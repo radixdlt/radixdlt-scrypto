@@ -19,7 +19,6 @@ use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT, PACKAGE_ROYALTY_CLAIM_ROYALTY_IDENT,
     PACKAGE_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
-use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::{ClientComponentApi, ClientDerefApi};
@@ -214,11 +213,6 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
             | BasicInstruction::BurnResource { .. }
             | BasicInstruction::AssertAccessRule { .. } => {}
         },
-        Instruction::System(invocation) => {
-            for node_id in invocation.refs() {
-                update.add_ref(node_id);
-            }
-        }
     }
 }
 
@@ -514,14 +508,13 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                             ),
                         ))?;
                     // TODO: remove clone by allowing invocation to have references, like in TransactionProcessorRunInvocation.
-                    let rtn = api.call_native(PackagePublishInvocation {
-                        package_address: None,
-                        code: code.clone().clone(),
-                        abi: abi.clone().clone(),
-                        royalty_config: BTreeMap::new(),
-                        metadata: BTreeMap::new(),
-                        access_rules: package_access_rules_from_owner_badge(owner_badge),
-                    })?;
+                    let rtn = api.new_package(
+                        code.clone().clone(),
+                        abi.clone().clone(),
+                        vec![package_access_rules_from_owner_badge(owner_badge)],
+                        BTreeMap::new(),
+                        BTreeMap::new(),
+                    )?;
 
                     InstructionOutput::Native(Box::new(rtn))
                 }
@@ -785,18 +778,6 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 Instruction::Basic(BasicInstruction::AssertAccessRule { access_rule }) => {
                     let rtn = ComponentAuthZone::sys_assert_access_rule(access_rule.clone(), api)?;
                     InstructionOutput::Native(Box::new(rtn))
-                }
-                Instruction::System(invocation) => {
-                    let invocation = invocation.clone();
-                    let (fn_identifier, invocation) = invocation.flatten();
-                    let rtn = api.call_native_raw(fn_identifier, invocation)?;
-
-                    // TODO: Move buckets/proofs to worktop/authzone without serialization
-                    let result = IndexedScryptoValue::from_vec(rtn.clone()).unwrap();
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result, api,
-                    )?;
-                    InstructionOutput::Native(Box::new(result.as_value().clone()))
                 }
             };
             outputs.push(result);

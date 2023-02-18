@@ -98,7 +98,7 @@ impl VisibilityProperties {
                         false
                     }
                 }
-                RENodeInit::NativePackage(..) => package_address.eq(&NATIVE_PACKAGE),
+                RENodeInit::NativePackage(..) | RENodeInit::WasmPackage(..) => package_address.eq(&PACKAGE),
                 RENodeInit::ResourceManager(..)
                 | RENodeInit::Vault(..)
                 | RENodeInit::Bucket(..)
@@ -216,7 +216,7 @@ impl VisibilityProperties {
                             || package_address.eq(&METADATA_PACKAGE)
                             || package_address.eq(&ROYALTY_PACKAGE)
                             || package_address.eq(&ACCESS_RULES_PACKAGE)
-                            || package_address.eq(&NATIVE_PACKAGE)
+                            || package_address.eq(&PACKAGE)
                         =>
                         {
                             true
@@ -303,7 +303,7 @@ impl VisibilityProperties {
                             || package_address.eq(&METADATA_PACKAGE)
                             || package_address.eq(&ROYALTY_PACKAGE)
                             || package_address.eq(&ACCESS_RULES_PACKAGE)
-                            || package_address.eq(&NATIVE_PACKAGE)
+                            || package_address.eq(&PACKAGE)
                         =>
                         {
                             true

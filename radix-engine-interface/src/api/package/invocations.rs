@@ -6,8 +6,19 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use scrypto_abi::BlueprintAbi;
 
+pub struct PackageAbi;
+
+impl PackageAbi {
+    pub fn blueprint_abis() -> BTreeMap<String, BlueprintAbi> {
+        BTreeMap::new()
+    }
+}
+pub const PACKAGE_BLUEPRINT: &str = "Package";
+
+pub const PACKAGE_PUBLISH_WASM_IDENT: &str = "publish_wasm";
+
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct PackagePublishInvocation {
+pub struct PackagePublishWasmInput {
     pub package_address: Option<[u8; 26]>, // TODO: Clean this up
     pub code: Vec<u8>,
     pub abi: Vec<u8>,
@@ -16,43 +27,10 @@ pub struct PackagePublishInvocation {
     pub access_rules: AccessRules,
 }
 
-impl Invocation for PackagePublishInvocation {
-    type Output = PackageAddress;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Package(PackageFn::Publish))
-    }
-}
-
-impl SerializableInvocation for PackagePublishInvocation {
-    type ScryptoOutput = PackageAddress;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Package(PackageFn::Publish)
-    }
-}
-
-impl Into<CallTableInvocation> for PackagePublishInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Package(PackageInvocation::Publish(self)).into()
-    }
-}
-
-
-pub struct NativePackageAbi;
-
-impl NativePackageAbi {
-    pub fn blueprint_abis() -> BTreeMap<String, BlueprintAbi> {
-        BTreeMap::new()
-    }
-}
-
-pub const NATIVE_PACKAGE_BLUEPRINT: &str = "NativePackage";
-
-pub const NATIVE_PACKAGE_PUBLISH_IDENT: &str = "publish";
+pub const PACKAGE_PUBLISH_PRECOMPILED_IDENT: &str = "publish_precompiled";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct PackagePublishNativeInput {
+pub struct PackagePublishPrecompiledInput {
     pub package_address: Option<[u8; 26]>, // TODO: Clean this up
     pub native_package_code_id: u8,
     pub abi: Vec<u8>,

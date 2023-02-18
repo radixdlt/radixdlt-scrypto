@@ -161,7 +161,7 @@ impl KernelModule for CostingModule {
             || package_address == METADATA_PACKAGE
             || package_address == ROYALTY_PACKAGE
             || package_address == ACCESS_RULES_PACKAGE
-            || package_address == NATIVE_PACKAGE
+            || package_address == PACKAGE
         {
             return Ok(());
         }

@@ -530,7 +530,7 @@ where
                             {
                                 if matches!(
                                     global_address,
-                                    GlobalAddress::Package(NATIVE_PACKAGE)
+                                    GlobalAddress::Package(PACKAGE)
                                 ) {
                                     self.current_frame
                                         .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);

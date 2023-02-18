@@ -12,7 +12,7 @@ use crate::system::node::RENodeInit;
 use crate::system::node_modules::auth::AuthZoneStackSubstate;
 use crate::types::*;
 use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::package::{NATIVE_PACKAGE_BLUEPRINT, NATIVE_PACKAGE_PUBLISH_IDENT};
+use radix_engine_interface::api::package::{PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_PRECOMPILED_IDENT};
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, ComponentOffset, GlobalAddress, PackageOffset, RENodeId, SubstateOffset,
     VaultOffset,
@@ -107,9 +107,9 @@ impl KernelModule for AuthModule {
                     ident,
                 }),
                 receiver: None,
-            } if package_address.eq(&NATIVE_PACKAGE)
-                && blueprint_name.eq(NATIVE_PACKAGE_BLUEPRINT)
-                && ident.eq(NATIVE_PACKAGE_PUBLISH_IDENT) => {
+            } if package_address.eq(&PACKAGE)
+                && blueprint_name.eq(PACKAGE_BLUEPRINT)
+                && ident.eq(PACKAGE_PUBLISH_PRECOMPILED_IDENT) => {
                     vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
                         HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
                             AuthAddresses::system_role(),
@@ -264,28 +264,9 @@ impl KernelModule for AuthModule {
             }
 
             ResolvedActor {
-                identifier: FnIdentifier::Native(native_fn),
-                receiver: Some(resolved_receiver),
-            } => match (native_fn, resolved_receiver) {
-                (method, ..) if matches!(method, NativeFn::Package(..)) => {
-                    let handle = api.kernel_lock_substate(
-                        resolved_receiver.receiver.0,
-                        NodeModuleId::AccessRules,
-                        SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
-                        LockFlags::read_only(),
-                    )?;
-                    let substate_ref = api.kernel_get_substate_ref(handle)?;
-                    let substate = substate_ref.access_rules_chain();
-                    let auth = substate.native_fn_authorization(
-                        resolved_receiver.receiver.1,
-                        FnIdentifier::Native(*method),
-                    );
-                    api.kernel_drop_lock(handle)?;
-                    auth
-                }
-
-                _ => vec![],
-            },
+                identifier: FnIdentifier::Native(..),
+                receiver: Some(..),
+            } => vec![],
 
             // SetAccessRule auth is done manually within the method
             ResolvedActor {

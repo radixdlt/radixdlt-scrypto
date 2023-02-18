@@ -35,7 +35,7 @@ use radix_engine_interface::api::{
 use radix_engine_interface::api::{ClientDerefApi, ClientPackageApi};
 use radix_engine_interface::data::*;
 use radix_engine_interface::data::{match_schema_with_value, ScryptoValue};
-use crate::system::package::NativePackage;
+use crate::system::package::Package;
 
 use super::ScryptoRuntime;
 
@@ -144,7 +144,9 @@ impl ExecutableInvocation for ScryptoInvocation {
             )
         };
 
-        let type_info = if self.package_address.eq(&NATIVE_PACKAGE) {
+        let type_info = if self.package_address.eq(&PACKAGE) {
+            // TODO: Remove this weirdness
+            node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
             TypeInfoSubstate::NativePackage
         } else {
             let handle = api.kernel_lock_substate(
@@ -285,7 +287,7 @@ impl Executor for ScryptoExecutor {
             + ClientNativeInvokeApi<RuntimeError>,
         W: WasmEngine,
     {
-        let output = if self.package_address.eq(&NATIVE_PACKAGE) {
+        let output = if self.package_address.eq(&PACKAGE) {
             NativeVm::invoke_native_package(
                 NATIVE_PACKAGE_CODE_ID,
                 self.receiver,
@@ -452,7 +454,7 @@ impl NativeVm {
     {
         match native_package_code_id {
             NATIVE_PACKAGE_CODE_ID => {
-                NativePackage::invoke_export(&export_name, receiver, input, api)
+                Package::invoke_export(&export_name, receiver, input, api)
             }
             RESOURCE_MANAGER_PACKAGE_CODE_ID => {
                 ResourceManagerNativePackage::invoke_export(&export_name, receiver, input, api)

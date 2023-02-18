@@ -21,7 +21,7 @@ pub const PACKAGE_TOKEN: ResourceAddress = address!(EntityType::Resource, 4);
 pub const OLYMPIA_VALIDATOR_TOKEN: ResourceAddress = address!(EntityType::Resource, 5);
 
 /// The address of the faucet package.
-pub const NATIVE_PACKAGE: PackageAddress = address!(EntityType::Package, 0);
+pub const PACKAGE: PackageAddress = address!(EntityType::Package, 0);
 pub const RESOURCE_MANAGER_PACKAGE: PackageAddress = address!(EntityType::Package, 1);
 pub const IDENTITY_PACKAGE: PackageAddress = address!(EntityType::Package, 2);
 pub const EPOCH_MANAGER_PACKAGE: PackageAddress = address!(EntityType::Package, 3);

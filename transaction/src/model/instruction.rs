@@ -192,7 +192,6 @@ pub enum BasicInstruction {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum Instruction {
     Basic(BasicInstruction),
-    System(NativeInvocation),
 }
 
 impl From<BasicInstruction> for Instruction {

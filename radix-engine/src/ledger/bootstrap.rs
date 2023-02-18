@@ -10,7 +10,7 @@ use radix_engine_interface::api::node_modules::metadata::MetadataAbi;
 use radix_engine_interface::api::node_modules::royalty::RoyaltyAbi;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::package::{
-    PackagePublishInvocation, PackagePublishNativeInput,
+    PackagePublishWasmInput, PackagePublishPrecompiledInput,
 };
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::access_controller::AccessControllerAbi;
@@ -60,10 +60,10 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(METADATA_PACKAGE)));
         let package_address = METADATA_PACKAGE.raw();
         instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
-            package_address: NATIVE_PACKAGE,
-            blueprint_name: NATIVE_PACKAGE_BLUEPRINT.to_string(),
-            function_name: NATIVE_PACKAGE_PUBLISH_IDENT.to_string(),
-            args: scrypto_encode(&PackagePublishNativeInput {
+            package_address: PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: scrypto_encode(&PackagePublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: METADATA_CODE_ID,
                 abi: scrypto_encode(&MetadataAbi::blueprint_abis()).unwrap(),
@@ -81,10 +81,10 @@ pub fn create_genesis(
         let package_address = ROYALTY_PACKAGE.raw();
 
         instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
-            package_address: NATIVE_PACKAGE,
-            blueprint_name: NATIVE_PACKAGE_BLUEPRINT.to_string(),
-            function_name: NATIVE_PACKAGE_PUBLISH_IDENT.to_string(),
-            args: scrypto_encode(&PackagePublishNativeInput {
+            package_address: PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: scrypto_encode(&PackagePublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: ROYALTY_CODE_ID,
                 abi: scrypto_encode(&RoyaltyAbi::blueprint_abis()).unwrap(),
@@ -103,10 +103,10 @@ pub fn create_genesis(
         )));
         let package_address = ACCESS_RULES_PACKAGE.raw();
         instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
-            package_address: NATIVE_PACKAGE,
-            blueprint_name: NATIVE_PACKAGE_BLUEPRINT.to_string(),
-            function_name: NATIVE_PACKAGE_PUBLISH_IDENT.to_string(),
-            args: scrypto_encode(&PackagePublishNativeInput {
+            package_address: PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: scrypto_encode(&PackagePublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: ACCESS_RULES_CODE_ID,
                 abi: scrypto_encode(&AccessRulesAbi::blueprint_abis()).unwrap(),
@@ -125,10 +125,10 @@ pub fn create_genesis(
         )));
         let package_address = RESOURCE_MANAGER_PACKAGE.raw();
         instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
-            package_address: NATIVE_PACKAGE,
-            blueprint_name: NATIVE_PACKAGE_BLUEPRINT.to_string(),
-            function_name: NATIVE_PACKAGE_PUBLISH_IDENT.to_string(),
-            args: scrypto_encode(&PackagePublishNativeInput {
+            package_address: PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: scrypto_encode(&PackagePublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: RESOURCE_MANAGER_PACKAGE_CODE_ID,
                 abi: scrypto_encode(&ResourceManagerAbi::blueprint_abis()).unwrap(),
@@ -197,10 +197,10 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(IDENTITY_PACKAGE)));
         let package_address = IDENTITY_PACKAGE.raw();
         instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
-            package_address: NATIVE_PACKAGE,
-            blueprint_name: NATIVE_PACKAGE_BLUEPRINT.to_string(),
-            function_name: NATIVE_PACKAGE_PUBLISH_IDENT.to_string(),
-            args: scrypto_encode(&PackagePublishNativeInput {
+            package_address: PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: scrypto_encode(&PackagePublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: scrypto_encode(&IdentityAbi::blueprint_abis()).unwrap(),
                 dependent_resources: vec![],
@@ -219,10 +219,10 @@ pub fn create_genesis(
         )));
         let package_address = EPOCH_MANAGER_PACKAGE.raw();
         instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
-            package_address: NATIVE_PACKAGE,
-            blueprint_name: NATIVE_PACKAGE_BLUEPRINT.to_string(),
-            function_name: NATIVE_PACKAGE_PUBLISH_IDENT.to_string(),
-            args: scrypto_encode(&PackagePublishNativeInput {
+            package_address: PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: scrypto_encode(&PackagePublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: scrypto_encode(&EpochManagerAbi::blueprint_abis()).unwrap(),
                 native_package_code_id: EPOCH_MANAGER_PACKAGE_CODE_ID,
@@ -239,10 +239,10 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(CLOCK_PACKAGE)));
         let package_address = CLOCK_PACKAGE.raw();
         instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
-            package_address: NATIVE_PACKAGE,
-            blueprint_name: NATIVE_PACKAGE_BLUEPRINT.to_string(),
-            function_name: NATIVE_PACKAGE_PUBLISH_IDENT.to_string(),
-            args: scrypto_encode(&PackagePublishNativeInput {
+            package_address: PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: scrypto_encode(&PackagePublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: scrypto_encode(&ClockAbi::blueprint_abis()).unwrap(),
                 native_package_code_id: CLOCK_PACKAGE_CODE_ID,
@@ -259,10 +259,10 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
         let package_address = ACCOUNT_PACKAGE.raw();
         instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
-            package_address: NATIVE_PACKAGE,
-            blueprint_name: NATIVE_PACKAGE_BLUEPRINT.to_string(),
-            function_name: NATIVE_PACKAGE_PUBLISH_IDENT.to_string(),
-            args: scrypto_encode(&PackagePublishNativeInput {
+            package_address: PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: scrypto_encode(&PackagePublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: scrypto_encode(&AccountAbi::blueprint_abis()).unwrap(),
                 native_package_code_id: ACCOUNT_PACKAGE_CODE_ID,
@@ -281,10 +281,10 @@ pub fn create_genesis(
         )));
         let package_address = ACCESS_CONTROLLER_PACKAGE.raw();
         instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
-            package_address: NATIVE_PACKAGE,
-            blueprint_name: NATIVE_PACKAGE_BLUEPRINT.to_string(),
-            function_name: NATIVE_PACKAGE_PUBLISH_IDENT.to_string(),
-            args: scrypto_encode(&PackagePublishNativeInput {
+            package_address: PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: scrypto_encode(&PackagePublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: scrypto_encode(&AccessControllerAbi::blueprint_abis()).unwrap(),
                 metadata: BTreeMap::new(),
@@ -301,10 +301,10 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(LOGGER_PACKAGE)));
         let package_address = LOGGER_PACKAGE.raw();
         instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
-            package_address: NATIVE_PACKAGE,
-            blueprint_name: NATIVE_PACKAGE_BLUEPRINT.to_string(),
-            function_name: NATIVE_PACKAGE_PUBLISH_IDENT.to_string(),
-            args: scrypto_encode(&PackagePublishNativeInput {
+            package_address: PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: scrypto_encode(&PackagePublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: scrypto_encode(&TransactionRuntimeAbi::blueprint_abis()).unwrap(),
                 metadata: BTreeMap::new(),
@@ -323,10 +323,10 @@ pub fn create_genesis(
         )));
         let package_address = TRANSACTION_RUNTIME_PACKAGE.raw();
         instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
-            package_address: NATIVE_PACKAGE,
-            blueprint_name: NATIVE_PACKAGE_BLUEPRINT.to_string(),
-            function_name: NATIVE_PACKAGE_PUBLISH_IDENT.to_string(),
-            args: scrypto_encode(&PackagePublishNativeInput {
+            package_address: PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: scrypto_encode(&PackagePublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: scrypto_encode(&LoggerAbi::blueprint_abis()).unwrap(),
                 metadata: BTreeMap::new(),
@@ -343,10 +343,10 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(AUTH_ZONE_PACKAGE)));
         let package_address = AUTH_ZONE_PACKAGE.raw();
         instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
-            package_address: NATIVE_PACKAGE,
-            blueprint_name: NATIVE_PACKAGE_BLUEPRINT.to_string(),
-            function_name: NATIVE_PACKAGE_PUBLISH_IDENT.to_string(),
-            args: scrypto_encode(&PackagePublishNativeInput {
+            package_address: PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: scrypto_encode(&PackagePublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: scrypto_encode(&AuthZoneAbi::blueprint_abis()).unwrap(),
                 metadata: BTreeMap::new(),
@@ -432,16 +432,19 @@ pub fn create_genesis(
         let faucet_abi = include_bytes!("../../../assets/faucet.abi").to_vec();
         let package_address = FAUCET_PACKAGE.raw();
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(FAUCET_PACKAGE)));
-        instructions.push(Instruction::System(NativeInvocation::Package(
-            PackageInvocation::Publish(PackagePublishInvocation {
+        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+            package_address: PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_WASM_IDENT.to_string(),
+            args: scrypto_encode(&PackagePublishWasmInput {
                 package_address: Some(package_address),
                 code: faucet_code, // TODO: Use blob here instead?
                 abi: faucet_abi,   // TODO: Use blob here instead?
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll),
-            }),
-        )));
+            }).unwrap(),
+        }));
     }
 
     {

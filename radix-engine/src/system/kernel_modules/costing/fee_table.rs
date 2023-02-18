@@ -73,9 +73,10 @@ impl FeeTable {
             identifier.package_address,
             identifier.blueprint_name.as_str(),
         ) {
-            (NATIVE_PACKAGE, NATIVE_PACKAGE_BLUEPRINT) => {
+            (PACKAGE, PACKAGE_BLUEPRINT) => {
                 match identifier.ident.as_str() {
-                    NATIVE_PACKAGE_PUBLISH_IDENT => self.fixed_high,
+                    PACKAGE_PUBLISH_PRECOMPILED_IDENT => self.fixed_high,
+                    PACKAGE_PUBLISH_WASM_IDENT => self.fixed_high,
                     _ => self.fixed_low,
                 }
             }
@@ -270,9 +271,6 @@ impl FeeTable {
     pub fn run_native_fn_cost(&self, native_fn: &NativeFn) -> u32 {
         match native_fn {
             NativeFn::Root => panic!("Should not get here"),
-            NativeFn::Package(method_ident) => match method_ident {
-                PackageFn::Publish => self.fixed_high,
-            },
             NativeFn::TransactionProcessor(transaction_processor_fn) => {
                 match transaction_processor_fn {
                     TransactionProcessorFn::Run => self.fixed_high,

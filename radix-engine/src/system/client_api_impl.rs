@@ -10,7 +10,6 @@ use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::module::KernelModule;
 use crate::kernel::module_mixer::KernelModuleMixer;
 use crate::system::global::GlobalAddressSubstate;
-use crate::system::invocation::invoke_native::invoke_native_fn;
 use crate::system::invocation::resolve_function::resolve_function;
 use crate::system::invocation::resolve_method::resolve_method;
 use crate::system::invocation::resolve_native::resolve_native;
@@ -142,10 +141,6 @@ where
     ) -> Result<Vec<u8>, RuntimeError> {
         let call_table_invocation = resolve_native(native_fn, invocation)?;
         match call_table_invocation {
-            CallTableInvocation::Native(native_invocation) => {
-                invoke_native_fn(native_invocation, self)
-                    .map(|r| scrypto_encode(r.as_ref()).unwrap())
-            }
             CallTableInvocation::Scrypto(_) => {
                 panic!("TODO: better interface")
             }
@@ -252,10 +247,6 @@ where
             self,
         )?;
         match invocation {
-            CallTableInvocation::Native(native_invocation) => Ok(scrypto_encode(
-                invoke_native_fn(native_invocation, self)?.as_ref(),
-            )
-            .expect("Failed to encode native fn return")),
             CallTableInvocation::Scrypto(scrypto_invocation) => self
                 .kernel_invoke(scrypto_invocation)
                 .map(|v| scrypto_encode(&v).expect("Failed to encode scrypto fn return")),
