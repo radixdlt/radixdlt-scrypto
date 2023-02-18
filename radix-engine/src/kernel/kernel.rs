@@ -45,7 +45,7 @@ use super::id_allocator::IdAllocator;
 use super::interpreters::ScryptoInterpreter;
 use super::kernel_api::{
     ExecutableInvocation, Executor, Invokable, KernelActorApi, KernelApi, KernelInternalApi,
-    KernelInvokeApi, KernelModuleApi, KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockFlags,
+    KernelModuleApi, KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockFlags,
     LockInfo,
 };
 use super::module::KernelModule;
@@ -1215,8 +1215,6 @@ where
         Ok(rtn)
     }
 }
-
-impl<'g, 's, W> KernelInvokeApi<RuntimeError> for Kernel<'g, 's, W> where W: WasmEngine {}
 
 impl<'g, 's, W> KernelApi<W, RuntimeError> for Kernel<'g, 's, W> where W: WasmEngine {}
 

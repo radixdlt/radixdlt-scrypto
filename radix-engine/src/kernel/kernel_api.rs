@@ -121,11 +121,9 @@ pub trait ExecutableInvocation: Invocation {
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>;
 }
 
-pub trait KernelInvokeApi<E> {}
-
 /// Interface of the Kernel, for Kernel modules.
 pub trait KernelApi<W: WasmEngine, E>:
-    KernelActorApi<E> + KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + KernelInvokeApi<E>
+    KernelActorApi<E> + KernelNodeApi + KernelSubstateApi + KernelWasmApi<W>
 {
 }
 
