@@ -2,12 +2,13 @@ use super::node::{RENodeInit, RENodeModuleInit};
 use crate::errors::{KernelError, RuntimeError};
 use crate::kernel::actor::{ExecutionMode, ResolvedActor, ResolvedReceiver};
 use crate::kernel::kernel_api::LockFlags;
+use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     AccessControllerOffset, AccountOffset, AuthZoneStackOffset, BucketOffset, ComponentOffset,
     FnIdentifier, GlobalOffset, KeyValueStoreOffset, NativeFn, PackageOffset, ProofOffset,
     RENodeId, ResourceManagerOffset, RoyaltyOffset, ScryptoFnIdentifier, SubstateOffset,
-    TransactionProcessorFn, ValidatorOffset, VaultOffset, WorktopOffset,
+    ValidatorOffset, VaultOffset, WorktopOffset,
 };
 use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLUEPRINT;
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
@@ -43,9 +44,15 @@ impl VisibilityProperties {
             },
             ExecutionMode::Client => match node_id {
                 RENodeId::Worktop => match &actor.identifier {
-                    FnIdentifier::Native(NativeFn::TransactionProcessor(
-                        TransactionProcessorFn::Run,
-                    )) => true,
+                    FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                        package_address,
+                        blueprint_name,
+                        ..
+                    }) if package_address.eq(&PACKAGE)
+                        && blueprint_name.eq(&TRANSACTION_PROCESSOR_BLUEPRINT) =>
+                    {
+                        true
+                    }
                     _ => false,
                 },
                 RENodeId::Bucket(..) => match &actor.identifier {
@@ -60,9 +67,15 @@ impl VisibilityProperties {
                         package_address: RESOURCE_MANAGER_PACKAGE | AUTH_ZONE_PACKAGE,
                         ..
                     }) => true,
-                    FnIdentifier::Native(NativeFn::TransactionProcessor(
-                        TransactionProcessorFn::Run,
-                    )) => true,
+                    FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                        package_address,
+                        blueprint_name,
+                        ..
+                    }) if package_address.eq(&PACKAGE)
+                        && blueprint_name.eq(&TRANSACTION_PROCESSOR_BLUEPRINT) =>
+                    {
+                        true
+                    }
                     FnIdentifier::Scrypto(..) => true,
                     _ => false,
                 },
@@ -98,9 +111,9 @@ impl VisibilityProperties {
                         false
                     }
                 }
-                RENodeInit::NativePackage(..) | RENodeInit::WasmPackage(..) => {
-                    package_address.eq(&PACKAGE)
-                }
+                RENodeInit::Worktop(..)
+                | RENodeInit::NativePackage(..)
+                | RENodeInit::WasmPackage(..) => package_address.eq(&PACKAGE),
                 RENodeInit::ResourceManager(..)
                 | RENodeInit::Vault(..)
                 | RENodeInit::Bucket(..)

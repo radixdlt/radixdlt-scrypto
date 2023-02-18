@@ -12,8 +12,6 @@ pub enum PackageIdentifier {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum NativePackage {
     Auth,
-    Package,
-    TransactionProcessor,
     Root,
 }
 
@@ -87,39 +85,13 @@ impl ScryptoFnIdentifier {
     LegacyDescribe,
 )]
 pub enum NativeFn {
-    TransactionProcessor(TransactionProcessorFn),
     Root,
 }
 
 impl NativeFn {
     pub fn package(&self) -> NativePackage {
         match self {
-            NativeFn::TransactionProcessor(..) => NativePackage::TransactionProcessor,
             NativeFn::Root => NativePackage::Root,
         }
     }
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    EnumString,
-    EnumVariantNames,
-    IntoStaticStr,
-    AsRefStr,
-    Display,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
-#[strum(serialize_all = "snake_case")]
-pub enum TransactionProcessorFn {
-    Run,
 }

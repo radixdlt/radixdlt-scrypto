@@ -39,3 +39,7 @@ pub struct PackagePublishPrecompiledInput {
     pub metadata: BTreeMap<String, String>,
     pub access_rules: AccessRules,
 }
+
+pub const TRANSACTION_PROCESSOR_BLUEPRINT: &str = "TransactionProcessor";
+
+pub const TRANSACTION_PROCESSOR_RUN_IDENT: &str = "run";

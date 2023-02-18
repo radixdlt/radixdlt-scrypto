@@ -78,6 +78,10 @@ impl FeeTable {
                 PACKAGE_PUBLISH_WASM_IDENT => self.fixed_high,
                 _ => self.fixed_low,
             },
+            (PACKAGE, TRANSACTION_PROCESSOR_BLUEPRINT) => match identifier.ident.as_str() {
+                TRANSACTION_PROCESSOR_RUN_IDENT => self.fixed_high,
+                _ => self.fixed_low,
+            },
             (LOGGER_PACKAGE, LOGGER_BLUEPRINT) => match identifier.ident.as_str() {
                 LOGGER_LOG_IDENT => self.fixed_low,
                 _ => self.fixed_low,
@@ -269,11 +273,6 @@ impl FeeTable {
     pub fn run_native_fn_cost(&self, native_fn: &NativeFn) -> u32 {
         match native_fn {
             NativeFn::Root => panic!("Should not get here"),
-            NativeFn::TransactionProcessor(transaction_processor_fn) => {
-                match transaction_processor_fn {
-                    TransactionProcessorFn::Run => self.fixed_high,
-                }
-            }
         }
     }
 

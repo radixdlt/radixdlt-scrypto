@@ -45,8 +45,7 @@ use super::id_allocator::IdAllocator;
 use super::interpreters::ScryptoInterpreter;
 use super::kernel_api::{
     ExecutableInvocation, Executor, Invokable, KernelActorApi, KernelApi, KernelInternalApi,
-    KernelModuleApi, KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockFlags,
-    LockInfo,
+    KernelModuleApi, KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockFlags, LockInfo,
 };
 use super::module::KernelModule;
 use super::module_mixer::KernelModuleMixer;

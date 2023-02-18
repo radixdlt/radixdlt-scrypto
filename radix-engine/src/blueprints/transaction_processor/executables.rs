@@ -19,6 +19,7 @@ use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT, PACKAGE_ROYALTY_CLAIM_ROYALTY_IDENT,
     PACKAGE_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
+use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::{ClientComponentApi, ClientDerefApi};
@@ -248,8 +249,11 @@ impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
             EDDSA_ED25519_TOKEN,
         )));
 
-        let actor =
-            ResolvedActor::function(NativeFn::TransactionProcessor(TransactionProcessorFn::Run));
+        let actor = ResolvedActor::function(FnIdentifier::Scrypto(ScryptoFnIdentifier {
+            package_address: PACKAGE,
+            blueprint_name: TRANSACTION_PROCESSOR_BLUEPRINT.to_string(),
+            ident: "run".to_string(),
+        }));
 
         Ok((actor, call_frame_update, self))
     }
