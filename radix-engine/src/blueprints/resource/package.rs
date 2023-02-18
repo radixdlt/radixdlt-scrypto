@@ -5,7 +5,6 @@ use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
@@ -23,8 +22,7 @@ impl ResourceManagerNativePackage {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         match export_name {
             RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT => {

@@ -2,7 +2,10 @@ use crate::abi::*;
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::*;
 use crate::*;
-use radix_engine_interface::api::node_modules::auth::{AccessRulesAddAccessCheckInput, AccessRulesGetLengthInput, ACCESS_RULES_ADD_ACCESS_CHECK_IDENT, ACCESS_RULES_GET_LENGTH_IDENT};
+use radix_engine_interface::api::node_modules::auth::{
+    AccessRulesAddAccessCheckInput, AccessRulesGetLengthInput, ACCESS_RULES_ADD_ACCESS_CHECK_IDENT,
+    ACCESS_RULES_GET_LENGTH_IDENT,
+};
 use radix_engine_interface::api::node_modules::metadata::{
     MetadataSetInput, METADATA_GET_IDENT, METADATA_SET_IDENT,
 };

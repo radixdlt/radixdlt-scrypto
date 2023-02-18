@@ -10,7 +10,7 @@ use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::{ClientApi, ClientNativeInvokeApi, ClientSubstateApi};
+use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
@@ -27,8 +27,7 @@ impl IdentityNativePackage {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         match export_name {
             IDENTITY_CREATE_IDENT => {

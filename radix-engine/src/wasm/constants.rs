@@ -35,9 +35,7 @@ pub const DROP_LOCK_FUNCTION_NAME: &str = "drop_lock";
 // Under active refactoring
 pub const GET_ACTOR_FUNCTION_ID: usize = 0xf0;
 pub const GET_ACTOR_FUNCTION_NAME: &str = "get_actor";
-pub const CALL_NATIVE_FUNCTION_ID: usize = 0xf1;
-pub const CALL_NATIVE_FUNCTION_NAME: &str = "call_native";
-pub const DROP_NODE_FUNCTION_ID: usize = 0xf2;
+pub const DROP_NODE_FUNCTION_ID: usize = 0xf1;
 pub const DROP_NODE_FUNCTION_NAME: &str = "drop_node";
 
 pub const MODULE_ENV_NAME: &str = "env";

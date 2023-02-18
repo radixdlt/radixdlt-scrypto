@@ -1,6 +1,6 @@
 use crate::engine::wasm_api::*;
 use radix_engine_interface::api::package::{PackageInfoSubstate, WasmCodeSubstate};
-use radix_engine_interface::api::{types::*, ClientNativeInvokeApi};
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::{
     ClientActorApi, ClientComponentApi, ClientNodeApi, ClientPackageApi, ClientSubstateApi,
 };
@@ -216,35 +216,6 @@ impl ClientPackageApi<ClientApiError> for ScryptoEnv {
             )
         });
 
-        Ok(return_data)
-    }
-}
-
-impl ClientNativeInvokeApi<ClientApiError> for ScryptoEnv {
-    fn call_native<N: SerializableInvocation>(
-        &mut self,
-        invocation: N,
-    ) -> Result<N::Output, ClientApiError> {
-        let native_fn = N::native_fn();
-        let invocation = scrypto_encode(&invocation).unwrap();
-        let output = self.call_native_raw(native_fn, invocation)?;
-        scrypto_decode(&output).map_err(ClientApiError::DecodeError)
-    }
-
-    fn call_native_raw(
-        &mut self,
-        native_fn: NativeFn,
-        invocation: Vec<u8>,
-    ) -> Result<Vec<u8>, ClientApiError> {
-        let native_fn = scrypto_encode(&native_fn).unwrap();
-        let return_data = copy_buffer(unsafe {
-            call_native(
-                native_fn.as_ptr(),
-                native_fn.len(),
-                invocation.as_ptr(),
-                invocation.len(),
-            )
-        });
         Ok(return_data)
     }
 }

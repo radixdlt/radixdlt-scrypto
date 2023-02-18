@@ -1,6 +1,5 @@
 use radix_engine_interface::api::types::ScryptoReceiver;
-use radix_engine_interface::api::{ClientApi, ClientNodeApi};
-use radix_engine_interface::api::{ClientComponentApi, ClientNativeInvokeApi};
+use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 use radix_engine_interface::data::types::Own;
@@ -23,7 +22,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<Self, E>
     where
-        Y: ClientNodeApi<E> + ClientApi<E>,
+        Y: ClientApi<E>,
     {
         let result = api
             .call_function(
@@ -50,7 +49,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<(Self, Bucket), E>
     where
-        Y: ClientNodeApi<E> + ClientApi<E>,
+        Y: ClientApi<E>,
     {
         let result = api
             .call_function(
@@ -78,7 +77,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<Self, E>
     where
-        Y: ClientNodeApi<E> + ClientApi<E>,
+        Y: ClientApi<E>,
     {
         let result = api.call_function(
             RESOURCE_MANAGER_PACKAGE,
@@ -102,7 +101,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientNodeApi<E> + ClientComponentApi<E>,
+        Y: ClientApi<E>,
     {
         let mut entries = BTreeMap::new();
         entries.insert(
@@ -126,7 +125,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientNodeApi<E> + ClientComponentApi<E>,
+        Y: ClientApi<E>,
     {
         // TODO: Implement UUID generation in ResourceManager
         let mut entries = Vec::new();
@@ -148,7 +147,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientNodeApi<E> + ClientComponentApi<E>,
+        Y: ClientApi<E>,
     {
         let rtn = api.call_method(
             ScryptoReceiver::Resource(self.0),
@@ -165,7 +164,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<T, E>
     where
-        Y: ClientNodeApi<E> + ClientComponentApi<E>,
+        Y: ClientApi<E>,
     {
         let rtn = api.call_method(
             ScryptoReceiver::Resource(self.0),
@@ -184,7 +183,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientNodeApi<E> + ClientNativeInvokeApi<E> + ClientComponentApi<E>,
+        Y: ClientApi<E>,
     {
         let rtn = api.call_method(
             ScryptoReceiver::Resource(self.0),
@@ -196,7 +195,7 @@ impl ResourceManager {
 
     pub fn total_supply<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Decimal, E>
     where
-        Y: ClientNodeApi<E> + ClientComponentApi<E>,
+        Y: ClientApi<E>,
     {
         let rtn = api.call_method(
             ScryptoReceiver::Resource(self.0),
@@ -208,7 +207,7 @@ impl ResourceManager {
 
     pub fn new_empty_bucket<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Bucket, E>
     where
-        Y: ClientNativeInvokeApi<E> + ClientComponentApi<E>,
+        Y: ClientApi<E>,
     {
         let rtn = api.call_method(
             ScryptoReceiver::Resource(self.0),
@@ -220,7 +219,7 @@ impl ResourceManager {
 
     pub fn new_vault<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Own, E>
     where
-        Y: ClientNativeInvokeApi<E> + ClientComponentApi<E>,
+        Y: ClientApi<E>,
     {
         let rtn = api.call_method(
             ScryptoReceiver::Resource(self.0),

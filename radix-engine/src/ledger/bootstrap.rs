@@ -10,7 +10,7 @@ use radix_engine_interface::api::node_modules::metadata::MetadataAbi;
 use radix_engine_interface::api::node_modules::royalty::RoyaltyAbi;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::package::{
-    PackagePublishWasmInput, PackagePublishPrecompiledInput,
+    PackagePublishPrecompiledInput, PackagePublishWasmInput,
 };
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::access_controller::AccessControllerAbi;
@@ -71,7 +71,8 @@ pub fn create_genesis(
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
-            }).unwrap(),
+            })
+            .unwrap(),
         }));
     }
 
@@ -92,7 +93,8 @@ pub fn create_genesis(
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
-            }).unwrap(),
+            })
+            .unwrap(),
         }));
     }
 
@@ -114,7 +116,8 @@ pub fn create_genesis(
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
-            }).unwrap(),
+            })
+            .unwrap(),
         }));
     }
 
@@ -136,7 +139,8 @@ pub fn create_genesis(
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
-            }).unwrap(),
+            })
+            .unwrap(),
         }));
     }
 
@@ -208,7 +212,8 @@ pub fn create_genesis(
                 native_package_code_id: IDENTITY_PACKAGE_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
-            }).unwrap(),
+            })
+            .unwrap(),
         }));
     }
 
@@ -230,7 +235,8 @@ pub fn create_genesis(
                 access_rules: AccessRules::new(),
                 dependent_resources: vec![RADIX_TOKEN, PACKAGE_TOKEN],
                 dependent_components: vec![],
-            }).unwrap(),
+            })
+            .unwrap(),
         }));
     }
 
@@ -250,7 +256,8 @@ pub fn create_genesis(
                 access_rules: AccessRules::new(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
-            }).unwrap(),
+            })
+            .unwrap(),
         }));
     }
 
@@ -270,7 +277,8 @@ pub fn create_genesis(
                 access_rules: AccessRules::new(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
-            }).unwrap(),
+            })
+            .unwrap(),
         }));
     }
 
@@ -292,7 +300,8 @@ pub fn create_genesis(
                 native_package_code_id: ACCESS_CONTROLLER_PACKAGE_CODE_ID,
                 dependent_resources: vec![],
                 dependent_components: vec![CLOCK],
-            }).unwrap(),
+            })
+            .unwrap(),
         }));
     }
 
@@ -312,7 +321,8 @@ pub fn create_genesis(
                 native_package_code_id: LOGGER_CODE_ID,
                 dependent_resources: vec![],
                 dependent_components: vec![],
-            }).unwrap(),
+            })
+            .unwrap(),
         }));
     }
 
@@ -334,7 +344,8 @@ pub fn create_genesis(
                 native_package_code_id: TRANSACTION_RUNTIME_CODE_ID,
                 dependent_resources: vec![],
                 dependent_components: vec![],
-            }).unwrap(),
+            })
+            .unwrap(),
         }));
     }
 
@@ -354,7 +365,8 @@ pub fn create_genesis(
                 native_package_code_id: AUTH_ZONE_CODE_ID,
                 dependent_resources: vec![],
                 dependent_components: vec![],
-            }).unwrap(),
+            })
+            .unwrap(),
         }));
     }
 
@@ -443,7 +455,8 @@ pub fn create_genesis(
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll),
-            }).unwrap(),
+            })
+            .unwrap(),
         }));
     }
 

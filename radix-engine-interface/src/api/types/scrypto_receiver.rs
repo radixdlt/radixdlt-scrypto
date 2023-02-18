@@ -71,7 +71,7 @@ impl From<RENodeId> for ScryptoReceiver {
             | RENodeId::Clock(..)
             | RENodeId::Account(..) => {
                 todo!()
-            },
+            }
         }
     }
 }

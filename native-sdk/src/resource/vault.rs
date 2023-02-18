@@ -1,6 +1,6 @@
 use radix_engine_interface::api::types::{ScryptoReceiver, VaultId};
 use radix_engine_interface::api::{
-    ClientApi, ClientComponentApi, ClientNativeInvokeApi, ClientNodeApi, ClientSubstateApi,
+    ClientApi, ClientComponentApi, ClientNodeApi, ClientSubstateApi,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::types::Own;
@@ -17,10 +17,7 @@ impl Vault {
         api: &mut Y,
     ) -> Result<Self, E>
     where
-        Y: ClientNodeApi<E>
-            + ClientSubstateApi<E>
-            + ClientNativeInvokeApi<E>
-            + ClientComponentApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientComponentApi<E>,
     {
         let rtn = api.call_method(
             ScryptoReceiver::Resource(resource_address),
@@ -55,10 +52,7 @@ impl Vault {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientNodeApi<E>
-            + ClientSubstateApi<E>
-            + ClientNativeInvokeApi<E>
-            + ClientComponentApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientComponentApi<E>,
     {
         let rtn = api.call_method(
             ScryptoReceiver::Vault(self.0),
@@ -71,10 +65,7 @@ impl Vault {
 
     pub fn sys_take_all<Y, E: Debug + ScryptoDecode>(&mut self, api: &mut Y) -> Result<Bucket, E>
     where
-        Y: ClientNodeApi<E>
-            + ClientSubstateApi<E>
-            + ClientNativeInvokeApi<E>
-            + ClientComponentApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientComponentApi<E>,
     {
         // TODO: Replace with actual take all blueprint method
         let amount = self.sys_amount(api)?;
@@ -93,10 +84,7 @@ impl Vault {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientNodeApi<E>
-            + ClientSubstateApi<E>
-            + ClientNativeInvokeApi<E>
-            + ClientComponentApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientComponentApi<E>,
     {
         let rtn = api.call_method(
             ScryptoReceiver::Vault(self.0),
@@ -112,10 +100,7 @@ impl Vault {
 
     pub fn sys_amount<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Decimal, E>
     where
-        Y: ClientNodeApi<E>
-            + ClientSubstateApi<E>
-            + ClientNativeInvokeApi<E>
-            + ClientComponentApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientComponentApi<E>,
     {
         let rtn = api.call_method(
             ScryptoReceiver::Vault(self.0),
@@ -129,10 +114,7 @@ impl Vault {
     pub fn sys_create_proof<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Proof, E>
     where
         E: Debug + ScryptoDecode,
-        Y: ClientNodeApi<E>
-            + ClientSubstateApi<E>
-            + ClientNativeInvokeApi<E>
-            + ClientComponentApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientComponentApi<E>,
     {
         let rtn = api.call_method(
             ScryptoReceiver::Vault(self.0),
@@ -183,10 +165,7 @@ impl Vault {
         amount: Decimal,
     ) -> Result<(), E>
     where
-        Y: ClientNodeApi<E>
-            + ClientSubstateApi<E>
-            + ClientNativeInvokeApi<E>
-            + ClientComponentApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientComponentApi<E>,
     {
         let rtn = api.call_method(
             ScryptoReceiver::Vault(self.0),
@@ -206,10 +185,7 @@ impl Vault {
         amount: Decimal,
     ) -> Result<(), E>
     where
-        Y: ClientNodeApi<E>
-            + ClientSubstateApi<E>
-            + ClientNativeInvokeApi<E>
-            + ClientComponentApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientComponentApi<E>,
     {
         let rtn = api.call_method(
             ScryptoReceiver::Vault(self.0),
@@ -228,10 +204,7 @@ impl Vault {
         api: &mut Y,
     ) -> Result<ResourceAddress, E>
     where
-        Y: ClientNodeApi<E>
-            + ClientSubstateApi<E>
-            + ClientNativeInvokeApi<E>
-            + ClientComponentApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientComponentApi<E>,
     {
         let rtn = api.call_method(
             ScryptoReceiver::Vault(self.0),

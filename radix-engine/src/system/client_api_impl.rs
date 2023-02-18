@@ -12,7 +12,6 @@ use crate::kernel::module_mixer::KernelModuleMixer;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::invocation::resolve_function::resolve_function;
 use crate::system::invocation::resolve_method::resolve_method;
-use crate::system::invocation::resolve_native::resolve_native;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
@@ -31,8 +30,8 @@ use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::{
-    ClientActorApi, ClientApi, ClientComponentApi, ClientDerefApi, ClientNativeInvokeApi,
-    ClientNodeApi, ClientPackageApi, ClientSubstateApi, ClientUnsafeApi,
+    ClientActorApi, ClientApi, ClientComponentApi, ClientDerefApi, ClientNodeApi, ClientPackageApi,
+    ClientSubstateApi, ClientUnsafeApi,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RADIX_TOKEN;
@@ -127,34 +126,6 @@ where
 {
     fn get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
         self.kernel_get_fn_identifier()
-    }
-}
-
-impl<'g, 's, W> ClientNativeInvokeApi<RuntimeError> for Kernel<'g, 's, W>
-where
-    W: WasmEngine,
-{
-    fn call_native_raw(
-        &mut self,
-        native_fn: NativeFn,
-        invocation: Vec<u8>,
-    ) -> Result<Vec<u8>, RuntimeError> {
-        let call_table_invocation = resolve_native(native_fn, invocation)?;
-        match call_table_invocation {
-            CallTableInvocation::Scrypto(_) => {
-                panic!("TODO: better interface")
-            }
-        }
-    }
-
-    fn call_native<N: SerializableInvocation>(
-        &mut self,
-        invocation: N,
-    ) -> Result<N::Output, RuntimeError> {
-        let native_fn = N::native_fn();
-        let invocation = scrypto_encode(&invocation).expect("Failed to encode native invocation");
-        let return_data = self.call_native_raw(native_fn, invocation)?;
-        Ok(scrypto_decode(&return_data).expect("Failed to decode native return data"))
     }
 }
 

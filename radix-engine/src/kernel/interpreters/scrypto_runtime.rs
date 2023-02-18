@@ -6,8 +6,8 @@ use crate::wasm::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::{
-    ClientActorApi, ClientComponentApi, ClientNativeInvokeApi, ClientNodeApi, ClientPackageApi,
-    ClientSubstateApi, ClientUnsafeApi,
+    ClientActorApi, ClientComponentApi, ClientNodeApi, ClientPackageApi, ClientSubstateApi,
+    ClientUnsafeApi,
 };
 use radix_engine_interface::blueprints::resource::AccessRules;
 use sbor::rust::vec::Vec;
@@ -20,8 +20,7 @@ where
         + ClientSubstateApi<RuntimeError>
         + ClientPackageApi<RuntimeError>
         + ClientComponentApi<RuntimeError>
-        + ClientActorApi<RuntimeError>
-        + ClientNativeInvokeApi<RuntimeError>,
+        + ClientActorApi<RuntimeError>,
 {
     api: &'y mut Y,
     buffers: BTreeMap<BufferId, Vec<u8>>,
@@ -35,8 +34,7 @@ where
         + ClientSubstateApi<RuntimeError>
         + ClientPackageApi<RuntimeError>
         + ClientComponentApi<RuntimeError>
-        + ClientActorApi<RuntimeError>
-        + ClientNativeInvokeApi<RuntimeError>,
+        + ClientActorApi<RuntimeError>,
 {
     pub fn new(api: &'y mut Y) -> Self {
         ScryptoRuntime {
@@ -54,8 +52,7 @@ where
         + ClientSubstateApi<RuntimeError>
         + ClientPackageApi<RuntimeError>
         + ClientComponentApi<RuntimeError>
-        + ClientActorApi<RuntimeError>
-        + ClientNativeInvokeApi<RuntimeError>,
+        + ClientActorApi<RuntimeError>,
 {
     fn allocate_buffer(
         &mut self,
@@ -122,19 +119,6 @@ where
         let return_data =
             self.api
                 .call_function(package_address, &blueprint_ident, &function_ident, args)?;
-
-        self.allocate_buffer(return_data)
-    }
-
-    fn call_native(
-        &mut self,
-        native_fn: Vec<u8>,
-        invocation: Vec<u8>,
-    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let native_fn = scrypto_decode::<NativeFn>(&native_fn)
-            .map_err(WasmRuntimeError::InvalidNativeFnIdentifier)?;
-
-        let return_data = self.api.call_native_raw(native_fn, invocation)?;
 
         self.allocate_buffer(return_data)
     }
@@ -356,14 +340,6 @@ impl WasmRuntime for NopWasmRuntime {
         blueprint_ident: Vec<u8>,
         ident: Vec<u8>,
         args: Vec<u8>,
-    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
-    }
-
-    fn call_native(
-        &mut self,
-        native_fn_identifier: Vec<u8>,
-        invocation: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }

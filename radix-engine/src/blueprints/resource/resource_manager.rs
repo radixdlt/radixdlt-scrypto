@@ -20,7 +20,6 @@ use radix_engine_interface::api::types::{
     SubstateOffset,
 };
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::blueprints::auth_zone::AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT;
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
@@ -495,8 +494,7 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateNonFungibleInput =
@@ -522,8 +520,7 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateNonFungibleWithAddressInput =
@@ -554,8 +551,7 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateNonFungibleWithInitialSupplyInput =
@@ -624,8 +620,7 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateUuidNonFungibleWithInitialSupplyInput =
@@ -692,8 +687,7 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateFungibleInput =
@@ -716,10 +710,7 @@ impl ResourceManagerBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateFungibleWithInitialSupplyInput =
@@ -779,8 +770,7 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput =
@@ -842,8 +832,7 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let input: ResourceManagerBurnBucketInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -863,8 +852,7 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let input: ResourceManagerMintNonFungibleInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -984,8 +972,7 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let input: ResourceManagerMintUuidNonFungibleInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -1077,8 +1064,7 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let input: ResourceManagerMintFungibleInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -1144,8 +1130,7 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let input: ResourceManagerBurnInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
@@ -1222,8 +1207,7 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let _input: ResourceManagerCreateBucketInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -1263,8 +1247,7 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let _input: ResourceManagerCreateVaultInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -1304,8 +1287,7 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let input: ResourceManagerUpdateVaultAuthInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -1374,8 +1356,7 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let input: ResourceManagerSetVaultAuthMutabilityInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -1444,8 +1425,7 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let input: ResourceManagerUpdateNonFungibleDataInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -1498,8 +1478,7 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let input: ResourceManagerNonFungibleExistsInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -1537,8 +1516,7 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let _input: ResourceManagerGetResourceTypeInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -1566,8 +1544,7 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let _input: ResourceManagerGetTotalSupplyInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -1592,8 +1569,7 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let input: ResourceManagerGetNonFungibleInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())

@@ -6,14 +6,14 @@ use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
+use crate::wasm::{PrepareError, WasmValidator};
 use core::fmt::Debug;
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{PackageId, RENodeId};
-use radix_engine_interface::api::{ClientApi};
+use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::data::ScryptoValue;
-use crate::wasm::{PrepareError, WasmValidator};
 
 #[derive(Debug, Clone, PartialEq, Eq, Categorize, Encode, Decode)]
 pub enum PackageError {
@@ -33,8 +33,8 @@ impl Package {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         match export_name {
             PACKAGE_PUBLISH_PRECOMPILED_IDENT => {
@@ -65,8 +65,8 @@ impl Package {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: PackagePublishPrecompiledInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -130,13 +130,11 @@ impl Package {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-
-        let input: PackagePublishWasmInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+        let input: PackagePublishWasmInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let royalty_vault_id = ResourceManager(RADIX_TOKEN).new_vault(api)?.vault_id();
 
@@ -147,11 +145,13 @@ impl Package {
                 ))
             })?;
 
-        WasmValidator::default().validate(&input.code, &blueprint_abis).map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::PackageError(
-                PackageError::InvalidWasm(e),
-            ))
-        })?;
+        WasmValidator::default()
+            .validate(&input.code, &blueprint_abis)
+            .map_err(|e| {
+                RuntimeError::ApplicationError(ApplicationError::PackageError(
+                    PackageError::InvalidWasm(e),
+                ))
+            })?;
 
         let wasm_code_substate = WasmCodeSubstate { code: input.code };
         let package_info_substate = PackageInfoSubstate {

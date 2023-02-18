@@ -1,8 +1,8 @@
 use crate::types::*;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::royalty::*;
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::package::*;
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::clock::*;
@@ -73,13 +73,11 @@ impl FeeTable {
             identifier.package_address,
             identifier.blueprint_name.as_str(),
         ) {
-            (PACKAGE, PACKAGE_BLUEPRINT) => {
-                match identifier.ident.as_str() {
-                    PACKAGE_PUBLISH_PRECOMPILED_IDENT => self.fixed_high,
-                    PACKAGE_PUBLISH_WASM_IDENT => self.fixed_high,
-                    _ => self.fixed_low,
-                }
-            }
+            (PACKAGE, PACKAGE_BLUEPRINT) => match identifier.ident.as_str() {
+                PACKAGE_PUBLISH_PRECOMPILED_IDENT => self.fixed_high,
+                PACKAGE_PUBLISH_WASM_IDENT => self.fixed_high,
+                _ => self.fixed_low,
+            },
             (LOGGER_PACKAGE, LOGGER_BLUEPRINT) => match identifier.ident.as_str() {
                 LOGGER_LOG_IDENT => self.fixed_low,
                 _ => self.fixed_low,

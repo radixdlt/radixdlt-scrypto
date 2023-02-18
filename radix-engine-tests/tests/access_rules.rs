@@ -3,7 +3,11 @@ use radix_engine::system::kernel_modules::auth::AuthError;
 use radix_engine::system::node_modules::auth::{AccessRulesChainError, AuthZoneError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::auth::{ACCESS_RULES_GET_LENGTH_IDENT, ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT, ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT, ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT};
+use radix_engine_interface::api::node_modules::auth::{
+    ACCESS_RULES_GET_LENGTH_IDENT, ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
+    ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
+    ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
+};
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;

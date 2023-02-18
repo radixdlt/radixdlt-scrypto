@@ -13,7 +13,6 @@ use radix_engine_interface::api::node_modules::auth::{
 };
 use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -57,8 +56,7 @@ impl ValidatorBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let _input: ValidatorRegisterInput = scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -120,8 +118,7 @@ impl ValidatorBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let _input: ValidatorUnregisterInput = scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -174,8 +171,7 @@ impl ValidatorBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ValidatorStakeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -245,8 +241,7 @@ impl ValidatorBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ValidatorUnstakeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -345,8 +340,7 @@ impl ValidatorBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ValidatorClaimXrdInput = scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -413,8 +407,7 @@ impl ValidatorBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ValidatorUpdateKeyInput = scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -465,8 +458,7 @@ impl ValidatorBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ValidatorUpdateAcceptDelegatedStakeInput =
@@ -506,10 +498,7 @@ impl ValidatorCreator {
         api: &mut Y,
     ) -> Result<(ResourceAddress, Bucket), RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let mut liquidity_token_auth = BTreeMap::new();
         let non_fungible_id = NonFungibleLocalId::bytes(
@@ -545,10 +534,7 @@ impl ValidatorCreator {
 
     fn create_liquidity_token<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let mut liquidity_token_auth = BTreeMap::new();
         let non_fungible_local_id = NonFungibleLocalId::bytes(
@@ -579,10 +565,7 @@ impl ValidatorCreator {
 
     fn create_unstake_nft<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let mut unstake_token_auth = BTreeMap::new();
         let non_fungible_local_id = NonFungibleLocalId::bytes(
@@ -688,10 +671,7 @@ impl ValidatorCreator {
         api: &mut Y,
     ) -> Result<(ComponentAddress, Bucket), RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let node_id = api.kernel_allocate_node_id(RENodeType::Validator)?;
         let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalValidator)?;
@@ -747,10 +727,7 @@ impl ValidatorCreator {
         api: &mut Y,
     ) -> Result<ComponentAddress, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let node_id = api.kernel_allocate_node_id(RENodeType::Validator)?;
         let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalValidator)?;

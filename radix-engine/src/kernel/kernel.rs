@@ -528,10 +528,7 @@ where
 
                             // TODO: Cleanup
                             {
-                                if matches!(
-                                    global_address,
-                                    GlobalAddress::Package(PACKAGE)
-                                ) {
+                                if matches!(global_address, GlobalAddress::Package(PACKAGE)) {
                                     self.current_frame
                                         .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
                                     continue;

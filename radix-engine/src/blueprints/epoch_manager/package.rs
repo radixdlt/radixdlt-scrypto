@@ -8,7 +8,6 @@ use crate::system::kernel_modules::auth::{
 use crate::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::data::ScryptoValue;
@@ -34,8 +33,7 @@ impl EpochManagerNativePackage {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         match export_name {
             EPOCH_MANAGER_CREATE_IDENT => {

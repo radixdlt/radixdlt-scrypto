@@ -11,7 +11,6 @@ use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{RENodeId, SubstateOffset};
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::api::ClientNodeApi;
 use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::blueprints::account::*;
@@ -58,8 +57,7 @@ impl AccountNativePackage {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         match export_name {
             ACCOUNT_CREATE_GLOBAL_IDENT => {
@@ -170,7 +168,6 @@ impl AccountNativePackage {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>
             + ClientNodeApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
@@ -236,7 +233,6 @@ impl AccountNativePackage {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>
             + ClientNodeApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
@@ -555,7 +551,6 @@ impl AccountNativePackage {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>
             + ClientNodeApi<RuntimeError>,
         F: FnOnce(&mut Vault, &mut Y) -> Result<R, RuntimeError>,
     {

@@ -180,33 +180,6 @@ fn call_function(
         .map(|buffer| buffer.0)
 }
 
-fn call_native(
-    mut caller: Caller<'_, HostState>,
-    native_fn_ptr: u32,
-    native_fn_len: u32,
-    invocation_ptr: u32,
-    invocation_len: u32,
-) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
-
-    let native_fn = read_memory(
-        caller.as_context_mut(),
-        memory,
-        native_fn_ptr,
-        native_fn_len,
-    )?;
-    let invocation = read_memory(
-        caller.as_context_mut(),
-        memory,
-        invocation_ptr,
-        invocation_len,
-    )?;
-
-    runtime
-        .call_native(native_fn, invocation)
-        .map(|buffer| buffer.0)
-}
-
 fn new_package(
     mut caller: Caller<'_, HostState>,
     code_ptr: u32,
@@ -514,25 +487,6 @@ impl WasmiModule {
             },
         );
 
-        let host_call_native = Func::wrap(
-            store.as_context_mut(),
-            |caller: Caller<'_, HostState>,
-             native_fn_ptr: u32,
-             native_fn_len: u32,
-             invocation_ptr: u32,
-             invocation_len: u32|
-             -> Result<u64, Trap> {
-                call_native(
-                    caller,
-                    native_fn_ptr,
-                    native_fn_len,
-                    invocation_ptr,
-                    invocation_len,
-                )
-                .map_err(|e| e.into())
-            },
-        );
-
         let host_new_package = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
@@ -709,7 +663,6 @@ impl WasmiModule {
         linker_define!(linker, CONSUME_BUFFER_FUNCTION_NAME, host_consume_buffer);
         linker_define!(linker, CALL_METHOD_FUNCTION_NAME, host_call_method);
         linker_define!(linker, CALL_FUNCTION_FUNCTION_NAME, host_call_function);
-        linker_define!(linker, CALL_NATIVE_FUNCTION_NAME, host_call_native);
         linker_define!(linker, NEW_PACKAGE_FUNCTION_NAME, host_new_package);
         linker_define!(linker, NEW_COMPONENT_FUNCTION_NAME, host_new_component);
         linker_define!(

@@ -17,6 +17,7 @@ use crate::kernel::kernel_api::{
 use crate::system::node_modules::auth::{AccessRulesNativePackage, AuthZoneNativePackage};
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
+use crate::system::package::Package;
 use crate::system::type_info::TypeInfoSubstate;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
@@ -29,13 +30,12 @@ use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::types::ScryptoInvocation;
 use radix_engine_interface::api::{
-    ClientActorApi, ClientApi, ClientComponentApi, ClientNativeInvokeApi, ClientNodeApi,
-    ClientSubstateApi, ClientUnsafeApi,
+    ClientActorApi, ClientApi, ClientComponentApi, ClientNodeApi, ClientSubstateApi,
+    ClientUnsafeApi,
 };
 use radix_engine_interface::api::{ClientDerefApi, ClientPackageApi};
 use radix_engine_interface::data::*;
 use radix_engine_interface::data::{match_schema_with_value, ScryptoValue};
-use crate::system::package::Package;
 
 use super::ScryptoRuntime;
 
@@ -283,8 +283,7 @@ impl Executor for ScryptoExecutor {
             + ClientPackageApi<RuntimeError>
             + ClientComponentApi<RuntimeError>
             + ClientActorApi<RuntimeError>
-            + ClientUnsafeApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientUnsafeApi<RuntimeError>,
         W: WasmEngine,
     {
         let output = if self.package_address.eq(&PACKAGE) {
@@ -449,13 +448,10 @@ impl NativeVm {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         match native_package_code_id {
-            NATIVE_PACKAGE_CODE_ID => {
-                Package::invoke_export(&export_name, receiver, input, api)
-            }
+            NATIVE_PACKAGE_CODE_ID => Package::invoke_export(&export_name, receiver, input, api),
             RESOURCE_MANAGER_PACKAGE_CODE_ID => {
                 ResourceManagerNativePackage::invoke_export(&export_name, receiver, input, api)
             }

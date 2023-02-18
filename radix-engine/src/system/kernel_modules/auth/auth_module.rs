@@ -101,21 +101,23 @@ impl KernelModule for AuthModule {
 
         let method_auths = match &actor {
             ResolvedActor {
-                identifier: FnIdentifier::Scrypto(ScryptoFnIdentifier {
-                    package_address,
-                    blueprint_name,
-                    ident,
-                }),
+                identifier:
+                    FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                        package_address,
+                        blueprint_name,
+                        ident,
+                    }),
                 receiver: None,
             } if package_address.eq(&PACKAGE)
                 && blueprint_name.eq(PACKAGE_BLUEPRINT)
-                && ident.eq(PACKAGE_PUBLISH_PRECOMPILED_IDENT) => {
-                    vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
-                        HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
-                            AuthAddresses::system_role(),
-                        )),
-                    ))]
-            },
+                && ident.eq(PACKAGE_PUBLISH_PRECOMPILED_IDENT) =>
+            {
+                vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
+                    HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
+                        AuthAddresses::system_role(),
+                    )),
+                ))]
+            }
             ResolvedActor {
                 identifier: FnIdentifier::Scrypto(fn_identifier),
                 receiver: None,
@@ -277,7 +279,9 @@ impl KernelModule for AuthModule {
                         ..
                     }),
                 ..
-            } if package_address.eq(&ACCESS_RULES_PACKAGE) && blueprint_name.eq(ACCESS_RULES_BLUEPRINT) => {
+            } if package_address.eq(&ACCESS_RULES_PACKAGE)
+                && blueprint_name.eq(ACCESS_RULES_BLUEPRINT) =>
+            {
                 vec![]
             }
 
@@ -412,14 +416,13 @@ impl KernelModule for AuthModule {
 
         if !matches!(
             actor.identifier,
-                FnIdentifier::Scrypto(ScryptoFnIdentifier {
-                    package_address: ACCESS_RULES_PACKAGE,
-                    ..
-                })
-                | FnIdentifier::Scrypto(ScryptoFnIdentifier {
-                    package_address: AUTH_ZONE_PACKAGE,
-                    ..
-                })
+            FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                package_address: ACCESS_RULES_PACKAGE,
+                ..
+            }) | FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                package_address: AUTH_ZONE_PACKAGE,
+                ..
+            })
         ) {
             let handle = api.kernel_lock_substate(
                 RENodeId::AuthZoneStack,
@@ -454,14 +457,13 @@ impl KernelModule for AuthModule {
     ) -> Result<(), RuntimeError> {
         if matches!(
             api.kernel_get_current_actor().identifier,
-                FnIdentifier::Scrypto(ScryptoFnIdentifier {
-                    package_address: ACCESS_RULES_PACKAGE,
-                    ..
-                })
-                | FnIdentifier::Scrypto(ScryptoFnIdentifier {
-                    package_address: AUTH_ZONE_PACKAGE,
-                    ..
-                }),
+            FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                package_address: ACCESS_RULES_PACKAGE,
+                ..
+            }) | FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                package_address: AUTH_ZONE_PACKAGE,
+                ..
+            }),
         ) {
             return Ok(());
         }
