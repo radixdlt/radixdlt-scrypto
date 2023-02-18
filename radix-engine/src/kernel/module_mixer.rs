@@ -18,7 +18,7 @@ use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::types::api::unsafe_api::ClientCostingReason;
 use bitflags::bitflags;
-use radix_engine_interface::api::types::{InvocationIdentifier};
+use radix_engine_interface::api::types::InvocationIdentifier;
 use radix_engine_interface::api::types::LockHandle;
 use radix_engine_interface::api::types::NodeModuleId;
 use radix_engine_interface::api::types::RENodeId;

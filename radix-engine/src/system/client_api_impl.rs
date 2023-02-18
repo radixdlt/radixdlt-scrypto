@@ -211,12 +211,10 @@ where
             package_address,
             blueprint_name: blueprint_name.to_string(),
             fn_name: function_name.to_string(),
-            receiver: None,
             args,
         };
 
-        self
-            .kernel_invoke(invocation)
+        self.kernel_invoke(invocation)
             .map(|v| scrypto_encode(&v).expect("Failed to encode scrypto fn return"))
     }
 

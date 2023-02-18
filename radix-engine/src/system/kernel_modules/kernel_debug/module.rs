@@ -6,7 +6,9 @@ use crate::{
     kernel::{kernel_api::KernelModuleApi, module::KernelModule},
     system::node::{RENodeInit, RENodeModuleInit},
 };
-use radix_engine_interface::api::types::{InvocationIdentifier, LockHandle, NodeModuleId, RENodeId, RENodeType, SubstateOffset};
+use radix_engine_interface::api::types::{
+    InvocationIdentifier, LockHandle, NodeModuleId, RENodeId, RENodeType, SubstateOffset,
+};
 use sbor::rust::collections::BTreeMap;
 
 #[derive(Debug, Clone)]

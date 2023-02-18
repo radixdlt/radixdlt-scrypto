@@ -27,8 +27,8 @@ use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_BLUEPRINT, PACKAGE_ROYALTY_BLUEPRINT,
 };
 use radix_engine_interface::api::package::*;
-use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::types::FunctionInvocation;
+use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::{
     ClientActorApi, ClientApi, ClientComponentApi, ClientNodeApi, ClientSubstateApi,
     ClientUnsafeApi,
@@ -108,19 +108,23 @@ impl ExecutableInvocation for MethodInvocation {
 
         // Deref if global
         // TODO: Move into kernel
-        let resolved_receiver = if let Some((derefed, derefed_lock)) =
-        api.deref(original_node_id)?
-        {
-            ResolvedReceiver::derefed((derefed, node_module_id), original_node_id, derefed_lock)
-        } else {
-            ResolvedReceiver::new((original_node_id, node_module_id))
-        };
+        let resolved_receiver =
+            if let Some((derefed, derefed_lock)) = api.deref(original_node_id)? {
+                ResolvedReceiver::derefed((derefed, node_module_id), original_node_id, derefed_lock)
+            } else {
+                ResolvedReceiver::new((original_node_id, node_module_id))
+            };
 
         // Pass the component ref
         node_refs_to_copy.insert(resolved_receiver.receiver.0);
-        let actor = ResolvedActor::method(FnIdentifier::Scrypto(ScryptoFnIdentifier::new(
-            package_address, blueprint_name.clone(), self.fn_name.clone(),
-        )), resolved_receiver);
+        let actor = ResolvedActor::method(
+            FnIdentifier::Scrypto(ScryptoFnIdentifier::new(
+                package_address,
+                blueprint_name.clone(),
+                self.fn_name.clone(),
+            )),
+            resolved_receiver,
+        );
 
         let type_info = if package_address.eq(&PACKAGE) {
             // TODO: Remove this weirdness
@@ -173,14 +177,16 @@ impl ExecutableInvocation for MethodInvocation {
                 }
 
                 // Find the abi
-                let abi = info.blueprint_abi(&blueprint_name).ok_or(
-                    RuntimeError::InterpreterError(InterpreterError::InvalidScryptoInvocation(
-                        package_address,
-                        blueprint_name.clone(),
-                        self.fn_name.clone(),
-                        ScryptoFnResolvingError::BlueprintNotFound,
-                    )),
-                )?;
+                let abi =
+                    info.blueprint_abi(&blueprint_name)
+                        .ok_or(RuntimeError::InterpreterError(
+                            InterpreterError::InvalidScryptoInvocation(
+                                package_address,
+                                blueprint_name.clone(),
+                                self.fn_name.clone(),
+                                ScryptoFnResolvingError::BlueprintNotFound,
+                            ),
+                        ))?;
                 let fn_abi =
                     abi.get_fn_abi(&self.fn_name)
                         .ok_or(RuntimeError::InterpreterError(
@@ -224,9 +230,7 @@ impl ExecutableInvocation for MethodInvocation {
         };
 
         // TODO: remove? currently needed for `Runtime::package_address()` API.
-        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(
-            package_address,
-        )));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(package_address)));
 
         Ok((
             actor,
@@ -271,78 +275,7 @@ impl ExecutableInvocation for FunctionInvocation {
             self.blueprint_name.clone(),
             self.fn_name.clone(),
         );
-
-        let (receiver, actor) = if let Some((receiver, node_module_id)) = self.receiver {
-            let original_node_id = receiver.into();
-
-            // Receiver Type Check
-            {
-                let (object_package_address, object_blueprint) = match node_module_id {
-                    NodeModuleId::SELF => {
-                        let handle = api.kernel_lock_substate(
-                            original_node_id,
-                            NodeModuleId::ComponentTypeInfo,
-                            SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo),
-                            LockFlags::read_only(),
-                        )?;
-                        let substate_ref = api.kernel_get_substate_ref(handle)?;
-                        let component_info = substate_ref.component_info(); // TODO: Remove clone()
-                        let info = (
-                            component_info.package_address,
-                            component_info.blueprint_name.to_string(),
-                        );
-                        api.kernel_drop_lock(handle)?;
-                        info
-                    }
-                    NodeModuleId::Metadata => (METADATA_PACKAGE, METADATA_BLUEPRINT.to_string()),
-                    NodeModuleId::ComponentRoyalty => {
-                        (ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT.to_string())
-                    }
-                    NodeModuleId::PackageRoyalty => {
-                        (ROYALTY_PACKAGE, PACKAGE_ROYALTY_BLUEPRINT.to_string())
-                    }
-                    NodeModuleId::AccessRules => {
-                        (ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT.to_string())
-                    }
-                    _ => todo!(),
-                };
-
-                // Type check
-                if !object_package_address.eq(&self.package_address) {
-                    return Err(RuntimeError::InterpreterError(
-                        InterpreterError::InvalidInvocation,
-                    ));
-                }
-                if !object_blueprint.eq(&self.blueprint_name) {
-                    return Err(RuntimeError::InterpreterError(
-                        InterpreterError::InvalidInvocation,
-                    ));
-                }
-            }
-
-            // Deref if global
-            // TODO: Move into kernel
-            let resolved_receiver = if let Some((derefed, derefed_lock)) =
-                api.deref(original_node_id)?
-            {
-                ResolvedReceiver::derefed((derefed, node_module_id), original_node_id, derefed_lock)
-            } else {
-                ResolvedReceiver::new((original_node_id, node_module_id))
-            };
-
-            // Pass the component ref
-            node_refs_to_copy.insert(resolved_receiver.receiver.0);
-
-            (
-                Some(resolved_receiver.receiver),
-                ResolvedActor::method(FnIdentifier::Scrypto(scrypto_fn_ident), resolved_receiver),
-            )
-        } else {
-            (
-                None,
-                ResolvedActor::function(FnIdentifier::Scrypto(scrypto_fn_ident)),
-            )
-        };
+        let actor = ResolvedActor::function(FnIdentifier::Scrypto(scrypto_fn_ident));
 
         let type_info = if self.package_address.eq(&PACKAGE) {
             // TODO: Remove this weirdness
@@ -414,7 +347,7 @@ impl ExecutableInvocation for FunctionInvocation {
                             ),
                         ))?;
 
-                if fn_abi.mutability.is_some() != self.receiver.is_some() {
+                if fn_abi.mutability.is_some() {
                     return Err(RuntimeError::InterpreterError(
                         InterpreterError::InvalidInvocation,
                     ));
@@ -441,7 +374,7 @@ impl ExecutableInvocation for FunctionInvocation {
         let executor = ScryptoExecutor {
             package_address: self.package_address,
             export_name,
-            receiver: receiver.map(|r| r.0),
+            receiver: None,
             args: args.into(),
         };
 
