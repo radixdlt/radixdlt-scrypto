@@ -1,15 +1,15 @@
-use radix_engine::types::{ScryptoDecode, ScryptoEncode};
+use radix_engine_interface::ScryptoSbor;
 use sbor::rust::collections::HashMap;
 use sbor::rust::vec::Vec;
+use sbor::*;
 
 pub use super::types::{Nibble, NibblePath, NodeKey, Version};
 use radix_engine_interface::api::types::SubstateId;
 use radix_engine_interface::crypto::Hash;
-use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoCustomValueKind};
-use sbor::{Categorize, Decode, DecodeError, Decoder, Encode, EncodeError, Encoder, ValueKind};
+use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
 
 /// A physical tree node, to be used in the storage.
-#[derive(Clone, PartialEq, Eq, Hash, Debug, Categorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoSbor)]
 pub enum TreeNode {
     /// Internal node - always metadata-only, as per JMT design.
     Internal(TreeInternalNode),
@@ -20,14 +20,14 @@ pub enum TreeNode {
 }
 
 /// Internal node.
-#[derive(Clone, PartialEq, Eq, Hash, Debug, Categorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoSbor)]
 pub struct TreeInternalNode {
     /// Metadata of each existing child.
     pub children: Vec<TreeChildEntry>,
 }
 
 /// Child node metadata.
-#[derive(Clone, PartialEq, Eq, Hash, Debug, Categorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoSbor)]
 pub struct TreeChildEntry {
     /// First of the remaining nibbles in the key.
     pub nibble: Nibble,
@@ -40,7 +40,7 @@ pub struct TreeChildEntry {
 }
 
 /// Physical leaf node (which may represent a ReNode or a Substate).
-#[derive(Clone, PartialEq, Eq, Hash, Debug, Categorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoSbor)]
 pub struct TreeLeafNode {
     /// All the remaining nibbles in the _hashed_ `substate_id`.
     pub key_suffix: NibblePath,
@@ -152,14 +152,14 @@ pub fn encode_key(key: &NodeKey) -> Vec<u8> {
 // structures can simply use SBOR, with only the most efficiency-sensitive parts having custom
 // codecs, implemented below:
 
-impl Categorize<ScryptoCustomValueKind> for Nibble {
+impl<X: CustomValueKind> Categorize<X> for Nibble {
     #[inline]
-    fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
+    fn value_kind() -> ValueKind<X> {
         ValueKind::U8
     }
 }
 
-impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for Nibble {
+impl<X: CustomValueKind, E: Encoder<X>> Encode<X, E> for Nibble {
     #[inline]
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
         encoder.write_value_kind(Self::value_kind())
@@ -171,10 +171,10 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for N
     }
 }
 
-impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for Nibble {
+impl<X: CustomValueKind, D: Decoder<X>> Decode<X, D> for Nibble {
     fn decode_body_with_value_kind(
         decoder: &mut D,
-        value_kind: ValueKind<ScryptoCustomValueKind>,
+        value_kind: ValueKind<X>,
     ) -> Result<Self, DecodeError> {
         Ok(Nibble::from(u8::decode_body_with_value_kind(
             decoder, value_kind,
@@ -182,14 +182,18 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for N
     }
 }
 
-impl Categorize<ScryptoCustomValueKind> for NibblePath {
+impl<T: CustomTypeKind<GlobalTypeId>> Describe<T> for Nibble {
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(basic_well_known_types::U8_ID);
+}
+
+impl<X: CustomValueKind> Categorize<X> for NibblePath {
     #[inline]
-    fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
+    fn value_kind() -> ValueKind<X> {
         ValueKind::Tuple
     }
 }
 
-impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for NibblePath {
+impl<X: CustomValueKind, E: Encoder<X>> Encode<X, E> for NibblePath {
     #[inline]
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
         encoder.write_value_kind(Self::value_kind())
@@ -202,13 +206,13 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for N
     }
 }
 
-impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for NibblePath {
+impl<X: CustomValueKind, D: Decoder<X>> Decode<X, D> for NibblePath {
     fn decode_body_with_value_kind(
         decoder: &mut D,
-        value_kind: ValueKind<ScryptoCustomValueKind>,
+        value_kind: ValueKind<X>,
     ) -> Result<Self, DecodeError> {
         let (even, bytes): (bool, Vec<u8>) =
-            Decode::<ScryptoCustomValueKind, D>::decode_body_with_value_kind(decoder, value_kind)?;
+            Decode::<X, D>::decode_body_with_value_kind(decoder, value_kind)?;
         let path = if even {
             NibblePath::new_even(bytes)
         } else {
@@ -216,4 +220,8 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for N
         };
         Ok(path)
     }
+}
+
+impl<T: CustomTypeKind<GlobalTypeId>> Describe<T> for NibblePath {
+    const TYPE_ID: GlobalTypeId = <(bool, Vec<u8>) as Describe<T>>::TYPE_ID;
 }

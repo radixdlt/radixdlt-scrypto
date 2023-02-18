@@ -6,7 +6,7 @@ use radix_engine_interface::api::types::{
     GlobalAddress, GlobalOffset, PackageOffset, RENodeId, SubstateId, SubstateOffset,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ExportError {
     ComponentNotFound(ComponentAddress),
     PackageNotFound(PackageAddress),

@@ -1,7 +1,7 @@
 use crate::abi::*;
 use crate::api::types::*;
 use crate::blueprints::resource::*;
-use crate::data::ScryptoCustomValueKind;
+use crate::data::{ScryptoCustomTypeKind, ScryptoCustomValueKind};
 use crate::*;
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
@@ -155,4 +155,9 @@ impl scrypto_abi::LegacyDescribe for Own {
     fn describe() -> scrypto_abi::Type {
         Type::Own
     }
+}
+
+impl Describe<ScryptoCustomTypeKind<GlobalTypeId>> for Own {
+    const TYPE_ID: GlobalTypeId =
+        GlobalTypeId::well_known(crate::data::well_known_scrypto_custom_types::OWN_ID);
 }

@@ -26,7 +26,7 @@ impl From<EncodeError> for SignatureValidationError {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum ManifestIdAllocationError {
     OutOfID,
 }

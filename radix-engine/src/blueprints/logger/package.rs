@@ -9,7 +9,7 @@ use radix_engine_interface::data::{
     scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoValue,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct LoggerSubstate {
     pub logs: Vec<(Level, String)>,
 }

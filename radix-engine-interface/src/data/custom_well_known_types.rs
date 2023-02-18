@@ -11,6 +11,13 @@ pub mod well_known_scrypto_custom_types {
     pub const RESOURCE_ADDRESS_ID: u8 = VALUE_KIND_RESOURCE_ADDRESS;
 
     pub const OWN_ID: u8 = VALUE_KIND_OWN;
+    pub const OWN_BUCKET_ID: u8 = VALUE_KIND_OWN + 1;
+    pub const OWN_PROOF_ID: u8 = VALUE_KIND_OWN + 2;
+    pub const OWN_VAULT_ID: u8 = VALUE_KIND_OWN + 3;
+    pub const OWN_COMPONENT_ID: u8 = VALUE_KIND_OWN + 4;
+    pub const OWN_KEY_VALUE_STORE_ID: u8 = VALUE_KIND_OWN + 5;
+    pub const OWN_ACCOUNT_ID: u8 = VALUE_KIND_OWN + 6;
+
     // We skip KeyValueStore because it has generic parameters
 
     pub const HASH_ID: u8 = VALUE_KIND_HASH;
@@ -32,6 +39,12 @@ pub(crate) fn resolve_scrypto_custom_well_known_type(
         RESOURCE_ADDRESS_ID => ("ResourceAddress", ScryptoCustomTypeKind::ResourceAddress),
 
         OWN_ID => ("Own", ScryptoCustomTypeKind::Own),
+        OWN_BUCKET_ID => ("Bucket", ScryptoCustomTypeKind::Own),
+        OWN_PROOF_ID => ("Proof", ScryptoCustomTypeKind::Own),
+        OWN_VAULT_ID => ("Vault", ScryptoCustomTypeKind::Own),
+        OWN_COMPONENT_ID => ("Component", ScryptoCustomTypeKind::Own),
+        OWN_KEY_VALUE_STORE_ID => ("KeyValueStore", ScryptoCustomTypeKind::Own),
+        OWN_ACCOUNT_ID => ("Account", ScryptoCustomTypeKind::Own),
 
         HASH_ID => ("Hash", ScryptoCustomTypeKind::Hash),
         ECDSA_SECP256K1_PUBLIC_KEY_ID => (

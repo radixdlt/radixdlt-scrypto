@@ -11,7 +11,7 @@ use sbor::*;
     derive(serde::Serialize, serde::Deserialize),
     serde(tag = "type")  // See https://serde.rs/enum-representations.html
 )]
-#[derive(Debug, Clone, PartialEq, Eq, Categorize, Decode, Encode)]
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum Type {
     Bool,
     I8,
@@ -101,7 +101,7 @@ pub enum Type {
 
 /// Represents the type info of an enum variant.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Categorize, Decode, Encode)]
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub struct Variant {
     pub name: String,
     pub fields: Fields,
@@ -113,7 +113,7 @@ pub struct Variant {
     derive(serde::Serialize, serde::Deserialize),
     serde(tag = "type")
 )]
-#[derive(Debug, Clone, PartialEq, Eq, Categorize, Decode, Encode)]
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum Fields {
     Named { named: Vec<(String, Type)> },
 

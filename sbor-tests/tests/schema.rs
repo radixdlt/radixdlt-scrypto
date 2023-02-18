@@ -7,16 +7,16 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-#[derive(Categorize, Encode, Decode, Describe)]
+#[derive(Sbor)]
 pub struct UnitStruct;
 
-#[derive(Categorize, Encode, Decode, Describe)]
+#[derive(Sbor)]
 pub struct BasicSample {
     pub a: (),
     pub b: UnitStruct,
 }
 
-#[derive(Categorize, Encode, Decode, Describe)]
+#[derive(Sbor)]
 #[sbor(categorize_types = "S, T")]
 pub struct AdvancedSample<T, S> {
     pub a: (),
@@ -32,23 +32,23 @@ pub struct AdvancedSample<T, S> {
     pub k: HashMap<[u8; 3], BTreeMap<i64, BTreeSet<i32>>>,
 }
 
-#[derive(Categorize, Encode, Decode, Describe)]
+#[derive(Sbor)]
 pub struct Recursive<T> {
     pub hello: Option<Box<Recursive<T>>>,
     pub what: T,
 }
 
-#[derive(Categorize, Encode, Decode, Describe)]
+#[derive(Sbor)]
 pub struct IndirectRecursive1(
     Vec<IndirectRecursive2<Recursive<u8>>>,
     Recursive<String>,
     Box<IndirectRecursiveEnum3>,
 );
 
-#[derive(Categorize, Encode, Decode, Describe)]
+#[derive(Sbor)]
 pub struct IndirectRecursive2<T>(Recursive<T>, IndirectRecursive1);
 
-#[derive(Categorize, Encode, Decode, Describe)]
+#[derive(Sbor)]
 pub enum IndirectRecursiveEnum3 {
     Variant1,
     Variant2(Box<IndirectRecursive1>),

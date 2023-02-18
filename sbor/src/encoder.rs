@@ -3,7 +3,7 @@ use crate::rust::vec::Vec;
 use crate::*;
 
 /// Represents an error occurred during encoding.
-#[derive(Debug, Clone, PartialEq, Eq, Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum EncodeError {
     MaxDepthExceeded(u8),
     SizeTooLarge { actual: usize, max_allowed: usize },

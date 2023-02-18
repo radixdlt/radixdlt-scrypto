@@ -10,19 +10,7 @@ use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use scrypto_abi::{Fields, Type, Variant};
 
-#[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    Ord,
-    PartialOrd,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, LegacyDescribe)]
 pub enum SoftDecimal {
     Static(Decimal),
     Dynamic(SchemaPath),
@@ -47,19 +35,7 @@ impl From<&str> for SoftDecimal {
     }
 }
 
-#[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    Ord,
-    PartialOrd,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, LegacyDescribe)]
 pub enum SoftCount {
     Static(u8),
     Dynamic(SchemaPath),
@@ -84,19 +60,7 @@ impl From<&str> for SoftCount {
     }
 }
 
-#[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    Ord,
-    PartialOrd,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, LegacyDescribe)]
 pub enum SoftResource {
     Static(ResourceAddress),
     Dynamic(SchemaPath),
@@ -121,19 +85,7 @@ impl From<&str> for SoftResource {
     }
 }
 
-#[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    Ord,
-    PartialOrd,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, LegacyDescribe)]
 pub enum SoftResourceOrNonFungible {
     StaticNonFungible(NonFungibleGlobalId),
     StaticResource(ResourceAddress),
@@ -165,19 +117,7 @@ impl From<&str> for SoftResourceOrNonFungible {
     }
 }
 
-#[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    Ord,
-    PartialOrd,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, LegacyDescribe)]
 pub enum SoftResourceOrNonFungibleList {
     Static(Vec<SoftResourceOrNonFungible>),
     Dynamic(SchemaPath),
@@ -206,19 +146,7 @@ where
 }
 
 /// Resource Proof Rules
-#[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    Ord,
-    PartialOrd,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, LegacyDescribe)]
 pub enum ProofRule {
     Require(SoftResourceOrNonFungible),
     AmountOf(SoftDecimal, SoftResource),
@@ -233,18 +161,7 @@ impl From<ResourceAddress> for ProofRule {
     }
 }
 
-#[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    Ord,
-    PartialOrd,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor)]
 pub enum AccessRuleNode {
     ProofRule(ProofRule),
     AnyOf(Vec<AccessRuleNode>),
@@ -343,19 +260,7 @@ where
     ProofRule::AmountOf(amount.into(), resource.into())
 }
 
-#[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    Ord,
-    PartialOrd,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, LegacyDescribe)]
 pub enum AccessRule {
     AllowAll,
     DenyAll,

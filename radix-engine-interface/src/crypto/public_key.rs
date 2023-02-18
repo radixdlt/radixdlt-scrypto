@@ -7,9 +7,7 @@ use crate::*;
     derive(serde::Serialize, serde::Deserialize),
     serde(tag = "type", content = "public_key")
 )]
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, ScryptoCategorize, ScryptoEncode, ScryptoDecode,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ScryptoSbor)]
 pub enum PublicKey {
     EcdsaSecp256k1(EcdsaSecp256k1PublicKey),
     EddsaEd25519(EddsaEd25519PublicKey),
