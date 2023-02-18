@@ -1187,7 +1187,6 @@ where
 impl<'g, 's, W, N> Invokable<N, RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
-
     N: ExecutableInvocation,
 {
     fn kernel_invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {

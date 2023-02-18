@@ -6,12 +6,6 @@ use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 
-// TODO: Remove enum
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum CallTableInvocation {
-    Scrypto(ScryptoInvocation),
-}
-
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ScryptoInvocation {
     pub package_address: PackageAddress,
@@ -30,11 +24,5 @@ impl Invocation for ScryptoInvocation {
             blueprint_name: self.blueprint_name.clone(),
             ident: self.fn_name.clone(),
         })
-    }
-}
-
-impl Into<CallTableInvocation> for ScryptoInvocation {
-    fn into(self) -> CallTableInvocation {
-        CallTableInvocation::Scrypto(self)
     }
 }

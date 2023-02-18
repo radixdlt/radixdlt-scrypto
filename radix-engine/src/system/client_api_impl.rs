@@ -10,7 +10,6 @@ use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::module::KernelModule;
 use crate::kernel::module_mixer::KernelModuleMixer;
 use crate::system::global::GlobalAddressSubstate;
-use crate::system::invocation::resolve_function::resolve_function;
 use crate::system::invocation::resolve_method::resolve_method;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
@@ -209,19 +208,17 @@ where
         function_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        // TODO: Use execution mode?
-        let invocation = resolve_function(
+        let invocation = ScryptoInvocation {
             package_address,
-            blueprint_name.to_string(),
-            function_name.to_string(),
+            blueprint_name: blueprint_name.to_string(),
+            fn_name: function_name.to_string(),
+            receiver: None,
             args,
-            self,
-        )?;
-        match invocation {
-            CallTableInvocation::Scrypto(scrypto_invocation) => self
-                .kernel_invoke(scrypto_invocation)
-                .map(|v| scrypto_encode(&v).expect("Failed to encode scrypto fn return")),
-        }
+        };
+
+        self
+            .kernel_invoke(invocation)
+            .map(|v| scrypto_encode(&v).expect("Failed to encode scrypto fn return"))
     }
 
     fn get_code(&mut self, package_address: PackageAddress) -> Result<PackageCode, RuntimeError> {
