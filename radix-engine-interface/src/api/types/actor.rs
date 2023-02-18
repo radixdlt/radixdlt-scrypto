@@ -21,7 +21,7 @@ pub enum NativePackage {
 pub enum InvocationIdentifier {
     Transaction,
     Function(PackageAddress, String, String),
-    Method(GlobalAddress, NodeModuleId, String),
+    Method(ScryptoReceiver, NodeModuleId, String),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
