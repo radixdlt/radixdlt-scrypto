@@ -1,12 +1,12 @@
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesSetGroupAccessRuleInvocation, AccessRulesSetMethodAccessRuleInvocation,
+    AccessRulesSetGroupAccessRuleInput, AccessRulesSetMethodAccessRuleInput,
 };
 use radix_engine_interface::api::node_modules::metadata::{
     MetadataGetInput, MetadataSetInput, METADATA_GET_IDENT, METADATA_SET_IDENT,
 };
-use radix_engine_interface::api::types::{GlobalAddress, NodeModuleId, RENodeId, ScryptoReceiver};
-use radix_engine_interface::api::{ClientComponentApi, ClientNativeInvokeApi};
+use radix_engine_interface::api::types::{NodeModuleId, ScryptoReceiver};
+use radix_engine_interface::api::ClientComponentApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::math::Decimal;
@@ -48,28 +48,38 @@ impl ResourceManager {
     }
 
     pub fn set_mintable(&mut self, access_rule: AccessRule) {
-        let mut env = ScryptoEnv;
-        env.call_native(AccessRulesSetGroupAccessRuleInvocation {
-            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
-            index: 0,
-            name: "mint".to_string(),
-            rule: access_rule,
-        })
-        .unwrap();
+        ScryptoEnv
+            .call_module_method(
+                ScryptoReceiver::Resource(self.0),
+                NodeModuleId::AccessRules,
+                ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
+                scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
+                    index: 0,
+                    name: "mint".to_string(),
+                    rule: access_rule,
+                })
+                .unwrap(),
+            )
+            .unwrap();
     }
 
     pub fn set_burnable(&mut self, access_rule: AccessRule) -> () {
-        let mut env = ScryptoEnv;
-        env.call_native(AccessRulesSetMethodAccessRuleInvocation {
-            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
-            index: 0,
-            key: AccessRuleKey::ScryptoMethod(
-                NodeModuleId::SELF,
-                RESOURCE_MANAGER_BURN_IDENT.to_string(),
-            ),
-            rule: AccessRuleEntry::AccessRule(access_rule),
-        })
-        .unwrap();
+        ScryptoEnv
+            .call_module_method(
+                ScryptoReceiver::Resource(self.0),
+                NodeModuleId::AccessRules,
+                ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
+                scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
+                    index: 0,
+                    key: AccessRuleKey::ScryptoMethod(
+                        NodeModuleId::SELF,
+                        RESOURCE_MANAGER_BURN_IDENT.to_string(),
+                    ),
+                    rule: AccessRuleEntry::AccessRule(access_rule),
+                })
+                .unwrap(),
+            )
+            .unwrap();
     }
 
     pub fn set_withdrawable(&mut self, access_rule: AccessRule) {
@@ -118,84 +128,114 @@ impl ResourceManager {
     }
 
     pub fn set_updateable_metadata(&self, access_rule: AccessRule) {
-        let mut env = ScryptoEnv;
-        env.call_native(AccessRulesSetMethodAccessRuleInvocation {
-            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
-            index: 0,
-            key: AccessRuleKey::ScryptoMethod(
-                NodeModuleId::Metadata,
-                METADATA_SET_IDENT.to_string(),
-            ),
-            rule: AccessRuleEntry::AccessRule(access_rule),
-        })
-        .unwrap();
+        ScryptoEnv
+            .call_module_method(
+                ScryptoReceiver::Resource(self.0),
+                NodeModuleId::AccessRules,
+                ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
+                scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
+                    index: 0,
+                    key: AccessRuleKey::ScryptoMethod(
+                        NodeModuleId::Metadata,
+                        METADATA_SET_IDENT.to_string(),
+                    ),
+                    rule: AccessRuleEntry::AccessRule(access_rule),
+                })
+                .unwrap(),
+            )
+            .unwrap();
     }
 
     pub fn set_updateable_non_fungible_data(&self, access_rule: AccessRule) {
-        let mut env = ScryptoEnv;
-        env.call_native(AccessRulesSetMethodAccessRuleInvocation {
-            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
-            index: 0,
-            key: AccessRuleKey::ScryptoMethod(
-                NodeModuleId::SELF,
-                RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT.to_string(),
-            ),
-            rule: AccessRuleEntry::AccessRule(access_rule),
-        })
-        .unwrap();
+        ScryptoEnv
+            .call_module_method(
+                ScryptoReceiver::Resource(self.0),
+                NodeModuleId::AccessRules,
+                ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
+                scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
+                    index: 0,
+                    key: AccessRuleKey::ScryptoMethod(
+                        NodeModuleId::SELF,
+                        RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT.to_string(),
+                    ),
+                    rule: AccessRuleEntry::AccessRule(access_rule),
+                })
+                .unwrap(),
+            )
+            .unwrap();
     }
 
     pub fn lock_mintable(&mut self) {
-        let mut env = ScryptoEnv;
-        env.call_native(AccessRulesSetGroupMutabilityInvocation {
-            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
-            index: 0,
-            name: "mint".to_string(),
-            mutability: AccessRule::DenyAll,
-        })
-        .unwrap()
+        ScryptoEnv
+            .call_module_method(
+                ScryptoReceiver::Resource(self.0),
+                NodeModuleId::AccessRules,
+                ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
+                scrypto_encode(&AccessRulesSetGroupMutabilityInput {
+                    index: 0,
+                    name: "mint".to_string(),
+                    mutability: AccessRule::DenyAll,
+                })
+                .unwrap(),
+            )
+            .unwrap();
     }
 
     pub fn lock_burnable(&mut self) {
-        let mut env = ScryptoEnv;
-        env.call_native(AccessRulesSetMethodMutabilityInvocation {
-            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
-            index: 0,
-            key: AccessRuleKey::ScryptoMethod(
-                NodeModuleId::SELF,
-                RESOURCE_MANAGER_BURN_IDENT.to_string(),
-            ),
-            mutability: AccessRule::DenyAll,
-        })
-        .unwrap()
+        ScryptoEnv
+            .call_module_method(
+                ScryptoReceiver::Resource(self.0),
+                NodeModuleId::AccessRules,
+                ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
+                scrypto_encode(&AccessRulesSetMethodMutabilityInput {
+                    index: 0,
+                    key: AccessRuleKey::ScryptoMethod(
+                        NodeModuleId::SELF,
+                        RESOURCE_MANAGER_BURN_IDENT.to_string(),
+                    ),
+                    mutability: AccessRule::DenyAll,
+                })
+                .unwrap(),
+            )
+            .unwrap();
     }
 
     pub fn lock_updateable_metadata(&mut self) {
-        let mut env = ScryptoEnv;
-        env.call_native(AccessRulesSetMethodMutabilityInvocation {
-            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
-            index: 0,
-            key: AccessRuleKey::ScryptoMethod(
-                NodeModuleId::Metadata,
-                METADATA_SET_IDENT.to_string(),
-            ),
-            mutability: AccessRule::DenyAll,
-        })
-        .unwrap()
+        ScryptoEnv
+            .call_module_method(
+                ScryptoReceiver::Resource(self.0),
+                NodeModuleId::AccessRules,
+                ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
+                scrypto_encode(&AccessRulesSetMethodMutabilityInput {
+                    index: 0,
+                    key: AccessRuleKey::ScryptoMethod(
+                        NodeModuleId::Metadata,
+                        METADATA_SET_IDENT.to_string(),
+                    ),
+                    mutability: AccessRule::DenyAll,
+                })
+                .unwrap(),
+            )
+            .unwrap();
     }
 
     pub fn lock_updateable_non_fungible_data(&mut self) {
-        let mut env = ScryptoEnv;
-        env.call_native(AccessRulesSetMethodMutabilityInvocation {
-            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
-            index: 0,
-            key: AccessRuleKey::ScryptoMethod(
-                NodeModuleId::SELF,
-                RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT.to_string(),
-            ),
-            mutability: AccessRule::DenyAll,
-        })
-        .unwrap()
+        ScryptoEnv
+            .call_module_method(
+                ScryptoReceiver::Resource(self.0),
+                NodeModuleId::AccessRules,
+                ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
+                scrypto_encode(&AccessRulesSetMethodMutabilityInput {
+                    index: 0,
+                    key: AccessRuleKey::ScryptoMethod(
+                        NodeModuleId::SELF,
+                        RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT.to_string(),
+                    ),
+                    mutability: AccessRule::DenyAll,
+                })
+                .unwrap(),
+            )
+            .unwrap();
     }
 
     pub fn lock_withdrawable(&mut self) {

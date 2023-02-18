@@ -1,9 +1,7 @@
 use crate::errors::*;
 use crate::kernel::actor::ResolvedActor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::{
-    ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi,
-};
+use crate::kernel::kernel_api::{ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi};
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;

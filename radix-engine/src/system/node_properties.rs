@@ -214,8 +214,7 @@ impl VisibilityProperties {
                             || package_address.eq(&AUTH_ZONE_PACKAGE)
                             || package_address.eq(&METADATA_PACKAGE)
                             || package_address.eq(&ROYALTY_PACKAGE)
-                            || package_address.eq(&ACCESS_RULES_PACKAGE)
-                        =>
+                            || package_address.eq(&ACCESS_RULES_PACKAGE) =>
                         {
                             true
                         }
@@ -300,8 +299,7 @@ impl VisibilityProperties {
                             || package_address.eq(&AUTH_ZONE_PACKAGE)
                             || package_address.eq(&METADATA_PACKAGE)
                             || package_address.eq(&ROYALTY_PACKAGE)
-                            || package_address.eq(&ACCESS_RULES_PACKAGE)
-                        =>
+                            || package_address.eq(&ACCESS_RULES_PACKAGE) =>
                         {
                             true
                         }

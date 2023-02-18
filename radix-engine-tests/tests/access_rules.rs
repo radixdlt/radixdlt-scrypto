@@ -3,6 +3,10 @@ use radix_engine::system::kernel_modules::auth::AuthError;
 use radix_engine::system::node_modules::auth::{AccessRulesChainError, AuthZoneError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
+use radix_engine_interface::api::node_modules::auth::{
+    ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT, ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
+    ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT, ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
+};
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
@@ -310,12 +314,24 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
 #[test]
 fn user_can_not_mutate_auth_on_methods_that_control_auth() {
     // Arrange
-    for method in [
-        AccessRulesChainFn::GetLength,
-        AccessRulesChainFn::SetGroupAccessRule,
-        AccessRulesChainFn::SetGroupMutability,
-        AccessRulesChainFn::SetMethodAccessRule,
-        AccessRulesChainFn::SetMethodMutability,
+    for access_rule_key in [
+        AccessRuleKey::Native(NativeFn::AccessRulesChain(AccessRulesChainFn::GetLength)),
+        AccessRuleKey::ScryptoMethod(
+            NodeModuleId::AccessRules,
+            ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT.to_string(),
+        ),
+        AccessRuleKey::ScryptoMethod(
+            NodeModuleId::AccessRules,
+            ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT.to_string(),
+        ),
+        AccessRuleKey::ScryptoMethod(
+            NodeModuleId::AccessRules,
+            ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT.to_string(),
+        ),
+        AccessRuleKey::ScryptoMethod(
+            NodeModuleId::AccessRules,
+            ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT.to_string(),
+        ),
     ] {
         let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
         let public_key = private_key.public_key();
@@ -341,7 +357,7 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
                 .set_method_access_rule(
                     GlobalAddress::Component(test_runner.component_address),
                     1,
-                    AccessRuleKey::Native(NativeFn::AccessRulesChain(method)),
+                    access_rule_key,
                     rule!(deny_all),
                 )
                 .build(),

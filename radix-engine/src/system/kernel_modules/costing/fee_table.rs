@@ -1,6 +1,6 @@
 use crate::types::*;
-use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::node_modules::auth::*;
+use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
@@ -249,8 +249,12 @@ impl FeeTable {
 
             (ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT) => match identifier.ident.as_str() {
                 ACCESS_RULES_ADD_ACCESS_CHECK_IDENT => self.fixed_low,
+                ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT => self.fixed_low,
+                ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT => self.fixed_low,
+                ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT => self.fixed_low,
+                ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT => self.fixed_low,
                 _ => self.fixed_low,
-            }
+            },
             _ => 0u32,
         }
     }
@@ -259,10 +263,6 @@ impl FeeTable {
         match native_fn {
             NativeFn::Root => panic!("Should not get here"),
             NativeFn::AccessRulesChain(component_ident) => match component_ident {
-                AccessRulesChainFn::SetMethodAccessRule => self.fixed_low,
-                AccessRulesChainFn::SetMethodMutability => self.fixed_low,
-                AccessRulesChainFn::SetGroupAccessRule => self.fixed_low,
-                AccessRulesChainFn::SetGroupMutability => self.fixed_low,
                 AccessRulesChainFn::GetLength => self.fixed_low,
             },
             NativeFn::Package(method_ident) => match method_ident {

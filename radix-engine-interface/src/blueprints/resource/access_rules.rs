@@ -243,12 +243,18 @@ pub fn package_access_rules_from_owner_badge(owner_badge: &NonFungibleGlobalId) 
         rule!(require(owner_badge.clone())),
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::ScryptoMethod(NodeModuleId::PackageRoyalty, PACKAGE_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string()),
+        AccessRuleKey::ScryptoMethod(
+            NodeModuleId::PackageRoyalty,
+            PACKAGE_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(),
+        ),
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::ScryptoMethod(NodeModuleId::PackageRoyalty, PACKAGE_ROYALTY_CLAIM_ROYALTY_IDENT.to_string()),
+        AccessRuleKey::ScryptoMethod(
+            NodeModuleId::PackageRoyalty,
+            PACKAGE_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
+        ),
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
     );

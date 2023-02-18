@@ -91,7 +91,9 @@ pub fn create_genesis(
 
     // Access Rules Package
     {
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(ACCESS_RULES_PACKAGE)));
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(
+            ACCESS_RULES_PACKAGE,
+        )));
         let package_address = ACCESS_RULES_PACKAGE.raw();
         instructions.push(Instruction::System(NativeInvocation::Package(
             PackageInvocation::PublishNative(PackagePublishNativeInvocation {

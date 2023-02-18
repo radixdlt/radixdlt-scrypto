@@ -11,7 +11,7 @@ use crate::kernel::module::KernelModule;
 use crate::system::node::RENodeInit;
 use crate::system::node_modules::auth::AuthZoneStackSubstate;
 use crate::types::*;
-use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, ComponentOffset, GlobalAddress, PackageOffset, RENodeId, SubstateOffset,
     VaultOffset,
@@ -259,33 +259,38 @@ impl KernelModule for AuthModule {
             ResolvedActor {
                 identifier: FnIdentifier::Native(native_fn),
                 receiver: Some(resolved_receiver),
-            } => {
-                match (native_fn, resolved_receiver) {
-                    // SetAccessRule auth is done manually within the method
-                    (NativeFn::AccessRulesChain(AccessRulesChainFn::SetMethodAccessRule), ..) => {
-                        vec![]
-                    }
-                    (method, ..) if matches!(method, NativeFn::Package(..)) => {
-                        let handle = api.kernel_lock_substate(
-                            resolved_receiver.receiver.0,
-                            NodeModuleId::AccessRules,
-                            SubstateOffset::AccessRulesChain(
-                                AccessRulesChainOffset::AccessRulesChain,
-                            ),
-                            LockFlags::read_only(),
-                        )?;
-                        let substate_ref = api.kernel_get_substate_ref(handle)?;
-                        let substate = substate_ref.access_rules_chain();
-                        let auth = substate.native_fn_authorization(
-                            resolved_receiver.receiver.1,
-                            FnIdentifier::Native(*method),
-                        );
-                        api.kernel_drop_lock(handle)?;
-                        auth
-                    }
-
-                    _ => vec![],
+            } => match (native_fn, resolved_receiver) {
+                (method, ..) if matches!(method, NativeFn::Package(..)) => {
+                    let handle = api.kernel_lock_substate(
+                        resolved_receiver.receiver.0,
+                        NodeModuleId::AccessRules,
+                        SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                        LockFlags::read_only(),
+                    )?;
+                    let substate_ref = api.kernel_get_substate_ref(handle)?;
+                    let substate = substate_ref.access_rules_chain();
+                    let auth = substate.native_fn_authorization(
+                        resolved_receiver.receiver.1,
+                        FnIdentifier::Native(*method),
+                    );
+                    api.kernel_drop_lock(handle)?;
+                    auth
                 }
+
+                _ => vec![],
+            },
+
+            // SetAccessRule auth is done manually within the method
+            ResolvedActor {
+                identifier:
+                    FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                        package_address,
+                        blueprint_name,
+                        ..
+                    }),
+                ..
+            } if package_address.eq(&ACCESS_RULES_PACKAGE) && blueprint_name.eq(ACCESS_RULES_BLUEPRINT) => {
+                vec![]
             }
 
             ResolvedActor {
@@ -421,6 +426,10 @@ impl KernelModule for AuthModule {
             actor.identifier,
             FnIdentifier::Native(NativeFn::AccessRulesChain(..))
                 | FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                    package_address: ACCESS_RULES_PACKAGE,
+                    ..
+                })
+                | FnIdentifier::Scrypto(ScryptoFnIdentifier {
                     package_address: AUTH_ZONE_PACKAGE,
                     ..
                 })
@@ -459,6 +468,10 @@ impl KernelModule for AuthModule {
         if matches!(
             api.kernel_get_current_actor().identifier,
             FnIdentifier::Native(NativeFn::AccessRulesChain(..))
+                | FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                    package_address: ACCESS_RULES_PACKAGE,
+                    ..
+                })
                 | FnIdentifier::Scrypto(ScryptoFnIdentifier {
                     package_address: AUTH_ZONE_PACKAGE,
                     ..

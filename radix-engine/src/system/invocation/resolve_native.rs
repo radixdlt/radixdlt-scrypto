@@ -21,30 +21,6 @@ pub fn resolve_native(
             }
         },
         NativeFn::AccessRulesChain(access_rules_fn) => match access_rules_fn {
-            AccessRulesChainFn::SetMethodAccessRule => {
-                let invocation =
-                    scrypto_decode::<AccessRulesSetMethodAccessRuleInvocation>(&invocation)
-                        .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            AccessRulesChainFn::SetMethodMutability => {
-                let invocation =
-                    scrypto_decode::<AccessRulesSetMethodMutabilityInvocation>(&invocation)
-                        .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            AccessRulesChainFn::SetGroupAccessRule => {
-                let invocation =
-                    scrypto_decode::<AccessRulesSetGroupAccessRuleInvocation>(&invocation)
-                        .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
-            AccessRulesChainFn::SetGroupMutability => {
-                let invocation =
-                    scrypto_decode::<AccessRulesSetGroupMutabilityInvocation>(&invocation)
-                        .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
             AccessRulesChainFn::GetLength => {
                 let invocation = scrypto_decode::<AccessRulesGetLengthInvocation>(&invocation)
                     .map_err(|_| InterpreterError::InvalidInvocation)?;

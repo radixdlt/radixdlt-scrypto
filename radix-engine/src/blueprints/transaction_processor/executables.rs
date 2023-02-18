@@ -9,9 +9,16 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::node_modules::auth::AccessRulesSetMethodAccessRuleInvocation;
+use radix_engine_interface::api::node_modules::auth::{
+    AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
+};
 use radix_engine_interface::api::node_modules::metadata::{MetadataSetInput, METADATA_SET_IDENT};
-use radix_engine_interface::api::node_modules::royalty::{ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT, PACKAGE_ROYALTY_SET_ROYALTY_CONFIG_IDENT, PackageSetRoyaltyConfigInput, PACKAGE_ROYALTY_CLAIM_ROYALTY_IDENT, PackageClaimRoyaltyInput};
+use radix_engine_interface::api::node_modules::royalty::{
+    ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput, PackageClaimRoyaltyInput,
+    PackageSetRoyaltyConfigInput, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
+    COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT, PACKAGE_ROYALTY_CLAIM_ROYALTY_IDENT,
+    PACKAGE_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+};
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
@@ -682,7 +689,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         scrypto_encode(&PackageSetRoyaltyConfigInput {
                             royalty_config: royalty_config.clone(),
                         })
-                            .unwrap(),
+                        .unwrap(),
                     )?;
 
                     let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
@@ -720,9 +727,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         ScryptoReceiver::Package(*package_address),
                         NodeModuleId::PackageRoyalty,
                         PACKAGE_ROYALTY_CLAIM_ROYALTY_IDENT,
-                        scrypto_encode(&PackageClaimRoyaltyInput {
-                        })
-                            .unwrap(),
+                        scrypto_encode(&PackageClaimRoyaltyInput {}).unwrap(),
                     )?;
 
                     let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
@@ -757,14 +762,25 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     key,
                     rule,
                 }) => {
-                    let rtn = api.call_native(AccessRulesSetMethodAccessRuleInvocation {
-                        receiver: RENodeId::Global(entity_address.clone()),
-                        index: index.clone(),
-                        key: key.clone(),
-                        rule: AccessRuleEntry::AccessRule(rule.clone()),
-                    })?;
+                    let result = api.call_module_method(
+                        RENodeId::Global(entity_address.clone()).into(),
+                        NodeModuleId::AccessRules,
+                        ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
+                        scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
+                            index: index.clone(),
+                            key: key.clone(),
+                            rule: AccessRuleEntry::AccessRule(rule.clone()),
+                        })
+                        .unwrap(),
+                    )?;
 
-                    InstructionOutput::Native(Box::new(rtn))
+                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result_indexed,
+                        api,
+                    )?;
+
+                    InstructionOutput::Scrypto(result_indexed)
                 }
                 Instruction::Basic(BasicInstruction::AssertAccessRule { access_rule }) => {
                     let rtn = ComponentAuthZone::sys_assert_access_rule(access_rule.clone(), api)?;

@@ -58,10 +58,6 @@ impl Into<CallTableInvocation> for NativeInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum AccessRulesChainInvocation {
-    SetMethodAccessRule(AccessRulesSetMethodAccessRuleInvocation),
-    SetMethodMutability(AccessRulesSetMethodMutabilityInvocation),
-    SetGroupAccessRule(AccessRulesSetGroupAccessRuleInvocation),
-    SetGroupMutability(AccessRulesSetGroupMutabilityInvocation),
     GetLength(AccessRulesGetLengthInvocation),
 }
 
@@ -80,18 +76,6 @@ impl NativeInvocation {
                 PackageInvocation::PublishNative(..) => {}
             },
             NativeInvocation::AccessRulesChain(access_rules_method) => match access_rules_method {
-                AccessRulesChainInvocation::SetMethodAccessRule(invocation) => {
-                    refs.insert(invocation.receiver);
-                }
-                AccessRulesChainInvocation::SetMethodMutability(invocation) => {
-                    refs.insert(invocation.receiver);
-                }
-                AccessRulesChainInvocation::SetGroupAccessRule(invocation) => {
-                    refs.insert(invocation.receiver);
-                }
-                AccessRulesChainInvocation::SetGroupMutability(invocation) => {
-                    refs.insert(invocation.receiver);
-                }
                 AccessRulesChainInvocation::GetLength(invocation) => {
                     refs.insert(invocation.receiver);
                 }
@@ -110,18 +94,6 @@ impl NativeInvocation {
     pub fn flatten(&self) -> (NativeFn, Vec<u8>) {
         let (native_fn, encoding) = match self {
             NativeInvocation::AccessRulesChain(i) => match i {
-                AccessRulesChainInvocation::SetMethodAccessRule(i) => {
-                    (get_native_fn(i), scrypto_encode(i))
-                }
-                AccessRulesChainInvocation::SetMethodMutability(i) => {
-                    (get_native_fn(i), scrypto_encode(i))
-                }
-                AccessRulesChainInvocation::SetGroupAccessRule(i) => {
-                    (get_native_fn(i), scrypto_encode(i))
-                }
-                AccessRulesChainInvocation::SetGroupMutability(i) => {
-                    (get_native_fn(i), scrypto_encode(i))
-                }
                 AccessRulesChainInvocation::GetLength(i) => (get_native_fn(i), scrypto_encode(i)),
             },
             NativeInvocation::Package(i) => match i {

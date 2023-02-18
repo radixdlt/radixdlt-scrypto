@@ -1,8 +1,10 @@
-use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, LockFlags};
 use crate::{errors::RuntimeError, types::*};
+use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
-use radix_engine_interface::api::node_modules::royalty::{COMPONENT_ROYALTY_BLUEPRINT, PACKAGE_ROYALTY_BLUEPRINT};
+use radix_engine_interface::api::node_modules::royalty::{
+    COMPONENT_ROYALTY_BLUEPRINT, PACKAGE_ROYALTY_BLUEPRINT,
+};
 use radix_engine_interface::api::types::{ScryptoInvocation, ScryptoReceiver};
 
 pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
@@ -12,29 +14,7 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
     args: &[u8],
     api: &mut Y,
 ) -> Result<ScryptoInvocation, RuntimeError> {
-    let node_id = match receiver {
-        ScryptoReceiver::Global(component_address) => {
-            RENodeId::Global(GlobalAddress::Component(component_address))
-        }
-        ScryptoReceiver::Resource(resource_address) => {
-            RENodeId::Global(GlobalAddress::Resource(resource_address))
-        }
-        ScryptoReceiver::Package(package_address) => {
-            RENodeId::Global(GlobalAddress::Package(package_address))
-        }
-        ScryptoReceiver::Component(component_id) => {
-            // TODO: Fix this as this is wrong id for native components
-            // TODO: Will be easier to fix this when local handles are implemented
-            RENodeId::Component(component_id)
-        }
-        ScryptoReceiver::Vault(vault_id) => RENodeId::Vault(vault_id),
-        ScryptoReceiver::Bucket(bucket_id) => RENodeId::Bucket(bucket_id),
-        ScryptoReceiver::Proof(proof_id) => RENodeId::Proof(proof_id),
-        ScryptoReceiver::Worktop => RENodeId::Worktop,
-        ScryptoReceiver::Logger => RENodeId::Logger,
-        ScryptoReceiver::TransactionRuntime => RENodeId::TransactionRuntime,
-        ScryptoReceiver::AuthZoneStack => RENodeId::AuthZoneStack,
-    };
+    let node_id = receiver.into();
 
     let (package_address, blueprint_name) = match module_id {
         NodeModuleId::SELF => {

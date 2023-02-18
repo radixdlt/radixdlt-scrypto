@@ -795,29 +795,35 @@ fn update_access_rules<Y>(
     access_rules: AccessRules,
 ) -> Result<(), RuntimeError>
 where
-    Y: KernelNodeApi
-        + KernelSubstateApi
-        + ClientNodeApi<RuntimeError>
-        + ClientSubstateApi<RuntimeError>
-        + ClientNativeInvokeApi<RuntimeError>,
+    Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
 {
     for (group_name, access_rule) in access_rules.get_all_grouped_auth().iter() {
-        api.call_native(AccessRulesSetGroupAccessRuleInvocation {
-            receiver: receiver,
-            index: 0,
-            name: group_name.into(),
-            rule: access_rule.clone(),
-        })?;
+        api.call_module_method(
+            receiver.into(),
+            NodeModuleId::AccessRules,
+            ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
+            scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
+                index: 0,
+                name: group_name.into(),
+                rule: access_rule.clone(),
+            })
+            .unwrap(),
+        )?;
     }
     for (method_key, entry) in access_rules.get_all_method_auth().iter() {
         match entry {
             AccessRuleEntry::AccessRule(access_rule) => {
-                api.call_native(AccessRulesSetMethodAccessRuleInvocation {
-                    receiver: receiver,
-                    index: 0,
-                    key: method_key.clone(),
-                    rule: AccessRuleEntry::AccessRule(access_rule.clone()),
-                })?;
+                api.call_module_method(
+                    receiver.into(),
+                    NodeModuleId::AccessRules,
+                    ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
+                    scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
+                        index: 0,
+                        key: method_key.clone(),
+                        rule: AccessRuleEntry::AccessRule(access_rule.clone()),
+                    })
+                    .unwrap(),
+                )?;
             }
             AccessRuleEntry::Group(..) => {} // Already updated above
         }

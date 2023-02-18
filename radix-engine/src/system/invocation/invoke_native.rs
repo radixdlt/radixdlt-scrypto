@@ -24,22 +24,6 @@ where
         },
         NativeInvocation::AccessRulesChain(access_rules_invocation) => {
             match access_rules_invocation {
-                AccessRulesChainInvocation::SetMethodAccessRule(invocation) => {
-                    let rtn = api.kernel_invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
-                AccessRulesChainInvocation::SetMethodMutability(invocation) => {
-                    let rtn = api.kernel_invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
-                AccessRulesChainInvocation::SetGroupAccessRule(invocation) => {
-                    let rtn = api.kernel_invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
-                AccessRulesChainInvocation::SetGroupMutability(invocation) => {
-                    let rtn = api.kernel_invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
                 AccessRulesChainInvocation::GetLength(invocation) => {
                     let rtn = api.kernel_invoke(invocation)?;
                     Ok(Box::new(rtn))

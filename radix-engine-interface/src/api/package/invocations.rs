@@ -69,4 +69,3 @@ impl Into<CallTableInvocation> for PackagePublishNativeInvocation {
         NativeInvocation::Package(PackageInvocation::PublishNative(self)).into()
     }
 }
-

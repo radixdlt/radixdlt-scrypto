@@ -1,6 +1,8 @@
+use radix_engine_interface::api::node_modules::royalty::{
+    PackageSetRoyaltyConfigInput, PACKAGE_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+};
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::api::node_modules::royalty::{PACKAGE_ROYALTY_SET_ROYALTY_CONFIG_IDENT, PackageSetRoyaltyConfigInput};
 use radix_engine_interface::data::{scrypto_encode, ScryptoDecode};
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
@@ -22,10 +24,7 @@ impl BorrowedPackage {
             ScryptoReceiver::Package(self.0),
             NodeModuleId::PackageRoyalty,
             PACKAGE_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
-            scrypto_encode(&PackageSetRoyaltyConfigInput {
-
-                royalty_config,
-            }).unwrap()
+            scrypto_encode(&PackageSetRoyaltyConfigInput { royalty_config }).unwrap(),
         )?;
 
         Ok(self)
