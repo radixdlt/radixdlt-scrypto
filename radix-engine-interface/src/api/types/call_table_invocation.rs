@@ -57,7 +57,6 @@ impl Into<CallTableInvocation> for NativeInvocation {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum PackageInvocation {
     Publish(PackagePublishInvocation),
-    PublishNative(PackagePublishNativeInvocation),
 }
 
 impl NativeInvocation {
@@ -66,7 +65,6 @@ impl NativeInvocation {
         match self {
             NativeInvocation::Package(package_method) => match package_method {
                 PackageInvocation::Publish(..) => {}
-                PackageInvocation::PublishNative(..) => {}
             },
         }
 
@@ -83,7 +81,6 @@ impl NativeInvocation {
         let (native_fn, encoding) = match self {
             NativeInvocation::Package(i) => match i {
                 PackageInvocation::Publish(i) => (get_native_fn(i), scrypto_encode(i)),
-                PackageInvocation::PublishNative(i) => (get_native_fn(i), scrypto_encode(i)),
             },
         };
 

@@ -17,10 +17,6 @@ where
                 let rtn = api.kernel_invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
-            PackageInvocation::PublishNative(invocation) => {
-                let rtn = api.kernel_invoke(invocation)?;
-                Ok(Box::new(rtn))
-            }
         },
     }
 }

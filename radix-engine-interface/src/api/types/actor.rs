@@ -117,7 +117,6 @@ impl NativeFn {
 #[strum(serialize_all = "snake_case")]
 pub enum PackageFn {
     Publish,
-    PublishNative,
 }
 
 #[derive(

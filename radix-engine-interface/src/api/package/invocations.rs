@@ -4,6 +4,7 @@ use crate::*;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
+use scrypto_abi::BlueprintAbi;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PackagePublishInvocation {
@@ -37,8 +38,21 @@ impl Into<CallTableInvocation> for PackagePublishInvocation {
     }
 }
 
+
+pub struct NativePackageAbi;
+
+impl NativePackageAbi {
+    pub fn blueprint_abis() -> BTreeMap<String, BlueprintAbi> {
+        BTreeMap::new()
+    }
+}
+
+pub const NATIVE_PACKAGE_BLUEPRINT: &str = "NativePackage";
+
+pub const NATIVE_PACKAGE_PUBLISH_IDENT: &str = "publish";
+
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct PackagePublishNativeInvocation {
+pub struct PackagePublishNativeInput {
     pub package_address: Option<[u8; 26]>, // TODO: Clean this up
     pub native_package_code_id: u8,
     pub abi: Vec<u8>,
@@ -46,26 +60,4 @@ pub struct PackagePublishNativeInvocation {
     pub dependent_components: Vec<ComponentAddress>,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: AccessRules,
-}
-
-impl Invocation for PackagePublishNativeInvocation {
-    type Output = PackageAddress;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Package(PackageFn::PublishNative))
-    }
-}
-
-impl SerializableInvocation for PackagePublishNativeInvocation {
-    type ScryptoOutput = PackageAddress;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Package(PackageFn::PublishNative)
-    }
-}
-
-impl Into<CallTableInvocation> for PackagePublishNativeInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Package(PackageInvocation::PublishNative(self)).into()
-    }
 }

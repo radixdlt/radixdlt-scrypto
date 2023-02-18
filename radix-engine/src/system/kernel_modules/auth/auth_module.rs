@@ -12,6 +12,7 @@ use crate::system::node::RENodeInit;
 use crate::system::node_modules::auth::AuthZoneStackSubstate;
 use crate::types::*;
 use radix_engine_interface::api::node_modules::auth::*;
+use radix_engine_interface::api::package::{NATIVE_PACKAGE_BLUEPRINT, NATIVE_PACKAGE_PUBLISH_IDENT};
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, ComponentOffset, GlobalAddress, PackageOffset, RENodeId, SubstateOffset,
     VaultOffset,
@@ -100,17 +101,20 @@ impl KernelModule for AuthModule {
 
         let method_auths = match &actor {
             ResolvedActor {
-                identifier: FnIdentifier::Native(native_fn),
+                identifier: FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                    package_address,
+                    blueprint_name,
+                    ident,
+                }),
                 receiver: None,
-            } => match native_fn {
-                NativeFn::Package(PackageFn::PublishNative) => {
+            } if package_address.eq(&NATIVE_PACKAGE)
+                && blueprint_name.eq(NATIVE_PACKAGE_BLUEPRINT)
+                && ident.eq(NATIVE_PACKAGE_PUBLISH_IDENT) => {
                     vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
                         HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
                             AuthAddresses::system_role(),
                         )),
                     ))]
-                }
-                _ => vec![],
             },
             ResolvedActor {
                 identifier: FnIdentifier::Scrypto(fn_identifier),
@@ -137,7 +141,10 @@ impl KernelModule for AuthModule {
                 }
                 _ => vec![],
             },
-
+            ResolvedActor {
+                identifier: FnIdentifier::Native(..),
+                receiver: None,
+            } => vec![],
             ResolvedActor {
                 receiver:
                     Some(ResolvedReceiver {

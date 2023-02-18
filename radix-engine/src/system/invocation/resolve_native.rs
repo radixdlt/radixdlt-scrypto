@@ -13,11 +13,6 @@ pub fn resolve_native(
                     .map_err(|_| InterpreterError::InvalidInvocation)?;
                 Ok(invocation.into())
             }
-            PackageFn::PublishNative => {
-                let invocation = scrypto_decode::<PackagePublishNativeInvocation>(&invocation)
-                    .map_err(|_| InterpreterError::InvalidInvocation)?;
-                Ok(invocation.into())
-            }
         },
         NativeFn::TransactionProcessor(_) => Err(RuntimeError::InterpreterError(
             InterpreterError::DisallowedInvocation(native_fn),

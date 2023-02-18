@@ -10,7 +10,7 @@ use radix_engine_interface::api::node_modules::metadata::MetadataAbi;
 use radix_engine_interface::api::node_modules::royalty::RoyaltyAbi;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::package::{
-    PackagePublishInvocation, PackagePublishNativeInvocation,
+    PackagePublishInvocation, PackagePublishNativeInput,
 };
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::access_controller::AccessControllerAbi;
@@ -59,8 +59,11 @@ pub fn create_genesis(
     {
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(METADATA_PACKAGE)));
         let package_address = METADATA_PACKAGE.raw();
-        instructions.push(Instruction::System(NativeInvocation::Package(
-            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+            package_address: NATIVE_PACKAGE,
+            blueprint_name: NATIVE_PACKAGE_BLUEPRINT.to_string(),
+            function_name: NATIVE_PACKAGE_PUBLISH_IDENT.to_string(),
+            args: scrypto_encode(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: METADATA_CODE_ID,
                 abi: scrypto_encode(&MetadataAbi::blueprint_abis()).unwrap(),
@@ -68,16 +71,20 @@ pub fn create_genesis(
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
-            }),
-        )));
+            }).unwrap(),
+        }));
     }
 
     // Royalty Package
     {
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(ROYALTY_PACKAGE)));
         let package_address = ROYALTY_PACKAGE.raw();
-        instructions.push(Instruction::System(NativeInvocation::Package(
-            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+
+        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+            package_address: NATIVE_PACKAGE,
+            blueprint_name: NATIVE_PACKAGE_BLUEPRINT.to_string(),
+            function_name: NATIVE_PACKAGE_PUBLISH_IDENT.to_string(),
+            args: scrypto_encode(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: ROYALTY_CODE_ID,
                 abi: scrypto_encode(&RoyaltyAbi::blueprint_abis()).unwrap(),
@@ -85,8 +92,8 @@ pub fn create_genesis(
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
-            }),
-        )));
+            }).unwrap(),
+        }));
     }
 
     // Access Rules Package
@@ -95,8 +102,11 @@ pub fn create_genesis(
             ACCESS_RULES_PACKAGE,
         )));
         let package_address = ACCESS_RULES_PACKAGE.raw();
-        instructions.push(Instruction::System(NativeInvocation::Package(
-            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+            package_address: NATIVE_PACKAGE,
+            blueprint_name: NATIVE_PACKAGE_BLUEPRINT.to_string(),
+            function_name: NATIVE_PACKAGE_PUBLISH_IDENT.to_string(),
+            args: scrypto_encode(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: ACCESS_RULES_CODE_ID,
                 abi: scrypto_encode(&AccessRulesAbi::blueprint_abis()).unwrap(),
@@ -104,8 +114,8 @@ pub fn create_genesis(
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
-            }),
-        )));
+            }).unwrap(),
+        }));
     }
 
     // Resource Package
@@ -114,8 +124,11 @@ pub fn create_genesis(
             RESOURCE_MANAGER_PACKAGE,
         )));
         let package_address = RESOURCE_MANAGER_PACKAGE.raw();
-        instructions.push(Instruction::System(NativeInvocation::Package(
-            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+            package_address: NATIVE_PACKAGE,
+            blueprint_name: NATIVE_PACKAGE_BLUEPRINT.to_string(),
+            function_name: NATIVE_PACKAGE_PUBLISH_IDENT.to_string(),
+            args: scrypto_encode(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: RESOURCE_MANAGER_PACKAGE_CODE_ID,
                 abi: scrypto_encode(&ResourceManagerAbi::blueprint_abis()).unwrap(),
@@ -123,8 +136,8 @@ pub fn create_genesis(
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
-            }),
-        )));
+            }).unwrap(),
+        }));
     }
 
     // XRD Token
@@ -183,8 +196,11 @@ pub fn create_genesis(
     {
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(IDENTITY_PACKAGE)));
         let package_address = IDENTITY_PACKAGE.raw();
-        instructions.push(Instruction::System(NativeInvocation::Package(
-            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+            package_address: NATIVE_PACKAGE,
+            blueprint_name: NATIVE_PACKAGE_BLUEPRINT.to_string(),
+            function_name: NATIVE_PACKAGE_PUBLISH_IDENT.to_string(),
+            args: scrypto_encode(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: scrypto_encode(&IdentityAbi::blueprint_abis()).unwrap(),
                 dependent_resources: vec![],
@@ -192,8 +208,8 @@ pub fn create_genesis(
                 native_package_code_id: IDENTITY_PACKAGE_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
-            }),
-        )));
+            }).unwrap(),
+        }));
     }
 
     // EpochManager Package
@@ -202,8 +218,11 @@ pub fn create_genesis(
             EPOCH_MANAGER_PACKAGE,
         )));
         let package_address = EPOCH_MANAGER_PACKAGE.raw();
-        instructions.push(Instruction::System(NativeInvocation::Package(
-            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+            package_address: NATIVE_PACKAGE,
+            blueprint_name: NATIVE_PACKAGE_BLUEPRINT.to_string(),
+            function_name: NATIVE_PACKAGE_PUBLISH_IDENT.to_string(),
+            args: scrypto_encode(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: scrypto_encode(&EpochManagerAbi::blueprint_abis()).unwrap(),
                 native_package_code_id: EPOCH_MANAGER_PACKAGE_CODE_ID,
@@ -211,16 +230,19 @@ pub fn create_genesis(
                 access_rules: AccessRules::new(),
                 dependent_resources: vec![RADIX_TOKEN, PACKAGE_TOKEN],
                 dependent_components: vec![],
-            }),
-        )));
+            }).unwrap(),
+        }));
     }
 
     // Clock Package
     {
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(CLOCK_PACKAGE)));
         let package_address = CLOCK_PACKAGE.raw();
-        instructions.push(Instruction::System(NativeInvocation::Package(
-            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+            package_address: NATIVE_PACKAGE,
+            blueprint_name: NATIVE_PACKAGE_BLUEPRINT.to_string(),
+            function_name: NATIVE_PACKAGE_PUBLISH_IDENT.to_string(),
+            args: scrypto_encode(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: scrypto_encode(&ClockAbi::blueprint_abis()).unwrap(),
                 native_package_code_id: CLOCK_PACKAGE_CODE_ID,
@@ -228,16 +250,19 @@ pub fn create_genesis(
                 access_rules: AccessRules::new(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
-            }),
-        )));
+            }).unwrap(),
+        }));
     }
 
     // Account Package
     {
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
         let package_address = ACCOUNT_PACKAGE.raw();
-        instructions.push(Instruction::System(NativeInvocation::Package(
-            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+            package_address: NATIVE_PACKAGE,
+            blueprint_name: NATIVE_PACKAGE_BLUEPRINT.to_string(),
+            function_name: NATIVE_PACKAGE_PUBLISH_IDENT.to_string(),
+            args: scrypto_encode(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: scrypto_encode(&AccountAbi::blueprint_abis()).unwrap(),
                 native_package_code_id: ACCOUNT_PACKAGE_CODE_ID,
@@ -245,8 +270,8 @@ pub fn create_genesis(
                 access_rules: AccessRules::new(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
-            }),
-        )));
+            }).unwrap(),
+        }));
     }
 
     // AccessRules Package
@@ -255,8 +280,11 @@ pub fn create_genesis(
             ACCESS_CONTROLLER_PACKAGE,
         )));
         let package_address = ACCESS_CONTROLLER_PACKAGE.raw();
-        instructions.push(Instruction::System(NativeInvocation::Package(
-            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+            package_address: NATIVE_PACKAGE,
+            blueprint_name: NATIVE_PACKAGE_BLUEPRINT.to_string(),
+            function_name: NATIVE_PACKAGE_PUBLISH_IDENT.to_string(),
+            args: scrypto_encode(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: scrypto_encode(&AccessControllerAbi::blueprint_abis()).unwrap(),
                 metadata: BTreeMap::new(),
@@ -264,16 +292,19 @@ pub fn create_genesis(
                 native_package_code_id: ACCESS_CONTROLLER_PACKAGE_CODE_ID,
                 dependent_resources: vec![],
                 dependent_components: vec![CLOCK],
-            }),
-        )));
+            }).unwrap(),
+        }));
     }
 
     // Logger Package
     {
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(LOGGER_PACKAGE)));
         let package_address = LOGGER_PACKAGE.raw();
-        instructions.push(Instruction::System(NativeInvocation::Package(
-            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+            package_address: NATIVE_PACKAGE,
+            blueprint_name: NATIVE_PACKAGE_BLUEPRINT.to_string(),
+            function_name: NATIVE_PACKAGE_PUBLISH_IDENT.to_string(),
+            args: scrypto_encode(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: scrypto_encode(&TransactionRuntimeAbi::blueprint_abis()).unwrap(),
                 metadata: BTreeMap::new(),
@@ -281,8 +312,8 @@ pub fn create_genesis(
                 native_package_code_id: LOGGER_CODE_ID,
                 dependent_resources: vec![],
                 dependent_components: vec![],
-            }),
-        )));
+            }).unwrap(),
+        }));
     }
 
     // TransactionRuntime Package
@@ -291,8 +322,11 @@ pub fn create_genesis(
             TRANSACTION_RUNTIME_PACKAGE,
         )));
         let package_address = TRANSACTION_RUNTIME_PACKAGE.raw();
-        instructions.push(Instruction::System(NativeInvocation::Package(
-            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+            package_address: NATIVE_PACKAGE,
+            blueprint_name: NATIVE_PACKAGE_BLUEPRINT.to_string(),
+            function_name: NATIVE_PACKAGE_PUBLISH_IDENT.to_string(),
+            args: scrypto_encode(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: scrypto_encode(&LoggerAbi::blueprint_abis()).unwrap(),
                 metadata: BTreeMap::new(),
@@ -300,16 +334,19 @@ pub fn create_genesis(
                 native_package_code_id: TRANSACTION_RUNTIME_CODE_ID,
                 dependent_resources: vec![],
                 dependent_components: vec![],
-            }),
-        )));
+            }).unwrap(),
+        }));
     }
 
     // AuthZone Package
     {
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(AUTH_ZONE_PACKAGE)));
         let package_address = AUTH_ZONE_PACKAGE.raw();
-        instructions.push(Instruction::System(NativeInvocation::Package(
-            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+            package_address: NATIVE_PACKAGE,
+            blueprint_name: NATIVE_PACKAGE_BLUEPRINT.to_string(),
+            function_name: NATIVE_PACKAGE_PUBLISH_IDENT.to_string(),
+            args: scrypto_encode(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: scrypto_encode(&AuthZoneAbi::blueprint_abis()).unwrap(),
                 metadata: BTreeMap::new(),
@@ -317,8 +354,8 @@ pub fn create_genesis(
                 native_package_code_id: AUTH_ZONE_CODE_ID,
                 dependent_resources: vec![],
                 dependent_components: vec![],
-            }),
-        )));
+            }).unwrap(),
+        }));
     }
 
     // ECDSA

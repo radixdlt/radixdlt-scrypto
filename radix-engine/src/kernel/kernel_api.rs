@@ -124,7 +124,6 @@ pub trait ExecutableInvocation: Invocation {
 
 pub trait KernelInvokeApi<E>:
     Invokable<PackagePublishInvocation, E>
-    + Invokable<PackagePublishNativeInvocation, E>
 {
 }
 

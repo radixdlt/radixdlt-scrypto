@@ -14,7 +14,7 @@ use crate::system::kernel_modules::costing::CostingError;
 use crate::system::kernel_modules::node_move::NodeMoveError;
 use crate::system::kernel_modules::transaction_limits::TransactionLimitsError;
 use crate::system::node_modules::auth::{AccessRulesChainError, AuthZoneError};
-use crate::system::package::PackageError;
+use crate::system::package::{NativePackageError, PackageError};
 use crate::transaction::AbortReason;
 use radix_engine_interface::api::types::{GlobalAddress, LockHandle, RENodeId, SubstateOffset};
 use radix_engine_interface::data::ReadOwnedNodesError;
@@ -299,6 +299,8 @@ impl<E: SelfError> From<InvokeError<E>> for RuntimeError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ApplicationError {
     TransactionProcessorError(TransactionProcessorError),
+
+    NativePackageError(NativePackageError),
 
     PackageError(PackageError),
 

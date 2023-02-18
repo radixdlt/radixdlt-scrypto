@@ -530,6 +530,15 @@ where
                             {
                                 if matches!(
                                     global_address,
+                                    GlobalAddress::Package(NATIVE_PACKAGE)
+                                ) {
+                                    self.current_frame
+                                        .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                                    continue;
+                                }
+
+                                if matches!(
+                                    global_address,
                                     GlobalAddress::Package(RESOURCE_MANAGER_PACKAGE)
                                 ) {
                                     self.current_frame

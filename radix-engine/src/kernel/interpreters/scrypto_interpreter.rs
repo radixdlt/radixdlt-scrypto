@@ -35,6 +35,7 @@ use radix_engine_interface::api::{
 use radix_engine_interface::api::{ClientDerefApi, ClientPackageApi};
 use radix_engine_interface::data::*;
 use radix_engine_interface::data::{match_schema_with_value, ScryptoValue};
+use crate::system::package::NativePackage;
 
 use super::ScryptoRuntime;
 
@@ -143,15 +144,20 @@ impl ExecutableInvocation for ScryptoInvocation {
             )
         };
 
-        let handle = api.kernel_lock_substate(
-            RENodeId::Global(GlobalAddress::Package(self.package_address)),
-            NodeModuleId::PackageTypeInfo,
-            SubstateOffset::PackageTypeInfo,
-            LockFlags::read_only(),
-        )?;
-        let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let type_info = substate_ref.type_info().clone();
-        api.kernel_drop_lock(handle)?;
+        let type_info = if self.package_address.eq(&NATIVE_PACKAGE) {
+            TypeInfoSubstate::NativePackage
+        } else {
+            let handle = api.kernel_lock_substate(
+                RENodeId::Global(GlobalAddress::Package(self.package_address)),
+                NodeModuleId::PackageTypeInfo,
+                SubstateOffset::PackageTypeInfo,
+                LockFlags::read_only(),
+            )?;
+            let substate_ref = api.kernel_get_substate_ref(handle)?;
+            let type_info = substate_ref.type_info().clone();
+            api.kernel_drop_lock(handle)?;
+            type_info
+        };
 
         let export_name = match type_info {
             TypeInfoSubstate::NativePackage => {
@@ -279,8 +285,16 @@ impl Executor for ScryptoExecutor {
             + ClientNativeInvokeApi<RuntimeError>,
         W: WasmEngine,
     {
-        // Make dependent resources/components visible
-        {
+        let output = if self.package_address.eq(&NATIVE_PACKAGE) {
+            NativeVm::invoke_native_package(
+                NATIVE_PACKAGE_CODE_ID,
+                self.receiver,
+                &self.export_name,
+                self.args,
+                api,
+            )?
+        } else {
+            // Make dependent resources/components visible
             let handle = api.kernel_lock_substate(
                 RENodeId::Global(GlobalAddress::Package(self.package_address)),
                 NodeModuleId::SELF,
@@ -288,113 +302,118 @@ impl Executor for ScryptoExecutor {
                 LockFlags::read_only(),
             )?;
             api.kernel_drop_lock(handle)?;
-        }
 
-        let handle = api.kernel_lock_substate(
-            RENodeId::Global(GlobalAddress::Package(self.package_address)),
-            NodeModuleId::PackageTypeInfo,
-            SubstateOffset::PackageTypeInfo,
-            LockFlags::read_only(),
-        )?;
-        let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let type_info = substate_ref.type_info().clone();
-        api.kernel_drop_lock(handle)?;
-
-        let output = match type_info {
-            TypeInfoSubstate::NativePackage => {
+            let type_info = {
                 let handle = api.kernel_lock_substate(
                     RENodeId::Global(GlobalAddress::Package(self.package_address)),
-                    NodeModuleId::SELF,
-                    SubstateOffset::Package(PackageOffset::NativeCode),
+                    NodeModuleId::PackageTypeInfo,
+                    SubstateOffset::PackageTypeInfo,
                     LockFlags::read_only(),
                 )?;
                 let substate_ref = api.kernel_get_substate_ref(handle)?;
-                let native_package_code_id = substate_ref.native_code().native_package_code_id;
+                let type_info = substate_ref.type_info().clone();
                 api.kernel_drop_lock(handle)?;
-                NativeVm::invoke_native_package(
-                    native_package_code_id,
-                    self.receiver,
-                    &self.export_name,
-                    self.args,
-                    api,
-                )?
-            }
-            TypeInfoSubstate::WasmPackage => {
-                let rtn_type = {
+                type_info
+            };
+
+            let output = match type_info {
+                TypeInfoSubstate::NativePackage => {
                     let handle = api.kernel_lock_substate(
                         RENodeId::Global(GlobalAddress::Package(self.package_address)),
                         NodeModuleId::SELF,
-                        SubstateOffset::Package(PackageOffset::Info),
+                        SubstateOffset::Package(PackageOffset::NativeCode),
                         LockFlags::read_only(),
                     )?;
                     let substate_ref = api.kernel_get_substate_ref(handle)?;
-                    let package_info = substate_ref.package_info();
-                    let fn_abi = package_info
-                        .fn_abi(&self.export_name)
-                        .expect("TODO: Remove this expect");
-                    let rtn_type = fn_abi.output.clone();
+                    let native_package_code_id = substate_ref.native_code().native_package_code_id;
                     api.kernel_drop_lock(handle)?;
-                    rtn_type
-                };
+                    NativeVm::invoke_native_package(
+                        native_package_code_id,
+                        self.receiver,
+                        &self.export_name,
+                        self.args,
+                        api,
+                    )?
+                }
+                TypeInfoSubstate::WasmPackage => {
+                    let rtn_type = {
+                        let handle = api.kernel_lock_substate(
+                            RENodeId::Global(GlobalAddress::Package(self.package_address)),
+                            NodeModuleId::SELF,
+                            SubstateOffset::Package(PackageOffset::Info),
+                            LockFlags::read_only(),
+                        )?;
+                        let substate_ref = api.kernel_get_substate_ref(handle)?;
+                        let package_info = substate_ref.package_info();
+                        let fn_abi = package_info
+                            .fn_abi(&self.export_name)
+                            .expect("TODO: Remove this expect");
+                        let rtn_type = fn_abi.output.clone();
+                        api.kernel_drop_lock(handle)?;
+                        rtn_type
+                    };
 
-                let wasm_code = {
-                    let handle = api.kernel_lock_substate(
-                        RENodeId::Global(GlobalAddress::Package(self.package_address)),
-                        NodeModuleId::SELF,
-                        SubstateOffset::Package(PackageOffset::WasmCode),
-                        LockFlags::read_only(),
-                    )?;
-                    let substate_ref = api.kernel_get_substate_ref(handle)?;
-                    let package = substate_ref.wasm_code().clone(); // TODO: Remove clone()
-                    api.kernel_drop_lock(handle)?;
+                    let wasm_code = {
+                        let handle = api.kernel_lock_substate(
+                            RENodeId::Global(GlobalAddress::Package(self.package_address)),
+                            NodeModuleId::SELF,
+                            SubstateOffset::Package(PackageOffset::WasmCode),
+                            LockFlags::read_only(),
+                        )?;
+                        let substate_ref = api.kernel_get_substate_ref(handle)?;
+                        let package = substate_ref.wasm_code().clone(); // TODO: Remove clone()
+                        api.kernel_drop_lock(handle)?;
 
-                    package
-                };
+                        package
+                    };
 
-                // Emit event
-                let mut instance = api
-                    .kernel_get_scrypto_interpreter()
-                    .create_instance(self.package_address, &wasm_code.code);
+                    // Emit event
+                    let mut instance = api
+                        .kernel_get_scrypto_interpreter()
+                        .create_instance(self.package_address, &wasm_code.code);
 
-                let output = {
-                    let mut runtime: Box<dyn WasmRuntime> = Box::new(ScryptoRuntime::new(api));
+                    let output = {
+                        let mut runtime: Box<dyn WasmRuntime> = Box::new(ScryptoRuntime::new(api));
 
-                    let mut input = Vec::new();
-                    if let Some(component_id) = self.receiver {
-                        let component_id: ComponentId = component_id.into();
+                        let mut input = Vec::new();
+                        if let Some(component_id) = self.receiver {
+                            let component_id: ComponentId = component_id.into();
+                            input.push(
+                                runtime
+                                    .allocate_buffer(
+                                        scrypto_encode(&component_id)
+                                            .expect("Failed to encode component id"),
+                                    )
+                                    .expect("Failed to allocate buffer"),
+                            );
+                        }
                         input.push(
                             runtime
                                 .allocate_buffer(
-                                    scrypto_encode(&component_id)
-                                        .expect("Failed to encode component id"),
+                                    scrypto_encode(&self.args).expect("Failed to encode args"),
                                 )
                                 .expect("Failed to allocate buffer"),
                         );
+
+                        instance.invoke_export(&self.export_name, input, &mut runtime)?
+                    };
+                    let output = IndexedScryptoValue::from_vec(output).map_err(|e| {
+                        RuntimeError::InterpreterError(InterpreterError::InvalidScryptoReturn(e))
+                    })?;
+
+                    if !match_schema_with_value(&rtn_type, output.as_value()) {
+                        return Err(RuntimeError::KernelError(
+                            KernelError::InvalidScryptoFnOutput,
+                        ));
                     }
-                    input.push(
-                        runtime
-                            .allocate_buffer(
-                                scrypto_encode(&self.args).expect("Failed to encode args"),
-                            )
-                            .expect("Failed to allocate buffer"),
-                    );
 
-                    instance.invoke_export(&self.export_name, input, &mut runtime)?
-                };
-                let output = IndexedScryptoValue::from_vec(output).map_err(|e| {
-                    RuntimeError::InterpreterError(InterpreterError::InvalidScryptoReturn(e))
-                })?;
+                    api.update_wasm_memory_usage(instance.consumed_memory()?)?;
 
-                if !match_schema_with_value(&rtn_type, output.as_value()) {
-                    return Err(RuntimeError::KernelError(
-                        KernelError::InvalidScryptoFnOutput,
-                    ));
+                    output
                 }
+            };
 
-                api.update_wasm_memory_usage(instance.consumed_memory()?)?;
-
-                output
-            }
+            output
         };
 
         let update = CallFrameUpdate {
@@ -432,6 +451,9 @@ impl NativeVm {
             + ClientNativeInvokeApi<RuntimeError>,
     {
         match native_package_code_id {
+            NATIVE_PACKAGE_CODE_ID => {
+                NativePackage::invoke_export(&export_name, receiver, input, api)
+            }
             RESOURCE_MANAGER_PACKAGE_CODE_ID => {
                 ResourceManagerNativePackage::invoke_export(&export_name, receiver, input, api)
             }
