@@ -13,8 +13,8 @@ use crate::types::*;
 use crate::wasm::*;
 use radix_engine_constants::*;
 use sbor::rust::borrow::Cow;
+use transaction::data::manifest_encode;
 use transaction::model::*;
-use transaction_data::manifest_encode;
 
 pub struct FeeReserveConfig {
     pub cost_unit_price: u128,

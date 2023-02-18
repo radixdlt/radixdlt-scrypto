@@ -9,7 +9,6 @@ radix-engine-constants = { path = "../radix-engine-constants" }
 radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
 native-sdk = { path = "../native-sdk", default-features = false }
 transaction = { path = "../transaction", default-features = false }
-transaction-data = { path = "../transaction-data", default-features = false }
 utils = { path = "../utils", default-features = false }
 colored = { version = "2.0.0", default-features = false }
 hex = { version = "0.4.3", default-features = false }
@@ -43,8 +42,8 @@ wabt = { version = "0.10.0" }
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["sbor/std", "native-sdk/std", "wasmi/std", "transaction/std", "transaction-data/std", "radix-engine-interface/std", "utils/std", "moka"]
-alloc = ["sbor/alloc", "native-sdk/alloc", "transaction/alloc", "transaction-data/alloc", "radix-engine-interface/alloc", "utils/alloc", "lru/hashbrown"]
+std = ["sbor/std", "native-sdk/std", "wasmi/std", "transaction/std", "radix-engine-interface/std", "utils/std", "moka"]
+alloc = ["sbor/alloc", "native-sdk/alloc", "transaction/alloc", "radix-engine-interface/alloc", "utils/alloc", "lru/hashbrown"]
 
 # Enables heap memory and CPU cycles resource tracing - available only for Linux OS on x86 arch.
 # Requires CAP_PERFMON capability for the process (sudo setcap cap_perfmon=eip <exec_file>).

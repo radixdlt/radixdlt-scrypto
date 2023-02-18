@@ -9,7 +9,6 @@ radix-engine-interface = { path = "../radix-engine-interface", default-features 
 radix-engine-constants = { path = "../radix-engine-constants" }
 radix-engine-stores = { path = "../radix-engine-stores", default-features = false }
 transaction = { path = "../transaction", default-features = false }
-transaction-data = { path = "../transaction-data", default-features = false }
 scrypto = { path = "../scrypto", default-features = false }
 utils = { path = "../utils", default-features = false }
 sbor = { path = "../sbor", default-features = false }
@@ -19,5 +18,5 @@ wabt = { version = "0.10.0" }
 
 [features]
 default = ["std"]
-std = ["scrypto/std", "scrypto/serde", "sbor/std", "radix-engine-interface/std", "radix-engine-stores/std", "radix-engine/std", "transaction/std", "transaction-data/std", "utils/std"]
-alloc = ["scrypto/alloc", "scrypto/serde", "sbor/alloc", "radix-engine-interface/alloc", "radix-engine-stores/alloc", "radix-engine/alloc", "transaction/alloc", "transaction-data/alloc", "utils/alloc"]
+std = ["scrypto/std", "scrypto/serde", "sbor/std", "radix-engine-interface/std", "radix-engine-stores/std", "radix-engine/std", "transaction/std", "utils/std"]
+alloc = ["scrypto/alloc", "scrypto/serde", "sbor/alloc", "radix-engine-interface/alloc", "radix-engine-stores/alloc", "radix-engine/alloc", "transaction/alloc", "utils/alloc"]

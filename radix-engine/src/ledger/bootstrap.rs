@@ -26,9 +26,9 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_runtime::TransactionRuntimeAbi;
 use radix_engine_interface::data::*;
 use radix_engine_interface::rule;
+use transaction::data::{manifest_args, manifest_encode};
 use transaction::model::{Instruction, SystemTransaction};
 use transaction::validation::ManifestIdAllocator;
-use transaction_data::{manifest_args, manifest_encode};
 
 const XRD_SYMBOL: &str = "XRD";
 const XRD_NAME: &str = "Radix";
@@ -519,8 +519,8 @@ where
 
 #[cfg(test)]
 mod tests {
+    use transaction::data::{manifest_decode, manifest_encode};
     use transaction::{data::ManifestBucket, ecdsa_secp256k1::EcdsaSecp256k1PrivateKey};
-    use transaction_data::{manifest_decode, manifest_encode};
 
     use super::*;
     use crate::{ledger::TypedInMemorySubstateStore, wasm::DefaultWasmEngine};

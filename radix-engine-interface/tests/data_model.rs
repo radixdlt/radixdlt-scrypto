@@ -1,3 +1,4 @@
+use radix_engine_interface::blueprints::resource::NonFungibleLocalId;
 use radix_engine_interface::data::*;
 use radix_engine_interface::*;
 use sbor::rust::boxed::Box;
@@ -11,6 +12,30 @@ use sbor::rust::rc::Rc;
 use sbor::rust::string::String;
 use sbor::rust::vec;
 use sbor::*;
+
+#[test]
+fn test_args() {
+    #[derive(ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
+    struct A {
+        a: u32,
+        b: String,
+    }
+
+    assert_eq!(
+        scrypto_args!(1u32, "abc"),
+        scrypto_encode(&A {
+            a: 1,
+            b: "abc".to_owned(),
+        })
+        .unwrap()
+    )
+}
+
+#[test]
+fn test_args_with_non_fungible_local_id() {
+    let id = NonFungibleLocalId::integer(1);
+    let _x = scrypto_args!(BTreeSet::from([id]));
+}
 
 #[test]
 fn test_encode_deep_scrypto_values() {

@@ -39,12 +39,12 @@ use scrypto::component::Mutability;
 use scrypto::component::Mutability::*;
 use scrypto::NonFungibleData;
 use transaction::builder::ManifestBuilder;
+use transaction::data::model::ManifestExpression;
+use transaction::data::{manifest_args, manifest_encode};
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::{Executable, Instruction, SystemTransaction, TransactionManifest};
 use transaction::model::{PreviewIntent, TestTransaction};
 use transaction::validation::TestIntentHashManager;
-use transaction_data::model::ManifestExpression;
-use transaction_data::{manifest_args, manifest_encode};
 
 pub struct Compile;
 
