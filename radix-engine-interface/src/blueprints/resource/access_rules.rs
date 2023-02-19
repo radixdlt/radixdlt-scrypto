@@ -4,7 +4,6 @@ use crate::api::types::NodeModuleId;
 use crate::blueprints::resource::*;
 use crate::rule;
 use crate::*;
-use radix_engine_interface::api::types::NativeFn;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::str;
 use sbor::rust::string::String;
@@ -27,7 +26,6 @@ use super::AccessRule;
 )]
 pub enum AccessRuleKey {
     ScryptoMethod(NodeModuleId, String),
-    Native(NativeFn),
 }
 
 #[derive(

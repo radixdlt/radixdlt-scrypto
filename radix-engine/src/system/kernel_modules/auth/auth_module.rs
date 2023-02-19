@@ -144,9 +144,10 @@ impl KernelModule for AuthModule {
                 _ => vec![],
             },
             ResolvedActor {
-                identifier: FnIdentifier::Native(..),
+                identifier: FnIdentifier::None,
                 receiver: None,
             } => vec![],
+
             ResolvedActor {
                 receiver:
                     Some(ResolvedReceiver {
@@ -266,7 +267,7 @@ impl KernelModule for AuthModule {
             }
 
             ResolvedActor {
-                identifier: FnIdentifier::Native(..),
+                identifier: FnIdentifier::None,
                 receiver: Some(..),
             } => vec![],
 

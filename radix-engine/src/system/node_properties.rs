@@ -6,7 +6,7 @@ use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     AccessControllerOffset, AccountOffset, AuthZoneStackOffset, BucketOffset, ComponentOffset,
-    FnIdentifier, GlobalOffset, KeyValueStoreOffset, NativeFn, PackageOffset, ProofOffset,
+    FnIdentifier, GlobalOffset, KeyValueStoreOffset, PackageOffset, ProofOffset,
     RENodeId, ResourceManagerOffset, RoyaltyOffset, ScryptoFnIdentifier, SubstateOffset,
     ValidatorOffset, VaultOffset, WorktopOffset,
 };
@@ -28,18 +28,9 @@ impl VisibilityProperties {
     ) -> bool {
         match mode {
             ExecutionMode::KernelModule => match node_id {
-                RENodeId::Logger => match &actor.identifier {
-                    FnIdentifier::Native(NativeFn::Root) => true,
-                    _ => false,
-                },
-                RENodeId::TransactionRuntime => match &actor.identifier {
-                    FnIdentifier::Native(NativeFn::Root) => true,
-                    _ => false,
-                },
-                RENodeId::AuthZoneStack => match &actor.identifier {
-                    FnIdentifier::Native(NativeFn::Root) => true,
-                    _ => false,
-                },
+                RENodeId::Logger => true,
+                RENodeId::TransactionRuntime => true,
+                RENodeId::AuthZoneStack => true,
                 _ => false,
             },
             ExecutionMode::Client => match node_id {
@@ -215,8 +206,8 @@ impl VisibilityProperties {
                     }
 
                     match &actor.identifier {
+                        FnIdentifier::None => true,
                         // Native
-                        FnIdentifier::Native(..) => true,
                         FnIdentifier::Scrypto(ScryptoFnIdentifier {
                             package_address, ..
                         }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
@@ -302,8 +293,8 @@ impl VisibilityProperties {
                     }
                 } else {
                     match &actor.identifier {
+                        FnIdentifier::None => true,
                         // Native
-                        FnIdentifier::Native(..) => true,
                         FnIdentifier::Scrypto(ScryptoFnIdentifier {
                             package_address, ..
                         }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)

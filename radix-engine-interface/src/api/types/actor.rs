@@ -6,7 +6,7 @@ use sbor::rust::string::String;
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum PackageIdentifier {
     Scrypto(PackageAddress),
-    Native(NativePackage),
+    None,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -25,13 +25,7 @@ pub enum InvocationIdentifier {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum FnIdentifier {
     Scrypto(ScryptoFnIdentifier),
-    Native(NativeFn),
-}
-
-impl From<NativeFn> for FnIdentifier {
-    fn from(native_fn: NativeFn) -> Self {
-        FnIdentifier::Native(native_fn)
-    }
+    None,
 }
 
 impl FnIdentifier {
@@ -40,7 +34,7 @@ impl FnIdentifier {
             FnIdentifier::Scrypto(identifier) => {
                 PackageIdentifier::Scrypto(identifier.package_address)
             }
-            FnIdentifier::Native(identifier) => PackageIdentifier::Native(identifier.package()),
+            FnIdentifier::None => PackageIdentifier::None,
         }
     }
 }
@@ -67,31 +61,5 @@ impl ScryptoFnIdentifier {
 
     pub fn blueprint_name(&self) -> &String {
         &self.blueprint_name
-    }
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
-pub enum NativeFn {
-    Root,
-}
-
-impl NativeFn {
-    pub fn package(&self) -> NativePackage {
-        match self {
-            NativeFn::Root => NativePackage::Root,
-        }
     }
 }

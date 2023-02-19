@@ -203,7 +203,6 @@ pub enum InterpreterError {
     NativeInvalidCodeId(u8),
 
     InvalidInvocation,
-    DisallowedInvocation(NativeFn),
 
     InvalidScryptoInvocation(PackageAddress, String, String, ScryptoFnResolvingError),
     InvalidScryptoReturn(DecodeError),

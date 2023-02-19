@@ -92,7 +92,6 @@ pub struct KernelCallTrace {
 pub enum KernelCallOrigin {
     ScryptoFunction(ScryptoFnIdentifier),
     ScryptoMethod(ScryptoFnIdentifier),
-    NativeFn(NativeFn),
     CreateNode,
     DropNode,
 }
@@ -325,7 +324,7 @@ impl ExecutionTraceModule {
                         KernelCallOrigin::ScryptoFunction(scrypto_fn.clone())
                     }
                 }
-                FnIdentifier::Native(native_fn) => KernelCallOrigin::NativeFn(native_fn.clone()),
+                FnIdentifier::None => panic!("Should not get here.")
             };
 
             let instruction_index = self.instruction_index();
