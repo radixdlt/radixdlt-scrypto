@@ -76,7 +76,6 @@ pub struct ResourceSummary {
     pub proofs: HashMap<ProofId, ProofSnapshot>,
 }
 
-
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum TraceActor {
     Root,
@@ -97,8 +96,8 @@ pub struct KernelCallTrace {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum KernelCallOrigin {
-    ScryptoFunction(ScryptoFnIdentifier),
-    ScryptoMethod(ScryptoFnIdentifier),
+    ScryptoFunction(FnIdentifier),
+    ScryptoMethod(FnIdentifier),
     CreateNode,
     DropNode,
 }
@@ -284,7 +283,10 @@ impl ExecutionTraceModule {
             return;
         }
 
-        let current_actor = current_actor.clone().map(|a| TraceActor::Actor(a)).unwrap_or(TraceActor::Root);
+        let current_actor = current_actor
+            .clone()
+            .map(|a| TraceActor::Actor(a))
+            .unwrap_or(TraceActor::Root);
         self.finalize_kernel_call_trace(resource_summary, current_actor, current_depth)
     }
 
@@ -303,7 +305,11 @@ impl ExecutionTraceModule {
         self.current_kernel_call_depth += 1;
     }
 
-    fn handle_after_drop_node(&mut self, current_actor: Option<ResolvedActor>, current_depth: usize) {
+    fn handle_after_drop_node(
+        &mut self,
+        current_actor: Option<ResolvedActor>,
+        current_depth: usize,
+    ) {
         // Important to always update the counter (even if we're over the depth limit).
         self.current_kernel_call_depth -= 1;
 
@@ -314,7 +320,10 @@ impl ExecutionTraceModule {
 
         let traced_output = ResourceSummary::new_empty();
 
-        let current_actor = current_actor.clone().map(|a| TraceActor::Actor(a)).unwrap_or(TraceActor::Root);
+        let current_actor = current_actor
+            .clone()
+            .map(|a| TraceActor::Actor(a))
+            .unwrap_or(TraceActor::Root);
         self.finalize_kernel_call_trace(traced_output, current_actor, current_depth)
     }
 
@@ -327,15 +336,15 @@ impl ExecutionTraceModule {
         if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
             let origin = match &callee {
                 Some(ResolvedActor {
-                    identifier: FnIdentifier::Some(scrypto_fn),
+                    identifier,
                     receiver,
-                 }) => {
+                }) => {
                     if receiver.is_some() {
-                        KernelCallOrigin::ScryptoMethod(scrypto_fn.clone())
+                        KernelCallOrigin::ScryptoMethod(identifier.clone())
                     } else {
-                        KernelCallOrigin::ScryptoFunction(scrypto_fn.clone())
+                        KernelCallOrigin::ScryptoFunction(identifier.clone())
                     }
-                },
+                }
                 _ => panic!("Should not get here."),
             };
 
@@ -353,40 +362,40 @@ impl ExecutionTraceModule {
         match &callee {
             Some(ResolvedActor {
                 identifier:
-                FnIdentifier::Some(ScryptoFnIdentifier {
-                                       package_address,
-                                       blueprint_name,
-                                       ident,
-                                   }),
+                    FnIdentifier {
+                        package_address,
+                        blueprint_name,
+                        ident,
+                    },
                 receiver:
-                Some(ResolvedReceiver {
-                         receiver: (RENodeId::Vault(vault_id), ..),
-                         ..
-                     }),
+                    Some(ResolvedReceiver {
+                        receiver: (RENodeId::Vault(vault_id), ..),
+                        ..
+                    }),
             }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_PUT_IDENT) =>
-                {
-                    self.handle_vault_put_input(&resource_summary, &current_actor, vault_id)
-                }
+            {
+                self.handle_vault_put_input(&resource_summary, &current_actor, vault_id)
+            }
             Some(ResolvedActor {
                 identifier:
-                FnIdentifier::Some(ScryptoFnIdentifier {
-                                       package_address,
-                                       blueprint_name,
-                                       ident,
-                                   }),
+                    FnIdentifier {
+                        package_address,
+                        blueprint_name,
+                        ident,
+                    },
                 receiver:
-                Some(ResolvedReceiver {
-                         receiver: (RENodeId::Vault(vault_id), ..),
-                         ..
-                     }),
+                    Some(ResolvedReceiver {
+                        receiver: (RENodeId::Vault(vault_id), ..),
+                        ..
+                    }),
             }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_LOCK_FEE_IDENT) =>
-                {
-                    self.handle_vault_lock_fee_input(&current_actor, vault_id)
-                }
+            {
+                self.handle_vault_lock_fee_input(&current_actor, vault_id)
+            }
             _ => {}
         }
     }
@@ -401,11 +410,11 @@ impl ExecutionTraceModule {
         match &current_actor {
             Some(ResolvedActor {
                 identifier:
-                    FnIdentifier::Some(ScryptoFnIdentifier {
+                    FnIdentifier {
                         package_address,
                         blueprint_name,
                         ident,
-                    }),
+                    },
                 receiver:
                     Some(ResolvedReceiver {
                         receiver: (RENodeId::Vault(vault_id), ..),
@@ -428,7 +437,10 @@ impl ExecutionTraceModule {
             return;
         }
 
-        let current_actor = current_actor.clone().map(|a| TraceActor::Actor(a)).unwrap_or(TraceActor::Root);
+        let current_actor = current_actor
+            .clone()
+            .map(|a| TraceActor::Actor(a))
+            .unwrap_or(TraceActor::Root);
         self.finalize_kernel_call_trace(resource_summary, current_actor, current_depth)
     }
 
@@ -495,7 +507,10 @@ impl ExecutionTraceModule {
         caller: &Option<ResolvedActor>,
         vault_id: &VaultId,
     ) {
-        let actor = caller.clone().map(|a| TraceActor::Actor(a)).unwrap_or(TraceActor::Root);
+        let actor = caller
+            .clone()
+            .map(|a| TraceActor::Actor(a))
+            .unwrap_or(TraceActor::Root);
         for (_, resource) in &resource_summary.buckets {
             self.vault_ops.push((
                 actor.clone(),
@@ -505,8 +520,15 @@ impl ExecutionTraceModule {
         }
     }
 
-    fn handle_vault_lock_fee_input<'s>(&mut self, caller: &Option<ResolvedActor>, vault_id: &VaultId) {
-        let actor = caller.clone().map(|a| TraceActor::Actor(a)).unwrap_or(TraceActor::Root);
+    fn handle_vault_lock_fee_input<'s>(
+        &mut self,
+        caller: &Option<ResolvedActor>,
+        vault_id: &VaultId,
+    ) {
+        let actor = caller
+            .clone()
+            .map(|a| TraceActor::Actor(a))
+            .unwrap_or(TraceActor::Root);
         self.vault_ops
             .push((actor, vault_id.clone(), VaultOp::LockFee));
     }
@@ -517,7 +539,10 @@ impl ExecutionTraceModule {
         caller: &Option<ResolvedActor>,
         vault_id: &VaultId,
     ) {
-        let actor = caller.clone().map(|a| TraceActor::Actor(a)).unwrap_or(TraceActor::Root);
+        let actor = caller
+            .clone()
+            .map(|a| TraceActor::Actor(a))
+            .unwrap_or(TraceActor::Root);
         for (_, resource) in &resource_summary.buckets {
             self.vault_ops.push((
                 actor.clone(),
@@ -544,8 +569,10 @@ impl ExecutionTraceReceipt {
         let mut vault_locked_by = HashMap::<VaultId, ComponentId>::new();
         for (actor, vault_id, vault_op) in ops {
             if let TraceActor::Actor(ResolvedActor {
-                receiver: Some(resolved_receiver), ..
-             }) = actor {
+                receiver: Some(resolved_receiver),
+                ..
+            }) = actor
+            {
                 match resolved_receiver.receiver.0 {
                     RENodeId::Component(component_id) | RENodeId::Account(component_id) => {
                         match vault_op {

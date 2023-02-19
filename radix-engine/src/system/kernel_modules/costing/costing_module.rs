@@ -11,8 +11,8 @@ use crate::{
     transaction::AbortReason,
 };
 use radix_engine_interface::api::types::{
-    FnIdentifier, GlobalAddress, GlobalOffset, InvocationIdentifier, LockHandle, NodeModuleId,
-    RoyaltyOffset, SubstateOffset, VaultId, VaultOffset,
+    GlobalAddress, GlobalOffset, InvocationIdentifier, LockHandle, NodeModuleId, RoyaltyOffset,
+    SubstateOffset, VaultId, VaultOffset,
 };
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::blueprints::resource::Resource;
@@ -117,11 +117,11 @@ impl KernelModule for CostingModule {
         _nodes_and_refs: &mut CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         // Identify the function, and optional component address
-        let (scrypto_fn_identifier, optional_component) = match &callee {
+        let (fn_identifier, optional_component) = match &callee {
             Some(ResolvedActor {
                 receiver,
-                identifier: FnIdentifier::Some(scrypto_fn_identifier),
-             }) => {
+                identifier,
+            }) => {
                 let maybe_component = match &receiver {
                     Some(ResolvedReceiver {
                         derefed_from:
@@ -131,7 +131,7 @@ impl KernelModule for CostingModule {
                     _ => None,
                 };
 
-                (scrypto_fn_identifier, maybe_component)
+                (identifier, maybe_component)
             }
             _ => {
                 return Ok(());
@@ -139,7 +139,7 @@ impl KernelModule for CostingModule {
         };
 
         // FIXME: algin native packages with wasm package, or read package type info and disallow royalty on native package.
-        let package_address = scrypto_fn_identifier.package_address;
+        let package_address = fn_identifier.package_address;
         if package_address == RESOURCE_MANAGER_PACKAGE
             || package_address == IDENTITY_PACKAGE
             || package_address == EPOCH_MANAGER_PACKAGE
@@ -183,8 +183,8 @@ impl KernelModule for CostingModule {
         let royalty_amount = substate
             .package_royalty_config()
             .royalty_config
-            .get(&scrypto_fn_identifier.blueprint_name)
-            .map(|x| x.get_rule(&scrypto_fn_identifier.ident).clone())
+            .get(&fn_identifier.blueprint_name)
+            .map(|x| x.get_rule(&fn_identifier.ident).clone())
             .unwrap_or(0);
         api.kernel_drop_lock(handle)?;
 
@@ -211,7 +211,7 @@ impl KernelModule for CostingModule {
 
         apply_royalty_cost(
             api,
-            RoyaltyReceiver::Package(scrypto_fn_identifier.package_address, package_id),
+            RoyaltyReceiver::Package(fn_identifier.package_address, package_id),
             royalty_amount,
         )?;
         api.kernel_drop_lock(package_lock)?;
@@ -231,7 +231,7 @@ impl KernelModule for CostingModule {
             let royalty_amount = substate
                 .component_royalty_config()
                 .royalty_config
-                .get_rule(&scrypto_fn_identifier.ident)
+                .get_rule(&fn_identifier.ident)
                 .clone();
             api.kernel_drop_lock(handle)?;
 

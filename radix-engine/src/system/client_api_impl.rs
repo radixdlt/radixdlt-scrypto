@@ -2,10 +2,10 @@ use crate::errors::ApplicationError;
 use crate::errors::KernelError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel::Kernel;
-use crate::kernel::kernel_api::{Invokable, KernelInternalApi};
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::LockFlags;
+use crate::kernel::kernel_api::{Invokable, KernelInternalApi};
 use crate::kernel::module::KernelModule;
 use crate::kernel::module_mixer::KernelModuleMixer;
 use crate::system::global::GlobalAddressSubstate;
@@ -298,7 +298,11 @@ where
 
         // Create component RENode
         // FIXME: support native blueprints
-        let package_address = self.kernel_get_current_actor().unwrap().identifier.package_address();
+        let package_address = self
+            .kernel_get_current_actor()
+            .unwrap()
+            .identifier
+            .package_address();
 
         let blueprint_ident = blueprint_ident.to_string();
         // FIXME: generalize app substates;

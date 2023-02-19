@@ -248,11 +248,11 @@ impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
             EDDSA_ED25519_TOKEN,
         )));
 
-        let actor = ResolvedActor::function(FnIdentifier::Some(ScryptoFnIdentifier {
+        let actor = ResolvedActor::function(FnIdentifier {
             package_address: PACKAGE,
             blueprint_name: TRANSACTION_PROCESSOR_BLUEPRINT.to_string(),
             ident: "run".to_string(),
-        }));
+        });
 
         Ok((actor, call_frame_update, self))
     }

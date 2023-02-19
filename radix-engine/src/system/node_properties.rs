@@ -7,8 +7,8 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     AccessControllerOffset, AccountOffset, AuthZoneStackOffset, BucketOffset, ComponentOffset,
     FnIdentifier, GlobalOffset, KeyValueStoreOffset, PackageOffset, ProofOffset, RENodeId,
-    ResourceManagerOffset, RoyaltyOffset, ScryptoFnIdentifier, SubstateOffset, ValidatorOffset,
-    VaultOffset, WorktopOffset,
+    ResourceManagerOffset, RoyaltyOffset, SubstateOffset, ValidatorOffset, VaultOffset,
+    WorktopOffset,
 };
 use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLUEPRINT;
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
@@ -35,11 +35,11 @@ impl VisibilityProperties {
             },
             ExecutionMode::Client => match node_id {
                 RENodeId::Worktop => match &actor.identifier {
-                    FnIdentifier::Some(ScryptoFnIdentifier {
+                    FnIdentifier {
                         package_address,
                         blueprint_name,
                         ..
-                    }) if package_address.eq(&PACKAGE)
+                    } if package_address.eq(&PACKAGE)
                         && blueprint_name.eq(&TRANSACTION_PROCESSOR_BLUEPRINT) =>
                     {
                         true
@@ -47,27 +47,27 @@ impl VisibilityProperties {
                     _ => false,
                 },
                 RENodeId::Bucket(..) => match &actor.identifier {
-                    FnIdentifier::Some(ScryptoFnIdentifier {
+                    FnIdentifier {
                         package_address: RESOURCE_MANAGER_PACKAGE,
                         ..
-                    }) => true,
+                    } => true,
                     _ => false,
                 },
                 RENodeId::Proof(..) => match &actor.identifier {
-                    FnIdentifier::Some(ScryptoFnIdentifier {
+                    FnIdentifier {
                         package_address: RESOURCE_MANAGER_PACKAGE | AUTH_ZONE_PACKAGE,
                         ..
-                    }) => true,
-                    FnIdentifier::Some(ScryptoFnIdentifier {
+                    } => true,
+                    FnIdentifier {
                         package_address,
                         blueprint_name,
                         ..
-                    }) if package_address.eq(&PACKAGE)
+                    } if package_address.eq(&PACKAGE)
                         && blueprint_name.eq(&TRANSACTION_PROCESSOR_BLUEPRINT) =>
                     {
                         true
                     }
-                    FnIdentifier::Some(..) => true,
+                    _ => true,
                 },
                 _ => false,
             },
@@ -85,11 +85,11 @@ impl VisibilityProperties {
         match (mode, &actor.identifier) {
             (
                 ExecutionMode::Client,
-                FnIdentifier::Some(ScryptoFnIdentifier {
+                FnIdentifier {
                     package_address,
                     blueprint_name,
                     ..
-                }),
+                },
             ) => match node {
                 RENodeInit::Component(..) => {
                     if let Some(RENodeModuleInit::ComponentTypeInfo(type_info)) =
@@ -206,9 +206,9 @@ impl VisibilityProperties {
 
                     match &actor.identifier {
                         // Native
-                        FnIdentifier::Some(ScryptoFnIdentifier {
+                        FnIdentifier {
                             package_address, ..
-                        }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                        } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                             || package_address.eq(&IDENTITY_PACKAGE)
                             || package_address.eq(&EPOCH_MANAGER_PACKAGE)
                             || package_address.eq(&CLOCK_PACKAGE)
@@ -225,7 +225,7 @@ impl VisibilityProperties {
                             true
                         }
                         // Scrypto
-                        FnIdentifier::Some(..) => match &actor.receiver {
+                        _ => match &actor.receiver {
                             None => match (node_id, offset) {
                                 // READ package code & abi
                                 (
@@ -292,9 +292,9 @@ impl VisibilityProperties {
                 } else {
                     match &actor.identifier {
                         // Native
-                        FnIdentifier::Some(ScryptoFnIdentifier {
+                        FnIdentifier {
                             package_address, ..
-                        }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                        } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                             || package_address.eq(&IDENTITY_PACKAGE)
                             || package_address.eq(&ACCESS_CONTROLLER_PACKAGE)
                             || package_address.eq(&CLOCK_PACKAGE)
@@ -311,7 +311,7 @@ impl VisibilityProperties {
                         }
 
                         // Scrypto
-                        FnIdentifier::Some(..) => match &actor.receiver {
+                        _ => match &actor.receiver {
                             None => match (node_id, offset) {
                                 (
                                     RENodeId::KeyValueStore(_),

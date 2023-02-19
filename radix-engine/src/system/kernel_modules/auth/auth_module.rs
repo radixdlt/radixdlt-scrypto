@@ -50,11 +50,11 @@ impl AuthModule {
         matches!(
             actor,
             Some(ResolvedActor {
-                identifier: FnIdentifier::Some(..),
                 receiver: Some(ResolvedReceiver {
                     derefed_from: Some((RENodeId::Global(GlobalAddress::Component(..)), _)),
                     ..
-                })
+                }),
+                ..
             })
         )
     }
@@ -91,10 +91,10 @@ impl KernelModule for AuthModule {
         if matches!(
             actor,
             Some(ResolvedActor {
-                identifier: FnIdentifier::Some(ScryptoFnIdentifier {
+                identifier: FnIdentifier {
                     package_address: AUTH_ZONE_PACKAGE,
-                ..
-                }),
+                    ..
+                },
                 ..
             })
         ) {
@@ -105,30 +105,30 @@ impl KernelModule for AuthModule {
             match &actor {
                 ResolvedActor {
                     identifier:
-                    FnIdentifier::Some(ScryptoFnIdentifier {
-                                           package_address,
-                                           blueprint_name,
-                                           ident,
-                                       }),
+                        FnIdentifier {
+                            package_address,
+                            blueprint_name,
+                            ident,
+                        },
                     receiver: None,
                 } if package_address.eq(&PACKAGE)
                     && blueprint_name.eq(PACKAGE_BLUEPRINT)
                     && ident.eq(PACKAGE_PUBLISH_PRECOMPILED_IDENT) =>
-                    {
-                        vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
-                            HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
-                                AuthAddresses::system_role(),
-                            )),
-                        ))]
-                    }
+                {
+                    vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
+                        HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
+                            AuthAddresses::system_role(),
+                        )),
+                    ))]
+                }
                 ResolvedActor {
-                    identifier: FnIdentifier::Some(fn_identifier),
+                    identifier,
                     receiver: None,
-                } => match fn_identifier.package_address {
+                } => match identifier.package_address {
                     // TODO: Clean this up, move into package logic
                     EPOCH_MANAGER_PACKAGE => {
-                        if fn_identifier.blueprint_name.eq(&EPOCH_MANAGER_BLUEPRINT)
-                            && fn_identifier.ident.eq(EPOCH_MANAGER_CREATE_IDENT)
+                        if identifier.blueprint_name.eq(&EPOCH_MANAGER_BLUEPRINT)
+                            && identifier.ident.eq(EPOCH_MANAGER_CREATE_IDENT)
                         {
                             EpochManagerNativePackage::create_auth()
                         } else {
@@ -136,8 +136,8 @@ impl KernelModule for AuthModule {
                         }
                     }
                     CLOCK_PACKAGE => {
-                        if fn_identifier.blueprint_name.eq(&CLOCK_BLUEPRINT)
-                            && fn_identifier.ident.eq(CLOCK_CREATE_IDENT)
+                        if identifier.blueprint_name.eq(&CLOCK_BLUEPRINT)
+                            && identifier.ident.eq(CLOCK_CREATE_IDENT)
                         {
                             ClockNativePackage::create_auth()
                         } else {
@@ -149,69 +149,71 @@ impl KernelModule for AuthModule {
 
                 ResolvedActor {
                     receiver:
-                    Some(ResolvedReceiver {
-                             receiver: (RENodeId::Proof(..), ..),
-                             ..
-                         }),
+                        Some(ResolvedReceiver {
+                            receiver: (RENodeId::Proof(..), ..),
+                            ..
+                        }),
                     ..
                 } => vec![],
 
                 ResolvedActor {
                     receiver:
-                    Some(ResolvedReceiver {
-                             receiver: (RENodeId::Bucket(..), ..),
-                             ..
-                         }),
+                        Some(ResolvedReceiver {
+                            receiver: (RENodeId::Bucket(..), ..),
+                            ..
+                        }),
                     ..
                 } => vec![],
 
                 ResolvedActor {
                     receiver:
-                    Some(ResolvedReceiver {
-                             receiver: (RENodeId::Worktop, ..),
-                             ..
-                         }),
+                        Some(ResolvedReceiver {
+                            receiver: (RENodeId::Worktop, ..),
+                            ..
+                        }),
                     ..
                 } => vec![],
 
                 ResolvedActor {
                     receiver:
-                    Some(ResolvedReceiver {
-                             receiver: (RENodeId::Logger, ..),
-                             ..
-                         }),
+                        Some(ResolvedReceiver {
+                            receiver: (RENodeId::Logger, ..),
+                            ..
+                        }),
                     ..
                 } => vec![],
 
                 ResolvedActor {
                     receiver:
-                    Some(ResolvedReceiver {
-                             receiver: (RENodeId::TransactionRuntime, ..),
-                             ..
-                         }),
+                        Some(ResolvedReceiver {
+                            receiver: (RENodeId::TransactionRuntime, ..),
+                            ..
+                        }),
                     ..
                 } => vec![],
 
                 ResolvedActor {
                     receiver:
-                    Some(ResolvedReceiver {
-                             receiver: (RENodeId::AuthZoneStack, ..),
-                             ..
-                         }),
+                        Some(ResolvedReceiver {
+                            receiver: (RENodeId::AuthZoneStack, ..),
+                            ..
+                        }),
                     ..
                 } => vec![],
 
                 ResolvedActor {
                     identifier,
                     receiver:
-                    Some(ResolvedReceiver {
-                             receiver: (RENodeId::Vault(vault_id), module_id),
-                             ..
-                         }),
+                        Some(ResolvedReceiver {
+                            receiver: (RENodeId::Vault(vault_id), module_id),
+                            ..
+                        }),
                 } => {
                     let vault_node_id = RENodeId::Vault(*vault_id);
                     let visibility = api.kernel_get_node_visibility_origin(vault_node_id).ok_or(
-                        RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(vault_node_id)),
+                        RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(
+                            vault_node_id,
+                        )),
                     )?;
 
                     let resource_address = {
@@ -242,23 +244,22 @@ impl KernelModule for AuthModule {
                         RENodeVisibilityOrigin::Normal => {
                             substate.native_fn_authorization(*module_id, identifier.clone())
                         }
-                        RENodeVisibilityOrigin::DirectAccess => match identifier {
+                        RENodeVisibilityOrigin::DirectAccess => {
                             // TODO: Do we want to allow recaller to be able to withdraw from
                             // TODO: any visible vault?
-                            FnIdentifier::Some(ident)
-                            if ident.ident.eq(VAULT_RECALL_IDENT)
-                                || ident.ident.eq(VAULT_RECALL_NON_FUNGIBLES_IDENT) =>
-                                {
-                                    let access_rule = substate.access_rules_chain[0].get_group("recall");
-                                    let authorization = convert_contextless(access_rule);
-                                    vec![authorization]
-                                }
-                            _ => {
+                            if identifier.ident.eq(VAULT_RECALL_IDENT)
+                                || identifier.ident.eq(VAULT_RECALL_NON_FUNGIBLES_IDENT)
+                            {
+                                let access_rule =
+                                    substate.access_rules_chain[0].get_group("recall");
+                                let authorization = convert_contextless(access_rule);
+                                vec![authorization]
+                            } else {
                                 return Err(RuntimeError::ModuleError(ModuleError::AuthError(
                                     AuthError::VisibilityError(vault_node_id),
                                 )));
                             }
-                        },
+                        }
                     };
 
                     api.kernel_drop_lock(handle)?;
@@ -268,28 +269,28 @@ impl KernelModule for AuthModule {
                 // SetAccessRule auth is done manually within the method
                 ResolvedActor {
                     identifier:
-                    FnIdentifier::Some(ScryptoFnIdentifier {
-                                           package_address,
-                                           blueprint_name,
-                                           ..
-                                       }),
+                        FnIdentifier {
+                            package_address,
+                            blueprint_name,
+                            ..
+                        },
                     ..
                 } if package_address.eq(&ACCESS_RULES_PACKAGE)
                     && blueprint_name.eq(ACCESS_RULES_BLUEPRINT) =>
-                    {
-                        vec![]
-                    }
+                {
+                    vec![]
+                }
 
                 ResolvedActor {
-                    identifier: FnIdentifier::Some(method_identifier),
+                    identifier,
                     receiver:
-                    Some(ResolvedReceiver {
-                             receiver: (RENodeId::Component(component_id), module_id),
-                             ..
-                         }),
+                        Some(ResolvedReceiver {
+                            receiver: (RENodeId::Component(component_id), module_id),
+                            ..
+                        }),
                 } => {
                     let node_id =
-                        RENodeId::Global(GlobalAddress::Package(method_identifier.package_address));
+                        RENodeId::Global(GlobalAddress::Package(identifier.package_address));
 
                     let offset = SubstateOffset::Package(PackageOffset::Info);
                     let handle = api.kernel_lock_substate(
@@ -305,7 +306,7 @@ impl KernelModule for AuthModule {
                         let substate_ref = api.kernel_get_substate_ref(handle)?;
                         let package = substate_ref.package_info();
                         let schema = package
-                            .blueprint_abi(&method_identifier.blueprint_name)
+                            .blueprint_abi(&identifier.blueprint_name)
                             .expect("Blueprint not found for existing component")
                             .structure
                             .clone();
@@ -340,7 +341,7 @@ impl KernelModule for AuthModule {
                                 &state,
                                 &schema,
                                 *module_id,
-                                method_identifier.ident.clone(),
+                                identifier.ident.clone(),
                             );
                             api.kernel_drop_lock(handle)?;
                             auth
@@ -349,15 +350,15 @@ impl KernelModule for AuthModule {
                         let handle = api.kernel_lock_substate(
                             RENodeId::Component(*component_id),
                             NodeModuleId::AccessRules,
-                            SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                            SubstateOffset::AccessRulesChain(
+                                AccessRulesChainOffset::AccessRulesChain,
+                            ),
                             LockFlags::read_only(),
                         )?;
                         let substate_ref = api.kernel_get_substate_ref(handle)?;
                         let access_rules = substate_ref.access_rules_chain();
-                        let auth = access_rules.native_fn_authorization(
-                            *module_id,
-                            FnIdentifier::Some(method_identifier.clone()),
-                        );
+                        let auth =
+                            access_rules.native_fn_authorization(*module_id, identifier.clone());
                         api.kernel_drop_lock(handle)?;
                         auth
                     }
@@ -414,13 +415,11 @@ impl KernelModule for AuthModule {
         if !matches!(
             actor,
             Some(ResolvedActor {
-                identifier: FnIdentifier::Some(ScryptoFnIdentifier {
-                    package_address: ACCESS_RULES_PACKAGE,
+                identifier: FnIdentifier {
+                    package_address: ACCESS_RULES_PACKAGE | AUTH_ZONE_PACKAGE,
                     ..
-                }) | FnIdentifier::Some(ScryptoFnIdentifier {
-                    package_address: AUTH_ZONE_PACKAGE,
-                    ..
-                }), ..
+                },
+                ..
             })
         ) {
             let handle = api.kernel_lock_substate(
@@ -459,13 +458,10 @@ impl KernelModule for AuthModule {
     ) -> Result<(), RuntimeError> {
         if matches!(
             api.kernel_get_current_actor().unwrap().identifier,
-            FnIdentifier::Some(ScryptoFnIdentifier {
-                package_address: ACCESS_RULES_PACKAGE,
+            FnIdentifier {
+                package_address: ACCESS_RULES_PACKAGE | AUTH_ZONE_PACKAGE,
                 ..
-            }) | FnIdentifier::Some(ScryptoFnIdentifier {
-                package_address: AUTH_ZONE_PACKAGE,
-                ..
-            }),
+            }
         ) {
             return Ok(());
         }

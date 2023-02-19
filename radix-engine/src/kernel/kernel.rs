@@ -44,8 +44,8 @@ use super::heap::{Heap, HeapRENode};
 use super::id_allocator::IdAllocator;
 use super::interpreters::ScryptoInterpreter;
 use super::kernel_api::{
-    ExecutableInvocation, Executor, Invokable, KernelApi, KernelInternalApi,
-    KernelModuleApi, KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockFlags, LockInfo,
+    ExecutableInvocation, Executor, Invokable, KernelApi, KernelInternalApi, KernelModuleApi,
+    KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockFlags, LockInfo,
 };
 use super::module::KernelModule;
 use super::module_mixer::KernelModuleMixer;
@@ -393,7 +393,11 @@ where
         // Before push call frame
         {
             self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-                KernelModuleMixer::before_push_frame(api, &Some(actor.clone()), &mut call_frame_update)
+                KernelModuleMixer::before_push_frame(
+                    api,
+                    &Some(actor.clone()),
+                    &mut call_frame_update,
+                )
             })?;
         }
 
@@ -661,11 +665,7 @@ where
         self.execution_mode = ExecutionMode::Kernel;
 
         if let Some(actor) = &self.current_frame.actor {
-            if !VisibilityProperties::check_drop_node_visibility(
-                current_mode,
-                actor,
-                node_id,
-            ) {
+            if !VisibilityProperties::check_drop_node_visibility(current_mode, actor, node_id) {
                 return Err(RuntimeError::KernelError(
                     KernelError::InvalidDropNodeAccess {
                         mode: current_mode,
@@ -675,7 +675,6 @@ where
                 ));
             }
         }
-
 
         let node = self.drop_node_internal(node_id)?;
 
@@ -1007,7 +1006,7 @@ where
         // TODO: Check if valid offset for node_id
 
         // Authorization
-        if let Some(actor) =  &self.current_frame.actor {
+        if let Some(actor) = &self.current_frame.actor {
             if !VisibilityProperties::check_substate_access(
                 current_mode,
                 actor,
@@ -1026,7 +1025,6 @@ where
                 ));
             }
         }
-
 
         let maybe_lock_handle = self.current_frame.acquire_lock(
             &mut self.heap,

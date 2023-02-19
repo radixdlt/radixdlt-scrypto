@@ -1,4 +1,4 @@
-use radix_engine_interface::api::types::{FnIdentifier, ScryptoFnIdentifier};
+use radix_engine_interface::api::types::FnIdentifier;
 use radix_engine_interface::api::ClientActorApi;
 use radix_engine_interface::api::{types::*, ClientComponentApi, ClientPackageApi};
 use radix_engine_interface::blueprints::epoch_manager::{
@@ -40,10 +40,8 @@ impl Runtime {
     }
 
     /// Returns the running entity.
-    pub fn actor() -> ScryptoFnIdentifier {
-        match ScryptoEnv.get_fn_identifier().unwrap() {
-            FnIdentifier::Some(identifier) => identifier,
-        }
+    pub fn actor() -> FnIdentifier {
+        ScryptoEnv.get_fn_identifier().unwrap()
     }
 
     /// Returns the current package address.

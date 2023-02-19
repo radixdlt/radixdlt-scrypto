@@ -198,7 +198,7 @@ fn test_instruction_traces() {
         // followed by a single input (auto-add to worktop) - in this order.
         assert_eq!(2, traces.len());
         let free_trace = traces.get(0).unwrap();
-        if let KernelCallOrigin::ScryptoMethod(ScryptoFnIdentifier {
+        if let KernelCallOrigin::ScryptoMethod(FnIdentifier {
             ident: method_name, ..
         }) = &free_trace.origin
         {
@@ -218,7 +218,7 @@ fn test_instruction_traces() {
 
         let worktop_put_trace = traces.get(1).unwrap();
         assert_eq!(
-            KernelCallOrigin::ScryptoMethod(ScryptoFnIdentifier {
+            KernelCallOrigin::ScryptoMethod(FnIdentifier {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: WORKTOP_BLUEPRINT.to_string(),
                 ident: WORKTOP_PUT_IDENT.to_string(),
@@ -245,7 +245,7 @@ fn test_instruction_traces() {
 
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            KernelCallOrigin::ScryptoMethod(ScryptoFnIdentifier {
+            KernelCallOrigin::ScryptoMethod(FnIdentifier {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: WORKTOP_BLUEPRINT.to_string(),
                 ident: WORKTOP_TAKE_ALL_IDENT.to_string(),
@@ -268,7 +268,7 @@ fn test_instruction_traces() {
         assert_eq!(1, traces.len());
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            KernelCallOrigin::ScryptoMethod(ScryptoFnIdentifier {
+            KernelCallOrigin::ScryptoMethod(FnIdentifier {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: BUCKET_BLUEPRINT.to_string(),
                 ident: BUCKET_CREATE_PROOF_IDENT.to_string(),
@@ -313,7 +313,7 @@ fn test_instruction_traces() {
         assert_eq!(1, traces.len());
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            KernelCallOrigin::ScryptoMethod(ScryptoFnIdentifier {
+            KernelCallOrigin::ScryptoMethod(FnIdentifier {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: WORKTOP_BLUEPRINT.to_string(),
                 ident: WORKTOP_PUT_IDENT.to_string(),
@@ -337,7 +337,7 @@ fn test_instruction_traces() {
 
         let take_trace = traces.get(0).unwrap();
         assert_eq!(
-            KernelCallOrigin::ScryptoMethod(ScryptoFnIdentifier {
+            KernelCallOrigin::ScryptoMethod(FnIdentifier {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: WORKTOP_BLUEPRINT.to_string(),
                 ident: WORKTOP_DRAIN_IDENT.to_string(),
@@ -346,7 +346,7 @@ fn test_instruction_traces() {
         );
 
         let call_trace = traces.get(1).unwrap();
-        if let KernelCallOrigin::ScryptoFunction(ScryptoFnIdentifier {
+        if let KernelCallOrigin::ScryptoFunction(FnIdentifier {
             ident: function_name,
             ..
         }) = &call_trace.origin
