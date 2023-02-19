@@ -3,6 +3,7 @@ use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, LockFlags};
 use crate::system::kernel_modules::auth::convert_contextless;
 use crate::system::kernel_modules::auth::*;
+use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE};
 use crate::system::node::RENodeInit;
 use crate::types::*;
 use radix_engine_interface::api::node_modules::auth::*;
@@ -10,6 +11,7 @@ use radix_engine_interface::api::types::{
     AuthZoneStackOffset, GlobalAddress, ProofOffset, RENodeId, ResourceManagerOffset,
     SubstateOffset,
 };
+use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
@@ -41,48 +43,64 @@ impl AuthZoneNativePackage {
     {
         match export_name {
             AUTH_ZONE_POP_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 AuthZoneBlueprint::pop(receiver, input, api)
             }
             AUTH_ZONE_PUSH_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 AuthZoneBlueprint::push(receiver, input, api)
             }
             AUTH_ZONE_CREATE_PROOF_IDENT => {
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 AuthZoneBlueprint::create_proof(receiver, input, api)
             }
             AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_IDENT => {
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 AuthZoneBlueprint::create_proof_by_amount(receiver, input, api)
             }
             AUTH_ZONE_CREATE_PROOF_BY_IDS_IDENT => {
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 AuthZoneBlueprint::create_proof_by_ids(receiver, input, api)
             }
             AUTH_ZONE_CLEAR_IDENT => {
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 AuthZoneBlueprint::clear(receiver, input, api)
             }
             AUTH_ZONE_DRAIN_IDENT => {
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 AuthZoneBlueprint::drain(receiver, input, api)
             }
             AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT => {
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;

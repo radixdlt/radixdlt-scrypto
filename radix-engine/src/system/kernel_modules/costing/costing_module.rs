@@ -116,18 +116,6 @@ impl KernelModule for CostingModule {
         callee: &ResolvedActor,
         _nodes_and_refs: &mut CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
-        match &callee.identifier {
-            FnIdentifier::Native(native_fn) => {
-                apply_execution_cost(
-                    api,
-                    CostingReason::RunNative,
-                    |fee_table| fee_table.run_native_fn_cost(&native_fn),
-                    1,
-                )?;
-            }
-            _ => {}
-        }
-
         // Identify the function, and optional component address
         let (scrypto_fn_identifier, optional_component) = match &callee.identifier {
             FnIdentifier::Scrypto(scrypto_fn_identifier) => {
@@ -373,6 +361,7 @@ impl KernelModule for CostingModule {
             api,
             match reason {
                 ClientCostingReason::RunWasm => CostingReason::RunWasm,
+                ClientCostingReason::RunPrecompiled => CostingReason::RunPrecompiled,
             },
             |_| units,
             5,

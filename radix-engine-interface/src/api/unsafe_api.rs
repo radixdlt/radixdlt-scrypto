@@ -4,6 +4,7 @@ use crate::blueprints::resource::Resource;
 #[derive(Clone, Copy, Debug)]
 pub enum ClientCostingReason {
     RunWasm,
+    RunPrecompiled,
 }
 
 /// Unsafe APIs for interacting with kernel modules.

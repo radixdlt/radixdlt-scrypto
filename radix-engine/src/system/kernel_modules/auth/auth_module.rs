@@ -9,7 +9,7 @@ use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::module::KernelModule;
 use crate::system::node::RENodeInit;
-use crate::system::node_modules::auth::AuthZoneStackSubstate;
+use crate::system::node_modules::access_rules::AuthZoneStackSubstate;
 use crate::types::*;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::package::{PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_PRECOMPILED_IDENT};

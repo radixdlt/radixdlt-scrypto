@@ -14,7 +14,7 @@ use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{
     ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockFlags,
 };
-use crate::system::node_modules::auth::{AccessRulesNativePackage, AuthZoneNativePackage};
+use crate::system::node_modules::access_rules::{AccessRulesNativePackage, AuthZoneNativePackage};
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::package::Package;
@@ -29,11 +29,7 @@ use radix_engine_interface::api::node_modules::royalty::{
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::FunctionInvocation;
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::api::{
-    ClientActorApi, ClientApi, ClientComponentApi, ClientNodeApi, ClientSubstateApi,
-    ClientUnsafeApi,
-};
-use radix_engine_interface::api::{ClientDerefApi, ClientPackageApi};
+use radix_engine_interface::api::{ClientApi, ClientDerefApi, ClientSubstateApi};
 use radix_engine_interface::data::*;
 use radix_engine_interface::data::{match_schema_with_value, ScryptoValue};
 
@@ -406,17 +402,7 @@ impl Executor for ScryptoExecutor {
 
     fn execute<Y, W>(self, api: &mut Y) -> Result<(ScryptoValue, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + KernelWasmApi<W>
-            + ClientApi<RuntimeError>
-            + ClientNodeApi<RuntimeError>
-            + ClientSubstateApi<RuntimeError>
-            + ClientSubstateApi<RuntimeError>
-            + ClientPackageApi<RuntimeError>
-            + ClientComponentApi<RuntimeError>
-            + ClientActorApi<RuntimeError>
-            + ClientUnsafeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + ClientApi<RuntimeError>,
         W: WasmEngine,
     {
         let output = if self.package_address.eq(&PACKAGE) {

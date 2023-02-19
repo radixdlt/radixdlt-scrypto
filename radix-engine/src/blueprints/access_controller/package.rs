@@ -2,11 +2,13 @@ use super::state_machine::*;
 use crate::errors::{ApplicationError, InterpreterError, RuntimeError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, LockFlags};
 use crate::system::global::GlobalAddressSubstate;
+use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
-use crate::system::node_modules::auth::AccessRulesChainSubstate;
+use crate::system::node_modules::access_rules::AccessRulesChainSubstate;
 use native_sdk::resource::{SysBucket, Vault};
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{ACCESS_CONTROLLER_PACKAGE, PACKAGE_TOKEN};
@@ -133,6 +135,8 @@ impl AccessControllerNativePackage {
     {
         match export_name {
             ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 if receiver.is_some() {
                     return Err(RuntimeError::InterpreterError(
                         InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
@@ -141,66 +145,88 @@ impl AccessControllerNativePackage {
                 Self::create_global(input, api)
             }
             ACCESS_CONTROLLER_CREATE_PROOF_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::create_proof(receiver, input, api)
             }
             ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::initial_recovery_as_primary(receiver, input, api)
             }
             ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::initial_recovery_as_recovery(receiver, input, api)
             }
             ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::quick_confirm_primary_role_recovery_proposal(receiver, input, api)
             }
             ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::quick_confirm_recovery_role_recovery_proposal(receiver, input, api)
             }
             ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::timed_confirm_recovery(receiver, input, api)
             }
             ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::cancel_primary_role_recovery_proposal(receiver, input, api)
             }
             ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::cancel_recovery_role_recovery_proposal(receiver, input, api)
             }
             ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::lock_primary_role(receiver, input, api)
             }
             ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::unlock_primary_role(receiver, input, api)
             }
             ACCESS_CONTROLLER_STOP_TIMED_RECOVERY => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;

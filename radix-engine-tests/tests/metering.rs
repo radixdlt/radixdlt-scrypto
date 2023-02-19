@@ -72,7 +72,7 @@ fn test_basic_transfer() {
         + 6500 /* Invoke */
         + 101000 /* LockSubstate */
         + 76500 /* ReadSubstate */
-        + 0 /* RunNative */
+        + 62500 /* RunPrecompiled */
         + 0 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1320 /* TxPayloadCost */
@@ -204,7 +204,7 @@ fn test_radiswap() {
         + 19000 /* Invoke */
         + 296000 /* LockSubstate */
         + 230000 /* ReadSubstate */
-        + 0 /* RunNative */
+        + 162500 /* RunPrecompiled */
         + 1616710 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1705 /* TxPayloadCost */

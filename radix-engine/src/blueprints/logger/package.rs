@@ -1,8 +1,10 @@
 use crate::errors::{InterpreterError, RuntimeError};
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::logger::*;
 use radix_engine_interface::data::{
@@ -27,6 +29,8 @@ impl LoggerNativePackage {
     {
         match export_name {
             LOGGER_LOG_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;

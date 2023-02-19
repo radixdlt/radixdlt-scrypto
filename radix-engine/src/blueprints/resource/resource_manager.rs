@@ -7,7 +7,7 @@ use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::auth::AccessRulesChainSubstate;
+use crate::system::node_modules::access_rules::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use native_sdk::resource::SysBucket;

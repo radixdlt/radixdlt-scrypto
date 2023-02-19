@@ -3,13 +3,15 @@ use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::global::GlobalAddressSubstate;
+use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::auth::AccessRulesChainSubstate;
+use crate::system::node_modules::access_rules::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -31,6 +33,8 @@ impl IdentityNativePackage {
     {
         match export_name {
             IDENTITY_CREATE_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 if receiver.is_some() {
                     return Err(RuntimeError::InterpreterError(
                         InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),

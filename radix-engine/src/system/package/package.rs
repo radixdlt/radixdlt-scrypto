@@ -1,9 +1,10 @@
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::global::GlobalAddressSubstate;
+use crate::system::kernel_modules::costing::FIXED_HIGH_FEE;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::auth::AccessRulesChainSubstate;
+use crate::system::node_modules::access_rules::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use crate::wasm::{PrepareError, WasmValidator};
@@ -12,6 +13,7 @@ use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{PackageId, RENodeId};
+use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::data::ScryptoValue;
 
@@ -38,6 +40,8 @@ impl Package {
     {
         match export_name {
             PACKAGE_PUBLISH_PRECOMPILED_IDENT => {
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 if receiver.is_some() {
                     return Err(RuntimeError::InterpreterError(
                         InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
@@ -47,6 +51,8 @@ impl Package {
                 Self::publish_precompiled(input, api)
             }
             PACKAGE_PUBLISH_WASM_IDENT => {
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 if receiver.is_some() {
                     return Err(RuntimeError::InterpreterError(
                         InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),

@@ -2,13 +2,15 @@ use crate::errors::{InterpreterError, RuntimeError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, LockFlags};
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::kernel_modules::auth::*;
+use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE};
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::auth::AccessRulesChainSubstate;
+use crate::system::node_modules::access_rules::AccessRulesChainSubstate;
 use crate::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{ClockOffset, GlobalAddress, RENodeId, SubstateOffset};
+use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::blueprints::clock::ClockCreateInput;
@@ -54,6 +56,8 @@ impl ClockNativePackage {
     {
         match export_name {
             CLOCK_CREATE_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 if receiver.is_some() {
                     return Err(RuntimeError::InterpreterError(
                         InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
@@ -62,18 +66,24 @@ impl ClockNativePackage {
                 Self::create(input, api)
             }
             CLOCK_GET_CURRENT_TIME_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::get_current_time(receiver, input, api)
             }
             CLOCK_SET_CURRENT_TIME_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::set_current_time(receiver, input, api)
             }
             CLOCK_COMPARE_CURRENT_TIME_IDENT => {
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;

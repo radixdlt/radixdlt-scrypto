@@ -14,7 +14,7 @@ use crate::wasm::WasmEngine;
 use native_sdk::resource::SysBucket;
 use radix_engine_interface::api::component::ComponentInfoSubstate;
 // TODO: clean this up!
-use crate::system::node_modules::auth::AccessRulesChainSubstate;
+use crate::system::node_modules::access_rules::AccessRulesChainSubstate;
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, GlobalAddress, GlobalOffset, LockHandle, ProofOffset, RENodeId,
     SubstateId, SubstateOffset, WorktopOffset,
