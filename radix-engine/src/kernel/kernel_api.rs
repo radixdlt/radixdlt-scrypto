@@ -8,7 +8,6 @@ use crate::wasm::WasmEngine;
 use bitflags::bitflags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::api::ClientDerefApi;
 use radix_engine_interface::blueprints::resource::*;
 
 use super::actor::ResolvedActor;
@@ -111,7 +110,7 @@ pub trait Executor {
 pub trait ExecutableInvocation: Invocation {
     type Exec: Executor<Output = Self::Output>;
 
-    fn resolve<Y: KernelSubstateApi + ClientDerefApi<RuntimeError>>(
+    fn resolve<Y: KernelSubstateApi>(
         self,
         api: &mut Y,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>;

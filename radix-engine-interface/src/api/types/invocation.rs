@@ -1,8 +1,8 @@
 use crate::api::package::PackageAddress;
 use crate::api::types::*;
+use crate::data::ScryptoValue;
 use crate::*;
 use sbor::rust::string::String;
-use crate::data::ScryptoValue;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum InvocationIdentifier {
@@ -50,10 +50,8 @@ impl Invocation for FunctionInvocation {
     }
 }
 
-
 #[derive(Debug, Clone, Copy, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct MethodReceiver(pub RENodeId, pub NodeModuleId);
-
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct MethodInvocation {

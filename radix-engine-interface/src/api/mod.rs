@@ -1,7 +1,6 @@
 pub mod actor_api;
 pub mod component;
 pub mod component_api;
-pub mod deref_api;
 pub mod node_api;
 pub mod node_modules;
 pub mod package;
@@ -13,7 +12,6 @@ pub mod unsafe_api;
 // Re-exports
 pub use actor_api::ClientActorApi;
 pub use component_api::ClientComponentApi;
-pub use deref_api::ClientDerefApi;
 pub use node_api::ClientNodeApi;
 pub use package_api::ClientPackageApi;
 pub use substate_api::ClientSubstateApi;
@@ -28,7 +26,6 @@ pub trait ClientApi<E: sbor::rust::fmt::Debug>:
     + ClientPackageApi<E>
     + ClientNodeApi<E>
     + ClientSubstateApi<E>
-    + ClientDerefApi<E>  // TODO: remove
     + ClientUnsafeApi<E>
 {
 }

@@ -10,7 +10,10 @@ use crate::{
     system::node::RENodeInit,
     transaction::AbortReason,
 };
-use radix_engine_interface::api::types::{GlobalAddress, GlobalOffset, InvocationIdentifier, LockHandle, MethodReceiver, NodeModuleId, RoyaltyOffset, SubstateOffset, VaultId, VaultOffset};
+use radix_engine_interface::api::types::{
+    GlobalAddress, GlobalOffset, InvocationIdentifier, LockHandle, MethodReceiver, NodeModuleId,
+    RoyaltyOffset, SubstateOffset, VaultId, VaultOffset,
+};
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::blueprints::resource::Resource;
 use radix_engine_interface::constants::*;

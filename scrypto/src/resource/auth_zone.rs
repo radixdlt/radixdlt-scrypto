@@ -1,6 +1,6 @@
 use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::ClientComponentApi;
 use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::api::ClientComponentApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::math::Decimal;

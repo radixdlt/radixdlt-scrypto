@@ -11,11 +11,7 @@ pub struct ResolvedReceiver {
 }
 
 impl ResolvedReceiver {
-    pub fn derefed(
-        receiver: MethodReceiver,
-        from: RENodeId,
-        lock_handle: LockHandle,
-    ) -> Self {
+    pub fn derefed(receiver: MethodReceiver, from: RENodeId, lock_handle: LockHandle) -> Self {
         Self {
             receiver,
             derefed_from: Some((from, lock_handle)),

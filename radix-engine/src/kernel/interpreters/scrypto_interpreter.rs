@@ -29,7 +29,7 @@ use radix_engine_interface::api::node_modules::royalty::{
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::FunctionInvocation;
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::api::{ClientApi, ClientDerefApi, ClientSubstateApi};
+use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
 use radix_engine_interface::data::*;
 use radix_engine_interface::data::{match_schema_with_value, ScryptoValue};
 
@@ -38,7 +38,7 @@ use super::ScryptoRuntime;
 impl ExecutableInvocation for MethodInvocation {
     type Exec = ScryptoExecutor;
 
-    fn resolve<D: ClientDerefApi<RuntimeError> + KernelSubstateApi>(
+    fn resolve<D: KernelSubstateApi>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -100,23 +100,33 @@ impl ExecutableInvocation for MethodInvocation {
         };
 
         // Deref if global
-        // TODO: Move into kernel
-        let resolved_receiver =
-            if let Some((derefed, derefed_lock)) = api.deref(self.receiver.0)? {
-                ResolvedReceiver::derefed(MethodReceiver(derefed, self.receiver.1), self.receiver.0, derefed_lock)
-            } else {
-                ResolvedReceiver::new(self.receiver)
-            };
+        let resolved_receiver = if let RENodeId::Global(..) = self.receiver.0 {
+            let handle = api.kernel_lock_substate(
+                self.receiver.0,
+                NodeModuleId::SELF,
+                SubstateOffset::Global(GlobalOffset::Global),
+                LockFlags::empty(),
+            )?;
+            let substate_ref = api.kernel_get_substate_ref(handle)?;
+            let derefed = substate_ref.global_address().node_deref();
+            ResolvedReceiver::derefed(
+                MethodReceiver(derefed, self.receiver.1),
+                self.receiver.0,
+                handle,
+            )
+        } else {
+            ResolvedReceiver::new(self.receiver)
+        };
 
         // Pass the component ref
         node_refs_to_copy.insert(resolved_receiver.receiver.0);
 
-
-        let fn_identifier = FnIdentifier::new(package_address, blueprint_name.clone(), self.fn_name.clone());
-        let actor = ResolvedActor::method(
-            fn_identifier.clone(),
-            resolved_receiver,
+        let fn_identifier = FnIdentifier::new(
+            package_address,
+            blueprint_name.clone(),
+            self.fn_name.clone(),
         );
+        let actor = ResolvedActor::method(fn_identifier.clone(), resolved_receiver);
 
         let type_info = if package_address.eq(&PACKAGE) {
             // TODO: Remove this weirdness
@@ -134,7 +144,6 @@ impl ExecutableInvocation for MethodInvocation {
             api.kernel_drop_lock(handle)?;
             type_info
         };
-
 
         let export_name = match type_info {
             TypeInfoSubstate::NativePackage => {
@@ -233,7 +242,7 @@ impl ExecutableInvocation for MethodInvocation {
 impl ExecutableInvocation for FunctionInvocation {
     type Exec = ScryptoExecutor;
 
-    fn resolve<D: ClientDerefApi<RuntimeError> + KernelSubstateApi>(
+    fn resolve<D: KernelSubstateApi>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -294,7 +303,8 @@ impl ExecutableInvocation for FunctionInvocation {
                     EDDSA_ED25519_TOKEN,
                 )));
 
-                let package_global = RENodeId::Global(GlobalAddress::Package(self.fn_identifier.package_address));
+                let package_global =
+                    RENodeId::Global(GlobalAddress::Package(self.fn_identifier.package_address));
                 let handle = api.kernel_lock_substate(
                     package_global,
                     NodeModuleId::SELF,
@@ -310,20 +320,20 @@ impl ExecutableInvocation for FunctionInvocation {
                 }
 
                 // Find the abi
-                let abi = info.blueprint_abi(&self.fn_identifier.blueprint_name).ok_or(
+                let abi = info
+                    .blueprint_abi(&self.fn_identifier.blueprint_name)
+                    .ok_or(RuntimeError::InterpreterError(
+                        InterpreterError::InvalidScryptoInvocation(
+                            self.fn_identifier.clone(),
+                            ScryptoFnResolvingError::BlueprintNotFound,
+                        ),
+                    ))?;
+                let fn_abi = abi.get_fn_abi(&self.fn_identifier.ident).ok_or(
                     RuntimeError::InterpreterError(InterpreterError::InvalidScryptoInvocation(
                         self.fn_identifier.clone(),
-                        ScryptoFnResolvingError::BlueprintNotFound,
+                        ScryptoFnResolvingError::MethodNotFound,
                     )),
                 )?;
-                let fn_abi =
-                    abi.get_fn_abi(&self.fn_identifier.ident)
-                        .ok_or(RuntimeError::InterpreterError(
-                            InterpreterError::InvalidScryptoInvocation(
-                                self.fn_identifier.clone(),
-                                ScryptoFnResolvingError::MethodNotFound,
-                            ),
-                        ))?;
 
                 if fn_abi.mutability.is_some() {
                     return Err(RuntimeError::InterpreterError(

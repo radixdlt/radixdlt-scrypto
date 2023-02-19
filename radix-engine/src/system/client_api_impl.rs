@@ -27,7 +27,7 @@ use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::{
-    ClientActorApi, ClientApi, ClientComponentApi, ClientDerefApi, ClientNodeApi, ClientPackageApi,
+    ClientActorApi, ClientApi, ClientComponentApi, ClientNodeApi, ClientPackageApi,
     ClientSubstateApi, ClientUnsafeApi,
 };
 use radix_engine_interface::blueprints::resource::*;
@@ -97,23 +97,6 @@ where
 
     fn sys_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
         self.kernel_drop_lock(lock_handle)
-    }
-}
-
-impl<'g, 's, W> ClientDerefApi<RuntimeError> for Kernel<'g, 's, W>
-where
-    W: WasmEngine,
-{
-    fn deref(&mut self, node_id: RENodeId) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError> {
-        if let RENodeId::Global(..) = node_id {
-            let offset = SubstateOffset::Global(GlobalOffset::Global);
-            let handle =
-                self.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::empty())?;
-            let substate_ref = self.kernel_get_substate_ref(handle)?;
-            Ok(Some((substate_ref.global_address().node_deref(), handle)))
-        } else {
-            Ok(None)
-        }
     }
 }
 

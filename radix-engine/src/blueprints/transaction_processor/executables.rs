@@ -22,7 +22,7 @@ use radix_engine_interface::api::node_modules::royalty::{
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::api::{ClientComponentApi, ClientDerefApi};
+use radix_engine_interface::api::ClientComponentApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{
     IndexedScryptoValue, ReadOwnedNodesError, ReplaceManifestValuesError, ScryptoValue,
@@ -228,7 +228,7 @@ fn slice_to_global_references(slice: &[u8]) -> Vec<RENodeId> {
 impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
     type Exec = Self;
 
-    fn resolve<D: ClientDerefApi<RuntimeError>>(
+    fn resolve<D: KernelSubstateApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -602,7 +602,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                             key: key.clone(),
                             value: value.clone(),
                         })
-                            .unwrap(),
+                        .unwrap(),
                     )?;
 
                     let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
