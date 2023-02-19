@@ -4,6 +4,7 @@ pub const VALUE_KIND_PACKAGE_ADDRESS: u8 = 0x80;
 pub const VALUE_KIND_COMPONENT_ADDRESS: u8 = 0x81;
 pub const VALUE_KIND_RESOURCE_ADDRESS: u8 = 0x82;
 pub const VALUE_KIND_OWN: u8 = 0x90;
+// 90-9f reserved for well-known own subtypes
 
 pub const VALUE_KIND_BUCKET: u8 = 0xa0;
 pub const VALUE_KIND_PROOF: u8 = 0xa1;

@@ -11,37 +11,13 @@ use sbor::rust::string::ToString;
 
 use super::AccessRule;
 
-#[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    Ord,
-    PartialOrd,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, LegacyDescribe)]
 pub enum AccessRuleKey {
     ScryptoMethod(String),
     Native(NativeFn),
 }
 
-#[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    Ord,
-    PartialOrd,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, LegacyDescribe)]
 pub enum AccessRuleEntry {
     AccessRule(AccessRule),
     Group(String),
@@ -60,9 +36,7 @@ impl From<String> for AccessRuleEntry {
 }
 
 /// Method authorization rules for a component
-#[derive(
-    Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, LegacyDescribe)]
 pub struct AccessRules {
     method_auth: BTreeMap<AccessRuleKey, AccessRuleEntry>,
     grouped_auth: BTreeMap<String, AccessRule>,

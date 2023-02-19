@@ -14,13 +14,13 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 
 // TODO: Remove enum
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, ScryptoSbor)]
 pub enum CallTableInvocation {
     Native(NativeInvocation),
     Scrypto(ScryptoInvocation),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct ScryptoInvocation {
     pub package_address: PackageAddress,
     pub blueprint_name: String,
@@ -47,7 +47,7 @@ impl Into<CallTableInvocation> for ScryptoInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub enum NativeInvocation {
     AccessRulesChain(AccessRulesChainInvocation),
     Metadata(MetadataInvocation),
@@ -61,7 +61,7 @@ impl Into<CallTableInvocation> for NativeInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub enum AccessRulesChainInvocation {
     AddAccessCheck(AccessRulesAddAccessCheckInvocation),
     SetMethodAccessRule(AccessRulesSetMethodAccessRuleInvocation),
@@ -71,19 +71,19 @@ pub enum AccessRulesChainInvocation {
     GetLength(AccessRulesGetLengthInvocation),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub enum MetadataInvocation {
     Set(MetadataSetInvocation),
     Get(MetadataGetInvocation),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub enum ComponentInvocation {
     SetRoyaltyConfig(ComponentSetRoyaltyConfigInvocation),
     ClaimRoyalty(ComponentClaimRoyaltyInvocation),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub enum PackageInvocation {
     Publish(PackagePublishInvocation),
     PublishNative(PackagePublishNativeInvocation),

@@ -52,3 +52,8 @@ impl ManifestProof {
 }
 
 schemaless_scrypto_custom_type!(ManifestProof, ScryptoCustomValueKind::Proof, 4);
+
+// Temporary until ManifestProof is no longer in the ScryptoValue model
+impl<C: CustomTypeKind<GlobalTypeId>> Describe<C> for ManifestProof {
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(basic_well_known_types::ANY_ID);
+}

@@ -30,7 +30,7 @@ use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ResourceManagerSubstate {
     pub resource_address: ResourceAddress, // TODO: Figure out a way to remove?
     pub resource_type: ResourceType,
@@ -73,7 +73,7 @@ impl ResourceManagerSubstate {
 }
 
 /// Represents an error when accessing a bucket.
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ResourceManagerError {
     InvalidAmount(Decimal, u8),
     MaxMintAmountExceeded,

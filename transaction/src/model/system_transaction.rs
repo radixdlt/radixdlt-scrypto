@@ -5,7 +5,7 @@ use radix_engine_interface::crypto::hash;
 use radix_engine_interface::*;
 use std::collections::BTreeSet;
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct SystemTransaction {
     pub instructions: Vec<Instruction>,
     pub pre_allocated_ids: BTreeSet<RENodeId>,

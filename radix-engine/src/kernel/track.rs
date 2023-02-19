@@ -29,7 +29,7 @@ use sbor::rust::collections::*;
 use super::actor::ResolvedActor;
 use super::event::TrackedEvent;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]
 pub enum LockState {
     Read(usize),
     Write,
@@ -71,7 +71,7 @@ pub struct Track<'s> {
     new_global_addresses: Vec<GlobalAddress>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TrackError {
     NotFound(SubstateId),
     SubstateLocked(SubstateId, LockState),

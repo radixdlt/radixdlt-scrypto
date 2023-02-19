@@ -3,17 +3,16 @@ use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
-use sbor::{Categorize, Decode, Encode};
 
 use crate::model::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct AuthZoneParams {
     pub initial_proofs: Vec<NonFungibleGlobalId>,
     pub virtualizable_proofs_resource_addresses: BTreeSet<ResourceAddress>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ExecutionContext {
     pub transaction_hash: Hash,
     pub pre_allocated_ids: BTreeSet<RENodeId>,
@@ -23,7 +22,7 @@ pub struct ExecutionContext {
     pub runtime_validations: Vec<RuntimeValidationRequest>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum FeePayment {
     User {
         cost_unit_limit: u32,
@@ -46,7 +45,7 @@ pub struct Executable<'a> {
     pub context: ExecutionContext,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct RuntimeValidationRequest {
     /// The validation to perform
     pub validation: RuntimeValidation,
@@ -55,7 +54,7 @@ pub struct RuntimeValidationRequest {
     pub skip_assertion: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum RuntimeValidation {
     /// To ensure we don't commit a duplicate intent hash
     IntentHashUniqueness { intent_hash: Hash },

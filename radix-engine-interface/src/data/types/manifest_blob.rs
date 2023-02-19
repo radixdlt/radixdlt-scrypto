@@ -54,3 +54,8 @@ impl ManifestBlobRef {
 }
 
 schemaless_scrypto_custom_type!(ManifestBlobRef, ScryptoCustomValueKind::Blob, 32);
+
+// Temporary until ManifestBlobRef is no longer in the ScryptoValue model
+impl<C: CustomTypeKind<GlobalTypeId>> Describe<C> for ManifestBlobRef {
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(basic_well_known_types::ANY_ID);
+}

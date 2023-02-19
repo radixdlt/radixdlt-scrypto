@@ -50,6 +50,9 @@ impl<T: for<'a> Encode<NoCustomValueKind, BasicEncoder<'a>> + ?Sized> BasicEncod
 pub trait BasicDescribe: for<'a> Describe<NoCustomTypeKind> {}
 impl<T: Describe<NoCustomTypeKind> + ?Sized> BasicDescribe for T {}
 
+pub trait BasicSbor: BasicCategorize + BasicDecode + BasicEncode + BasicDescribe {}
+impl<T: BasicCategorize + BasicDecode + BasicEncode + BasicDescribe> BasicSbor for T {}
+
 /// Encode a `T` into byte array.
 pub fn basic_encode<T: BasicEncode + ?Sized>(v: &T) -> Result<Vec<u8>, EncodeError> {
     let mut buf = Vec::with_capacity(512);

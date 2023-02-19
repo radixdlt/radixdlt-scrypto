@@ -14,13 +14,13 @@ use sbor::rust::vec::Vec;
 use utils::ContextualDisplay;
 
 /// Represents an error when reading the owned node ids from a value.
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ReadOwnedNodesError {
     DuplicateOwn,
 }
 
 /// Represents an error when replacing manifest values.
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ReplaceManifestValuesError {
     BucketNotFound(ManifestBucket),
     ProofNotFound(ManifestProof),
@@ -373,7 +373,7 @@ pub struct ScryptoValueVisitor {
     pub maps: Vec<(ScryptoValueKind, ScryptoValueKind, SborPath)>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum ValueIndexingError {
     DuplicateOwnership,
     DuplicateManifestBucket,
