@@ -204,7 +204,7 @@ pub enum InterpreterError {
 
     InvalidInvocation,
 
-    InvalidScryptoInvocation(PackageAddress, String, String, ScryptoFnResolvingError),
+    InvalidScryptoInvocation(FnIdentifier, ScryptoFnResolvingError),
     InvalidScryptoReturn(DecodeError),
 }
 

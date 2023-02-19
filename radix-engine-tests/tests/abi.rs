@@ -210,8 +210,6 @@ fn test_arg(method_name: &str, args: Vec<u8>, expected_result: ExpectedResult) {
                     e,
                     RuntimeError::InterpreterError(InterpreterError::InvalidScryptoInvocation(
                         _,
-                        _,
-                        _,
                         ScryptoFnResolvingError::InvalidInput
                     ))
                 )

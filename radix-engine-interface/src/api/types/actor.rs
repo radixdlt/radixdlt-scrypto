@@ -6,7 +6,7 @@ use sbor::rust::string::String;
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum InvocationIdentifier {
     Transaction, // TODO: Remove
-    Function(PackageAddress, String, String),
+    Function(FnIdentifier),
     Method(ScryptoReceiver, NodeModuleId, String),
 }
 

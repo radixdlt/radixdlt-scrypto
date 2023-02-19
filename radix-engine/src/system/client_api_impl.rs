@@ -207,9 +207,11 @@ where
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         let invocation = FunctionInvocation {
-            package_address,
-            blueprint_name: blueprint_name.to_string(),
-            fn_name: function_name.to_string(),
+            fn_identifier: FnIdentifier::new(
+                package_address,
+                blueprint_name.to_string(),
+                function_name.to_string(),
+            ),
             args,
         };
 

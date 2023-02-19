@@ -113,12 +113,11 @@ impl ExecutableInvocation for MethodInvocation {
 
         // Pass the component ref
         node_refs_to_copy.insert(resolved_receiver.receiver.0);
+
+
+        let fn_identifier = FnIdentifier::new(package_address, blueprint_name.clone(), self.fn_name.clone());
         let actor = ResolvedActor::method(
-            FnIdentifier::new(
-                package_address,
-                blueprint_name.clone(),
-                self.fn_name.clone(),
-            ),
+            fn_identifier.clone(),
             resolved_receiver,
         );
 
@@ -138,6 +137,7 @@ impl ExecutableInvocation for MethodInvocation {
             api.kernel_drop_lock(handle)?;
             type_info
         };
+
 
         let export_name = match type_info {
             TypeInfoSubstate::NativePackage => {
@@ -177,9 +177,7 @@ impl ExecutableInvocation for MethodInvocation {
                     info.blueprint_abi(&blueprint_name)
                         .ok_or(RuntimeError::InterpreterError(
                             InterpreterError::InvalidScryptoInvocation(
-                                package_address,
-                                blueprint_name.clone(),
-                                self.fn_name.clone(),
+                                fn_identifier.clone(),
                                 ScryptoFnResolvingError::BlueprintNotFound,
                             ),
                         ))?;
@@ -187,9 +185,7 @@ impl ExecutableInvocation for MethodInvocation {
                     abi.get_fn_abi(&self.fn_name)
                         .ok_or(RuntimeError::InterpreterError(
                             InterpreterError::InvalidScryptoInvocation(
-                                package_address,
-                                blueprint_name.clone(),
-                                self.fn_name.clone(),
+                                fn_identifier.clone(),
                                 ScryptoFnResolvingError::MethodNotFound,
                             ),
                         ))?;
@@ -203,9 +199,7 @@ impl ExecutableInvocation for MethodInvocation {
                 if !match_schema_with_value(&fn_abi.input, args.as_value()) {
                     return Err(RuntimeError::InterpreterError(
                         InterpreterError::InvalidScryptoInvocation(
-                            package_address,
-                            blueprint_name.clone(),
-                            self.fn_name.clone(),
+                            fn_identifier.clone(),
                             ScryptoFnResolvingError::InvalidInput,
                         ),
                     ));
@@ -266,20 +260,15 @@ impl ExecutableInvocation for FunctionInvocation {
             node_refs_to_copy.insert(RENodeId::Global(global_address));
         }
 
-        let fn_identifier = FnIdentifier::new(
-            self.package_address,
-            self.blueprint_name.clone(),
-            self.fn_name.clone(),
-        );
-        let actor = ResolvedActor::function(fn_identifier);
+        let actor = ResolvedActor::function(self.fn_identifier.clone());
 
-        let type_info = if self.package_address.eq(&PACKAGE) {
+        let type_info = if self.fn_identifier.package_address.eq(&PACKAGE) {
             // TODO: Remove this weirdness
             node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
             TypeInfoSubstate::NativePackage
         } else {
             let handle = api.kernel_lock_substate(
-                RENodeId::Global(GlobalAddress::Package(self.package_address)),
+                RENodeId::Global(GlobalAddress::Package(self.fn_identifier.package_address)),
                 NodeModuleId::PackageTypeInfo,
                 SubstateOffset::PackageTypeInfo,
                 LockFlags::read_only(),
@@ -294,7 +283,7 @@ impl ExecutableInvocation for FunctionInvocation {
             TypeInfoSubstate::NativePackage => {
                 // TODO: Do we need to check against the abi? Probably not since we should be able to verify this
                 // TODO: in the native package itself.
-                self.fn_name.to_string() // TODO: Clean this up
+                self.fn_identifier.ident.to_string() // TODO: Clean this up
             }
             TypeInfoSubstate::WasmPackage => {
                 node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)));
@@ -308,7 +297,7 @@ impl ExecutableInvocation for FunctionInvocation {
                     EDDSA_ED25519_TOKEN,
                 )));
 
-                let package_global = RENodeId::Global(GlobalAddress::Package(self.package_address));
+                let package_global = RENodeId::Global(GlobalAddress::Package(self.fn_identifier.package_address));
                 let handle = api.kernel_lock_substate(
                     package_global,
                     NodeModuleId::SELF,
@@ -324,21 +313,17 @@ impl ExecutableInvocation for FunctionInvocation {
                 }
 
                 // Find the abi
-                let abi = info.blueprint_abi(&self.blueprint_name).ok_or(
+                let abi = info.blueprint_abi(&self.fn_identifier.blueprint_name).ok_or(
                     RuntimeError::InterpreterError(InterpreterError::InvalidScryptoInvocation(
-                        self.package_address,
-                        self.blueprint_name.clone(),
-                        self.fn_name.clone(),
+                        self.fn_identifier.clone(),
                         ScryptoFnResolvingError::BlueprintNotFound,
                     )),
                 )?;
                 let fn_abi =
-                    abi.get_fn_abi(&self.fn_name)
+                    abi.get_fn_abi(&self.fn_identifier.ident)
                         .ok_or(RuntimeError::InterpreterError(
                             InterpreterError::InvalidScryptoInvocation(
-                                self.package_address,
-                                self.blueprint_name.clone(),
-                                self.fn_name.clone(),
+                                self.fn_identifier.clone(),
                                 ScryptoFnResolvingError::MethodNotFound,
                             ),
                         ))?;
@@ -352,9 +337,7 @@ impl ExecutableInvocation for FunctionInvocation {
                 if !match_schema_with_value(&fn_abi.input, args.as_value()) {
                     return Err(RuntimeError::InterpreterError(
                         InterpreterError::InvalidScryptoInvocation(
-                            self.package_address,
-                            self.blueprint_name.clone(),
-                            self.fn_name.clone(),
+                            self.fn_identifier.clone(),
                             ScryptoFnResolvingError::InvalidInput,
                         ),
                     ));
@@ -368,7 +351,7 @@ impl ExecutableInvocation for FunctionInvocation {
         };
 
         let executor = ScryptoExecutor {
-            package_address: self.package_address,
+            package_address: self.fn_identifier.package_address,
             export_name,
             receiver: None,
             args: args.into(),
@@ -376,7 +359,7 @@ impl ExecutableInvocation for FunctionInvocation {
 
         // TODO: remove? currently needed for `Runtime::package_address()` API.
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(
-            self.package_address,
+            self.fn_identifier.package_address,
         )));
 
         Ok((
