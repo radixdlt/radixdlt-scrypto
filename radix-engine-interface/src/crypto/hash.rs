@@ -10,7 +10,7 @@ use sbor::*;
 use utils::copy_u8_array;
 
 /// Represents a 32-byte hash digest.
-#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Categorize, Encode, Decode)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 #[sbor(transparent)]
 pub struct Hash(pub [u8; Self::LENGTH]);
 

@@ -15,6 +15,8 @@ pub use macros::*;
 
 // Re-export radix engine derives
 pub extern crate radix_engine_derive;
-pub use radix_engine_derive::{LegacyDescribe, ScryptoCategorize, ScryptoDecode, ScryptoEncode};
+pub use radix_engine_derive::{
+    LegacyDescribe, ScryptoCategorize, ScryptoDecode, ScryptoDescribe, ScryptoEncode, ScryptoSbor,
+};
 
 pub extern crate radix_engine_interface;

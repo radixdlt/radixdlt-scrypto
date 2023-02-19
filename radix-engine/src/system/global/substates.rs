@@ -1,7 +1,7 @@
 use crate::types::*;
 
 // TODO: clean up after `Owned(RENodeId)`?
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum GlobalSubstate {
     Component(ComponentId),
     Resource(ResourceManagerId),

@@ -307,9 +307,7 @@ fn build_value_of_tuple_of_depth(depth: u8) -> ScryptoValue {
     value
 }
 
-#[derive(
-    ScryptoCategorize, ScryptoEncode, ScryptoDecode, Debug, Clone, Eq, PartialEq, Ord, PartialOrd,
-)]
+#[derive(ScryptoSbor, Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 struct NestedType {
     inner: Box<Rc<Option<RefCell<NestedType>>>>,
 }

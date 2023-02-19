@@ -4,7 +4,7 @@ use radix_engine_interface::api::types::VaultId;
 use radix_engine_interface::blueprints::resource::Resource;
 use sbor::rust::collections::*;
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct FeeSummary {
     /// The cost unit price in XRD.
     pub cost_unit_price: Decimal,

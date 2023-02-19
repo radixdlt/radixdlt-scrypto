@@ -19,16 +19,7 @@ pub const IDENTITY_BLUEPRINT: &str = "Identity";
 pub const IDENTITY_CREATE_IDENT: &str = "create";
 
 #[derive(
-    Debug,
-    Clone,
-    Eq,
-    PartialEq,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    ManifestCategorize,
-    ManifestEncode,
-    ManifestDecode,
+    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
 )]
 pub struct IdentityCreateInput {
     pub access_rule: AccessRule,

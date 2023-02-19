@@ -2,6 +2,7 @@ use crate::abi::*;
 use crate::api::types::*;
 use crate::blueprints::resource::*;
 use crate::data::model::Own;
+use crate::data::ScryptoCustomTypeKind;
 use crate::data::ScryptoCustomValueKind;
 use crate::math::*;
 use sbor::rust::collections::BTreeSet;
@@ -13,22 +14,22 @@ pub const PROOF_BLUEPRINT: &str = "Proof";
 
 pub const PROOF_GET_AMOUNT_IDENT: &str = "Proof_get_amount";
 
-#[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct ProofGetAmountInput {}
 
 pub const PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT: &str = "Proof_get_non_fungible_local_ids";
 
-#[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct ProofGetNonFungibleLocalIdsInput {}
 
 pub const PROOF_GET_RESOURCE_ADDRESS_IDENT: &str = "Proof_get_resource_address";
 
-#[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct ProofGetResourceAddressInput {}
 
 pub const PROOF_CLONE_IDENT: &str = "clone";
 
-#[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct ProofCloneInput {}
 
 // TODO: Evaluate if we should have a ProofValidationModeBuilder to construct more complex validation modes.
@@ -127,4 +128,9 @@ impl scrypto_abi::LegacyDescribe for Proof {
     fn describe() -> scrypto_abi::Type {
         Type::Proof
     }
+}
+
+impl Describe<ScryptoCustomTypeKind<GlobalTypeId>> for Proof {
+    const TYPE_ID: GlobalTypeId =
+        GlobalTypeId::well_known(crate::data::well_known_scrypto_custom_types::OWN_PROOF_ID);
 }

@@ -15,13 +15,13 @@ use sbor::rust::vec::Vec;
 use transaction_data::*;
 
 // TODO: Remove enum
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, ScryptoSbor)]
 pub enum CallTableInvocation {
     Native(NativeInvocation),
     Scrypto(ScryptoInvocation),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct ScryptoInvocation {
     pub package_address: PackageAddress,
     pub blueprint_name: String,
@@ -49,16 +49,7 @@ impl Into<CallTableInvocation> for ScryptoInvocation {
 }
 
 #[derive(
-    Debug,
-    Clone,
-    Eq,
-    PartialEq,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    ManifestCategorize,
-    ManifestEncode,
-    ManifestDecode,
+    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
 )]
 pub enum NativeInvocation {
     AccessRulesChain(AccessRulesChainInvocation),
@@ -74,16 +65,7 @@ impl Into<CallTableInvocation> for NativeInvocation {
 }
 
 #[derive(
-    Debug,
-    Clone,
-    Eq,
-    PartialEq,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    ManifestCategorize,
-    ManifestEncode,
-    ManifestDecode,
+    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
 )]
 pub enum AccessRulesChainInvocation {
     AddAccessCheck(AccessRulesAddAccessCheckInvocation),
@@ -95,16 +77,7 @@ pub enum AccessRulesChainInvocation {
 }
 
 #[derive(
-    Debug,
-    Clone,
-    Eq,
-    PartialEq,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    ManifestCategorize,
-    ManifestEncode,
-    ManifestDecode,
+    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
 )]
 pub enum MetadataInvocation {
     Set(MetadataSetInvocation),
@@ -112,16 +85,7 @@ pub enum MetadataInvocation {
 }
 
 #[derive(
-    Debug,
-    Clone,
-    Eq,
-    PartialEq,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    ManifestCategorize,
-    ManifestEncode,
-    ManifestDecode,
+    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
 )]
 pub enum ComponentInvocation {
     SetRoyaltyConfig(ComponentSetRoyaltyConfigInvocation),
@@ -129,16 +93,7 @@ pub enum ComponentInvocation {
 }
 
 #[derive(
-    Debug,
-    Clone,
-    Eq,
-    PartialEq,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    ManifestCategorize,
-    ManifestEncode,
-    ManifestDecode,
+    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
 )]
 pub enum PackageInvocation {
     Publish(PackagePublishInvocation),

@@ -16,7 +16,7 @@ use transaction::model::Instruction;
 
 use crate::resim::*;
 
-#[derive(ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(ScryptoSbor)]
 struct EmptyStruct;
 
 /// Create a non-fungible badge with fixed supply

@@ -4,7 +4,7 @@ use radix_engine_interface::*;
 use sbor::*;
 use transaction_data::*;
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq)]
 pub struct PreviewFlags {
     pub unlimited_loan: bool,
     pub assume_all_signature_proofs: bool,
@@ -12,7 +12,7 @@ pub struct PreviewFlags {
     pub permit_invalid_header_epoch: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ManifestCategorize, ManifestEncode, ManifestDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestCategorize, ManifestEncode, ManifestDecode)]
 pub struct PreviewIntent {
     pub intent: TransactionIntent,
     pub signer_public_keys: Vec<PublicKey>,

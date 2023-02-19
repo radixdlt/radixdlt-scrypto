@@ -6,7 +6,7 @@ pub type ScryptoTypeKind<L> = TypeKind<ScryptoCustomValueKind, ScryptoCustomType
 pub type ScryptoSchema = Schema<ScryptoCustomTypeExtension>;
 
 /// A schema for the values that a codec can decode / views as valid
-#[derive(Debug, Clone, PartialEq, Eq, Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum ScryptoCustomTypeKind<L: SchemaTypeLink> {
     Address, /* any */
     PackageAddress,

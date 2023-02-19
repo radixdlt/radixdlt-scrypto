@@ -1,11 +1,11 @@
 use scrypto::prelude::*;
 
-#[derive(Categorize, Encode, Decode, LegacyDescribe, PartialEq)]
+#[derive(Sbor, LegacyDescribe, PartialEq)]
 struct ExtraStruct {
     field_one: String,
 }
 
-#[derive(Categorize, Encode, Decode, LegacyDescribe, PartialEq)]
+#[derive(Sbor, LegacyDescribe, PartialEq)]
 enum ExtraEnum {
     EntryOne,
     EntryTwo,

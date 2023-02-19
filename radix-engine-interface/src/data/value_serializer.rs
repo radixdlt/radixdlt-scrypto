@@ -534,7 +534,7 @@ mod tests {
         data::{scrypto_decode, scrypto_encode, ScryptoValue},
     };
 
-    #[derive(ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    #[derive(ScryptoSbor)]
     pub struct Sample {
         pub a: ResourceAddress,
     }

@@ -1,6 +1,7 @@
 use crate::abi::*;
 use crate::api::types::*;
 use crate::blueprints::resource::*;
+use crate::data::ScryptoCustomTypeKind;
 use crate::data::{ScryptoCustomValueKind, ScryptoEncoder};
 use crate::*;
 #[cfg(not(feature = "alloc"))]
@@ -177,4 +178,9 @@ impl scrypto_abi::LegacyDescribe for Own {
     fn describe() -> scrypto_abi::Type {
         Type::Own
     }
+}
+
+impl Describe<ScryptoCustomTypeKind<GlobalTypeId>> for Own {
+    const TYPE_ID: GlobalTypeId =
+        GlobalTypeId::well_known(crate::data::well_known_scrypto_custom_types::OWN_ID);
 }

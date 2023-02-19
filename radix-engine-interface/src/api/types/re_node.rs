@@ -8,19 +8,7 @@ use sbor::rust::fmt;
 use transaction_data::*;
 
 // TODO: Remove when better type system implemented
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    Ord,
-    PartialOrd,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor)]
 pub enum RENodeType {
     Bucket,
     Proof,
@@ -59,9 +47,7 @@ pub enum RENodeType {
     Hash,
     Ord,
     PartialOrd,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
+    ScryptoSbor,
     ManifestCategorize,
     ManifestEncode,
     ManifestDecode,
@@ -182,19 +168,7 @@ impl Into<ResourceAddress> for RENodeId {
     }
 }
 
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
 pub enum NodeModuleId {
     PackageTypeInfo, // TODO: Unify with ComponentTypeInfo
     SELF,
@@ -206,157 +180,124 @@ pub enum NodeModuleId {
     PackageRoyalty,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum AuthZoneStackOffset {
     AuthZoneStack,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum AccessRulesChainOffset {
     AccessRulesChain,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ComponentTypeInfoOffset {
     TypeInfo,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum MetadataOffset {
     Metadata,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum RoyaltyOffset {
     RoyaltyConfig,
     RoyaltyAccumulator,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ComponentOffset {
     /// Component application state at offset `0x00`.
     State0,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum PackageOffset {
     NativeCode,
     WasmCode,
     Info,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum GlobalOffset {
     Global,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ResourceManagerOffset {
     ResourceManager,
 }
 
-#[derive(
-    Debug,
-    Clone,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-)]
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum KeyValueStoreOffset {
     Entry(Vec<u8>),
 }
 
-#[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
 pub enum NonFungibleStoreOffset {
     Entry(NonFungibleLocalId),
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum VaultOffset {
     Vault,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum EpochManagerOffset {
     EpochManager,
     CurrentValidatorSet,
     PreparingValidatorSet,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ValidatorOffset {
     Validator,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum BucketOffset {
     Bucket,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ProofOffset {
     Proof,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum WorktopOffset {
     Worktop,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum LoggerOffset {
     Logger,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ClockOffset {
     CurrentTimeRoundedToMinutes,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum TransactionRuntimeOffset {
     TransactionRuntime,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum AccountOffset {
     Account,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum AccessControllerOffset {
     AccessController,
 }
 
 /// Specifies a specific Substate into a given RENode
-#[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
 pub enum SubstateOffset {
     PackageTypeInfo, // TODO: Unify with ComponentTypeInfo
     Global(GlobalOffset),
@@ -387,16 +328,5 @@ pub enum SubstateOffset {
 }
 
 /// TODO: separate space addresses?
-#[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
 pub struct SubstateId(pub RENodeId, pub NodeModuleId, pub SubstateOffset);

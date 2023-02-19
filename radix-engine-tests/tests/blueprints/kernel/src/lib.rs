@@ -3,7 +3,7 @@ use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 
 // TODO: de-dup
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum GlobalSubstate {
     Component(ComponentId),
     Resource(ResourceManagerId),

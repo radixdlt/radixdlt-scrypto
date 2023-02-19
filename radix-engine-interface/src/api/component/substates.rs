@@ -2,7 +2,7 @@ use crate::api::types::*;
 use crate::data::model::Own;
 use radix_engine_derive::*;
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq)]
 pub struct ComponentStateSubstate {
     pub raw: Vec<u8>,
 }
@@ -13,7 +13,7 @@ impl ComponentStateSubstate {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ComponentInfoSubstate {
     pub package_address: PackageAddress,
     pub blueprint_name: String,
@@ -28,12 +28,12 @@ impl ComponentInfoSubstate {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ComponentRoyaltyConfigSubstate {
     pub royalty_config: RoyaltyConfig,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ComponentRoyaltyAccumulatorSubstate {
     pub royalty: Own,
 }

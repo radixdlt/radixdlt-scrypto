@@ -13,14 +13,14 @@ use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::data::{ScryptoDecode, ScryptoValueDisplayContext};
 use utils::ContextualDisplay;
 
-#[derive(Debug, Clone, Default, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Default, ScryptoSbor)]
 pub struct ResourcesUsage {
     pub heap_allocations_sum: usize,
     pub heap_peak_memory: usize,
     pub cpu_cycles: u64,
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct TransactionExecution {
     pub fee_summary: FeeSummary,
     pub events: Vec<TrackedEvent>,
@@ -81,7 +81,7 @@ impl TransactionOutcome {
     }
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct EntityChanges {
     pub new_package_addresses: Vec<PackageAddress>,
     pub new_component_addresses: Vec<ComponentAddress>,
@@ -114,17 +114,17 @@ impl EntityChanges {
     }
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct RejectResult {
     pub error: RejectionError,
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct AbortResult {
     pub reason: AbortReason,
 }
 
-#[derive(Debug, Clone, Display, PartialEq, Eq, Encode, Decode, Categorize)]
+#[derive(Debug, Clone, Display, PartialEq, Eq, Sbor)]
 pub enum AbortReason {
     ConfiguredAbortTriggeredOnFeeLoanRepayment,
 }

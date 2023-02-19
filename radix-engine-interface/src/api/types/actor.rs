@@ -3,13 +3,13 @@ use crate::api::types::*;
 use crate::*;
 use sbor::rust::string::String;
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub enum PackageIdentifier {
     Scrypto(PackageAddress),
     Native(NativePackage),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub enum NativePackage {
     Auth,
     Royalty,
@@ -19,7 +19,7 @@ pub enum NativePackage {
     Root,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub enum FnIdentifier {
     Scrypto(ScryptoFnIdentifier),
     Native(NativeFn),
@@ -42,7 +42,7 @@ impl FnIdentifier {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct ScryptoFnIdentifier {
     pub package_address: PackageAddress,
     pub blueprint_name: String,
@@ -67,20 +67,7 @@ impl ScryptoFnIdentifier {
     }
 }
 
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    Categorize,
-    Encode,
-    Decode,
-    LegacyDescribe,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor, LegacyDescribe)]
 pub enum NativeFn {
     AccessRulesChain(AccessRulesChainFn),
     ComponentRoyalty(ComponentRoyaltyFn),
@@ -117,9 +104,7 @@ impl NativeFn {
     IntoStaticStr,
     AsRefStr,
     Display,
-    Categorize,
-    Encode,
-    Decode,
+    Sbor,
     LegacyDescribe,
 )]
 #[strum(serialize_all = "snake_case")]
@@ -146,9 +131,7 @@ pub enum AccessRulesChainFn {
     IntoStaticStr,
     AsRefStr,
     Display,
-    Categorize,
-    Encode,
-    Decode,
+    Sbor,
     LegacyDescribe,
 )]
 #[strum(serialize_all = "snake_case")]
@@ -171,9 +154,7 @@ pub enum MetadataFn {
     IntoStaticStr,
     AsRefStr,
     Display,
-    Categorize,
-    Encode,
-    Decode,
+    Sbor,
     LegacyDescribe,
 )]
 #[strum(serialize_all = "snake_case")]
@@ -196,9 +177,7 @@ pub enum ComponentRoyaltyFn {
     IntoStaticStr,
     AsRefStr,
     Display,
-    Categorize,
-    Encode,
-    Decode,
+    Sbor,
     LegacyDescribe,
 )]
 #[strum(serialize_all = "snake_case")]
@@ -223,9 +202,7 @@ pub enum PackageFn {
     IntoStaticStr,
     AsRefStr,
     Display,
-    Categorize,
-    Encode,
-    Decode,
+    Sbor,
     LegacyDescribe,
 )]
 #[strum(serialize_all = "snake_case")]

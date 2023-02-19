@@ -3,7 +3,7 @@ use crate::value_kind::*;
 use crate::*;
 
 /// Represents an error ocurred during decoding.
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum DecodeError {
     ExtraTrailingBytes(usize),
 

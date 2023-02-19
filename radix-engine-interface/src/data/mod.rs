@@ -26,10 +26,7 @@ pub use custom_value_kind::*;
 pub use custom_well_known_types::*;
 pub use indexed_value::*;
 use sbor::rust::vec::Vec;
-use sbor::{
-    Categorize, Decode, DecodeError, Decoder, Encode, EncodeError, Encoder, Value, ValueKind,
-    VecDecoder, VecEncoder,
-};
+use sbor::*;
 pub use schema_matcher::*;
 pub use schema_path::*;
 pub use value_formatter::*;
@@ -64,6 +61,12 @@ impl<T: for<'a> Decode<ScryptoCustomValueKind, ScryptoDecoder<'a>>> ScryptoDecod
 
 pub trait ScryptoEncode: for<'a> Encode<ScryptoCustomValueKind, ScryptoEncoder<'a>> {}
 impl<T: for<'a> Encode<ScryptoCustomValueKind, ScryptoEncoder<'a>> + ?Sized> ScryptoEncode for T {}
+
+pub trait ScryptoDescribe: Describe<ScryptoCustomTypeKind<GlobalTypeId>> {}
+impl<T: Describe<ScryptoCustomTypeKind<GlobalTypeId>>> ScryptoDescribe for T {}
+
+pub trait ScryptoSbor: ScryptoCategorize + ScryptoDecode + ScryptoEncode + ScryptoDescribe {}
+impl<T: ScryptoCategorize + ScryptoDecode + ScryptoEncode + ScryptoDescribe> ScryptoSbor for T {}
 
 /// Encodes a data structure into byte array.
 pub fn scrypto_encode<T: ScryptoEncode + ?Sized>(value: &T) -> Result<Vec<u8>, EncodeError> {

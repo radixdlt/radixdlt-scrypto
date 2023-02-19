@@ -7,16 +7,7 @@ use sbor::rust::vec::Vec;
 use transaction_data::*;
 
 #[derive(
-    Debug,
-    Clone,
-    Eq,
-    PartialEq,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    ManifestCategorize,
-    ManifestEncode,
-    ManifestDecode,
+    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
 )]
 pub struct PackagePublishInvocation {
     pub package_address: Option<[u8; 26]>, // TODO: Clean this up
@@ -50,16 +41,7 @@ impl Into<CallTableInvocation> for PackagePublishInvocation {
 }
 
 #[derive(
-    Debug,
-    Clone,
-    Eq,
-    PartialEq,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    ManifestCategorize,
-    ManifestEncode,
-    ManifestDecode,
+    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
 )]
 pub struct PackagePublishNativeInvocation {
     pub package_address: Option<[u8; 26]>, // TODO: Clean this up
@@ -94,16 +76,7 @@ impl Into<CallTableInvocation> for PackagePublishNativeInvocation {
 }
 
 #[derive(
-    Debug,
-    Clone,
-    Eq,
-    PartialEq,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    ManifestCategorize,
-    ManifestEncode,
-    ManifestDecode,
+    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
 )]
 pub struct PackageSetRoyaltyConfigInvocation {
     pub receiver: PackageAddress,
@@ -133,16 +106,7 @@ impl Into<CallTableInvocation> for PackageSetRoyaltyConfigInvocation {
 }
 
 #[derive(
-    Debug,
-    Clone,
-    Eq,
-    PartialEq,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    ManifestCategorize,
-    ManifestEncode,
-    ManifestDecode,
+    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
 )]
 pub struct PackageSetRoyaltyConfigExecutable {
     pub receiver: RENodeId,
@@ -150,16 +114,7 @@ pub struct PackageSetRoyaltyConfigExecutable {
 }
 
 #[derive(
-    Debug,
-    Clone,
-    Eq,
-    PartialEq,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    ManifestCategorize,
-    ManifestEncode,
-    ManifestDecode,
+    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
 )]
 pub struct PackageClaimRoyaltyInvocation {
     pub receiver: PackageAddress,
@@ -187,15 +142,7 @@ impl Into<CallTableInvocation> for PackageClaimRoyaltyInvocation {
     }
 }
 
-#[derive(
-    Debug,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    ManifestCategorize,
-    ManifestEncode,
-    ManifestDecode,
-)]
+#[derive(Debug, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode)]
 pub struct PackageClaimRoyaltyExecutable {
     pub receiver: RENodeId,
 }

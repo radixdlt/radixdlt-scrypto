@@ -2,6 +2,7 @@ use crate::abi::*;
 use crate::address::{AddressDisplayContext, AddressError, NO_NETWORK};
 use crate::api::types::*;
 use crate::blueprints::resource::*;
+use crate::data::ScryptoCustomTypeKind;
 use crate::data::ScryptoCustomValueKind;
 use crate::data::ScryptoEncoder;
 use crate::*;
@@ -115,6 +116,11 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for A
         decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
         Self::decode_body_common(decoder)
     }
+}
+
+impl Describe<ScryptoCustomTypeKind<GlobalTypeId>> for Address {
+    const TYPE_ID: GlobalTypeId =
+        GlobalTypeId::well_known(crate::data::well_known_scrypto_custom_types::ADDRESS_ID);
 }
 
 impl scrypto_abi::LegacyDescribe for Address {

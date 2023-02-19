@@ -23,7 +23,7 @@ use radix_engine_interface::blueprints::resource::Bucket;
 
 pub struct Package;
 
-#[derive(Debug, Clone, PartialEq, Eq, Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum PackageError {
     InvalidRequestData(DecodeError),
     InvalidAbi(DecodeError),

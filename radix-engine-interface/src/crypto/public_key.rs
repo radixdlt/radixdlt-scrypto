@@ -8,7 +8,7 @@ use sbor::*;
     derive(serde::Serialize, serde::Deserialize),
     serde(tag = "type", content = "public_key")
 )]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sbor)]
 pub enum PublicKey {
     EcdsaSecp256k1(EcdsaSecp256k1PublicKey),
     EddsaEd25519(EddsaEd25519PublicKey),
