@@ -47,7 +47,7 @@ impl ComponentAccessRules {
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
                     index: self.index,
-                    key: AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, method_name.to_string()),
+                    key: AccessRuleKey::new(NodeModuleId::SELF, method_name.to_string()),
                     rule: AccessRuleEntry::AccessRule(access_rule),
                 })
                 .unwrap(),
@@ -64,7 +64,7 @@ impl ComponentAccessRules {
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
                     index: self.index,
-                    key: AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, method_name.to_string()),
+                    key: AccessRuleKey::new(NodeModuleId::SELF, method_name.to_string()),
                     mutability: AccessRule::DenyAll,
                 })
                 .unwrap(),

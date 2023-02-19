@@ -1641,7 +1641,6 @@ mod tests {
                 "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak",
             )
             .unwrap();
-        let owner_badge = NonFungibleGlobalId::new(resource, NonFungibleLocalId::integer(1));
 
         generate_instruction_ok!(
             r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Bucket("xrd_bucket");"#,
@@ -1684,44 +1683,6 @@ mod tests {
                 args: args!()
             },
         );
-        generate_instruction_ok!(
-            r#"PUBLISH_PACKAGE Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Blob("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791") Map<String, Tuple>() Map<String, String>() Tuple(Map<Enum, Enum>(), Map<String, Enum>(), Enum("AccessRule::DenyAll"), Map<Enum, Enum>(), Map<String, Enum>(), Enum("AccessRule::DenyAll"));"#,
-            BasicInstruction::PublishPackage {
-                code: ManifestBlobRef(
-                    "a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0"
-                        .parse()
-                        .unwrap()
-                ),
-                abi: ManifestBlobRef(
-                    "554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791"
-                        .parse()
-                        .unwrap()
-                ),
-                royalty_config: BTreeMap::new(),
-                metadata: BTreeMap::new(),
-                access_rules: AccessRules::new()
-            },
-            "a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0",
-            "554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791"
-        );
-        generate_instruction_ok!(
-            r#"PUBLISH_PACKAGE_WITH_OWNER Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Blob("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791") NonFungibleGlobalId("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak:#1#");"#,
-            BasicInstruction::PublishPackageWithOwner {
-                code: ManifestBlobRef(
-                    "a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0"
-                        .parse()
-                        .unwrap()
-                ),
-                abi: ManifestBlobRef(
-                    "554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791"
-                        .parse()
-                        .unwrap()
-                ),
-                owner_badge: owner_badge.clone()
-            },
-            "a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0",
-            "554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791"
-        );
 
         generate_instruction_ok!(
             r#"MINT_FUNGIBLE ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak") Decimal("100");"#,
@@ -1742,6 +1703,30 @@ mod tests {
                     )
                 )])
             },
+        );
+    }
+
+    #[test]
+    fn test_publish_instruction() {
+        generate_instruction_ok!(
+            r#"PUBLISH_PACKAGE Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Blob("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791") Map<String, Tuple>() Map<String, String>() Tuple(Map<Tuple, Enum>(), Map<String, Enum>(), Enum("AccessRule::DenyAll"), Map<Tuple, Enum>(), Map<String, Enum>(), Enum("AccessRule::DenyAll"));"#,
+            BasicInstruction::PublishPackage {
+                code: ManifestBlobRef(
+                    "a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0"
+                        .parse()
+                        .unwrap()
+                ),
+                abi: ManifestBlobRef(
+                    "554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791"
+                        .parse()
+                        .unwrap()
+                ),
+                royalty_config: BTreeMap::new(),
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new()
+            },
+            "a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0",
+            "554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791"
         );
     }
 

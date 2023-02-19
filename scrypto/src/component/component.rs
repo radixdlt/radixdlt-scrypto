@@ -56,17 +56,17 @@ pub trait Component {
         let mut access_rules =
             AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll);
         access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::ScryptoMethod(NodeModuleId::Metadata, METADATA_GET_IDENT.to_string()),
+            AccessRuleKey::new(NodeModuleId::Metadata, METADATA_GET_IDENT.to_string()),
             AccessRule::AllowAll,
             rule!(require(owner_badge.clone())),
         );
         access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::ScryptoMethod(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
+            AccessRuleKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
             rule!(require(owner_badge.clone())),
             rule!(require(owner_badge.clone())),
         );
         access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::ScryptoMethod(
+            AccessRuleKey::new(
                 NodeModuleId::ComponentRoyalty,
                 COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(),
             ),
@@ -74,7 +74,7 @@ pub trait Component {
             rule!(require(owner_badge.clone())),
         );
         access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::ScryptoMethod(
+            AccessRuleKey::new(
                 NodeModuleId::ComponentRoyalty,
                 COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
             ),

@@ -295,7 +295,7 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
             .set_method_access_rule(
                 GlobalAddress::Component(test_runner.component_address),
                 0,
-                AccessRuleKey::ScryptoMethod(NodeModuleId::SELF, "borrow_funds".to_string()),
+                AccessRuleKey::new(NodeModuleId::SELF, "borrow_funds".to_string()),
                 rule!(deny_all),
             )
             .build(),
@@ -316,23 +316,23 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
 fn user_can_not_mutate_auth_on_methods_that_control_auth() {
     // Arrange
     for access_rule_key in [
-        AccessRuleKey::ScryptoMethod(
+        AccessRuleKey::new(
             NodeModuleId::AccessRules,
             ACCESS_RULES_GET_LENGTH_IDENT.to_string(),
         ),
-        AccessRuleKey::ScryptoMethod(
+        AccessRuleKey::new(
             NodeModuleId::AccessRules,
             ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT.to_string(),
         ),
-        AccessRuleKey::ScryptoMethod(
+        AccessRuleKey::new(
             NodeModuleId::AccessRules,
             ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT.to_string(),
         ),
-        AccessRuleKey::ScryptoMethod(
+        AccessRuleKey::new(
             NodeModuleId::AccessRules,
             ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT.to_string(),
         ),
-        AccessRuleKey::ScryptoMethod(
+        AccessRuleKey::new(
             NodeModuleId::AccessRules,
             ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT.to_string(),
         ),

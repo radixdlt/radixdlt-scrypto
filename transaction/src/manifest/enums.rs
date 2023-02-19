@@ -81,24 +81,6 @@ lazy_static! {
 
         known_enum!(
             m,
-            enum AccessRuleKey {
-                Scrypto = 0;
-                Native = 1;
-            }
-        );
-
-        known_enum!(
-            m,
-            enum NativeFn {
-                AccessRulesChain = 0;
-                Package = 1;
-                TransactionProcessor = 2;
-                Root = 3;
-            }
-        );
-
-        known_enum!(
-            m,
             enum NodeModuleId {
                 PackageTypeInfo = 0;
                 SELF = 1;
@@ -108,13 +90,6 @@ lazy_static! {
                 AccessRules1 = 5;
                 ComponentRoyalty = 6;
                 PackageRoyalty = 7;
-            }
-        );
-
-        known_enum!(
-            m,
-            enum PackageFn {
-                Publish = 0;
             }
         );
 

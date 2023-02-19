@@ -19,9 +19,8 @@ PUBLISH_PACKAGE
     Map<String, Tuple>()       # Royalty Configuration
     Map<String, String>()      # Metadata 
     Tuple(                     # Access Rules Struct
-        Map<Enum, Enum>(       # Method auth Field
-            Enum(
-                "AccessRuleKey::Scrypto",
+        Map<Tuple, Enum>(       # Method auth Field
+            Tuple(
                 Enum("NodeModuleId::PackageRoyalty"),
                 "set_royalty_config"
             ),
@@ -41,8 +40,7 @@ PUBLISH_PACKAGE
                     )
                 )
             ),
-            Enum(
-                "AccessRuleKey::Scrypto",
+            Tuple(
                 Enum("NodeModuleId::PackageRoyalty"),
                 "claim_royalty"
             ),
@@ -62,8 +60,7 @@ PUBLISH_PACKAGE
                     )
                 )
             ),
-            Enum(
-                "AccessRuleKey::Scrypto",
+            Tuple(
                 Enum("NodeModuleId::Metadata"),
                 "set"
             ),
@@ -83,8 +80,7 @@ PUBLISH_PACKAGE
                     )
                 )
             ),
-            Enum(
-                "AccessRuleKey::Scrypto",
+            Tuple(
                 Enum("NodeModuleId::Metadata"),
                 "get"
             ),
@@ -95,9 +91,8 @@ PUBLISH_PACKAGE
         ), 
         Map<String, Enum>(),     # Grouped Auth Field
         Enum("AccessRule::DenyAll"),         # Default Auth Field
-        Map<Enum, Enum>(         # Method Auth Mutability Field
-            Enum(
-                "AccessRuleKey::Scrypto",
+        Map<Tuple, Enum>(         # Method Auth Mutability Field
+            Tuple(
                 Enum("NodeModuleId::PackageRoyalty"),
                 "set_royalty_config"
             ),
@@ -114,8 +109,7 @@ PUBLISH_PACKAGE
                     )
                 )
             ),
-            Enum(
-                "AccessRuleKey::Scrypto",
+            Tuple(
                 Enum("NodeModuleId::PackageRoyalty"),
                 "claim_royalty"
             ),
@@ -132,8 +126,7 @@ PUBLISH_PACKAGE
                     )
                 )
             ),
-            Enum(
-                "AccessRuleKey::Scrypto",
+            Tuple(
                 Enum("NodeModuleId::Metadata"),
                 "set"
             ), 
@@ -150,8 +143,7 @@ PUBLISH_PACKAGE
                     )
                 )
             ),
-            Enum(
-                "AccessRuleKey::Scrypto",
+            Tuple(
                 Enum("NodeModuleId::Metadata"),
                 "get"
             ),
