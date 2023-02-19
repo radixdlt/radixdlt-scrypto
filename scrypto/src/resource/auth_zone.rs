@@ -1,6 +1,6 @@
 use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::types::ScryptoReceiver;
 use radix_engine_interface::api::ClientComponentApi;
+use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::math::Decimal;
@@ -21,7 +21,7 @@ impl ComponentAuthZone {
         let proof: Proof = proof.into();
 
         env.call_method(
-            ScryptoReceiver::AuthZoneStack,
+            RENodeId::AuthZoneStack,
             AUTH_ZONE_PUSH_IDENT,
             scrypto_encode(&AuthZonePushInput { proof }).unwrap(),
         )
@@ -32,7 +32,7 @@ impl ComponentAuthZone {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                ScryptoReceiver::AuthZoneStack,
+                RENodeId::AuthZoneStack,
                 AUTH_ZONE_POP_IDENT,
                 scrypto_encode(&AuthZonePopInput {}).unwrap(),
             )
@@ -44,7 +44,7 @@ impl ComponentAuthZone {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                ScryptoReceiver::AuthZoneStack,
+                RENodeId::AuthZoneStack,
                 AUTH_ZONE_CREATE_PROOF_IDENT,
                 scrypto_encode(&AuthZoneCreateProofInput { resource_address }).unwrap(),
             )
@@ -56,7 +56,7 @@ impl ComponentAuthZone {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                ScryptoReceiver::AuthZoneStack,
+                RENodeId::AuthZoneStack,
                 AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_IDENT,
                 scrypto_encode(&AuthZoneCreateProofByAmountInput {
                     resource_address,
@@ -75,7 +75,7 @@ impl ComponentAuthZone {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                ScryptoReceiver::AuthZoneStack,
+                RENodeId::AuthZoneStack,
                 AUTH_ZONE_CREATE_PROOF_BY_IDS_IDENT,
                 scrypto_encode(&AuthZoneCreateProofByIdsInput {
                     resource_address,
@@ -90,7 +90,7 @@ impl ComponentAuthZone {
     pub fn assert_access_rule(access_rule: AccessRule) {
         let mut env = ScryptoEnv;
         env.call_method(
-            ScryptoReceiver::AuthZoneStack,
+            RENodeId::AuthZoneStack,
             AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
             scrypto_encode(&AuthZoneAssertAccessRuleInput { access_rule }).unwrap(),
         )

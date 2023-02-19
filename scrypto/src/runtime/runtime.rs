@@ -23,7 +23,7 @@ impl Runtime {
     pub fn current_epoch() -> u64 {
         let rtn = ScryptoEnv
             .call_method(
-                ScryptoReceiver::Global(EPOCH_MANAGER),
+                RENodeId::Global(EPOCH_MANAGER.into()),
                 EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
                 scrypto_encode(&EpochManagerGetCurrentEpochInput).unwrap(),
             )
@@ -75,7 +75,7 @@ impl Runtime {
     ) -> T {
         let output = ScryptoEnv
             .call_method(
-                ScryptoReceiver::Global(component_address),
+                RENodeId::Global(component_address.into()),
                 method.as_ref(),
                 args,
             )
@@ -87,7 +87,7 @@ impl Runtime {
     pub fn transaction_hash() -> Hash {
         let output = ScryptoEnv
             .call_method(
-                ScryptoReceiver::TransactionRuntime,
+                RENodeId::TransactionRuntime,
                 TRANSACTION_RUNTIME_GET_HASH_IDENT,
                 scrypto_encode(&TransactionRuntimeGetHashInput {}).unwrap(),
             )
@@ -99,7 +99,7 @@ impl Runtime {
     pub fn generate_uuid() -> u128 {
         let output = ScryptoEnv
             .call_method(
-                ScryptoReceiver::TransactionRuntime,
+                RENodeId::TransactionRuntime,
                 TRANSACTION_RUNTIME_GENERATE_UUID_IDENT,
                 scrypto_encode(&TransactionRuntimeGenerateUuid {}).unwrap(),
             )

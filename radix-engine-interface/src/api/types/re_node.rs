@@ -156,6 +156,24 @@ pub enum GlobalAddress {
     Resource(ResourceAddress),
 }
 
+impl From<ComponentAddress> for GlobalAddress {
+    fn from(value: ComponentAddress) -> Self {
+        GlobalAddress::Component(value)
+    }
+}
+
+impl From<PackageAddress> for GlobalAddress {
+    fn from(value: PackageAddress) -> Self {
+        GlobalAddress::Package(value)
+    }
+}
+
+impl From<ResourceAddress> for GlobalAddress {
+    fn from(value: ResourceAddress) -> Self {
+        GlobalAddress::Resource(value)
+    }
+}
+
 impl Into<ComponentAddress> for GlobalAddress {
     fn into(self) -> ComponentAddress {
         match self {

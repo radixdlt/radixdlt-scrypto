@@ -6,7 +6,7 @@ use radix_engine_interface::api::node_modules::auth::{
     ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT, ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
 };
 use radix_engine_interface::api::types::{
-    ComponentAddress, ComponentId, GlobalAddress, NodeModuleId, RENodeId, ScryptoReceiver, ToString,
+    ComponentAddress, ComponentId, GlobalAddress, NodeModuleId, RENodeId, ToString,
 };
 use radix_engine_interface::api::ClientComponentApi;
 use radix_engine_interface::blueprints::resource::{AccessRule, AccessRuleEntry, AccessRuleKey};
@@ -79,15 +79,6 @@ impl ComponentAccessRules {
 pub enum ComponentIdentifier {
     RENodeId(ComponentId),
     GlobalAddress(ComponentAddress),
-}
-
-impl Into<ScryptoReceiver> for ComponentIdentifier {
-    fn into(self) -> ScryptoReceiver {
-        match self {
-            ComponentIdentifier::RENodeId(component_id) => ScryptoReceiver::Component(component_id),
-            ComponentIdentifier::GlobalAddress(address) => ScryptoReceiver::Global(address),
-        }
-    }
 }
 
 impl From<ComponentId> for ComponentIdentifier {

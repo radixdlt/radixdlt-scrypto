@@ -17,19 +17,19 @@ mod reentrant_component {
 
         pub fn call_mut_self(&mut self, address: ComponentAddress) {
             ScryptoEnv
-                .call_method(ScryptoReceiver::Global(address), "mut_func", args!())
+                .call_method(RENodeId::Global(address.into()), "mut_func", args!())
                 .unwrap();
         }
 
         pub fn call_self(&self, address: ComponentAddress) {
             ScryptoEnv
-                .call_method(ScryptoReceiver::Global(address), "func", args!())
+                .call_method(RENodeId::Global(address.into()), "func", args!())
                 .unwrap();
         }
 
         pub fn call_mut_self_2(&self, address: ComponentAddress) {
             ScryptoEnv
-                .call_method(ScryptoReceiver::Global(address), "mut_func", args!())
+                .call_method(RENodeId::Global(address.into()), "mut_func", args!())
                 .unwrap();
         }
     }

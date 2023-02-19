@@ -21,7 +21,7 @@ impl Invocation for FunctionInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct MethodInvocation {
-    pub receiver: (ScryptoReceiver, NodeModuleId),
+    pub receiver: (RENodeId, NodeModuleId),
     pub fn_name: String,
     pub args: Vec<u8>,
 }

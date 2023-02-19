@@ -1316,7 +1316,7 @@ impl ResourceManagerBlueprint {
             .clone();
 
             api.call_method(
-                ScryptoReceiver::AuthZoneStack,
+                RENodeId::AuthZoneStack,
                 AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
                 scrypto_encode(&AuthZoneAssertAccessRuleInput { access_rule }).unwrap(),
             )?;
@@ -1381,7 +1381,7 @@ impl ResourceManagerBlueprint {
             .clone();
 
             api.call_method(
-                ScryptoReceiver::AuthZoneStack,
+                RENodeId::AuthZoneStack,
                 AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
                 scrypto_encode(&AuthZoneAssertAccessRuleInput { access_rule }).unwrap(),
             )?;

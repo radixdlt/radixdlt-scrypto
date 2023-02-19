@@ -96,7 +96,7 @@ pub struct OwnedComponent(pub ComponentId);
 impl Component for OwnedComponent {
     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
         let output = ScryptoEnv
-            .call_method(ScryptoReceiver::Component(self.0), method, args)
+            .call_method(RENodeId::Component(self.0), method, args)
             .unwrap();
         scrypto_decode(&output).unwrap()
     }
@@ -104,7 +104,7 @@ impl Component for OwnedComponent {
     fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
         ScryptoEnv
             .call_module_method(
-                ScryptoReceiver::Component(self.0),
+                RENodeId::Component(self.0),
                 NodeModuleId::Metadata,
                 METADATA_SET_IDENT,
                 scrypto_encode(&MetadataSetInput {
@@ -119,7 +119,7 @@ impl Component for OwnedComponent {
     fn add_access_check(&self, access_rules: AccessRules) {
         ScryptoEnv
             .call_module_method(
-                ScryptoReceiver::Component(self.0),
+                RENodeId::Component(self.0),
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_ADD_ACCESS_CHECK_IDENT,
                 scrypto_encode(&AccessRulesAddAccessCheckInput { access_rules }).unwrap(),
@@ -130,7 +130,7 @@ impl Component for OwnedComponent {
     fn set_royalty_config(&self, royalty_config: RoyaltyConfig) {
         ScryptoEnv
             .call_module_method(
-                ScryptoReceiver::Component(self.0),
+                RENodeId::Component(self.0),
                 NodeModuleId::ComponentRoyalty,
                 COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
                 scrypto_encode(&ComponentSetRoyaltyConfigInput { royalty_config }).unwrap(),
@@ -141,7 +141,7 @@ impl Component for OwnedComponent {
     fn claim_royalty(&self) -> Bucket {
         let rtn = ScryptoEnv
             .call_module_method(
-                ScryptoReceiver::Component(self.0),
+                RENodeId::Component(self.0),
                 NodeModuleId::ComponentRoyalty,
                 COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
                 scrypto_encode(&ComponentClaimRoyaltyInput {}).unwrap(),
@@ -161,7 +161,7 @@ impl Component for OwnedComponent {
     fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
         let rtn = ScryptoEnv
             .call_module_method(
-                ScryptoReceiver::Component(self.0),
+                RENodeId::Component(self.0),
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_GET_LENGTH_IDENT,
                 scrypto_encode(&AccessRulesGetLengthInput {}).unwrap(),
@@ -188,7 +188,7 @@ pub struct GlobalComponentRef(pub ComponentAddress);
 impl Component for GlobalComponentRef {
     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
         let output = ScryptoEnv
-            .call_method(ScryptoReceiver::Global(self.0), method, args)
+            .call_method(RENodeId::Global(self.0.into()), method, args)
             .unwrap();
         scrypto_decode(&output).unwrap()
     }
@@ -196,7 +196,7 @@ impl Component for GlobalComponentRef {
     fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
         ScryptoEnv
             .call_module_method(
-                ScryptoReceiver::Global(self.0),
+                RENodeId::Global(self.0.into()),
                 NodeModuleId::Metadata,
                 METADATA_SET_IDENT,
                 scrypto_encode(&MetadataSetInput {
@@ -211,7 +211,7 @@ impl Component for GlobalComponentRef {
     fn add_access_check(&self, access_rules: AccessRules) {
         ScryptoEnv
             .call_module_method(
-                ScryptoReceiver::Global(self.0),
+                RENodeId::Global(self.0.into()),
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_ADD_ACCESS_CHECK_IDENT,
                 scrypto_encode(&AccessRulesAddAccessCheckInput { access_rules }).unwrap(),
@@ -222,7 +222,7 @@ impl Component for GlobalComponentRef {
     fn set_royalty_config(&self, royalty_config: RoyaltyConfig) {
         ScryptoEnv
             .call_module_method(
-                ScryptoReceiver::Global(self.0),
+                RENodeId::Global(self.0.into()),
                 NodeModuleId::ComponentRoyalty,
                 COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
                 scrypto_encode(&ComponentSetRoyaltyConfigInput { royalty_config }).unwrap(),
@@ -233,7 +233,7 @@ impl Component for GlobalComponentRef {
     fn claim_royalty(&self) -> Bucket {
         let rtn = ScryptoEnv
             .call_module_method(
-                ScryptoReceiver::Global(self.0),
+                RENodeId::Global(self.0.into()),
                 NodeModuleId::ComponentRoyalty,
                 COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
                 scrypto_encode(&ComponentClaimRoyaltyInput {}).unwrap(),
@@ -253,7 +253,7 @@ impl Component for GlobalComponentRef {
     fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
         let rtn = ScryptoEnv
             .call_module_method(
-                ScryptoReceiver::Global(self.0),
+                RENodeId::Global(self.0.into()),
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_GET_LENGTH_IDENT,
                 scrypto_encode(&AccessRulesGetLengthInput {}).unwrap(),

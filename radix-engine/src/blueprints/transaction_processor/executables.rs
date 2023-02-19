@@ -446,7 +446,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     )?;
 
                     let result = api.call_method(
-                        ScryptoReceiver::Global(*component_address),
+                        RENodeId::Global(GlobalAddress::Component(*component_address)),
                         method_name,
                         args.into_vec(),
                     )?;
@@ -513,7 +513,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     amount,
                 }) => {
                     let result = api.call_method(
-                        ScryptoReceiver::Resource(*resource_address),
+                        RENodeId::Global(GlobalAddress::Resource(*resource_address)),
                         RESOURCE_MANAGER_MINT_FUNGIBLE,
                         scrypto_encode(&ResourceManagerMintFungibleInput {
                             amount: amount.clone(),
@@ -534,7 +534,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     entries,
                 }) => {
                     let result = api.call_method(
-                        ScryptoReceiver::Resource(*resource_address),
+                        RENodeId::Global(GlobalAddress::Resource(*resource_address)),
                         RESOURCE_MANAGER_MINT_NON_FUNGIBLE,
                         scrypto_encode(&ResourceManagerMintNonFungibleInput {
                             entries: entries.clone(),
@@ -555,7 +555,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     entries,
                 }) => {
                     let result = api.call_method(
-                        ScryptoReceiver::Resource(*resource_address),
+                        RENodeId::Global(GlobalAddress::Resource(*resource_address)),
                         RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE,
                         scrypto_encode(&ResourceManagerMintUuidNonFungibleInput {
                             entries: entries.clone(),
@@ -573,7 +573,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 }
                 Instruction::Basic(BasicInstruction::RecallResource { vault_id, amount }) => {
                     let result = api.call_method(
-                        ScryptoReceiver::Vault(*vault_id),
+                        RENodeId::Vault(*vault_id),
                         VAULT_RECALL_IDENT,
                         scrypto_encode(&VaultRecallInput {
                             amount: amount.clone(),
@@ -594,47 +594,16 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     key,
                     value,
                 }) => {
-                    let result = match entity_address {
-                        GlobalAddress::Resource(address) => {
-                            let result = api.call_module_method(
-                                ScryptoReceiver::Resource(*address),
-                                NodeModuleId::Metadata,
-                                METADATA_SET_IDENT,
-                                scrypto_encode(&MetadataSetInput {
-                                    key: key.clone(),
-                                    value: value.clone(),
-                                })
-                                .unwrap(),
-                            )?;
-                            result
-                        }
-                        GlobalAddress::Component(address) => {
-                            let result = api.call_module_method(
-                                ScryptoReceiver::Global(*address),
-                                NodeModuleId::Metadata,
-                                METADATA_SET_IDENT,
-                                scrypto_encode(&MetadataSetInput {
-                                    key: key.clone(),
-                                    value: value.clone(),
-                                })
-                                .unwrap(),
-                            )?;
-                            result
-                        }
-                        GlobalAddress::Package(address) => {
-                            let result = api.call_module_method(
-                                ScryptoReceiver::Package(*address),
-                                NodeModuleId::Metadata,
-                                METADATA_SET_IDENT,
-                                scrypto_encode(&MetadataSetInput {
-                                    key: key.clone(),
-                                    value: value.clone(),
-                                })
-                                .unwrap(),
-                            )?;
-                            result
-                        }
-                    };
+                    let result = api.call_module_method(
+                        RENodeId::Global(entity_address.clone()),
+                        NodeModuleId::Metadata,
+                        METADATA_SET_IDENT,
+                        scrypto_encode(&MetadataSetInput {
+                            key: key.clone(),
+                            value: value.clone(),
+                        })
+                            .unwrap(),
+                    )?;
 
                     let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
@@ -649,7 +618,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     royalty_config,
                 }) => {
                     let result = api.call_module_method(
-                        ScryptoReceiver::Package(*package_address),
+                        RENodeId::Global(GlobalAddress::Package(*package_address)),
                         NodeModuleId::PackageRoyalty,
                         PACKAGE_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
                         scrypto_encode(&PackageSetRoyaltyConfigInput {
@@ -671,7 +640,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     royalty_config,
                 }) => {
                     let result = api.call_module_method(
-                        ScryptoReceiver::Global(*component_address),
+                        RENodeId::Global(GlobalAddress::Component(*component_address)),
                         NodeModuleId::ComponentRoyalty,
                         COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
                         scrypto_encode(&ComponentSetRoyaltyConfigInput {
@@ -690,7 +659,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 }
                 Instruction::Basic(BasicInstruction::ClaimPackageRoyalty { package_address }) => {
                     let result = api.call_module_method(
-                        ScryptoReceiver::Package(*package_address),
+                        RENodeId::Global(GlobalAddress::Package(*package_address)),
                         NodeModuleId::PackageRoyalty,
                         PACKAGE_ROYALTY_CLAIM_ROYALTY_IDENT,
                         scrypto_encode(&PackageClaimRoyaltyInput {}).unwrap(),
@@ -708,7 +677,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     component_address,
                 }) => {
                     let result = api.call_module_method(
-                        ScryptoReceiver::Global(*component_address),
+                        RENodeId::Global(GlobalAddress::Component(*component_address)),
                         NodeModuleId::ComponentRoyalty,
                         COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
                         scrypto_encode(&ComponentClaimRoyaltyInput {}).unwrap(),

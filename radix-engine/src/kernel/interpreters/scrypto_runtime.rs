@@ -87,7 +87,7 @@ where
         ident: Vec<u8>,
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let receiver = scrypto_decode::<ScryptoReceiver>(&receiver)
+        let receiver = scrypto_decode::<RENodeId>(&receiver)
             .map_err(WasmRuntimeError::InvalidReceiver)?;
 
         let ident = String::from_utf8(ident).map_err(|_| WasmRuntimeError::InvalidIdent)?;

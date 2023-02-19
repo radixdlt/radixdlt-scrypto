@@ -23,7 +23,7 @@ impl Component {
         Y: ClientApi<E>,
     {
         api.call_module_method(
-            ScryptoReceiver::Component(self.0),
+            RENodeId::Component(self.0),
             NodeModuleId::AccessRules,
             ACCESS_RULES_ADD_ACCESS_CHECK_IDENT,
             scrypto_encode(&AccessRulesAddAccessCheckInput { access_rules }).unwrap(),
@@ -41,7 +41,7 @@ impl Component {
         Y: ClientApi<E>,
     {
         api.call_module_method(
-            ScryptoReceiver::Component(self.0),
+            RENodeId::Component(self.0),
             NodeModuleId::ComponentRoyalty,
             COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
             scrypto_encode(&ComponentSetRoyaltyConfigInput { royalty_config }).unwrap(),

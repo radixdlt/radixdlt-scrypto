@@ -348,7 +348,7 @@ where
 
     fn call_method(
         &mut self,
-        receiver: ScryptoReceiver,
+        receiver: RENodeId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
@@ -357,7 +357,7 @@ where
 
     fn call_module_method(
         &mut self,
-        receiver: ScryptoReceiver,
+        receiver: RENodeId,
         node_module_id: NodeModuleId,
         method_name: &str,
         args: Vec<u8>,
