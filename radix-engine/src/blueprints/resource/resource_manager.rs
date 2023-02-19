@@ -194,7 +194,10 @@ where
 
 fn build_substates(
     mut access_rules_map: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-) -> (ObjectAccessRulesChainSubstate, ObjectAccessRulesChainSubstate) {
+) -> (
+    ObjectAccessRulesChainSubstate,
+    ObjectAccessRulesChainSubstate,
+) {
     let (mint_access_rule, mint_mutability) = access_rules_map
         .remove(&Mint)
         .unwrap_or((DenyAll, rule!(deny_all)));

@@ -103,12 +103,13 @@ impl KernelModule for AuthModule {
                 } => {
                     if identifier.package_address.eq(&PACKAGE) {
                         if identifier.blueprint_name.eq(PACKAGE_BLUEPRINT)
-                            && identifier.ident.eq(PACKAGE_PUBLISH_PRECOMPILED_IDENT) {
-                                vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
-                                    HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
-                                        AuthAddresses::system_role(),
-                                    )),
-                                ))]
+                            && identifier.ident.eq(PACKAGE_PUBLISH_PRECOMPILED_IDENT)
+                        {
+                            vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
+                                HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
+                                    AuthAddresses::system_role(),
+                                )),
+                            ))]
                         } else {
                             vec![]
                         }
@@ -121,62 +122,44 @@ impl KernelModule for AuthModule {
                         )?;
                         let substate_ref = api.kernel_get_substate_ref(handle)?;
                         let substate = substate_ref.package_access_rules();
-                        let local_fn_identifier = (identifier.blueprint_name.to_string(), identifier.ident.to_string());
-                        let access_rule = substate.access_rules.get(&local_fn_identifier).unwrap_or(&substate.default_auth);
+                        let local_fn_identifier = (
+                            identifier.blueprint_name.to_string(),
+                            identifier.ident.to_string(),
+                        );
+                        let access_rule = substate
+                            .access_rules
+                            .get(&local_fn_identifier)
+                            .unwrap_or(&substate.default_auth);
                         let func_auth = convert_contextless(access_rule);
                         vec![func_auth]
                     }
-                },
+                }
 
+                // TODO: Cleanup
+                // SetAccessRule auth is done manually within the method
                 ResolvedActor {
                     receiver:
                         Some(ResolvedReceiver {
-                            receiver: MethodReceiver(RENodeId::Proof(..), ..),
+                            receiver: MethodReceiver(_, NodeModuleId::AccessRules),
                             ..
                         }),
                     ..
                 } => vec![],
 
+                // TODO: Cleanup
                 ResolvedActor {
                     receiver:
                         Some(ResolvedReceiver {
-                            receiver: MethodReceiver(RENodeId::Bucket(..), ..),
-                            ..
-                        }),
-                    ..
-                } => vec![],
-
-                ResolvedActor {
-                    receiver:
-                        Some(ResolvedReceiver {
-                            receiver: MethodReceiver(RENodeId::Worktop, ..),
-                            ..
-                        }),
-                    ..
-                } => vec![],
-
-                ResolvedActor {
-                    receiver:
-                        Some(ResolvedReceiver {
-                            receiver: MethodReceiver(RENodeId::Logger, ..),
-                            ..
-                        }),
-                    ..
-                } => vec![],
-
-                ResolvedActor {
-                    receiver:
-                        Some(ResolvedReceiver {
-                            receiver: MethodReceiver(RENodeId::TransactionRuntime, ..),
-                            ..
-                        }),
-                    ..
-                } => vec![],
-
-                ResolvedActor {
-                    receiver:
-                        Some(ResolvedReceiver {
-                            receiver: MethodReceiver(RENodeId::AuthZoneStack, ..),
+                            receiver:
+                                MethodReceiver(
+                                    RENodeId::Proof(..)
+                                    | RENodeId::Bucket(..)
+                                    | RENodeId::Worktop
+                                    | RENodeId::Logger
+                                    | RENodeId::TransactionRuntime
+                                    | RENodeId::AuthZoneStack,
+                                    ..,
+                                ),
                             ..
                         }),
                     ..
@@ -247,21 +230,6 @@ impl KernelModule for AuthModule {
                     auth
                 }
 
-                // SetAccessRule auth is done manually within the method
-                ResolvedActor {
-                    identifier:
-                        FnIdentifier {
-                            package_address,
-                            blueprint_name,
-                            ..
-                        },
-                    ..
-                } if package_address.eq(&ACCESS_RULES_PACKAGE)
-                    && blueprint_name.eq(ACCESS_RULES_BLUEPRINT) =>
-                {
-                    vec![]
-                }
-
                 ResolvedActor {
                     identifier,
                     receiver:
@@ -270,12 +238,9 @@ impl KernelModule for AuthModule {
                             ..
                         }),
                 } => {
-                    let node_id =
-                        RENodeId::Global(GlobalAddress::Package(identifier.package_address));
-
                     let offset = SubstateOffset::Package(PackageOffset::Info);
                     let handle = api.kernel_lock_substate(
-                        node_id,
+                        RENodeId::Global(GlobalAddress::Package(identifier.package_address)),
                         NodeModuleId::SELF,
                         offset,
                         LockFlags::read_only(),

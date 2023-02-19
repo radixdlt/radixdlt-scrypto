@@ -1,6 +1,6 @@
 use super::global::GlobalAddressSubstate;
-use super::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use super::node_modules::access_rules::AuthZoneStackSubstate;
+use super::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use super::node_modules::metadata::MetadataSubstate;
 use crate::blueprints::access_controller::AccessControllerSubstate;
 use crate::blueprints::account::AccountSubstate;
@@ -18,6 +18,7 @@ use crate::blueprints::resource::VaultSubstate;
 use crate::blueprints::resource::WorktopSubstate;
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::errors::*;
+use crate::system::node_modules::access_rules::PackageAccessRulesSubstate;
 use crate::system::type_info::TypeInfoSubstate;
 use crate::types::*;
 use radix_engine_interface::api::component::*;
@@ -27,7 +28,6 @@ use radix_engine_interface::api::types::{
     SubstateOffset,
 };
 use radix_engine_interface::data::IndexedScryptoValue;
-use crate::system::node_modules::access_rules::PackageAccessRulesSubstate;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum PersistedSubstate {
@@ -243,7 +243,9 @@ impl RuntimeSubstate {
             RuntimeSubstate::PackageRoyaltyAccumulator(value) => {
                 PersistedSubstate::PackageRoyaltyAccumulator(value.clone())
             }
-            RuntimeSubstate::PackageAccessRules(value) => PersistedSubstate::PackageAccessRules(value.clone()),
+            RuntimeSubstate::PackageAccessRules(value) => {
+                PersistedSubstate::PackageAccessRules(value.clone())
+            }
             RuntimeSubstate::NonFungible(value) => PersistedSubstate::NonFungible(value.clone()),
             RuntimeSubstate::KeyValueStoreEntry(value) => {
                 PersistedSubstate::KeyValueStoreEntry(value.clone())
@@ -383,9 +385,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::PackageRoyaltyAccumulator(value) => {
                 SubstateRefMut::PackageRoyaltyAccumulator(value)
             }
-            RuntimeSubstate::PackageAccessRules(value) => {
-                SubstateRefMut::PackageAccessRules(value)
-            }
+            RuntimeSubstate::PackageAccessRules(value) => SubstateRefMut::PackageAccessRules(value),
             RuntimeSubstate::Vault(value) => SubstateRefMut::Vault(value),
             RuntimeSubstate::NonFungible(value) => SubstateRefMut::NonFungible(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => SubstateRefMut::KeyValueStoreEntry(value),
@@ -430,9 +430,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::PackageRoyaltyAccumulator(value) => {
                 SubstateRef::PackageRoyaltyAccumulator(value)
             }
-            RuntimeSubstate::PackageAccessRules(value) => {
-                SubstateRef::PackageAccessRules(value)
-            }
+            RuntimeSubstate::PackageAccessRules(value) => SubstateRef::PackageAccessRules(value),
             RuntimeSubstate::Vault(value) => SubstateRef::Vault(value),
             RuntimeSubstate::NonFungible(value) => SubstateRef::NonFungible(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => SubstateRef::KeyValueStoreEntry(value),
@@ -685,7 +683,6 @@ impl Into<RuntimeSubstate> for PackageAccessRulesSubstate {
         RuntimeSubstate::PackageAccessRules(self)
     }
 }
-
 
 impl Into<RuntimeSubstate> for TransactionRuntimeSubstate {
     fn into(self) -> RuntimeSubstate {

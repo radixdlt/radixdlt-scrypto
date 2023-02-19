@@ -15,9 +15,9 @@ use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::blueprints::clock::ClockCreateInput;
 use radix_engine_interface::blueprints::clock::TimePrecision;
 use radix_engine_interface::blueprints::clock::*;
-use radix_engine_interface::blueprints::resource::{AccessRule, require};
 use radix_engine_interface::blueprints::resource::AccessRuleKey;
 use radix_engine_interface::blueprints::resource::AccessRules;
+use radix_engine_interface::blueprints::resource::{require, AccessRule};
 use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::rule;
 use radix_engine_interface::time::*;
@@ -35,7 +35,10 @@ pub struct ClockNativePackage;
 impl ClockNativePackage {
     pub fn package_access_rules() -> BTreeMap<(String, String), AccessRule> {
         let mut access_rules = BTreeMap::new();
-        access_rules.insert((CLOCK_BLUEPRINT.to_string(), CLOCK_CREATE_IDENT.to_string()), rule!(require(AuthAddresses::system_role())));
+        access_rules.insert(
+            (CLOCK_BLUEPRINT.to_string(), CLOCK_CREATE_IDENT.to_string()),
+            rule!(require(AuthAddresses::system_role())),
+        );
         access_rules
     }
 

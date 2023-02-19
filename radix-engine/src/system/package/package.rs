@@ -4,7 +4,9 @@ use crate::system::global::GlobalAddressSubstate;
 use crate::system::kernel_modules::costing::FIXED_HIGH_FEE;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::access_rules::{ObjectAccessRulesChainSubstate, PackageAccessRulesSubstate};
+use crate::system::node_modules::access_rules::{
+    ObjectAccessRulesChainSubstate, PackageAccessRulesSubstate,
+};
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use crate::wasm::{PrepareError, WasmValidator};

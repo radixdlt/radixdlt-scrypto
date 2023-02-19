@@ -129,7 +129,8 @@ where
                 access_rules: access_rules.clone(),
                 royalty_config: royalty_config.clone(),
                 metadata: metadata.clone(),
-            }).unwrap()
+            })
+            .unwrap(),
         )?;
 
         let package_address: PackageAddress = scrypto_decode(&result).unwrap();

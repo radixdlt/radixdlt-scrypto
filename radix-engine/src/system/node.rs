@@ -82,10 +82,7 @@ impl RENodeModuleInit {
                 );
             }
             RENodeModuleInit::PackageAccessRules(access_rules) => {
-                substates.insert(
-                    SubstateOffset::PackageAccessRules,
-                    access_rules.into(),
-                );
+                substates.insert(SubstateOffset::PackageAccessRules, access_rules.into());
             }
         }
 

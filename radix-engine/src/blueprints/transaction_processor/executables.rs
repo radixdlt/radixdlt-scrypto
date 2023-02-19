@@ -498,7 +498,8 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                             access_rules: access_rules.clone(),
                             royalty_config: royalty_config.clone(),
                             metadata: metadata.clone(),
-                        }).unwrap()
+                        })
+                        .unwrap(),
                     )?;
 
                     let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
