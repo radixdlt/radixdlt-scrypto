@@ -6,7 +6,7 @@ use crate::system::global::GlobalAddressSubstate;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::access_rules::AccessRulesChainSubstate;
+use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
@@ -99,7 +99,7 @@ impl Identity {
         );
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::AccessRulesChain(AccessRulesChainSubstate {
+            RENodeModuleInit::ComponentAccessRulesChain(ObjectAccessRulesChainSubstate {
                 access_rules_chain: vec![access_rules],
             }),
         );

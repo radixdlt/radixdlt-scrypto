@@ -14,7 +14,7 @@ use crate::wasm::WasmEngine;
 use native_sdk::resource::SysBucket;
 use radix_engine_interface::api::component::ComponentInfoSubstate;
 // TODO: clean this up!
-use crate::system::node_modules::access_rules::AccessRulesChainSubstate;
+use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, GlobalAddress, GlobalOffset, LockHandle, ProofOffset, RENodeId,
     SubstateId, SubstateOffset, WorktopOffset,
@@ -170,12 +170,12 @@ where
                         metadata: BTreeMap::new(),
                     }),
                 );
-                let access_rules_substate = AccessRulesChainSubstate {
+                let access_rules_substate = ObjectAccessRulesChainSubstate {
                     access_rules_chain: vec![access_rules],
                 };
                 node_modules.insert(
                     NodeModuleId::AccessRules,
-                    RENodeModuleInit::AccessRulesChain(access_rules_substate),
+                    RENodeModuleInit::ComponentAccessRulesChain(access_rules_substate),
                 );
                 let account_substate = AccountSubstate {
                     vaults: Own::KeyValueStore(kv_store_id.into()),

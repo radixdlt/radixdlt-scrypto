@@ -186,6 +186,7 @@ impl VisibilityProperties {
                 SubstateOffset::Package(PackageOffset::NativeCode) => read_only,
                 SubstateOffset::Package(PackageOffset::WasmCode) => read_only,
                 SubstateOffset::Component(ComponentOffset::State0) => read_only,
+                SubstateOffset::PackageAccessRules => read_only,
                 SubstateOffset::ComponentTypeInfo(_) => read_only,
                 SubstateOffset::AccessRulesChain(_) => read_only,
                 SubstateOffset::Royalty(_) => true,
@@ -375,6 +376,7 @@ impl SubstateProperties {
             SubstateOffset::Account(..) => true,
             SubstateOffset::AccessController(..) => true,
             SubstateOffset::ComponentTypeInfo(..) => true,
+            SubstateOffset::PackageAccessRules => true,
         }
     }
 

@@ -137,12 +137,12 @@ impl ClientPackageApi<ClientApiError> for ScryptoEnv {
         &mut self,
         code: Vec<u8>,
         abi: Vec<u8>,
-        access_rules_chain: Vec<AccessRules>,
+        access_rules: AccessRules,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
     ) -> Result<PackageAddress, ClientApiError> {
         let abi = scrypto_encode(&abi).unwrap();
-        let access_rules_chain = scrypto_encode(&access_rules_chain).unwrap();
+        let access_rules = scrypto_encode(&access_rules).unwrap();
         let royalty_config = scrypto_encode(&royalty_config).unwrap();
         let metadata = scrypto_encode(&metadata).unwrap();
 
@@ -152,8 +152,8 @@ impl ClientPackageApi<ClientApiError> for ScryptoEnv {
                 code.len(),
                 abi.as_ptr(),
                 abi.len(),
-                access_rules_chain.as_ptr(),
-                access_rules_chain.len(),
+                access_rules.as_ptr(),
+                access_rules.len(),
                 royalty_config.as_ptr(),
                 royalty_config.len(),
                 metadata.as_ptr(),

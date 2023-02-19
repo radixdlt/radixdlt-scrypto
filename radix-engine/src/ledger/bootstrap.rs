@@ -30,6 +30,8 @@ use radix_engine_interface::data::*;
 use radix_engine_interface::rule;
 use transaction::model::{BasicInstruction, Instruction, SystemTransaction};
 use transaction::validation::ManifestIdAllocator;
+use crate::blueprints::clock::ClockNativePackage;
+use crate::blueprints::epoch_manager::EpochManagerNativePackage;
 
 const XRD_SYMBOL: &str = "XRD";
 const XRD_NAME: &str = "Radix";
@@ -71,6 +73,8 @@ pub fn create_genesis(
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
+                package_access_rules: BTreeMap::new(),
+                default_package_access_rule: AccessRule::DenyAll,
             })
             .unwrap(),
         }));
@@ -93,6 +97,8 @@ pub fn create_genesis(
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
+                package_access_rules: BTreeMap::new(),
+                default_package_access_rule: AccessRule::DenyAll,
             })
             .unwrap(),
         }));
@@ -116,6 +122,8 @@ pub fn create_genesis(
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
+                package_access_rules: BTreeMap::new(),
+                default_package_access_rule: AccessRule::DenyAll,
             })
             .unwrap(),
         }));
@@ -139,6 +147,8 @@ pub fn create_genesis(
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
+                package_access_rules: BTreeMap::new(),
+                default_package_access_rule: AccessRule::AllowAll,
             })
             .unwrap(),
         }));
@@ -212,6 +222,8 @@ pub fn create_genesis(
                 native_package_code_id: IDENTITY_PACKAGE_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
+                package_access_rules: BTreeMap::new(),
+                default_package_access_rule: AccessRule::AllowAll,
             })
             .unwrap(),
         }));
@@ -235,6 +247,8 @@ pub fn create_genesis(
                 access_rules: AccessRules::new(),
                 dependent_resources: vec![RADIX_TOKEN, PACKAGE_TOKEN],
                 dependent_components: vec![],
+                package_access_rules: EpochManagerNativePackage::package_access_rules(),
+                default_package_access_rule: AccessRule::DenyAll,
             })
             .unwrap(),
         }));
@@ -256,6 +270,8 @@ pub fn create_genesis(
                 access_rules: AccessRules::new(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
+                package_access_rules: ClockNativePackage::package_access_rules(),
+                default_package_access_rule: AccessRule::DenyAll,
             })
             .unwrap(),
         }));
@@ -277,6 +293,8 @@ pub fn create_genesis(
                 access_rules: AccessRules::new(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
+                package_access_rules: BTreeMap::new(),
+                default_package_access_rule: AccessRule::AllowAll,
             })
             .unwrap(),
         }));
@@ -300,6 +318,8 @@ pub fn create_genesis(
                 native_package_code_id: ACCESS_CONTROLLER_PACKAGE_CODE_ID,
                 dependent_resources: vec![],
                 dependent_components: vec![CLOCK],
+                package_access_rules: BTreeMap::new(),
+                default_package_access_rule: AccessRule::AllowAll,
             })
             .unwrap(),
         }));
@@ -321,6 +341,8 @@ pub fn create_genesis(
                 native_package_code_id: LOGGER_CODE_ID,
                 dependent_resources: vec![],
                 dependent_components: vec![],
+                package_access_rules: BTreeMap::new(),
+                default_package_access_rule: AccessRule::AllowAll,
             })
             .unwrap(),
         }));
@@ -344,6 +366,8 @@ pub fn create_genesis(
                 native_package_code_id: TRANSACTION_RUNTIME_CODE_ID,
                 dependent_resources: vec![],
                 dependent_components: vec![],
+                package_access_rules: BTreeMap::new(),
+                default_package_access_rule: AccessRule::DenyAll,
             })
             .unwrap(),
         }));
@@ -365,6 +389,8 @@ pub fn create_genesis(
                 native_package_code_id: AUTH_ZONE_CODE_ID,
                 dependent_resources: vec![],
                 dependent_components: vec![],
+                package_access_rules: BTreeMap::new(),
+                default_package_access_rule: AccessRule::DenyAll,
             })
             .unwrap(),
         }));

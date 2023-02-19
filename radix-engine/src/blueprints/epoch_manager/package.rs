@@ -2,9 +2,6 @@ use crate::blueprints::epoch_manager::{EpochManagerBlueprint, ValidatorBlueprint
 use crate::errors::InterpreterError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::kernel_modules::auth::{
-    HardAuthRule, HardProofRule, HardResourceOrNonFungible, MethodAuthorization,
-};
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
@@ -12,17 +9,16 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::epoch_manager::*;
+use radix_engine_interface::blueprints::resource::{AccessRule, require};
 use radix_engine_interface::data::ScryptoValue;
 
 pub struct EpochManagerNativePackage;
 
 impl EpochManagerNativePackage {
-    pub fn create_auth() -> Vec<MethodAuthorization> {
-        vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
-            HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
-                AuthAddresses::system_role(),
-            )),
-        ))]
+    pub fn package_access_rules() -> BTreeMap<(String, String), AccessRule> {
+        let mut access_rules = BTreeMap::new();
+        access_rules.insert((EPOCH_MANAGER_BLUEPRINT.to_string(), EPOCH_MANAGER_CREATE_IDENT.to_string()), rule!(require(AuthAddresses::system_role())));
+        access_rules
     }
 
     pub fn invoke_export<Y>(

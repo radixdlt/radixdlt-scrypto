@@ -127,11 +127,11 @@ where
         &mut self,
         code: Vec<u8>,
         abi: Vec<u8>,
-        access_rules_chain: Vec<u8>,
+        access_rules: Vec<u8>,
         royalty_config: Vec<u8>,
         metadata: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let access_rules_chain = scrypto_decode::<Vec<AccessRules>>(&access_rules_chain)
+        let access_rules = scrypto_decode::<AccessRules>(&access_rules)
             .map_err(WasmRuntimeError::InvalidAccessRulesChain)?;
         let royalty_config = scrypto_decode::<BTreeMap<String, RoyaltyConfig>>(&royalty_config)
             .map_err(WasmRuntimeError::InvalidRoyaltyConfig)?;
@@ -140,7 +140,7 @@ where
 
         let package_address =
             self.api
-                .new_package(code, abi, access_rules_chain, royalty_config, metadata)?;
+                .new_package(code, abi, access_rules, royalty_config, metadata)?;
         let package_address_encoded =
             scrypto_encode(&package_address).expect("Failed to encode package address");
 

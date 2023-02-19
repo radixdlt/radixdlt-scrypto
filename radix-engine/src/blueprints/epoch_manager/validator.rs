@@ -4,7 +4,7 @@ use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, LockFlags};
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::access_rules::AccessRulesChainSubstate;
+use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use native_sdk::resource::{ResourceManager, SysBucket, Vault};
@@ -676,7 +676,7 @@ impl ValidatorCreator {
         );
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::AccessRulesChain(AccessRulesChainSubstate {
+            RENodeModuleInit::ComponentAccessRulesChain(ObjectAccessRulesChainSubstate {
                 access_rules_chain: vec![Self::build_access_rules(owner_access_rule)],
             }),
         );
@@ -728,7 +728,7 @@ impl ValidatorCreator {
         );
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::AccessRulesChain(AccessRulesChainSubstate {
+            RENodeModuleInit::ComponentAccessRulesChain(ObjectAccessRulesChainSubstate {
                 access_rules_chain: vec![Self::build_access_rules(owner_access_rule)],
             }),
         );

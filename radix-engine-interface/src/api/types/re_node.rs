@@ -224,6 +224,7 @@ pub enum NodeModuleId {
     AccessRules1,
     ComponentRoyalty,
     PackageRoyalty,
+    PackageAccessRules,
 }
 
 impl NodeModuleId {
@@ -237,6 +238,7 @@ impl NodeModuleId {
             5u32 => Some(NodeModuleId::AccessRules1),
             6u32 => Some(NodeModuleId::ComponentRoyalty),
             7u32 => Some(NodeModuleId::PackageRoyalty),
+            8u32 => Some(NodeModuleId::PackageAccessRules),
             _ => None,
         }
     }
@@ -251,6 +253,7 @@ impl NodeModuleId {
             NodeModuleId::AccessRules1 => 5u32,
             NodeModuleId::ComponentRoyalty => 6u32,
             NodeModuleId::PackageRoyalty => 7u32,
+            NodeModuleId::PackageAccessRules => 8u32,
         }
     }
 }
@@ -431,6 +434,7 @@ pub enum SubstateOffset {
     // TODO: align with module ID allocation?
     ComponentTypeInfo(ComponentTypeInfoOffset),
     AccessRulesChain(AccessRulesChainOffset),
+    PackageAccessRules,
     Metadata(MetadataOffset),
     Royalty(RoyaltyOffset),
 }

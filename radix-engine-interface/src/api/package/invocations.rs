@@ -38,6 +38,9 @@ pub struct PackagePublishPrecompiledInput {
     pub dependent_components: Vec<ComponentAddress>,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: AccessRules,
+
+    pub package_access_rules: BTreeMap<(String, String), AccessRule>,
+    pub default_package_access_rule: AccessRule,
 }
 
 pub const TRANSACTION_PROCESSOR_BLUEPRINT: &str = "TransactionProcessor";

@@ -7,7 +7,7 @@ use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::access_rules::AccessRulesChainSubstate;
+use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use native_sdk::resource::SysBucket;
@@ -194,7 +194,7 @@ where
 
 fn build_substates(
     mut access_rules_map: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-) -> (AccessRulesChainSubstate, AccessRulesChainSubstate) {
+) -> (ObjectAccessRulesChainSubstate, ObjectAccessRulesChainSubstate) {
     let (mint_access_rule, mint_mutability) = access_rules_map
         .remove(&Mint)
         .unwrap_or((DenyAll, rule!(deny_all)));
@@ -328,7 +328,7 @@ fn build_substates(
         DenyAll,
     );
 
-    let substate = AccessRulesChainSubstate {
+    let substate = ObjectAccessRulesChainSubstate {
         access_rules_chain: vec![access_rules],
     };
 
@@ -420,7 +420,7 @@ fn build_substates(
         DenyAll,
     );
 
-    let vault_substate = AccessRulesChainSubstate {
+    let vault_substate = ObjectAccessRulesChainSubstate {
         access_rules_chain: vec![vault_access_rules],
     };
 
@@ -461,11 +461,11 @@ where
     );
     node_modules.insert(
         NodeModuleId::AccessRules,
-        RENodeModuleInit::AccessRulesChain(access_rules_substate),
+        RENodeModuleInit::ComponentAccessRulesChain(access_rules_substate),
     );
     node_modules.insert(
         NodeModuleId::AccessRules1,
-        RENodeModuleInit::AccessRulesChain(vault_substate),
+        RENodeModuleInit::ComponentAccessRulesChain(vault_substate),
     );
 
     let underlying_node_id = api.kernel_allocate_node_id(RENodeType::ResourceManager)?;
@@ -589,11 +589,11 @@ impl ResourceManagerBlueprint {
         );
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::AccessRulesChain(access_rules_substate),
+            RENodeModuleInit::ComponentAccessRulesChain(access_rules_substate),
         );
         node_modules.insert(
             NodeModuleId::AccessRules1,
-            RENodeModuleInit::AccessRulesChain(vault_substate),
+            RENodeModuleInit::ComponentAccessRulesChain(vault_substate),
         );
 
         let underlying_node_id = api.kernel_allocate_node_id(RENodeType::ResourceManager)?;
@@ -656,11 +656,11 @@ impl ResourceManagerBlueprint {
         );
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::AccessRulesChain(access_rules_substate),
+            RENodeModuleInit::ComponentAccessRulesChain(access_rules_substate),
         );
         node_modules.insert(
             NodeModuleId::AccessRules1,
-            RENodeModuleInit::AccessRulesChain(vault_substate),
+            RENodeModuleInit::ComponentAccessRulesChain(vault_substate),
         );
 
         let underlying_node_id = api.kernel_allocate_node_id(RENodeType::ResourceManager)?;
@@ -739,11 +739,11 @@ impl ResourceManagerBlueprint {
         );
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::AccessRulesChain(access_rules_substate),
+            RENodeModuleInit::ComponentAccessRulesChain(access_rules_substate),
         );
         node_modules.insert(
             NodeModuleId::AccessRules1,
-            RENodeModuleInit::AccessRulesChain(vault_substate),
+            RENodeModuleInit::ComponentAccessRulesChain(vault_substate),
         );
 
         let underlying_node_id = api.kernel_allocate_node_id(RENodeType::ResourceManager)?;
@@ -801,11 +801,11 @@ impl ResourceManagerBlueprint {
         );
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::AccessRulesChain(access_rules_substate),
+            RENodeModuleInit::ComponentAccessRulesChain(access_rules_substate),
         );
         node_modules.insert(
             NodeModuleId::AccessRules1,
-            RENodeModuleInit::AccessRulesChain(vault_substate),
+            RENodeModuleInit::ComponentAccessRulesChain(vault_substate),
         );
 
         let underlying_node_id = api.kernel_allocate_node_id(RENodeType::ResourceManager)?;
@@ -1633,11 +1633,11 @@ where
     );
     node_modules.insert(
         NodeModuleId::AccessRules,
-        RENodeModuleInit::AccessRulesChain(access_rules_substate),
+        RENodeModuleInit::ComponentAccessRulesChain(access_rules_substate),
     );
     node_modules.insert(
         NodeModuleId::AccessRules1,
-        RENodeModuleInit::AccessRulesChain(vault_substate),
+        RENodeModuleInit::ComponentAccessRulesChain(vault_substate),
     );
 
     let underlying_node_id = api.kernel_allocate_node_id(RENodeType::ResourceManager)?;

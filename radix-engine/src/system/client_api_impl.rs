@@ -1,4 +1,3 @@
-use crate::errors::ApplicationError;
 use crate::errors::KernelError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel::Kernel;
@@ -11,13 +10,11 @@ use crate::kernel::module_mixer::KernelModuleMixer;
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::access_rules::AccessRulesChainSubstate;
+use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_substates::RuntimeSubstate;
-use crate::system::package::PackageError;
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use crate::wasm::WasmValidator;
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::component::{
     ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
@@ -117,69 +114,26 @@ where
         &mut self,
         code: Vec<u8>,
         abi: Vec<u8>,
-        access_rules_chain: Vec<AccessRules>,
+        access_rules: AccessRules,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
     ) -> Result<PackageAddress, RuntimeError> {
-        let royalty_vault_id = ResourceManager(RADIX_TOKEN).new_vault(self)?.vault_id();
-
-        let blueprint_abis =
-            scrypto_decode::<BTreeMap<String, BlueprintAbi>>(&abi).map_err(|e| {
-                RuntimeError::ApplicationError(ApplicationError::PackageError(
-                    PackageError::InvalidAbi(e),
-                ))
-            })?;
-        WasmValidator::default()
-            .validate(&code, &blueprint_abis)
-            .map_err(|e| {
-                RuntimeError::ApplicationError(ApplicationError::PackageError(
-                    PackageError::InvalidWasm(e),
-                ))
-            })?;
-        let wasm_code_substate = WasmCodeSubstate { code };
-        let package_info_substate = PackageInfoSubstate {
-            blueprint_abis,
-            dependent_resources: BTreeSet::new(),
-            dependent_components: BTreeSet::new(),
-        };
-        let royalty_config_substate = PackageRoyaltyConfigSubstate { royalty_config };
-        let royalty_accumulator_substate = PackageRoyaltyAccumulatorSubstate {
-            royalty: Own::Vault(royalty_vault_id),
-        };
-        let metadata_substate = MetadataSubstate { metadata };
-        let auth_substate = AccessRulesChainSubstate { access_rules_chain };
-
-        // TODO: Can we trust developers enough to add protection for
-        // - `metadata::set`
-        // - `access_rules_chain::add_access_rules`
-        // - `royalty::set_royalty_config`
-        // - `royalty::claim_royalty`
-
-        // Create package node
-        let node_id = self.kernel_allocate_node_id(RENodeType::Package)?;
-        self.kernel_create_node(
-            node_id,
-            RENodeInit::WasmPackage(package_info_substate, wasm_code_substate),
-            btreemap!(
-                NodeModuleId::PackageRoyalty => RENodeModuleInit::PackageRoyalty(
-                    royalty_config_substate,
-                    royalty_accumulator_substate
-                ),
-                NodeModuleId::Metadata => RENodeModuleInit::Metadata(metadata_substate),
-                NodeModuleId::AccessRules => RENodeModuleInit::AccessRulesChain(auth_substate),
-            ),
-        )?;
-        let package_id: PackageId = node_id.into();
-
-        // Globalize
-        let global_node_id = self.kernel_allocate_node_id(RENodeType::GlobalPackage)?;
-        self.kernel_create_node(
-            global_node_id,
-            RENodeInit::Global(GlobalAddressSubstate::Package(package_id)),
-            BTreeMap::new(),
+        let result = self.call_function(
+            PACKAGE,
+            PACKAGE_BLUEPRINT,
+            PACKAGE_PUBLISH_WASM_IDENT,
+            scrypto_encode(&PackagePublishWasmInput {
+                package_address: None,
+                code: code.clone().clone(),
+                abi: abi.clone().clone(),
+                access_rules: access_rules.clone(),
+                royalty_config: royalty_config.clone(),
+                metadata: metadata.clone(),
+            }).unwrap()
         )?;
 
-        Ok(global_node_id.into())
+        let package_address: PackageAddress = scrypto_decode(&result).unwrap();
+        Ok(package_address)
     }
 
     fn call_function(
@@ -279,7 +233,7 @@ where
         let metadata_substate = MetadataSubstate { metadata };
 
         // Create auth substates
-        let auth_substate = AccessRulesChainSubstate { access_rules_chain };
+        let auth_substate = ObjectAccessRulesChainSubstate { access_rules_chain };
 
         // Create component RENode
         // FIXME: support native blueprints
@@ -307,7 +261,7 @@ where
                     royalty_accumulator_substate
                 ),
                 NodeModuleId::Metadata => RENodeModuleInit::Metadata(metadata_substate),
-                NodeModuleId::AccessRules => RENodeModuleInit::AccessRulesChain(auth_substate),
+                NodeModuleId::AccessRules => RENodeModuleInit::ComponentAccessRulesChain(auth_substate),
             ),
         )?;
 

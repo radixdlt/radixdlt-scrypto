@@ -4,7 +4,7 @@ use crate::system::global::GlobalAddressSubstate;
 use crate::system::kernel_modules::costing::FIXED_HIGH_FEE;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::access_rules::AccessRulesChainSubstate;
+use crate::system::node_modules::access_rules::{ObjectAccessRulesChainSubstate, PackageAccessRulesSubstate};
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use crate::wasm::{PrepareError, WasmValidator};
@@ -15,6 +15,7 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{PackageId, RENodeId};
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::data::ScryptoValue;
 
 #[derive(Debug, Clone, PartialEq, Eq, Categorize, Encode, Decode)]
@@ -81,7 +82,7 @@ impl Package {
         let metadata_substate = MetadataSubstate {
             metadata: input.metadata,
         };
-        let access_rules = AccessRulesChainSubstate {
+        let access_rules = ObjectAccessRulesChainSubstate {
             access_rules_chain: vec![input.access_rules],
         };
         let blueprint_abis =
@@ -98,7 +99,14 @@ impl Package {
         );
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::AccessRulesChain(access_rules),
+            RENodeModuleInit::ComponentAccessRulesChain(access_rules),
+        );
+        node_modules.insert(
+            NodeModuleId::PackageAccessRules,
+            RENodeModuleInit::PackageAccessRules(PackageAccessRulesSubstate {
+                access_rules: input.package_access_rules,
+                default_auth: input.default_package_access_rule,
+            }),
         );
 
         let info = PackageInfoSubstate {
@@ -174,7 +182,7 @@ impl Package {
         let metadata_substate = MetadataSubstate {
             metadata: input.metadata,
         };
-        let access_rules = AccessRulesChainSubstate {
+        let access_rules = ObjectAccessRulesChainSubstate {
             access_rules_chain: vec![input.access_rules],
         };
 
@@ -195,7 +203,14 @@ impl Package {
         );
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::AccessRulesChain(access_rules),
+            RENodeModuleInit::ComponentAccessRulesChain(access_rules),
+        );
+        node_modules.insert(
+            NodeModuleId::PackageAccessRules,
+            RENodeModuleInit::PackageAccessRules(PackageAccessRulesSubstate {
+                access_rules: BTreeMap::new(),
+                default_auth: AccessRule::AllowAll,
+            }),
         );
 
         // Create package node

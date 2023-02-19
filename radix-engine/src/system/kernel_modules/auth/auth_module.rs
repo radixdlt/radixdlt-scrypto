@@ -1,5 +1,3 @@
-use crate::blueprints::clock::ClockNativePackage;
-use crate::blueprints::epoch_manager::EpochManagerNativePackage;
 use crate::errors::*;
 use crate::kernel::actor::ResolvedActor;
 use crate::kernel::actor::ResolvedReceiver;
@@ -16,10 +14,6 @@ use radix_engine_interface::api::package::{PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_PR
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, ComponentOffset, GlobalAddress, PackageOffset, RENodeId, SubstateOffset,
     VaultOffset,
-};
-use radix_engine_interface::blueprints::clock::{CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT};
-use radix_engine_interface::blueprints::epoch_manager::{
-    EPOCH_MANAGER_BLUEPRINT, EPOCH_MANAGER_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::resource::*;
 use transaction::model::AuthZoneParams;
@@ -104,47 +98,34 @@ impl KernelModule for AuthModule {
         let method_auths = if let Some(actor) = actor {
             match &actor {
                 ResolvedActor {
-                    identifier:
-                        FnIdentifier {
-                            package_address,
-                            blueprint_name,
-                            ident,
-                        },
-                    receiver: None,
-                } if package_address.eq(&PACKAGE)
-                    && blueprint_name.eq(PACKAGE_BLUEPRINT)
-                    && ident.eq(PACKAGE_PUBLISH_PRECOMPILED_IDENT) =>
-                {
-                    vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
-                        HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
-                            AuthAddresses::system_role(),
-                        )),
-                    ))]
-                }
-                ResolvedActor {
                     identifier,
                     receiver: None,
-                } => match identifier.package_address {
-                    // TODO: Clean this up, move into package logic
-                    EPOCH_MANAGER_PACKAGE => {
-                        if identifier.blueprint_name.eq(&EPOCH_MANAGER_BLUEPRINT)
-                            && identifier.ident.eq(EPOCH_MANAGER_CREATE_IDENT)
-                        {
-                            EpochManagerNativePackage::create_auth()
+                } => {
+                    if identifier.package_address.eq(&PACKAGE) {
+                        if identifier.blueprint_name.eq(PACKAGE_BLUEPRINT)
+                            && identifier.ident.eq(PACKAGE_PUBLISH_PRECOMPILED_IDENT) {
+                                vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
+                                    HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
+                                        AuthAddresses::system_role(),
+                                    )),
+                                ))]
                         } else {
                             vec![]
                         }
+                    } else {
+                        let handle = api.kernel_lock_substate(
+                            RENodeId::Global(GlobalAddress::Package(identifier.package_address)),
+                            NodeModuleId::PackageAccessRules,
+                            SubstateOffset::PackageAccessRules,
+                            LockFlags::read_only(),
+                        )?;
+                        let substate_ref = api.kernel_get_substate_ref(handle)?;
+                        let substate = substate_ref.package_access_rules();
+                        let local_fn_identifier = (identifier.blueprint_name.to_string(), identifier.ident.to_string());
+                        let access_rule = substate.access_rules.get(&local_fn_identifier).unwrap_or(&substate.default_auth);
+                        let func_auth = convert_contextless(access_rule);
+                        vec![func_auth]
                     }
-                    CLOCK_PACKAGE => {
-                        if identifier.blueprint_name.eq(&CLOCK_BLUEPRINT)
-                            && identifier.ident.eq(CLOCK_CREATE_IDENT)
-                        {
-                            ClockNativePackage::create_auth()
-                        } else {
-                            vec![]
-                        }
-                    }
-                    _ => vec![],
                 },
 
                 ResolvedActor {

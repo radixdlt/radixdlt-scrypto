@@ -1,5 +1,5 @@
 use super::global::GlobalAddressSubstate;
-use super::node_modules::access_rules::AccessRulesChainSubstate;
+use super::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use super::node_modules::access_rules::AuthZoneStackSubstate;
 use super::node_modules::metadata::MetadataSubstate;
 use crate::blueprints::access_controller::AccessControllerSubstate;
@@ -27,6 +27,7 @@ use radix_engine_interface::api::types::{
     SubstateOffset,
 };
 use radix_engine_interface::data::IndexedScryptoValue;
+use crate::system::node_modules::access_rules::PackageAccessRulesSubstate;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum PersistedSubstate {
@@ -37,7 +38,7 @@ pub enum PersistedSubstate {
     Validator(ValidatorSubstate),
     CurrentTimeRoundedToMinutes(CurrentTimeRoundedToMinutesSubstate),
     ResourceManager(ResourceManagerSubstate),
-    AccessRulesChain(AccessRulesChainSubstate),
+    AccessRulesChain(ObjectAccessRulesChainSubstate),
     Metadata(MetadataSubstate),
     ComponentInfo(ComponentInfoSubstate),
     ComponentState(ComponentStateSubstate),
@@ -48,6 +49,7 @@ pub enum PersistedSubstate {
     NativePackageInfo(NativeCodeSubstate),
     PackageRoyaltyConfig(PackageRoyaltyConfigSubstate),
     PackageRoyaltyAccumulator(PackageRoyaltyAccumulatorSubstate),
+    PackageAccessRules(PackageAccessRulesSubstate),
     Vault(VaultSubstate),
     NonFungible(NonFungibleSubstate),
     KeyValueStoreEntry(KeyValueStoreEntrySubstate),
@@ -146,6 +148,9 @@ impl PersistedSubstate {
             PersistedSubstate::PackageRoyaltyAccumulator(value) => {
                 RuntimeSubstate::PackageRoyaltyAccumulator(value)
             }
+            PersistedSubstate::PackageAccessRules(value) => {
+                RuntimeSubstate::PackageAccessRules(value)
+            }
             PersistedSubstate::Vault(value) => {
                 RuntimeSubstate::Vault(VaultRuntimeSubstate::new(value.0))
             }
@@ -172,7 +177,7 @@ pub enum RuntimeSubstate {
     Validator(ValidatorSubstate),
     CurrentTimeRoundedToMinutes(CurrentTimeRoundedToMinutesSubstate),
     ResourceManager(ResourceManagerSubstate),
-    AccessRulesChain(AccessRulesChainSubstate),
+    AccessRulesChain(ObjectAccessRulesChainSubstate),
     Metadata(MetadataSubstate),
     ComponentInfo(ComponentInfoSubstate),
     ComponentState(ComponentStateSubstate),
@@ -183,6 +188,7 @@ pub enum RuntimeSubstate {
     PackageInfo(PackageInfoSubstate),
     PackageRoyaltyConfig(PackageRoyaltyConfigSubstate),
     PackageRoyaltyAccumulator(PackageRoyaltyAccumulatorSubstate),
+    PackageAccessRules(PackageAccessRulesSubstate),
     Vault(VaultRuntimeSubstate),
     NonFungible(NonFungibleSubstate),
     KeyValueStoreEntry(KeyValueStoreEntrySubstate),
@@ -237,6 +243,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::PackageRoyaltyAccumulator(value) => {
                 PersistedSubstate::PackageRoyaltyAccumulator(value.clone())
             }
+            RuntimeSubstate::PackageAccessRules(value) => PersistedSubstate::PackageAccessRules(value.clone()),
             RuntimeSubstate::NonFungible(value) => PersistedSubstate::NonFungible(value.clone()),
             RuntimeSubstate::KeyValueStoreEntry(value) => {
                 PersistedSubstate::KeyValueStoreEntry(value.clone())
@@ -289,6 +296,9 @@ impl RuntimeSubstate {
             }
             RuntimeSubstate::PackageRoyaltyAccumulator(value) => {
                 PersistedSubstate::PackageRoyaltyAccumulator(value)
+            }
+            RuntimeSubstate::PackageAccessRules(value) => {
+                PersistedSubstate::PackageAccessRules(value)
             }
             RuntimeSubstate::NonFungible(value) => PersistedSubstate::NonFungible(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => {
@@ -373,6 +383,9 @@ impl RuntimeSubstate {
             RuntimeSubstate::PackageRoyaltyAccumulator(value) => {
                 SubstateRefMut::PackageRoyaltyAccumulator(value)
             }
+            RuntimeSubstate::PackageAccessRules(value) => {
+                SubstateRefMut::PackageAccessRules(value)
+            }
             RuntimeSubstate::Vault(value) => SubstateRefMut::Vault(value),
             RuntimeSubstate::NonFungible(value) => SubstateRefMut::NonFungible(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => SubstateRefMut::KeyValueStoreEntry(value),
@@ -416,6 +429,9 @@ impl RuntimeSubstate {
             }
             RuntimeSubstate::PackageRoyaltyAccumulator(value) => {
                 SubstateRef::PackageRoyaltyAccumulator(value)
+            }
+            RuntimeSubstate::PackageAccessRules(value) => {
+                SubstateRef::PackageAccessRules(value)
             }
             RuntimeSubstate::Vault(value) => SubstateRef::Vault(value),
             RuntimeSubstate::NonFungible(value) => SubstateRef::NonFungible(value),
@@ -527,7 +543,7 @@ impl RuntimeSubstate {
         }
     }
 
-    pub fn access_rules_chain(&self) -> &AccessRulesChainSubstate {
+    pub fn access_rules_chain(&self) -> &ObjectAccessRulesChainSubstate {
         if let RuntimeSubstate::AccessRulesChain(access_rules_chain) = self {
             access_rules_chain
         } else {
@@ -544,7 +560,7 @@ impl RuntimeSubstate {
     }
 }
 
-impl Into<RuntimeSubstate> for AccessRulesChainSubstate {
+impl Into<RuntimeSubstate> for ObjectAccessRulesChainSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::AccessRulesChain(self)
     }
@@ -663,6 +679,13 @@ impl Into<RuntimeSubstate> for PackageRoyaltyAccumulatorSubstate {
         RuntimeSubstate::PackageRoyaltyAccumulator(self)
     }
 }
+
+impl Into<RuntimeSubstate> for PackageAccessRulesSubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::PackageAccessRules(self)
+    }
+}
+
 
 impl Into<RuntimeSubstate> for TransactionRuntimeSubstate {
     fn into(self) -> RuntimeSubstate {
@@ -852,8 +875,8 @@ impl Into<ProofSubstate> for RuntimeSubstate {
     }
 }
 
-impl Into<AccessRulesChainSubstate> for RuntimeSubstate {
-    fn into(self) -> AccessRulesChainSubstate {
+impl Into<ObjectAccessRulesChainSubstate> for RuntimeSubstate {
+    fn into(self) -> ObjectAccessRulesChainSubstate {
         if let RuntimeSubstate::AccessRulesChain(substate) = self {
             substate
         } else {
@@ -919,13 +942,14 @@ pub enum SubstateRef<'a> {
     NativeCode(&'a NativeCodeSubstate),
     PackageRoyaltyConfig(&'a PackageRoyaltyConfigSubstate),
     PackageRoyaltyAccumulator(&'a PackageRoyaltyAccumulatorSubstate),
+    PackageAccessRules(&'a PackageAccessRulesSubstate),
     Vault(&'a VaultRuntimeSubstate),
     ResourceManager(&'a ResourceManagerSubstate),
     EpochManager(&'a EpochManagerSubstate),
     ValidatorSet(&'a ValidatorSetSubstate),
     Validator(&'a ValidatorSubstate),
     CurrentTimeRoundedToMinutes(&'a CurrentTimeRoundedToMinutesSubstate),
-    AccessRulesChain(&'a AccessRulesChainSubstate),
+    AccessRulesChain(&'a ObjectAccessRulesChainSubstate),
     Metadata(&'a MetadataSubstate),
     Global(&'a GlobalAddressSubstate),
     TypeInfo(&'a TypeInfoSubstate),
@@ -1026,6 +1050,13 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
+    pub fn package_access_rules(&self) -> &PackageAccessRulesSubstate {
+        match self {
+            SubstateRef::PackageAccessRules(info) => *info,
+            _ => panic!("Not package access rules"),
+        }
+    }
+
     pub fn proof(&self) -> &ProofSubstate {
         match self {
             SubstateRef::Proof(value) => *value,
@@ -1103,7 +1134,7 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
-    pub fn access_rules_chain(&self) -> &AccessRulesChainSubstate {
+    pub fn access_rules_chain(&self) -> &ObjectAccessRulesChainSubstate {
         match self {
             SubstateRef::AccessRulesChain(value) => *value,
             _ => panic!("Not access rules chain"),
@@ -1313,6 +1344,7 @@ pub enum SubstateRefMut<'a> {
     NativePackageInfo(&'a mut NativeCodeSubstate),
     PackageRoyaltyConfig(&'a mut PackageRoyaltyConfigSubstate),
     PackageRoyaltyAccumulator(&'a mut PackageRoyaltyAccumulatorSubstate),
+    PackageAccessRules(&'a mut PackageAccessRulesSubstate),
     NonFungible(&'a mut NonFungibleSubstate),
     KeyValueStoreEntry(&'a mut KeyValueStoreEntrySubstate),
     Vault(&'a mut VaultRuntimeSubstate),
@@ -1321,7 +1353,7 @@ pub enum SubstateRefMut<'a> {
     ValidatorSet(&'a mut ValidatorSetSubstate),
     Validator(&'a mut ValidatorSubstate),
     CurrentTimeRoundedToMinutes(&'a mut CurrentTimeRoundedToMinutesSubstate),
-    AccessRulesChain(&'a mut AccessRulesChainSubstate),
+    AccessRulesChain(&'a mut ObjectAccessRulesChainSubstate),
     Metadata(&'a mut MetadataSubstate),
     Global(&'a mut GlobalAddressSubstate),
     TypeInfo(&'a mut TypeInfoSubstate),
@@ -1477,7 +1509,7 @@ impl<'a> SubstateRefMut<'a> {
         }
     }
 
-    pub fn access_rules_chain(&mut self) -> &mut AccessRulesChainSubstate {
+    pub fn access_rules_chain(&mut self) -> &mut ObjectAccessRulesChainSubstate {
         match self {
             SubstateRefMut::AccessRulesChain(value) => *value,
             _ => panic!("Not access rules"),

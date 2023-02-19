@@ -1,11 +1,10 @@
 use crate::errors::{InterpreterError, RuntimeError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, LockFlags};
 use crate::system::global::GlobalAddressSubstate;
-use crate::system::kernel_modules::auth::*;
 use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE};
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::access_rules::AccessRulesChainSubstate;
+use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use crate::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::types::*;
@@ -16,7 +15,7 @@ use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::blueprints::clock::ClockCreateInput;
 use radix_engine_interface::blueprints::clock::TimePrecision;
 use radix_engine_interface::blueprints::clock::*;
-use radix_engine_interface::blueprints::resource::require;
+use radix_engine_interface::blueprints::resource::{AccessRule, require};
 use radix_engine_interface::blueprints::resource::AccessRuleKey;
 use radix_engine_interface::blueprints::resource::AccessRules;
 use radix_engine_interface::data::ScryptoValue;
@@ -34,12 +33,10 @@ const MINUTES_TO_MS_FACTOR: i64 = SECONDS_TO_MS_FACTOR * MINUTES_TO_SECONDS_FACT
 
 pub struct ClockNativePackage;
 impl ClockNativePackage {
-    pub fn create_auth() -> Vec<MethodAuthorization> {
-        vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
-            HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
-                AuthAddresses::system_role(),
-            )),
-        ))]
+    pub fn package_access_rules() -> BTreeMap<(String, String), AccessRule> {
+        let mut access_rules = BTreeMap::new();
+        access_rules.insert((CLOCK_BLUEPRINT.to_string(), CLOCK_CREATE_IDENT.to_string()), rule!(require(AuthAddresses::system_role())));
+        access_rules
     }
 
     pub fn invoke_export<Y>(
@@ -125,7 +122,7 @@ impl ClockNativePackage {
         let mut node_modules = BTreeMap::new();
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::AccessRulesChain(AccessRulesChainSubstate {
+            RENodeModuleInit::ComponentAccessRulesChain(ObjectAccessRulesChainSubstate {
                 access_rules_chain: vec![access_rules],
             }),
         );

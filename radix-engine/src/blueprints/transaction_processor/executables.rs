@@ -133,6 +133,13 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
                     update.add_ref(node_id);
                 }
             }
+            BasicInstruction::PublishPackage { access_rules, .. } => {
+                update.add_ref(RENodeId::Global(GlobalAddress::Package(PACKAGE)));
+
+                for node_id in slice_to_global_references(&scrypto_encode(access_rules).unwrap()) {
+                    update.add_ref(node_id);
+                }
+            }
 
             BasicInstruction::SetMetadata { entity_address, .. }
             | BasicInstruction::SetMethodAccessRule { entity_address, .. } => {
@@ -209,7 +216,6 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
             | BasicInstruction::CloneProof { .. }
             | BasicInstruction::DropProof { .. }
             | BasicInstruction::DropAllProofs { .. }
-            | BasicInstruction::PublishPackage { .. }
             | BasicInstruction::BurnResource { .. }
             | BasicInstruction::AssertAccessRule { .. } => {}
         },
@@ -481,15 +487,27 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         ))?;
 
                     // TODO: remove clone by allowing invocation to have references, like in TransactionProcessorRunInvocation.
-                    let rtn = api.new_package(
-                        code.clone().clone(),
-                        abi.clone().clone(),
-                        vec![access_rules.clone()],
-                        royalty_config.clone(),
-                        metadata.clone(),
+                    let result = api.call_function(
+                        PACKAGE,
+                        PACKAGE_BLUEPRINT,
+                        PACKAGE_PUBLISH_WASM_IDENT,
+                        scrypto_encode(&PackagePublishWasmInput {
+                            package_address: None,
+                            code: code.clone().clone(),
+                            abi: abi.clone().clone(),
+                            access_rules: access_rules.clone(),
+                            royalty_config: royalty_config.clone(),
+                            metadata: metadata.clone(),
+                        }).unwrap()
                     )?;
 
-                    InstructionOutput::Native(Box::new(rtn))
+                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result_indexed,
+                        api,
+                    )?;
+
+                    InstructionOutput::Scrypto(result_indexed)
                 }
                 Instruction::Basic(BasicInstruction::BurnResource { bucket_id }) => {
                     let bucket = processor.take_bucket(bucket_id)?;

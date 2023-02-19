@@ -9,7 +9,7 @@ pub trait ClientPackageApi<E> {
         &mut self,
         code: Vec<u8>,
         abi: Vec<u8>,
-        access_rules_chain: Vec<AccessRules>,
+        access_rules: AccessRules,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
     ) -> Result<PackageAddress, E>;

@@ -4,7 +4,7 @@ use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, LockFlags};
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
-use crate::system::node_modules::access_rules::AccessRulesChainSubstate;
+use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use native_sdk::resource::{SysBucket, Vault};
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::types::*;
@@ -267,7 +267,7 @@ impl AccessControllerNativePackage {
         let mut node_modules = BTreeMap::new();
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::AccessRulesChain(AccessRulesChainSubstate {
+            RENodeModuleInit::ComponentAccessRulesChain(ObjectAccessRulesChainSubstate {
                 access_rules_chain: [access_rules_from_rule_set(input.rule_set)].into(),
             }),
         );

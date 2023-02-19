@@ -5,7 +5,7 @@ use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::global::GlobalAddressSubstate;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::access_rules::AccessRulesChainSubstate;
+use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use crate::types::*;
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::types::*;
@@ -227,12 +227,12 @@ impl AccountNativePackage {
                     metadata: BTreeMap::new(),
                 }),
             );
-            let access_rules_substate = AccessRulesChainSubstate {
+            let access_rules_substate = ObjectAccessRulesChainSubstate {
                 access_rules_chain: [access_rules].into(),
             };
             node_modules.insert(
                 NodeModuleId::AccessRules,
-                RENodeModuleInit::AccessRulesChain(access_rules_substate),
+                RENodeModuleInit::ComponentAccessRulesChain(access_rules_substate),
             );
 
             let account_substate = AccountSubstate {
@@ -292,12 +292,12 @@ impl AccountNativePackage {
                     metadata: BTreeMap::new(),
                 }),
             );
-            let access_rules_substate = AccessRulesChainSubstate {
+            let access_rules_substate = ObjectAccessRulesChainSubstate {
                 access_rules_chain: [access_rules].into(),
             };
             node_modules.insert(
                 NodeModuleId::AccessRules,
-                RENodeModuleInit::AccessRulesChain(access_rules_substate),
+                RENodeModuleInit::ComponentAccessRulesChain(access_rules_substate),
             );
             let account_substate = AccountSubstate {
                 vaults: Own::KeyValueStore(kv_store_id.into()),
