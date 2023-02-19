@@ -1,4 +1,4 @@
-use radix_engine_interface::api::types::{FnIdentifier, PackageIdentifier, ScryptoFnIdentifier};
+use radix_engine_interface::api::types::{FnIdentifier, ScryptoFnIdentifier};
 use radix_engine_interface::api::ClientActorApi;
 use radix_engine_interface::api::{types::*, ClientComponentApi, ClientPackageApi};
 use radix_engine_interface::blueprints::epoch_manager::{
@@ -33,17 +33,16 @@ impl Runtime {
     }
 
     pub fn package_token() -> NonFungibleGlobalId {
-        let non_fungible_local_id = NonFungibleLocalId::bytes(
-            scrypto_encode(&PackageIdentifier::Scrypto(Runtime::package_address())).unwrap(),
-        )
-        .unwrap();
+        let non_fungible_local_id =
+            NonFungibleLocalId::bytes(scrypto_encode(&Runtime::package_address()).unwrap())
+                .unwrap();
         NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id)
     }
 
     /// Returns the running entity.
     pub fn actor() -> ScryptoFnIdentifier {
         match ScryptoEnv.get_fn_identifier().unwrap() {
-            FnIdentifier::Scrypto(identifier) => identifier,
+            FnIdentifier::Some(identifier) => identifier,
             _ => panic!("Unexpected actor"),
         }
     }

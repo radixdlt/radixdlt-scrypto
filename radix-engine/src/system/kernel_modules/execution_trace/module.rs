@@ -317,14 +317,14 @@ impl ExecutionTraceModule {
     ) {
         if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
             let origin = match &callee.identifier {
-                FnIdentifier::Scrypto(scrypto_fn) => {
+                FnIdentifier::Some(scrypto_fn) => {
                     if callee.receiver.is_some() {
                         KernelCallOrigin::ScryptoMethod(scrypto_fn.clone())
                     } else {
                         KernelCallOrigin::ScryptoFunction(scrypto_fn.clone())
                     }
                 }
-                FnIdentifier::None => panic!("Should not get here.")
+                FnIdentifier::None => panic!("Should not get here."),
             };
 
             let instruction_index = self.instruction_index();
@@ -341,7 +341,7 @@ impl ExecutionTraceModule {
         match &callee {
             ResolvedActor {
                 identifier:
-                    FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                    FnIdentifier::Some(ScryptoFnIdentifier {
                         package_address,
                         blueprint_name,
                         ident,
@@ -359,7 +359,7 @@ impl ExecutionTraceModule {
             }
             ResolvedActor {
                 identifier:
-                    FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                    FnIdentifier::Some(ScryptoFnIdentifier {
                         package_address,
                         blueprint_name,
                         ident,
@@ -389,7 +389,7 @@ impl ExecutionTraceModule {
         match &current_actor {
             ResolvedActor {
                 identifier:
-                    FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                    FnIdentifier::Some(ScryptoFnIdentifier {
                         package_address,
                         blueprint_name,
                         ident,

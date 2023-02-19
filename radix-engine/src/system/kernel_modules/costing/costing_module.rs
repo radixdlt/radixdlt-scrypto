@@ -118,7 +118,7 @@ impl KernelModule for CostingModule {
     ) -> Result<(), RuntimeError> {
         // Identify the function, and optional component address
         let (scrypto_fn_identifier, optional_component) = match &callee.identifier {
-            FnIdentifier::Scrypto(scrypto_fn_identifier) => {
+            FnIdentifier::Some(scrypto_fn_identifier) => {
                 let maybe_component = match &callee.receiver {
                     Some(ResolvedReceiver {
                         derefed_from:

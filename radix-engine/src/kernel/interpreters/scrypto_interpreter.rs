@@ -114,7 +114,7 @@ impl ExecutableInvocation for MethodInvocation {
         // Pass the component ref
         node_refs_to_copy.insert(resolved_receiver.receiver.0);
         let actor = ResolvedActor::method(
-            FnIdentifier::Scrypto(ScryptoFnIdentifier::new(
+            FnIdentifier::Some(ScryptoFnIdentifier::new(
                 package_address,
                 blueprint_name.clone(),
                 self.fn_name.clone(),
@@ -271,7 +271,7 @@ impl ExecutableInvocation for FunctionInvocation {
             self.blueprint_name.clone(),
             self.fn_name.clone(),
         );
-        let actor = ResolvedActor::function(FnIdentifier::Scrypto(scrypto_fn_ident));
+        let actor = ResolvedActor::function(FnIdentifier::Some(scrypto_fn_ident));
 
         let type_info = if self.package_address.eq(&PACKAGE) {
             // TODO: Remove this weirdness

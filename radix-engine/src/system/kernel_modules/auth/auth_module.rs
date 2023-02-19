@@ -51,7 +51,7 @@ impl AuthModule {
         matches!(
             actor,
             ResolvedActor {
-                identifier: FnIdentifier::Scrypto(..),
+                identifier: FnIdentifier::Some(..),
                 receiver: Some(ResolvedReceiver {
                     derefed_from: Some((RENodeId::Global(GlobalAddress::Component(..)), _)),
                     ..
@@ -91,7 +91,7 @@ impl KernelModule for AuthModule {
     ) -> Result<(), RuntimeError> {
         if matches!(
             actor.identifier,
-            FnIdentifier::Scrypto(ScryptoFnIdentifier {
+            FnIdentifier::Some(ScryptoFnIdentifier {
                 package_address: AUTH_ZONE_PACKAGE,
                 ..
             })
@@ -102,7 +102,7 @@ impl KernelModule for AuthModule {
         let method_auths = match &actor {
             ResolvedActor {
                 identifier:
-                    FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                    FnIdentifier::Some(ScryptoFnIdentifier {
                         package_address,
                         blueprint_name,
                         ident,
@@ -119,7 +119,7 @@ impl KernelModule for AuthModule {
                 ))]
             }
             ResolvedActor {
-                identifier: FnIdentifier::Scrypto(fn_identifier),
+                identifier: FnIdentifier::Some(fn_identifier),
                 receiver: None,
             } => match fn_identifier.package_address {
                 // TODO: Clean this up, move into package logic
@@ -246,7 +246,7 @@ impl KernelModule for AuthModule {
                     RENodeVisibilityOrigin::DirectAccess => match identifier {
                         // TODO: Do we want to allow recaller to be able to withdraw from
                         // TODO: any visible vault?
-                        FnIdentifier::Scrypto(ident)
+                        FnIdentifier::Some(ident)
                             if ident.ident.eq(VAULT_RECALL_IDENT)
                                 || ident.ident.eq(VAULT_RECALL_NON_FUNGIBLES_IDENT) =>
                         {
@@ -274,7 +274,7 @@ impl KernelModule for AuthModule {
             // SetAccessRule auth is done manually within the method
             ResolvedActor {
                 identifier:
-                    FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                    FnIdentifier::Some(ScryptoFnIdentifier {
                         package_address,
                         blueprint_name,
                         ..
@@ -287,7 +287,7 @@ impl KernelModule for AuthModule {
             }
 
             ResolvedActor {
-                identifier: FnIdentifier::Scrypto(method_identifier),
+                identifier: FnIdentifier::Some(method_identifier),
                 receiver:
                     Some(ResolvedReceiver {
                         receiver: (RENodeId::Component(component_id), module_id),
@@ -362,7 +362,7 @@ impl KernelModule for AuthModule {
                     let access_rules = substate_ref.access_rules_chain();
                     let auth = access_rules.native_fn_authorization(
                         *module_id,
-                        FnIdentifier::Scrypto(method_identifier.clone()),
+                        FnIdentifier::Some(method_identifier.clone()),
                     );
                     api.kernel_drop_lock(handle)?;
                     auth
@@ -417,10 +417,10 @@ impl KernelModule for AuthModule {
 
         if !matches!(
             actor.identifier,
-            FnIdentifier::Scrypto(ScryptoFnIdentifier {
+            FnIdentifier::Some(ScryptoFnIdentifier {
                 package_address: ACCESS_RULES_PACKAGE,
                 ..
-            }) | FnIdentifier::Scrypto(ScryptoFnIdentifier {
+            }) | FnIdentifier::Some(ScryptoFnIdentifier {
                 package_address: AUTH_ZONE_PACKAGE,
                 ..
             })
@@ -438,11 +438,13 @@ impl KernelModule for AuthModule {
             let is_barrier = Self::is_barrier(actor);
 
             // Add Package Actor Auth
-            let id = scrypto_encode(&actor.identifier.package_identifier()).unwrap();
-            let non_fungible_global_id =
-                NonFungibleGlobalId::new(PACKAGE_TOKEN, NonFungibleLocalId::bytes(id).unwrap());
             let mut virtual_non_fungibles = BTreeSet::new();
-            virtual_non_fungibles.insert(non_fungible_global_id);
+            if let Some(package_address) = actor.identifier.package() {
+                let id = scrypto_encode(&package_address).unwrap();
+                let non_fungible_global_id =
+                    NonFungibleGlobalId::new(PACKAGE_TOKEN, NonFungibleLocalId::bytes(id).unwrap());
+                virtual_non_fungibles.insert(non_fungible_global_id);
+            }
 
             auth_zone_stack.new_frame(virtual_non_fungibles, is_barrier);
             api.kernel_drop_lock(handle)?;
@@ -458,10 +460,10 @@ impl KernelModule for AuthModule {
     ) -> Result<(), RuntimeError> {
         if matches!(
             api.kernel_get_current_actor().identifier,
-            FnIdentifier::Scrypto(ScryptoFnIdentifier {
+            FnIdentifier::Some(ScryptoFnIdentifier {
                 package_address: ACCESS_RULES_PACKAGE,
                 ..
-            }) | FnIdentifier::Scrypto(ScryptoFnIdentifier {
+            }) | FnIdentifier::Some(ScryptoFnIdentifier {
                 package_address: AUTH_ZONE_PACKAGE,
                 ..
             }),

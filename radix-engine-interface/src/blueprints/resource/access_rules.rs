@@ -30,7 +30,7 @@ pub struct AccessRuleKey {
 }
 
 impl AccessRuleKey {
-    pub fn new(node_module_id: NodeModuleId, method_ident: String) -> Self{
+    pub fn new(node_module_id: NodeModuleId, method_ident: String) -> Self {
         Self {
             node_module_id,
             method_ident,

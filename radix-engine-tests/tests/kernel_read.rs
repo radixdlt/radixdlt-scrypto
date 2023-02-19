@@ -31,7 +31,7 @@ fn should_not_be_able_to_read_global_substate() {
             e,
             RuntimeError::KernelError(KernelError::InvalidSubstateAccess {
                 actor: ResolvedActor {
-                    identifier: FnIdentifier::Scrypto(..),
+                    identifier: FnIdentifier::Some(..),
                     ..
                 },
                 node_id: RENodeId::Global(GlobalAddress::Component(..)),

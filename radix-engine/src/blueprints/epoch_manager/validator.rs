@@ -477,10 +477,7 @@ impl ValidatorBlueprint {
             ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
             scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
                 index: 0u32,
-                key: AccessRuleKey::new(
-                    NodeModuleId::SELF,
-                    VALIDATOR_STAKE_IDENT.to_string(),
-                ),
+                key: AccessRuleKey::new(NodeModuleId::SELF, VALIDATOR_STAKE_IDENT.to_string()),
                 rule,
             })
             .unwrap(),
@@ -501,10 +498,8 @@ impl ValidatorCreator {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let mut liquidity_token_auth = BTreeMap::new();
-        let non_fungible_id = NonFungibleLocalId::bytes(
-            scrypto_encode(&PackageIdentifier::Scrypto(EPOCH_MANAGER_PACKAGE)).unwrap(),
-        )
-        .unwrap();
+        let non_fungible_id =
+            NonFungibleLocalId::bytes(scrypto_encode(&EPOCH_MANAGER_PACKAGE).unwrap()).unwrap();
         let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_id);
         liquidity_token_auth.insert(
             Mint,
@@ -537,10 +532,8 @@ impl ValidatorCreator {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let mut liquidity_token_auth = BTreeMap::new();
-        let non_fungible_local_id = NonFungibleLocalId::bytes(
-            scrypto_encode(&PackageIdentifier::Scrypto(EPOCH_MANAGER_PACKAGE)).unwrap(),
-        )
-        .unwrap();
+        let non_fungible_local_id =
+            NonFungibleLocalId::bytes(scrypto_encode(&EPOCH_MANAGER_PACKAGE).unwrap()).unwrap();
         let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
 
         liquidity_token_auth.insert(
@@ -568,10 +561,8 @@ impl ValidatorCreator {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let mut unstake_token_auth = BTreeMap::new();
-        let non_fungible_local_id = NonFungibleLocalId::bytes(
-            scrypto_encode(&PackageIdentifier::Scrypto(EPOCH_MANAGER_PACKAGE)).unwrap(),
-        )
-        .unwrap();
+        let non_fungible_local_id =
+            NonFungibleLocalId::bytes(scrypto_encode(&EPOCH_MANAGER_PACKAGE).unwrap()).unwrap();
         let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
 
         unstake_token_auth.insert(
@@ -614,17 +605,11 @@ impl ValidatorCreator {
             "owner".to_string(),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::new(
-                NodeModuleId::SELF,
-                VALIDATOR_UNREGISTER_IDENT.to_string(),
-            ),
+            AccessRuleKey::new(NodeModuleId::SELF, VALIDATOR_UNREGISTER_IDENT.to_string()),
             "owner".to_string(),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::new(
-                NodeModuleId::SELF,
-                VALIDATOR_UPDATE_KEY_IDENT.to_string(),
-            ),
+            AccessRuleKey::new(NodeModuleId::SELF, VALIDATOR_UPDATE_KEY_IDENT.to_string()),
             "owner".to_string(),
         );
         access_rules.set_method_access_rule(
@@ -635,10 +620,8 @@ impl ValidatorCreator {
             "owner".to_string(),
         );
 
-        let non_fungible_local_id = NonFungibleLocalId::bytes(
-            scrypto_encode(&PackageIdentifier::Scrypto(EPOCH_MANAGER_PACKAGE)).unwrap(),
-        )
-        .unwrap();
+        let non_fungible_local_id =
+            NonFungibleLocalId::bytes(scrypto_encode(&EPOCH_MANAGER_PACKAGE).unwrap()).unwrap();
         let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
         access_rules.set_group_and_mutability(
             AccessRuleKey::new(NodeModuleId::SELF, VALIDATOR_STAKE_IDENT.to_string()),

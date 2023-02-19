@@ -725,10 +725,8 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
         access_rule_or([rule_set.primary_role, rule_set.confirmation_role].into()),
     );
 
-    let non_fungible_local_id = NonFungibleLocalId::bytes(
-        scrypto_encode(&PackageIdentifier::Scrypto(ACCESS_CONTROLLER_PACKAGE)).unwrap(),
-    )
-    .unwrap();
+    let non_fungible_local_id =
+        NonFungibleLocalId::bytes(scrypto_encode(&ACCESS_CONTROLLER_PACKAGE).unwrap()).unwrap();
     let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
 
     access_rules.default(rule!(deny_all), rule!(require(non_fungible_global_id)))

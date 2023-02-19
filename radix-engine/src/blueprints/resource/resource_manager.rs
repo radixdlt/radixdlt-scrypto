@@ -1307,10 +1307,7 @@ impl ResourceManagerBlueprint {
 
             let access_rule = match input.method {
                 Deposit => {
-                    let key = AccessRuleKey::new(
-                        NodeModuleId::SELF,
-                        VAULT_PUT_IDENT.to_string(),
-                    );
+                    let key = AccessRuleKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string());
                     substate.access_rules_chain[0].get_mutability(&key)
                 }
                 Withdraw => substate.access_rules_chain[0].get_group_mutability("withdraw"),
@@ -1330,8 +1327,7 @@ impl ResourceManagerBlueprint {
 
         match input.method {
             Deposit => {
-                let key =
-                    AccessRuleKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string());
+                let key = AccessRuleKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string());
                 substate.access_rules_chain[0].set_method_access_rule(key, input.access_rule);
             }
             Withdraw => {
@@ -1376,10 +1372,7 @@ impl ResourceManagerBlueprint {
 
             let access_rule = match input.method {
                 Deposit => {
-                    let key = AccessRuleKey::new(
-                        NodeModuleId::SELF,
-                        VAULT_PUT_IDENT.to_string(),
-                    );
+                    let key = AccessRuleKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string());
                     substate.access_rules_chain[0].get_mutability(&key)
                 }
                 Withdraw => substate.access_rules_chain[0].get_group_mutability("withdraw"),
@@ -1399,8 +1392,7 @@ impl ResourceManagerBlueprint {
 
         match input.method {
             Deposit => {
-                let key =
-                    AccessRuleKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string());
+                let key = AccessRuleKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string());
                 substate.access_rules_chain[0].set_mutability(key, input.mutability);
             }
             Withdraw => {

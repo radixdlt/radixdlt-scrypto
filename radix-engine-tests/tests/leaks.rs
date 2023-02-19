@@ -25,7 +25,7 @@ fn dangling_component_should_fail() {
             RuntimeError::KernelError(KernelError::InvalidDropNodeAccess {
                 mode: ExecutionMode::Client,
                 actor: ResolvedActor {
-                    identifier: FnIdentifier::Scrypto(..),
+                    identifier: FnIdentifier::Some(..),
                     receiver: None,
                 },
                 node_id: RENodeId::Component(..)
@@ -54,7 +54,7 @@ fn dangling_bucket_should_fail() {
             RuntimeError::KernelError(KernelError::InvalidDropNodeAccess {
                 mode: ExecutionMode::Client,
                 actor: ResolvedActor {
-                    identifier: FnIdentifier::Scrypto(..),
+                    identifier: FnIdentifier::Some(..),
                     receiver: None,
                 },
                 node_id: RENodeId::Bucket(..)
@@ -83,7 +83,7 @@ fn dangling_vault_should_fail() {
             RuntimeError::KernelError(KernelError::InvalidDropNodeAccess {
                 mode: ExecutionMode::Client,
                 actor: ResolvedActor {
-                    identifier: FnIdentifier::Scrypto(..),
+                    identifier: FnIdentifier::Some(..),
                     receiver: None,
                 },
                 node_id: RENodeId::Vault(..)
@@ -134,7 +134,7 @@ fn dangling_kv_store_should_fail() {
             RuntimeError::KernelError(KernelError::InvalidDropNodeAccess {
                 mode: ExecutionMode::Client,
                 actor: ResolvedActor {
-                    identifier: FnIdentifier::Scrypto(..),
+                    identifier: FnIdentifier::Some(..),
                     receiver: None,
                 },
                 node_id: RENodeId::KeyValueStore(..)
@@ -168,7 +168,7 @@ fn dangling_bucket_with_proof_should_fail() {
             RuntimeError::KernelError(KernelError::InvalidDropNodeAccess {
                 mode: ExecutionMode::Client,
                 actor: ResolvedActor {
-                    identifier: FnIdentifier::Scrypto(..),
+                    identifier: FnIdentifier::Some(..),
                     receiver: None,
                 },
                 node_id: RENodeId::Bucket(..)

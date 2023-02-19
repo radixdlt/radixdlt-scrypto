@@ -107,17 +107,11 @@ impl ClockNativePackage {
 
         let mut access_rules = AccessRules::new();
         access_rules.set_method_access_rule(
-            AccessRuleKey::new(
-                NodeModuleId::SELF,
-                CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
-            ),
+            AccessRuleKey::new(NodeModuleId::SELF, CLOCK_SET_CURRENT_TIME_IDENT.to_string()),
             rule!(require(AuthAddresses::validator_role())),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::new(
-                NodeModuleId::SELF,
-                CLOCK_GET_CURRENT_TIME_IDENT.to_string(),
-            ),
+            AccessRuleKey::new(NodeModuleId::SELF, CLOCK_GET_CURRENT_TIME_IDENT.to_string()),
             rule!(allow_all),
         );
         access_rules.set_method_access_rule(

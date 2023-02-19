@@ -4,37 +4,23 @@ use crate::*;
 use sbor::rust::string::String;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum PackageIdentifier {
-    Scrypto(PackageAddress),
-    None,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum NativePackage {
-    Auth,
-    Root,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum InvocationIdentifier {
-    Transaction,
+    Transaction, // TODO: Remove
     Function(PackageAddress, String, String),
     Method(ScryptoReceiver, NodeModuleId, String),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum FnIdentifier {
-    Scrypto(ScryptoFnIdentifier),
+    Some(ScryptoFnIdentifier),
     None,
 }
 
 impl FnIdentifier {
-    pub fn package_identifier(&self) -> PackageIdentifier {
+    pub fn package(&self) -> Option<PackageAddress> {
         match self {
-            FnIdentifier::Scrypto(identifier) => {
-                PackageIdentifier::Scrypto(identifier.package_address)
-            }
-            FnIdentifier::None => PackageIdentifier::None,
+            FnIdentifier::Some(identifier) => Some(identifier.package_address),
+            FnIdentifier::None => None,
         }
     }
 }

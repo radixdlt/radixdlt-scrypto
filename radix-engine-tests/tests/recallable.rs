@@ -66,7 +66,7 @@ fn cannot_take_on_non_recallable_vault() {
             e,
             RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized {
                 actor: ResolvedActor {
-                    identifier: FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                    identifier: FnIdentifier::Some(ScryptoFnIdentifier {
                         package_address: RESOURCE_MANAGER_PACKAGE,
                         ..
                     }),

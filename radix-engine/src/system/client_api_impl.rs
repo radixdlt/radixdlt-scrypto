@@ -300,7 +300,7 @@ where
         // Create component RENode
         // FIXME: support native blueprints
         let package_address = match self.kernel_get_fn_identifier()? {
-            FnIdentifier::Scrypto(s) => s.package_address,
+            FnIdentifier::Some(s) => s.package_address,
             FnIdentifier::None => todo!(),
         };
         let blueprint_ident = blueprint_ident.to_string();
