@@ -14,9 +14,7 @@ use radix_engine_interface::data::scrypto_encode;
 
 // TODO: Should `Encode` and `Decode` be removed so that `ComponentAccessRules` can not be passed
 // between components?
-#[derive(
-    Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, LegacyDescribe)]
 pub struct ComponentAccessRules {
     component: ComponentIdentifier,
     index: u32,
@@ -73,9 +71,7 @@ impl ComponentAccessRules {
     }
 }
 
-#[derive(
-    Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, LegacyDescribe)]
 pub enum ComponentIdentifier {
     RENodeId(ComponentId),
     GlobalAddress(ComponentAddress),
@@ -104,17 +100,7 @@ impl From<ComponentIdentifier> for RENodeId {
     }
 }
 
-#[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    LegacyDescribe,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor, LegacyDescribe)]
 pub enum Mutability {
     LOCKED,
     MUTABLE(AccessRule),

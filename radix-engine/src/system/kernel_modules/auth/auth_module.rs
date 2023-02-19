@@ -25,7 +25,7 @@ use super::HardAuthRule;
 use super::HardProofRule;
 use super::HardResourceOrNonFungible;
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
     VisibilityError(RENodeId),
     Unauthorized {

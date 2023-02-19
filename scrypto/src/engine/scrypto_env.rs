@@ -10,7 +10,7 @@ use sbor::rust::collections::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 
-#[derive(Debug, Categorize, Encode, Decode)]
+#[derive(Debug, Sbor)]
 pub enum ClientApiError {
     DecodeError(DecodeError),
 }

@@ -3,7 +3,7 @@ use radix_engine_interface::api::types::RENodeId;
 
 /// Resolved receiver including info whether receiver was derefed
 /// or not
-#[derive(Debug, Copy, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct ResolvedReceiver {
     pub derefed_from: Option<(RENodeId, LockHandle)>,
     pub receiver: MethodReceiver,
@@ -26,7 +26,7 @@ impl ResolvedReceiver {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ResolvedActor {
     pub identifier: FnIdentifier,
     pub receiver: Option<ResolvedReceiver>,
@@ -49,7 +49,7 @@ impl ResolvedActor {
 }
 
 /// Execution mode
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Sbor)]
 pub enum ExecutionMode {
     Kernel,
     Resolver,

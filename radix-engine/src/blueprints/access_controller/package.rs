@@ -20,7 +20,7 @@ use radix_engine_interface::*;
 use radix_engine_interface::{api::*, rule};
 use sbor::rust::collections::BTreeMap;
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct AccessControllerSubstate {
     /// A vault where the asset controlled by the access controller lives.
     pub controlled_asset: VaultId,
@@ -48,28 +48,28 @@ impl AccessControllerSubstate {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
 pub enum PrimaryRoleState {
     #[default]
     Unlocked,
     Locked,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
 pub enum PrimaryOperationState {
     #[default]
     Normal,
     Recovery(RecoveryProposal),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
 pub enum RecoveryOperationState {
     #[default]
     Normal,
     Recovery(RecoveryRecoveryState),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum RecoveryRecoveryState {
     Untimed(RecoveryProposal),
     Timed {
@@ -78,7 +78,7 @@ pub enum RecoveryRecoveryState {
     },
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AccessControllerError {
     /// Occurs when some action requires that the primary role is unlocked to happen.
     OperationRequiresUnlockedPrimaryRole,

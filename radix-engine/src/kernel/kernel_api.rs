@@ -18,7 +18,7 @@ use super::interpreters::ScryptoInterpreter;
 use super::module_mixer::KernelModuleMixer;
 
 bitflags! {
-    #[derive(Encode, Decode, Categorize)]
+    #[derive(Sbor)]
     pub struct LockFlags: u32 {
         /// Allows the locked substate to be mutated
         const MUTABLE = 0b00000001;

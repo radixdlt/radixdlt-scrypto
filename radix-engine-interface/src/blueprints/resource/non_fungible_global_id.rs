@@ -14,9 +14,7 @@ use scrypto_abi::Type;
 use utils::ContextualDisplay;
 
 /// Represents the global id of a non-fungible.
-#[derive(
-    Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoCategorize, ScryptoEncode, ScryptoDecode,
-)]
+#[derive(Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor)]
 pub struct NonFungibleGlobalId(ResourceAddress, NonFungibleLocalId);
 
 impl LegacyDescribe for NonFungibleGlobalId {

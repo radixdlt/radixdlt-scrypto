@@ -7,7 +7,7 @@ use std::collections::BTreeSet;
 
 use crate::model::*;
 
-#[derive(ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(ScryptoSbor)]
 pub struct TestTransaction {
     nonce: u64,
     cost_unit_limit: u32,

@@ -6,9 +6,7 @@ use sbor::rust::string::ToString;
 use crate::*;
 
 /// Royalty rules
-#[derive(
-    Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, LegacyDescribe)]
 pub struct RoyaltyConfig {
     pub rules: HashMap<String, u32>,
     pub default_rule: u32,

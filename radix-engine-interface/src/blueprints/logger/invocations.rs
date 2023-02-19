@@ -15,7 +15,7 @@ impl LoggerAbi {
 }
 
 /// Represents the level of a log message.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Categorize, Encode, Decode, LegacyDescribe)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Sbor, LegacyDescribe)]
 pub enum Level {
     Error,
     Warn,
@@ -40,7 +40,7 @@ pub const LOGGER_BLUEPRINT: &str = "Logger";
 
 pub const LOGGER_LOG_IDENT: &str = "log";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct LoggerLogInput {
     pub level: Level,
     pub message: String,

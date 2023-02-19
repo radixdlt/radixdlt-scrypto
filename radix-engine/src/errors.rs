@@ -23,7 +23,7 @@ use sbor::*;
 use crate::types::*;
 use crate::wasm::WasmRuntimeError;
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum IdAllocationError {
     RENodeIdWasNotAllocated(RENodeId),
     AllocatedIDsNotEmpty,
@@ -35,7 +35,7 @@ pub trait CanBeAbortion {
 }
 
 /// Represents an error which causes a tranasction to be rejected.
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum RejectionError {
     SuccessButFeeLoanNotRepaid,
     ErrorBeforeFeeLoanRepaid(RuntimeError),
@@ -56,7 +56,7 @@ impl fmt::Display for RejectionError {
 }
 
 /// Represents an error when executing a transaction.
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum RuntimeError {
     /// An error occurred within the kernel.
     KernelError(KernelError),
@@ -116,7 +116,7 @@ impl CanBeAbortion for RuntimeError {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum KernelError {
     InvalidModeTransition(ExecutionMode, ExecutionMode),
 
@@ -180,7 +180,7 @@ impl CanBeAbortion for KernelError {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameError {
     OffsetDoesNotExist(RENodeId, SubstateOffset),
     RENodeNotVisible(RENodeId),
@@ -188,14 +188,14 @@ pub enum CallFrameError {
     MovingLockedRENode(RENodeId),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum ScryptoFnResolvingError {
     BlueprintNotFound,
     MethodNotFound,
     InvalidInput,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum InterpreterError {
     NativeUnexpectedReceiver(String),
     NativeExpectedReceiver(String),
@@ -208,7 +208,7 @@ pub enum InterpreterError {
     InvalidScryptoReturn(DecodeError),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ModuleError {
     NodeMoveError(NodeMoveError),
     AuthError(AuthError),
@@ -295,7 +295,7 @@ impl<E: SelfError> From<InvokeError<E>> for RuntimeError {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ApplicationError {
     TransactionProcessorError(TransactionProcessorError),
 

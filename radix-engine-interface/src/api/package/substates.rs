@@ -20,13 +20,13 @@ pub const ROYALTY_CODE_ID: u8 = 11u8;
 pub const ACCESS_RULES_CODE_ID: u8 = 12u8;
 
 /// A collection of blueprints, compiled and published as a single unit.
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct NativeCodeSubstate {
     pub native_package_code_id: u8,
 }
 
 /// A collection of blueprints, compiled and published as a single unit.
-#[derive(Clone, Categorize, Encode, Decode, PartialEq, Eq)]
+#[derive(Clone, Sbor, PartialEq, Eq)]
 pub struct WasmCodeSubstate {
     pub code: Vec<u8>,
 }
@@ -43,7 +43,7 @@ impl Debug for WasmCodeSubstate {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct PackageInfoSubstate {
     pub blueprint_abis: BTreeMap<String, BlueprintAbi>,
     pub dependent_resources: BTreeSet<ResourceAddress>,
@@ -69,12 +69,12 @@ impl PackageInfoSubstate {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct PackageRoyaltyConfigSubstate {
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct PackageRoyaltyAccumulatorSubstate {
     pub royalty: Own,
 }

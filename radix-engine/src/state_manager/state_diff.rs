@@ -4,7 +4,7 @@ use crate::types::*;
 use radix_engine_interface::api::types::SubstateId;
 use radix_engine_interface::crypto::hash;
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct StateDiff {
     pub up_substates: BTreeMap<SubstateId, OutputValue>,
     pub down_substates: BTreeSet<OutputId>,

@@ -10,5 +10,3 @@ mod schema_type;
 
 pub use blueprint_abi::*;
 pub use schema_type::*;
-
-pub mod scrypto_schema {}

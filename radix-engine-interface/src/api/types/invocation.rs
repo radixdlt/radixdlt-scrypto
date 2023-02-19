@@ -4,14 +4,14 @@ use crate::data::ScryptoValue;
 use crate::*;
 use sbor::rust::string::String;
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub enum InvocationIdentifier {
     Transaction, // TODO: Remove
     Function(FnIdentifier),
     Method(MethodReceiver, String),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct FnIdentifier {
     pub package_address: PackageAddress,
     pub blueprint_name: String,
@@ -36,7 +36,7 @@ impl FnIdentifier {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct FunctionInvocation {
     pub fn_identifier: FnIdentifier,
     pub args: Vec<u8>,
@@ -50,10 +50,10 @@ impl Invocation for FunctionInvocation {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, ScryptoSbor)]
 pub struct MethodReceiver(pub RENodeId, pub NodeModuleId);
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct MethodInvocation {
     pub receiver: MethodReceiver,
     pub fn_name: String,

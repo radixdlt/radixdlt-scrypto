@@ -69,3 +69,8 @@ impl ManifestExpression {
 }
 
 schemaless_scrypto_custom_type!(ManifestExpression, ScryptoCustomValueKind::Expression, 1);
+
+// Temporary until ManifestExpression is no longer in the ScryptoValue model
+impl<C: CustomTypeKind<GlobalTypeId>> Describe<C> for ManifestExpression {
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(basic_well_known_types::ANY_ID);
+}

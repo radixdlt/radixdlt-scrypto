@@ -41,7 +41,7 @@ pub struct ExecutionTraceModule {
     vault_ops: Vec<(TraceActor, VaultId, VaultOp)>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ResourceChange {
     pub resource_address: ResourceAddress,
     pub component_id: ComponentId, // TODO: support non component actor
@@ -62,7 +62,7 @@ pub enum VaultOp {
     LockFee,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Clone, Debug, PartialEq, Eq, ScryptoSbor)]
 pub struct ProofSnapshot {
     pub resource_address: ResourceAddress,
     pub resource_type: ResourceType,
@@ -70,19 +70,20 @@ pub struct ProofSnapshot {
     pub total_locked: LockedAmountOrIds,
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct ResourceSummary {
     pub buckets: HashMap<BucketId, Resource>,
     pub proofs: HashMap<ProofId, ProofSnapshot>,
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+// TODO: Clean up
+#[derive(Debug, Clone, ScryptoSbor)]
 pub enum TraceActor {
     Root,
     Actor(ResolvedActor),
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct KernelCallTrace {
     pub origin: KernelCallOrigin,
     pub kernel_call_depth: usize,
@@ -94,7 +95,7 @@ pub struct KernelCallTrace {
     pub children: Vec<KernelCallTrace>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub enum KernelCallOrigin {
     ScryptoFunction(FnIdentifier),
     ScryptoMethod(FnIdentifier),

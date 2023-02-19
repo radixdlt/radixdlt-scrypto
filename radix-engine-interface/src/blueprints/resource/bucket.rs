@@ -2,6 +2,7 @@ use crate::abi::*;
 use crate::api::types::*;
 use crate::blueprints::resource::*;
 use crate::data::types::Own;
+use crate::data::ScryptoCustomTypeKind;
 use crate::data::ScryptoCustomValueKind;
 use crate::math::*;
 use crate::*;
@@ -12,14 +13,14 @@ pub const BUCKET_BLUEPRINT: &str = "Bucket";
 
 pub const BUCKET_TAKE_IDENT: &str = "Bucket_take";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct BucketTakeInput {
     pub amount: Decimal,
 }
 
 pub const BUCKET_PUT_IDENT: &str = "Bucket_put";
 
-#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct BucketPutInput {
     pub bucket: Bucket,
 }
@@ -34,29 +35,29 @@ impl Clone for BucketPutInput {
 
 pub const BUCKET_TAKE_NON_FUNGIBLES_IDENT: &str = "Bucket_take_non_fungibles";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct BucketTakeNonFungiblesInput {
     pub ids: BTreeSet<NonFungibleLocalId>,
 }
 
 pub const BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT: &str = "Bucket_get_non_fungible_local_ids";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct BucketGetNonFungibleLocalIdsInput {}
 
 pub const BUCKET_GET_AMOUNT_IDENT: &str = "Bucket_get_amount";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct BucketGetAmountInput {}
 
 pub const BUCKET_GET_RESOURCE_ADDRESS_IDENT: &str = "Bucket_get_resource_address";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct BucketGetResourceAddressInput {}
 
 pub const BUCKET_CREATE_PROOF_IDENT: &str = "Bucket_create_proof";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct BucketCreateProofInput {}
 
 #[derive(Debug, PartialEq, Eq, Hash)]
@@ -102,4 +103,9 @@ impl scrypto_abi::LegacyDescribe for Bucket {
     fn describe() -> scrypto_abi::Type {
         Type::Bucket
     }
+}
+
+impl Describe<ScryptoCustomTypeKind<GlobalTypeId>> for Bucket {
+    const TYPE_ID: GlobalTypeId =
+        GlobalTypeId::well_known(crate::data::well_known_scrypto_custom_types::OWN_BUCKET_ID);
 }

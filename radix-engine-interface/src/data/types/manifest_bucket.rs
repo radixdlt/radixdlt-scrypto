@@ -52,3 +52,8 @@ impl ManifestBucket {
 }
 
 schemaless_scrypto_custom_type!(ManifestBucket, ScryptoCustomValueKind::Bucket, 4);
+
+// Temporary until ManifestBucket is no longer in the ScryptoValue model
+impl<C: CustomTypeKind<GlobalTypeId>> Describe<C> for ManifestBucket {
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(basic_well_known_types::ANY_ID);
+}

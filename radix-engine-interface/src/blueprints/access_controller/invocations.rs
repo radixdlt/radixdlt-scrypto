@@ -22,7 +22,7 @@ pub const ACCESS_CONTROLLER_BLUEPRINT: &str = "AccessController";
 
 pub const ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT: &str = "create_global";
 
-#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct AccessControllerCreateGlobalInput {
     pub controlled_asset: Bucket,
     pub rule_set: RuleSet,
@@ -45,7 +45,7 @@ impl Clone for AccessControllerCreateGlobalInput {
 
 pub const ACCESS_CONTROLLER_CREATE_PROOF_IDENT: &str = "create_proof";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct AccessControllerCreateProofInput {}
 
 //================================================
@@ -55,7 +55,7 @@ pub struct AccessControllerCreateProofInput {}
 pub const ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT: &str =
     "initiate_recovery_as_primary";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct AccessControllerInitiateRecoveryAsPrimaryInput {
     pub rule_set: RuleSet,
     pub timed_recovery_delay_in_minutes: Option<u32>,
@@ -68,7 +68,7 @@ pub struct AccessControllerInitiateRecoveryAsPrimaryInput {
 pub const ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT: &str =
     "initiate_recovery_as_recovery";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct AccessControllerInitiateRecoveryAsRecoveryInput {
     pub rule_set: RuleSet,
     pub timed_recovery_delay_in_minutes: Option<u32>,
@@ -81,7 +81,7 @@ pub struct AccessControllerInitiateRecoveryAsRecoveryInput {
 pub const ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT: &str =
     "quick_confirm_primary_role_recovery_proposal";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput {
     pub rule_set: RuleSet,
     pub timed_recovery_delay_in_minutes: Option<u32>,
@@ -94,7 +94,7 @@ pub struct AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput {
 pub const ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT: &str =
     "quick_confirm_recovery_role_recovery_proposal";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInput {
     pub rule_set: RuleSet,
     pub timed_recovery_delay_in_minutes: Option<u32>,
@@ -106,7 +106,7 @@ pub struct AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInput {
 
 pub const ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT: &str = "timed_confirm_recovery";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct AccessControllerTimedConfirmRecoveryInput {
     pub rule_set: RuleSet,
     pub timed_recovery_delay_in_minutes: Option<u32>,
@@ -119,7 +119,7 @@ pub struct AccessControllerTimedConfirmRecoveryInput {
 pub const ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT: &str =
     "cancel_primary_role_recovery_proposal";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct AccessControllerCancelPrimaryRoleRecoveryProposalInput;
 
 //==========================================================
@@ -129,7 +129,7 @@ pub struct AccessControllerCancelPrimaryRoleRecoveryProposalInput;
 pub const ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT: &str =
     "cancel_recovery_role_recovery_proposal";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct AccessControllerCancelRecoveryRoleRecoveryProposalInput;
 
 //=====================================
@@ -138,7 +138,7 @@ pub struct AccessControllerCancelRecoveryRoleRecoveryProposalInput;
 
 pub const ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE: &str = "lock_primary_role";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct AccessControllerLockPrimaryRoleInput;
 
 //=======================================
@@ -147,7 +147,7 @@ pub struct AccessControllerLockPrimaryRoleInput;
 
 pub const ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE: &str = "unlock_primary_role";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct AccessControllerUnlockPrimaryRoleInput;
 
 //=======================================
@@ -156,7 +156,7 @@ pub struct AccessControllerUnlockPrimaryRoleInput;
 
 pub const ACCESS_CONTROLLER_STOP_TIMED_RECOVERY: &str = "stop_timed_recovery";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct AccessControllerStopTimedRecoveryInput {
     pub rule_set: RuleSet,
     pub timed_recovery_delay_in_minutes: Option<u32>,
