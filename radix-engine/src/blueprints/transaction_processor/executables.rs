@@ -210,7 +210,6 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
             | BasicInstruction::DropProof { .. }
             | BasicInstruction::DropAllProofs { .. }
             | BasicInstruction::PublishPackage { .. }
-            | BasicInstruction::PublishPackageWithOwner { .. }
             | BasicInstruction::BurnResource { .. }
             | BasicInstruction::AssertAccessRule { .. } => {}
         },
@@ -488,36 +487,6 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         vec![access_rules.clone()],
                         royalty_config.clone(),
                         metadata.clone(),
-                    )?;
-
-                    InstructionOutput::Native(Box::new(rtn))
-                }
-                Instruction::Basic(BasicInstruction::PublishPackageWithOwner {
-                    code,
-                    abi,
-                    owner_badge,
-                }) => {
-                    let code = blobs_by_hash
-                        .get(&code.0)
-                        .ok_or(RuntimeError::ApplicationError(
-                            ApplicationError::TransactionProcessorError(
-                                TransactionProcessorError::BlobNotFound(code.clone()),
-                            ),
-                        ))?;
-                    let abi = blobs_by_hash
-                        .get(&abi.0)
-                        .ok_or(RuntimeError::ApplicationError(
-                            ApplicationError::TransactionProcessorError(
-                                TransactionProcessorError::BlobNotFound(abi.clone()),
-                            ),
-                        ))?;
-                    // TODO: remove clone by allowing invocation to have references, like in TransactionProcessorRunInvocation.
-                    let rtn = api.new_package(
-                        code.clone().clone(),
-                        abi.clone().clone(),
-                        vec![package_access_rules_from_owner_badge(owner_badge)],
-                        BTreeMap::new(),
-                        BTreeMap::new(),
                     )?;
 
                     InstructionOutput::Native(Box::new(rtn))

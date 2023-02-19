@@ -153,28 +153,6 @@ fn publish_package_succeeds() {
     });
 }
 
-/// A sample manifest that publishes a package with an owner badge.
-#[test]
-fn publish_package_with_owner_succeeds() {
-    test_manifest(|account_component_address, bech32_encoder| {
-        // TODO: Update the code.blob and abi.blob files that are used for testing.
-        // Using the WASM and ABI from the account blueprint here as they are up to date. The
-        // abi.blob and code.blob files from the transaction crate are not.
-        let code_blob = include_bytes!("../../assets/faucet.wasm").to_vec();
-        let abi_blob = include_bytes!("../../assets/faucet.abi").to_vec();
-
-        let manifest = replace_variables!(
-            include_str!("../../transaction/examples/package/publish_with_owner.rtm"),
-            code_blob_hash = hash(&code_blob),
-            abi_blob_hash = hash(&abi_blob),
-            account_component_address = account_component_address.display(bech32_encoder),
-            owner_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
-            owner_badge_non_fungible_local_id = "#1#"
-        );
-        (manifest, vec![code_blob, abi_blob])
-    });
-}
-
 /// A sample manifest for minting of a fungible resource
 #[test]
 fn minting_of_fungible_resource_succeeds() {

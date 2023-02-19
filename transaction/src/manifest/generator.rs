@@ -410,15 +410,6 @@ pub fn generate_instruction(
             metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
             access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
         },
-        ast::Instruction::PublishPackageWithOwner {
-            code,
-            abi,
-            owner_badge,
-        } => BasicInstruction::PublishPackageWithOwner {
-            code: generate_blob(code, blobs)?,
-            abi: generate_blob(abi, blobs)?,
-            owner_badge: generate_non_fungible_global_id(owner_badge, bech32_decoder)?,
-        },
         ast::Instruction::BurnResource { bucket } => {
             let bucket_id = generate_bucket(bucket, resolver)?;
             id_validator
@@ -960,33 +951,6 @@ fn generate_non_fungible_local_id(
             v => invalid_type!(v, ast::Type::String)?,
         },
         v => invalid_type!(v, ast::Type::NonFungibleLocalId),
-    }
-}
-
-fn generate_non_fungible_global_id(
-    value: &ast::Value,
-    bech32_decoder: &Bech32Decoder,
-) -> Result<NonFungibleGlobalId, GeneratorError> {
-    match value {
-        ast::Value::Tuple(elements) => {
-            if elements.len() != 2 {
-                return Err(GeneratorError::InvalidNonFungibleGlobalId);
-            }
-            let resource_address = generate_resource_address(&elements[0], bech32_decoder)?;
-            let non_fungible_local_id = generate_non_fungible_local_id(&elements[1])?;
-            Ok(NonFungibleGlobalId::new(
-                resource_address,
-                non_fungible_local_id,
-            ))
-        }
-        ast::Value::NonFungibleGlobalId(value) => match value.as_ref() {
-            ast::Value::String(s) => {
-                NonFungibleGlobalId::try_from_canonical_string(bech32_decoder, s.as_str())
-                    .map_err(|_| GeneratorError::InvalidNonFungibleGlobalId)
-            }
-            v => invalid_type!(v, ast::Type::String)?,
-        },
-        v => invalid_type!(v, ast::Type::NonFungibleGlobalId, ast::Type::Tuple),
     }
 }
 

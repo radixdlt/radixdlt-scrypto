@@ -31,30 +31,6 @@ PUBLISH_PACKAGE
     }
 
     #[test]
-    fn test_publish_package_with_owner() {
-        compile_and_decompile_with_inversion_test(
-            &apply_replacements_to_manifest(
-                include_str!("../../examples/package/publish_with_owner.rtm").to_string(),
-            ),
-            &NetworkDefinition::simulator(),
-            vec![
-                include_bytes!("../../examples/package/code.blob").to_vec(),
-                include_bytes!("../../examples/package/abi.blob").to_vec(),
-            ],
-            r##"
-CALL_METHOD
-    ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na")
-    "lock_fee"
-    Decimal("10");
-PUBLISH_PACKAGE_WITH_OWNER
-    Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0")
-    Blob("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791")
-    NonFungibleGlobalId("resource_sim1qqgvpz8q7ypeueqcv4qthsv7ezt8h9m3depmqqw7pc4sfmucfx:#1#");
-"##,
-        );
-    }
-
-    #[test]
     fn test_resource_worktop() {
         compile_and_decompile_with_inversion_test(
             include_str!("../../examples/resources/worktop.rtm"),

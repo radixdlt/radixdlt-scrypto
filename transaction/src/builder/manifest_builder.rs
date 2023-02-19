@@ -587,10 +587,12 @@ impl ManifestBuilder {
         let abi_hash = hash(&abi);
         self.blobs.insert(abi_hash, abi);
 
-        self.add_instruction(BasicInstruction::PublishPackageWithOwner {
+        self.add_instruction(BasicInstruction::PublishPackage {
             code: ManifestBlobRef(code_hash),
             abi: ManifestBlobRef(abi_hash),
-            owner_badge,
+            royalty_config: BTreeMap::new(),
+            metadata: BTreeMap::new(),
+            access_rules: package_access_rules_from_owner_badge(&owner_badge),
         });
         self
     }

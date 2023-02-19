@@ -104,13 +104,6 @@ pub enum BasicInstruction {
         access_rules: AccessRules,
     },
 
-    /// Publish a package with owner.
-    PublishPackageWithOwner {
-        code: ManifestBlobRef,
-        abi: ManifestBlobRef,
-        owner_badge: NonFungibleGlobalId,
-    },
-
     BurnResource {
         bucket_id: ManifestBucket,
     },
