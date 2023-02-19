@@ -40,7 +40,7 @@ impl KernelModule for KernelDebugModule {
 
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        callee: &ResolvedActor,
+        callee: &Option<ResolvedActor>,
         nodes_and_refs: &mut CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         log!(api, "Sending nodes: {:?}", nodes_and_refs.nodes_to_move);
@@ -50,7 +50,7 @@ impl KernelModule for KernelDebugModule {
 
     fn on_execution_finish<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        caller: &ResolvedActor,
+        caller: &Option<ResolvedActor>,
         nodes_and_refs: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         log!(api, "Returning nodes: {:?}", nodes_and_refs.nodes_to_move);

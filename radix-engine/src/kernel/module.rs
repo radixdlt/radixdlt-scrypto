@@ -46,7 +46,7 @@ pub trait KernelModule {
     #[inline(always)]
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
-        _actor: &ResolvedActor,
+        _actor: &Option<ResolvedActor>,
         _down_movement: &mut CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         Ok(())
@@ -55,7 +55,7 @@ pub trait KernelModule {
     #[inline(always)]
     fn on_execution_start<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
-        _caller: &ResolvedActor,
+        _caller: &Option<ResolvedActor>,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -63,7 +63,7 @@ pub trait KernelModule {
     #[inline(always)]
     fn on_execution_finish<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
-        _caller: &ResolvedActor,
+        _caller: &Option<ResolvedActor>,
         _up_movement: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         Ok(())

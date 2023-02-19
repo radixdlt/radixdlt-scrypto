@@ -113,13 +113,16 @@ impl KernelModule for CostingModule {
 
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        callee: &ResolvedActor,
+        callee: &Option<ResolvedActor>,
         _nodes_and_refs: &mut CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         // Identify the function, and optional component address
-        let (scrypto_fn_identifier, optional_component) = match &callee.identifier {
-            FnIdentifier::Some(scrypto_fn_identifier) => {
-                let maybe_component = match &callee.receiver {
+        let (scrypto_fn_identifier, optional_component) = match &callee {
+            Some(ResolvedActor {
+                receiver,
+                identifier: FnIdentifier::Some(scrypto_fn_identifier),
+             }) => {
+                let maybe_component = match &receiver {
                     Some(ResolvedReceiver {
                         derefed_from:
                             Some((RENodeId::Global(GlobalAddress::Component(component_address)), ..)),

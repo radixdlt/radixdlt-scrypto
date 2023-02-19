@@ -44,7 +44,7 @@ use super::heap::{Heap, HeapRENode};
 use super::id_allocator::IdAllocator;
 use super::interpreters::ScryptoInterpreter;
 use super::kernel_api::{
-    ExecutableInvocation, Executor, Invokable, KernelActorApi, KernelApi, KernelInternalApi,
+    ExecutableInvocation, Executor, Invokable, KernelApi, KernelInternalApi,
     KernelModuleApi, KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockFlags, LockInfo,
 };
 use super::module::KernelModule;
@@ -393,7 +393,7 @@ where
         // Before push call frame
         {
             self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-                KernelModuleMixer::before_push_frame(api, &actor, &mut call_frame_update)
+                KernelModuleMixer::before_push_frame(api, &Some(actor.clone()), &mut call_frame_update)
             })?;
         }
 
@@ -649,15 +649,6 @@ where
     }
 }
 
-impl<'g, 's, W> KernelActorApi<RuntimeError> for Kernel<'g, 's, W>
-where
-    W: WasmEngine,
-{
-    fn kernel_get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
-        Ok(self.current_frame.actor.identifier.clone())
-    }
-}
-
 impl<'g, 's, W> KernelNodeApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
@@ -669,19 +660,22 @@ where
         let current_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        if !VisibilityProperties::check_drop_node_visibility(
-            current_mode,
-            &self.current_frame.actor,
-            node_id,
-        ) {
-            return Err(RuntimeError::KernelError(
-                KernelError::InvalidDropNodeAccess {
-                    mode: current_mode,
-                    actor: self.current_frame.actor.clone(),
-                    node_id,
-                },
-            ));
+        if let Some(actor) = &self.current_frame.actor {
+            if !VisibilityProperties::check_drop_node_visibility(
+                current_mode,
+                actor,
+                node_id,
+            ) {
+                return Err(RuntimeError::KernelError(
+                    KernelError::InvalidDropNodeAccess {
+                        mode: current_mode,
+                        actor: actor.clone(),
+                        node_id,
+                    },
+                ));
+            }
         }
+
 
         let node = self.drop_node_internal(node_id)?;
 
@@ -712,18 +706,20 @@ where
         let current_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        if !VisibilityProperties::check_create_node_access(
-            current_mode,
-            &self.current_frame.actor,
-            &re_node,
-            &module_init,
-        ) {
-            return Err(RuntimeError::KernelError(
-                KernelError::InvalidCreateNodeAccess {
-                    mode: current_mode,
-                    actor: self.current_frame.actor.clone(),
-                },
-            ));
+        if let Some(actor) = &self.current_frame.actor {
+            if !VisibilityProperties::check_create_node_access(
+                current_mode,
+                actor,
+                &re_node,
+                &module_init,
+            ) {
+                return Err(RuntimeError::KernelError(
+                    KernelError::InvalidCreateNodeAccess {
+                        mode: current_mode,
+                        actor: actor.clone(),
+                    },
+                ));
+            }
         }
 
         match (node_id, &re_node) {
@@ -947,7 +943,7 @@ where
         self.current_frame.depth
     }
 
-    fn kernel_get_current_actor(&self) -> ResolvedActor {
+    fn kernel_get_current_actor(&self) -> Option<ResolvedActor> {
         self.current_frame.actor.clone()
     }
 
@@ -1011,24 +1007,26 @@ where
         // TODO: Check if valid offset for node_id
 
         // Authorization
-        let actor = &self.current_frame.actor;
-        if !VisibilityProperties::check_substate_access(
-            current_mode,
-            actor,
-            node_id,
-            offset.clone(),
-            flags,
-        ) {
-            return Err(RuntimeError::KernelError(
-                KernelError::InvalidSubstateAccess {
-                    mode: current_mode,
-                    actor: actor.clone(),
-                    node_id,
-                    offset,
-                    flags,
-                },
-            ));
+        if let Some(actor) =  &self.current_frame.actor {
+            if !VisibilityProperties::check_substate_access(
+                current_mode,
+                actor,
+                node_id,
+                offset.clone(),
+                flags,
+            ) {
+                return Err(RuntimeError::KernelError(
+                    KernelError::InvalidSubstateAccess {
+                        mode: current_mode,
+                        actor: actor.clone(),
+                        node_id,
+                        offset,
+                        flags,
+                    },
+                ));
+            }
         }
+
 
         let maybe_lock_handle = self.current_frame.acquire_lock(
             &mut self.heap,

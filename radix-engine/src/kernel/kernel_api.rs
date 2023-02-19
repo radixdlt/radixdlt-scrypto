@@ -46,10 +46,6 @@ pub struct LockInfo {
 // Following the convention of Linux Kernel API, https://www.kernel.org/doc/htmldocs/kernel-api/,
 // all methods are prefixed by the subsystem of kernel.
 
-pub trait KernelActorApi<E> {
-    fn kernel_get_fn_identifier(&mut self) -> Result<FnIdentifier, E>;
-}
-
 pub trait KernelNodeApi {
     /// Removes an RENode and all of it's children from the Heap
     fn kernel_drop_node(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError>;
@@ -123,7 +119,7 @@ pub trait ExecutableInvocation: Invocation {
 
 /// Interface of the Kernel, for Kernel modules.
 pub trait KernelApi<W: WasmEngine, E>:
-    KernelActorApi<E> + KernelNodeApi + KernelSubstateApi + KernelWasmApi<W>
+    KernelNodeApi + KernelSubstateApi + KernelWasmApi<W>
 {
 }
 
@@ -136,7 +132,9 @@ pub trait KernelInternalApi {
         node_id: RENodeId,
     ) -> Option<RENodeVisibilityOrigin>;
     fn kernel_get_current_depth(&self) -> usize;
-    fn kernel_get_current_actor(&self) -> ResolvedActor;
+
+    // TODO: Remove
+    fn kernel_get_current_actor(&self) -> Option<ResolvedActor>;
 
     /* Super unstable interface, specifically for `ExecutionTrace` kernel module */
     fn kernel_read_bucket(&mut self, bucket_id: BucketId) -> Option<Resource>;

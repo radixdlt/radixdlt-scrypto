@@ -93,7 +93,8 @@ pub struct CallFrame {
     pub depth: usize,
 
     /// The running application actor of this frame
-    pub actor: ResolvedActor,
+    /// TODO: Move to an RENode
+    pub actor: Option<ResolvedActor>,
 
     /// All ref nodes accessible by this call frame (does not include owned nodes).
     node_refs: HashMap<RENodeId, RENodeRefData>,
@@ -292,7 +293,7 @@ impl CallFrame {
     pub fn new_root() -> Self {
         let mut frame = Self {
             depth: 0,
-            actor: ResolvedActor::function(FnIdentifier::None),
+            actor: None,
             node_refs: HashMap::new(),
             owned_root_nodes: HashMap::new(),
             next_lock_handle: 0u32,
@@ -357,7 +358,7 @@ impl CallFrame {
 
         let frame = Self {
             depth: parent.depth + 1,
-            actor,
+            actor: Some(actor),
             node_refs: next_node_refs,
             owned_root_nodes: owned_heap_nodes,
             next_lock_handle: 0u32,

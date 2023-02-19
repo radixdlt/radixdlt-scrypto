@@ -222,7 +222,7 @@ impl KernelModule for KernelModuleMixer {
 
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        actor: &ResolvedActor,
+        actor: &Option<ResolvedActor>,
         update: &mut CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
@@ -255,7 +255,7 @@ impl KernelModule for KernelModuleMixer {
 
     fn on_execution_start<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        caller: &ResolvedActor,
+        caller: &Option<ResolvedActor>,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
@@ -287,7 +287,7 @@ impl KernelModule for KernelModuleMixer {
 
     fn on_execution_finish<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        caller: &ResolvedActor,
+        caller: &Option<ResolvedActor>,
         update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;

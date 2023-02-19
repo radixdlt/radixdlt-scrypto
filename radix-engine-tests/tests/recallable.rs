@@ -65,16 +65,6 @@ fn cannot_take_on_non_recallable_vault() {
         matches!(
             e,
             RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized {
-                actor: ResolvedActor {
-                    identifier: FnIdentifier::Some(ScryptoFnIdentifier {
-                        package_address: RESOURCE_MANAGER_PACKAGE,
-                        ..
-                    }),
-                    receiver: Some(ResolvedReceiver {
-                        receiver: (RENodeId::Vault(..), ..),
-                        ..
-                    })
-                },
                 error: MethodAuthorizationError::NotAuthorized,
                 ..
             },))
