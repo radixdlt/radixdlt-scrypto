@@ -68,7 +68,6 @@ impl VisibilityProperties {
                         true
                     }
                     FnIdentifier::Some(..) => true,
-                    _ => false,
                 },
                 _ => false,
             },
@@ -206,7 +205,6 @@ impl VisibilityProperties {
                     }
 
                     match &actor.identifier {
-                        FnIdentifier::None => true,
                         // Native
                         FnIdentifier::Some(ScryptoFnIdentifier {
                             package_address, ..
@@ -293,7 +291,6 @@ impl VisibilityProperties {
                     }
                 } else {
                     match &actor.identifier {
-                        FnIdentifier::None => true,
                         // Native
                         FnIdentifier::Some(ScryptoFnIdentifier {
                             package_address, ..

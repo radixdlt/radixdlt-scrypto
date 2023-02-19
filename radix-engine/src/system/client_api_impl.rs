@@ -298,7 +298,7 @@ where
 
         // Create component RENode
         // FIXME: support native blueprints
-        let package_address = self.kernel_get_current_actor().unwrap().identifier.package().unwrap();
+        let package_address = self.kernel_get_current_actor().unwrap().identifier.package_address();
 
         let blueprint_ident = blueprint_ident.to_string();
         // FIXME: generalize app substates;

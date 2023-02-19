@@ -1,5 +1,4 @@
 use radix_engine::errors::{KernelError, ModuleError, RejectionError, RuntimeError};
-use radix_engine::kernel::actor::{ResolvedActor, ResolvedReceiver};
 use radix_engine::system::kernel_modules::auth::AuthError;
 use radix_engine::system::kernel_modules::auth::MethodAuthorizationError;
 use radix_engine::types::*;

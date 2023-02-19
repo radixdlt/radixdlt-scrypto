@@ -146,10 +146,6 @@ impl KernelModule for AuthModule {
                     }
                     _ => vec![],
                 },
-                ResolvedActor {
-                    identifier: FnIdentifier::None,
-                    receiver: None,
-                } => vec![],
 
                 ResolvedActor {
                     receiver:
@@ -268,11 +264,6 @@ impl KernelModule for AuthModule {
                     api.kernel_drop_lock(handle)?;
                     auth
                 }
-
-                ResolvedActor {
-                    identifier: FnIdentifier::None,
-                    receiver: Some(..),
-                } => vec![],
 
                 // SetAccessRule auth is done manually within the method
                 ResolvedActor {
@@ -447,12 +438,11 @@ impl KernelModule for AuthModule {
             // Add Package Actor Auth
             let mut virtual_non_fungibles = BTreeSet::new();
             if let Some(actor) = actor {
-                if let Some(package_address) = actor.identifier.package() {
-                    let id = scrypto_encode(&package_address).unwrap();
-                    let non_fungible_global_id =
-                        NonFungibleGlobalId::new(PACKAGE_TOKEN, NonFungibleLocalId::bytes(id).unwrap());
-                    virtual_non_fungibles.insert(non_fungible_global_id);
-                }
+                let package_address = actor.identifier.package_address();
+                let id = scrypto_encode(&package_address).unwrap();
+                let non_fungible_global_id =
+                    NonFungibleGlobalId::new(PACKAGE_TOKEN, NonFungibleLocalId::bytes(id).unwrap());
+                virtual_non_fungibles.insert(non_fungible_global_id);
             }
 
             auth_zone_stack.new_frame(virtual_non_fungibles, is_barrier);

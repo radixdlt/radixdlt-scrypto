@@ -13,14 +13,12 @@ pub enum InvocationIdentifier {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum FnIdentifier {
     Some(ScryptoFnIdentifier),
-    None,
 }
 
 impl FnIdentifier {
-    pub fn package(&self) -> Option<PackageAddress> {
+    pub fn package_address(&self) -> PackageAddress {
         match self {
-            FnIdentifier::Some(identifier) => Some(identifier.package_address),
-            FnIdentifier::None => None,
+            FnIdentifier::Some(identifier) => identifier.package_address,
         }
     }
 }

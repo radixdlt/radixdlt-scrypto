@@ -43,7 +43,6 @@ impl Runtime {
     pub fn actor() -> ScryptoFnIdentifier {
         match ScryptoEnv.get_fn_identifier().unwrap() {
             FnIdentifier::Some(identifier) => identifier,
-            _ => panic!("Unexpected actor"),
         }
     }
 
