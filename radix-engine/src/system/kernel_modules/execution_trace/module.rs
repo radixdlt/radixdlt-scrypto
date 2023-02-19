@@ -369,7 +369,7 @@ impl ExecutionTraceModule {
                     },
                 receiver:
                     Some(ResolvedReceiver {
-                        receiver: (RENodeId::Vault(vault_id), ..),
+                        receiver: MethodReceiver(RENodeId::Vault(vault_id), ..),
                         ..
                     }),
             }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
@@ -387,7 +387,7 @@ impl ExecutionTraceModule {
                     },
                 receiver:
                     Some(ResolvedReceiver {
-                        receiver: (RENodeId::Vault(vault_id), ..),
+                        receiver: MethodReceiver(RENodeId::Vault(vault_id), ..),
                         ..
                     }),
             }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
@@ -417,7 +417,7 @@ impl ExecutionTraceModule {
                     },
                 receiver:
                     Some(ResolvedReceiver {
-                        receiver: (RENodeId::Vault(vault_id), ..),
+                        receiver: MethodReceiver(RENodeId::Vault(vault_id), ..),
                         ..
                     }),
             }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)

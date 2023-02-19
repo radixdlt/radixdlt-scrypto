@@ -62,13 +62,10 @@ impl ExecutableInvocation for MethodInvocation {
             node_refs_to_copy.insert(RENodeId::Global(global_address));
         }
 
-        let original_node_id = self.receiver.0.into();
-        let node_module_id = self.receiver.1;
-
         let (package_address, blueprint_name) = match self.receiver.1 {
             NodeModuleId::SELF => {
                 let handle = api.kernel_lock_substate(
-                    original_node_id,
+                    self.receiver.0,
                     NodeModuleId::ComponentTypeInfo,
                     SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo),
                     LockFlags::read_only(),
@@ -105,10 +102,10 @@ impl ExecutableInvocation for MethodInvocation {
         // Deref if global
         // TODO: Move into kernel
         let resolved_receiver =
-            if let Some((derefed, derefed_lock)) = api.deref(original_node_id)? {
-                ResolvedReceiver::derefed((derefed, node_module_id), original_node_id, derefed_lock)
+            if let Some((derefed, derefed_lock)) = api.deref(self.receiver.0)? {
+                ResolvedReceiver::derefed(MethodReceiver(derefed, self.receiver.1), self.receiver.0, derefed_lock)
             } else {
-                ResolvedReceiver::new((original_node_id, node_module_id))
+                ResolvedReceiver::new(self.receiver)
             };
 
         // Pass the component ref

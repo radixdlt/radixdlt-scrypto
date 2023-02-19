@@ -363,7 +363,7 @@ where
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         let invocation = MethodInvocation {
-            receiver: (receiver, node_module_id),
+            receiver: MethodReceiver(receiver, node_module_id),
             fn_name: method_name.to_string(),
             args,
         };

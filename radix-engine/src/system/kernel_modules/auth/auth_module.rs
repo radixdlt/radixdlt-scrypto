@@ -150,7 +150,7 @@ impl KernelModule for AuthModule {
                 ResolvedActor {
                     receiver:
                         Some(ResolvedReceiver {
-                            receiver: (RENodeId::Proof(..), ..),
+                            receiver: MethodReceiver(RENodeId::Proof(..), ..),
                             ..
                         }),
                     ..
@@ -159,7 +159,7 @@ impl KernelModule for AuthModule {
                 ResolvedActor {
                     receiver:
                         Some(ResolvedReceiver {
-                            receiver: (RENodeId::Bucket(..), ..),
+                            receiver: MethodReceiver(RENodeId::Bucket(..), ..),
                             ..
                         }),
                     ..
@@ -168,7 +168,7 @@ impl KernelModule for AuthModule {
                 ResolvedActor {
                     receiver:
                         Some(ResolvedReceiver {
-                            receiver: (RENodeId::Worktop, ..),
+                            receiver: MethodReceiver(RENodeId::Worktop, ..),
                             ..
                         }),
                     ..
@@ -177,7 +177,7 @@ impl KernelModule for AuthModule {
                 ResolvedActor {
                     receiver:
                         Some(ResolvedReceiver {
-                            receiver: (RENodeId::Logger, ..),
+                            receiver: MethodReceiver(RENodeId::Logger, ..),
                             ..
                         }),
                     ..
@@ -186,7 +186,7 @@ impl KernelModule for AuthModule {
                 ResolvedActor {
                     receiver:
                         Some(ResolvedReceiver {
-                            receiver: (RENodeId::TransactionRuntime, ..),
+                            receiver: MethodReceiver(RENodeId::TransactionRuntime, ..),
                             ..
                         }),
                     ..
@@ -195,7 +195,7 @@ impl KernelModule for AuthModule {
                 ResolvedActor {
                     receiver:
                         Some(ResolvedReceiver {
-                            receiver: (RENodeId::AuthZoneStack, ..),
+                            receiver: MethodReceiver(RENodeId::AuthZoneStack, ..),
                             ..
                         }),
                     ..
@@ -205,7 +205,7 @@ impl KernelModule for AuthModule {
                     identifier,
                     receiver:
                         Some(ResolvedReceiver {
-                            receiver: (RENodeId::Vault(vault_id), module_id),
+                            receiver: MethodReceiver(RENodeId::Vault(vault_id), module_id),
                             ..
                         }),
                 } => {
@@ -285,7 +285,7 @@ impl KernelModule for AuthModule {
                     identifier,
                     receiver:
                         Some(ResolvedReceiver {
-                            receiver: (RENodeId::Component(component_id), module_id),
+                            receiver: MethodReceiver(RENodeId::Component(component_id), module_id),
                             ..
                         }),
                 } => {

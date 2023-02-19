@@ -1,20 +1,19 @@
 use crate::errors::*;
 use crate::kernel::actor::ResolvedReceiver;
 use crate::kernel::call_frame::CallFrameUpdate;
-use radix_engine_interface::api::types::{NodeModuleId, RENodeId};
+use radix_engine_interface::api::types::MethodReceiver;
 use radix_engine_interface::api::ClientDerefApi;
 
 pub fn deref_and_update<D: ClientDerefApi<RuntimeError>>(
-    receiver: RENodeId,
-    module_id: NodeModuleId,
+    receiver: MethodReceiver,
     call_frame_update: &mut CallFrameUpdate,
     deref: &mut D,
 ) -> Result<ResolvedReceiver, RuntimeError> {
     // TODO: Move this logic into kernel
-    let resolved_receiver = if let Some((derefed, derefed_lock)) = deref.deref(receiver)? {
-        ResolvedReceiver::derefed((derefed, module_id), receiver, derefed_lock)
+    let resolved_receiver = if let Some((derefed, derefed_lock)) = deref.deref(receiver.0)? {
+        ResolvedReceiver::derefed(MethodReceiver(derefed, receiver.1), receiver.0, derefed_lock)
     } else {
-        ResolvedReceiver::new((receiver, module_id))
+        ResolvedReceiver::new(receiver)
     };
     let resolved_node_id = resolved_receiver.receiver;
     call_frame_update
