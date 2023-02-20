@@ -2,7 +2,7 @@ use jellyfish::JellyfishMerkleTree;
 use radix_engine_interface::api::types::{NodeModuleId, RENodeId, SubstateId, SubstateOffset};
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::scrypto_encode;
-use radix_engine_interface::{ScryptoCategorize, ScryptoDecode, ScryptoEncode};
+use radix_engine_interface::ScryptoSbor;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
 use tree_store::{ReNodeModulePayload, ReadableTreeStore, TreeNode, TreeStore, WriteableTreeStore};
@@ -74,19 +74,7 @@ pub fn put_at_next_version<S: TreeStore<ReNodeModulePayload> + TreeStore<Substat
 
 // only internals below
 
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Hash,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ScryptoSbor)]
 struct ReNodeModule {
     re_node_id: RENodeId,
     node_module_id: NodeModuleId,
