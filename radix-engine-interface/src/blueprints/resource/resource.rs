@@ -272,7 +272,10 @@ impl FungibleResource {
         self.take_by_amount(self.liquid_amount())
     }
 
-    pub fn lock_by_amount(&mut self, amount: Decimal) -> Result<Decimal, ResourceOperationError> {
+    pub(super) fn lock_by_amount(
+        &mut self,
+        amount: Decimal,
+    ) -> Result<Decimal, ResourceOperationError> {
         // check amount granularity
         let divisibility = self.resource_type().divisibility();
         Self::check_amount(amount, divisibility)?;
@@ -295,7 +298,7 @@ impl FungibleResource {
         Ok(amount)
     }
 
-    pub fn unlock(&mut self, amount: Decimal) {
+    pub(super) fn unlock(&mut self, amount: Decimal) {
         let max_locked = self.max_locked_amount();
         let count = self
             .locked
@@ -418,7 +421,7 @@ impl NonFungibleResource {
         self.take_by_amount(self.liquid_amount())
     }
 
-    pub fn lock_by_amount(
+    pub(super) fn lock_by_amount(
         &mut self,
         amount: Decimal,
     ) -> Result<BTreeSet<NonFungibleLocalId>, ResourceOperationError> {
@@ -442,7 +445,7 @@ impl NonFungibleResource {
         self.lock_by_ids(&ids)
     }
 
-    pub fn lock_by_ids(
+    pub(super) fn lock_by_ids(
         &mut self,
         ids: &BTreeSet<NonFungibleLocalId>,
     ) -> Result<BTreeSet<NonFungibleLocalId>, ResourceOperationError> {
@@ -463,7 +466,7 @@ impl NonFungibleResource {
         Ok(ids.clone())
     }
 
-    pub fn unlock(&mut self, ids: &BTreeSet<NonFungibleLocalId>) {
+    pub(super) fn unlock(&mut self, ids: &BTreeSet<NonFungibleLocalId>) {
         for id in ids {
             if let Some(cnt) = self.locked.ids.remove(&id) {
                 if cnt > 1 {
