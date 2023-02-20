@@ -39,7 +39,7 @@ impl VisibilityProperties {
                         package_address,
                         blueprint_name,
                         ..
-                    } if package_address.eq(&PACKAGE)
+                    } if package_address.eq(&PACKAGE_LOADER)
                         && blueprint_name.eq(&TRANSACTION_PROCESSOR_BLUEPRINT) =>
                     {
                         true
@@ -62,7 +62,7 @@ impl VisibilityProperties {
                         package_address,
                         blueprint_name,
                         ..
-                    } if package_address.eq(&PACKAGE)
+                    } if package_address.eq(&PACKAGE_LOADER)
                         && blueprint_name.eq(&TRANSACTION_PROCESSOR_BLUEPRINT) =>
                     {
                         true
@@ -103,7 +103,7 @@ impl VisibilityProperties {
                 }
                 RENodeInit::Worktop(..)
                 | RENodeInit::NativePackage(..)
-                | RENodeInit::WasmPackage(..) => package_address.eq(&PACKAGE),
+                | RENodeInit::WasmPackage(..) => package_address.eq(&PACKAGE_LOADER),
                 RENodeInit::ResourceManager(..)
                 | RENodeInit::Vault(..)
                 | RENodeInit::Bucket(..)
@@ -221,7 +221,7 @@ impl VisibilityProperties {
                             || package_address.eq(&METADATA_PACKAGE)
                             || package_address.eq(&ROYALTY_PACKAGE)
                             || package_address.eq(&ACCESS_RULES_PACKAGE)
-                            || package_address.eq(&PACKAGE) =>
+                            || package_address.eq(&PACKAGE_LOADER) =>
                         {
                             true
                         }
@@ -306,7 +306,7 @@ impl VisibilityProperties {
                             || package_address.eq(&METADATA_PACKAGE)
                             || package_address.eq(&ROYALTY_PACKAGE)
                             || package_address.eq(&ACCESS_RULES_PACKAGE)
-                            || package_address.eq(&PACKAGE) =>
+                            || package_address.eq(&PACKAGE_LOADER) =>
                         {
                             true
                         }

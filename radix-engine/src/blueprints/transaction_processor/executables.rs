@@ -96,7 +96,7 @@ fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFra
             }
         }
         Instruction::PublishPackage { access_rules, .. } => {
-            update.add_ref(RENodeId::Global(Address::Package(PACKAGE)));
+            update.add_ref(RENodeId::Global(Address::Package(PACKAGE_LOADER)));
 
             // TODO: Remove and cleanup
             let value: ManifestValue = manifest_decode(&manifest_encode(access_rules).unwrap())
@@ -259,7 +259,7 @@ impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
         call_frame_update.add_ref(RENodeId::Global(Address::Resource(EDDSA_ED25519_TOKEN)));
 
         let actor = ResolvedActor::function(FnIdentifier {
-            package_address: PACKAGE,
+            package_address: PACKAGE_LOADER,
             blueprint_name: TRANSACTION_PROCESSOR_BLUEPRINT.to_string(),
             ident: "run".to_string(),
         });
@@ -472,10 +472,10 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
                     // TODO: remove clone by allowing invocation to have references, like in TransactionProcessorRunInvocation.
                     let result = api.call_function(
-                        PACKAGE,
-                        PACKAGE_BLUEPRINT,
-                        PACKAGE_PUBLISH_WASM_IDENT,
-                        scrypto_encode(&PackagePublishWasmInput {
+                        PACKAGE_LOADER,
+                        PACKAGE_LOADER_BLUEPRINT,
+                        PACKAGE_LOADER_PUBLISH_WASM_IDENT,
+                        scrypto_encode(&PackageLoaderPublishWasmInput {
                             package_address: None,
                             code: code.clone(),
                             abi: abi.clone(),

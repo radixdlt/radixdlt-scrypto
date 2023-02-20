@@ -42,7 +42,7 @@ impl Package {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         match export_name {
-            PACKAGE_PUBLISH_PRECOMPILED_IDENT => {
+            PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunPrecompiled)?;
 
                 if receiver.is_some() {
@@ -53,7 +53,7 @@ impl Package {
 
                 Self::publish_precompiled(input, api)
             }
-            PACKAGE_PUBLISH_WASM_IDENT => {
+            PACKAGE_LOADER_PUBLISH_WASM_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunPrecompiled)?;
 
                 if receiver.is_some() {
@@ -77,7 +77,7 @@ impl Package {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: PackagePublishPrecompiledInput =
+        let input: PackageLoaderPublishPrecompiledInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
@@ -149,7 +149,7 @@ impl Package {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: PackagePublishWasmInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+        let input: PackageLoaderPublishWasmInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let royalty_vault_id = ResourceManager(RADIX_TOKEN).new_vault(api)?.vault_id();

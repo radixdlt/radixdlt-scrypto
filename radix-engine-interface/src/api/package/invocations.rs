@@ -14,14 +14,14 @@ impl PackageAbi {
         BTreeMap::new()
     }
 }
-pub const PACKAGE_BLUEPRINT: &str = "Package";
+pub const PACKAGE_LOADER_BLUEPRINT: &str = "PackageLoader";
 
-pub const PACKAGE_PUBLISH_WASM_IDENT: &str = "publish_wasm";
+pub const PACKAGE_LOADER_PUBLISH_WASM_IDENT: &str = "publish_wasm";
 
 #[derive(
     Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
 )]
-pub struct PackagePublishWasmInput {
+pub struct PackageLoaderPublishWasmInput {
     pub package_address: Option<[u8; 26]>, // TODO: Clean this up
     pub code: Vec<u8>,
     pub abi: Vec<u8>,
@@ -30,12 +30,12 @@ pub struct PackagePublishWasmInput {
     pub access_rules: AccessRules,
 }
 
-pub const PACKAGE_PUBLISH_PRECOMPILED_IDENT: &str = "publish_precompiled";
+pub const PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT: &str = "publish_precompiled";
 
 #[derive(
     Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
 )]
-pub struct PackagePublishPrecompiledInput {
+pub struct PackageLoaderPublishPrecompiledInput {
     pub package_address: Option<[u8; 26]>, // TODO: Clean this up
     pub native_package_code_id: u8,
     pub abi: Vec<u8>,

@@ -112,7 +112,7 @@ impl ExecutableInvocation for MethodInvocation {
         );
         let actor = ResolvedActor::method(fn_identifier.clone(), resolved_receiver);
 
-        let type_info = if package_address.eq(&PACKAGE) {
+        let type_info = if package_address.eq(&PACKAGE_LOADER) {
             // TODO: Remove this weirdness
             node_refs_to_copy.insert(RENodeId::Global(Address::Resource(RADIX_TOKEN)));
             TypeInfoSubstate::NativePackage
@@ -233,7 +233,7 @@ impl ExecutableInvocation for FunctionInvocation {
 
         let actor = ResolvedActor::function(self.fn_identifier.clone());
 
-        let type_info = if self.fn_identifier.package_address.eq(&PACKAGE) {
+        let type_info = if self.fn_identifier.package_address.eq(&PACKAGE_LOADER) {
             // TODO: Remove this weirdness
             node_refs_to_copy.insert(RENodeId::Global(Address::Resource(RADIX_TOKEN)));
             TypeInfoSubstate::NativePackage
@@ -356,7 +356,7 @@ impl Executor for ScryptoExecutor {
         Y: KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + ClientApi<RuntimeError>,
         W: WasmEngine,
     {
-        let output = if self.package_address.eq(&PACKAGE) {
+        let output = if self.package_address.eq(&PACKAGE_LOADER) {
             NativeVm::invoke_native_package(
                 NATIVE_PACKAGE_CODE_ID,
                 self.receiver,

@@ -119,10 +119,10 @@ where
         metadata: BTreeMap<String, String>,
     ) -> Result<PackageAddress, RuntimeError> {
         let result = self.call_function(
-            PACKAGE,
-            PACKAGE_BLUEPRINT,
-            PACKAGE_PUBLISH_WASM_IDENT,
-            scrypto_encode(&PackagePublishWasmInput {
+            PACKAGE_LOADER,
+            PACKAGE_LOADER_BLUEPRINT,
+            PACKAGE_LOADER_PUBLISH_WASM_IDENT,
+            scrypto_encode(&PackageLoaderPublishWasmInput {
                 package_address: None,
                 code: code.clone().clone(),
                 abi: abi.clone().clone(),

@@ -10,7 +10,7 @@ use crate::system::node::RENodeInit;
 use crate::system::node_modules::access_rules::AuthZoneStackSubstate;
 use crate::types::*;
 use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::package::{PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_PRECOMPILED_IDENT};
+use radix_engine_interface::api::package::{PACKAGE_LOADER_BLUEPRINT, PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT};
 use radix_engine_interface::api::types::{
     Address, AuthZoneStackOffset, ComponentOffset, PackageOffset, RENodeId, SubstateOffset,
     VaultOffset,
@@ -101,9 +101,9 @@ impl KernelModule for AuthModule {
                     identifier,
                     receiver: None,
                 } => {
-                    if identifier.package_address.eq(&PACKAGE) {
-                        if identifier.blueprint_name.eq(PACKAGE_BLUEPRINT)
-                            && identifier.ident.eq(PACKAGE_PUBLISH_PRECOMPILED_IDENT)
+                    if identifier.package_address.eq(&PACKAGE_LOADER) {
+                        if identifier.blueprint_name.eq(PACKAGE_LOADER_BLUEPRINT)
+                            && identifier.ident.eq(PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT)
                         {
                             vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
                                 HardProofRule::Require(HardResourceOrNonFungible::NonFungible(

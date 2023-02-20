@@ -12,7 +12,7 @@ use radix_engine_interface::api::node_modules::metadata::MetadataAbi;
 use radix_engine_interface::api::node_modules::royalty::RoyaltyAbi;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::package::{
-    PackagePublishPrecompiledInput, PackagePublishWasmInput,
+    PackageLoaderPublishPrecompiledInput, PackageLoaderPublishWasmInput,
 };
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::access_controller::AccessControllerAbi;
@@ -63,10 +63,10 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::Global(Address::Package(METADATA_PACKAGE)));
         let package_address = METADATA_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE,
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_PRECOMPILED_IDENT.to_string(),
-            args: manifest_encode(&PackagePublishPrecompiledInput {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: METADATA_CODE_ID,
                 abi: scrypto_encode(&MetadataAbi::blueprint_abis()).unwrap(),
@@ -87,10 +87,10 @@ pub fn create_genesis(
         let package_address = ROYALTY_PACKAGE.to_array_without_entity_id();
 
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE,
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_PRECOMPILED_IDENT.to_string(),
-            args: manifest_encode(&PackagePublishPrecompiledInput {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: ROYALTY_CODE_ID,
                 abi: scrypto_encode(&RoyaltyAbi::blueprint_abis()).unwrap(),
@@ -110,10 +110,10 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::Global(Address::Package(ACCESS_RULES_PACKAGE)));
         let package_address = ACCESS_RULES_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE,
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_PRECOMPILED_IDENT.to_string(),
-            args: manifest_encode(&PackagePublishPrecompiledInput {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: ACCESS_RULES_CODE_ID,
                 abi: scrypto_encode(&AccessRulesAbi::blueprint_abis()).unwrap(),
@@ -133,10 +133,10 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::Global(Address::Package(RESOURCE_MANAGER_PACKAGE)));
         let package_address = RESOURCE_MANAGER_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE,
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_PRECOMPILED_IDENT.to_string(),
-            args: manifest_encode(&PackagePublishPrecompiledInput {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: RESOURCE_MANAGER_PACKAGE_CODE_ID,
                 abi: scrypto_encode(&ResourceManagerAbi::blueprint_abis()).unwrap(),
@@ -208,10 +208,10 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::Global(Address::Package(IDENTITY_PACKAGE)));
         let package_address = IDENTITY_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE,
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_PRECOMPILED_IDENT.to_string(),
-            args: manifest_encode(&PackagePublishPrecompiledInput {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: scrypto_encode(&IdentityAbi::blueprint_abis()).unwrap(),
                 dependent_resources: vec![],
@@ -231,10 +231,10 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::Global(Address::Package(EPOCH_MANAGER_PACKAGE)));
         let package_address = EPOCH_MANAGER_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE,
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_PRECOMPILED_IDENT.to_string(),
-            args: manifest_encode(&PackagePublishPrecompiledInput {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: scrypto_encode(&EpochManagerAbi::blueprint_abis()).unwrap(),
                 native_package_code_id: EPOCH_MANAGER_PACKAGE_CODE_ID,
@@ -254,10 +254,10 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::Global(Address::Package(CLOCK_PACKAGE)));
         let package_address = CLOCK_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE,
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_PRECOMPILED_IDENT.to_string(),
-            args: manifest_encode(&PackagePublishPrecompiledInput {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: scrypto_encode(&ClockAbi::blueprint_abis()).unwrap(),
                 native_package_code_id: CLOCK_PACKAGE_CODE_ID,
@@ -277,10 +277,10 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::Global(Address::Package(ACCOUNT_PACKAGE)));
         let package_address = ACCOUNT_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE,
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_PRECOMPILED_IDENT.to_string(),
-            args: manifest_encode(&PackagePublishPrecompiledInput {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: scrypto_encode(&AccountAbi::blueprint_abis()).unwrap(),
                 native_package_code_id: ACCOUNT_PACKAGE_CODE_ID,
@@ -302,10 +302,10 @@ pub fn create_genesis(
         )));
         let package_address = ACCESS_CONTROLLER_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE,
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_PRECOMPILED_IDENT.to_string(),
-            args: manifest_encode(&PackagePublishPrecompiledInput {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: scrypto_encode(&AccessControllerAbi::blueprint_abis()).unwrap(),
                 metadata: BTreeMap::new(),
@@ -325,10 +325,10 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::Global(Address::Package(LOGGER_PACKAGE)));
         let package_address = LOGGER_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE,
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_PRECOMPILED_IDENT.to_string(),
-            args: manifest_encode(&PackagePublishPrecompiledInput {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: scrypto_encode(&TransactionRuntimeAbi::blueprint_abis()).unwrap(),
                 metadata: BTreeMap::new(),
@@ -350,10 +350,10 @@ pub fn create_genesis(
         )));
         let package_address = TRANSACTION_RUNTIME_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE,
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_PRECOMPILED_IDENT.to_string(),
-            args: manifest_encode(&PackagePublishPrecompiledInput {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: scrypto_encode(&LoggerAbi::blueprint_abis()).unwrap(),
                 metadata: BTreeMap::new(),
@@ -373,10 +373,10 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::Global(Address::Package(AUTH_ZONE_PACKAGE)));
         let package_address = AUTH_ZONE_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE,
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_PRECOMPILED_IDENT.to_string(),
-            args: manifest_encode(&PackagePublishPrecompiledInput {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: scrypto_encode(&AuthZoneAbi::blueprint_abis()).unwrap(),
                 metadata: BTreeMap::new(),
@@ -462,10 +462,10 @@ pub fn create_genesis(
         let package_address = FAUCET_PACKAGE.to_array_without_entity_id();
         pre_allocated_ids.insert(RENodeId::Global(Address::Package(FAUCET_PACKAGE)));
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE,
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_WASM_IDENT.to_string(),
-            args: manifest_encode(&PackagePublishWasmInput {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_WASM_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishWasmInput {
                 package_address: Some(package_address),
                 code: faucet_code, // TODO: Use blob here instead?
                 abi: faucet_abi,   // TODO: Use blob here instead?
