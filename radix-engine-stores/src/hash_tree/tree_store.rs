@@ -6,7 +6,7 @@ use sbor::*;
 pub use super::types::{Nibble, NibblePath, NodeKey, Version};
 use radix_engine_interface::api::types::{NodeModuleId, RENodeId, SubstateOffset};
 use radix_engine_interface::crypto::Hash;
-use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode};
+use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoSbor};
 
 /// A physical tree node, to be used in the storage.
 #[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoSbor)]
@@ -69,14 +69,7 @@ pub struct ReNodeModulePayload {
 /// The top ReNodeModule tree carries an `ReNodeModulePayload` payload.
 /// The sub-trees carry  a `SubstateOffset` payload.
 pub trait Payload:
-    Clone
-    + PartialEq
-    + Eq
-    + sbor::rust::hash::Hash
-    + sbor::rust::fmt::Debug
-    + ScryptoCategorize
-    + ScryptoEncode
-    + ScryptoDecode
+    Clone + PartialEq + Eq + rust::hash::Hash + rust::fmt::Debug + ScryptoSbor
 {
 }
 
