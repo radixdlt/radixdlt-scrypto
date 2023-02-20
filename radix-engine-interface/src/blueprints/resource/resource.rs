@@ -286,7 +286,6 @@ pub enum LockedAmountOrIds {
 pub enum ResourceContainerId {
     Bucket(BucketId),
     Vault(VaultId),
-    Worktop(u32, ResourceAddress),
 }
 
 impl LockedAmountOrIds {
