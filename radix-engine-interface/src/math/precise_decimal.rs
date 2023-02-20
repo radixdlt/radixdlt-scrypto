@@ -195,8 +195,8 @@ impl PreciseDecimal {
 
     /// Calculates power using exponentiation by squaring.
     pub fn powi(&self, exp: i64) -> Self {
-        let one_768 = BnumI768::try_from(Self::ONE.0).unwrap();
-        let base_768 = BnumI768::try_from(self.0).unwrap();
+        let one_768 = BnumI768::from(Self::ONE.0);
+        let base_768 = BnumI768::from(self.0);
         let div = |x: i64, y: i64| x.checked_div(y).expect("Overflow");
         let sub = |x: i64, y: i64| x.checked_sub(y).expect("Overflow");
         let mul = |x: i64, y: i64| x.checked_mul(y).expect("Overflow");
@@ -236,9 +236,9 @@ impl PreciseDecimal {
         // The BnumI512 i associated to a Decimal d is : i = d*10^64.
         // Therefore, taking sqrt yields sqrt(i) = sqrt(d)*10^32 => We lost precision
         // To get the right precision, we compute : sqrt(i*10^64) = sqrt(d)*10^64
-        let self_768 = BnumI768::try_from(self.0).unwrap();
-        let correct_nb = self_768 * BnumI768::try_from(PreciseDecimal::one().0).unwrap();
-        let sqrt = BnumI512::try_from(correct_nb.sqrt()).unwrap();
+        let self_768 = BnumI768::from(self.0);
+        let correct_nb = self_768 * BnumI768::from(PreciseDecimal::one().0);
+        let sqrt = BnumI512::try_from(correct_nb.sqrt()).expect("Overflow");
         Some(PreciseDecimal(sqrt))
     }
 
@@ -298,15 +298,20 @@ from_int!(i64);
 from_int!(i128);
 from_int!(isize);
 
-impl From<&str> for PreciseDecimal {
-    fn from(val: &str) -> Self {
-        Self::from_str(&val).unwrap()
+// from_str() should be enough, but we want to have try_from() to simplify pdec! macro
+impl TryFrom<&str> for PreciseDecimal {
+    type Error = ParsePreciseDecimalError;
+
+    fn try_from(val: &str) -> Result<Self, Self::Error> {
+        Self::from_str(val)
     }
 }
 
-impl From<String> for PreciseDecimal {
-    fn from(val: String) -> Self {
-        Self::from_str(&val).unwrap()
+impl TryFrom<String> for PreciseDecimal {
+    type Error = ParsePreciseDecimalError;
+
+    fn try_from(val: String) -> Result<Self, Self::Error> {
+        Self::from_str(&val)
     }
 }
 
@@ -358,10 +363,10 @@ where
 
     fn mul(self, other: T) -> Self::Output {
         // Use BnumI768 to not overflow.
-        let a = BnumI768::try_from(self.0).unwrap();
+        let a = BnumI768::from(self.0);
         let b_dec: PreciseDecimal = other.try_into().expect("Overflow");
-        let b = BnumI768::try_from(b_dec.0).unwrap();
-        let c = a * b / BnumI768::try_from(Self::ONE.0).unwrap();
+        let b = BnumI768::from(b_dec.0);
+        let c = a * b / BnumI768::from(Self::ONE.0);
         let c_512 = BnumI512::try_from(c).expect("Overflow");
         PreciseDecimal(c_512)
     }
@@ -375,10 +380,10 @@ where
 
     fn div(self, other: T) -> Self::Output {
         // Use BnumI768 to not overflow.
-        let a = BnumI768::try_from(self.0).unwrap();
+        let a = BnumI768::from(self.0);
         let b_dec: PreciseDecimal = other.try_into().expect("Overflow");
-        let b = BnumI768::try_from(b_dec.0).unwrap();
-        let c = a * BnumI768::try_from(Self::ONE.0).unwrap() / b;
+        let b = BnumI768::from(b_dec.0);
+        let c = a * BnumI768::from(Self::ONE.0) / b;
         let c_512 = BnumI512::try_from(c).expect("Overflow");
         PreciseDecimal(c_512)
     }
@@ -480,7 +485,7 @@ impl FromStr for PreciseDecimal {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let tens = BnumI512::from(10);
-        let v: Vec<&str> = s.split(".").collect();
+        let v: Vec<&str> = s.split('.').collect();
 
         let mut int = match BnumI512::from_str(v[0]) {
             Ok(val) => val,
@@ -492,12 +497,17 @@ impl FromStr for PreciseDecimal {
         if v.len() == 2 {
             let scale: u32 = Self::SCALE - (v[1].len() as u32);
 
+            let frac = match BnumI512::from_str(v[1]) {
+                Ok(val) => val,
+                Err(_) => return Err(ParsePreciseDecimalError::InvalidDigit),
+            };
+
             // if input is -0. then from_str returns 0 and we loose '-' sign.
             // Therefore check for '-' in input directly
             if int.is_negative() || v[0].starts_with('-') {
-                int -= BnumI512::from(v[1]) * tens.pow(scale);
+                int -= frac * tens.pow(scale);
             } else {
-                int += BnumI512::from(v[1]) * tens.pow(scale);
+                int += frac * tens.pow(scale);
             }
         }
         Ok(Self(int))
@@ -590,15 +600,36 @@ macro_rules! from_integer {
         $(
             impl From<$t> for PreciseDecimal {
                 fn from(val: $t) -> Self {
-                    Self(BnumI512::try_from(val).unwrap() * Self::ONE.0)
+                    Self(BnumI512::from(val) * Self::ONE.0)
+                }
+            }
+        )*
+    };
+}
+macro_rules! try_from_integer {
+    ($($t:ident),*) => {
+        $(
+            impl TryFrom<$t> for PreciseDecimal {
+                type Error = ParsePreciseDecimalError;
+
+                fn try_from(val: $t) -> Result<Self, Self::Error> {
+                    match BnumI512::try_from(val) {
+                        Ok(val) => {
+                            match val.checked_mul(Self::ONE.0) {
+                                Some(mul) => Ok(Self(mul)),
+                                None => Err(ParsePreciseDecimalError::Overflow),
+                            }
+                        },
+                        Err(_) => Err(ParsePreciseDecimalError::Overflow),
+                    }
                 }
             }
         )*
     };
 }
 
-from_integer!(BnumI256, BnumI512);
-from_integer!(BnumU256, BnumU512);
+from_integer!(BnumI256, BnumU256);
+try_from_integer!(BnumI512, BnumU512);
 
 #[cfg(test)]
 mod tests {
@@ -625,9 +656,12 @@ mod tests {
             "123"
         );
         assert_eq!(
-            PreciseDecimal(BnumI512::from(
-                "1234567890000000000000000000000000000000000000000000000000000000000000000"
-            ))
+            PreciseDecimal(
+                BnumI512::from_str(
+                    "1234567890000000000000000000000000000000000000000000000000000000000000000"
+                )
+                .unwrap()
+            )
             .to_string(),
             "123456789"
         );
@@ -1167,13 +1201,7 @@ mod tests {
                     let pdec = PreciseDecimal::from(dec);
                     assert_eq!(pdec.to_string(), $expected);
 
-                    let pdec = PreciseDecimal::try_from(dec).unwrap();
-                    assert_eq!(pdec.to_string(), $expected);
-
                     let pdec: PreciseDecimal = dec.into();
-                    assert_eq!(pdec.to_string(), $expected);
-
-                    let pdec: PreciseDecimal = dec.try_into().unwrap();
                     assert_eq!(pdec.to_string(), $expected);
                 }
             )*
@@ -1187,6 +1215,76 @@ mod tests {
         ("-0.000000000000000001", "-0.000000000000000001", 3),
         ("5", "5", 4),
         ("12345678.1", "12345678.1", 5)
+    }
+
+    macro_rules! test_try_from_integer_overflow {
+        ($(($from:expr, $suffix:expr)),*) => {
+            paste!{
+            $(
+                #[test]
+                fn [<test_try_from_integer_overflow_ $suffix>]() {
+                    let err = PreciseDecimal::try_from($from).unwrap_err();
+                    assert_eq!(err, ParsePreciseDecimalError::Overflow)
+                }
+            )*
+            }
+        };
+    }
+
+    test_try_from_integer_overflow! {
+        (BnumI512::MAX, 1),
+        (BnumI512::MIN, 2),
+        // maximal PreciseDecimal integer part + 1
+        (BnumI512::MAX/(BnumI512::from(10).pow(PreciseDecimal::SCALE)) + BnumI512::ONE, 3),
+        // minimal PreciseDecimal integer part - 1
+        (BnumI512::MIN/(BnumI512::from(10).pow(PreciseDecimal::SCALE)) - BnumI512::ONE, 4),
+        (BnumI512::MIN, 5),
+        (BnumU512::MAX, 6)
+    }
+
+    macro_rules! test_try_from_integer {
+        ($(($from:expr, $expected:expr, $suffix:expr)),*) => {
+            paste!{
+            $(
+                #[test]
+                fn [<test_try_from_integer_ $suffix>]() {
+                    let dec = PreciseDecimal::try_from($from).unwrap();
+                    assert_eq!(dec.to_string(), $expected)
+                }
+            )*
+            }
+        };
+    }
+
+    test_try_from_integer! {
+        (BnumI512::ONE, "1", 1),
+        (-BnumI512::ONE, "-1", 2),
+        // maximal PreciseDecimal integer part
+        (BnumI512::MAX/(BnumI512::from(10).pow(PreciseDecimal::SCALE)), "670390396497129854978701249910292306373968291029619668886178072186088201503677348840093714" , 3),
+        // minimal PreciseDecimal integer part
+        (BnumI512::MIN/(BnumI512::from(10).pow(PreciseDecimal::SCALE)), "-670390396497129854978701249910292306373968291029619668886178072186088201503677348840093714" , 4),
+        (BnumU512::MIN, "0", 5)
+    }
+
+    macro_rules! test_from_integer {
+        ($(($from:expr, $expected:expr, $suffix:expr)),*) => {
+            paste!{
+            $(
+                #[test]
+                fn [<test_from_integer_ $suffix>]() {
+                    let dec = PreciseDecimal::from($from);
+                    assert_eq!(dec.to_string(), $expected)
+                }
+            )*
+            }
+        };
+    }
+
+    test_from_integer! {
+        (BnumI256::MAX, "57896044618658097711785492504343953926634992332820282019728792003956564819967", 1),
+        (BnumI256::MIN, "-57896044618658097711785492504343953926634992332820282019728792003956564819968", 2),
+        (BnumU256::MIN, "0", 3),
+        (BnumU256::MAX, "115792089237316195423570985008687907853269984665640564039457584007913129639935", 4)
     }
 
     #[test]

@@ -185,8 +185,8 @@ impl Decimal {
 
     /// Calculates power using exponentiation by squaring".
     pub fn powi(&self, exp: i64) -> Self {
-        let one_384 = BnumI384::try_from(Self::ONE.0).unwrap();
-        let base_384 = BnumI384::try_from(self.0).unwrap();
+        let one_384 = BnumI384::from(Self::ONE.0);
+        let base_384 = BnumI384::from(self.0);
         let div = |x: i64, y: i64| x.checked_div(y).expect("Overflow");
         let sub = |x: i64, y: i64| x.checked_sub(y).expect("Overflow");
         let mul = |x: i64, y: i64| x.checked_mul(y).expect("Overflow");
@@ -223,8 +223,8 @@ impl Decimal {
         // The BnumI256 i associated to a Decimal d is : i = d*10^18.
         // Therefore, taking sqrt yields sqrt(i) = sqrt(d)*10^9 => We lost precision
         // To get the right precision, we compute : sqrt(i*10^18) = sqrt(d)*10^18
-        let self_384: BnumI384 = BnumI384::try_from(self.0).unwrap();
-        let correct_nb = self_384 * BnumI384::try_from(Decimal::one().0).unwrap();
+        let self_384: BnumI384 = BnumI384::from(self.0);
+        let correct_nb = self_384 * BnumI384::from(Decimal::one().0);
         let sqrt = BnumI256::try_from(correct_nb.sqrt()).expect("Overflow");
         Some(Decimal(sqrt))
     }
@@ -236,8 +236,8 @@ impl Decimal {
         }
 
         // By reasoning in the same way as before, we realise that we need to multiply by 10^36
-        let self_384: BnumI384 = BnumI384::try_from(self.0).unwrap();
-        let correct_nb = self_384 * BnumI384::try_from(Decimal::one().0).unwrap().pow(2);
+        let self_384: BnumI384 = BnumI384::from(self.0);
+        let correct_nb = self_384 * BnumI384::from(Decimal::one().0).pow(2);
         let cbrt = BnumI256::try_from(correct_nb.cbrt()).expect("Overflow");
         Decimal(cbrt)
     }
@@ -285,15 +285,20 @@ from_int!(i64);
 from_int!(i128);
 from_int!(isize);
 
-impl From<&str> for Decimal {
-    fn from(val: &str) -> Self {
-        Self::from_str(&val).unwrap()
+// from_str() should be enough, but we want to have try_from() to simplify dec! macro
+impl TryFrom<&str> for Decimal {
+    type Error = ParseDecimalError;
+
+    fn try_from(val: &str) -> Result<Self, Self::Error> {
+        Self::from_str(val)
     }
 }
 
-impl From<String> for Decimal {
-    fn from(val: String) -> Self {
-        Self::from_str(&val).unwrap()
+impl TryFrom<String> for Decimal {
+    type Error = ParseDecimalError;
+
+    fn try_from(val: String) -> Result<Self, Self::Error> {
+        Self::from_str(&val)
     }
 }
 
@@ -345,11 +350,11 @@ where
 
     fn mul(self, other: T) -> Self::Output {
         // Use BnumI384 (BInt<6>) to not overflow.
-        let a = BnumI384::try_from(self.0).unwrap();
+        let a = BnumI384::from(self.0);
         let b_dec: Decimal = other.try_into().expect("Overflow");
-        let b = BnumI384::try_from(b_dec.0).unwrap();
-        let c = a * b / BnumI384::try_from(Self::ONE.0).unwrap();
-        let c_256 = BnumI256::try_from(c).unwrap();
+        let b = BnumI384::from(b_dec.0);
+        let c = a * b / BnumI384::from(Self::ONE.0);
+        let c_256 = BnumI256::try_from(c).expect("Overflow");
         Decimal(c_256)
     }
 }
@@ -362,11 +367,11 @@ where
 
     fn div(self, other: T) -> Self::Output {
         // Use BnumI384 (BInt<6>) to not overflow.
-        let a = BnumI384::try_from(self.0).unwrap();
+        let a = BnumI384::from(self.0);
         let b_dec: Decimal = other.try_into().expect("Overflow");
-        let b = BnumI384::try_from(b_dec.0).unwrap();
-        let c = a * BnumI384::try_from(Self::ONE.0).unwrap() / b;
-        let c_256 = BnumI256::try_from(c).unwrap();
+        let b = BnumI384::from(b_dec.0);
+        let c = a * BnumI384::from(Self::ONE.0) / b;
+        let c_256 = BnumI256::try_from(c).expect("Overflow");
         Decimal(c_256)
     }
 }
@@ -463,7 +468,7 @@ impl FromStr for Decimal {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let tens = BnumI256::from(10);
-        let v: Vec<&str> = s.split(".").collect();
+        let v: Vec<&str> = s.split('.').collect();
 
         let mut int = match BnumI256::from_str(v[0]) {
             Ok(val) => val,
@@ -475,12 +480,16 @@ impl FromStr for Decimal {
         if v.len() == 2 {
             let scale: u32 = Self::SCALE - (v[1].len() as u32);
 
+            let frac = match BnumI256::from_str(v[1]) {
+                Ok(val) => val,
+                Err(_) => return Err(ParseDecimalError::InvalidDigit),
+            };
             // if input is -0. then from_str returns 0 and we loose '-' sign.
             // Therefore check for '-' in input directly
             if int.is_negative() || v[0].starts_with('-') {
-                int -= BnumI256::from(v[1]) * tens.pow(scale);
+                int -= frac * tens.pow(scale);
             } else {
-                int += BnumI256::from(v[1]) * tens.pow(scale);
+                int += frac * tens.pow(scale);
             }
         }
         Ok(Self(int))
@@ -555,20 +564,28 @@ impl TryFrom<PreciseDecimal> for Decimal {
     }
 }
 
-macro_rules! from_integer {
+macro_rules! try_from_integer {
     ($($t:ident),*) => {
         $(
-            impl From<$t> for Decimal {
-                fn from(val: $t) -> Self {
-                    Self(BnumI256::try_from(val).unwrap() * Self::ONE.0)
+            impl TryFrom<$t> for Decimal {
+                type Error = ParseDecimalError;
+
+                fn try_from(val: $t) -> Result<Self, Self::Error> {
+                    match BnumI256::try_from(val) {
+                        Ok(val) => {
+                            match val.checked_mul(Self::ONE.0) {
+                                Some(mul) => Ok(Self(mul)),
+                                None => Err(ParseDecimalError::Overflow),
+                            }
+                        },
+                        Err(_) => Err(ParseDecimalError::Overflow),
+                    }
                 }
             }
         )*
     };
 }
-
-from_integer!(BnumI256, BnumI512);
-from_integer!(BnumU256, BnumU512);
+try_from_integer!(BnumI256, BnumI512, BnumU256, BnumU512);
 
 #[cfg(test)]
 mod tests {
@@ -1104,7 +1121,7 @@ mod tests {
             $(
                 #[test]
                 fn [<test_from_into_precise_decimal_decimal_ $suffix>]() {
-                    let pdec = PreciseDecimal::from($from);
+                    let pdec = PreciseDecimal::try_from($from).unwrap();
                     let dec = Decimal::try_from(pdec).unwrap();
                     assert_eq!(dec.to_string(), $expected);
 
@@ -1143,6 +1160,60 @@ mod tests {
         (PreciseDecimal::MIN, 2),
         (PreciseDecimal::from(Decimal::MAX) + 1, 3),
         (PreciseDecimal::from(Decimal::MIN) - 1, 4)
+    }
+
+    macro_rules! test_try_from_integer_overflow {
+        ($(($from:expr, $suffix:expr)),*) => {
+            paste!{
+            $(
+                #[test]
+                fn [<test_try_from_integer_overflow_ $suffix>]() {
+                    let err = Decimal::try_from($from).unwrap_err();
+                    assert_eq!(err, ParseDecimalError::Overflow)
+                }
+            )*
+            }
+        };
+    }
+
+    test_try_from_integer_overflow! {
+        (BnumI256::MAX, 1),
+        (BnumI256::MIN, 2),
+        // maximal Decimal integer part + 1
+        (BnumI256::MAX/(BnumI256::from(10).pow(Decimal::SCALE)) + BnumI256::ONE, 3),
+        // minimal Decimal integer part - 1
+        (BnumI256::MIN/(BnumI256::from(10).pow(Decimal::SCALE)) - BnumI256::ONE, 4),
+        (BnumU256::MAX, 5),
+        (BnumI512::MAX, 6),
+        (BnumI512::MIN, 7),
+        (BnumU512::MAX, 8)
+    }
+
+    macro_rules! test_try_from_integer {
+        ($(($from:expr, $expected:expr, $suffix:expr)),*) => {
+            paste!{
+            $(
+                #[test]
+                fn [<test_try_from_integer_ $suffix>]() {
+                    let dec = Decimal::try_from($from).unwrap();
+                    assert_eq!(dec.to_string(), $expected)
+                }
+            )*
+            }
+        };
+    }
+
+    test_try_from_integer! {
+        (BnumI256::ONE, "1", 1),
+        (-BnumI256::ONE, "-1", 2),
+        // maximal Decimal integer part
+        (BnumI256::MAX/(BnumI256::from(10_u64.pow(Decimal::SCALE))), "57896044618658097711785492504343953926634992332820282019728" , 3),
+        // minimal Decimal integer part
+        (BnumI256::MIN/(BnumI256::from(10_u64.pow(Decimal::SCALE))), "-57896044618658097711785492504343953926634992332820282019728" , 4),
+        (BnumU256::MIN, "0", 5),
+        (BnumU512::MIN, "0", 6),
+        (BnumI512::ONE, "1", 7),
+        (-BnumI512::ONE, "-1", 8)
     }
 
     #[test]

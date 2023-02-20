@@ -3,14 +3,14 @@
 #[macro_export]
 macro_rules! dec {
     ($x:literal) => {
-        Decimal::from($x)
+        Decimal::try_from($x).unwrap()
     };
 
     ($base:literal, $shift:literal) => {
         // Base can be any type that converts into a Decimal, and shift must support
         // comparison and `-` unary operation, enforced by rustc.
         {
-            let base = Decimal::from($base);
+            let base = Decimal::try_from($base).unwrap();
             if $shift >= 0 {
                 base * Decimal::try_from(
                     BnumI256::from(10u8).pow(u32::try_from($shift).expect("Shift overflow")),
@@ -42,14 +42,14 @@ macro_rules! i {
 #[macro_export]
 macro_rules! pdec {
     ($x:literal) => {
-        PreciseDecimal::from($x)
+        PreciseDecimal::try_from($x).unwrap()
     };
 
     ($base:literal, $shift:literal) => {
         // Base can be any type that converts into a PreciseDecimal, and shift must support
         // comparison and `-` unary operation, enforced by rustc.
         {
-            let base = PreciseDecimal::from($base);
+            let base = PreciseDecimal::try_from($base).unwrap();
             if $shift >= 0 {
                 base * PreciseDecimal::try_from(
                     BnumI512::from(10u8).pow(u32::try_from($shift).expect("Shift overflow")),

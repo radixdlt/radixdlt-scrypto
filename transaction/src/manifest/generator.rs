@@ -1382,7 +1382,7 @@ mod tests {
         AccessRule, AccessRules, NonFungibleIdType, ResourceMethodAuthKey,
     };
     use radix_engine_interface::network::NetworkDefinition;
-    use radix_engine_interface::pdec;
+    use radix_engine_interface::{dec, pdec};
 
     #[macro_export]
     macro_rules! generate_value_ok {
@@ -1639,7 +1639,7 @@ mod tests {
             r#"MINT_FUNGIBLE ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak") Decimal("100");"#,
             Instruction::MintFungible {
                 resource_address: resource,
-                amount: Decimal::from_str("100").unwrap()
+                amount: dec!("100")
             },
         );
         generate_instruction_ok!(
@@ -1649,7 +1649,7 @@ mod tests {
                 entries: BTreeMap::from([(
                     NonFungibleLocalId::integer(1),
                     (
-                        manifest_args!(String::from("Hello World"), Decimal::from("12")),
+                        manifest_args!(String::from("Hello World"), dec!("12")),
                         manifest_args!(12u8, 19u128)
                     )
                 )])
@@ -1709,7 +1709,7 @@ mod tests {
                     entries: BTreeMap::from([(
                         NonFungibleLocalId::integer(1),
                         (
-                            manifest_args!(String::from("Hello World"), Decimal::from("12")),
+                            manifest_args!(String::from("Hello World"), dec!("12")),
                             manifest_args!(12u8, 19u128)
                         )
                     )]),
@@ -1797,7 +1797,7 @@ mod tests {
             Instruction::MintUuidNonFungible {
                 resource_address: resource,
                 entries: Vec::from([(
-                    manifest_args!(String::from("Hello World"), Decimal::from("12")),
+                    manifest_args!(String::from("Hello World"), dec!("12")),
                     manifest_args!(12u8, 19u128)
                 )])
             },

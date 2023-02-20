@@ -69,7 +69,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
 
     match action {
         Action::Mint => builder
-            .mint_fungible(token_address, Decimal::from("1.0"))
+            .mint_fungible(token_address, dec!("1.0"))
             .call_method(
                 account,
                 "deposit_batch",
@@ -77,15 +77,15 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             ),
         Action::Burn => builder
             .create_proof_from_account(account, withdraw_auth)
-            .withdraw_from_account(account, token_address, Decimal::from("1.0"))
-            .burn(Decimal::from("1.0"), token_address)
+            .withdraw_from_account(account, token_address, dec!("1.0"))
+            .burn(dec!("1.0"), token_address)
             .call_method(
                 account,
                 "deposit_batch",
                 manifest_args!(ManifestExpression::EntireWorktop),
             ),
         Action::Withdraw => builder
-            .withdraw_from_account(account, token_address, Decimal::from("1.0"))
+            .withdraw_from_account(account, token_address, dec!("1.0"))
             .call_method(
                 account,
                 "deposit_batch",
@@ -93,7 +93,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             ),
         Action::Deposit => builder
             .create_proof_from_account(account, withdraw_auth)
-            .withdraw_from_account(account, token_address, Decimal::from("1.0"))
+            .withdraw_from_account(account, token_address, dec!("1.0"))
             .take_from_worktop(token_address, |builder, bucket_id| {
                 builder.call_method(account, "deposit", manifest_args!(bucket_id))
             })

@@ -104,7 +104,7 @@ fn mint_with_bad_granularity_should_fail() {
             ResourceManagerError::InvalidAmount(amount, granularity),
         )) = e
         {
-            amount.eq(&Decimal::from("0.1")) && *granularity == 0
+            amount.eq(&dec!("0.1")) && *granularity == 0
         } else {
             false
         }
