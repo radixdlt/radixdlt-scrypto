@@ -3,7 +3,7 @@ use radix_engine_interface::api::types::{NodeModuleId, RENodeId, SubstateId, Sub
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::scrypto_encode;
 use radix_engine_interface::ScryptoSbor;
-use sbor::rust::collections::BTreeMap;
+use sbor::rust::collections::{index_map_new, IndexMap};
 use sbor::rust::vec::Vec;
 use tree_store::{ReNodeModulePayload, ReadableTreeStore, TreeNode, TreeStore, WriteableTreeStore};
 use types::{NibblePath, NodeKey, Version};
@@ -91,9 +91,8 @@ impl ReNodeModule {
 
 fn index_by_re_node_module(
     changes: Vec<SubstateHashChange>,
-) -> BTreeMap<ReNodeModule, Vec<IdChange<SubstateOffset, Hash>>> {
-    let mut by_re_node_module =
-        BTreeMap::<ReNodeModule, Vec<IdChange<SubstateOffset, Hash>>>::new();
+) -> IndexMap<ReNodeModule, Vec<IdChange<SubstateOffset, Hash>>> {
+    let mut by_re_node_module = index_map_new();
     for change in changes {
         let substate_id = change.id;
         by_re_node_module
