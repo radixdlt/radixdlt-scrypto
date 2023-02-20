@@ -103,7 +103,7 @@ mod tests {
                     ::sbor::Describe<radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId> > for MyEnum<T>
                 where
                     T: ::sbor::Describe<radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId> >,
-                    T: ::sbor::Categorize<<
+                    T: ::sbor::Categorize< <
                         radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId>
                         as ::sbor::CustomTypeKind<::sbor::GlobalTypeId>
                     >::CustomValueKind >
