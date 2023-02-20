@@ -483,7 +483,9 @@ pub fn build_describe_generics<'a>(
         for categorize_type in categorize_types {
             new_where_clause
                 .predicates
-                .push(parse_quote!(#categorize_type: ::sbor::Categorize<#custom_type_kind_generic::CustomValueKind>));
+                .push(parse_quote!(#categorize_type: ::sbor::Categorize<<
+                    #custom_type_kind_generic as::sbor::CustomTypeKind<::sbor::GlobalTypeId>
+                >::CustomValueKind>));
         }
         where_clause = Some(new_where_clause);
     }

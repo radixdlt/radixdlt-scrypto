@@ -48,6 +48,48 @@ mod tests {
     }
 
     #[test]
+    fn test_describe_generic_struct() {
+        let input = TokenStream::from_str("pub struct Thing<T> { field: T }").unwrap();
+        let code_hash = get_code_hash_const_array_token_stream(&input);
+        let output = handle_describe(input).unwrap();
+
+        assert_code_eq(
+            output,
+            quote! {
+                impl<T> ::sbor::Describe<radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId> > for Thing<T>
+                where
+                    T: ::sbor::Describe<
+                        radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId>
+                    >,
+                    T: ::sbor::Categorize<
+                        <
+                            radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId>
+                            as ::sbor::CustomTypeKind<::sbor::GlobalTypeId>
+                        >::CustomValueKind
+                    >
+                {
+                    const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
+                        stringify!(Thing),
+                        &[<T>::TYPE_ID,],
+                        &#code_hash
+                    );
+                    fn type_data() -> Option<::sbor::TypeData<radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId>, ::sbor::GlobalTypeId>> {
+                        Some(::sbor::TypeData::named_fields_tuple(
+                            stringify!(Thing),
+                            ::sbor::rust::vec![
+                                ("field", <T as ::sbor::Describe<radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId> >>::TYPE_ID),
+                            ],
+                        ))
+                    }
+                    fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId> >) {
+                        aggregator.add_child_type_and_descendents::<T>();
+                    }
+                }
+            },
+        );
+    }
+
+    #[test]
     fn test_describe_enum() {
         let input = TokenStream::from_str("enum MyEnum<T: Bound> { A { named: T }, B(String), C }")
             .unwrap();
@@ -61,7 +103,10 @@ mod tests {
                     ::sbor::Describe<radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId> > for MyEnum<T>
                 where
                     T: ::sbor::Describe<radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId> >,
-                    T: ::sbor::Categorize<radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId>::CustomValueKind >
+                    T: ::sbor::Categorize< <
+                        radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId>
+                        as ::sbor::CustomTypeKind<::sbor::GlobalTypeId>
+                    >::CustomValueKind >
                 {
                     const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(MyEnum),
