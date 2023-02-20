@@ -14,8 +14,6 @@ pub enum ResourceOperationError {
     InsufficientBalance,
     /// Resource is locked because of proofs
     ResourceLocked,
-    /// Non-fungible resource id type is not matching this resource id type.
-    NonFungibleIdTypeNotMatching,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -476,9 +474,7 @@ impl NonFungibleResource {
         ids: &BTreeSet<NonFungibleLocalId>,
     ) -> Result<BTreeSet<NonFungibleLocalId>, ResourceOperationError> {
         for id in ids {
-            if id.id_type() != self.liquid.id_type {
-                return Err(ResourceOperationError::NonFungibleIdTypeNotMatching);
-            } else if self.liquid.ids.remove(id) {
+            if self.liquid.ids.remove(id) {
                 // if the non-fungible is liquid, move it to locked.
                 self.locked.ids.insert(id.clone(), 1);
             } else if let Some(cnt) = self.locked.ids.get_mut(id) {
