@@ -7,7 +7,7 @@ use sbor::*;
 pub trait SchemaTypeLink: Debug + Clone + PartialEq + Eq {}
 
 /// This is a global identifier for a type.
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, Encode, Decode, Categorize)]
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, Sbor)]
 pub enum GlobalTypeId {
     /// This takes a well_known type index.
     ///
@@ -102,7 +102,7 @@ const fn capture_dependent_type_ids(
 }
 
 /// This is the [`SchemaTypeLink`] used in a linearized [`Schema`] to link [`TypeKind`]s.
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, Encode, Decode, Categorize)]
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, Sbor)]
 pub enum LocalTypeIndex {
     /// This takes a well_known type index
     WellKnown(u8),

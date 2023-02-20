@@ -4,21 +4,11 @@ use crate::api::package::PackageAddress;
 use crate::blueprints::resource::NonFungibleLocalId;
 use crate::blueprints::resource::ResourceAddress;
 use crate::*;
+use sbor::rust::fmt;
+use transaction_data::*;
 
 // TODO: Remove when better type system implemented
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    Ord,
-    PartialOrd,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor)]
 pub enum RENodeType {
     Bucket,
     Proof,
@@ -50,7 +40,6 @@ pub enum RENodeType {
 }
 
 #[derive(
-    Debug,
     Clone,
     Copy,
     PartialEq,
@@ -58,9 +47,10 @@ pub enum RENodeType {
     Hash,
     Ord,
     PartialOrd,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
+    ScryptoSbor,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
 )]
 pub enum RENodeId {
     Bucket(BucketId),
@@ -69,7 +59,7 @@ pub enum RENodeId {
     Worktop,
     Logger,
     TransactionRuntime,
-    Global(GlobalAddress),
+    Global(Address),
     KeyValueStore(KeyValueStoreId),
     NonFungibleStore(NonFungibleStoreId),
     Component(ComponentId),
@@ -82,6 +72,47 @@ pub enum RENodeId {
     Validator(ValidatorId),
     Account(AccountId),
     AccessController(AccessControllerId),
+}
+
+impl fmt::Debug for RENodeId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Bucket(id) => f.debug_tuple("Bucket").field(&hex::encode(id)).finish(),
+            Self::Proof(id) => f.debug_tuple("Proof").field(&hex::encode(id)).finish(),
+            Self::AuthZoneStack => write!(f, "AuthZoneStack"),
+            Self::Worktop => write!(f, "Worktop"),
+            Self::Logger => write!(f, "Logger"),
+            Self::TransactionRuntime => write!(f, "TransactionRuntime"),
+            Self::Global(address) => f.debug_tuple("Global").field(address).finish(),
+            Self::KeyValueStore(id) => f
+                .debug_tuple("KeyValueStore")
+                .field(&hex::encode(id))
+                .finish(),
+            Self::NonFungibleStore(id) => f
+                .debug_tuple("NonFungibleStore")
+                .field(&hex::encode(id))
+                .finish(),
+            Self::Component(id) => f.debug_tuple("Component").field(&hex::encode(id)).finish(),
+            Self::Vault(id) => f.debug_tuple("Vault").field(&hex::encode(id)).finish(),
+            Self::ResourceManager(id) => f
+                .debug_tuple("ResourceManager")
+                .field(&hex::encode(id))
+                .finish(),
+            Self::Package(id) => f.debug_tuple("Package").field(&hex::encode(id)).finish(),
+            Self::EpochManager(id) => f
+                .debug_tuple("EpochManager")
+                .field(&hex::encode(id))
+                .finish(),
+            Self::Identity(id) => f.debug_tuple("Identity").field(&hex::encode(id)).finish(),
+            Self::Clock(id) => f.debug_tuple("Clock").field(&hex::encode(id)).finish(),
+            Self::Validator(id) => f.debug_tuple("Validator").field(&hex::encode(id)).finish(),
+            Self::Account(id) => f.debug_tuple("Account").field(&hex::encode(id)).finish(),
+            Self::AccessController(id) => f
+                .debug_tuple("AccessController")
+                .field(&hex::encode(id))
+                .finish(),
+        }
+    }
 }
 
 impl Into<[u8; 36]> for RENodeId {
@@ -99,19 +130,13 @@ impl Into<[u8; 36]> for RENodeId {
             RENodeId::Clock(id) => id,
             RENodeId::Account(id) => id,
             RENodeId::AccessController(id) => id,
-            _ => panic!("Not a stored id"),
-        }
-    }
-}
-
-impl Into<u32> for RENodeId {
-    fn into(self) -> u32 {
-        match self {
-            RENodeId::Bucket(id) => id,
             RENodeId::Proof(id) => id,
-            RENodeId::AuthZoneStack => 0x10000000u32, // TODO: Remove, this is here to preserve receiver in invocation for now
-            RENodeId::TransactionRuntime => 0x20000000u32, // TODO: Remove, this here to preserve receiver in invocation for now
-            _ => panic!("Not a transient id"),
+            RENodeId::Bucket(id) => id,
+            RENodeId::Worktop => [3u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
+            RENodeId::Logger => [4u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
+            RENodeId::TransactionRuntime => [5u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
+            RENodeId::AuthZoneStack => [6u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
+            _ => panic!("Not a stored id"),
         }
     }
 }
@@ -119,7 +144,7 @@ impl Into<u32> for RENodeId {
 impl Into<ComponentAddress> for RENodeId {
     fn into(self) -> ComponentAddress {
         match self {
-            RENodeId::Global(GlobalAddress::Component(address)) => address,
+            RENodeId::Global(Address::Component(address)) => address,
             _ => panic!("Not a component address"),
         }
     }
@@ -128,7 +153,7 @@ impl Into<ComponentAddress> for RENodeId {
 impl Into<PackageAddress> for RENodeId {
     fn into(self) -> PackageAddress {
         match self {
-            RENodeId::Global(GlobalAddress::Package(package_address)) => package_address,
+            RENodeId::Global(Address::Package(package_address)) => package_address,
             _ => panic!("Not a package address"),
         }
     }
@@ -137,71 +162,13 @@ impl Into<PackageAddress> for RENodeId {
 impl Into<ResourceAddress> for RENodeId {
     fn into(self) -> ResourceAddress {
         match self {
-            RENodeId::Global(GlobalAddress::Resource(resource_address)) => resource_address,
+            RENodeId::Global(Address::Resource(resource_address)) => resource_address,
             _ => panic!("Not a resource address"),
         }
     }
 }
 
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-)]
-pub enum GlobalAddress {
-    Component(ComponentAddress),
-    Package(PackageAddress),
-    Resource(ResourceAddress),
-}
-
-impl Into<ComponentAddress> for GlobalAddress {
-    fn into(self) -> ComponentAddress {
-        match self {
-            GlobalAddress::Component(component_address) => component_address,
-            _ => panic!("Not a component address"),
-        }
-    }
-}
-
-impl Into<PackageAddress> for GlobalAddress {
-    fn into(self) -> PackageAddress {
-        match self {
-            GlobalAddress::Package(package_address) => package_address,
-            _ => panic!("Not a package address"),
-        }
-    }
-}
-
-impl Into<ResourceAddress> for GlobalAddress {
-    fn into(self) -> ResourceAddress {
-        match self {
-            GlobalAddress::Resource(resource_address) => resource_address,
-            _ => panic!("Not a resource address"),
-        }
-    }
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
 pub enum NodeModuleId {
     PackageTypeInfo, // TODO: Unify with ComponentTypeInfo
     SELF,
@@ -213,157 +180,124 @@ pub enum NodeModuleId {
     PackageRoyalty,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum AuthZoneStackOffset {
     AuthZoneStack,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum AccessRulesChainOffset {
     AccessRulesChain,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ComponentTypeInfoOffset {
     TypeInfo,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum MetadataOffset {
     Metadata,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum RoyaltyOffset {
     RoyaltyConfig,
     RoyaltyAccumulator,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ComponentOffset {
     /// Component application state at offset `0x00`.
     State0,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum PackageOffset {
     NativeCode,
     WasmCode,
     Info,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum GlobalOffset {
     Global,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ResourceManagerOffset {
     ResourceManager,
 }
 
-#[derive(
-    Debug,
-    Clone,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-)]
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum KeyValueStoreOffset {
     Entry(Vec<u8>),
 }
 
-#[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
 pub enum NonFungibleStoreOffset {
     Entry(NonFungibleLocalId),
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum VaultOffset {
     Vault,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum EpochManagerOffset {
     EpochManager,
     CurrentValidatorSet,
     PreparingValidatorSet,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ValidatorOffset {
     Validator,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum BucketOffset {
     Bucket,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ProofOffset {
     Proof,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum WorktopOffset {
     Worktop,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum LoggerOffset {
     Logger,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ClockOffset {
     CurrentTimeRoundedToMinutes,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum TransactionRuntimeOffset {
     TransactionRuntime,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum AccountOffset {
     Account,
 }
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum AccessControllerOffset {
     AccessController,
 }
 
 /// Specifies a specific Substate into a given RENode
-#[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
 pub enum SubstateOffset {
     PackageTypeInfo, // TODO: Unify with ComponentTypeInfo
     Global(GlobalOffset),
@@ -394,16 +328,5 @@ pub enum SubstateOffset {
 }
 
 /// TODO: separate space addresses?
-#[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
 pub struct SubstateId(pub RENodeId, pub NodeModuleId, pub SubstateOffset);

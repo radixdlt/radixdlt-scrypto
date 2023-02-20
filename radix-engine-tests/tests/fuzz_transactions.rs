@@ -12,8 +12,9 @@ use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use rayon::prelude::*;
 use transaction::builder::{ManifestBuilder, TransactionBuilder};
+use transaction::data::manifest_args;
+use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::{NotarizedTransaction, TransactionHeader};
-use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::{
     NotarizedTransactionValidator, TestIntentHashManager, TransactionValidator, ValidationConfig,
 };
@@ -69,7 +70,7 @@ impl TransactionFuzzer {
                     builder.new_account(AccessRule::AllowAll);
                 }
                 3 => {
-                    builder.call_method(FAUCET_COMPONENT, "lock_fee", args!(dec!("100")));
+                    builder.call_method(FAUCET_COMPONENT, "lock_fee", manifest_args!(dec!("100")));
                 }
                 _ => panic!("Unexpected"),
             }

@@ -11,11 +11,21 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use scrypto_abi::LegacyDescribe;
 use scrypto_abi::Type;
+use transaction_data::*;
 use utils::ContextualDisplay;
 
 /// Represents the global id of a non-fungible.
 #[derive(
-    Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoCategorize, ScryptoEncode, ScryptoDecode,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    Ord,
+    PartialOrd,
+    ScryptoSbor,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
 )]
 pub struct NonFungibleGlobalId(ResourceAddress, NonFungibleLocalId);
 

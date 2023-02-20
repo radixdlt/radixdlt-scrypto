@@ -24,6 +24,7 @@ pub use crate::api::component::ComponentAddress;
 pub use crate::api::package::PackageAddress;
 pub use crate::blueprints::resource::{NonFungibleGlobalId, NonFungibleLocalId, ResourceAddress};
 pub use crate::crypto::Hash;
+pub use crate::data::model::Address;
 pub use crate::network::NetworkDefinition;
 
 // Additional 3rd-party re-exports

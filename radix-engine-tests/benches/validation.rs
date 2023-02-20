@@ -2,9 +2,11 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use radix_engine::types::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
+use transaction::data::manifest_args;
+use transaction::data::ManifestExpression;
+use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
+use transaction::eddsa_ed25519::EddsaEd25519PrivateKey;
 use transaction::model::TransactionHeader;
-use transaction::signing::EcdsaSecp256k1PrivateKey;
-use transaction::signing::EddsaEd25519PrivateKey;
 use transaction::validation::verify_ecdsa_secp256k1;
 use transaction::validation::verify_eddsa_ed25519;
 use transaction::validation::NotarizedTransactionValidator;
@@ -13,27 +15,27 @@ use transaction::validation::ValidationConfig;
 use transaction::validation::{recover_ecdsa_secp256k1, TransactionValidator};
 
 fn bench_ecdsa_secp256k1_validation(c: &mut Criterion) {
-    let message = "This is a long message".repeat(100);
+    let message_hash = hash("This is a long message".repeat(100));
     let signer = EcdsaSecp256k1PrivateKey::from_u64(123123123123).unwrap();
-    let signature = signer.sign(message.as_bytes());
+    let signature = signer.sign(&message_hash);
 
     c.bench_function("ECDSA signature validation", |b| {
         b.iter(|| {
-            let public_key = recover_ecdsa_secp256k1(message.as_bytes(), &signature).unwrap();
-            verify_ecdsa_secp256k1(message.as_bytes(), &public_key, &signature);
+            let public_key = recover_ecdsa_secp256k1(&message_hash, &signature).unwrap();
+            verify_ecdsa_secp256k1(&message_hash, &public_key, &signature);
         })
     });
 }
 
 fn bench_eddsa_ed25519_validation(c: &mut Criterion) {
-    let message = "This is a long message".repeat(100);
+    let message_hash = hash("This is a long message".repeat(100));
     let signer = EddsaEd25519PrivateKey::from_u64(123123123123).unwrap();
     let public_key = signer.public_key();
-    let signature = signer.sign(message.as_bytes());
+    let signature = signer.sign(&message_hash);
 
     c.bench_function("ED25519 signature validation", |b| {
         b.iter(|| {
-            verify_eddsa_ed25519(message.as_bytes(), &public_key, &signature);
+            verify_eddsa_ed25519(&message_hash, &public_key, &signature);
         })
     });
 }
@@ -71,7 +73,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
                 .call_method(
                     account2,
                     "deposit_batch",
-                    args!(ManifestExpression::EntireWorktop),
+                    manifest_args!(ManifestExpression::EntireWorktop),
                 )
                 .build(),
         )

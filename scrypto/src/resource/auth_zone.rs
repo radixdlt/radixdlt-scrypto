@@ -1,7 +1,8 @@
 use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::api::ClientNativeInvokeApi;
+use radix_engine_interface::api::types::ScryptoReceiver;
+use radix_engine_interface::api::ClientComponentApi;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeSet;
 use scrypto::engine::scrypto_env::ScryptoEnv;
@@ -19,38 +20,52 @@ impl ComponentAuthZone {
 
         let proof: Proof = proof.into();
 
-        env.call_native(AuthZonePushInvocation {
-            receiver: RENodeId::AuthZoneStack.into(),
-            proof,
-        })
+        env.call_method(
+            ScryptoReceiver::AuthZoneStack,
+            AUTH_ZONE_PUSH_IDENT,
+            scrypto_encode(&AuthZonePushInput { proof }).unwrap(),
+        )
         .unwrap();
     }
 
     pub fn pop() -> Proof {
         let mut env = ScryptoEnv;
-        env.call_native(AuthZonePopInvocation {
-            receiver: RENodeId::AuthZoneStack.into(),
-        })
-        .unwrap()
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::AuthZoneStack,
+                AUTH_ZONE_POP_IDENT,
+                scrypto_encode(&AuthZonePopInput {}).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
     pub fn create_proof(resource_address: ResourceAddress) -> Proof {
         let mut env = ScryptoEnv;
-        env.call_native(AuthZoneCreateProofInvocation {
-            receiver: RENodeId::AuthZoneStack.into(),
-            resource_address,
-        })
-        .unwrap()
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::AuthZoneStack,
+                AUTH_ZONE_CREATE_PROOF_IDENT,
+                scrypto_encode(&AuthZoneCreateProofInput { resource_address }).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
     pub fn create_proof_by_amount(amount: Decimal, resource_address: ResourceAddress) -> Proof {
         let mut env = ScryptoEnv;
-        env.call_native(AuthZoneCreateProofByAmountInvocation {
-            receiver: RENodeId::AuthZoneStack.into(),
-            amount,
-            resource_address,
-        })
-        .unwrap()
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::AuthZoneStack,
+                AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_IDENT,
+                scrypto_encode(&AuthZoneCreateProofByAmountInput {
+                    resource_address,
+                    amount,
+                })
+                .unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
     pub fn create_proof_by_ids(
@@ -58,20 +73,27 @@ impl ComponentAuthZone {
         resource_address: ResourceAddress,
     ) -> Proof {
         let mut env = ScryptoEnv;
-        env.call_native(AuthZoneCreateProofByIdsInvocation {
-            receiver: RENodeId::AuthZoneStack.into(),
-            ids: ids.clone(),
-            resource_address,
-        })
-        .unwrap()
+        let rtn = env
+            .call_method(
+                ScryptoReceiver::AuthZoneStack,
+                AUTH_ZONE_CREATE_PROOF_BY_IDS_IDENT,
+                scrypto_encode(&AuthZoneCreateProofByIdsInput {
+                    resource_address,
+                    ids: ids.clone(),
+                })
+                .unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
     pub fn assert_access_rule(access_rule: AccessRule) {
         let mut env = ScryptoEnv;
-        env.call_native(AuthZoneAssertAccessRuleInvocation {
-            receiver: RENodeId::AuthZoneStack.into(),
-            access_rule,
-        })
-        .unwrap()
+        env.call_method(
+            ScryptoReceiver::AuthZoneStack,
+            AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
+            scrypto_encode(&AuthZoneAssertAccessRuleInput { access_rule }).unwrap(),
+        )
+        .unwrap();
     }
 }

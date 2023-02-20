@@ -11,10 +11,9 @@ use crate::system::kernel_modules::costing::*;
 use crate::transaction::*;
 use crate::types::*;
 use crate::wasm::*;
-use radix_engine_constants::{
-    DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
-};
+use radix_engine_constants::*;
 use sbor::rust::borrow::Cow;
+use transaction::data::manifest_encode;
 use transaction::model::*;
 
 pub struct FeeReserveConfig {
@@ -42,6 +41,9 @@ pub struct ExecutionConfig {
     pub max_call_depth: usize,
     pub max_kernel_call_depth_traced: Option<usize>,
     pub abort_when_loan_repaid: bool,
+    pub max_wasm_mem_per_transaction: usize,
+    pub max_wasm_mem_per_call_frame: usize,
+    pub max_substate_reads_per_transaction: usize,
 }
 
 impl Default for ExecutionConfig {
@@ -57,6 +59,9 @@ impl ExecutionConfig {
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
             max_kernel_call_depth_traced: Some(1),
             abort_when_loan_repaid: false,
+            max_wasm_mem_per_transaction: DEFAULT_MAX_WASM_MEM_PER_TRANSACTION,
+            max_wasm_mem_per_call_frame: DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME,
+            max_substate_reads_per_transaction: DEFAULT_MAX_SUBSTATE_READS_PER_TRANSACTION,
         }
     }
 
@@ -171,23 +176,22 @@ where
 
     fn execute_with_fee_reserve(
         &mut self,
-        transaction: &Executable,
+        executable: &Executable,
         execution_config: &ExecutionConfig,
         fee_reserve: SystemLoanFeeReserve,
         fee_table: FeeTable,
     ) -> TransactionReceipt {
-        let transaction_hash = transaction.transaction_hash();
-        let auth_zone_params = transaction.auth_zone_params();
-        let pre_allocated_ids = transaction.pre_allocated_ids();
-        let instructions = transaction.instructions();
-        let blobs = transaction.blobs();
+        let transaction_hash = executable.transaction_hash();
 
         #[cfg(not(feature = "alloc"))]
         if execution_config.debug {
             println!("{:-^80}", "Transaction Metadata");
             println!("Transaction hash: {}", transaction_hash);
-            println!("Transaction auth zone params: {:?}", auth_zone_params);
-            println!("Number of unique blobs: {}", blobs.len());
+            println!(
+                "Transaction auth zone params: {:?}",
+                executable.pre_allocated_ids()
+            );
+            println!("Number of unique blobs: {}", executable.blobs().len());
 
             println!("{:-^80}", "Engine Execution Log");
         }
@@ -199,7 +203,7 @@ where
 
         // Apply pre execution costing
         let pre_execution_result =
-            Self::apply_pre_execution_costs(fee_reserve, &fee_table, transaction);
+            Self::apply_pre_execution_costs(fee_reserve, &fee_table, executable);
         let fee_reserve = match pre_execution_result {
             Ok(fee_reserve) => fee_reserve,
             Err(err) => {
@@ -223,18 +227,23 @@ where
 
         // Invoke the function/method
         let track_receipt = {
-            let mut id_allocator =
-                IdAllocator::new(transaction_hash.clone(), pre_allocated_ids.clone());
+            let mut id_allocator = IdAllocator::new(
+                transaction_hash.clone(),
+                executable.pre_allocated_ids().clone(),
+            );
 
             // Create kernel
             let modules = KernelModuleMixer::standard(
                 execution_config.debug,
-                transaction.transaction_hash().clone(),
-                transaction.auth_zone_params().clone(),
+                transaction_hash.clone(),
+                executable.auth_zone_params().clone(),
                 fee_reserve,
                 fee_table,
                 execution_config.max_call_depth,
                 execution_config.max_kernel_call_depth_traced,
+                execution_config.max_wasm_mem_per_transaction,
+                execution_config.max_wasm_mem_per_call_frame,
+                execution_config.max_substate_reads_per_transaction,
             );
             let mut kernel = Kernel::new(
                 &mut id_allocator,
@@ -249,15 +258,9 @@ where
             // Invoke transaction processor
             let invoke_result = kernel.kernel_invoke(TransactionProcessorRunInvocation {
                 transaction_hash: transaction_hash.clone(),
-                runtime_validations: Cow::Borrowed(transaction.runtime_validations()),
-                instructions: match instructions {
-                    InstructionList::Basic(instructions) => {
-                        Cow::Owned(instructions.iter().map(|e| e.clone().into()).collect())
-                    }
-                    InstructionList::Any(instructions) => Cow::Borrowed(instructions),
-                    InstructionList::AnyOwned(instructions) => Cow::Borrowed(instructions),
-                },
-                blobs: Cow::Borrowed(blobs),
+                runtime_validations: Cow::Borrowed(executable.runtime_validations()),
+                instructions: Cow::Owned(manifest_encode(executable.instructions()).unwrap()),
+                blobs: Cow::Borrowed(executable.blobs()),
             });
 
             // Teardown

@@ -1,8 +1,9 @@
+use crate::data::model::Own;
 use crate::data::*;
 use sbor::*;
 use scrypto_abi::{Fields, Type};
 
-use super::types::Own;
+use super::model::Address;
 
 pub fn get_value_kind(ty: &Type) -> Option<ScryptoValueKind> {
     match ty {
@@ -34,9 +35,9 @@ pub fn get_value_kind(ty: &Type) -> Option<ScryptoValueKind> {
         Type::Option { .. } => Some(ValueKind::Enum),
         Type::Result { .. } => Some(ValueKind::Enum),
 
-        Type::PackageAddress => Some(ValueKind::Custom(ScryptoCustomValueKind::PackageAddress)),
-        Type::ComponentAddress => Some(ValueKind::Custom(ScryptoCustomValueKind::ComponentAddress)),
-        Type::ResourceAddress => Some(ValueKind::Custom(ScryptoCustomValueKind::ResourceAddress)),
+        Type::Address | Type::PackageAddress | Type::ComponentAddress | Type::ResourceAddress => {
+            Some(ValueKind::Custom(ScryptoCustomValueKind::Address))
+        }
 
         Type::Own
         | Type::Bucket
@@ -45,19 +46,6 @@ pub fn get_value_kind(ty: &Type) -> Option<ScryptoValueKind> {
         | Type::Component
         | Type::KeyValueStore { .. } => Some(ValueKind::Custom(ScryptoCustomValueKind::Own)),
 
-        Type::Hash => Some(ValueKind::Custom(ScryptoCustomValueKind::Hash)),
-        Type::EcdsaSecp256k1PublicKey => Some(ValueKind::Custom(
-            ScryptoCustomValueKind::EcdsaSecp256k1PublicKey,
-        )),
-        Type::EcdsaSecp256k1Signature => Some(ValueKind::Custom(
-            ScryptoCustomValueKind::EcdsaSecp256k1Signature,
-        )),
-        Type::EddsaEd25519PublicKey => Some(ValueKind::Custom(
-            ScryptoCustomValueKind::EddsaEd25519PublicKey,
-        )),
-        Type::EddsaEd25519Signature => Some(ValueKind::Custom(
-            ScryptoCustomValueKind::EddsaEd25519Signature,
-        )),
         Type::Decimal => Some(ValueKind::Custom(ScryptoCustomValueKind::Decimal)),
         Type::PreciseDecimal => Some(ValueKind::Custom(ScryptoCustomValueKind::PreciseDecimal)),
         Type::NonFungibleLocalId => Some(ValueKind::Custom(
@@ -279,23 +267,30 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
         }
 
         // custom
+        Type::Address => {
+            if let Value::Custom { value } = value {
+                matches!(value, ScryptoCustomValue::Address(_))
+            } else {
+                false
+            }
+        }
         Type::PackageAddress => {
             if let Value::Custom { value } = value {
-                matches!(value, ScryptoCustomValue::PackageAddress(_))
+                matches!(value, ScryptoCustomValue::Address(Address::Package(_)))
             } else {
                 false
             }
         }
         Type::ComponentAddress => {
             if let Value::Custom { value } = value {
-                matches!(value, ScryptoCustomValue::ComponentAddress(_))
+                matches!(value, ScryptoCustomValue::Address(Address::Component(_)))
             } else {
                 false
             }
         }
         Type::ResourceAddress => {
             if let Value::Custom { value } = value {
-                matches!(value, ScryptoCustomValue::ResourceAddress(_))
+                matches!(value, ScryptoCustomValue::Address(Address::Resource(_)))
             } else {
                 false
             }
@@ -339,41 +334,6 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
         Type::KeyValueStore { .. } => {
             if let Value::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::Own(Own::KeyValueStore(_)))
-            } else {
-                false
-            }
-        }
-        Type::Hash => {
-            if let Value::Custom { value } = value {
-                matches!(value, ScryptoCustomValue::Hash(_))
-            } else {
-                false
-            }
-        }
-        Type::EcdsaSecp256k1PublicKey => {
-            if let Value::Custom { value } = value {
-                matches!(value, ScryptoCustomValue::EcdsaSecp256k1PublicKey(_))
-            } else {
-                false
-            }
-        }
-        Type::EcdsaSecp256k1Signature => {
-            if let Value::Custom { value } = value {
-                matches!(value, ScryptoCustomValue::EcdsaSecp256k1Signature(_))
-            } else {
-                false
-            }
-        }
-        Type::EddsaEd25519PublicKey => {
-            if let Value::Custom { value } = value {
-                matches!(value, ScryptoCustomValue::EddsaEd25519PublicKey(_))
-            } else {
-                false
-            }
-        }
-        Type::EddsaEd25519Signature => {
-            if let Value::Custom { value } = value {
-                matches!(value, ScryptoCustomValue::EddsaEd25519Signature(_))
             } else {
                 false
             }

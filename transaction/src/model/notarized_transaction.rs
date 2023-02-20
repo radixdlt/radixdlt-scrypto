@@ -1,16 +1,16 @@
-use radix_engine_interface::crypto::*;
-use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
-use radix_engine_interface::network::NetworkDefinition;
-use radix_engine_interface::*;
-use sbor::*;
-
+use crate::ecdsa_secp256k1::EcdsaSecp256k1Signature;
+use crate::eddsa_ed25519::EddsaEd25519Signature;
 use crate::manifest::{compile, CompileError};
 use crate::model::TransactionManifest;
+use radix_engine_interface::crypto::*;
+use radix_engine_interface::network::NetworkDefinition;
+use sbor::*;
+use transaction_data::*;
 
 // TODO: add versioning of transaction schema
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestCategorize, ManifestEncode, ManifestDecode)]
 pub struct TransactionHeader {
     pub version: u8,
     pub network_id: u8,
@@ -23,19 +23,19 @@ pub struct TransactionHeader {
     pub tip_percentage: u16,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestCategorize, ManifestEncode, ManifestDecode)]
 pub struct TransactionIntent {
     pub header: TransactionHeader,
     pub manifest: TransactionManifest,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestCategorize, ManifestEncode, ManifestDecode)]
 pub struct SignedTransactionIntent {
     pub intent: TransactionIntent,
     pub intent_signatures: Vec<SignatureWithPublicKey>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestCategorize, ManifestEncode, ManifestDecode)]
 pub struct NotarizedTransaction {
     pub signed_intent: SignedTransactionIntent,
     pub notary_signature: Signature,
@@ -48,7 +48,7 @@ pub struct NotarizedTransaction {
     serde(tag = "type", content = "signature")
 )]
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, ScryptoCategorize, ScryptoEncode, ScryptoDecode,
+    Debug, Clone, Copy, PartialEq, Eq, Hash, ManifestCategorize, ManifestEncode, ManifestDecode,
 )]
 pub enum Signature {
     EcdsaSecp256k1(EcdsaSecp256k1Signature),
@@ -62,7 +62,7 @@ pub enum Signature {
     serde(tag = "type")
 )]
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, ScryptoCategorize, ScryptoEncode, ScryptoDecode,
+    Debug, Clone, Copy, PartialEq, Eq, Hash, ManifestCategorize, ManifestEncode, ManifestDecode,
 )]
 pub enum SignatureWithPublicKey {
     EcdsaSecp256k1 {
@@ -149,7 +149,7 @@ impl TransactionIntent {
     }
 
     pub fn from_slice(slice: &[u8]) -> Result<Self, DecodeError> {
-        scrypto_decode(slice)
+        manifest_decode(slice)
     }
 
     pub fn hash(&self) -> Result<Hash, EncodeError> {
@@ -157,13 +157,13 @@ impl TransactionIntent {
     }
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, EncodeError> {
-        scrypto_encode(self)
+        manifest_encode(self)
     }
 }
 
 impl SignedTransactionIntent {
     pub fn from_slice(slice: &[u8]) -> Result<Self, DecodeError> {
-        scrypto_decode(slice)
+        manifest_decode(slice)
     }
 
     pub fn hash(&self) -> Result<Hash, EncodeError> {
@@ -171,13 +171,13 @@ impl SignedTransactionIntent {
     }
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, EncodeError> {
-        scrypto_encode(self)
+        manifest_encode(self)
     }
 }
 
 impl NotarizedTransaction {
     pub fn from_slice(slice: &[u8]) -> Result<Self, DecodeError> {
-        scrypto_decode(slice)
+        manifest_decode(slice)
     }
 
     pub fn hash(&self) -> Result<Hash, EncodeError> {
@@ -185,14 +185,14 @@ impl NotarizedTransaction {
     }
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, EncodeError> {
-        scrypto_encode(self)
+        manifest_encode(self)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::signing::*;
+    use crate::{ecdsa_secp256k1::EcdsaSecp256k1PrivateKey, eddsa_ed25519::EddsaEd25519PrivateKey};
 
     #[test]
     fn construct_sign_and_notarize_ecdsa_secp256k1() {
@@ -220,34 +220,38 @@ mod tests {
         )
         .unwrap();
 
+        let intent_hash = intent.hash().unwrap();
+
         // sign
-        let signature1 = sk1.sign(&intent.to_bytes().unwrap());
-        let signature2 = sk2.sign(&intent.to_bytes().unwrap());
+        let signature1 = sk1.sign(&intent_hash);
+        let signature2 = sk2.sign(&intent_hash);
         let signed_intent = SignedTransactionIntent {
             intent,
             intent_signatures: vec![signature1.into(), signature2.into()],
         };
 
+        let signed_intent_hash = signed_intent.hash().unwrap();
+
         // notarize
-        let signature3 = sk_notary.sign(&signed_intent.to_bytes().unwrap());
+        let signature3 = sk_notary.sign(&signed_intent_hash);
         let transaction = NotarizedTransaction {
             signed_intent,
             notary_signature: signature3.into(),
         };
 
         assert_eq!(
-            "dc5ecacf6a3ceb4fef2e58deaa030d64edbfe6028eaf619f19fb411fc6223eba",
-            transaction.signed_intent.intent.hash().unwrap().to_string()
+            transaction.signed_intent.intent.hash().unwrap().to_string(),
+            "81b06974e2e359ed9ceb16ebbcaae7d256f19d6b13bbef6d44698c203e3d14e7"
         );
         assert_eq!(
-            "279fb956a9143c0591424482c1bdfcc36c442485bdc8290c9f9f01ce9a15f99f",
-            transaction.signed_intent.hash().unwrap().to_string()
+            transaction.signed_intent.hash().unwrap().to_string(),
+            "b00287b46fc52651e5db2913b8886051d4ca6fd851852697fe4e43fd85608737"
         );
         assert_eq!(
-            "d447fd70de1e7727067b6282ed11d2cc215e08ab495f5a017d2f4cc8628a9ebf",
-            transaction.hash().unwrap().to_string()
+            transaction.hash().unwrap().to_string(),
+            "d5a09086b67552347a0d34a1729e87a8b75e992be95f1c5817e51484b208c3d0",
         );
-        assert_eq!("5c2102210221022109070107f20a00000000000000000a64000000000000000a0500000000000000220001b102f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f901000940420f00080500210220220109002020002022020001b20093ce440fadbd89f53ec11e8f33a9f52073a4fb1447e4ca2fae5cc6951a8950a62d7cb46ee8b398796b630db258da0bf0bdb8a7d7dfad483e14ebf0eb2f6870da0001b201f6ab8f5364c763ad822790649738ee7ec9c69141bff73887e2124ffcd836c8ce703269f29484d8e7d2fbbd89c5f7960490b264de0ae1f3acdce3cc4dc4db9d6c220001b200b4fafc970acef2d0d63df34abac36e2f26e212d939c2d0aeeb14493b4e54ef0e27902de7e88e1864a56ce7f0cdcb797f1919d9e4f2c7c6262ef4958c2a777c08", hex::encode(scrypto_encode(&transaction).unwrap()));
+        assert_eq!(hex::encode(manifest_encode(&transaction).unwrap()), "4d2102210221022109070107f20a00000000000000000a64000000000000000a050000000000000022000120072102f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f901000940420f0008050021022022010900202000202202000121012007410080f917243985f64db4fe011a1758c223ed6866400853fede94bc6cef35ca98bb2bca3164e6b4b6f08fdf7d39e067b9c5b3eeb5fdff66e4e095c46baeba12061c000121012007410157551ffc806d3abf40d0be5673b9102fb83bbee9101ee4e674a6ffe1f6d8e85d17f2a41f1092067dd9a2af36c1cb5a46fb904f41e4b8d9698f833c1d6f806dd2220001210120074100f4859a1bd63b649548b0e3dd5c0c52e1446ddec18a40cab19acbd24c9e8bce1655f802e67e6ae8ad4cad34849b17c557d0f95ff660423564315da147ec7f37eb");
     }
 
     #[test]
@@ -276,33 +280,37 @@ mod tests {
         )
         .unwrap();
 
+        let intent_hash = intent.hash().unwrap();
+
         // sign
-        let signature1 = (sk1.public_key(), sk1.sign(&intent.to_bytes().unwrap()));
-        let signature2 = (sk2.public_key(), sk2.sign(&intent.to_bytes().unwrap()));
+        let signature1 = (sk1.public_key(), sk1.sign(&intent_hash));
+        let signature2 = (sk2.public_key(), sk2.sign(&intent_hash));
         let signed_intent = SignedTransactionIntent {
             intent,
             intent_signatures: vec![signature1.into(), signature2.into()],
         };
 
         // notarize
-        let signature3 = sk_notary.sign(&signed_intent.to_bytes().unwrap());
+        let signed_intent_hash = hash(signed_intent.to_bytes().unwrap());
+
+        let signature3 = sk_notary.sign(&signed_intent_hash);
         let transaction = NotarizedTransaction {
             signed_intent,
             notary_signature: signature3.into(),
         };
 
         assert_eq!(
-            "ba55b1c9725753da65d708e7f88e894accec5e57da1c17c889b421cd49898abd",
-            transaction.signed_intent.intent.hash().unwrap().to_string()
+            transaction.signed_intent.intent.hash().unwrap().to_string(),
+            "bc01cff3978ff43d881ad01f4a8be3ff21582de55a1631b3384d27b66dd28d8d"
         );
         assert_eq!(
-            "dca89a7072a349b7d222b57852ccdd369eedf87997b9e79aee22d5ce7d11c02d",
-            transaction.signed_intent.hash().unwrap().to_string()
+            transaction.signed_intent.hash().unwrap().to_string(),
+            "69076ac02d6958a1b07c49382b14e0e037951653774068fa424416138d206fda",
         );
         assert_eq!(
-            "6973345b165c9efb8f926b6decff306cd641d044518fdb15979cba801292a21d",
-            transaction.hash().unwrap().to_string()
+            transaction.hash().unwrap().to_string(),
+            "b4924b71bd03aa69e0f796ece997b7fbb9e501dd1298aeec57d802dcac8ef8d3"
         );
-        assert_eq!("5c2102210221022109070107f20a00000000000000000a64000000000000000a0500000000000000220101b3f381626e41e7027ea431bfe3009e94bdd25a746beec468948d6c3c7c5dc9a54b01000940420f00080500210220220109002020002022020102b34cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29b4e756712638dc7deeabdee71bddc156f84cb69b24ed2bac7a0806a25a9831c1d63e26dfdb402313a07c9f3f1c4d2862dfb97b968f1dfbacc532eb0ce65ba66d090102b37422b9887598068e32c4448a949adb290d0f4e35b9e01b0ee5f1a1e600fe2674b4400bf5f21b9427bd6d379ee9200804066cf219044ac7f2cb9c1e22dccb122befee9e513a63f6f56ca120d91c04a00d7f250d80afcaaf089b942e4e631ed8d804220101b48b0b9f9ebe27b6a16158a91413488b3c9718cd0280d505e79efed54fc0edd7dfc2e31a4707925a642dd8d00b61c46cda670c16e8750bab5755cfa9f0f4092e0b", hex::encode(scrypto_encode(&transaction).unwrap()));
+        assert_eq!(  hex::encode(manifest_encode(&transaction).unwrap()), "4d2102210221022109070107f20a00000000000000000a64000000000000000a0500000000000000220101200720f381626e41e7027ea431bfe3009e94bdd25a746beec468948d6c3c7c5dc9a54b01000940420f000805002102202201090020200020220201022007204cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba292101200740efca0f6a4e2a782eef27da5bce284e93ca3b993774b1866510a8888b7100162f9f30405ab6ded0cbe45262dc9b7c514d89d610e779e36659c53bcbf83182760501022007207422b9887598068e32c4448a949adb290d0f4e35b9e01b0ee5f1a1e600fe26742101200740de01a711a96684c9e705583680f44729cccab96f5dde370225003382e86e66660ea216d020d1b296ae8137ff072065e850c46fde287772139fabcebfd38cc10e2201012101200740622d0f7f90e7cc3d5550bcb763c3f52a14ee19e6dd9239673682b57c1cfb33e4cffce2b3a4b13d7a4ea987f214d539e2621bd5f9b0cca054d0581e06287d5b0e");
     }
 }

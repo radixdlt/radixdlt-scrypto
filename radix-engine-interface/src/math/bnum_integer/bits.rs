@@ -75,7 +75,7 @@ macro_rules! impl_bits {
                     #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
                     pub fn rotate_left(self, other: Self) -> Self {
-                        Self(self.0.rotate_left(u32::from(other)))
+                        Self(self.0.rotate_left(u32::try_from(other).unwrap()))
                     }
 
                     /// Shifts the bits to the right by a specified amount, `n`,
@@ -89,7 +89,7 @@ macro_rules! impl_bits {
                     #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
                     pub fn rotate_right(self, other: Self) -> Self {
-                        Self(self.0.rotate_right(u32::from(other)))
+                        Self(self.0.rotate_right(u32::try_from(other).unwrap()))
                     }
 
                     /// Converts an integer from big endian to the target's endianness.

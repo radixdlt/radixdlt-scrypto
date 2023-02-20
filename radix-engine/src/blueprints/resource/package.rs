@@ -243,6 +243,120 @@ impl ResourceManagerNativePackage {
                 ))?;
                 VaultBlueprint::create_proof_by_ids(receiver, input, api)
             }
+            PROOF_CLONE_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                ProofBlueprint::clone(receiver, input, api)
+            }
+            PROOF_GET_AMOUNT_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                ProofBlueprint::get_amount(receiver, input, api)
+            }
+            PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                ProofBlueprint::get_non_fungible_local_ids(receiver, input, api)
+            }
+            PROOF_GET_RESOURCE_ADDRESS_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                ProofBlueprint::get_resource_address(receiver, input, api)
+            }
+            BUCKET_PUT_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                BucketBlueprint::put(receiver, input, api)
+            }
+            BUCKET_TAKE_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                BucketBlueprint::take(receiver, input, api)
+            }
+            BUCKET_TAKE_NON_FUNGIBLES_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                BucketBlueprint::take_non_fungibles(receiver, input, api)
+            }
+            BUCKET_GET_AMOUNT_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                BucketBlueprint::get_amount(receiver, input, api)
+            }
+            BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                BucketBlueprint::get_non_fungible_local_ids(receiver, input, api)
+            }
+            BUCKET_GET_RESOURCE_ADDRESS_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                BucketBlueprint::get_resource_address(receiver, input, api)
+            }
+            BUCKET_CREATE_PROOF_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                BucketBlueprint::create_proof(receiver, input, api)
+            }
+            WORKTOP_PUT_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                WorktopBlueprint::put(receiver, input, api)
+            }
+            WORKTOP_TAKE_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                WorktopBlueprint::take(receiver, input, api)
+            }
+            WORKTOP_TAKE_NON_FUNGIBLES_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                WorktopBlueprint::take_non_fungibles(receiver, input, api)
+            }
+            WORKTOP_TAKE_ALL_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                WorktopBlueprint::take_all(receiver, input, api)
+            }
+            WORKTOP_ASSERT_CONTAINS_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                WorktopBlueprint::assert_contains(receiver, input, api)
+            }
+            WORKTOP_ASSERT_CONTAINS_AMOUNT_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                WorktopBlueprint::assert_contains_amount(receiver, input, api)
+            }
+            WORKTOP_ASSERT_CONTAINS_NON_FUNGIBLES_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                WorktopBlueprint::assert_contains_non_fungibles(receiver, input, api)
+            }
+            WORKTOP_DRAIN_IDENT => {
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                WorktopBlueprint::drain(receiver, input, api)
+            }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
             )),

@@ -125,6 +125,16 @@ pub fn read_slice(instance: &Instance, v: Slice) -> Result<Vec<u8>, WasmRuntimeE
     read_memory(instance, ptr, len)
 }
 
+pub fn get_memory_size(instance: &Instance) -> Result<usize, WasmRuntimeError> {
+    let memory = instance
+        .exports
+        .get_memory(EXPORT_MEMORY)
+        .map_err(|_| WasmRuntimeError::MemoryAccessError)?;
+    let memory_slice = unsafe { memory.data_unchecked() };
+
+    Ok(memory_slice.len())
+}
+
 impl WasmerEnv for WasmerInstanceEnv {
     fn init_with_instance(&mut self, instance: &Instance) -> Result<(), HostEnvInitError> {
         self.instance.initialize(instance.clone());
@@ -181,6 +191,12 @@ impl WasmerModule {
             let ident = read_memory(&instance, ident_ptr, ident_len)?;
             let args = read_memory(&instance, args_ptr, args_len)?;
 
+            // Get current memory consumption and update it in transaction limit kernel module
+            // for current call frame through runtime call.
+            runtime
+                .update_wasm_memory_usage(get_memory_size(&instance)?)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
             let buffer = runtime
                 .call_method(receiver, ident, args)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
@@ -205,6 +221,12 @@ impl WasmerModule {
             let blueprint_ident = read_memory(&instance, blueprint_ident_ptr, blueprint_ident_len)?;
             let ident = read_memory(&instance, ident_ptr, ident_len)?;
             let args = read_memory(&instance, args_ptr, args_len)?;
+
+            // Get current memory consumption and update it in transaction limit kernel module
+            // for current call frame through runtime call.
+            runtime
+                .update_wasm_memory_usage(get_memory_size(&instance)?)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             let buffer = runtime
                 .call_function(package_address, blueprint_ident, ident, args)
@@ -528,6 +550,16 @@ impl WasmInstance for WasmerInstance {
         } else {
             Err(InvokeError::SelfError(WasmRuntimeError::InvalidWasmPointer))
         }
+    }
+
+    fn consumed_memory(&self) -> Result<usize, InvokeError<WasmRuntimeError>> {
+        let memory = self
+            .instance
+            .exports
+            .get_memory(EXPORT_MEMORY)
+            .map_err(|_| WasmRuntimeError::MemoryAccessError)?;
+        let memory_slice = unsafe { memory.data_unchecked_mut() };
+        Ok(memory_slice.len())
     }
 }
 

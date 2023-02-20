@@ -1,4 +1,6 @@
+use crate::crypto::blake2b_256_hash;
 use sbor::rust::borrow::ToOwned;
+use sbor::rust::boxed::Box;
 use sbor::rust::convert::TryFrom;
 use sbor::rust::fmt;
 use sbor::rust::str::FromStr;
@@ -7,12 +9,9 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use utils::copy_u8_array;
 
-use crate::abi::*;
-use crate::data::*;
-use crate::scrypto_type;
-
 /// Represents a 32-byte hash digest.
-#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
+#[sbor(transparent)]
 pub struct Hash(pub [u8; Self::LENGTH]);
 
 impl Hash {
@@ -41,10 +40,7 @@ impl AsRef<[u8]> for Hash {
 
 /// Computes the hash digest of a message.
 pub fn hash<T: AsRef<[u8]>>(data: T) -> Hash {
-    // TODO: replace with whatever hash algorithm we eventually agrees on
-    // The point here is to have a single "main" hashing function in the code base
-
-    crate::crypto::sha256(data)
+    blake2b_256_hash(data)
 }
 
 //========
@@ -95,7 +91,14 @@ impl Hash {
     }
 }
 
-scrypto_type!(Hash, ScryptoCustomValueKind::Hash, Type::Hash, 32);
+impl scrypto_abi::LegacyDescribe for Hash {
+    fn describe() -> scrypto_abi::Type {
+        scrypto_abi::Type::Array {
+            element_type: Box::new(scrypto_abi::Type::U8),
+            length: Self::LENGTH as u16,
+        }
+    }
+}
 
 //======
 // text

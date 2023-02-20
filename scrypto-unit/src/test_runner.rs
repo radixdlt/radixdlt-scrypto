@@ -8,7 +8,7 @@ use radix_engine::blueprints::epoch_manager::*;
 use radix_engine::errors::*;
 use radix_engine::kernel::interpreters::ScryptoInterpreter;
 use radix_engine::ledger::*;
-use radix_engine::system::global::GlobalAddressSubstate;
+use radix_engine::system::global::GlobalSubstate;
 use radix_engine::system::node_modules::metadata::MetadataSubstate;
 use radix_engine::system::package::*;
 use radix_engine::transaction::{
@@ -39,11 +39,11 @@ use scrypto::component::Mutability;
 use scrypto::component::Mutability::*;
 use scrypto::NonFungibleData;
 use transaction::builder::ManifestBuilder;
-use transaction::model::{
-    BasicInstruction, Executable, Instruction, SystemTransaction, TransactionManifest,
-};
+use transaction::data::model::ManifestExpression;
+use transaction::data::{manifest_args, manifest_encode};
+use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
+use transaction::model::{Executable, Instruction, SystemTransaction, TransactionManifest};
 use transaction::model::{PreviewIntent, TestTransaction};
-use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::TestIntentHashManager;
 
 pub struct Compile;
@@ -220,7 +220,7 @@ impl TestRunner {
         )
     }
 
-    pub fn get_metadata(&mut self, address: GlobalAddress) -> BTreeMap<String, String> {
+    pub fn get_metadata(&mut self, address: Address) -> BTreeMap<String, String> {
         let node_id = RENodeId::Global(address);
         let global = self
             .substate_store
@@ -249,7 +249,7 @@ impl TestRunner {
     }
 
     pub fn deref_component(&mut self, component_address: ComponentAddress) -> Option<RENodeId> {
-        let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
+        let node_id = RENodeId::Global(Address::Component(component_address));
         let global = self
             .substate_store
             .get_substate(&SubstateId(
@@ -262,7 +262,7 @@ impl TestRunner {
     }
 
     pub fn deref_package(&mut self, package_address: PackageAddress) -> Option<RENodeId> {
-        let node_id = RENodeId::Global(GlobalAddress::Package(package_address));
+        let node_id = RENodeId::Global(Address::Package(package_address));
         let global = self
             .substate_store
             .get_substate(&SubstateId(
@@ -354,7 +354,7 @@ impl TestRunner {
         component_address: ComponentAddress,
         resource_address: ResourceAddress,
     ) -> Vec<VaultId> {
-        let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
+        let node_id = RENodeId::Global(Address::Component(component_address));
         let mut vault_finder = VaultFinder::new(resource_address);
 
         let mut state_tree_visitor =
@@ -389,7 +389,7 @@ impl TestRunner {
         &mut self,
         component_address: ComponentAddress,
     ) -> HashMap<ResourceAddress, Decimal> {
-        let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
+        let node_id = RENodeId::Global(Address::Component(component_address));
         let mut accounter = ResourceAccounter::new(&self.substate_store);
         accounter.add_resources(node_id).unwrap();
         accounter.into_map()
@@ -398,9 +398,9 @@ impl TestRunner {
     pub fn load_account_from_faucet(&mut self, account_address: ComponentAddress) {
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .call_method(FAUCET_COMPONENT, "free", args!())
+            .call_method(FAUCET_COMPONENT, "free", manifest_args!())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket| {
-                builder.call_method(account_address, "deposit", args!(bucket))
+                builder.call_method(account_address, "deposit", manifest_args!(bucket))
             })
             .build();
 
@@ -419,11 +419,11 @@ impl TestRunner {
             .new_component_addresses[0];
 
         let manifest = ManifestBuilder::new()
-            .call_method(FAUCET_COMPONENT, "free", args!())
+            .call_method(FAUCET_COMPONENT, "free", manifest_args!())
             .call_method(
                 account_component,
                 "deposit_batch",
-                args!(ManifestExpression::EntireWorktop),
+                manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
         let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
@@ -448,10 +448,10 @@ impl TestRunner {
     }
 
     pub fn deref_component_address(&mut self, component_address: ComponentAddress) -> RENodeId {
-        let substate: GlobalAddressSubstate = self
+        let substate: GlobalSubstate = self
             .substate_store
             .get_substate(&SubstateId(
-                RENodeId::Global(GlobalAddress::Component(component_address)),
+                RENodeId::Global(Address::Component(component_address)),
                 NodeModuleId::SELF,
                 SubstateOffset::Global(GlobalOffset::Global),
             ))
@@ -462,10 +462,10 @@ impl TestRunner {
     }
 
     pub fn deref_package_address(&mut self, package_address: PackageAddress) -> RENodeId {
-        let substate: GlobalAddressSubstate = self
+        let substate: GlobalSubstate = self
             .substate_store
             .get_substate(&SubstateId(
-                RENodeId::Global(GlobalAddress::Package(package_address)),
+                RENodeId::Global(Address::Package(package_address)),
                 NodeModuleId::SELF,
                 SubstateOffset::Global(GlobalOffset::Global),
             ))
@@ -629,10 +629,10 @@ impl TestRunner {
     ) -> TransactionReceipt {
         manifest.instructions.insert(
             0,
-            transaction::model::BasicInstruction::CallMethod {
+            transaction::model::Instruction::CallMethod {
                 component_address: FAUCET_COMPONENT,
                 method_name: "lock_fee".to_string(),
-                args: args!(dec!("100")),
+                args: manifest_args!(dec!("100")),
             },
         );
         self.execute_manifest(manifest, initial_proofs)
@@ -737,7 +737,7 @@ impl TestRunner {
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_proof_from_account(account, auth)
-            .call_function(package, "ResourceCreator", function, args!(token))
+            .call_function(package, "ResourceCreator", function, manifest_args!(token))
             .build();
         self.execute_manifest(
             manifest,
@@ -759,11 +759,16 @@ impl TestRunner {
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_proof_from_account(account, auth)
-            .call_function(package, "ResourceCreator", function, args!(token, set_auth))
+            .call_function(
+                package,
+                "ResourceCreator",
+                function,
+                manifest_args!(token, set_auth),
+            )
             .call_method(
                 account,
                 "deposit_batch",
-                args!(ManifestExpression::EntireWorktop),
+                manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
         self.execute_manifest(
@@ -784,7 +789,7 @@ impl TestRunner {
             .call_method(
                 to,
                 "deposit_batch",
-                args!(ManifestExpression::EntireWorktop),
+                manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -930,7 +935,7 @@ impl TestRunner {
             .call_method(
                 account,
                 "deposit_batch",
-                args!(ManifestExpression::EntireWorktop),
+                manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -956,7 +961,7 @@ impl TestRunner {
             .call_method(
                 account,
                 "deposit_batch",
-                args!(ManifestExpression::EntireWorktop),
+                manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -983,7 +988,7 @@ impl TestRunner {
             .call_method(
                 account,
                 "deposit_batch",
-                args!(ManifestExpression::EntireWorktop),
+                manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -1003,7 +1008,7 @@ impl TestRunner {
         F: FnOnce(&mut ManifestBuilder) -> &mut ManifestBuilder,
     {
         let manifest = ManifestBuilder::new()
-            .call_method(FAUCET_COMPONENT, "lock_fee", args!(dec!("10")))
+            .call_method(FAUCET_COMPONENT, "lock_fee", manifest_args!(dec!("10")))
             .borrow_mut(|builder| Result::<_, Infallible>::Ok(handler(builder)))
             .unwrap()
             .build();
@@ -1013,11 +1018,11 @@ impl TestRunner {
     }
 
     pub fn set_current_epoch(&mut self, epoch: u64) {
-        let instructions = vec![Instruction::Basic(BasicInstruction::CallMethod {
+        let instructions = vec![Instruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_SET_EPOCH_IDENT.to_string(),
-            args: scrypto_encode(&EpochManagerSetEpochInput { epoch }).unwrap(),
-        })];
+            args: manifest_encode(&EpochManagerSetEpochInput { epoch }).unwrap(),
+        }];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
 
@@ -1034,11 +1039,11 @@ impl TestRunner {
     }
 
     pub fn get_current_epoch(&mut self) -> u64 {
-        let instructions = vec![Instruction::Basic(BasicInstruction::CallMethod {
+        let instructions = vec![Instruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
-            args: scrypto_encode(&EpochManagerGetCurrentEpochInput).unwrap(),
-        })];
+            args: manifest_encode(&EpochManagerGetCurrentEpochInput).unwrap(),
+        }];
 
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
@@ -1063,11 +1068,11 @@ impl TestRunner {
     }
 
     pub fn set_current_time(&mut self, current_time_ms: i64) {
-        let instructions = vec![Instruction::Basic(BasicInstruction::CallMethod {
+        let instructions = vec![Instruction::CallMethod {
             component_address: CLOCK,
             method_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
-            args: scrypto_encode(&ClockSetCurrentTimeInput { current_time_ms }).unwrap(),
-        })];
+            args: manifest_encode(&ClockSetCurrentTimeInput { current_time_ms }).unwrap(),
+        }];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
 
@@ -1084,11 +1089,11 @@ impl TestRunner {
     }
 
     pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {
-        let instructions = vec![Instruction::Basic(BasicInstruction::CallMethod {
+        let instructions = vec![Instruction::CallMethod {
             component_address: CLOCK,
             method_name: CLOCK_GET_CURRENT_TIME_IDENT.to_string(),
-            args: scrypto_encode(&ClockGetCurrentTimeInput { precision }).unwrap(),
-        })];
+            args: manifest_encode(&ClockGetCurrentTimeInput { precision }).unwrap(),
+        }];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
 

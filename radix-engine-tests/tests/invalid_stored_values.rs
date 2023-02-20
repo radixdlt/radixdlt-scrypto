@@ -3,6 +3,7 @@ use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::data::manifest_args;
 
 #[test]
 fn stored_bucket_in_committed_component_should_fail() {
@@ -17,7 +18,7 @@ fn stored_bucket_in_committed_component_should_fail() {
             package_address,
             "InvalidInitStoredBucket",
             "create",
-            args!(),
+            manifest_args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -47,7 +48,7 @@ fn stored_bucket_in_owned_component_should_fail() {
             package_address,
             "InvalidStoredBucketInOwnedComponent",
             "create_bucket_in_owned_component",
-            args!(),
+            manifest_args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

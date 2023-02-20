@@ -1,61 +1,25 @@
-use crate::api::types::*;
 use crate::*;
-use radix_engine_interface::crypto::Hash;
+use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
+use sbor::rust::string::String;
+use scrypto_abi::BlueprintAbi;
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct TransactionRuntimeGetHashInvocation {
-    pub receiver: TransactionRuntimeId, // Not in use
-}
+pub struct TransactionRuntimeAbi;
 
-impl Invocation for TransactionRuntimeGetHashInvocation {
-    type Output = Hash;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::TransactionRuntime(TransactionRuntimeFn::GetHash))
+impl TransactionRuntimeAbi {
+    pub fn blueprint_abis() -> BTreeMap<String, BlueprintAbi> {
+        BTreeMap::new()
     }
 }
 
-impl SerializableInvocation for TransactionRuntimeGetHashInvocation {
-    type ScryptoOutput = Hash;
+pub const TRANSACTION_RUNTIME_BLUEPRINT: &str = "TransactionRuntime";
 
-    fn native_fn() -> NativeFn {
-        NativeFn::TransactionRuntime(TransactionRuntimeFn::GetHash)
-    }
-}
+pub const TRANSACTION_RUNTIME_GET_HASH_IDENT: &str = "get_hash";
 
-impl Into<CallTableInvocation> for TransactionRuntimeGetHashInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::TransactionRuntime(TransactionRuntimeInvocation::GetHash(self)).into()
-    }
-}
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct TransactionRuntimeGetHashInput {}
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct TransactionRuntimeGenerateUuidInvocation {
-    pub receiver: TransactionRuntimeId, // Not in use
-}
+pub const TRANSACTION_RUNTIME_GENERATE_UUID_IDENT: &str = "generate_uuid";
 
-impl Invocation for TransactionRuntimeGenerateUuidInvocation {
-    type Output = u128;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::TransactionRuntime(
-            TransactionRuntimeFn::GenerateUuid,
-        ))
-    }
-}
-
-impl SerializableInvocation for TransactionRuntimeGenerateUuidInvocation {
-    type ScryptoOutput = u128;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::TransactionRuntime(TransactionRuntimeFn::GenerateUuid)
-    }
-}
-
-impl Into<CallTableInvocation> for TransactionRuntimeGenerateUuidInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::TransactionRuntime(TransactionRuntimeInvocation::GenerateUuid(self))
-            .into()
-    }
-}
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct TransactionRuntimeGenerateUuid {}

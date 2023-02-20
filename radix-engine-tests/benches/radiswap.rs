@@ -1,3 +1,4 @@
+use core::time::Duration;
 use criterion::{criterion_group, criterion_main, Criterion};
 use radix_engine::{transaction::TransactionReceipt, types::*};
 use radix_engine_interface::blueprints::resource::*;
@@ -5,6 +6,7 @@ use radix_engine_interface::dec;
 use scrypto_unit::TestRunner;
 use transaction::{
     builder::{ManifestBuilder, TransactionBuilder},
+    data::{manifest_args, manifest_decode, ManifestExpression},
     model::{NotarizedTransaction, TransactionHeader},
     validation::{
         NotarizedTransactionValidator, TestIntentHashManager, TransactionValidator,
@@ -57,7 +59,7 @@ fn bench_radiswap(c: &mut Criterion) {
                             package_address,
                             "Radiswap",
                             "instantiate_pool",
-                            args!(
+                            manifest_args!(
                                 bucket1,
                                 bucket2,
                                 dec!("1000"),
@@ -72,7 +74,7 @@ fn bench_radiswap(c: &mut Criterion) {
                 .call_method(
                     account2,
                     "deposit_batch",
-                    args!(ManifestExpression::EntireWorktop),
+                    manifest_args!(ManifestExpression::EntireWorktop),
                 )
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
@@ -89,7 +91,7 @@ fn bench_radiswap(c: &mut Criterion) {
                 .call_method(
                     account3,
                     "deposit_batch",
-                    args!(ManifestExpression::EntireWorktop),
+                    manifest_args!(ManifestExpression::EntireWorktop),
                 )
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
@@ -101,12 +103,12 @@ fn bench_radiswap(c: &mut Criterion) {
         .lock_fee(account3, 10u32.into())
         .withdraw_from_account(account3, btc, dec!(1))
         .take_from_worktop(btc, |builder, bucket| {
-            builder.call_method(component_address, "swap", args!(bucket))
+            builder.call_method(component_address, "swap", manifest_args!(bucket))
         })
         .call_method(
             account3,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
 
@@ -153,7 +155,7 @@ fn do_swap(
     nonce: u32,
 ) -> TransactionReceipt {
     // Decode payload
-    let transaction: NotarizedTransaction = scrypto_decode(&transaction_payload).unwrap();
+    let transaction: NotarizedTransaction = manifest_decode(&transaction_payload).unwrap();
 
     // Validate
     let mut executable = NotarizedTransactionValidator::new(ValidationConfig::default(
@@ -174,5 +176,11 @@ fn do_swap(
     receipt
 }
 
-criterion_group!(radiswap, bench_radiswap);
+criterion_group!(
+    name = radiswap;
+    // Reduce number of iterations by reducing the benchmark duration.
+    // This is to avoid VaultError(LockFeeInsufficientBalance) error
+    config = Criterion::default().measurement_time(Duration::from_millis(2000));
+    targets = bench_radiswap
+);
 criterion_main!(radiswap);

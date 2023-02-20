@@ -3,8 +3,8 @@ use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 
 // TODO: de-dup
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum GlobalAddressSubstate {
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum GlobalSubstate {
     Component(ComponentId),
     Resource(ResourceManagerId),
     Package(PackageId),
@@ -20,7 +20,7 @@ mod read {
         pub fn read_global_substate(component_address: ComponentAddress) {
             ScryptoEnv
                 .sys_lock_substate(
-                    RENodeId::Global(GlobalAddress::Component(component_address)),
+                    RENodeId::Global(Address::Component(component_address)),
                     SubstateOffset::Global(GlobalOffset::Global),
                     false,
                 )

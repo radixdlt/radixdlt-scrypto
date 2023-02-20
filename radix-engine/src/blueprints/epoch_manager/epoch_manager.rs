@@ -3,7 +3,7 @@ use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::global::GlobalAddressSubstate;
+use crate::system::global::GlobalSubstate;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
@@ -19,7 +19,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::rule;
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct EpochManagerSubstate {
     pub address: ComponentAddress, // TODO: Does it make sense for this to be stored here?
     pub epoch: u64,
@@ -30,21 +30,19 @@ pub struct EpochManagerSubstate {
     pub num_unstake_epochs: u64,
 }
 
-#[derive(
-    Debug, Clone, PartialEq, Eq, Ord, PartialOrd, ScryptoCategorize, ScryptoEncode, ScryptoDecode,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, ScryptoSbor)]
 pub struct Validator {
     pub key: EcdsaSecp256k1PublicKey,
     pub stake: Decimal,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ValidatorSetSubstate {
     pub validator_set: BTreeMap<ComponentAddress, Validator>,
     pub epoch: u64,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub enum EpochManagerError {
     InvalidRoundUpdate { from: u64, to: u64 },
 }
@@ -68,9 +66,9 @@ impl EpochManagerBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let underlying_node_id = api.kernel_allocate_node_id(RENodeType::EpochManager)?;
-        let global_node_id = RENodeId::Global(GlobalAddress::Component(
-            ComponentAddress::EpochManager(input.component_address),
-        ));
+        let global_node_id = RENodeId::Global(Address::Component(ComponentAddress::EpochManager(
+            input.component_address,
+        )));
 
         let epoch_manager = EpochManagerSubstate {
             address: global_node_id.into(),
@@ -205,9 +203,7 @@ impl EpochManagerBlueprint {
 
         api.kernel_create_node(
             global_node_id,
-            RENodeInit::Global(GlobalAddressSubstate::EpochManager(
-                underlying_node_id.into(),
-            )),
+            RENodeInit::Global(GlobalSubstate::EpochManager(underlying_node_id.into())),
             BTreeMap::new(),
         )?;
 

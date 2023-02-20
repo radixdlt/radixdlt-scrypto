@@ -1,6 +1,6 @@
 use crate::abi::*;
 use crate::api::types::*;
-use crate::data::types::Own;
+use crate::data::model::Own;
 use radix_engine_derive::*;
 use sbor::rust::collections::*;
 use sbor::rust::fmt::{Debug, Formatter};
@@ -11,15 +11,18 @@ pub const EPOCH_MANAGER_PACKAGE_CODE_ID: u8 = 2u8;
 pub const CLOCK_PACKAGE_CODE_ID: u8 = 3u8;
 pub const ACCOUNT_PACKAGE_CODE_ID: u8 = 4u8;
 pub const ACCESS_CONTROLLER_PACKAGE_CODE_ID: u8 = 5u8;
+pub const LOGGER_CODE_ID: u8 = 6u8;
+pub const TRANSACTION_RUNTIME_CODE_ID: u8 = 7u8;
+pub const AUTH_ZONE_CODE_ID: u8 = 8u8;
 
 /// A collection of blueprints, compiled and published as a single unit.
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct NativeCodeSubstate {
     pub native_package_code_id: u8,
 }
 
 /// A collection of blueprints, compiled and published as a single unit.
-#[derive(Clone, Categorize, Encode, Decode, PartialEq, Eq)]
+#[derive(Clone, Sbor, PartialEq, Eq)]
 pub struct WasmCodeSubstate {
     pub code: Vec<u8>,
 }
@@ -36,7 +39,7 @@ impl Debug for WasmCodeSubstate {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct PackageInfoSubstate {
     pub blueprint_abis: BTreeMap<String, BlueprintAbi>,
     pub dependent_resources: BTreeSet<ResourceAddress>,
@@ -62,12 +65,12 @@ impl PackageInfoSubstate {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct PackageRoyaltyConfigSubstate {
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct PackageRoyaltyAccumulatorSubstate {
     pub royalty: Own,
 }

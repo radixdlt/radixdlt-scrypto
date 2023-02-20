@@ -11,8 +11,8 @@ use crate::{
     transaction::AbortReason,
 };
 use radix_engine_interface::api::types::{
-    FnIdentifier, GlobalAddress, GlobalOffset, LockHandle, NodeModuleId, RoyaltyOffset,
-    SubstateOffset, VaultId, VaultOffset,
+    Address, FnIdentifier, GlobalOffset, LockHandle, NodeModuleId, RoyaltyOffset, SubstateOffset,
+    VaultId, VaultOffset,
 };
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::blueprints::resource::Resource;
@@ -20,7 +20,7 @@ use radix_engine_interface::constants::*;
 use radix_engine_interface::{api::types::RENodeId, *};
 use sbor::rust::collections::BTreeMap;
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CostingError {
     FeeReserveError(FeeReserveError),
     MaxCallDepthLimitReached,
@@ -134,7 +134,7 @@ impl KernelModule for CostingModule {
                 let maybe_component = match &callee.receiver {
                     Some(ResolvedReceiver {
                         derefed_from:
-                            Some((RENodeId::Global(GlobalAddress::Component(component_address)), ..)),
+                            Some((RENodeId::Global(Address::Component(component_address)), ..)),
                         receiver: RENodeId::Component(component_id),
                     }) => Some((*component_address, *component_id)),
                     _ => None,
@@ -155,6 +155,9 @@ impl KernelModule for CostingModule {
             || package_address == CLOCK_PACKAGE
             || package_address == ACCOUNT_PACKAGE
             || package_address == ACCESS_CONTROLLER_PACKAGE
+            || package_address == LOGGER_PACKAGE
+            || package_address == TRANSACTION_RUNTIME_PACKAGE
+            || package_address == AUTH_ZONE_PACKAGE
         {
             return Ok(());
         }
@@ -162,7 +165,7 @@ impl KernelModule for CostingModule {
         /*
          * Apply package royalty
          */
-        let package_global_node_id = RENodeId::Global(GlobalAddress::Package(package_address));
+        let package_global_node_id = RENodeId::Global(Address::Package(package_address));
         let (package_id, package_lock) = {
             let handle = api.kernel_lock_substate(
                 package_global_node_id,

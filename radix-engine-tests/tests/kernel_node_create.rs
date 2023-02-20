@@ -3,6 +3,7 @@ use radix_engine::kernel::actor::ResolvedActor;
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::data::manifest_args;
 
 #[test]
 fn should_not_be_able_to_node_create_with_invalid_blueprint() {
@@ -17,7 +18,7 @@ fn should_not_be_able_to_node_create_with_invalid_blueprint() {
             package_address,
             "NodeCreate",
             "create_node_with_invalid_blueprint",
-            args!(),
+            manifest_args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

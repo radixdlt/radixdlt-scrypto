@@ -10,11 +10,13 @@ use radix_engine_interface::blueprints::resource::{
 };
 use radix_engine_interface::rule;
 use transaction::builder::ManifestBuilder;
-use transaction::model::BasicInstruction;
+use transaction::data::model::*;
+use transaction::data::{manifest_args, manifest_encode};
+use transaction::model::Instruction;
 
 use crate::resim::*;
 
-#[derive(ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(ScryptoSbor)]
 struct EmptyStruct;
 
 /// Create a non-fungible badge with fixed supply
@@ -91,12 +93,12 @@ impl NewSimpleBadge {
 
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100.into())
-            .add_instruction(BasicInstruction::CallFunction {
+            .add_instruction(Instruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
-                args: scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
+                args: manifest_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
                     id_type: NonFungibleIdType::Integer,
                     metadata,
                     access_rules: resource_auth,
@@ -114,7 +116,7 @@ impl NewSimpleBadge {
             .call_method(
                 default_account,
                 "deposit_batch",
-                args!(ManifestExpression::EntireWorktop),
+                manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
         let receipt = handle_manifest(

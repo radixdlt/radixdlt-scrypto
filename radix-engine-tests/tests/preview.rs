@@ -4,8 +4,10 @@ use radix_engine_interface::rule;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
+use transaction::data::manifest_args;
+use transaction::data::ManifestExpression;
+use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::*;
-use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::{NotarizedTransactionValidator, TestIntentHashManager};
 use transaction::validation::{TransactionValidator, ValidationConfig};
 
@@ -76,7 +78,7 @@ fn test_assume_all_signature_proofs_flag_method_authorization() {
         .call_method(
             other_account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
 

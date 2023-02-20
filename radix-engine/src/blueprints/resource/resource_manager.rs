@@ -4,7 +4,7 @@ use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::global::GlobalAddressSubstate;
+use crate::system::global::GlobalSubstate;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
@@ -12,24 +12,25 @@ use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use native_sdk::resource::SysBucket;
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::node_modules::auth::AuthZoneAssertAccessRuleInvocation;
+use radix_engine_interface::api::node_modules::auth::AuthZoneAssertAccessRuleInput;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
-    GlobalAddress, NativeFn, NonFungibleStoreId, NonFungibleStoreOffset, RENodeId,
-    ResourceManagerOffset, SubstateOffset,
+    Address, NativeFn, NonFungibleStoreId, NonFungibleStoreOffset, RENodeId, ResourceManagerOffset,
+    SubstateOffset,
 };
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::api::ClientSubstateApi;
+use radix_engine_interface::blueprints::auth_zone::AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT;
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
 use radix_engine_interface::blueprints::resource::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::types::Own;
+use radix_engine_interface::data::model::Own;
 use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ResourceManagerSubstate {
     pub resource_address: ResourceAddress, // TODO: Figure out a way to remove?
     pub resource_type: ResourceType,
@@ -72,7 +73,7 @@ impl ResourceManagerSubstate {
 }
 
 /// Represents an error when accessing a bucket.
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ResourceManagerError {
     InvalidAmount(Decimal, u8),
     MaxMintAmountExceeded,
@@ -424,7 +425,7 @@ where
     )?;
     api.kernel_create_node(
         global_node_id,
-        RENodeInit::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
+        RENodeInit::Global(GlobalSubstate::Resource(underlying_node_id.into())),
         BTreeMap::new(),
     )?;
 
@@ -479,7 +480,7 @@ impl ResourceManagerBlueprint {
 
         // If address isn't user frame allocated or pre_allocated then
         // using this node_id will fail on create_node below
-        let global_node_id = RENodeId::Global(GlobalAddress::Resource(ResourceAddress::Normal(
+        let global_node_id = RENodeId::Global(Address::Resource(ResourceAddress::Normal(
             input.resource_address,
         )));
         let address = create_non_fungible_resource_manager(
@@ -556,7 +557,7 @@ impl ResourceManagerBlueprint {
 
         api.kernel_create_node(
             global_node_id,
-            RENodeInit::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
+            RENodeInit::Global(GlobalSubstate::Resource(underlying_node_id.into())),
             BTreeMap::new(),
         )?;
 
@@ -624,7 +625,7 @@ impl ResourceManagerBlueprint {
 
         api.kernel_create_node(
             global_node_id,
-            RENodeInit::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
+            RENodeInit::Global(GlobalSubstate::Resource(underlying_node_id.into())),
             BTreeMap::new(),
         )?;
 
@@ -711,7 +712,7 @@ impl ResourceManagerBlueprint {
 
         api.kernel_create_node(
             global_node_id,
-            RENodeInit::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
+            RENodeInit::Global(GlobalSubstate::Resource(underlying_node_id.into())),
             BTreeMap::new(),
         )?;
 
@@ -734,7 +735,7 @@ impl ResourceManagerBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let global_node_id = RENodeId::Global(GlobalAddress::Resource(ResourceAddress::Normal(
+        let global_node_id = RENodeId::Global(Address::Resource(ResourceAddress::Normal(
             input.resource_address,
         )));
         let resource_address: ResourceAddress = global_node_id.into();
@@ -774,7 +775,7 @@ impl ResourceManagerBlueprint {
 
         api.kernel_create_node(
             global_node_id,
-            RENodeInit::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
+            RENodeInit::Global(GlobalSubstate::Resource(underlying_node_id.into())),
             BTreeMap::new(),
         )?;
 
@@ -1280,10 +1281,11 @@ impl ResourceManagerBlueprint {
             }
             .clone();
 
-            api.call_native(AuthZoneAssertAccessRuleInvocation {
-                receiver: RENodeId::AuthZoneStack.into(),
-                access_rule,
-            })?;
+            api.call_method(
+                ScryptoReceiver::AuthZoneStack,
+                AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
+                scrypto_encode(&AuthZoneAssertAccessRuleInput { access_rule }).unwrap(),
+            )?;
         }
 
         let mut substate_mut = api.kernel_get_substate_ref_mut(handle)?;
@@ -1345,10 +1347,11 @@ impl ResourceManagerBlueprint {
             }
             .clone();
 
-            api.call_native(AuthZoneAssertAccessRuleInvocation {
-                receiver: RENodeId::AuthZoneStack.into(),
-                access_rule,
-            })?;
+            api.call_method(
+                ScryptoReceiver::AuthZoneStack,
+                AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
+                scrypto_encode(&AuthZoneAssertAccessRuleInput { access_rule }).unwrap(),
+            )?;
         }
 
         let mut substate_mut = api.kernel_get_substate_ref_mut(handle)?;
@@ -1617,7 +1620,7 @@ where
     )?;
     api.kernel_create_node(
         global_node_id,
-        RENodeInit::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
+        RENodeInit::Global(GlobalSubstate::Resource(underlying_node_id.into())),
         BTreeMap::new(),
     )?;
 

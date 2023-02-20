@@ -9,7 +9,7 @@ use strum::EnumCount;
 
 // Note: for performance reason, `u128` is used to represent decimal in this file.
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum FeeReserveError {
     InsufficientBalance,
     Overflow,
@@ -73,18 +73,7 @@ pub trait FinalizingFeeReserve {
 
 pub trait FeeReserve: PreExecutionFeeReserve + ExecutionFeeReserve + FinalizingFeeReserve {}
 
-#[derive(
-    Debug,
-    Clone,
-    Hash,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, ScryptoSbor)]
 pub enum RoyaltyReceiver {
     Package(PackageAddress, PackageId),
     Component(ComponentAddress, ComponentId),
@@ -99,9 +88,7 @@ pub enum RoyaltyReceiver {
     Hash,
     PartialOrd,
     Ord,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
+    ScryptoSbor,
     IntoStaticStr,
     EnumCount,
     Display,
@@ -123,7 +110,7 @@ pub enum CostingReason {
     RunNative,
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct SystemLoanFeeReserve {
     /// The price of cost unit
     cost_unit_price: u128,

@@ -55,9 +55,12 @@ mod tests {
             output,
             quote! {
                 impl<
-                        T: Bound + ::sbor::Encode<radix_engine_interface::data::ScryptoCustomValueKind, E>,
+                        T: Bound,
                         E: ::sbor::Encoder<radix_engine_interface::data::ScryptoCustomValueKind>
                     > ::sbor::Encode<radix_engine_interface::data::ScryptoCustomValueKind, E> for MyEnum<T>
+                where
+                    T: ::sbor::Encode<radix_engine_interface::data::ScryptoCustomValueKind, E>,
+                    T: ::sbor::Categorize<radix_engine_interface::data::ScryptoCustomValueKind>
                 {
                     #[inline]
                     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {

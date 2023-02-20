@@ -1,6 +1,6 @@
 use crate::errors::{InterpreterError, RuntimeError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, LockFlags};
-use crate::system::global::GlobalAddressSubstate;
+use crate::system::global::GlobalSubstate;
 use crate::system::kernel_modules::auth::*;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
@@ -8,7 +8,7 @@ use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::types::{ClockOffset, GlobalAddress, RENodeId, SubstateOffset};
+use radix_engine_interface::api::types::{Address, ClockOffset, RENodeId, SubstateOffset};
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::{ClientNativeInvokeApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::clock::ClockCreateInput;
@@ -21,7 +21,7 @@ use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::rule;
 use radix_engine_interface::time::*;
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq)]
 pub struct CurrentTimeRoundedToMinutesSubstate {
     pub current_time_rounded_to_minutes_ms: i64,
 }
@@ -126,12 +126,12 @@ impl ClockNativePackage {
             node_modules,
         )?;
 
-        let global_node_id = RENodeId::Global(GlobalAddress::Component(ComponentAddress::Clock(
+        let global_node_id = RENodeId::Global(Address::Component(ComponentAddress::Clock(
             input.component_address,
         )));
         api.kernel_create_node(
             global_node_id,
-            RENodeInit::Global(GlobalAddressSubstate::Clock(underlying_node_id.into())),
+            RENodeInit::Global(GlobalSubstate::Clock(underlying_node_id.into())),
             BTreeMap::new(),
         )?;
 

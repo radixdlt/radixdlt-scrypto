@@ -1,3 +1,4 @@
+use crate::rust::collections::*;
 use crate::rust::vec::Vec;
 use crate::*;
 
@@ -46,6 +47,12 @@ impl<T: for<'a> Decode<NoCustomValueKind, BasicDecoder<'a>>> BasicDecode for T {
 pub trait BasicEncode: for<'a> Encode<NoCustomValueKind, BasicEncoder<'a>> {}
 impl<T: for<'a> Encode<NoCustomValueKind, BasicEncoder<'a>> + ?Sized> BasicEncode for T {}
 
+pub trait BasicDescribe: for<'a> Describe<NoCustomTypeKind> {}
+impl<T: Describe<NoCustomTypeKind> + ?Sized> BasicDescribe for T {}
+
+pub trait BasicSbor: BasicCategorize + BasicDecode + BasicEncode + BasicDescribe {}
+impl<T: BasicCategorize + BasicDecode + BasicEncode + BasicDescribe> BasicSbor for T {}
+
 /// Encode a `T` into byte array.
 pub fn basic_encode<T: BasicEncode + ?Sized>(v: &T) -> Result<Vec<u8>, EncodeError> {
     let mut buf = Vec::with_capacity(512);
@@ -92,9 +99,8 @@ pub use schema::*;
 
 mod schema {
     use super::*;
-    use crate::rust::collections::BTreeMap;
 
-    #[derive(Debug, Clone, PartialEq, Eq)]
+    #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
     pub enum NoCustomTypeKind {}
 
     impl<L: SchemaTypeLink> CustomTypeKind<L> for NoCustomTypeKind {
@@ -103,7 +109,7 @@ mod schema {
         type CustomTypeExtension = NoCustomTypeExtension;
     }
 
-    #[derive(Debug, Clone, PartialEq, Eq)]
+    #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
     pub enum NoCustomTypeValidation {}
 
     impl CustomTypeValidation for NoCustomTypeValidation {}
@@ -118,7 +124,7 @@ mod schema {
 
         fn linearize_type_kind(
             _: Self::CustomTypeKind<GlobalTypeId>,
-            _: &BTreeMap<TypeHash, usize>,
+            _: &IndexSet<TypeHash>,
         ) -> Self::CustomTypeKind<LocalTypeIndex> {
             unreachable!("No custom type kinds exist")
         }
@@ -127,6 +133,29 @@ mod schema {
             _: u8,
         ) -> Option<TypeData<Self::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>> {
             None
+        }
+
+        fn validate_type_kind(
+            _: &TypeValidationContext,
+            _: &SchemaCustomTypeKind<Self>,
+        ) -> Result<(), SchemaValidationError> {
+            unreachable!("No custom type kinds exist")
+        }
+
+        fn validate_type_metadata_with_type_kind(
+            _: &TypeValidationContext,
+            _: &SchemaCustomTypeKind<Self>,
+            _: &TypeMetadata,
+        ) -> Result<(), SchemaValidationError> {
+            unreachable!("No custom type kinds exist")
+        }
+
+        fn validate_type_validation_with_type_kind(
+            _: &TypeValidationContext,
+            _: &SchemaCustomTypeKind<Self>,
+            _: &SchemaCustomTypeValidation<Self>,
+        ) -> Result<(), SchemaValidationError> {
+            unreachable!("No custom type kinds exist")
         }
     }
 

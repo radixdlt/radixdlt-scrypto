@@ -5,9 +5,11 @@
     ],
     "cSpell.words": [
         "bech",
+        "btreemap",
         "Decompilation",
         "decompile",
         "decompiled",
+        "decompiler",
         "eddsa",
         "flamegraph",
         "instantiatable",

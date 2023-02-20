@@ -72,12 +72,12 @@ use std::env;
 use std::fs;
 use std::path::PathBuf;
 use transaction::builder::ManifestBuilder;
+use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::manifest::decompile;
 use transaction::model::Instruction;
 use transaction::model::SystemTransaction;
 use transaction::model::TestTransaction;
 use transaction::model::TransactionManifest;
-use transaction::signing::EcdsaSecp256k1PrivateKey;
 use utils::ContextualDisplay;
 
 /// Build fast, reward everyone, and scale without friction

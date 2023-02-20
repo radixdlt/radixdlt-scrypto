@@ -7,17 +7,17 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-#[derive(Categorize, Encode, Decode, Describe)]
+#[derive(Sbor)]
 pub struct UnitStruct;
 
-#[derive(Categorize, Encode, Decode, Describe)]
+#[derive(Sbor)]
 pub struct BasicSample {
     pub a: (),
     pub b: UnitStruct,
 }
 
-#[derive(Categorize, Encode, Decode, Describe)]
-#[sbor(generic_categorize_bounds = "S,T")]
+#[derive(Sbor)]
+#[sbor(categorize_types = "S, T")]
 pub struct AdvancedSample<T, S> {
     pub a: (),
     pub b: u32,
@@ -32,23 +32,23 @@ pub struct AdvancedSample<T, S> {
     pub k: HashMap<[u8; 3], BTreeMap<i64, BTreeSet<i32>>>,
 }
 
-#[derive(Categorize, Encode, Decode, Describe)]
+#[derive(Sbor)]
 pub struct Recursive<T> {
     pub hello: Option<Box<Recursive<T>>>,
     pub what: T,
 }
 
-#[derive(Categorize, Encode, Decode, Describe)]
+#[derive(Sbor)]
 pub struct IndirectRecursive1(
     Vec<IndirectRecursive2<Recursive<u8>>>,
     Recursive<String>,
     Box<IndirectRecursiveEnum3>,
 );
 
-#[derive(Categorize, Encode, Decode, Describe)]
+#[derive(Sbor)]
 pub struct IndirectRecursive2<T>(Recursive<T>, IndirectRecursive1);
 
-#[derive(Categorize, Encode, Decode, Describe)]
+#[derive(Sbor)]
 pub enum IndirectRecursiveEnum3 {
     Variant1,
     Variant2(Box<IndirectRecursive1>),
@@ -73,9 +73,10 @@ fn create_unit_struct_schema_works_correctly() {
         "UnitStruct"
     );
     assert!(matches!(
-        &schema.type_metadata[0].type_metadata.child_names,
-        ChildNames::None
+        &schema.type_metadata[0].type_metadata.children,
+        Children::None
     ));
+    assert!(schema.validate().is_ok());
 }
 
 #[test]
@@ -92,9 +93,9 @@ fn create_basic_sample_schema_works_correctly() {
     let type_data = schema.resolve(LocalTypeIndex::SchemaLocalIndex(0)).unwrap();
     assert_eq!(type_data.metadata.type_name, "BasicSample");
     assert!(
-        matches!(&type_data.metadata.child_names, ChildNames::FieldNames(field_names) if matches!(field_names[..], [
-            Cow::Borrowed("a"),
-            Cow::Borrowed("b"),
+        matches!(&type_data.metadata.children, Children::Fields(field_names) if matches!(field_names[..], [
+            FieldMetadata { field_name: Cow::Borrowed("a") },
+            FieldMetadata { field_name: Cow::Borrowed("b") },
         ]))
     );
     assert!(
@@ -108,10 +109,11 @@ fn create_basic_sample_schema_works_correctly() {
 
     let type_data = schema.resolve(LocalTypeIndex::SchemaLocalIndex(1)).unwrap();
     assert_eq!(type_data.metadata.type_name, "UnitStruct");
-    assert!(matches!(type_data.metadata.child_names, ChildNames::None));
+    assert!(matches!(type_data.metadata.children, Children::None));
     assert!(
         matches!(type_data.kind.into_owned(), TypeKind::Tuple { field_types } if matches!(field_types[..], []))
     );
+    assert!(schema.validate().is_ok());
 }
 
 #[test]
@@ -129,18 +131,18 @@ fn create_advanced_sample_schema_works_correctly() {
     let type_data = schema.resolve(LocalTypeIndex::SchemaLocalIndex(0)).unwrap();
     assert_eq!(type_data.metadata.type_name, "AdvancedSample");
     assert!(
-        matches!(&type_data.metadata.child_names, ChildNames::FieldNames(field_names) if matches!(field_names[..], [
-            Cow::Borrowed("a"),
-            Cow::Borrowed("b"),
-            Cow::Borrowed("c"),
-            Cow::Borrowed("d"),
-            Cow::Borrowed("e"),
-            Cow::Borrowed("f"),
-            Cow::Borrowed("g"),
-            Cow::Borrowed("h"),
-            Cow::Borrowed("i"),
-            Cow::Borrowed("j"),
-            Cow::Borrowed("k"),
+        matches!(&type_data.metadata.children, Children::Fields(field_names) if matches!(field_names[..], [
+            FieldMetadata { field_name: Cow::Borrowed("a") },
+            FieldMetadata { field_name: Cow::Borrowed("b") },
+            FieldMetadata { field_name: Cow::Borrowed("c") },
+            FieldMetadata { field_name: Cow::Borrowed("d") },
+            FieldMetadata { field_name: Cow::Borrowed("e") },
+            FieldMetadata { field_name: Cow::Borrowed("f") },
+            FieldMetadata { field_name: Cow::Borrowed("g") },
+            FieldMetadata { field_name: Cow::Borrowed("h") },
+            FieldMetadata { field_name: Cow::Borrowed("i") },
+            FieldMetadata { field_name: Cow::Borrowed("j") },
+            FieldMetadata { field_name: Cow::Borrowed("k") },
         ]))
     );
     let TypeKind::Tuple { field_types } = type_data.kind.into_owned() else {
@@ -162,6 +164,7 @@ fn create_advanced_sample_schema_works_correctly() {
             LocalTypeIndex::SchemaLocalIndex(5), // HashMap<[u8; 3], BTreeMap<i64, BTreeSet<i32>>>
         ]
     ));
+    assert!(schema.validate().is_ok());
 }
 
 #[test]
@@ -199,6 +202,7 @@ fn creating_schema_from_multiple_types_works_correctly() {
         panic!("Type was not a Tuple");
     };
     assert_eq!(field_types[6], unit_struct_type_ref); // T = UnitStruct is the 7th field in AdvancedSample<UnitStruct, u128>
+    assert!(schema.validate().is_ok());
 }
 
 #[test]
@@ -212,4 +216,5 @@ fn create_recursive_schema_works_correctly() {
 
     let type_data = schema.resolve(LocalTypeIndex::SchemaLocalIndex(0)).unwrap();
     assert_eq!(type_data.metadata.type_name, "IndirectRecursive1");
+    assert!(schema.validate().is_ok());
 }

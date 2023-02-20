@@ -62,7 +62,7 @@ import! {
                             }
                         },
                         "output": {
-                            "type": "Hash"
+                            "type": "U32"
                         },
                         "export_name": "Simple_hash_main"
                     }
@@ -84,3 +84,5 @@ fn test_import_from_abi() {
     let _ = SimpleGlobalComponentRef::from(ComponentAddress::Normal([0; 26]));
     let _: SimpleGlobalComponentRef = ComponentAddress::Normal([0; 26]).into();
 }
+
+// FIXME: make sure all types are covered!

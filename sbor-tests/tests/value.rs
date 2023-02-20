@@ -8,7 +8,7 @@ use sbor::*;
 use serde::Serialize;
 use serde_json::{json, to_string, to_value, Value};
 
-#[derive(Categorize, Encode, Decode)]
+#[derive(Sbor)]
 pub struct Sample {
     pub a: (),
     pub b: u32,

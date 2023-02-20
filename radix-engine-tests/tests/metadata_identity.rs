@@ -4,7 +4,7 @@ use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::signing::EcdsaSecp256k1PrivateKey;
+use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 
 fn create_identity(
     test_runner: &mut TestRunner,
@@ -41,7 +41,7 @@ fn can_set_identity_metadata_with_owner(is_virtual: bool) {
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .set_metadata(
-            GlobalAddress::Component(component_address),
+            Address::Component(component_address),
             "name".to_string(),
             "best package ever!".to_string(),
         )
@@ -50,7 +50,7 @@ fn can_set_identity_metadata_with_owner(is_virtual: bool) {
 
     // Assert
     receipt.expect_commit_success();
-    let metadata = test_runner.get_metadata(GlobalAddress::Component(component_address));
+    let metadata = test_runner.get_metadata(Address::Component(component_address));
     assert_eq!(metadata.get("name").unwrap(), "best package ever!");
 }
 
@@ -74,7 +74,7 @@ fn cannot_set_identity_metadata_without_owner(is_virtual: bool) {
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .set_metadata(
-            GlobalAddress::Component(component_address),
+            Address::Component(component_address),
             "name".to_string(),
             "best package ever!".to_string(),
         )

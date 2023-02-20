@@ -9,6 +9,7 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use scrypto_abi::{Fields, Type, Variant};
+use transaction_data::*;
 
 #[derive(
     Debug,
@@ -18,9 +19,10 @@ use scrypto_abi::{Fields, Type, Variant};
     Hash,
     Ord,
     PartialOrd,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
+    ScryptoSbor,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
     LegacyDescribe,
 )]
 pub enum SoftDecimal {
@@ -55,9 +57,10 @@ impl From<&str> for SoftDecimal {
     Hash,
     Ord,
     PartialOrd,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
+    ScryptoSbor,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
     LegacyDescribe,
 )]
 pub enum SoftCount {
@@ -92,9 +95,10 @@ impl From<&str> for SoftCount {
     Hash,
     Ord,
     PartialOrd,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
+    ScryptoSbor,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
     LegacyDescribe,
 )]
 pub enum SoftResource {
@@ -129,9 +133,10 @@ impl From<&str> for SoftResource {
     Hash,
     Ord,
     PartialOrd,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
+    ScryptoSbor,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
     LegacyDescribe,
 )]
 pub enum SoftResourceOrNonFungible {
@@ -173,9 +178,10 @@ impl From<&str> for SoftResourceOrNonFungible {
     Hash,
     Ord,
     PartialOrd,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
+    ScryptoSbor,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
     LegacyDescribe,
 )]
 pub enum SoftResourceOrNonFungibleList {
@@ -214,9 +220,10 @@ where
     Hash,
     Ord,
     PartialOrd,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
+    ScryptoSbor,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
     LegacyDescribe,
 )]
 pub enum ProofRule {
@@ -241,9 +248,10 @@ impl From<ResourceAddress> for ProofRule {
     Hash,
     Ord,
     PartialOrd,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
+    ScryptoSbor,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
 )]
 pub enum AccessRuleNode {
     ProofRule(ProofRule),
@@ -351,9 +359,10 @@ where
     Hash,
     Ord,
     PartialOrd,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
+    ScryptoSbor,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
     LegacyDescribe,
 )]
 pub enum AccessRule {

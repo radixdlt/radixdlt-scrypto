@@ -2,7 +2,7 @@ use crate::errors::{IdAllocationError, KernelError, RuntimeError};
 use radix_engine_interface::address::EntityType;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
-    AccessControllerId, BucketId, ComponentId, GlobalAddress, KeyValueStoreId, NonFungibleStoreId,
+    AccessControllerId, Address, BucketId, ComponentId, KeyValueStoreId, NonFungibleStoreId,
     PackageId, ProofId, RENodeId, RENodeType, ResourceManagerId, ValidatorId, VaultId,
 };
 use radix_engine_interface::crypto::{hash, Hash};
@@ -93,31 +93,31 @@ impl IdAllocator {
             RENodeType::Account => self.new_component_id().map(|id| RENodeId::Account(id)),
             RENodeType::GlobalPackage => self
                 .new_package_address()
-                .map(|address| RENodeId::Global(GlobalAddress::Package(address))),
+                .map(|address| RENodeId::Global(Address::Package(address))),
             RENodeType::GlobalEpochManager => self
                 .new_epoch_manager_address()
-                .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
+                .map(|address| RENodeId::Global(Address::Component(address))),
             RENodeType::GlobalValidator => self
                 .new_validator_address()
-                .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
+                .map(|address| RENodeId::Global(Address::Component(address))),
             RENodeType::GlobalClock => self
                 .new_clock_address()
-                .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
+                .map(|address| RENodeId::Global(Address::Component(address))),
             RENodeType::GlobalResourceManager => self
                 .new_resource_address()
-                .map(|address| RENodeId::Global(GlobalAddress::Resource(address))),
+                .map(|address| RENodeId::Global(Address::Resource(address))),
             RENodeType::GlobalAccount => self
                 .new_account_address()
-                .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
+                .map(|address| RENodeId::Global(Address::Component(address))),
             RENodeType::GlobalIdentity => self
                 .new_identity_address()
-                .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
+                .map(|address| RENodeId::Global(Address::Component(address))),
             RENodeType::GlobalComponent => self
                 .new_component_address()
-                .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
+                .map(|address| RENodeId::Global(Address::Component(address))),
             RENodeType::GlobalAccessController => self
                 .new_access_controller_address()
-                .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
+                .map(|address| RENodeId::Global(Address::Component(address))),
         }
         .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
 
@@ -232,12 +232,12 @@ impl IdAllocator {
 
     /// Creates a new bucket ID.
     pub fn new_bucket_id(&mut self) -> Result<BucketId, IdAllocationError> {
-        Ok(self.next()?)
+        self.next_id()
     }
 
     /// Creates a new proof ID.
     pub fn new_proof_id(&mut self) -> Result<ProofId, IdAllocationError> {
-        Ok(self.next()?)
+        self.next_id()
     }
 
     /// Creates a new vault ID.

@@ -4,6 +4,7 @@ use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::data::{manifest_args, ManifestExpression};
 
 #[test]
 fn test_trace_resource_transfers() {
@@ -20,7 +21,7 @@ fn test_trace_resource_transfers() {
             package_address,
             "ExecutionTraceTest",
             "transfer_resource_between_two_components",
-            args!(transfer_amount),
+            manifest_args!(transfer_amount),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -92,12 +93,12 @@ fn test_trace_fee_payments() {
     // Prepare the component that will pay the fee
     let manifest_prepare = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_method(FAUCET_COMPONENT, "free", args!())
+        .call_method(FAUCET_COMPONENT, "free", manifest_args!())
         .call_function(
             package_address,
             "ExecutionTraceTest",
             "create_and_fund_a_component",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .clear_auth_zone()
         .build();
@@ -121,7 +122,7 @@ fn test_trace_fee_payments() {
         .call_method(
             funded_component.clone(),
             "test_lock_contingent_fee",
-            args!(),
+            manifest_args!(),
         )
         .clear_auth_zone()
         .build();
@@ -149,7 +150,7 @@ fn test_instruction_traces() {
 
     let manfiest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_method(FAUCET_COMPONENT, "free", args!())
+        .call_method(FAUCET_COMPONENT, "free", manifest_args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder
                 .create_proof_from_bucket(&bucket_id, |builder, proof_id| {
@@ -161,7 +162,7 @@ fn test_instruction_traces() {
             package_address,
             "ExecutionTraceTest",
             "create_and_fund_a_component",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
 
@@ -218,7 +219,11 @@ fn test_instruction_traces() {
 
         let worktop_put_trace = traces.get(1).unwrap();
         assert_eq!(
-            KernelCallOrigin::NativeFn(NativeFn::Worktop(WorktopFn::Put)),
+            KernelCallOrigin::ScryptoMethod(ScryptoFnIdentifier {
+                package_address: RESOURCE_MANAGER_PACKAGE,
+                blueprint_name: WORKTOP_BLUEPRINT.to_string(),
+                ident: WORKTOP_PUT_IDENT.to_string(),
+            }),
             worktop_put_trace.origin
         );
         assert!(worktop_put_trace.output.is_empty());
@@ -241,7 +246,11 @@ fn test_instruction_traces() {
 
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            KernelCallOrigin::NativeFn(NativeFn::Worktop(WorktopFn::TakeAll)),
+            KernelCallOrigin::ScryptoMethod(ScryptoFnIdentifier {
+                package_address: RESOURCE_MANAGER_PACKAGE,
+                blueprint_name: WORKTOP_BLUEPRINT.to_string(),
+                ident: WORKTOP_TAKE_ALL_IDENT.to_string(),
+            }),
             trace.origin
         );
 
@@ -260,7 +269,11 @@ fn test_instruction_traces() {
         assert_eq!(1, traces.len());
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            KernelCallOrigin::NativeFn(NativeFn::Bucket(BucketFn::CreateProof)),
+            KernelCallOrigin::ScryptoMethod(ScryptoFnIdentifier {
+                package_address: RESOURCE_MANAGER_PACKAGE,
+                blueprint_name: BUCKET_BLUEPRINT.to_string(),
+                ident: BUCKET_CREATE_PROOF_IDENT.to_string(),
+            }),
             trace.origin
         );
 
@@ -301,7 +314,11 @@ fn test_instruction_traces() {
         assert_eq!(1, traces.len());
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            KernelCallOrigin::NativeFn(NativeFn::Worktop(WorktopFn::Put)),
+            KernelCallOrigin::ScryptoMethod(ScryptoFnIdentifier {
+                package_address: RESOURCE_MANAGER_PACKAGE,
+                blueprint_name: WORKTOP_BLUEPRINT.to_string(),
+                ident: WORKTOP_PUT_IDENT.to_string(),
+            }),
             trace.origin
         );
         assert!(trace.output.is_empty());
@@ -321,7 +338,11 @@ fn test_instruction_traces() {
 
         let take_trace = traces.get(0).unwrap();
         assert_eq!(
-            KernelCallOrigin::NativeFn(NativeFn::Worktop(WorktopFn::Drain)),
+            KernelCallOrigin::ScryptoMethod(ScryptoFnIdentifier {
+                package_address: RESOURCE_MANAGER_PACKAGE,
+                blueprint_name: WORKTOP_BLUEPRINT.to_string(),
+                ident: WORKTOP_DRAIN_IDENT.to_string(),
+            }),
             take_trace.origin
         );
 

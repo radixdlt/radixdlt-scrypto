@@ -161,11 +161,11 @@ fn transfer_test(c: &mut Criterion) {
 
             let manifest = ManifestBuilder::new()
                 .lock_fee(FAUCET_COMPONENT, 100.into())
-                .call_method(FAUCET_COMPONENT, "free", args!())
+                .call_method(FAUCET_COMPONENT, "free", manifest_args!())
                 .call_method(
                     account,
                     "deposit_batch",
-                    args!(ManifestExpression::EntireWorktop),
+                    manifest_args!(ManifestExpression::EntireWorktop),
                 )
                 .build();
             execute_and_commit_transaction(
@@ -188,11 +188,11 @@ fn transfer_test(c: &mut Criterion) {
     // Fill first account
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 100.into())
-        .call_method(FAUCET_COMPONENT, "free", args!())
+        .call_method(FAUCET_COMPONENT, "free", manifest_args!())
         .call_method(
             account1,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
 
@@ -215,7 +215,7 @@ fn transfer_test(c: &mut Criterion) {
         .call_method(
             account2,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
 

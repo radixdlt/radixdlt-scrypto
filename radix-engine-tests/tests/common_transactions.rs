@@ -3,12 +3,13 @@ use radix_engine::types::{
     NonFungibleGlobalId, NonFungibleLocalId, ResourceAddress, FAUCET_COMPONENT, RADIX_TOKEN,
 };
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::dec;
 use radix_engine_interface::rule;
 use scrypto::NonFungibleData;
 use scrypto_unit::TestRunner;
 use transaction::builder::ManifestBuilder;
+use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::manifest::compile;
-use transaction::signing::EcdsaSecp256k1PrivateKey;
 use utils::ContextualDisplay;
 
 macro_rules! replace_variables {
@@ -90,7 +91,7 @@ fn creating_a_fungible_resource_with_no_initial_supply_succeeds() {
 #[test]
 fn creating_a_fungible_resource_with_initial_supply_succeeds() {
     test_manifest(|account_component_address, bech32_encoder| {
-        let initial_supply = Decimal::from("10000000");
+        let initial_supply = dec!("10000000");
 
         let manifest = replace_variables!(
             include_str!(
@@ -184,7 +185,7 @@ fn minting_of_fungible_resource_succeeds() {
          minter_badge_resource_address,
          mintable_resource_address,
          bech32_encoder| {
-            let mint_amount = Decimal::from("800");
+            let mint_amount = dec!("800");
 
             let manifest = replace_variables!(
                 include_str!("../../transaction/examples/resources/mint/fungible/mint.rtm"),
@@ -272,7 +273,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
 
     // Creating the minter badge and the requested resource
     let minter_badge_resource_address =
-        test_runner.create_fungible_resource("1".into(), 0, component_address);
+        test_runner.create_fungible_resource(dec!("1"), 0, component_address);
 
     let access_rules = BTreeMap::from([(
         ResourceMethodAuthKey::Mint,

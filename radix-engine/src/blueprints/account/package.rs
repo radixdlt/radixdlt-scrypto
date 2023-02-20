@@ -2,7 +2,7 @@ use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::global::GlobalAddressSubstate;
+use crate::system::global::GlobalSubstate;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
@@ -10,10 +10,10 @@ use crate::types::*;
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{RENodeId, SubstateOffset};
+use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::api::ClientNodeApi;
 use radix_engine_interface::api::ClientSubstateApi;
-use radix_engine_interface::api::{ClientApi, ClientComponentApi};
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::blueprints::resource::AccessRuleKey;
@@ -23,14 +23,14 @@ use crate::system::node_modules::metadata::MetadataSubstate;
 use native_sdk::resource::{SysBucket, Vault};
 use radix_engine_interface::data::ScryptoValue;
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct AccountSubstate {
     /// An owned [`KeyValueStore`] which maps the [`ResourceAddress`] to an [`Own`] of the vault
     /// containing that resource.
     pub vaults: Own,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AccountError {
     VaultDoesNotExist { resource_address: ResourceAddress },
 }
@@ -218,7 +218,7 @@ impl AccountNativePackage {
 
         // Creating the account's global address
         let global_node_id = {
-            let node = RENodeInit::Global(GlobalAddressSubstate::Account(node_id.into()));
+            let node = RENodeInit::Global(GlobalSubstate::Account(node_id.into()));
             let node_id = api.kernel_allocate_node_id(RENodeType::GlobalAccount)?;
             api.kernel_create_node(node_id, node, BTreeMap::new())?;
             node_id
@@ -393,12 +393,7 @@ impl AccountNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>
-            + ClientComponentApi<RuntimeError>
-            + ClientNodeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: AccountDepositInput = scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -471,12 +466,7 @@ impl AccountNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>
-            + ClientComponentApi<RuntimeError>
-            + ClientNodeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: AccountDepositBatchInput = scrypto_decode(&scrypto_encode(&input).unwrap())

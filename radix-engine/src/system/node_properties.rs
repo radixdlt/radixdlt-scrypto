@@ -52,14 +52,14 @@ impl VisibilityProperties {
                     FnIdentifier::Scrypto(ScryptoFnIdentifier {
                         package_address: RESOURCE_MANAGER_PACKAGE,
                         ..
-                    })
-                    | FnIdentifier::Native(NativeFn::Bucket(..))
-                    | FnIdentifier::Native(NativeFn::Worktop(..)) => true,
+                    }) => true,
                     _ => false,
                 },
                 RENodeId::Proof(..) => match &actor.identifier {
-                    FnIdentifier::Native(NativeFn::AuthZoneStack(..)) => true,
-                    FnIdentifier::Native(NativeFn::Proof(..)) => true,
+                    FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                        package_address: RESOURCE_MANAGER_PACKAGE | AUTH_ZONE_PACKAGE,
+                        ..
+                    }) => true,
                     FnIdentifier::Native(NativeFn::TransactionProcessor(
                         TransactionProcessorFn::Run,
                     )) => true,
@@ -102,7 +102,10 @@ impl VisibilityProperties {
                 | RENodeInit::Vault(..)
                 | RENodeInit::Bucket(..)
                 | RENodeInit::NonFungibleStore(..)
-                | RENodeInit::Proof(..) => package_address.eq(&RESOURCE_MANAGER_PACKAGE),
+                | RENodeInit::Proof(..) => {
+                    package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                        || package_address.eq(&AUTH_ZONE_PACKAGE)
+                } // TODO: Remove AuthZonePackage
                 RENodeInit::Identity() => {
                     package_address.eq(&IDENTITY_PACKAGE) && blueprint_name.eq(IDENTITY_BLUEPRINT)
                 }
@@ -156,6 +159,7 @@ impl VisibilityProperties {
                 _ => false,
             },
             (ExecutionMode::DropNode, offset) => match offset {
+                SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo) => true,
                 SubstateOffset::Bucket(BucketOffset::Bucket) => true,
                 SubstateOffset::Proof(ProofOffset::Proof) => true,
                 SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack) => true,
@@ -204,7 +208,10 @@ impl VisibilityProperties {
                             || package_address.eq(&EPOCH_MANAGER_PACKAGE)
                             || package_address.eq(&CLOCK_PACKAGE)
                             || package_address.eq(&ACCOUNT_PACKAGE)
-                            || package_address.eq(&ACCESS_CONTROLLER_PACKAGE) =>
+                            || package_address.eq(&LOGGER_PACKAGE)
+                            || package_address.eq(&ACCESS_CONTROLLER_PACKAGE)
+                            || package_address.eq(&TRANSACTION_RUNTIME_PACKAGE)
+                            || package_address.eq(&AUTH_ZONE_PACKAGE) =>
                         {
                             true
                         }
@@ -283,7 +290,10 @@ impl VisibilityProperties {
                             || package_address.eq(&IDENTITY_PACKAGE)
                             || package_address.eq(&ACCESS_CONTROLLER_PACKAGE)
                             || package_address.eq(&CLOCK_PACKAGE)
-                            || package_address.eq(&EPOCH_MANAGER_PACKAGE) =>
+                            || package_address.eq(&LOGGER_PACKAGE)
+                            || package_address.eq(&EPOCH_MANAGER_PACKAGE)
+                            || package_address.eq(&TRANSACTION_RUNTIME_PACKAGE)
+                            || package_address.eq(&AUTH_ZONE_PACKAGE) =>
                         {
                             true
                         }

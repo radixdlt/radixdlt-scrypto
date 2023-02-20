@@ -235,7 +235,6 @@ mod simple {
             Decimal,
             PackageAddress,
             KeyValueStore<String, String>,
-            Hash,
             Bucket,
             Proof,
             Vault,

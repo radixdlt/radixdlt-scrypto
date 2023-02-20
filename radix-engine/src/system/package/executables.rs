@@ -5,7 +5,7 @@ use crate::kernel::interpreters::deref_and_update;
 use crate::kernel::kernel_api::{
     ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, LockFlags,
 };
-use crate::system::global::GlobalAddressSubstate;
+use crate::system::global::GlobalSubstate;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
@@ -23,7 +23,7 @@ use radix_engine_interface::blueprints::resource::Bucket;
 
 pub struct Package;
 
-#[derive(Debug, Clone, PartialEq, Eq, Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum PackageError {
     InvalidRequestData(DecodeError),
     InvalidAbi(DecodeError),
@@ -105,14 +105,14 @@ impl Executor for PackagePublishNativeInvocation {
 
         // Globalize
         let global_node_id = if let Some(address) = self.package_address {
-            RENodeId::Global(GlobalAddress::Package(PackageAddress::Normal(address)))
+            RENodeId::Global(Address::Package(PackageAddress::Normal(address)))
         } else {
             api.kernel_allocate_node_id(RENodeType::GlobalPackage)?
         };
 
         api.kernel_create_node(
             global_node_id,
-            RENodeInit::Global(GlobalAddressSubstate::Package(package_id)),
+            RENodeInit::Global(GlobalSubstate::Package(package_id)),
             BTreeMap::new(),
         )?;
 
@@ -129,7 +129,7 @@ impl ExecutableInvocation for PackagePublishInvocation {
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
-        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
+        call_frame_update.add_ref(RENodeId::Global(Address::Resource(RADIX_TOKEN)));
         let actor = ResolvedActor::function(NativeFn::Package(PackageFn::Publish));
         Ok((actor, call_frame_update, self))
     }
@@ -210,14 +210,14 @@ impl Executor for PackagePublishInvocation {
 
         // Globalize
         let global_node_id = if let Some(address) = self.package_address {
-            RENodeId::Global(GlobalAddress::Package(PackageAddress::Normal(address)))
+            RENodeId::Global(Address::Package(PackageAddress::Normal(address)))
         } else {
             api.kernel_allocate_node_id(RENodeType::GlobalPackage)?
         };
 
         api.kernel_create_node(
             global_node_id,
-            RENodeInit::Global(GlobalAddressSubstate::Package(package_id)),
+            RENodeInit::Global(GlobalSubstate::Package(package_id)),
             BTreeMap::new(),
         )?;
 
@@ -237,7 +237,7 @@ impl ExecutableInvocation for PackageSetRoyaltyConfigInvocation {
         Self: Sized,
     {
         let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Package(self.receiver));
+        let receiver = RENodeId::Global(Address::Package(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, api)?;
 
         let actor = ResolvedActor::method(
@@ -286,7 +286,7 @@ impl ExecutableInvocation for PackageClaimRoyaltyInvocation {
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Package(self.receiver));
+        let receiver = RENodeId::Global(Address::Package(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, api)?;
 
         let actor = ResolvedActor::method(

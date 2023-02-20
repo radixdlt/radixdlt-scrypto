@@ -29,7 +29,7 @@ use sbor::rust::collections::*;
 use super::actor::ResolvedActor;
 use super::event::TrackedEvent;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]
 pub enum LockState {
     Read(usize),
     Write,
@@ -68,10 +68,10 @@ pub struct Track<'s> {
     application_logs: Vec<(Level, String)>,
     substate_store: &'s dyn ReadableSubstateStore,
     loaded_substates: HashMap<SubstateId, LoadedSubstate>,
-    new_global_addresses: Vec<GlobalAddress>,
+    new_global_addresses: Vec<Address>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TrackError {
     NotFound(SubstateId),
     SubstateLocked(SubstateId, LockState),
@@ -565,7 +565,7 @@ fn determine_result_type(
 /// This is just used when finalizing track into a commit
 struct FinalizingTrack<'s> {
     substate_store: &'s dyn ReadableSubstateStore,
-    new_global_addresses: Vec<GlobalAddress>,
+    new_global_addresses: Vec<Address>,
     loaded_substates: BTreeMap<SubstateId, LoadedSubstate>,
 }
 

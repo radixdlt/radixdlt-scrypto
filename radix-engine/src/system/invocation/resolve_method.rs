@@ -10,10 +10,10 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
 ) -> Result<ScryptoInvocation, RuntimeError> {
     let node_id = match receiver {
         ScryptoReceiver::Global(component_address) => {
-            RENodeId::Global(GlobalAddress::Component(component_address))
+            RENodeId::Global(Address::Component(component_address))
         }
         ScryptoReceiver::Resource(resource_address) => {
-            RENodeId::Global(GlobalAddress::Resource(resource_address))
+            RENodeId::Global(Address::Resource(resource_address))
         }
         ScryptoReceiver::Component(component_id) => {
             // TODO: Fix this as this is wrong id for native components
@@ -21,6 +21,12 @@ pub fn resolve_method<Y: KernelNodeApi + KernelSubstateApi>(
             RENodeId::Component(component_id)
         }
         ScryptoReceiver::Vault(vault_id) => RENodeId::Vault(vault_id),
+        ScryptoReceiver::Bucket(bucket_id) => RENodeId::Bucket(bucket_id),
+        ScryptoReceiver::Proof(proof_id) => RENodeId::Proof(proof_id),
+        ScryptoReceiver::Worktop => RENodeId::Worktop,
+        ScryptoReceiver::Logger => RENodeId::Logger,
+        ScryptoReceiver::TransactionRuntime => RENodeId::TransactionRuntime,
+        ScryptoReceiver::AuthZoneStack => RENodeId::AuthZoneStack,
     };
 
     let component_info = {

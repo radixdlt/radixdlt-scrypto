@@ -291,7 +291,13 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <T: ::sbor::Encode<X, E0>, E: Clashing + ::sbor::Encode<X, E0>, E0: ::sbor::Encoder<X>, X: ::sbor::CustomValueKind > ::sbor::Encode<X, E0> for Test<T, E > {
+                impl <T, E: Clashing, E0: ::sbor::Encoder<X>, X: ::sbor::CustomValueKind > ::sbor::Encode<X, E0> for Test<T, E >
+                where
+                    T: ::sbor::Encode<X, E0>,
+                    E: ::sbor::Encode<X, E0>,
+                    T: ::sbor::Categorize<X>,
+                    E: ::sbor::Categorize<X>
+                {
                     #[inline]
                     fn encode_value_kind(&self, encoder: &mut E0) -> Result<(), ::sbor::EncodeError> {
                         encoder.write_value_kind(::sbor::ValueKind::Tuple)

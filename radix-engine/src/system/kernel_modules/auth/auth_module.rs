@@ -13,7 +13,7 @@ use crate::system::node_modules::auth::AuthZoneStackSubstate;
 use crate::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::types::{
-    AuthZoneStackOffset, ComponentOffset, GlobalAddress, PackageOffset, RENodeId, SubstateOffset,
+    Address, AuthZoneStackOffset, ComponentOffset, PackageOffset, RENodeId, SubstateOffset,
     VaultOffset,
 };
 use radix_engine_interface::blueprints::clock::{CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT};
@@ -30,7 +30,7 @@ use super::HardAuthRule;
 use super::HardProofRule;
 use super::HardResourceOrNonFungible;
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
     VisibilityError(RENodeId),
     Unauthorized {
@@ -52,7 +52,7 @@ impl AuthModule {
             ResolvedActor {
                 identifier: FnIdentifier::Scrypto(..),
                 receiver: Some(ResolvedReceiver {
-                    derefed_from: Some((RENodeId::Global(GlobalAddress::Component(..)), _)),
+                    derefed_from: Some((RENodeId::Global(Address::Component(..)), _)),
                     ..
                 })
             }
@@ -90,7 +90,10 @@ impl KernelModule for AuthModule {
     ) -> Result<(), RuntimeError> {
         if matches!(
             actor.identifier,
-            FnIdentifier::Native(NativeFn::AuthZoneStack(..))
+            FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                package_address: AUTH_ZONE_PACKAGE,
+                ..
+            })
         ) {
             return Ok(());
         }
@@ -136,6 +139,60 @@ impl KernelModule for AuthModule {
             },
 
             ResolvedActor {
+                receiver:
+                    Some(ResolvedReceiver {
+                        receiver: RENodeId::Proof(..),
+                        ..
+                    }),
+                ..
+            } => vec![],
+
+            ResolvedActor {
+                receiver:
+                    Some(ResolvedReceiver {
+                        receiver: RENodeId::Bucket(..),
+                        ..
+                    }),
+                ..
+            } => vec![],
+
+            ResolvedActor {
+                receiver:
+                    Some(ResolvedReceiver {
+                        receiver: RENodeId::Worktop,
+                        ..
+                    }),
+                ..
+            } => vec![],
+
+            ResolvedActor {
+                receiver:
+                    Some(ResolvedReceiver {
+                        receiver: RENodeId::Logger,
+                        ..
+                    }),
+                ..
+            } => vec![],
+
+            ResolvedActor {
+                receiver:
+                    Some(ResolvedReceiver {
+                        receiver: RENodeId::TransactionRuntime,
+                        ..
+                    }),
+                ..
+            } => vec![],
+
+            ResolvedActor {
+                receiver:
+                    Some(ResolvedReceiver {
+                        receiver: RENodeId::AuthZoneStack,
+                        ..
+                    }),
+                ..
+            } => vec![],
+
+            ResolvedActor {
                 identifier,
                 receiver:
                     Some(ResolvedReceiver {
@@ -162,7 +219,7 @@ impl KernelModule for AuthModule {
                     resource_address
                 };
                 let handle = api.kernel_lock_substate(
-                    RENodeId::Global(GlobalAddress::Resource(resource_address)),
+                    RENodeId::Global(Address::Resource(resource_address)),
                     NodeModuleId::AccessRules1,
                     SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                     LockFlags::read_only(),
@@ -211,7 +268,7 @@ impl KernelModule for AuthModule {
                     (method, ..)
                         if matches!(method, NativeFn::Metadata(..))
                             || matches!(method, NativeFn::Package(..))
-                            || matches!(method, NativeFn::Component(..)) =>
+                            || matches!(method, NativeFn::ComponentRoyalty(..)) =>
                     {
                         let handle = api.kernel_lock_substate(
                             resolved_receiver.receiver,
@@ -240,8 +297,7 @@ impl KernelModule for AuthModule {
                         ..
                     }),
             } => {
-                let node_id =
-                    RENodeId::Global(GlobalAddress::Package(method_identifier.package_address));
+                let node_id = RENodeId::Global(Address::Package(method_identifier.package_address));
                 let offset = SubstateOffset::Package(PackageOffset::Info);
                 let handle = api.kernel_lock_substate(
                     node_id,
@@ -342,8 +398,11 @@ impl KernelModule for AuthModule {
 
         if !matches!(
             actor.identifier,
-            FnIdentifier::Native(NativeFn::AuthZoneStack(..))
-                | FnIdentifier::Native(NativeFn::AccessRulesChain(..))
+            FnIdentifier::Native(NativeFn::AccessRulesChain(..))
+                | FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                    package_address: AUTH_ZONE_PACKAGE,
+                    ..
+                })
         ) {
             let handle = api.kernel_lock_substate(
                 RENodeId::AuthZoneStack,
@@ -378,8 +437,11 @@ impl KernelModule for AuthModule {
     ) -> Result<(), RuntimeError> {
         if matches!(
             api.kernel_get_current_actor().identifier,
-            FnIdentifier::Native(NativeFn::AuthZoneStack(..))
-                | FnIdentifier::Native(NativeFn::AccessRulesChain(..)),
+            FnIdentifier::Native(NativeFn::AccessRulesChain(..))
+                | FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                    package_address: AUTH_ZONE_PACKAGE,
+                    ..
+                }),
         ) {
             return Ok(());
         }

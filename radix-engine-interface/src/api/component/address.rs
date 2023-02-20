@@ -1,14 +1,14 @@
+use crate::abi::*;
+use crate::address::{AddressDisplayContext, AddressError, EntityType, NO_NETWORK};
+use crate::crypto::{hash, PublicKey};
+use crate::data::ScryptoCustomValueKind;
+use crate::well_known_scrypto_custom_type;
 use sbor::rust::fmt;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use transaction_data::*;
 use utils::{copy_u8_array, ContextualDisplay};
-
-use crate::abi::*;
-use crate::address::*;
-use crate::crypto::{hash, PublicKey};
-use crate::data::ScryptoCustomValueKind;
-use crate::scrypto_type;
 
 /// An instance of a blueprint, which lives in the ledger state.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -25,10 +25,6 @@ pub enum ComponentAddress {
     EddsaEd25519VirtualIdentity([u8; 26]),
     AccessController([u8; 26]),
 }
-
-//========
-// binary
-//========
 
 impl TryFrom<&[u8]> for ComponentAddress {
     type Error = AddressError;
@@ -69,7 +65,7 @@ impl TryFrom<&[u8]> for ComponentAddress {
 }
 
 impl ComponentAddress {
-    pub fn raw(&self) -> [u8; 26] {
+    pub fn to_array_without_entity_id(&self) -> [u8; 26] {
         match self {
             Self::Normal(v)
             | Self::Account(v)
@@ -145,12 +141,19 @@ impl ComponentAddress {
     }
 }
 
-scrypto_type!(
+//========
+// binary
+//========
+
+well_known_scrypto_custom_type!(
     ComponentAddress,
-    ScryptoCustomValueKind::ComponentAddress,
+    ScryptoCustomValueKind::Address,
     Type::ComponentAddress,
-    27
+    27,
+    COMPONENT_ADDRESS_ID
 );
+
+manifest_type!(ComponentAddress, ManifestCustomValueKind::Address, 27);
 
 //======
 // text
