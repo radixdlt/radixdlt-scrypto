@@ -1,5 +1,7 @@
+use crate::decoder::PayloadTraverser;
 use crate::rust::collections::*;
 use crate::rust::vec::Vec;
+use crate::traversal::{CustomTraverser, VecTraverser};
 use crate::*;
 
 #[cfg_attr(
@@ -21,6 +23,8 @@ pub enum NoCustomValue {}
 pub const DEFAULT_BASIC_MAX_DEPTH: u8 = 64;
 pub type BasicEncoder<'a> = VecEncoder<'a, NoCustomValueKind, DEFAULT_BASIC_MAX_DEPTH>;
 pub type BasicDecoder<'a> = VecDecoder<'a, NoCustomValueKind, DEFAULT_BASIC_MAX_DEPTH>;
+pub type BasicTraverser<'a> =
+    VecTraverser<'a, NoCustomValueKind, NoCustomTraversal, DEFAULT_BASIC_MAX_DEPTH>;
 pub type BasicValue = Value<NoCustomValueKind, NoCustomValue>;
 pub type BasicValueKind = ValueKind<NoCustomValueKind>;
 
@@ -93,6 +97,42 @@ impl<X: CustomValueKind, D: Decoder<X>> Decode<X, D> for NoCustomValue {
     {
         panic!("No custom value")
     }
+}
+
+pub enum NoCustomTraversal {}
+
+#[derive(Copy, Debug, Clone, PartialEq, Eq)]
+pub enum NoCustomTraversalEvent {}
+
+impl<'de, R: PayloadTraverser<'de, NoCustomValueKind>> CustomTraverser<'de, R>
+    for NoCustomTraversal
+{
+    type CustomTraversalEvent = NoCustomTraversalEvent;
+    type CustomValueKind = NoCustomValueKind;
+
+    fn new_traversal(_: NoCustomValueKind) -> Self {
+        unreachable!()
+    }
+
+    fn next_event(
+        &mut self,
+        _reader: &mut R,
+    ) -> Result<
+        (
+            traversal::TraversalEvent<'de, Self::CustomValueKind, Self::CustomTraversalEvent>,
+            bool,
+        ),
+        DecodeError,
+    > {
+        unreachable!()
+    }
+}
+
+/// Creates a traverser from the buffer
+pub fn basic_traverser<'b>(buf: &'b [u8]) -> Result<BasicTraverser<'b>, DecodeError> {
+    let mut traverser = BasicTraverser::new(buf);
+    traverser.start_and_check_payload_prefix(BASIC_SBOR_V1_PAYLOAD_PREFIX)?;
+    Ok(traverser)
 }
 
 pub use schema::*;

@@ -3,7 +3,7 @@ use crate::value_kind::*;
 use crate::*;
 
 /// Represents an error ocurred during decoding.
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]
 pub enum DecodeError {
     ExtraTrailingBytes(usize),
 
@@ -168,6 +168,10 @@ pub trait Decoder<X: CustomValueKind>: Sized {
     fn read_slice(&mut self, n: usize) -> Result<&[u8], DecodeError>;
 }
 
+pub trait BorrowingDecoder<'de, X: CustomValueKind>: Decoder<X> {
+    fn read_slice_from_payload(&mut self, n: usize) -> Result<&'de [u8], DecodeError>;
+}
+
 /// A `Decoder` abstracts the logic for decoding basic types.
 pub struct VecDecoder<'de, X: CustomValueKind, const MAX_DEPTH: u8> {
     input: &'de [u8],
@@ -239,11 +243,9 @@ impl<'de, X: CustomValueKind, const MAX_DEPTH: u8> Decoder<X> for VecDecoder<'de
     }
 
     #[inline]
-    fn read_slice(&mut self, n: usize) -> Result<&'de [u8], DecodeError> {
-        self.require_remaining(n)?;
-        let slice = &self.input[self.offset..self.offset + n];
-        self.offset += n;
-        Ok(slice)
+    fn read_slice(&mut self, n: usize) -> Result<&[u8], DecodeError> {
+        // Note - the Decoder trait can't capture all the lifetimes correctly
+        self.read_slice_from_payload(n)
     }
 
     #[inline]
@@ -254,6 +256,52 @@ impl<'de, X: CustomValueKind, const MAX_DEPTH: u8> Decoder<X> for VecDecoder<'de
         } else {
             Ok(())
         }
+    }
+}
+
+impl<'de, X: CustomValueKind, const MAX_DEPTH: u8> BorrowingDecoder<'de, X>
+    for VecDecoder<'de, X, MAX_DEPTH>
+{
+    #[inline]
+    fn read_slice_from_payload(&mut self, n: usize) -> Result<&'de [u8], DecodeError> {
+        self.require_remaining(n)?;
+        let slice = &self.input[self.offset..self.offset + n];
+        self.offset += n;
+        Ok(slice)
+    }
+}
+
+pub trait PayloadTraverser<'de, X: CustomValueKind>: BorrowingDecoder<'de, X> {
+    fn get_stack_depth(&self) -> u8;
+
+    fn get_offset(&self) -> usize;
+
+    fn peek_value_kind(&self) -> Result<ValueKind<X>, DecodeError> {
+        let id = self.peek_byte()?;
+        ValueKind::from_u8(id).ok_or(DecodeError::UnknownValueKind(id))
+    }
+
+    fn peek_byte(&self) -> Result<u8, DecodeError>;
+}
+
+impl<'de, X: CustomValueKind, const MAX_DEPTH: u8> PayloadTraverser<'de, X>
+    for VecDecoder<'de, X, MAX_DEPTH>
+{
+    #[inline]
+    fn get_stack_depth(&self) -> u8 {
+        self.stack_depth
+    }
+
+    #[inline]
+    fn get_offset(&self) -> usize {
+        self.offset
+    }
+
+    #[inline]
+    fn peek_byte(&self) -> Result<u8, DecodeError> {
+        self.require_remaining(1)?;
+        let result = self.input[self.offset];
+        Ok(result)
     }
 }
 
