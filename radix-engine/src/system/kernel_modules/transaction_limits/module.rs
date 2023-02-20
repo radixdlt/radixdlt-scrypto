@@ -7,9 +7,7 @@ use crate::{
     },
     types::Vec,
 };
-use radix_engine_interface::{
-    api::types::LockHandle, ScryptoCategorize, ScryptoDecode, ScryptoEncode,
-};
+use radix_engine_interface::{api::types::LockHandle, ScryptoSbor};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TransactionLimitsError {
