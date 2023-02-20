@@ -4,7 +4,7 @@ use sbor::rust::vec::Vec;
 use radix_engine_interface::crypto::Hash;
 
 use super::tree_store::{
-    ReadableTreeStore, TreeChildEntry, TreeInternalNode, TreeLeafNode, TreeNode,
+    Payload, ReadableTreeStore, TreeChildEntry, TreeInternalNode, TreeLeafNode, TreeNode,
 };
 use super::types::{
     Child, InternalNode, LeafNode, Nibble, NibblePath, Node, NodeKey, NodeType, StorageError,
@@ -102,7 +102,7 @@ impl<P: Clone> LeafNode<P> {
     }
 }
 
-impl<R: ReadableTreeStore<P>, P: Clone> TreeReader<P> for R {
+impl<R: ReadableTreeStore<P>, P: Payload> TreeReader<P> for R {
     fn get_node_option(&self, node_key: &NodeKey) -> Result<Option<Node<P>>, StorageError> {
         Ok(self
             .get_node(node_key)
