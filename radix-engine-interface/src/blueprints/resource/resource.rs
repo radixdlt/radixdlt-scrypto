@@ -20,7 +20,7 @@ pub enum ResourceError {
 pub struct LiquidFungibleResource {
     /// The resource address.
     resource_address: ResourceAddress,
-    /// The resource divisibility.
+    /// The resource divisibility (copied from resource manager for performance).
     divisibility: u8,
     /// The total amount.
     amount: Decimal,
@@ -114,17 +114,17 @@ impl LiquidFungibleResource {
 pub struct LiquidNonFungibleResource {
     /// The resource address.
     resource_address: ResourceAddress,
+    /// NonFungible Id type (copied from resource manager for performance)
+    id_type: NonFungibleIdType,
     /// The total non-fungible ids.
     ids: BTreeSet<NonFungibleLocalId>,
-    /// NonFungible Id type
-    id_type: NonFungibleIdType,
 }
 
 impl LiquidNonFungibleResource {
     pub fn new(
         resource_address: ResourceAddress,
-        ids: BTreeSet<NonFungibleLocalId>,
         id_type: NonFungibleIdType,
+        ids: BTreeSet<NonFungibleLocalId>,
     ) -> Self {
         Self {
             resource_address,
@@ -134,7 +134,7 @@ impl LiquidNonFungibleResource {
     }
 
     pub fn new_empty(resource_address: ResourceAddress, id_type: NonFungibleIdType) -> Self {
-        Self::new(resource_address, BTreeSet::new(), id_type)
+        Self::new(resource_address, id_type, BTreeSet::new())
     }
 
     pub fn ids(&self) -> &BTreeSet<NonFungibleLocalId> {
@@ -206,8 +206,8 @@ impl LiquidNonFungibleResource {
         }
         Ok(LiquidNonFungibleResource::new(
             resource_address,
-            ids_to_take.clone(),
             self.id_type,
+            ids_to_take.clone(),
         ))
     }
 
@@ -435,8 +435,8 @@ impl NonFungibleResource {
         }
         Ok(LiquidNonFungibleResource::new(
             self.resource_address(),
-            ids.clone(),
             self.id_type(),
+            ids.clone(),
         ))
     }
 
