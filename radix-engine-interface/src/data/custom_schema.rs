@@ -8,28 +8,14 @@ pub type ScryptoSchema = Schema<ScryptoCustomTypeExtension>;
 /// A schema for the values that a codec can decode / views as valid
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum ScryptoCustomTypeKind<L: SchemaTypeLink> {
-    // Global address types
+    Address, /* any */
     PackageAddress,
     ComponentAddress,
     ResourceAddress,
 
-    // Other Engine types
-    Own,
-    NonFungibleGlobalId,
+    Own, /* any */
     KeyValueStore { key_type: L, value_type: L },
 
-    // Manifest types
-    Blob,
-    Bucket,
-    Proof,
-    Expression,
-
-    // Uninterpreted
-    Hash,
-    EcdsaSecp256k1PublicKey,
-    EcdsaSecp256k1Signature,
-    EddsaEd25519PublicKey,
-    EddsaEd25519Signature,
     Decimal,
     PreciseDecimal,
     NonFungibleLocalId,
@@ -58,9 +44,12 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
         type_indices: &IndexSet<TypeHash>,
     ) -> Self::CustomTypeKind<LocalTypeIndex> {
         match type_kind {
+            ScryptoCustomTypeKind::Address => ScryptoCustomTypeKind::Address,
             ScryptoCustomTypeKind::PackageAddress => ScryptoCustomTypeKind::PackageAddress,
             ScryptoCustomTypeKind::ComponentAddress => ScryptoCustomTypeKind::ComponentAddress,
             ScryptoCustomTypeKind::ResourceAddress => ScryptoCustomTypeKind::ResourceAddress,
+
+            ScryptoCustomTypeKind::Own => ScryptoCustomTypeKind::Own,
             ScryptoCustomTypeKind::KeyValueStore {
                 key_type,
                 value_type,
@@ -68,27 +57,7 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
                 key_type: resolve_local_type_ref(type_indices, &key_type),
                 value_type: resolve_local_type_ref(type_indices, &value_type),
             },
-            ScryptoCustomTypeKind::Bucket => ScryptoCustomTypeKind::Bucket,
-            ScryptoCustomTypeKind::Proof => ScryptoCustomTypeKind::Proof,
-            ScryptoCustomTypeKind::Own => ScryptoCustomTypeKind::Own,
-            ScryptoCustomTypeKind::Expression => ScryptoCustomTypeKind::Expression,
-            ScryptoCustomTypeKind::Blob => ScryptoCustomTypeKind::Blob,
-            ScryptoCustomTypeKind::NonFungibleGlobalId => {
-                ScryptoCustomTypeKind::NonFungibleGlobalId
-            }
-            ScryptoCustomTypeKind::Hash => ScryptoCustomTypeKind::Hash,
-            ScryptoCustomTypeKind::EcdsaSecp256k1PublicKey => {
-                ScryptoCustomTypeKind::EcdsaSecp256k1PublicKey
-            }
-            ScryptoCustomTypeKind::EcdsaSecp256k1Signature => {
-                ScryptoCustomTypeKind::EcdsaSecp256k1Signature
-            }
-            ScryptoCustomTypeKind::EddsaEd25519PublicKey => {
-                ScryptoCustomTypeKind::EddsaEd25519PublicKey
-            }
-            ScryptoCustomTypeKind::EddsaEd25519Signature => {
-                ScryptoCustomTypeKind::EddsaEd25519Signature
-            }
+
             ScryptoCustomTypeKind::Decimal => ScryptoCustomTypeKind::Decimal,
             ScryptoCustomTypeKind::PreciseDecimal => ScryptoCustomTypeKind::PreciseDecimal,
             ScryptoCustomTypeKind::NonFungibleLocalId => ScryptoCustomTypeKind::NonFungibleLocalId,
@@ -106,20 +75,11 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
         type_kind: &SchemaCustomTypeKind<Self>,
     ) -> Result<(), SchemaValidationError> {
         match type_kind {
-            ScryptoCustomTypeKind::PackageAddress
+            ScryptoCustomTypeKind::Address
+            | ScryptoCustomTypeKind::PackageAddress
             | ScryptoCustomTypeKind::ComponentAddress
             | ScryptoCustomTypeKind::ResourceAddress
             | ScryptoCustomTypeKind::Own
-            | ScryptoCustomTypeKind::NonFungibleGlobalId
-            | ScryptoCustomTypeKind::Blob
-            | ScryptoCustomTypeKind::Bucket
-            | ScryptoCustomTypeKind::Proof
-            | ScryptoCustomTypeKind::Expression
-            | ScryptoCustomTypeKind::Hash
-            | ScryptoCustomTypeKind::EcdsaSecp256k1PublicKey
-            | ScryptoCustomTypeKind::EcdsaSecp256k1Signature
-            | ScryptoCustomTypeKind::EddsaEd25519PublicKey
-            | ScryptoCustomTypeKind::EddsaEd25519Signature
             | ScryptoCustomTypeKind::Decimal
             | ScryptoCustomTypeKind::PreciseDecimal
             | ScryptoCustomTypeKind::NonFungibleLocalId => {
@@ -144,24 +104,15 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
         // Even though they all map to the same thing, we keep the explicit match statement so that
         // we will have to explicitly check this when we add a new `ScryptoCustomTypeKind`
         match type_kind {
-            ScryptoCustomTypeKind::PackageAddress
+            ScryptoCustomTypeKind::Address
+            | ScryptoCustomTypeKind::PackageAddress
             | ScryptoCustomTypeKind::ComponentAddress
             | ScryptoCustomTypeKind::ResourceAddress
             | ScryptoCustomTypeKind::Own
-            | ScryptoCustomTypeKind::NonFungibleGlobalId
-            | ScryptoCustomTypeKind::Blob
-            | ScryptoCustomTypeKind::Bucket
-            | ScryptoCustomTypeKind::Proof
-            | ScryptoCustomTypeKind::Expression
-            | ScryptoCustomTypeKind::Hash
-            | ScryptoCustomTypeKind::EcdsaSecp256k1PublicKey
-            | ScryptoCustomTypeKind::EcdsaSecp256k1Signature
-            | ScryptoCustomTypeKind::EddsaEd25519PublicKey
-            | ScryptoCustomTypeKind::EddsaEd25519Signature
+            | ScryptoCustomTypeKind::KeyValueStore { .. }
             | ScryptoCustomTypeKind::Decimal
             | ScryptoCustomTypeKind::PreciseDecimal
-            | ScryptoCustomTypeKind::NonFungibleLocalId
-            | ScryptoCustomTypeKind::KeyValueStore { .. } => {
+            | ScryptoCustomTypeKind::NonFungibleLocalId => {
                 validate_childless_metadata(type_metadata)?;
             }
         }
@@ -181,24 +132,15 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
         match type_kind {
             // Even though they all map to the same thing, we keep the explicit match statement so that
             // we will have to explicitly check this when we add a new `ScryptoCustomTypeKind`
-            ScryptoCustomTypeKind::PackageAddress
+            ScryptoCustomTypeKind::Address
+            | ScryptoCustomTypeKind::PackageAddress
             | ScryptoCustomTypeKind::ComponentAddress
             | ScryptoCustomTypeKind::ResourceAddress
             | ScryptoCustomTypeKind::Own
-            | ScryptoCustomTypeKind::NonFungibleGlobalId
-            | ScryptoCustomTypeKind::Blob
-            | ScryptoCustomTypeKind::Bucket
-            | ScryptoCustomTypeKind::Proof
-            | ScryptoCustomTypeKind::Expression
-            | ScryptoCustomTypeKind::Hash
-            | ScryptoCustomTypeKind::EcdsaSecp256k1PublicKey
-            | ScryptoCustomTypeKind::EcdsaSecp256k1Signature
-            | ScryptoCustomTypeKind::EddsaEd25519PublicKey
-            | ScryptoCustomTypeKind::EddsaEd25519Signature
+            | ScryptoCustomTypeKind::KeyValueStore { .. }
             | ScryptoCustomTypeKind::Decimal
             | ScryptoCustomTypeKind::PreciseDecimal
-            | ScryptoCustomTypeKind::NonFungibleLocalId
-            | ScryptoCustomTypeKind::KeyValueStore { .. } => {
+            | ScryptoCustomTypeKind::NonFungibleLocalId => {
                 // All these custom type kinds only support `SchemaTypeValidation::None`.
                 // If they get to this point, they have been paired with some ScryptoCustomTypeValidation
                 // - which isn't valid.

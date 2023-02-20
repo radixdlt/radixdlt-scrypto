@@ -1,9 +1,9 @@
 use crate::blueprints::resource::VaultSubstate;
 use crate::ledger::{QueryableSubstateStore, ReadableSubstateStore};
-use crate::system::global::GlobalAddressSubstate;
+use crate::system::global::GlobalSubstate;
 use crate::system::node_substates::PersistedSubstate;
 use radix_engine_interface::api::types::{
-    AccountOffset, ComponentOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset, NodeModuleId,
+    AccountOffset, Address, ComponentOffset, GlobalOffset, KeyValueStoreOffset, NodeModuleId,
     RENodeId, SubstateId, SubstateOffset, VaultId, VaultOffset,
 };
 
@@ -60,7 +60,7 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
         }
         self.visitor.visit_node_id(parent, &node_id, depth);
         match node_id {
-            RENodeId::Global(GlobalAddress::Component(..)) => {
+            RENodeId::Global(Address::Component(..)) => {
                 let substate_id = SubstateId(
                     node_id,
                     NodeModuleId::SELF,
@@ -70,7 +70,7 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                     .substate_store
                     .get_substate(&substate_id)
                     .ok_or(StateTreeTraverserError::RENodeNotFound(node_id))?;
-                let global: GlobalAddressSubstate = substate.substate.to_runtime().into();
+                let global: GlobalSubstate = substate.substate.to_runtime().into();
                 let derefed = global.node_deref();
                 self.traverse_recursive(Some(&substate_id), derefed, depth + 1)
                     .expect("Broken Node Store");

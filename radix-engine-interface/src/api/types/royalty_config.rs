@@ -2,11 +2,12 @@ use sbor::rust::collections::HashMap;
 use sbor::rust::str;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
+use sbor::*;
 
 use crate::*;
 
 /// Royalty rules
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, LegacyDescribe)]
+#[derive(Debug, Clone, PartialEq, Eq, Sbor, LegacyDescribe)]
 pub struct RoyaltyConfig {
     pub rules: HashMap<String, u32>,
     pub default_rule: u32,

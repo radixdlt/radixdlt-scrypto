@@ -1,5 +1,6 @@
-use super::{EcdsaSecp256k1PublicKey, EddsaEd25519PublicKey};
+use crate::crypto::*;
 use crate::*;
+use sbor::*;
 
 /// Represents any natively supported public key.
 #[cfg_attr(
@@ -7,7 +8,7 @@ use crate::*;
     derive(serde::Serialize, serde::Deserialize),
     serde(tag = "type", content = "public_key")
 )]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ScryptoSbor)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sbor)]
 pub enum PublicKey {
     EcdsaSecp256k1(EcdsaSecp256k1PublicKey),
     EddsaEd25519(EddsaEd25519PublicKey),

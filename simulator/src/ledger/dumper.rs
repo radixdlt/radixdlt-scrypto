@@ -4,14 +4,14 @@ use radix_engine::blueprints::resource::{
     NonFungibleSubstate, ResourceManagerSubstate, VaultSubstate,
 };
 use radix_engine::ledger::*;
-use radix_engine::system::global::GlobalAddressSubstate;
+use radix_engine::system::global::GlobalSubstate;
 use radix_engine::system::node_modules::metadata::MetadataSubstate;
 use radix_engine::types::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::package::WasmCodeSubstate;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::blueprints::resource::{AccessRules, ResourceType};
-use radix_engine_interface::data::{IndexedScryptoValue, ValueFormattingContext};
+use radix_engine_interface::data::{IndexedScryptoValue, ScryptoValueDisplayContext};
 use radix_engine_interface::network::NetworkDefinition;
 use std::collections::VecDeque;
 use utils::ContextualDisplay;
@@ -35,9 +35,9 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
 ) -> Result<(), DisplayError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 
-    let global: Option<GlobalAddressSubstate> = substate_store
+    let global: Option<GlobalSubstate> = substate_store
         .get_substate(&SubstateId(
-            RENodeId::Global(GlobalAddress::Package(package_address)),
+            RENodeId::Global(Address::Package(package_address)),
             NodeModuleId::SELF,
             SubstateOffset::Global(GlobalOffset::Global),
         ))
@@ -89,7 +89,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
 
     // Dereference the global component address to get the component id
     let component_id = {
-        let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
+        let node_id = RENodeId::Global(Address::Component(component_address));
         substate_store
             .get_substate(&SubstateId(
                 node_id,
@@ -151,7 +151,6 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
             // Find all vaults owned by the component, assuming a tree structure.
             let mut vaults_found: HashSet<VaultId> = raw_state
                 .owned_node_ids()
-                .unwrap()
                 .iter()
                 .cloned()
                 .filter_map(|node_id| match node_id {
@@ -161,7 +160,6 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 .collect();
             let mut queue: VecDeque<KeyValueStoreId> = raw_state
                 .owned_node_ids()
-                .unwrap()
                 .iter()
                 .cloned()
                 .filter_map(|node_id| match node_id {
@@ -348,7 +346,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
 
     if let Some(raw_state) = component_state_dump.raw_state {
         let value_display_context =
-            ValueFormattingContext::no_manifest_context(Some(&bech32_encoder));
+            ScryptoValueDisplayContext::with_optional_bench32(Some(&bech32_encoder));
         writeln!(
             output,
             "{}: {}",
@@ -400,7 +398,7 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
         let substate = substate.clone().to_runtime();
         if let KeyValueStoreEntrySubstate::Some(key, value) = &substate.kv_store_entry() {
             let value_display_context =
-                ValueFormattingContext::no_manifest_context(Some(&bech32_encoder));
+                ScryptoValueDisplayContext::with_optional_bench32(Some(&bech32_encoder));
             writeln!(
                 output,
                 "{} {} => {}",
@@ -444,9 +442,9 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             .unwrap();
         let amount = vault.0.amount();
         let resource_address = vault.0.resource_address();
-        let global: Option<GlobalAddressSubstate> = substate_store
+        let global: Option<GlobalSubstate> = substate_store
             .get_substate(&SubstateId(
-                RENodeId::Global(GlobalAddress::Resource(resource_address)),
+                RENodeId::Global(Address::Resource(resource_address)),
                 NodeModuleId::SELF,
                 SubstateOffset::Global(GlobalOffset::Global),
             ))
@@ -514,7 +512,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                     let mutable_data =
                         IndexedScryptoValue::from_slice(&non_fungible.mutable_data()).unwrap();
                     let value_display_context =
-                        ValueFormattingContext::no_manifest_context(Some(&bech32_encoder));
+                        ScryptoValueDisplayContext::with_optional_bench32(Some(&bech32_encoder));
                     writeln!(
                         output,
                         "{}  {} NonFungible {{ id: {}, immutable_data: {}, mutable_data: {} }}",
@@ -537,9 +535,9 @@ pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
     substate_store: &T,
     output: &mut O,
 ) -> Result<(), DisplayError> {
-    let global: Option<GlobalAddressSubstate> = substate_store
+    let global: Option<GlobalSubstate> = substate_store
         .get_substate(&SubstateId(
-            RENodeId::Global(GlobalAddress::Resource(resource_address)),
+            RENodeId::Global(Address::Resource(resource_address)),
             NodeModuleId::SELF,
             SubstateOffset::Global(GlobalOffset::Global),
         ))

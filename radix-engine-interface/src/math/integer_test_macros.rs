@@ -802,10 +802,10 @@ macro_rules! test_math {
                 let mut a: $i = <$i>::from_str("118").unwrap();
                 assert_eq!(a.to_string(), "118");
                 let b: String = a.to_string();
-                a = <$i>::from(b);
+                a = <$i>::from_str(&b).unwrap();
                 assert_eq!(a.to_string(), "118");
                 let c: &str = &a.to_string();
-                a = <$i>::from(c);
+                a = <$i>::from_str(c).unwrap();
                 assert_eq!(a.to_string(), "118");
             }
 

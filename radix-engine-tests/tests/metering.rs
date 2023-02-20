@@ -1,9 +1,12 @@
+use radix_engine::errors::{ModuleError, RuntimeError};
+use radix_engine::system::kernel_modules::transaction_limits::TransactionLimitsError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::data::{manifest_args, ManifestExpression};
 use transaction::model::TransactionManifest;
 
 // For WASM-specific metering tests, see `wasm_metering.rs`.
@@ -48,7 +51,7 @@ fn test_basic_transfer() {
         .call_method(
             account2,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
 
@@ -127,7 +130,7 @@ fn test_radiswap() {
                             package_address,
                             "Radiswap",
                             "instantiate_pool",
-                            args!(
+                            manifest_args!(
                                 bucket1,
                                 bucket2,
                                 dec!("1000"),
@@ -142,7 +145,7 @@ fn test_radiswap() {
                 .call_method(
                     account2,
                     "deposit_batch",
-                    args!(ManifestExpression::EntireWorktop),
+                    manifest_args!(ManifestExpression::EntireWorktop),
                 )
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
@@ -159,7 +162,7 @@ fn test_radiswap() {
                 .call_method(
                     account3,
                     "deposit_batch",
-                    args!(ManifestExpression::EntireWorktop),
+                    manifest_args!(ManifestExpression::EntireWorktop),
                 )
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
@@ -174,12 +177,12 @@ fn test_radiswap() {
             .lock_fee(account3, 10u32.into())
             .withdraw_from_account(account3, btc, btc_to_swap)
             .take_from_worktop(btc, |builder, bucket| {
-                builder.call_method(component_address, "swap", args!(bucket))
+                builder.call_method(component_address, "swap", manifest_args!(bucket))
             })
             .call_method(
                 account3,
                 "deposit_batch",
-                args!(ManifestExpression::EntireWorktop),
+                manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&pk3)],
@@ -205,7 +208,7 @@ fn test_radiswap() {
         + 296000 /* LockSubstate */
         + 230000 /* ReadSubstate */
         + 162500 /* RunPrecompiled */
-        + 1619555 /* RunWasm */
+        + 1644360 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1705 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
@@ -254,17 +257,17 @@ fn test_publish_large_package() {
     );
 }
 
-#[test]
-fn should_be_able_run_large_manifest() {
-    // Arrange
-    let mut test_runner = TestRunner::builder().build();
+fn prepare_large_manifest(
+    test_runner: &mut TestRunner,
+    take_count: usize,
+) -> (TransactionManifest, EcdsaSecp256k1PublicKey) {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
     let mut builder = ManifestBuilder::new();
     builder.lock_fee(account, 100u32.into());
     builder.withdraw_from_account(account, RADIX_TOKEN, 100u32.into());
-    for _ in 0..300 {
+    for _ in 0..take_count {
         builder.take_from_worktop_by_amount(1.into(), RADIX_TOKEN, |builder, bid| {
             builder.return_to_worktop(bid)
         });
@@ -272,9 +275,20 @@ fn should_be_able_run_large_manifest() {
     builder.call_method(
         account,
         "deposit_batch",
-        args!(ManifestExpression::EntireWorktop),
+        manifest_args!(ManifestExpression::EntireWorktop),
     );
     let manifest = builder.build();
+
+    (manifest, public_key)
+}
+
+#[test]
+fn should_be_able_run_large_manifest() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+
+    // Act
+    let (manifest, public_key) = prepare_large_manifest(&mut test_runner, 300);
 
     let (receipt, _) = execute_with_time_logging(
         &mut test_runner,
@@ -284,6 +298,31 @@ fn should_be_able_run_large_manifest() {
 
     // Assert
     receipt.expect_commit_success();
+}
+
+#[test]
+fn too_large_manifest_fails_on_substate_read_limit() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+
+    // Act
+    let (manifest, public_key) = prepare_large_manifest(&mut test_runner, 400);
+
+    let (receipt, _) = execute_with_time_logging(
+        &mut test_runner,
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
+                TransactionLimitsError::MaxSubstateReadsCountExceeded
+            ))
+        )
+    });
 }
 
 #[test]
@@ -323,7 +362,7 @@ fn setup_test_runner_with_fee_blueprint_component() -> (TestRunner, ComponentAdd
             .lock_fee(account, 10u32.into())
             .withdraw_from_account(account, RADIX_TOKEN, 10u32.into())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                builder.call_function(package_address, "Fee", "new", args!(bucket_id));
+                builder.call_function(package_address, "Fee", "new", manifest_args!(bucket_id));
                 builder
             })
             .build(),
@@ -343,9 +382,13 @@ fn spin_loop_should_end_in_reasonable_amount_of_time() {
 
     let manifest = ManifestBuilder::new()
         // First, lock the fee so that the loan will be repaid
-        .call_method(component_address, "lock_fee", args!(Decimal::from(10)))
+        .call_method(
+            component_address,
+            "lock_fee",
+            manifest_args!(Decimal::from(10)),
+        )
         // Now spin-loop to wait for the fee loan to burn through
-        .call_method(component_address, "spin_loop", args!())
+        .call_method(component_address, "spin_loop", manifest_args!())
         .build();
 
     let (receipt, _) = execute_with_time_logging(&mut test_runner, manifest, vec![]);

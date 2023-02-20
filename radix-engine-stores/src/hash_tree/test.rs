@@ -9,7 +9,7 @@ use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::PackageAddress;
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::types::{
-    GlobalAddress, KeyValueStoreOffset, NodeModuleId, RENodeId, SubstateId, SubstateOffset,
+    Address, KeyValueStoreOffset, NodeModuleId, RENodeId, SubstateId, SubstateOffset,
 };
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
@@ -209,7 +209,7 @@ fn substate_id(re_node_id_seed: u8, substate_offset_seed: u8) -> SubstateId {
     let fake_pkg_address = PackageAddress::Normal([re_node_id_seed; 26]);
     let fake_kvs_entry_id = vec![substate_offset_seed; substate_offset_seed as usize];
     SubstateId(
-        RENodeId::Global(GlobalAddress::Package(fake_pkg_address)),
+        RENodeId::Global(Address::Package(fake_pkg_address)),
         NodeModuleId::SELF,
         SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(fake_kvs_entry_id)),
     )

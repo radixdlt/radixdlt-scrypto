@@ -13,7 +13,7 @@ use radix_engine_interface::api::node_modules::royalty::{
     ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput,
     COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
-use radix_engine_interface::api::types::ComponentId;
+use radix_engine_interface::api::types::{Address, ComponentId, RENodeId};
 use radix_engine_interface::api::{types::*, ClientComponentApi};
 use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRuleKey, AccessRules, Bucket,
@@ -196,7 +196,7 @@ impl Component for GlobalComponentRef {
     fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
         ScryptoEnv
             .call_module_method(
-                RENodeId::Global(self.0.into()),
+                RENodeId::Global(Address::Component(self.0)),
                 NodeModuleId::Metadata,
                 METADATA_SET_IDENT,
                 scrypto_encode(&MetadataSetInput {

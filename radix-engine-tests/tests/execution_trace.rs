@@ -4,6 +4,7 @@ use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::data::{manifest_args, ManifestExpression};
 
 #[test]
 fn test_trace_resource_transfers() {
@@ -20,7 +21,7 @@ fn test_trace_resource_transfers() {
             package_address,
             "ExecutionTraceTest",
             "transfer_resource_between_two_components",
-            args!(transfer_amount),
+            manifest_args!(transfer_amount),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -92,12 +93,12 @@ fn test_trace_fee_payments() {
     // Prepare the component that will pay the fee
     let manifest_prepare = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_method(FAUCET_COMPONENT, "free", args!())
+        .call_method(FAUCET_COMPONENT, "free", manifest_args!())
         .call_function(
             package_address,
             "ExecutionTraceTest",
             "create_and_fund_a_component",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .clear_auth_zone()
         .build();
@@ -121,7 +122,7 @@ fn test_trace_fee_payments() {
         .call_method(
             funded_component.clone(),
             "test_lock_contingent_fee",
-            args!(),
+            manifest_args!(),
         )
         .clear_auth_zone()
         .build();
@@ -149,7 +150,7 @@ fn test_instruction_traces() {
 
     let manfiest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_method(FAUCET_COMPONENT, "free", args!())
+        .call_method(FAUCET_COMPONENT, "free", manifest_args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder
                 .create_proof_from_bucket(&bucket_id, |builder, proof_id| {
@@ -161,7 +162,7 @@ fn test_instruction_traces() {
             package_address,
             "ExecutionTraceTest",
             "create_and_fund_a_component",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
 

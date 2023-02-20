@@ -1,5 +1,6 @@
 use crate::blueprints::resource::AccessRule;
 use crate::*;
+use transaction_data::*;
 
 /// An enum of the roles in the Access Controller component
 #[derive(Debug, Clone, Copy, PartialOrd, PartialEq, Ord, Eq, ScryptoSbor, Hash)]
@@ -28,7 +29,9 @@ impl From<Proposer> for Role {
 
 /// A struct with the set of rule associated with each role - used when creating a new access
 /// controller for the initial rules and also used during recovery for proposing a rule set.
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(
+    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
+)]
 pub struct RuleSet {
     pub primary_role: AccessRule,
     pub recovery_role: AccessRule,

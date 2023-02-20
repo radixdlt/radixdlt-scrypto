@@ -2,7 +2,7 @@ use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::global::GlobalAddressSubstate;
+use crate::system::global::GlobalSubstate;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
@@ -247,7 +247,7 @@ impl AccountNativePackage {
 
         // Creating the account's global address
         let global_node_id = {
-            let node = RENodeInit::Global(GlobalAddressSubstate::Account(node_id.into()));
+            let node = RENodeInit::Global(GlobalSubstate::Account(node_id.into()));
             let node_id = api.kernel_allocate_node_id(RENodeType::GlobalAccount)?;
             api.kernel_create_node(node_id, node, BTreeMap::new())?;
             node_id

@@ -1,16 +1,16 @@
-use radix_engine_interface::crypto::*;
-use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
-use radix_engine_interface::network::NetworkDefinition;
-use radix_engine_interface::*;
-use sbor::*;
-
+use crate::ecdsa_secp256k1::EcdsaSecp256k1Signature;
+use crate::eddsa_ed25519::EddsaEd25519Signature;
 use crate::manifest::{compile, CompileError};
 use crate::model::TransactionManifest;
+use radix_engine_interface::crypto::*;
+use radix_engine_interface::network::NetworkDefinition;
+use sbor::*;
+use transaction_data::*;
 
 // TODO: add versioning of transaction schema
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestCategorize, ManifestEncode, ManifestDecode)]
 pub struct TransactionHeader {
     pub version: u8,
     pub network_id: u8,
@@ -23,19 +23,19 @@ pub struct TransactionHeader {
     pub tip_percentage: u16,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestCategorize, ManifestEncode, ManifestDecode)]
 pub struct TransactionIntent {
     pub header: TransactionHeader,
     pub manifest: TransactionManifest,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestCategorize, ManifestEncode, ManifestDecode)]
 pub struct SignedTransactionIntent {
     pub intent: TransactionIntent,
     pub intent_signatures: Vec<SignatureWithPublicKey>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestCategorize, ManifestEncode, ManifestDecode)]
 pub struct NotarizedTransaction {
     pub signed_intent: SignedTransactionIntent,
     pub notary_signature: Signature,
@@ -47,7 +47,9 @@ pub struct NotarizedTransaction {
     derive(serde::Serialize, serde::Deserialize),
     serde(tag = "type", content = "signature")
 )]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ScryptoSbor)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, ManifestCategorize, ManifestEncode, ManifestDecode,
+)]
 pub enum Signature {
     EcdsaSecp256k1(EcdsaSecp256k1Signature),
     EddsaEd25519(EddsaEd25519Signature),
@@ -59,7 +61,9 @@ pub enum Signature {
     derive(serde::Serialize, serde::Deserialize),
     serde(tag = "type")
 )]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ScryptoSbor)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, ManifestCategorize, ManifestEncode, ManifestDecode,
+)]
 pub enum SignatureWithPublicKey {
     EcdsaSecp256k1 {
         signature: EcdsaSecp256k1Signature,
@@ -145,7 +149,7 @@ impl TransactionIntent {
     }
 
     pub fn from_slice(slice: &[u8]) -> Result<Self, DecodeError> {
-        scrypto_decode(slice)
+        manifest_decode(slice)
     }
 
     pub fn hash(&self) -> Result<Hash, EncodeError> {
@@ -153,13 +157,13 @@ impl TransactionIntent {
     }
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, EncodeError> {
-        scrypto_encode(self)
+        manifest_encode(self)
     }
 }
 
 impl SignedTransactionIntent {
     pub fn from_slice(slice: &[u8]) -> Result<Self, DecodeError> {
-        scrypto_decode(slice)
+        manifest_decode(slice)
     }
 
     pub fn hash(&self) -> Result<Hash, EncodeError> {
@@ -167,13 +171,13 @@ impl SignedTransactionIntent {
     }
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, EncodeError> {
-        scrypto_encode(self)
+        manifest_encode(self)
     }
 }
 
 impl NotarizedTransaction {
     pub fn from_slice(slice: &[u8]) -> Result<Self, DecodeError> {
-        scrypto_decode(slice)
+        manifest_decode(slice)
     }
 
     pub fn hash(&self) -> Result<Hash, EncodeError> {
@@ -181,14 +185,14 @@ impl NotarizedTransaction {
     }
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, EncodeError> {
-        scrypto_encode(self)
+        manifest_encode(self)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::signing::*;
+    use crate::{ecdsa_secp256k1::EcdsaSecp256k1PrivateKey, eddsa_ed25519::EddsaEd25519PrivateKey};
 
     #[test]
     fn construct_sign_and_notarize_ecdsa_secp256k1() {
@@ -236,18 +240,18 @@ mod tests {
         };
 
         assert_eq!(
-            "641c247aa64c7f8f6706f365efcb2898b43893f006b748c2de46929756c08f5e",
-            transaction.signed_intent.intent.hash().unwrap().to_string()
+            transaction.signed_intent.intent.hash().unwrap().to_string(),
+            "81b06974e2e359ed9ceb16ebbcaae7d256f19d6b13bbef6d44698c203e3d14e7"
         );
         assert_eq!(
-            "fea2075148785705d52a383176e9ded4b0ee8481ae82276bb7dec04c48f4eb05",
-            transaction.signed_intent.hash().unwrap().to_string()
+            transaction.signed_intent.hash().unwrap().to_string(),
+            "b00287b46fc52651e5db2913b8886051d4ca6fd851852697fe4e43fd85608737"
         );
         assert_eq!(
-            "c1dce0e0b3cba17e85575736b25874f2185b7c761863bf52d1b49702ef23b228",
-            transaction.hash().unwrap().to_string()
+            transaction.hash().unwrap().to_string(),
+            "d5a09086b67552347a0d34a1729e87a8b75e992be95f1c5817e51484b208c3d0",
         );
-        assert_eq!("5c2102210221022109070107f20a00000000000000000a64000000000000000a0500000000000000220001b102f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f901000940420f00080500210220220109002020002022020001b20102115096107f734faceb87b1e3a6d678c3ddd407fb646a219035d79203caa348372be680c53eedc18160bf0dc8ca207c0082d4a35f40a8d4bad036f833c8bbae0001b200f0b7e0b49a44ed7f72cd8dcdbe267ebdde521935ea13273a4d0bee4ec68a7db658e56c9d2821f45ea78856c489c1c9eacf8fbf804eddeb77b4bd901916d4d4c1220001b200610bd7a14a6910490911f0b3de5a7b77669b224ff7ab5ffb62ceac4e2eb443731c3b5cd5d544db4f5671cf2b24b117ebd33122bc40b54ffb749c11e24dfa22c2", hex::encode(scrypto_encode(&transaction).unwrap()));
+        assert_eq!(hex::encode(manifest_encode(&transaction).unwrap()), "4d2102210221022109070107f20a00000000000000000a64000000000000000a050000000000000022000120072102f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f901000940420f0008050021022022010900202000202202000121012007410080f917243985f64db4fe011a1758c223ed6866400853fede94bc6cef35ca98bb2bca3164e6b4b6f08fdf7d39e067b9c5b3eeb5fdff66e4e095c46baeba12061c000121012007410157551ffc806d3abf40d0be5673b9102fb83bbee9101ee4e674a6ffe1f6d8e85d17f2a41f1092067dd9a2af36c1cb5a46fb904f41e4b8d9698f833c1d6f806dd2220001210120074100f4859a1bd63b649548b0e3dd5c0c52e1446ddec18a40cab19acbd24c9e8bce1655f802e67e6ae8ad4cad34849b17c557d0f95ff660423564315da147ec7f37eb");
     }
 
     #[test]
@@ -296,17 +300,17 @@ mod tests {
         };
 
         assert_eq!(
-            "9e6a155f408a445b7f5249bfc2df9dbc4f94b78a1b81f170d2dc0f91529cc212",
-            transaction.signed_intent.intent.hash().unwrap().to_string()
+            transaction.signed_intent.intent.hash().unwrap().to_string(),
+            "bc01cff3978ff43d881ad01f4a8be3ff21582de55a1631b3384d27b66dd28d8d"
         );
         assert_eq!(
-            "12f65ffad398eb3e927c68787cdc34efa61f57c038798e0cb465c34aed38cb49",
-            transaction.signed_intent.hash().unwrap().to_string()
+            transaction.signed_intent.hash().unwrap().to_string(),
+            "69076ac02d6958a1b07c49382b14e0e037951653774068fa424416138d206fda",
         );
         assert_eq!(
-            "69dbbf6de80d2508410a92b2840c913a989a43884a3ce376660a059ec921d1f4",
-            transaction.hash().unwrap().to_string()
+            transaction.hash().unwrap().to_string(),
+            "b4924b71bd03aa69e0f796ece997b7fbb9e501dd1298aeec57d802dcac8ef8d3"
         );
-        assert_eq!("5c2102210221022109070107f20a00000000000000000a64000000000000000a0500000000000000220101b3f381626e41e7027ea431bfe3009e94bdd25a746beec468948d6c3c7c5dc9a54b01000940420f00080500210220220109002020002022020102b34cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29b4637acc3086579a7951f3339954a7c819082df0f2aefcf5bee6545886a212fb11deb3ea77cd45b20408980f31ce16bffeeb3e28705c601a4ae565e44a9ac120040102b37422b9887598068e32c4448a949adb290d0f4e35b9e01b0ee5f1a1e600fe2674b486aefe97b661ab550e5c65bb5bffbb27ad8a4b3a3936c9aecc7a308996087f9a624a3a0293aeacd3c3ec489054719e3854aad040e1ec0378013563c5db309106220101b4e224ace8bcd124de7af8da24cd897bc50ac8d26758020ae7735fa2374983be491de610450bc628e8c2e19fe386762f3573382f82607ac040fe72640c8ffb070a", hex::encode(scrypto_encode(&transaction).unwrap()));
+        assert_eq!(  hex::encode(manifest_encode(&transaction).unwrap()), "4d2102210221022109070107f20a00000000000000000a64000000000000000a0500000000000000220101200720f381626e41e7027ea431bfe3009e94bdd25a746beec468948d6c3c7c5dc9a54b01000940420f000805002102202201090020200020220201022007204cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba292101200740efca0f6a4e2a782eef27da5bce284e93ca3b993774b1866510a8888b7100162f9f30405ab6ded0cbe45262dc9b7c514d89d610e779e36659c53bcbf83182760501022007207422b9887598068e32c4448a949adb290d0f4e35b9e01b0ee5f1a1e600fe26742101200740de01a711a96684c9e705583680f44729cccab96f5dde370225003382e86e66660ea216d020d1b296ae8137ff072065e850c46fde287772139fabcebfd38cc10e2201012101200740622d0f7f90e7cc3d5550bcb763c3f52a14ee19e6dd9239673682b57c1cfb33e4cffce2b3a4b13d7a4ea987f214d539e2621bd5f9b0cca054d0581e06287d5b0e");
     }
 }

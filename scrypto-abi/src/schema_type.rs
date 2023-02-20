@@ -73,10 +73,12 @@ pub enum Type {
     },
 
     // RE interpreted
+    Address, /* any */
     PackageAddress,
     ComponentAddress,
     ResourceAddress,
-    Own, /* generic, either bucket, proof, vault, component or kv store. TODO: do we really need this? */
+
+    Own, /* any */
     Bucket,
     Proof,
     Vault,
@@ -86,12 +88,6 @@ pub enum Type {
         value_type: Box<Type>,
     },
 
-    // Uninterpreted
-    Hash,
-    EcdsaSecp256k1PublicKey,
-    EcdsaSecp256k1Signature,
-    EddsaEd25519PublicKey,
-    EddsaEd25519Signature,
     Decimal,
     PreciseDecimal,
     NonFungibleLocalId,

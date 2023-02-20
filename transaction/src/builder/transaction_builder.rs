@@ -1,6 +1,7 @@
-use crate::{model::*, signing::Signer};
+use crate::model::*;
+use crate::signing::Signer;
 use radix_engine_interface::crypto::hash;
-use radix_engine_interface::data::scrypto_encode;
+use transaction_data::manifest_encode;
 
 pub struct TransactionBuilder {
     manifest: Option<TransactionManifest>,
@@ -31,7 +32,7 @@ impl TransactionBuilder {
 
     pub fn sign<S: Signer>(mut self, signer: &S) -> Self {
         let intent = self.transaction_intent();
-        let intent_payload = scrypto_encode(&intent).unwrap();
+        let intent_payload = manifest_encode(&intent).unwrap();
         let intent_payload_hash = hash(intent_payload);
         self.intent_signatures
             .push(signer.sign(&intent_payload_hash));
@@ -45,7 +46,7 @@ impl TransactionBuilder {
 
     pub fn notarize<S: Signer>(mut self, signer: &S) -> Self {
         let signed_intent = self.signed_transaction_intent();
-        let signed_intent_payload = scrypto_encode(&signed_intent).unwrap();
+        let signed_intent_payload = manifest_encode(&signed_intent).unwrap();
         let signed_intent_payload_hash = hash(signed_intent_payload);
         self.notary_signature = Some(signer.sign(&signed_intent_payload_hash).signature());
         self
@@ -85,7 +86,7 @@ mod tests {
 
     use super::*;
     use crate::builder::*;
-    use crate::signing::*;
+    use crate::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 
     #[test]
     fn notary_as_signatory() {

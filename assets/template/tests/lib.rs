@@ -2,6 +2,8 @@ use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto::prelude::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::data::manifest_args;
+use transaction::data::model::*;
 
 #[test]
 fn test_hello() {
@@ -16,7 +18,12 @@ fn test_hello() {
 
     // Test the `instantiate_hello` function.
     let manifest = ManifestBuilder::new()
-        .call_function(package_address, "Hello", "instantiate_hello", args!())
+        .call_function(
+            package_address,
+            "Hello",
+            "instantiate_hello",
+            manifest_args!(),
+        )
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(
         manifest,
@@ -31,11 +38,11 @@ fn test_hello() {
 
     // Test the `free_token` method.
     let manifest = ManifestBuilder::new()
-        .call_method(component, "free_token", args!())
+        .call_method(component, "free_token", manifest_args!())
         .call_method(
             account_component,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(

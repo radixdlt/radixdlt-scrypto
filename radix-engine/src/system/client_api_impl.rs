@@ -7,7 +7,7 @@ use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::kernel_api::{Invokable, KernelInternalApi};
 use crate::kernel::module::KernelModule;
 use crate::kernel::module_mixer::KernelModuleMixer;
-use crate::system::global::GlobalAddressSubstate;
+use crate::system::global::GlobalSubstate;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
@@ -29,7 +29,7 @@ use radix_engine_interface::api::{
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RADIX_TOKEN;
-use radix_engine_interface::data::types::Own;
+use radix_engine_interface::data::model::Own;
 use radix_engine_interface::data::*;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
@@ -66,7 +66,7 @@ where
 
     fn sys_read_substate(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, RuntimeError> {
         self.kernel_get_substate_ref(lock_handle)
-            .map(|substate_ref| substate_ref.to_scrypto_value().into_vec())
+            .map(|substate_ref| substate_ref.to_scrypto_value().into())
     }
 
     fn sys_write_substate(
@@ -158,7 +158,7 @@ where
     }
 
     fn get_code(&mut self, package_address: PackageAddress) -> Result<PackageCode, RuntimeError> {
-        let package_global = RENodeId::Global(GlobalAddress::Package(package_address));
+        let package_global = RENodeId::Global(Address::Package(package_address));
         let handle = self.kernel_lock_substate(
             package_global,
             NodeModuleId::SELF,
@@ -176,7 +176,7 @@ where
         &mut self,
         package_address: PackageAddress,
     ) -> Result<BTreeMap<String, BlueprintAbi>, RuntimeError> {
-        let package_global = RENodeId::Global(GlobalAddress::Package(package_address));
+        let package_global = RENodeId::Global(Address::Package(package_address));
         let handle = self.kernel_lock_substate(
             package_global,
             NodeModuleId::SELF,
@@ -201,7 +201,7 @@ where
     ) -> Result<ComponentId, RuntimeError> {
         let offset = SubstateOffset::Global(GlobalOffset::Global);
         let handle = self.kernel_lock_substate(
-            RENodeId::Global(GlobalAddress::Component(component_address)),
+            RENodeId::Global(Address::Component(component_address)),
             NodeModuleId::SELF,
             offset,
             LockFlags::empty(),
@@ -277,7 +277,7 @@ where
 
         self.kernel_create_node(
             node_id,
-            RENodeInit::Global(GlobalAddressSubstate::Component(component_id)),
+            RENodeInit::Global(GlobalSubstate::Component(component_id)),
             btreemap!(),
         )?;
 

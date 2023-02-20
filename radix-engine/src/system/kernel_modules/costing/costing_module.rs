@@ -11,7 +11,7 @@ use crate::{
     transaction::AbortReason,
 };
 use radix_engine_interface::api::types::{
-    GlobalAddress, GlobalOffset, InvocationIdentifier, LockHandle, MethodReceiver, NodeModuleId,
+    Address, GlobalOffset, InvocationIdentifier, LockHandle, MethodReceiver, NodeModuleId,
     RoyaltyOffset, SubstateOffset, VaultId, VaultOffset,
 };
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
@@ -125,7 +125,7 @@ impl KernelModule for CostingModule {
                 let maybe_component = match &receiver {
                     Some(ResolvedReceiver {
                         derefed_from:
-                            Some((RENodeId::Global(GlobalAddress::Component(component_address)), ..)),
+                            Some((RENodeId::Global(Address::Component(component_address)), ..)),
                         receiver: MethodReceiver(RENodeId::Component(component_id), ..),
                     }) => Some((*component_address, *component_id)),
                     _ => None,
@@ -160,7 +160,7 @@ impl KernelModule for CostingModule {
         /*
          * Apply package royalty
          */
-        let package_global_node_id = RENodeId::Global(GlobalAddress::Package(package_address));
+        let package_global_node_id = RENodeId::Global(Address::Package(package_address));
         let (package_id, package_lock) = {
             let handle = api.kernel_lock_substate(
                 package_global_node_id,

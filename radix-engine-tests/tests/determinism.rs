@@ -1,11 +1,11 @@
 use radix_engine::types::*;
-use radix_engine_interface::args;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::FAUCET_COMPONENT;
 use scrypto::resource::DIVISIBILITY_MAXIMUM;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::model::BasicInstruction;
+use transaction::data::{manifest_args, ManifestProof};
+use transaction::model::Instruction;
 
 #[test]
 fn test_simple_deterministic_execution() {
@@ -57,7 +57,7 @@ fn create_and_pass_multiple_proofs() -> Hash {
         .map(|_| {
             builder
                 .create_proof_from_account_by_amount(account, resource_address, 1.into())
-                .add_instruction(BasicInstruction::PopFromAuthZone)
+                .add_instruction(Instruction::PopFromAuthZone)
                 .2
                 .unwrap()
         })
@@ -67,7 +67,7 @@ fn create_and_pass_multiple_proofs() -> Hash {
             package_address,
             "VaultProof",
             "receive_proofs",
-            args!(proof_ids),
+            manifest_args!(proof_ids),
         )
         .build();
     let receipt = test_runner.execute_manifest(

@@ -5,7 +5,8 @@ use radix_engine::{
 };
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::data::manifest_args;
+use transaction::{builder::ManifestBuilder, data::ManifestExpression};
 use utils::ContextualDisplay;
 
 fn test_bucket_internal(method_name: &str) {
@@ -17,11 +18,11 @@ fn test_bucket_internal(method_name: &str) {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(account, 10.into())
-        .call_function(package_address, "BucketTest", method_name, args!())
+        .call_function(package_address, "BucketTest", method_name, manifest_args!())
         .call_method(
             account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -86,14 +87,14 @@ fn test_bucket_of_badges() {
 
     let manifest = ManifestBuilder::new()
         .lock_fee(account, 10.into())
-        .call_function(package_address, "BadgeTest", "combine", args!())
-        .call_function(package_address, "BadgeTest", "split", args!())
-        .call_function(package_address, "BadgeTest", "borrow", args!())
-        .call_function(package_address, "BadgeTest", "query", args!())
+        .call_function(package_address, "BadgeTest", "combine", manifest_args!())
+        .call_function(package_address, "BadgeTest", "split", manifest_args!())
+        .call_function(package_address, "BadgeTest", "borrow", manifest_args!())
+        .call_function(package_address, "BadgeTest", "query", manifest_args!())
         .call_method(
             account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -121,7 +122,7 @@ fn test_take_with_invalid_granularity() {
                 package_address,
                 "BucketTest",
                 "take_from_bucket",
-                args!(bucket, dec!("1.123")),
+                manifest_args!(bucket, dec!("1.123")),
             )
         })
         .build();
@@ -164,7 +165,7 @@ fn test_take_with_negative_amount() {
                 package_address,
                 "BucketTest",
                 "take_from_bucket",
-                args!(bucket, dec!("-2")),
+                manifest_args!(bucket, dec!("-2")),
             )
         })
         .build();

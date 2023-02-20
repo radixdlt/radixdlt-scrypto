@@ -1,18 +1,18 @@
+use super::track::Track;
 use crate::blueprints::logger::LoggerSubstate;
 use crate::blueprints::resource::{BucketSubstate, NonFungibleSubstate, ProofSubstate};
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::errors::CallFrameError;
 use crate::system::node_modules::access_rules::AuthZoneStackSubstate;
 use crate::system::node_substates::{RuntimeSubstate, SubstateRef, SubstateRefMut};
-use crate::types::{HashMap, HashSet};
+use crate::types::HashMap;
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, BucketOffset, LoggerOffset, NodeModuleId, ProofOffset, RENodeId,
     SubstateId, SubstateOffset, TransactionRuntimeOffset,
 };
 use sbor::rust::collections::BTreeMap;
-
-use super::track::Track;
+use sbor::rust::vec::Vec;
 
 pub struct Heap {
     nodes: HashMap<RENodeId, HeapRENode>,
@@ -100,7 +100,7 @@ impl Heap {
     pub fn move_nodes_to_store(
         &mut self,
         track: &mut Track,
-        nodes: HashSet<RENodeId>,
+        nodes: Vec<RENodeId>,
     ) -> Result<(), CallFrameError> {
         for node_id in nodes {
             self.move_node_to_store(track, node_id)?;

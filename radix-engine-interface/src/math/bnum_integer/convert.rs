@@ -14,7 +14,9 @@ macro_rules! impl_from_primitive {
             impl FromPrimitive for $t {
                 $(
                     fn [< from_$type >](n: [<$type>]) -> Option<Self> {
-                        Some(Self(<$wrapped>::try_from(n).unwrap()))
+                        <$wrapped>::try_from(n)
+                            .map(|val| Self(val))
+                            .ok()
                     }
                 )*
             }
@@ -72,13 +74,35 @@ macro_rules! impl_from_builtin{
     };
 }
 
+macro_rules! impl_try_from_builtin{
+    ($t:ident, $wrapped:ty, ($($o:ident),*)) => {
+        paste! {
+            $(
+                impl TryFrom<$o> for $t {
+                    type Error = [<Parse $t Error>];
+
+                    fn try_from(val: $o) -> Result<Self, Self::Error> {
+                        match Self::[<from_$o>](val) {
+                            Some(val) => Ok(val),
+                            None => Err([<Parse $t Error>]::Overflow),
+                        }
+                    }
+                }
+            )*
+        }
+    };
+}
+
 macro_rules! impl_to_builtin{
     ($t:ident, $wrapped:ty, ($($o:ident),*)) => {
         paste! {
             $(
-                impl From<$t> for $o {
-                    fn from(val: $t) -> $o {
-                        $o::try_from(val.0).unwrap()
+                impl TryFrom<$t> for $o {
+                    type Error = [<Parse $t Error>];
+
+                    fn try_from(val: $t) -> Result<Self, Self::Error> {
+                        $o::try_from(val.0)
+                            .map_err(|_| [<Parse $t Error>]::Overflow)
                     }
                 }
             )*
@@ -89,11 +113,17 @@ macro_rules! impl_to_builtin{
 impl_from_builtin! { BnumI256, BInt::<4>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
 impl_from_builtin! { BnumI384, BInt::<6>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
 impl_from_builtin! { BnumI512, BInt::<8>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
-impl_from_builtin! { BnumI768, BInt::<12>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
-impl_from_builtin! { BnumU256, BUint::<4>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
-impl_from_builtin! { BnumU384, BUint::<6>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
-impl_from_builtin! { BnumU512, BUint::<8>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
-impl_from_builtin! { BnumU768, BUint::<12>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
+impl_from_builtin! { BnumI768, BInt::<12>,(i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
+impl_from_builtin! { BnumU256, BUint::<4>, (u8, u16, u32, u64, u128, usize)}
+impl_from_builtin! { BnumU384, BUint::<6>, (u8, u16, u32, u64, u128, usize)}
+impl_from_builtin! { BnumU512, BUint::<8>, (u8, u16, u32, u64, u128, usize)}
+impl_from_builtin! { BnumU768, BUint::<8>, (u8, u16, u32, u64, u128, usize)}
+
+impl_try_from_builtin! { BnumU256, BUint::<4>, (i8, i16, i32, i64, i128, isize)}
+impl_try_from_builtin! { BnumU384, BUint::<6>, (i8, i16, i32, i64, i128, isize)}
+impl_try_from_builtin! { BnumU512, BUint::<8>, (i8, i16, i32, i64, i128, isize)}
+impl_try_from_builtin! { BnumU768, BUint::<12>, (i8, i16, i32, i64, i128, isize)}
+
 impl_to_builtin! { BnumI256, BInt::<4>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
 impl_to_builtin! { BnumI384, BInt::<6>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
 impl_to_builtin! { BnumI512, BInt::<8>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
@@ -103,14 +133,19 @@ impl_to_builtin! { BnumU384, BUint::<6>, (i8, i16, i32, i64, i128, isize, u8, u1
 impl_to_builtin! { BnumU512, BUint::<8>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
 impl_to_builtin! { BnumU768, BUint::<12>, (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize)}
 
-macro_rules! impl_from_bigint {
+macro_rules! impl_try_from_bigint {
     ($($t:ident, $wrapped:ty),*) => {
         paste! {
             $(
-                impl From<BigInt> for $t {
-                    fn from(val: BigInt) -> Self {
+                impl TryFrom<BigInt> for $t {
+                    type Error = [<Parse $t Error>];
+
+                    fn try_from(val: BigInt) -> Result<Self, Self::Error> {
                         let bytes = val.to_signed_bytes_le();
-                        Self(<$wrapped>::from_le_slice(&bytes).expect("Overflow"))
+                        match <$wrapped>::from_le_slice(&bytes) {
+                            Some(val) => Ok(Self(val)),
+                            None => Err([<Parse $t Error>]::Overflow),
+                        }
                     }
                 }
             )*
@@ -132,14 +167,14 @@ macro_rules! impl_to_bigint {
         }
     };
 }
-impl_from_bigint! { BnumI256, BInt::<4> }
-impl_from_bigint! { BnumI384, BInt::<6> }
-impl_from_bigint! { BnumI512, BInt::<8> }
-impl_from_bigint! { BnumI768, BInt::<12> }
-impl_from_bigint! { BnumU256, BUint::<4> }
-impl_from_bigint! { BnumU384, BUint::<6> }
-impl_from_bigint! { BnumU512, BUint::<8> }
-impl_from_bigint! { BnumU768, BUint::<12> }
+impl_try_from_bigint! { BnumI256, BInt::<4> }
+impl_try_from_bigint! { BnumI384, BInt::<6> }
+impl_try_from_bigint! { BnumI512, BInt::<8> }
+impl_try_from_bigint! { BnumI768, BInt::<12> }
+impl_try_from_bigint! { BnumU256, BUint::<4> }
+impl_try_from_bigint! { BnumU384, BUint::<6> }
+impl_try_from_bigint! { BnumU512, BUint::<8> }
+impl_try_from_bigint! { BnumU768, BUint::<12> }
 impl_to_bigint! { BnumI256, BInt::<4> }
 impl_to_bigint! { BnumI384, BInt::<6> }
 impl_to_bigint! { BnumI512, BInt::<8> }
@@ -162,16 +197,6 @@ macro_rules! impl_from_string {
                         }
                     }
                 }
-                impl From<&str> for $t {
-                    fn from(val: &str) -> Self {
-                        Self::from_str(&val).unwrap()
-                    }
-                }
-                impl From<String> for $t {
-                    fn from(val: String) -> Self {
-                        Self::from_str(&val).unwrap()
-                    }
-                }
             }
         )*
     };
@@ -186,7 +211,7 @@ impl_from_string! { BnumU384, BUint::<6> }
 impl_from_string! { BnumU512, BUint::<8> }
 impl_from_string! { BnumU768, BUint::<12> }
 
-macro_rules! impl_from_bnum {
+macro_rules! impl_try_from_bnum {
     ($t:ident, $wrapped:ty, ($($into:ident, $into_wrap:ty),*)) => {
         $(
             paste! {
@@ -222,11 +247,57 @@ macro_rules! impl_from_bnum {
         )*
     };
 }
-impl_from_bnum! {
+macro_rules! impl_from_bnum {
+    ($t:ident, $wrapped:ty, ($($into:ident, $into_wrap:ty),*)) => {
+        $(
+            paste! {
+                impl From<$t> for $into {
+                    fn from(val: $t) -> $into {
+                        let mut sign = <$into>::ONE;
+                        let mut other = val;
+
+                        if other < <$t>::ZERO {
+                            if <$into>::MIN == <$into>::ZERO {
+                                panic!("NegativeToUnsigned");
+                            } else {
+                                // This is basically abs() function (which is not available for
+                                // unsigned types).
+                                // Do not perform below for MIN value to avoid overflow
+                                if other != <$t>::MIN {
+                                    other = <$t>::ZERO - other;
+                                    sign = <$into>::ZERO - sign;
+                                }
+                            }
+                        }
+                        if (other.leading_zeros() as i32) <= <$t>::BITS as i32 - <$into>::BITS as i32 {
+                            panic!("Overflow");
+                        }
+                        Self(<$into_wrap>::cast_from(other.0)) * sign
+                    }
+                }
+
+            }
+        )*
+    };
+}
+
+impl_try_from_bnum! {
     BnumI512, BInt::<8>, (
         BnumI256, BInt::<4>,
         BnumI384, BInt::<6>,
-        BnumI768, BInt::<12>,
+        BnumU256, BUint::<4>,
+        BnumU384, BUint::<6>,
+        BnumU512, BUint::<8>,
+        BnumU768, BUint::<12>
+    )
+}
+impl_from_bnum! {
+    BnumI512, BInt::<8>, (
+        BnumI768, BInt::<12>
+    )
+}
+impl_try_from_bnum! {
+    BnumI256, BInt::<4>, (
         BnumU256, BUint::<4>,
         BnumU384, BUint::<6>,
         BnumU512, BUint::<8>,
@@ -237,7 +308,12 @@ impl_from_bnum! {
     BnumI256, BInt::<4>, (
         BnumI384, BInt::<6>,
         BnumI512, BInt::<8>,
-        BnumI768, BInt::<12>,
+        BnumI768, BInt::<12>
+    )
+}
+impl_try_from_bnum! {
+    BnumI384, BInt::<6>, (
+        BnumI256, BInt::<4>,
         BnumU256, BUint::<4>,
         BnumU384, BUint::<6>,
         BnumU512, BUint::<8>,
@@ -246,16 +322,11 @@ impl_from_bnum! {
 }
 impl_from_bnum! {
     BnumI384, BInt::<6>, (
-        BnumI256, BInt::<4>,
         BnumI512, BInt::<8>,
-        BnumI768, BInt::<12>,
-        BnumU256, BUint::<4>,
-        BnumU384, BUint::<6>,
-        BnumU512, BUint::<8>,
-        BnumU768, BUint::<12>
+        BnumI768, BInt::<12>
     )
 }
-impl_from_bnum! {
+impl_try_from_bnum! {
     BnumI768, BInt::<12>, (
         BnumI256, BInt::<4>,
         BnumI384, BInt::<6>,
@@ -268,20 +339,28 @@ impl_from_bnum! {
 }
 
 // must fit 0 - MAX
-impl_from_bnum! {
+impl_try_from_bnum! {
     BnumU512, BUint::<8>, (
         BnumI256, BInt::<4>,
         BnumI384, BInt::<6>,
         BnumI512, BInt::<8>,
-        BnumI768, BInt::<12>,
         BnumU256, BUint::<4>,
-        BnumU384, BUint::<6>,
+        BnumU384, BUint::<6>
+    )
+}
+impl_from_bnum! {
+    BnumU512, BUint::<8>, (
+        BnumI768, BInt::<12>,
         BnumU768, BUint::<12>
+    )
+}
+impl_try_from_bnum! {
+    BnumU256, BUint::<4>, (
+        BnumI256, BInt::<4>
     )
 }
 impl_from_bnum! {
     BnumU256, BUint::<4>, (
-        BnumI256, BInt::<4>,
         BnumI384, BInt::<6>,
         BnumI512, BInt::<8>,
         BnumI768, BInt::<12>,
@@ -290,18 +369,22 @@ impl_from_bnum! {
         BnumU768, BUint::<12>
     )
 }
-impl_from_bnum! {
+impl_try_from_bnum! {
     BnumU384, BUint::<6>, (
         BnumI256, BInt::<4>,
         BnumI384, BInt::<6>,
+        BnumU256, BUint::<4>
+    )
+}
+impl_from_bnum! {
+    BnumU384, BUint::<6>, (
         BnumI512, BInt::<8>,
         BnumI768, BInt::<12>,
-        BnumU256, BUint::<4>,
         BnumU512, BUint::<8>,
         BnumU768, BUint::<12>
     )
 }
-impl_from_bnum! {
+impl_try_from_bnum! {
     BnumU768, BUint::<12>, (
         BnumI256, BInt::<4>,
         BnumI384, BInt::<6>,

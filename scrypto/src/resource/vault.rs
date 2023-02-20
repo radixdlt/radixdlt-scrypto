@@ -1,7 +1,7 @@
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientComponentApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::types::Own;
+use radix_engine_interface::data::model::Own;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoCustomValueKind};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::Categorize;

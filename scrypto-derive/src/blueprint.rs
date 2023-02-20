@@ -475,14 +475,14 @@ fn generate_stubs(
                                     ::scrypto::runtime::Runtime::package_address(),
                                     #bp_name,
                                     #name,
-                                    args!(#(#input_args),*)
+                                    scrypto_args!(#(#input_args),*)
                                 )
                             }
                         });
                     } else {
                         methods.push(parse_quote! {
                             pub fn #ident(&self #(, #input_args: #input_types)*) -> #output {
-                                self.component.call(#name, args!(
+                                self.component.call(#name, scrypto_args!(
                                     #(
                                        #input_args
                                     ),*
@@ -797,11 +797,11 @@ mod tests {
 
                 impl TestComponent {
                     pub fn y(arg0: u32) -> u32 {
-                        ::scrypto::runtime::Runtime::call_function(::scrypto::runtime::Runtime::package_address(), "Test", "y", args!(arg0))
+                        ::scrypto::runtime::Runtime::call_function(::scrypto::runtime::Runtime::package_address(), "Test", "y", scrypto_args!(arg0))
                     }
 
                     pub fn x(&self, arg0: u32) -> u32 {
-                        self.component.call("x", args!(arg0))
+                        self.component.call("x", scrypto_args!(arg0))
                     }
                 }
 
@@ -848,7 +848,7 @@ mod tests {
 
                 impl TestGlobalComponentRef {
                     pub fn x(&self, arg0: u32) -> u32 {
-                        self.component.call("x", args!(arg0))
+                        self.component.call("x", scrypto_args!(arg0))
                     }
                 }
             },

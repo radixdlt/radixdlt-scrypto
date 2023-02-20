@@ -12,7 +12,7 @@ use crate::types::*;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::package::{PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_PRECOMPILED_IDENT};
 use radix_engine_interface::api::types::{
-    AuthZoneStackOffset, ComponentOffset, GlobalAddress, PackageOffset, RENodeId, SubstateOffset,
+    Address, AuthZoneStackOffset, ComponentOffset, PackageOffset, RENodeId, SubstateOffset,
     VaultOffset,
 };
 use radix_engine_interface::blueprints::resource::*;
@@ -45,7 +45,7 @@ impl AuthModule {
             actor,
             Some(ResolvedActor {
                 receiver: Some(ResolvedReceiver {
-                    derefed_from: Some((RENodeId::Global(GlobalAddress::Component(..)), _)),
+                    derefed_from: Some((RENodeId::Global(Address::Component(..)), _)),
                     ..
                 }),
                 ..
@@ -115,7 +115,7 @@ impl KernelModule for AuthModule {
                         }
                     } else {
                         let handle = api.kernel_lock_substate(
-                            RENodeId::Global(GlobalAddress::Package(identifier.package_address)),
+                            RENodeId::Global(Address::Package(identifier.package_address)),
                             NodeModuleId::PackageAccessRules,
                             SubstateOffset::PackageAccessRules,
                             LockFlags::read_only(),
@@ -194,7 +194,7 @@ impl KernelModule for AuthModule {
                         resource_address
                     };
                     let handle = api.kernel_lock_substate(
-                        RENodeId::Global(GlobalAddress::Resource(resource_address)),
+                        RENodeId::Global(Address::Resource(resource_address)),
                         NodeModuleId::AccessRules1,
                         SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                         LockFlags::read_only(),
@@ -240,7 +240,7 @@ impl KernelModule for AuthModule {
                 } => {
                     let offset = SubstateOffset::Package(PackageOffset::Info);
                     let handle = api.kernel_lock_substate(
-                        RENodeId::Global(GlobalAddress::Package(identifier.package_address)),
+                        RENodeId::Global(Address::Package(identifier.package_address)),
                         NodeModuleId::SELF,
                         offset,
                         LockFlags::read_only(),

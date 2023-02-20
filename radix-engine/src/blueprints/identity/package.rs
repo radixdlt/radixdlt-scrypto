@@ -2,7 +2,7 @@ use crate::errors::InterpreterError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::system::global::GlobalAddressSubstate;
+use crate::system::global::GlobalSubstate;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
@@ -60,7 +60,7 @@ impl IdentityNativePackage {
         let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalIdentity)?;
         api.kernel_create_node(
             global_node_id,
-            RENodeInit::Global(GlobalAddressSubstate::Identity(node_id.into())),
+            RENodeInit::Global(GlobalSubstate::Identity(node_id.into())),
             BTreeMap::new(),
         )?;
         let identity_address: ComponentAddress = global_node_id.into();

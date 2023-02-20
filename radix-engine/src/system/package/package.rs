@@ -1,6 +1,6 @@
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::global::GlobalAddressSubstate;
+use crate::system::global::GlobalSubstate;
 use crate::system::kernel_modules::costing::FIXED_HIGH_FEE;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
@@ -127,14 +127,14 @@ impl Package {
 
         // Globalize
         let global_node_id = if let Some(address) = input.package_address {
-            RENodeId::Global(GlobalAddress::Package(PackageAddress::Normal(address)))
+            RENodeId::Global(Address::Package(PackageAddress::Normal(address)))
         } else {
             api.kernel_allocate_node_id(RENodeType::GlobalPackage)?
         };
 
         api.kernel_create_node(
             global_node_id,
-            RENodeInit::Global(GlobalAddressSubstate::Package(package_id)),
+            RENodeInit::Global(GlobalSubstate::Package(package_id)),
             BTreeMap::new(),
         )?;
 
@@ -226,14 +226,14 @@ impl Package {
 
         // Globalize
         let global_node_id = if let Some(address) = input.package_address {
-            RENodeId::Global(GlobalAddress::Package(PackageAddress::Normal(address)))
+            RENodeId::Global(Address::Package(PackageAddress::Normal(address)))
         } else {
             api.kernel_allocate_node_id(RENodeType::GlobalPackage)?
         };
 
         api.kernel_create_node(
             global_node_id,
-            RENodeInit::Global(GlobalAddressSubstate::Package(package_id)),
+            RENodeInit::Global(GlobalSubstate::Package(package_id)),
             BTreeMap::new(),
         )?;
 

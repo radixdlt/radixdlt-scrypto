@@ -3,7 +3,7 @@ use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use radix_engine_interface::abi;
 use radix_engine_interface::api::types::{
-    GlobalAddress, GlobalOffset, PackageOffset, RENodeId, SubstateId, SubstateOffset,
+    Address, GlobalOffset, PackageOffset, RENodeId, SubstateId, SubstateOffset,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -20,7 +20,7 @@ pub fn export_abi<S: ReadableSubstateStore>(
 ) -> Result<abi::BlueprintAbi, ExportError> {
     let global_substate: RuntimeSubstate = substate_store
         .get_substate(&SubstateId(
-            RENodeId::Global(GlobalAddress::Package(package_address)),
+            RENodeId::Global(Address::Package(package_address)),
             NodeModuleId::SELF,
             SubstateOffset::Global(GlobalOffset::Global),
         ))
@@ -52,7 +52,7 @@ pub fn export_abi_by_component<S: ReadableSubstateStore>(
     substate_store: &S,
     component_address: ComponentAddress,
 ) -> Result<abi::BlueprintAbi, ExportError> {
-    let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
+    let node_id = RENodeId::Global(Address::Component(component_address));
     let global = substate_store
         .get_substate(&SubstateId(
             node_id,

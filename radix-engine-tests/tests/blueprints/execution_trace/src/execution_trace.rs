@@ -29,8 +29,9 @@ mod execution_trace_test {
             .globalize();
 
             let transfer_bucket: Bucket =
-                Runtime::call_method(source_component, "take", args!(amount));
-            let _: () = Runtime::call_method(target_component, "put", args!(transfer_bucket));
+                Runtime::call_method(source_component, "take", scrypto_args!(amount));
+            let _: () =
+                Runtime::call_method(target_component, "put", scrypto_args!(transfer_bucket));
 
             (resource_address, source_component, target_component)
         }

@@ -2,7 +2,6 @@ use std::fs;
 use std::path::PathBuf;
 
 use radix_engine::types::*;
-use transaction::signing::EcdsaSecp256k1PrivateKey;
 
 use crate::resim::*;
 use std::env;

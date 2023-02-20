@@ -14,8 +14,9 @@ use radix_engine_interface::rule;
 use scrypto::component::ComponentAccessRules;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::data::{manifest_args, *};
+use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::TransactionManifest;
-use transaction::signing::EcdsaSecp256k1PrivateKey;
 
 #[test]
 fn scrypto_methods_and_functions_should_be_able_to_return_access_rules_pointers() {
@@ -293,7 +294,7 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
     let receipt = test_runner.execute_manifest(
         MutableAccessRulesTestRunner::manifest_builder()
             .set_method_access_rule(
-                GlobalAddress::Component(test_runner.component_address),
+                Address::Component(test_runner.component_address),
                 0,
                 AccessRuleKey::new(NodeModuleId::SELF, "borrow_funds".to_string()),
                 rule!(deny_all),
@@ -342,7 +343,7 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
         let virtual_badge_non_fungible_global_id =
             NonFungibleGlobalId::from_public_key(&public_key);
 
-        let access_rules = vec![scrypto_decode::<AccessRules>(&args!(
+        let access_rules = vec![manifest_decode::<AccessRules>(&manifest_args!(
             HashMap::<AccessRuleKey, AccessRuleEntry>::new(),
             HashMap::<String, AccessRule>::new(),
             AccessRule::AllowAll,
@@ -359,7 +360,7 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
         let receipt = test_runner.execute_manifest(
             MutableAccessRulesTestRunner::manifest_builder()
                 .set_method_access_rule(
-                    GlobalAddress::Component(test_runner.component_address),
+                    Address::Component(test_runner.component_address),
                     1,
                     access_rule_key,
                     rule!(deny_all),
@@ -434,7 +435,12 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
 
     let component_address = {
         let manifest = ManifestBuilder::new()
-            .call_function(package_address, "AssertAccessRule".into(), "new", args!())
+            .call_function(
+                package_address,
+                "AssertAccessRule".into(),
+                "new",
+                manifest_args!(),
+            )
             .build();
 
         let receipt = test_runner.execute_manifest_ignoring_fee(
@@ -451,7 +457,7 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
         .call_method(
             component_address,
             "assert_access_rule",
-            args!(rule!(require(RADIX_TOKEN)), Vec::<ManifestBucket>::new()),
+            manifest_args!(rule!(require(RADIX_TOKEN)), Vec::<ManifestBucket>::new()),
         )
         .build();
 
@@ -481,7 +487,12 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
 
     let component_address = {
         let manifest = ManifestBuilder::new()
-            .call_function(package_address, "AssertAccessRule".into(), "new", args!())
+            .call_function(
+                package_address,
+                "AssertAccessRule".into(),
+                "new",
+                manifest_args!(),
+            )
             .build();
 
         let receipt = test_runner.execute_manifest_ignoring_fee(
@@ -499,13 +510,13 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
             builder.call_method(
                 component_address,
                 "assert_access_rule",
-                args!(rule!(require(RADIX_TOKEN)), vec![bucket]),
+                manifest_args!(rule!(require(RADIX_TOKEN)), vec![bucket]),
             )
         })
         .call_method(
             account_component,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
 
@@ -538,7 +549,7 @@ impl MutableAccessRulesTestRunner {
                 package_address,
                 Self::BLUEPRINT_NAME,
                 "new",
-                args!(access_rules),
+                manifest_args!(access_rules),
             )
             .build();
         let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
@@ -561,7 +572,7 @@ impl MutableAccessRulesTestRunner {
         let manifest = match call {
             /*
             Call::Method => Self::manifest_builder()
-                .call_method(self.component_address, "access_rules_method", args!())
+                .call_method(self.component_address, "access_rules_method", manifest_args!())
                 .build(),
              */
             Call::Function => Self::manifest_builder()
@@ -569,7 +580,7 @@ impl MutableAccessRulesTestRunner {
                     self.package_address,
                     Self::BLUEPRINT_NAME,
                     "access_rules_function",
-                    args!(self.component_address),
+                    manifest_args!(self.component_address),
                 )
                 .build(),
         };
@@ -583,7 +594,7 @@ impl MutableAccessRulesTestRunner {
         method_name: &str,
         access_rule: AccessRule,
     ) -> TransactionReceipt {
-        let args = args!(index, method_name.to_string(), access_rule);
+        let args = manifest_args!(index, method_name.to_string(), access_rule);
         let manifest = Self::manifest_builder()
             .call_method(self.component_address, "set_method_auth", args)
             .build();
@@ -595,7 +606,7 @@ impl MutableAccessRulesTestRunner {
         index: usize,
         access_rule: AccessRule,
     ) -> TransactionReceipt {
-        let args = args!(index, access_rule);
+        let args = manifest_args!(index, access_rule);
         let manifest = Self::manifest_builder()
             .call_method(self.component_address, "set_default", args)
             .build();
@@ -603,7 +614,7 @@ impl MutableAccessRulesTestRunner {
     }
 
     pub fn lock_method_auth(&mut self, index: usize, method_name: &str) -> TransactionReceipt {
-        let args = args!(index, method_name.to_string());
+        let args = manifest_args!(index, method_name.to_string());
         let manifest = Self::manifest_builder()
             .call_method(self.component_address, "lock_method_auth", args)
             .build();
@@ -611,7 +622,7 @@ impl MutableAccessRulesTestRunner {
     }
 
     pub fn lock_default_auth(&mut self, index: usize) -> TransactionReceipt {
-        let args = args!(index);
+        let args = manifest_args!(index);
         let manifest = Self::manifest_builder()
             .call_method(self.component_address, "lock_default_auth", args)
             .build();
@@ -620,14 +631,14 @@ impl MutableAccessRulesTestRunner {
 
     pub fn deposit_funds(&mut self) -> TransactionReceipt {
         let manifest = Self::manifest_builder()
-            .call_method(self.component_address, "deposit_funds", args!())
+            .call_method(self.component_address, "deposit_funds", manifest_args!())
             .build();
         self.execute_manifest(manifest)
     }
 
     pub fn borrow_funds(&mut self) -> TransactionReceipt {
         let manifest = Self::manifest_builder()
-            .call_method(self.component_address, "borrow_funds", args!())
+            .call_method(self.component_address, "borrow_funds", manifest_args!())
             .build();
         self.execute_manifest(manifest)
     }

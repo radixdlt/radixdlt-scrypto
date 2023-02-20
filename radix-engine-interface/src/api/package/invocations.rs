@@ -5,6 +5,7 @@ use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use scrypto_abi::BlueprintAbi;
+use transaction_data::*;
 
 pub struct PackageAbi;
 
@@ -17,7 +18,9 @@ pub const PACKAGE_BLUEPRINT: &str = "Package";
 
 pub const PACKAGE_PUBLISH_WASM_IDENT: &str = "publish_wasm";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(
+    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
+)]
 pub struct PackagePublishWasmInput {
     pub package_address: Option<[u8; 26]>, // TODO: Clean this up
     pub code: Vec<u8>,
@@ -29,7 +32,9 @@ pub struct PackagePublishWasmInput {
 
 pub const PACKAGE_PUBLISH_PRECOMPILED_IDENT: &str = "publish_precompiled";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(
+    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
+)]
 pub struct PackagePublishPrecompiledInput {
     pub package_address: Option<[u8; 26]>, // TODO: Clean this up
     pub native_package_code_id: u8,

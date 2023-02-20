@@ -4,6 +4,7 @@ use radix_engine::types::*;
 use radix_engine_constants::DEFAULT_MAX_CALL_DEPTH;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::data::manifest_args;
 
 #[test]
 fn test_max_call_depth_success() {
@@ -21,7 +22,12 @@ fn test_max_call_depth_success() {
     let num_calls = u32::try_from(DEFAULT_MAX_CALL_DEPTH).unwrap() - 1u32;
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package_address, "Caller", "recursive", args!(num_calls))
+        .call_function(
+            package_address,
+            "Caller",
+            "recursive",
+            manifest_args!(num_calls),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -38,7 +44,12 @@ fn test_max_call_depth_failure() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package_address, "Caller", "recursive", args!(16u32))
+        .call_function(
+            package_address,
+            "Caller",
+            "recursive",
+            manifest_args!(16u32),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 

@@ -1,7 +1,7 @@
 use super::state_machine::*;
 use crate::errors::{ApplicationError, InterpreterError, RuntimeError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, LockFlags};
-use crate::system::global::GlobalAddressSubstate;
+use crate::system::global::GlobalSubstate;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
@@ -286,7 +286,7 @@ impl AccessControllerNativePackage {
         let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalAccessController)?;
         api.kernel_create_node(
             global_node_id,
-            RENodeInit::Global(GlobalAddressSubstate::AccessController(node_id.into())),
+            RENodeInit::Global(GlobalSubstate::AccessController(node_id.into())),
             BTreeMap::new(),
         )?;
 

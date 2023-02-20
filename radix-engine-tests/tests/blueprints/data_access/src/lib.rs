@@ -11,7 +11,7 @@ mod data_access {
             let component_address = Self {}.instantiate().globalize();
             let lock_handle: LockHandle = ScryptoEnv
                 .sys_lock_substate(
-                    RENodeId::Global(GlobalAddress::Component(component_address)),
+                    RENodeId::Global(Address::Component(component_address)),
                     SubstateOffset::Component(ComponentOffset::State0),
                     false,
                 )
@@ -23,7 +23,7 @@ mod data_access {
             let component_address = Self {}.instantiate().globalize();
             let lock_handle: LockHandle = ScryptoEnv
                 .sys_lock_substate(
-                    RENodeId::Global(GlobalAddress::Component(component_address)),
+                    RENodeId::Global(Address::Component(component_address)),
                     SubstateOffset::Component(ComponentOffset::State0),
                     true,
                 )
