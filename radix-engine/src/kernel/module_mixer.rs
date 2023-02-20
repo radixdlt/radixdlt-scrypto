@@ -25,7 +25,7 @@ use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::types::RENodeType;
 use radix_engine_interface::api::types::SubstateOffset;
 use radix_engine_interface::api::types::VaultId;
-use radix_engine_interface::blueprints::resource::Resource;
+use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::crypto::Hash;
 use sbor::rust::collections::BTreeMap;
 use transaction::model::AuthZoneParams;

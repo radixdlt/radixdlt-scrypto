@@ -4,7 +4,7 @@ use radix_engine_constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_SYSTEM_LOAN,
 };
 use radix_engine_interface::api::types::VaultId;
-use radix_engine_interface::blueprints::resource::Resource;
+use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use strum::EnumCount;
 
 // Note: for performance reason, `u128` is used to represent decimal in this file.
@@ -62,9 +62,9 @@ pub trait ExecutionFeeReserve {
     fn lock_fee(
         &mut self,
         vault_id: VaultId,
-        fee: Resource,
+        fee: LiquidFungibleResource,
         contingent: bool,
-    ) -> Result<Resource, FeeReserveError>;
+    ) -> Result<LiquidFungibleResource, FeeReserveError>;
 }
 
 pub trait FinalizingFeeReserve {
@@ -118,7 +118,7 @@ pub struct SystemLoanFeeReserve {
     tip_percentage: u16,
 
     /// Payments made during the execution of a transaction.
-    payments: Vec<(VaultId, Resource, bool)>,
+    payments: Vec<(VaultId, LiquidFungibleResource, bool)>,
 
     /// The cost unit balance (from system loan)
     remaining_loan_balance: u32,
@@ -378,9 +378,9 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
     fn lock_fee(
         &mut self,
         vault_id: VaultId,
-        mut fee: Resource,
+        mut fee: LiquidFungibleResource,
         contingent: bool,
-    ) -> Result<Resource, FeeReserveError> {
+    ) -> Result<LiquidFungibleResource, FeeReserveError> {
         if fee.resource_address() != RADIX_TOKEN {
             return Err(FeeReserveError::NotXrd);
         }
@@ -446,8 +446,8 @@ mod tests {
 
     const TEST_VAULT_ID: VaultId = [0u8; 36];
 
-    fn xrd<T: Into<Decimal>>(amount: T) -> Resource {
-        Resource::new_fungible(RADIX_TOKEN, 18, amount.into())
+    fn xrd<T: Into<Decimal>>(amount: T) -> LiquidFungibleResource {
+        LiquidFungibleResource::new(RADIX_TOKEN, 18, amount.into())
     }
 
     #[test]

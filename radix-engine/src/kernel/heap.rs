@@ -1,6 +1,6 @@
 use super::track::Track;
 use crate::blueprints::logger::LoggerSubstate;
-use crate::blueprints::resource::{BucketSubstate, NonFungibleSubstate, ProofSubstate};
+use crate::blueprints::resource::{BucketSubstate, FungibleProofSubstate, NonFungibleSubstate};
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::errors::CallFrameError;
 use crate::system::node_modules::auth::AuthZoneStackSubstate;
@@ -151,8 +151,8 @@ impl Into<BucketSubstate> for HeapRENode {
     }
 }
 
-impl Into<ProofSubstate> for HeapRENode {
-    fn into(mut self) -> ProofSubstate {
+impl Into<FungibleProofSubstate> for HeapRENode {
+    fn into(mut self) -> FungibleProofSubstate {
         self.substates
             .remove(&(
                 NodeModuleId::SELF,

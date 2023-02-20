@@ -22,282 +22,134 @@ pub enum ProofError {
     NonFungibleOperationNotAllowed,
     /// Can't apply a fungible operation on non-fungible proofs.
     FungibleOperationNotAllowed,
-    CouldNotCreateProof,
     InvalidRequestData(DecodeError),
 }
 
+#[derive(Debug, Clone, Hash, Eq, PartialEq, PartialOrd, Ord)]
+pub enum ResourceContainerId {
+    Bucket(BucketId),
+    Vault(VaultId),
+}
+
 #[derive(Debug)]
-pub struct ProofSubstate {
+pub struct FungibleProofSubstate {
     /// The resource address.
     pub resource_address: ResourceAddress,
-    /// The resource type.
-    pub resource_type: ResourceType,
     /// Whether movement of this proof is restricted.
     pub restricted: bool,
     /// The total locked amount or non-fungible ids.
-    pub total_locked: LockedAmountOrIds,
+    pub total_locked: Decimal,
     /// The supporting containers.
-    pub evidence: HashMap<ResourceContainerId, (Rc<RefCell<LockableResource>>, LockedAmountOrIds)>,
+    pub evidence: BTreeMap<ResourceContainerId, (Rc<RefCell<FungibleResource>>, Decimal)>,
 }
 
-impl ProofSubstate {
+impl FungibleProofSubstate {
     pub fn new(
         resource_address: ResourceAddress,
-        resource_type: ResourceType,
-        total_locked: LockedAmountOrIds,
-        evidence: HashMap<ResourceContainerId, (Rc<RefCell<LockableResource>>, LockedAmountOrIds)>,
-    ) -> Result<ProofSubstate, ProofError> {
-        if total_locked.is_empty() {
+        total_locked: Decimal,
+        evidence: BTreeMap<ResourceContainerId, (Rc<RefCell<FungibleResource>>, Decimal)>,
+    ) -> Result<FungibleProofSubstate, ProofError> {
+        if total_locked.is_zero() {
             return Err(ProofError::EmptyProofNotAllowed);
         }
 
         Ok(Self {
             resource_address,
-            resource_type,
             restricted: false,
             total_locked,
             evidence,
         })
     }
 
-    /// Computes the locked amount or non-fungible IDs, in total and per resource container.
-    pub fn compute_total_locked(
-        proofs: &[ProofSubstate],
+    fn compute_max_locked(
+        proofs: &[FungibleProofSubstate],
         resource_address: ResourceAddress,
-        resource_type: ResourceType,
-    ) -> (
-        LockedAmountOrIds,
-        HashMap<ResourceContainerId, LockedAmountOrIds>,
-    ) {
+    ) -> (Decimal, BTreeMap<ResourceContainerId, Decimal>) {
         // filter proofs by resource address and restricted flag
-        let proofs: Vec<&ProofSubstate> = proofs
+        let proofs: Vec<&FungibleProofSubstate> = proofs
             .iter()
             .filter(|p| p.resource_address() == resource_address && !p.is_restricted())
             .collect();
 
-        // calculate the max locked amount (or ids) of each container
-        match resource_type {
-            ResourceType::Fungible { .. } => {
-                let mut max = HashMap::<ResourceContainerId, Decimal>::new();
-                for proof in &proofs {
-                    for (container_id, (_, locked_amount_or_ids)) in &proof.evidence {
-                        let new_amount = locked_amount_or_ids.amount();
-                        if let Some(existing) = max.get_mut(container_id) {
-                            *existing = Decimal::max(*existing, new_amount);
-                        } else {
-                            max.insert(container_id.clone(), new_amount);
-                        }
-                    }
-                }
-                let total = max
-                    .values()
-                    .cloned()
-                    .reduce(|a, b| a + b)
-                    .unwrap_or_default();
-                let per_container = max
-                    .into_iter()
-                    .map(|(k, v)| (k, LockedAmountOrIds::Amount(v)))
-                    .collect();
-                (LockedAmountOrIds::Amount(total), per_container)
-            }
-            ResourceType::NonFungible { .. } => {
-                let mut max = HashMap::<ResourceContainerId, BTreeSet<NonFungibleLocalId>>::new();
-                for proof in &proofs {
-                    for (container_id, (_, locked_amount_or_ids)) in &proof.evidence {
-                        let new_ids = locked_amount_or_ids
-                            .ids()
-                            .expect("Failed to list non-fungible IDS on non-fungible proof");
-                        if let Some(ids) = max.get_mut(container_id) {
-                            ids.extend(new_ids);
-                        } else {
-                            max.insert(container_id.clone(), new_ids);
-                        }
-                    }
-                }
-                let mut total = BTreeSet::<NonFungibleLocalId>::new();
-                for value in max.values() {
-                    total.extend(value.clone());
-                }
-                let per_container = max
-                    .into_iter()
-                    .map(|(k, v)| (k, LockedAmountOrIds::Ids(v)))
-                    .collect();
-                (LockedAmountOrIds::Ids(total), per_container)
-            }
-        }
-    }
-
-    /// Creates a composite proof from proofs. This method will generate a max proof.
-    pub fn compose(
-        proofs: &[ProofSubstate],
-        resource_address: ResourceAddress,
-        resource_type: ResourceType,
-    ) -> Result<ProofSubstate, ProofError> {
-        let (total, _) = Self::compute_total_locked(proofs, resource_address, resource_type);
-        match total {
-            LockedAmountOrIds::Amount(amount) => {
-                Self::compose_by_amount(proofs, amount, resource_address, resource_type)
-            }
-            LockedAmountOrIds::Ids(ids) => {
-                Self::compose_by_ids(proofs, &ids, resource_address, resource_type)
-            }
-        }
-    }
-
-    pub fn compose_by_amount(
-        proofs: &[ProofSubstate],
-        amount: Decimal,
-        resource_address: ResourceAddress,
-        resource_type: ResourceType,
-    ) -> Result<ProofSubstate, ProofError> {
-        let (total_locked, mut per_container) =
-            Self::compute_total_locked(proofs, resource_address, resource_type);
-
-        match total_locked {
-            LockedAmountOrIds::Amount(locked_amount) => {
-                if amount > locked_amount {
-                    return Err(ProofError::InsufficientBaseProofs);
-                }
-
-                // Locked the max (or needed) amount from the containers, in the order that the containers were referenced.
-                // TODO: observe the performance/feedback of this container selection algorithm and decide next steps
-                let mut evidence = HashMap::new();
-                let mut remaining = amount.clone();
-                'outer: for proof in proofs {
-                    for (container_id, (container, _)) in &proof.evidence {
-                        if remaining.is_zero() {
-                            break 'outer;
-                        }
-
-                        if let Some(quota) = per_container.remove(container_id) {
-                            let amount = Decimal::min(remaining, quota.amount());
-                            container
-                                .borrow_mut()
-                                .lock_by_amount(amount)
-                                .map_err(ProofError::ResourceError)?;
-                            remaining -= amount;
-                            evidence.insert(
-                                container_id.clone(),
-                                (container.clone(), LockedAmountOrIds::Amount(amount)),
-                            );
-                        }
-                    }
-                }
-
-                ProofSubstate::new(
-                    resource_address,
-                    resource_type,
-                    LockedAmountOrIds::Amount(amount),
-                    evidence,
-                )
-            }
-            LockedAmountOrIds::Ids(locked_ids) => {
-                if amount > locked_ids.len().into() {
-                    Err(ProofError::InsufficientBaseProofs)
+        // calculate the max locked amount of each container
+        let mut max = BTreeMap::<ResourceContainerId, Decimal>::new();
+        for proof in &proofs {
+            for (container_id, (_, locked_amount)) in &proof.evidence {
+                if let Some(existing) = max.get_mut(container_id) {
+                    *existing = Decimal::max(*existing, locked_amount.clone());
                 } else {
-                    let n: usize = amount
-                        .to_string()
-                        .parse()
-                        .expect("Failed to convert non-fungible amount to usize");
-                    let ids: BTreeSet<NonFungibleLocalId> =
-                        locked_ids.iter().take(n).cloned().collect();
-                    Self::compose_by_ids(proofs, &ids, resource_address, resource_type)
+                    max.insert(container_id.clone(), locked_amount.clone());
                 }
             }
         }
+        let total = max
+            .values()
+            .cloned()
+            .reduce(|a, b| a + b)
+            .unwrap_or_default();
+        let per_container = max.into_iter().collect();
+        (total, per_container)
     }
 
-    pub fn compose_by_ids(
-        proofs: &[ProofSubstate],
-        ids: &BTreeSet<NonFungibleLocalId>,
+    pub fn compose(
+        proofs: &[FungibleProofSubstate],
         resource_address: ResourceAddress,
-        resource_type: ResourceType,
-    ) -> Result<ProofSubstate, ProofError> {
-        let (total_locked, mut per_container) =
-            Self::compute_total_locked(proofs, resource_address, resource_type);
+        amount: Option<Decimal>,
+    ) -> Result<FungibleProofSubstate, ProofError> {
+        let (total_locked, mut per_container) = Self::compute_max_locked(proofs, resource_address);
+        let amount = amount.unwrap_or(total_locked);
 
-        match total_locked {
-            LockedAmountOrIds::Amount(_) => Err(ProofError::NonFungibleOperationNotAllowed),
-            LockedAmountOrIds::Ids(locked_ids) => {
-                if !locked_ids.is_superset(ids) {
-                    return Err(ProofError::InsufficientBaseProofs);
+        // Check if base proofs are sufficient for the request amount
+        if amount > total_locked {
+            return Err(ProofError::InsufficientBaseProofs);
+        }
+
+        // TODO: review resource selection algorithm here
+        let mut evidence = BTreeMap::new();
+        let mut remaining = amount.clone();
+        'outer: for proof in proofs {
+            for (container_id, (container, _)) in &proof.evidence {
+                if remaining.is_zero() {
+                    break 'outer;
                 }
 
-                // Locked the max (or needed) ids from the containers, in the order that the containers were referenced.
-                // TODO: observe the performance/feedback of this container selection algorithm and decide next steps
-                let mut evidence = HashMap::new();
-                let mut remaining = ids.clone();
-                'outer: for proof in proofs {
-                    for (container_id, (container, _)) in &proof.evidence {
-                        if remaining.is_empty() {
-                            break 'outer;
-                        }
-
-                        if let Some(quota) = per_container.remove(container_id) {
-                            let ids = remaining
-                                .intersection(&quota.ids().expect(
-                                    "Failed to list non-fungible ids on non-fungible resource",
-                                ))
-                                .cloned()
-                                .collect();
-                            container
-                                .borrow_mut()
-                                .lock_by_ids(&ids)
-                                .map_err(ProofError::ResourceError)?;
-                            for id in &ids {
-                                remaining.remove(id);
-                            }
-                            evidence.insert(
-                                container_id.clone(),
-                                (container.clone(), LockedAmountOrIds::Ids(ids)),
-                            );
-                        }
-                    }
+                if let Some(quota) = per_container.remove(container_id) {
+                    let amount = Decimal::min(remaining, quota);
+                    container
+                        .borrow_mut()
+                        .lock_by_amount(amount)
+                        .map_err(ProofError::ResourceError)?;
+                    remaining -= amount;
+                    evidence.insert(container_id.clone(), (container.clone(), amount));
                 }
-
-                ProofSubstate::new(
-                    resource_address,
-                    resource_type,
-                    LockedAmountOrIds::Ids(ids.clone()),
-                    evidence,
-                )
             }
         }
+
+        FungibleProofSubstate::new(resource_address, amount, evidence)
     }
 
     /// Makes a clone of this proof.
     ///
     /// Note that cloning a proof will update the ref count of the locked
     /// resources in the source containers.
-    pub fn clone(&self) -> Self {
-        for (_, (container, locked_amount_or_ids)) in &self.evidence {
-            match locked_amount_or_ids {
-                LockedAmountOrIds::Amount(amount) => {
-                    container
-                        .borrow_mut()
-                        .lock_by_amount(*amount)
-                        .expect("Failed to clone a proof");
-                }
-                LockedAmountOrIds::Ids(ids) => {
-                    container
-                        .borrow_mut()
-                        .lock_by_ids(ids)
-                        .expect("Failed to clone a proof");
-                }
-            }
+    pub fn clone_proof(&self) -> Self {
+        for (_, (container, locked_amount)) in &self.evidence {
+            container
+                .borrow_mut()
+                .lock_by_amount(*locked_amount)
+                .expect("Failed to clone a proof");
         }
         Self {
             resource_address: self.resource_address.clone(),
-            resource_type: self.resource_type.clone(),
             restricted: self.restricted,
             total_locked: self.total_locked.clone(),
             evidence: self.evidence.clone(),
         }
     }
 
-    pub fn drop(&mut self) {
-        for (_, (container, locked_amount_or_ids)) in &mut self.evidence {
-            container.borrow_mut().unlock(locked_amount_or_ids);
+    pub fn drop_proof(&mut self) {
+        for (_, (container, amount)) in &mut self.evidence {
+            container.borrow_mut().unlock(*amount);
         }
     }
 
@@ -314,13 +166,7 @@ impl ProofSubstate {
     }
 
     pub fn total_amount(&self) -> Decimal {
-        self.total_locked.amount()
-    }
-
-    pub fn total_ids(&self) -> Result<BTreeSet<NonFungibleLocalId>, InvokeError<ProofError>> {
         self.total_locked
-            .ids()
-            .map_err(|_| InvokeError::SelfError(ProofError::NonFungibleOperationNotAllowed))
     }
 
     pub fn is_restricted(&self) -> bool {
@@ -328,9 +174,202 @@ impl ProofSubstate {
     }
 
     pub fn snapshot(&self) -> ProofSnapshot {
-        ProofSnapshot {
+        ProofSnapshot::Fungible {
             resource_address: self.resource_address,
-            resource_type: self.resource_type,
+            restricted: self.restricted,
+            total_locked: self.total_locked.clone(),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct NonFungibleProofSubstate {
+    /// The resource address.
+    pub resource_address: ResourceAddress,
+    /// Whether movement of this proof is restricted.
+    pub restricted: bool,
+    /// The total locked amount or non-fungible ids.
+    pub total_locked: BTreeSet<NonFungibleLocalId>,
+    /// The supporting containers.
+    pub evidence: BTreeMap<
+        ResourceContainerId,
+        (
+            Rc<RefCell<NonFungibleResource>>,
+            BTreeSet<NonFungibleLocalId>,
+        ),
+    >,
+}
+
+impl NonFungibleProofSubstate {
+    pub fn new(
+        resource_address: ResourceAddress,
+        total_locked: BTreeSet<NonFungibleLocalId>,
+        evidence: BTreeMap<
+            ResourceContainerId,
+            (
+                Rc<RefCell<NonFungibleResource>>,
+                BTreeSet<NonFungibleLocalId>,
+            ),
+        >,
+    ) -> Result<NonFungibleProofSubstate, ProofError> {
+        if total_locked.is_empty() {
+            return Err(ProofError::EmptyProofNotAllowed);
+        }
+
+        Ok(Self {
+            resource_address,
+            restricted: false,
+            total_locked,
+            evidence,
+        })
+    }
+
+    /// Computes the locked amount or non-fungible IDs, in total and per resource container.
+    pub fn compute_max_locked(
+        proofs: &[NonFungibleProofSubstate],
+        resource_address: ResourceAddress,
+    ) -> (
+        BTreeSet<NonFungibleLocalId>,
+        HashMap<ResourceContainerId, BTreeSet<NonFungibleLocalId>>,
+    ) {
+        // filter proofs by resource address and restricted flag
+        let proofs: Vec<&NonFungibleProofSubstate> = proofs
+            .iter()
+            .filter(|p| p.resource_address() == resource_address && !p.is_restricted())
+            .collect();
+
+        // calculate the max locked amount (or ids) of each container
+        let mut max = HashMap::<ResourceContainerId, BTreeSet<NonFungibleLocalId>>::new();
+        for proof in &proofs {
+            for (container_id, (_, locked_ids)) in &proof.evidence {
+                let new_ids = locked_ids.clone();
+                if let Some(ids) = max.get_mut(container_id) {
+                    ids.extend(new_ids);
+                } else {
+                    max.insert(container_id.clone(), new_ids);
+                }
+            }
+        }
+        let mut total = BTreeSet::<NonFungibleLocalId>::new();
+        for value in max.values() {
+            total.extend(value.clone());
+        }
+        let per_container = max.into_iter().collect();
+        (total, per_container)
+    }
+
+    pub fn compose_by_amount(
+        proofs: &[NonFungibleProofSubstate],
+        resource_address: ResourceAddress,
+        amount: Option<Decimal>,
+    ) -> Result<NonFungibleProofSubstate, ProofError> {
+        let (total_locked, mut per_container) = Self::compute_max_locked(proofs, resource_address);
+        let total_amount = total_locked.len().into();
+        let amount = amount.unwrap_or(total_amount);
+
+        if amount > total_amount {
+            Err(ProofError::InsufficientBaseProofs)
+        } else {
+            let n: usize = amount
+                .to_string()
+                .parse()
+                .expect("Failed to convert non-fungible amount to usize");
+            let ids: BTreeSet<NonFungibleLocalId> = total_locked.iter().take(n).cloned().collect();
+            Self::compose_by_ids(proofs, resource_address, Some(ids))
+        }
+    }
+
+    pub fn compose_by_ids(
+        proofs: &[NonFungibleProofSubstate],
+        resource_address: ResourceAddress,
+        ids: Option<BTreeSet<NonFungibleLocalId>>,
+    ) -> Result<NonFungibleProofSubstate, ProofError> {
+        let (total_locked, mut per_container) = Self::compute_max_locked(proofs, resource_address);
+        let ids = ids.unwrap_or(total_locked.clone());
+
+        if !total_locked.is_superset(&ids) {
+            return Err(ProofError::InsufficientBaseProofs);
+        }
+
+        // Locked the max (or needed) ids from the containers, in the order that the containers were referenced.
+        // TODO: observe the performance/feedback of this container selection algorithm and decide next steps
+        let mut evidence = HashMap::new();
+        let mut remaining = ids.clone();
+        'outer: for proof in proofs {
+            for (container_id, (container, _)) in &proof.evidence {
+                if remaining.is_empty() {
+                    break 'outer;
+                }
+
+                if let Some(quota) = per_container.remove(container_id) {
+                    let ids = remaining.intersection(&quota).cloned().collect();
+                    container
+                        .borrow_mut()
+                        .lock_by_ids(&ids)
+                        .map_err(ProofError::ResourceError)?;
+                    for id in &ids {
+                        remaining.remove(id);
+                    }
+                    evidence.insert(container_id.clone(), (container.clone(), ids));
+                }
+            }
+        }
+
+        NonFungibleProofSubstate::new(resource_address, ids.clone(), evidence)
+    }
+
+    /// Makes a clone of this proof.
+    ///
+    /// Note that cloning a proof will update the ref count of the locked
+    /// resources in the source containers.
+    pub fn clone_proof(&self) -> Self {
+        for (_, (container, locked_ids)) in &self.evidence {
+            container
+                .borrow_mut()
+                .lock_by_ids(locked_ids)
+                .expect("Failed to clone a proof");
+        }
+        Self {
+            resource_address: self.resource_address.clone(),
+            restricted: self.restricted,
+            total_locked: self.total_locked.clone(),
+            evidence: self.evidence.clone(),
+        }
+    }
+
+    pub fn drop_proof(&mut self) {
+        for (_, (container, locked_ids)) in &mut self.evidence {
+            container.borrow_mut().unlock(locked_ids);
+        }
+    }
+
+    pub fn change_to_unrestricted(&mut self) {
+        self.restricted = false;
+    }
+
+    pub fn change_to_restricted(&mut self) {
+        self.restricted = true;
+    }
+
+    pub fn resource_address(&self) -> ResourceAddress {
+        self.resource_address
+    }
+
+    pub fn total_amount(&self) -> Decimal {
+        self.total_ids().len().into()
+    }
+
+    pub fn total_ids(&self) -> &BTreeSet<NonFungibleLocalId> {
+        &self.total_locked
+    }
+
+    pub fn is_restricted(&self) -> bool {
+        self.restricted
+    }
+
+    pub fn snapshot(&self) -> ProofSnapshot {
+        ProofSnapshot::NonFungible {
+            resource_address: self.resource_address,
             restricted: self.restricted,
             total_locked: self.total_locked.clone(),
         }

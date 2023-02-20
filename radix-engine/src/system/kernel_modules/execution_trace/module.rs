@@ -63,16 +63,53 @@ pub enum VaultOp {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, ScryptoSbor)]
-pub struct ProofSnapshot {
-    pub resource_address: ResourceAddress,
-    pub resource_type: ResourceType,
-    pub restricted: bool,
-    pub total_locked: LockedAmountOrIds,
+pub enum BucketSnapshot {
+    Fungible {
+        resource_address: ResourceAddress,
+        restricted: bool,
+        liquid_amount: Decimal,
+    },
+    NonFungible {
+        resource_address: ResourceAddress,
+        restricted: bool,
+        liquid_ids: BTreeSet<NonFungibleLocalId>,
+    },
+}
+
+impl BucketSnapshot {
+    pub fn amount(&self) -> Decimal {
+        match self {
+            BucketSnapshot::Fungible {
+                resource_address,
+                restricted,
+                liquid_amount,
+            } => liquid_amount.clone(),
+            BucketSnapshot::NonFungible {
+                resource_address,
+                restricted,
+                liquid_ids,
+            } => liquid_ids.len().into(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, ScryptoSbor)]
+pub enum ProofSnapshot {
+    Fungible {
+        resource_address: ResourceAddress,
+        restricted: bool,
+        total_locked: Decimal,
+    },
+    NonFungible {
+        resource_address: ResourceAddress,
+        restricted: bool,
+        total_locked: BTreeSet<NonFungibleLocalId>,
+    },
 }
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct ResourceSummary {
-    pub buckets: HashMap<BucketId, Resource>,
+    pub buckets: HashMap<BucketId, BucketSnapshot>,
     pub proofs: HashMap<ProofId, ProofSnapshot>,
 }
 

@@ -10,8 +10,8 @@ use crate::blueprints::epoch_manager::ValidatorSetSubstate;
 use crate::blueprints::epoch_manager::ValidatorSubstate;
 use crate::blueprints::logger::LoggerSubstate;
 use crate::blueprints::resource::BucketSubstate;
+use crate::blueprints::resource::FungibleProofSubstate;
 use crate::blueprints::resource::NonFungibleSubstate;
-use crate::blueprints::resource::ProofSubstate;
 use crate::blueprints::resource::ResourceManagerSubstate;
 use crate::blueprints::resource::VaultRuntimeSubstate;
 use crate::blueprints::resource::VaultSubstate;
@@ -187,7 +187,7 @@ pub enum RuntimeSubstate {
     KeyValueStoreEntry(KeyValueStoreEntrySubstate),
     AuthZoneStack(AuthZoneStackSubstate),
     Bucket(BucketSubstate),
-    Proof(ProofSubstate),
+    Proof(FungibleProofSubstate),
     Worktop(WorktopSubstate),
     Logger(LoggerSubstate),
     TransactionRuntime(TransactionRuntimeSubstate),
@@ -841,8 +841,8 @@ impl Into<BucketSubstate> for RuntimeSubstate {
     }
 }
 
-impl Into<ProofSubstate> for RuntimeSubstate {
-    fn into(self) -> ProofSubstate {
+impl Into<FungibleProofSubstate> for RuntimeSubstate {
+    fn into(self) -> FungibleProofSubstate {
         if let RuntimeSubstate::Proof(substate) = self {
             substate
         } else {
@@ -905,7 +905,7 @@ pub enum SubstateRef<'a> {
     AuthZoneStack(&'a AuthZoneStackSubstate),
     Worktop(&'a WorktopSubstate),
     Logger(&'a LoggerSubstate),
-    Proof(&'a ProofSubstate),
+    Proof(&'a FungibleProofSubstate),
     Bucket(&'a BucketSubstate),
     ComponentInfo(&'a ComponentInfoSubstate),
     ComponentState(&'a ComponentStateSubstate),
@@ -1025,7 +1025,7 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
-    pub fn proof(&self) -> &ProofSubstate {
+    pub fn proof(&self) -> &FungibleProofSubstate {
         match self {
             SubstateRef::Proof(value) => *value,
             _ => panic!("Not a proof"),
@@ -1324,7 +1324,7 @@ pub enum SubstateRefMut<'a> {
     Global(&'a mut GlobalSubstate),
     TypeInfo(&'a mut TypeInfoSubstate),
     Bucket(&'a mut BucketSubstate),
-    Proof(&'a mut ProofSubstate),
+    Proof(&'a mut FungibleProofSubstate),
     Worktop(&'a mut WorktopSubstate),
     Logger(&'a mut LoggerSubstate),
     TransactionRuntime(&'a mut TransactionRuntimeSubstate),
@@ -1356,7 +1356,7 @@ impl<'a> SubstateRefMut<'a> {
         }
     }
 
-    pub fn proof(&mut self) -> &mut ProofSubstate {
+    pub fn proof(&mut self) -> &mut FungibleProofSubstate {
         match self {
             SubstateRefMut::Proof(value) => *value,
             _ => panic!("Not a proof"),

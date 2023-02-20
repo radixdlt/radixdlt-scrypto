@@ -1,5 +1,5 @@
 use crate::api::types::*;
-use crate::blueprints::resource::Resource;
+use crate::blueprints::resource::LiquidFungibleResource;
 
 #[derive(Clone, Copy, Debug)]
 pub enum ClientCostingReason {
@@ -15,9 +15,9 @@ pub trait ClientUnsafeApi<E> {
     fn credit_cost_units(
         &mut self,
         vault_id: VaultId,
-        locked_fee: Resource,
+        locked_fee: LiquidFungibleResource,
         contingent: bool,
-    ) -> Result<Resource, E>;
+    ) -> Result<LiquidFungibleResource, E>;
 
     fn update_instruction_index(&mut self, new_index: usize) -> Result<(), E>;
 

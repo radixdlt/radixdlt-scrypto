@@ -15,7 +15,7 @@ use radix_engine_interface::api::types::{
     VaultId, VaultOffset,
 };
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
-use radix_engine_interface::blueprints::resource::Resource;
+use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::constants::*;
 use radix_engine_interface::{api::types::RENodeId, *};
 use sbor::rust::collections::BTreeMap;
@@ -378,9 +378,9 @@ impl KernelModule for CostingModule {
     fn on_credit_cost_units<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         vault_id: VaultId,
-        fee: Resource,
+        fee: LiquidFungibleResource,
         contingent: bool,
-    ) -> Result<Resource, RuntimeError> {
+    ) -> Result<LiquidFungibleResource, RuntimeError> {
         let changes = api
             .kernel_get_module_state()
             .costing

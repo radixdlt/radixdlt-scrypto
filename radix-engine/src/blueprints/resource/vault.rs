@@ -103,7 +103,7 @@ impl VaultRuntimeSubstate {
     pub fn create_proof(
         &mut self,
         container_id: ResourceContainerId,
-    ) -> Result<ProofSubstate, ProofError> {
+    ) -> Result<FungibleProofSubstate, ProofError> {
         match self.resource_type() {
             ResourceType::Fungible { .. } => {
                 self.create_proof_by_amount(self.total_amount(), container_id)
@@ -121,7 +121,7 @@ impl VaultRuntimeSubstate {
         &mut self,
         amount: Decimal,
         container_id: ResourceContainerId,
-    ) -> Result<ProofSubstate, ProofError> {
+    ) -> Result<FungibleProofSubstate, ProofError> {
         // lock the specified amount
         let locked_amount_or_ids = self
             .borrow_resource_mut()
@@ -134,7 +134,7 @@ impl VaultRuntimeSubstate {
             container_id,
             (self.resource.clone(), locked_amount_or_ids.clone()),
         );
-        ProofSubstate::new(
+        FungibleProofSubstate::new(
             self.resource_address(),
             self.resource_type(),
             locked_amount_or_ids,
@@ -146,7 +146,7 @@ impl VaultRuntimeSubstate {
         &mut self,
         ids: &BTreeSet<NonFungibleLocalId>,
         container_id: ResourceContainerId,
-    ) -> Result<ProofSubstate, ProofError> {
+    ) -> Result<FungibleProofSubstate, ProofError> {
         // lock the specified id set
         let locked_amount_or_ids = self
             .borrow_resource_mut()
@@ -159,7 +159,7 @@ impl VaultRuntimeSubstate {
             container_id,
             (self.resource.clone(), locked_amount_or_ids.clone()),
         );
-        ProofSubstate::new(
+        FungibleProofSubstate::new(
             self.resource_address(),
             self.resource_type(),
             locked_amount_or_ids,

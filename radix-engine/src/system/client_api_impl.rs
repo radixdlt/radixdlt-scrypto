@@ -442,9 +442,9 @@ where
     fn credit_cost_units(
         &mut self,
         vault_id: VaultId,
-        locked_fee: Resource,
+        locked_fee: LiquidFungibleResource,
         contingent: bool,
-    ) -> Result<Resource, RuntimeError> {
+    ) -> Result<LiquidFungibleResource, RuntimeError> {
         KernelModuleMixer::on_credit_cost_units(self, vault_id, locked_fee, contingent)
     }
 

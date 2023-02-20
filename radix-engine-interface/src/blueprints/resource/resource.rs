@@ -235,6 +235,7 @@ pub struct LockedFungibleResource {
     amounts: BTreeMap<Decimal, usize>,
 }
 
+#[derive(Debug)]
 pub struct FungibleResource {
     liquid: LiquidFungibleResource,
     locked: LockedFungibleResource,
@@ -273,7 +274,7 @@ impl FungibleResource {
         self.take_by_amount(self.liquid_amount())
     }
 
-    pub(super) fn lock_by_amount(&mut self, amount: Decimal) -> Result<Decimal, ResourceError> {
+    pub fn lock_by_amount(&mut self, amount: Decimal) -> Result<Decimal, ResourceError> {
         // check amount granularity
         let divisibility = self.resource_type().divisibility();
         Self::check_amount(amount, divisibility)?;
@@ -296,7 +297,7 @@ impl FungibleResource {
         Ok(amount)
     }
 
-    pub(super) fn unlock(&mut self, amount: Decimal) {
+    pub fn unlock(&mut self, amount: Decimal) {
         let max_locked = self.max_locked_amount();
         let count = self
             .locked
@@ -374,6 +375,7 @@ pub struct LockedNonFungibleResource {
     ids: BTreeMap<NonFungibleLocalId, usize>,
 }
 
+#[derive(Debug)]
 pub struct NonFungibleResource {
     liquid: LiquidNonFungibleResource,
     locked: LockedNonFungibleResource,
@@ -442,7 +444,7 @@ impl NonFungibleResource {
         self.take_by_amount(self.liquid_amount())
     }
 
-    pub(super) fn lock_by_amount(
+    pub fn lock_by_amount(
         &mut self,
         amount: Decimal,
     ) -> Result<BTreeSet<NonFungibleLocalId>, ResourceError> {
@@ -466,7 +468,7 @@ impl NonFungibleResource {
         self.lock_by_ids(&ids)
     }
 
-    pub(super) fn lock_by_ids(
+    pub fn lock_by_ids(
         &mut self,
         ids: &BTreeSet<NonFungibleLocalId>,
     ) -> Result<BTreeSet<NonFungibleLocalId>, ResourceError> {
@@ -485,7 +487,7 @@ impl NonFungibleResource {
         Ok(ids.clone())
     }
 
-    pub(super) fn unlock(&mut self, ids: &BTreeSet<NonFungibleLocalId>) {
+    pub fn unlock(&mut self, ids: &BTreeSet<NonFungibleLocalId>) {
         for id in ids {
             if let Some(cnt) = self.locked.ids.remove(&id) {
                 if cnt > 1 {

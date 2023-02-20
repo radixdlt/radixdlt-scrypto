@@ -1,7 +1,7 @@
 use super::{CostingReason, RoyaltyReceiver};
 use crate::types::*;
 use radix_engine_interface::api::types::VaultId;
-use radix_engine_interface::blueprints::resource::Resource;
+use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use sbor::rust::collections::*;
 
 #[derive(Debug, Clone, ScryptoSbor)]
@@ -21,7 +21,7 @@ pub struct FeeSummary {
     /// The (non-negative) amount of bad debt due to transaction unable to repay loan.
     pub bad_debt_xrd: Decimal,
     /// The vaults locked for XRD payment
-    pub vault_locks: Vec<(VaultId, Resource, bool)>,
+    pub vault_locks: Vec<(VaultId, LiquidFungibleResource, bool)>,
     /// The resultant vault charges in XRD (only present on commit)
     pub vault_payments_xrd: Option<BTreeMap<VaultId, Decimal>>,
     /// The execution cost breakdown

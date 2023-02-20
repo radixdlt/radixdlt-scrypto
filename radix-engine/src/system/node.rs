@@ -90,7 +90,7 @@ impl RENodeModuleInit {
 pub enum RENodeInit {
     Global(GlobalSubstate),
     Bucket(BucketSubstate),
-    Proof(ProofSubstate),
+    Proof(FungibleProofSubstate),
     AuthZoneStack(AuthZoneStackSubstate),
     Vault(VaultRuntimeSubstate),
     Worktop(WorktopSubstate),
