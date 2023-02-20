@@ -63,9 +63,9 @@ impl VaultRuntimeSubstate {
         VaultSubstate(resource)
     }
 
-    pub fn to_persisted(self) -> Result<VaultSubstate, ResourceOperationError> {
+    pub fn to_persisted(self) -> Result<VaultSubstate, ResourceError> {
         Rc::try_unwrap(self.resource)
-            .map_err(|_| ResourceOperationError::ResourceLocked)
+            .map_err(|_| ResourceError::ResourceLocked)
             .map(|c| c.into_inner())
             .map(Into::into)
             .map(|r| VaultSubstate(r))
@@ -77,7 +77,7 @@ impl VaultRuntimeSubstate {
         }
     }
 
-    pub fn put(&mut self, other: BucketSubstate) -> Result<(), ResourceOperationError> {
+    pub fn put(&mut self, other: BucketSubstate) -> Result<(), ResourceError> {
         self.borrow_resource_mut().put(other.resource()?)
     }
 
@@ -85,7 +85,7 @@ impl VaultRuntimeSubstate {
         let resource = self
             .borrow_resource_mut()
             .take_by_amount(amount)
-            .map_err(|e| InvokeError::SelfError(VaultError::ResourceOperationError(e)))?;
+            .map_err(|e| InvokeError::SelfError(VaultError::ResourceError(e)))?;
         Ok(resource)
     }
 
@@ -96,7 +96,7 @@ impl VaultRuntimeSubstate {
         let resource = self
             .borrow_resource_mut()
             .take_by_ids(ids)
-            .map_err(|e| InvokeError::SelfError(VaultError::ResourceOperationError(e)))?;
+            .map_err(|e| InvokeError::SelfError(VaultError::ResourceError(e)))?;
         Ok(resource)
     }
 
@@ -126,7 +126,7 @@ impl VaultRuntimeSubstate {
         let locked_amount_or_ids = self
             .borrow_resource_mut()
             .lock_by_amount(amount)
-            .map_err(ProofError::ResourceOperationError)?;
+            .map_err(ProofError::ResourceError)?;
 
         // produce proof
         let mut evidence = HashMap::new();
@@ -151,7 +151,7 @@ impl VaultRuntimeSubstate {
         let locked_amount_or_ids = self
             .borrow_resource_mut()
             .lock_by_ids(ids)
-            .map_err(ProofError::ResourceOperationError)?;
+            .map_err(ProofError::ResourceError)?;
 
         // produce proof
         let mut evidence = HashMap::new();
@@ -179,7 +179,7 @@ impl VaultRuntimeSubstate {
         self.borrow_resource().total_amount()
     }
 
-    pub fn total_ids(&self) -> Result<BTreeSet<NonFungibleLocalId>, ResourceOperationError> {
+    pub fn total_ids(&self) -> Result<BTreeSet<NonFungibleLocalId>, ResourceError> {
         self.borrow_resource().total_ids()
     }
 
@@ -203,7 +203,7 @@ impl VaultRuntimeSubstate {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum VaultError {
     InvalidRequestData(DecodeError),
-    ResourceOperationError(ResourceOperationError),
+    ResourceError(ResourceError),
     CouldNotCreateBucket,
     CouldNotTakeBucket,
     ProofError(ProofError),
@@ -357,9 +357,9 @@ impl VaultBlueprint {
         let mut substate_mut = api.kernel_get_substate_ref_mut(vault_handle)?;
         let vault = substate_mut.vault();
         vault.put(bucket).map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::VaultError(
-                VaultError::ResourceOperationError(e),
-            ))
+            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ResourceError(
+                e,
+            )))
         })?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
@@ -449,9 +449,9 @@ impl VaultBlueprint {
         let substate_ref = api.kernel_get_substate_ref(vault_handle)?;
         let vault = substate_ref.vault();
         let ids = vault.total_ids().map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::VaultError(
-                VaultError::ResourceOperationError(e),
-            ))
+            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ResourceError(
+                e,
+            )))
         })?;
 
         Ok(IndexedScryptoValue::from_typed(&ids))
@@ -508,7 +508,7 @@ impl VaultBlueprint {
             let vault = substate_mut.vault();
             vault.put(BucketSubstate::new(changes)).map_err(|e| {
                 RuntimeError::ApplicationError(ApplicationError::VaultError(
-                    VaultError::ResourceOperationError(e),
+                    VaultError::ResourceError(e),
                 ))
             })?;
         }

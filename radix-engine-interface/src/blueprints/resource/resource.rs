@@ -5,7 +5,7 @@ use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::collections::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum ResourceOperationError {
+pub enum ResourceError {
     /// Resource addresses do not match.
     ResourceAddressNotMatching,
     /// The amount is invalid, according to the resource divisibility.
@@ -61,10 +61,10 @@ impl LiquidFungibleResource {
         self.divisibility
     }
 
-    pub fn put(&mut self, other: LiquidFungibleResource) -> Result<(), ResourceOperationError> {
+    pub fn put(&mut self, other: LiquidFungibleResource) -> Result<(), ResourceError> {
         // check resource address
         if self.resource_address() != other.resource_address() {
-            return Err(ResourceOperationError::ResourceAddressNotMatching);
+            return Err(ResourceError::ResourceAddressNotMatching);
         }
 
         // update liquidity
@@ -76,14 +76,14 @@ impl LiquidFungibleResource {
     pub fn take_by_amount(
         &mut self,
         amount_to_take: Decimal,
-    ) -> Result<LiquidFungibleResource, ResourceOperationError> {
+    ) -> Result<LiquidFungibleResource, ResourceError> {
         // check amount granularity
         let divisibility = self.resource_type().divisibility();
         Self::check_amount(amount_to_take, divisibility)?;
 
         // deduct from liquidity pool
         if self.amount < amount_to_take {
-            return Err(ResourceOperationError::InsufficientBalance);
+            return Err(ResourceError::InsufficientBalance);
         }
         self.amount -= amount_to_take;
         Ok(LiquidFungibleResource::new(
@@ -98,12 +98,12 @@ impl LiquidFungibleResource {
             .expect("Take all from `Resource` should not fail")
     }
 
-    pub fn check_amount(amount: Decimal, divisibility: u8) -> Result<(), ResourceOperationError> {
+    pub fn check_amount(amount: Decimal, divisibility: u8) -> Result<(), ResourceError> {
         if amount.is_negative()
             || amount.0 % BnumI256::from(10i128.pow((18 - divisibility).into()))
                 != BnumI256::from(0)
         {
-            Err(ResourceOperationError::InvalidAmount(amount, divisibility))
+            Err(ResourceError::InvalidAmount(amount, divisibility))
         } else {
             Ok(())
         }
@@ -163,10 +163,10 @@ impl LiquidNonFungibleResource {
         }
     }
 
-    pub fn put(&mut self, other: LiquidNonFungibleResource) -> Result<(), ResourceOperationError> {
+    pub fn put(&mut self, other: LiquidNonFungibleResource) -> Result<(), ResourceError> {
         // check resource address
         if self.resource_address() != other.resource_address() {
-            return Err(ResourceOperationError::ResourceAddressNotMatching);
+            return Err(ResourceError::ResourceAddressNotMatching);
         }
 
         // update liquidity
@@ -177,14 +177,14 @@ impl LiquidNonFungibleResource {
     pub fn take_by_amount(
         &mut self,
         amount_to_take: Decimal,
-    ) -> Result<LiquidNonFungibleResource, ResourceOperationError> {
+    ) -> Result<LiquidNonFungibleResource, ResourceError> {
         // check amount granularity
         let divisibility = self.resource_type().divisibility();
         Self::check_amount(amount_to_take, divisibility)?;
 
         // deduct from liquidity pool
         if Decimal::from(self.ids.len()) < amount_to_take {
-            return Err(ResourceOperationError::InsufficientBalance);
+            return Err(ResourceError::InsufficientBalance);
         }
         let n: usize = amount_to_take
             .to_string()
@@ -197,11 +197,11 @@ impl LiquidNonFungibleResource {
     pub fn take_by_ids(
         &mut self,
         ids_to_take: &BTreeSet<NonFungibleLocalId>,
-    ) -> Result<LiquidNonFungibleResource, ResourceOperationError> {
+    ) -> Result<LiquidNonFungibleResource, ResourceError> {
         let resource_address = self.resource_address();
         for id in ids_to_take {
             if !self.ids.remove(&id) {
-                return Err(ResourceOperationError::InsufficientBalance);
+                return Err(ResourceError::InsufficientBalance);
             }
         }
         Ok(LiquidNonFungibleResource::new(
@@ -216,12 +216,12 @@ impl LiquidNonFungibleResource {
             .expect("Take all from `Resource` should not fail")
     }
 
-    pub fn check_amount(amount: Decimal, divisibility: u8) -> Result<(), ResourceOperationError> {
+    pub fn check_amount(amount: Decimal, divisibility: u8) -> Result<(), ResourceError> {
         if amount.is_negative()
             || amount.0 % BnumI256::from(10i128.pow((18 - divisibility).into()))
                 != BnumI256::from(0)
         {
-            Err(ResourceOperationError::InvalidAmount(amount, divisibility))
+            Err(ResourceError::InvalidAmount(amount, divisibility))
         } else {
             Ok(())
         }
@@ -250,33 +250,30 @@ impl FungibleResource {
         }
     }
 
-    pub fn into_liquid(self) -> Result<LiquidFungibleResource, ResourceOperationError> {
+    pub fn into_liquid(self) -> Result<LiquidFungibleResource, ResourceError> {
         if self.is_locked() {
-            Err(ResourceOperationError::ResourceLocked)
+            Err(ResourceError::ResourceLocked)
         } else {
             Ok(self.liquid)
         }
     }
 
-    pub fn put(&mut self, other: LiquidFungibleResource) -> Result<(), ResourceOperationError> {
+    pub fn put(&mut self, other: LiquidFungibleResource) -> Result<(), ResourceError> {
         self.liquid.put(other)
     }
 
     pub fn take_by_amount(
         &mut self,
         amount: Decimal,
-    ) -> Result<LiquidFungibleResource, ResourceOperationError> {
+    ) -> Result<LiquidFungibleResource, ResourceError> {
         self.liquid.take_by_amount(amount)
     }
 
-    pub fn take_all_liquid(&mut self) -> Result<LiquidFungibleResource, ResourceOperationError> {
+    pub fn take_all_liquid(&mut self) -> Result<LiquidFungibleResource, ResourceError> {
         self.take_by_amount(self.liquid_amount())
     }
 
-    pub(super) fn lock_by_amount(
-        &mut self,
-        amount: Decimal,
-    ) -> Result<Decimal, ResourceOperationError> {
+    pub(super) fn lock_by_amount(&mut self, amount: Decimal) -> Result<Decimal, ResourceError> {
         // check amount granularity
         let divisibility = self.resource_type().divisibility();
         Self::check_amount(amount, divisibility)?;
@@ -287,7 +284,7 @@ impl FungibleResource {
             if self.liquid.amount >= delta {
                 self.liquid.amount -= delta;
             } else {
-                return Err(ResourceOperationError::InsufficientBalance);
+                return Err(ResourceError::InsufficientBalance);
             }
         }
 
@@ -351,12 +348,12 @@ impl FungibleResource {
         self.liquid.resource_type()
     }
 
-    fn check_amount(amount: Decimal, divisibility: u8) -> Result<(), ResourceOperationError> {
+    fn check_amount(amount: Decimal, divisibility: u8) -> Result<(), ResourceError> {
         if amount.is_negative()
             || amount.0 % BnumI256::from(10i128.pow((18 - divisibility).into()))
                 != BnumI256::from(0)
         {
-            Err(ResourceOperationError::InvalidAmount(amount, divisibility))
+            Err(ResourceError::InvalidAmount(amount, divisibility))
         } else {
             Ok(())
         }
@@ -392,29 +389,29 @@ impl NonFungibleResource {
         }
     }
 
-    pub fn into_liquid(self) -> Result<LiquidNonFungibleResource, ResourceOperationError> {
+    pub fn into_liquid(self) -> Result<LiquidNonFungibleResource, ResourceError> {
         if self.is_locked() {
-            Err(ResourceOperationError::ResourceLocked)
+            Err(ResourceError::ResourceLocked)
         } else {
             Ok(self.liquid)
         }
     }
 
-    pub fn put(&mut self, other: LiquidNonFungibleResource) -> Result<(), ResourceOperationError> {
+    pub fn put(&mut self, other: LiquidNonFungibleResource) -> Result<(), ResourceError> {
         self.liquid.put(other)
     }
 
     pub fn take_by_amount(
         &mut self,
         amount: Decimal,
-    ) -> Result<LiquidNonFungibleResource, ResourceOperationError> {
+    ) -> Result<LiquidNonFungibleResource, ResourceError> {
         // check amount granularity
         let divisibility = self.resource_type().divisibility();
         Self::check_amount(amount, divisibility)?;
 
         // calculate the non-fungible id to take
         if Decimal::from(self.liquid.ids.len()) < amount {
-            return Err(ResourceOperationError::InsufficientBalance);
+            return Err(ResourceError::InsufficientBalance);
         }
         let n: usize = amount
             .to_string()
@@ -428,10 +425,10 @@ impl NonFungibleResource {
     pub fn take_by_ids(
         &mut self,
         ids: &BTreeSet<NonFungibleLocalId>,
-    ) -> Result<LiquidNonFungibleResource, ResourceOperationError> {
+    ) -> Result<LiquidNonFungibleResource, ResourceError> {
         for id in ids {
             if !self.liquid.ids.remove(&id) {
-                return Err(ResourceOperationError::InsufficientBalance);
+                return Err(ResourceError::InsufficientBalance);
             }
         }
         Ok(LiquidNonFungibleResource::new(
@@ -441,20 +438,20 @@ impl NonFungibleResource {
         ))
     }
 
-    pub fn take_all_liquid(&mut self) -> Result<LiquidNonFungibleResource, ResourceOperationError> {
+    pub fn take_all_liquid(&mut self) -> Result<LiquidNonFungibleResource, ResourceError> {
         self.take_by_amount(self.liquid_amount())
     }
 
     pub(super) fn lock_by_amount(
         &mut self,
         amount: Decimal,
-    ) -> Result<BTreeSet<NonFungibleLocalId>, ResourceOperationError> {
+    ) -> Result<BTreeSet<NonFungibleLocalId>, ResourceError> {
         // check amount granularity
         let divisibility = self.resource_type().divisibility();
         Self::check_amount(amount, divisibility)?;
 
         if Decimal::from(self.locked.ids.len() + self.liquid.ids.len()) < amount {
-            return Err(ResourceOperationError::InsufficientBalance);
+            return Err(ResourceError::InsufficientBalance);
         }
         let n: usize = amount
             .to_string()
@@ -472,7 +469,7 @@ impl NonFungibleResource {
     pub(super) fn lock_by_ids(
         &mut self,
         ids: &BTreeSet<NonFungibleLocalId>,
-    ) -> Result<BTreeSet<NonFungibleLocalId>, ResourceOperationError> {
+    ) -> Result<BTreeSet<NonFungibleLocalId>, ResourceError> {
         for id in ids {
             if self.liquid.ids.remove(id) {
                 // if the non-fungible is liquid, move it to locked.
@@ -481,7 +478,7 @@ impl NonFungibleResource {
                 // if the non-fungible is locked, increase the ref count.
                 *cnt += 1;
             } else {
-                return Err(ResourceOperationError::InsufficientBalance);
+                return Err(ResourceError::InsufficientBalance);
             }
         }
 
@@ -551,12 +548,12 @@ impl NonFungibleResource {
         }
     }
 
-    fn check_amount(amount: Decimal, divisibility: u8) -> Result<(), ResourceOperationError> {
+    fn check_amount(amount: Decimal, divisibility: u8) -> Result<(), ResourceError> {
         if amount.is_negative()
             || amount.0 % BnumI256::from(10i128.pow((18 - divisibility).into()))
                 != BnumI256::from(0)
         {
-            Err(ResourceOperationError::InvalidAmount(amount, divisibility))
+            Err(ResourceError::InvalidAmount(amount, divisibility))
         } else {
             Ok(())
         }

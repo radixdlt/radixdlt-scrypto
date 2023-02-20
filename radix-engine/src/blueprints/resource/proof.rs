@@ -13,7 +13,7 @@ use radix_engine_interface::data::ScryptoValue;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ProofError {
     /// Error produced by a resource container.
-    ResourceOperationError(ResourceOperationError),
+    ResourceError(ResourceError),
     /// Can't generate zero-amount or empty non-fungible set proofs.
     EmptyProofNotAllowed,
     /// The base proofs are not enough to cover the requested amount or non-fungible ids.
@@ -174,7 +174,7 @@ impl ProofSubstate {
                             container
                                 .borrow_mut()
                                 .lock_by_amount(amount)
-                                .map_err(ProofError::ResourceOperationError)?;
+                                .map_err(ProofError::ResourceError)?;
                             remaining -= amount;
                             evidence.insert(
                                 container_id.clone(),
@@ -243,7 +243,7 @@ impl ProofSubstate {
                             container
                                 .borrow_mut()
                                 .lock_by_ids(&ids)
-                                .map_err(ProofError::ResourceOperationError)?;
+                                .map_err(ProofError::ResourceError)?;
                             for id in &ids {
                                 remaining.remove(id);
                             }

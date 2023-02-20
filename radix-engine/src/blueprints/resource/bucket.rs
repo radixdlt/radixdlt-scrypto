@@ -16,7 +16,7 @@ pub enum BucketError {
     InvalidRequestData(DecodeError),
     CouldNotCreateBucket,
     CouldNotTakeBucket,
-    ResourceOperationError(ResourceOperationError),
+    ResourceError(ResourceError),
     ProofError(ProofError),
     CouldNotCreateProof,
 }
@@ -34,18 +34,18 @@ impl BucketSubstate {
         }
     }
 
-    pub fn put(&mut self, other: BucketSubstate) -> Result<(), ResourceOperationError> {
+    pub fn put(&mut self, other: BucketSubstate) -> Result<(), ResourceError> {
         self.borrow_resource_mut().put(other.resource()?)
     }
 
-    pub fn take(&mut self, amount: Decimal) -> Result<Resource, ResourceOperationError> {
+    pub fn take(&mut self, amount: Decimal) -> Result<Resource, ResourceError> {
         self.borrow_resource_mut().take_by_amount(amount)
     }
 
     pub fn take_non_fungibles(
         &mut self,
         ids: &BTreeSet<NonFungibleLocalId>,
-    ) -> Result<Resource, ResourceOperationError> {
+    ) -> Result<Resource, ResourceError> {
         self.borrow_resource_mut().take_by_ids(ids)
     }
 
@@ -73,7 +73,7 @@ impl BucketSubstate {
         let locked_amount_or_ids = self
             .borrow_resource_mut()
             .lock_by_amount(amount)
-            .map_err(ProofError::ResourceOperationError)?;
+            .map_err(ProofError::ResourceError)?;
 
         // produce proof
         let mut evidence = HashMap::new();
@@ -98,7 +98,7 @@ impl BucketSubstate {
         let locked_amount_or_ids = self
             .borrow_resource_mut()
             .lock_by_ids(ids)
-            .map_err(ProofError::ResourceOperationError)?;
+            .map_err(ProofError::ResourceError)?;
 
         // produce proof
         let mut evidence = HashMap::new();
@@ -126,7 +126,7 @@ impl BucketSubstate {
         self.borrow_resource().total_amount()
     }
 
-    pub fn total_ids(&self) -> Result<BTreeSet<NonFungibleLocalId>, ResourceOperationError> {
+    pub fn total_ids(&self) -> Result<BTreeSet<NonFungibleLocalId>, ResourceError> {
         self.borrow_resource().total_ids()
     }
 
@@ -138,9 +138,9 @@ impl BucketSubstate {
         self.borrow_resource().is_empty()
     }
 
-    pub fn resource(self) -> Result<Resource, ResourceOperationError> {
+    pub fn resource(self) -> Result<Resource, ResourceError> {
         Rc::try_unwrap(self.resource)
-            .map_err(|_| ResourceOperationError::ResourceLocked)
+            .map_err(|_| ResourceError::ResourceLocked)
             .map(|c| c.into_inner())
             .map(Into::into)
     }
@@ -185,7 +185,7 @@ impl BucketBlueprint {
         let bucket = substate_mut.bucket();
         let container = bucket.take(input.amount).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
-                BucketError::ResourceOperationError(e),
+                BucketError::ResourceError(e),
             ))
         })?;
 
@@ -224,7 +224,7 @@ impl BucketBlueprint {
         let bucket = substate_mut.bucket();
         let container = bucket.take_non_fungibles(&input.ids).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
-                BucketError::ResourceOperationError(e),
+                BucketError::ResourceError(e),
             ))
         })?;
 
@@ -265,7 +265,7 @@ impl BucketBlueprint {
         let bucket = substate_mut.bucket();
         bucket.put(other_bucket).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
-                BucketError::ResourceOperationError(e),
+                BucketError::ResourceError(e),
             ))
         })?;
 
@@ -329,7 +329,7 @@ impl BucketBlueprint {
         let bucket = substate_ref.bucket();
         let ids = bucket.total_ids().map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
-                BucketError::ResourceOperationError(e),
+                BucketError::ResourceError(e),
             ))
         })?;
 
