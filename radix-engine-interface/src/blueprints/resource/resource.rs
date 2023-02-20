@@ -233,22 +233,8 @@ impl LiquidNonFungibleResource {
 /// Resource that can be partially or completely locked for proofs.
 #[derive(Debug, PartialEq, Eq)]
 pub struct LockedFungibleResource {
-    /// The resource address.
-    resource_address: ResourceAddress,
-    /// The resource divisibility.
-    divisibility: u8,
     /// The locked amounts and the corresponding times of being locked.
     amounts: BTreeMap<Decimal, usize>,
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub struct LockedNonFungibleResource {
-    /// The resource address.
-    resource_address: ResourceAddress,
-    /// The locked non-fungible ids and the corresponding times of being locked.
-    ids: BTreeMap<NonFungibleLocalId, usize>,
-    /// The non-fungible ID type.
-    id_type: NonFungibleIdType,
 }
 
 pub struct FungibleResource {
@@ -257,6 +243,23 @@ pub struct FungibleResource {
 }
 
 impl FungibleResource {
+    pub fn new(liquid: LiquidFungibleResource) -> Self {
+        Self {
+            liquid,
+            locked: LockedFungibleResource {
+                amounts: BTreeMap::default(),
+            },
+        }
+    }
+
+    pub fn into_liquid(self) -> Result<LiquidFungibleResource, ResourceOperationError> {
+        if self.is_locked() {
+            Err(ResourceOperationError::ResourceLocked)
+        } else {
+            Ok(self.liquid)
+        }
+    }
+
     pub fn put(&mut self, other: LiquidFungibleResource) -> Result<(), ResourceOperationError> {
         self.liquid.put(other)
     }
@@ -370,12 +373,35 @@ impl FungibleResource {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub struct LockedNonFungibleResource {
+    /// The locked non-fungible ids and the corresponding times of being locked.
+    ids: BTreeMap<NonFungibleLocalId, usize>,
+}
+
 pub struct NonFungibleResource {
     liquid: LiquidNonFungibleResource,
     locked: LockedNonFungibleResource,
 }
 
 impl NonFungibleResource {
+    pub fn new(liquid: LiquidNonFungibleResource) -> Self {
+        Self {
+            liquid,
+            locked: LockedNonFungibleResource {
+                ids: BTreeMap::default(),
+            },
+        }
+    }
+
+    pub fn into_liquid(self) -> Result<LiquidNonFungibleResource, ResourceOperationError> {
+        if self.is_locked() {
+            Err(ResourceOperationError::ResourceLocked)
+        } else {
+            Ok(self.liquid)
+        }
+    }
+
     pub fn put(&mut self, other: LiquidNonFungibleResource) -> Result<(), ResourceOperationError> {
         self.liquid.put(other)
     }
