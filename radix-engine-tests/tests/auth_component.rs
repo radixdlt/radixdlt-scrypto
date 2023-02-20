@@ -4,9 +4,10 @@ use radix_engine_interface::blueprints::resource::{require, FromPublicKey};
 use radix_engine_interface::rule;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::data::{manifest_args, ManifestExpression};
 
 #[test]
-fn cannot_make_cross_component_call_without_authorization() {
+fn cannot_make_cross_component_process_call_dataout_authorization() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (_, _, account) = test_runner.new_allocated_account();
@@ -26,7 +27,7 @@ fn cannot_make_cross_component_call_without_authorization() {
             package_address,
             "CrossComponent",
             "create_component_with_auth",
-            args!(authorization),
+            manifest_args!(authorization),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -42,7 +43,7 @@ fn cannot_make_cross_component_call_without_authorization() {
             package_address,
             "CrossComponent",
             "create_component",
-            args!(),
+            manifest_args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -58,7 +59,7 @@ fn cannot_make_cross_component_call_without_authorization() {
         .call_method(
             my_component,
             "cross_component_call",
-            args!(secured_component),
+            manifest_args!(secured_component),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -68,7 +69,7 @@ fn cannot_make_cross_component_call_without_authorization() {
 }
 
 #[test]
-fn can_make_cross_component_call_with_authorization() {
+fn can_make_cross_component_process_call_data_authorization() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
@@ -88,7 +89,7 @@ fn can_make_cross_component_call_with_authorization() {
             package_address,
             "CrossComponent",
             "create_component_with_auth",
-            args!(authorization),
+            manifest_args!(authorization),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -104,7 +105,7 @@ fn can_make_cross_component_call_with_authorization() {
             package_address,
             "CrossComponent",
             "create_component",
-            args!(),
+            manifest_args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -120,7 +121,7 @@ fn can_make_cross_component_call_with_authorization() {
         .call_method(
             my_component,
             "put_auth",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -135,7 +136,7 @@ fn can_make_cross_component_call_with_authorization() {
         .call_method(
             my_component,
             "cross_component_call",
-            args!(secured_component),
+            manifest_args!(secured_component),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -165,7 +166,7 @@ fn root_auth_zone_does_not_carry_over_cross_component_calls() {
             package_address,
             "CrossComponent",
             "create_component_with_auth",
-            args!(authorization),
+            manifest_args!(authorization),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -181,7 +182,7 @@ fn root_auth_zone_does_not_carry_over_cross_component_calls() {
             package_address,
             "CrossComponent",
             "create_component",
-            args!(),
+            manifest_args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -198,7 +199,7 @@ fn root_auth_zone_does_not_carry_over_cross_component_calls() {
         .call_method(
             my_component,
             "cross_component_call",
-            args!(secured_component),
+            manifest_args!(secured_component),
         )
         .build();
     let receipt = test_runner.execute_manifest(

@@ -6,6 +6,7 @@ use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto::resource::DIVISIBILITY_MAXIMUM;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::data::{manifest_args, ManifestExpression};
 use utils::ContextualDisplay;
 
 #[test]
@@ -25,13 +26,13 @@ fn can_create_clone_and_drop_bucket_proof() {
                 package_address,
                 "BucketProof",
                 "create_clone_drop_bucket_proof",
-                args!(bucket_id, dec!("1")),
+                manifest_args!(bucket_id, dec!("1")),
             )
         })
         .call_method(
             account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -57,7 +58,12 @@ fn can_create_clone_and_drop_vault_proof() {
             builder
                 .withdraw_from_account(account, resource_address, 1.into())
                 .take_from_worktop(resource_address, |builder, bucket_id| {
-                    builder.call_function(package_address, "VaultProof", "new", args!(bucket_id))
+                    builder.call_function(
+                        package_address,
+                        "VaultProof",
+                        "new",
+                        manifest_args!(bucket_id),
+                    )
                 })
         },
     );
@@ -68,7 +74,7 @@ fn can_create_clone_and_drop_vault_proof() {
         .call_method(
             component_address,
             "create_clone_drop_vault_proof",
-            args!(Decimal::one()),
+            manifest_args!(Decimal::one()),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -92,7 +98,12 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
             builder
                 .withdraw_from_account(account, resource_address, 3.into())
                 .take_from_worktop(resource_address, |builder, bucket_id| {
-                    builder.call_function(package_address, "VaultProof", "new", args!(bucket_id))
+                    builder.call_function(
+                        package_address,
+                        "VaultProof",
+                        "new",
+                        manifest_args!(bucket_id),
+                    )
                 })
         },
     );
@@ -103,7 +114,7 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
         .call_method(
             component_address,
             "create_clone_drop_vault_proof_by_amount",
-            args!(dec!("3"), dec!("1")),
+            manifest_args!(dec!("3"), dec!("1")),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -126,7 +137,12 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
             builder
                 .withdraw_from_account(account, resource_address, 3.into())
                 .take_from_worktop(resource_address, |builder, bucket_id| {
-                    builder.call_function(package_address, "VaultProof", "new", args!(bucket_id))
+                    builder.call_function(
+                        package_address,
+                        "VaultProof",
+                        "new",
+                        manifest_args!(bucket_id),
+                    )
                 })
         },
     );
@@ -143,7 +159,7 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
         .call_method(
             component_address,
             "create_clone_drop_vault_proof_by_ids",
-            args!(total_ids, proof_ids),
+            manifest_args!(total_ids, proof_ids),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -172,14 +188,14 @@ fn can_use_bucket_for_authorization() {
                     package_address,
                     "BucketProof",
                     "use_bucket_proof_for_auth",
-                    args!(auth_bucket_id, burnable_bucket_id),
+                    manifest_args!(auth_bucket_id, burnable_bucket_id),
                 )
             })
         })
         .call_method(
             account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -205,7 +221,12 @@ fn can_use_vault_for_authorization() {
             builder
                 .withdraw_from_account(account, auth_resource_address, 1.into())
                 .take_from_worktop(auth_resource_address, |builder, bucket_id| {
-                    builder.call_function(package_address, "VaultProof", "new", args!(bucket_id))
+                    builder.call_function(
+                        package_address,
+                        "VaultProof",
+                        "new",
+                        manifest_args!(bucket_id),
+                    )
                 })
         },
     );
@@ -218,7 +239,7 @@ fn can_use_vault_for_authorization() {
             builder.call_method(
                 component_address,
                 "use_vault_proof_for_auth",
-                args!(bucket_id),
+                manifest_args!(bucket_id),
             )
         })
         .build();
@@ -249,7 +270,7 @@ fn can_create_proof_from_account_and_pass_on() {
                 package_address,
                 "VaultProof",
                 "receive_proof",
-                args!(proof_id),
+                manifest_args!(proof_id),
             )
         })
         .build();
@@ -280,7 +301,7 @@ fn cant_move_restricted_proof() {
                 package_address,
                 "VaultProof",
                 "receive_proof_and_push_to_auth_zone",
-                args!(proof_id),
+                manifest_args!(proof_id),
             )
         })
         .build();
@@ -318,7 +339,7 @@ fn cant_move_locked_bucket() {
                 package_address,
                 "BucketProof",
                 "return_bucket_while_locked",
-                args!(bucket_id),
+                manifest_args!(bucket_id),
             )
         })
         .build();
@@ -352,7 +373,12 @@ fn can_compose_bucket_and_vault_proof() {
             builder
                 .withdraw_from_account(account, resource_address, 1.into())
                 .take_from_worktop(resource_address, |builder, bucket_id| {
-                    builder.call_function(package_address, "VaultProof", "new", args!(bucket_id))
+                    builder.call_function(
+                        package_address,
+                        "VaultProof",
+                        "new",
+                        manifest_args!(bucket_id),
+                    )
                 })
         },
     );
@@ -365,7 +391,7 @@ fn can_compose_bucket_and_vault_proof() {
             builder.call_method(
                 component_address,
                 "compose_vault_and_bucket_proof",
-                args!(bucket_id),
+                manifest_args!(bucket_id),
             )
         })
         .build();
@@ -392,7 +418,12 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
             builder
                 .withdraw_from_account(account, resource_address, 1.into())
                 .take_from_worktop(resource_address, |builder, bucket_id| {
-                    builder.call_function(package_address, "VaultProof", "new", args!(bucket_id))
+                    builder.call_function(
+                        package_address,
+                        "VaultProof",
+                        "new",
+                        manifest_args!(bucket_id),
+                    )
                 })
         },
     );
@@ -405,7 +436,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
             builder.call_method(
                 component_address,
                 "compose_vault_and_bucket_proof_by_amount",
-                args!(bucket_id, Decimal::from(2u32)),
+                manifest_args!(bucket_id, Decimal::from(2u32)),
             )
         })
         .build();
@@ -431,7 +462,12 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
             builder
                 .withdraw_from_account(account, resource_address, 1.into())
                 .take_from_worktop(resource_address, |builder, bucket_id| {
-                    builder.call_function(package_address, "VaultProof", "new", args!(bucket_id))
+                    builder.call_function(
+                        package_address,
+                        "VaultProof",
+                        "new",
+                        manifest_args!(bucket_id),
+                    )
                 })
         },
     );
@@ -457,7 +493,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
                 builder.call_method(
                     component_address,
                     "compose_vault_and_bucket_proof_by_ids",
-                    args!(
+                    manifest_args!(
                         bucket_id,
                         BTreeSet::from([
                             NonFungibleLocalId::integer(1),
@@ -490,7 +526,12 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
             builder
                 .withdraw_from_account(account, resource_address, 3.into())
                 .take_from_worktop(resource_address, |builder, bucket_id| {
-                    builder.call_function(package_address, "VaultProof", "new", args!(bucket_id))
+                    builder.call_function(
+                        package_address,
+                        "VaultProof",
+                        "new",
+                        manifest_args!(bucket_id),
+                    )
                 })
         },
     );
@@ -501,7 +542,7 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
         .call_method(
             component_address,
             "create_clone_drop_vault_proof_by_amount",
-            args!(Decimal::from(3), Decimal::from(1)),
+            manifest_args!(Decimal::from(3), Decimal::from(1)),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -545,7 +586,7 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
                     package_address,
                     "Receiver",
                     "assert_ids",
-                    args!(
+                    manifest_args!(
                         proof_id,
                         BTreeSet::from([
                             NonFungibleLocalId::integer(2),

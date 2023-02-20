@@ -4,6 +4,8 @@ use crate::api::package::PackageAddress;
 use crate::blueprints::resource::NonFungibleLocalId;
 use crate::blueprints::resource::ResourceAddress;
 use crate::*;
+use sbor::rust::fmt;
+use transaction_data::*;
 
 // TODO: Remove when better type system implemented
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor)]
@@ -37,7 +39,19 @@ pub enum RENodeType {
     AccessController,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor)]
+#[derive(
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    Ord,
+    PartialOrd,
+    ScryptoSbor,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
+)]
 pub enum RENodeId {
     Bucket(BucketId),
     Proof(ProofId),
@@ -45,7 +59,7 @@ pub enum RENodeId {
     Worktop,
     Logger,
     TransactionRuntime,
-    Global(GlobalAddress),
+    Global(Address),
     KeyValueStore(KeyValueStoreId),
     NonFungibleStore(NonFungibleStoreId),
     Component(ComponentId),
@@ -58,6 +72,47 @@ pub enum RENodeId {
     Validator(ValidatorId),
     Account(AccountId),
     AccessController(AccessControllerId),
+}
+
+impl fmt::Debug for RENodeId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Bucket(id) => f.debug_tuple("Bucket").field(&hex::encode(id)).finish(),
+            Self::Proof(id) => f.debug_tuple("Proof").field(&hex::encode(id)).finish(),
+            Self::AuthZoneStack => write!(f, "AuthZoneStack"),
+            Self::Worktop => write!(f, "Worktop"),
+            Self::Logger => write!(f, "Logger"),
+            Self::TransactionRuntime => write!(f, "TransactionRuntime"),
+            Self::Global(address) => f.debug_tuple("Global").field(address).finish(),
+            Self::KeyValueStore(id) => f
+                .debug_tuple("KeyValueStore")
+                .field(&hex::encode(id))
+                .finish(),
+            Self::NonFungibleStore(id) => f
+                .debug_tuple("NonFungibleStore")
+                .field(&hex::encode(id))
+                .finish(),
+            Self::Component(id) => f.debug_tuple("Component").field(&hex::encode(id)).finish(),
+            Self::Vault(id) => f.debug_tuple("Vault").field(&hex::encode(id)).finish(),
+            Self::ResourceManager(id) => f
+                .debug_tuple("ResourceManager")
+                .field(&hex::encode(id))
+                .finish(),
+            Self::Package(id) => f.debug_tuple("Package").field(&hex::encode(id)).finish(),
+            Self::EpochManager(id) => f
+                .debug_tuple("EpochManager")
+                .field(&hex::encode(id))
+                .finish(),
+            Self::Identity(id) => f.debug_tuple("Identity").field(&hex::encode(id)).finish(),
+            Self::Clock(id) => f.debug_tuple("Clock").field(&hex::encode(id)).finish(),
+            Self::Validator(id) => f.debug_tuple("Validator").field(&hex::encode(id)).finish(),
+            Self::Account(id) => f.debug_tuple("Account").field(&hex::encode(id)).finish(),
+            Self::AccessController(id) => f
+                .debug_tuple("AccessController")
+                .field(&hex::encode(id))
+                .finish(),
+        }
+    }
 }
 
 impl Into<[u8; 36]> for RENodeId {
@@ -89,7 +144,7 @@ impl Into<[u8; 36]> for RENodeId {
 impl Into<ComponentAddress> for RENodeId {
     fn into(self) -> ComponentAddress {
         match self {
-            RENodeId::Global(GlobalAddress::Component(address)) => address,
+            RENodeId::Global(Address::Component(address)) => address,
             _ => panic!("Not a component address"),
         }
     }
@@ -98,7 +153,7 @@ impl Into<ComponentAddress> for RENodeId {
 impl Into<PackageAddress> for RENodeId {
     fn into(self) -> PackageAddress {
         match self {
-            RENodeId::Global(GlobalAddress::Package(package_address)) => package_address,
+            RENodeId::Global(Address::Package(package_address)) => package_address,
             _ => panic!("Not a package address"),
         }
     }
@@ -107,41 +162,7 @@ impl Into<PackageAddress> for RENodeId {
 impl Into<ResourceAddress> for RENodeId {
     fn into(self) -> ResourceAddress {
         match self {
-            RENodeId::Global(GlobalAddress::Resource(resource_address)) => resource_address,
-            _ => panic!("Not a resource address"),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
-pub enum GlobalAddress {
-    Component(ComponentAddress),
-    Package(PackageAddress),
-    Resource(ResourceAddress),
-}
-
-impl Into<ComponentAddress> for GlobalAddress {
-    fn into(self) -> ComponentAddress {
-        match self {
-            GlobalAddress::Component(component_address) => component_address,
-            _ => panic!("Not a component address"),
-        }
-    }
-}
-
-impl Into<PackageAddress> for GlobalAddress {
-    fn into(self) -> PackageAddress {
-        match self {
-            GlobalAddress::Package(package_address) => package_address,
-            _ => panic!("Not a package address"),
-        }
-    }
-}
-
-impl Into<ResourceAddress> for GlobalAddress {
-    fn into(self) -> ResourceAddress {
-        match self {
-            GlobalAddress::Resource(resource_address) => resource_address,
+            RENodeId::Global(Address::Resource(resource_address)) => resource_address,
             _ => panic!("Not a resource address"),
         }
     }

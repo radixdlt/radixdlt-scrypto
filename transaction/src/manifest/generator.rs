@@ -1,8 +1,13 @@
+use crate::data::*;
+use crate::errors::*;
+use crate::manifest::ast;
+use crate::model::*;
+use crate::validation::*;
 use radix_engine_interface::address::Bech32Decoder;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::args;
+use radix_engine_interface::blueprints::access_controller::RuleSet;
 use radix_engine_interface::blueprints::access_controller::{
-    RuleSet, ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
+    ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
 };
 use radix_engine_interface::blueprints::account::{
     AccountCreateLocalInput, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_LOCAL_IDENT,
@@ -26,26 +31,13 @@ use radix_engine_interface::constants::{
     ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, EPOCH_MANAGER, IDENTITY_PACKAGE,
     RESOURCE_MANAGER_PACKAGE,
 };
-use radix_engine_interface::crypto::{
-    EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
-    Hash,
-};
-use radix_engine_interface::data::types::*;
-use radix_engine_interface::data::{
-    scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoCustomValue, ScryptoDecode,
-    ScryptoValue, ScryptoValueKind,
-};
+use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
 use sbor::rust::borrow::Borrow;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::str::FromStr;
 use sbor::rust::vec;
-
-use crate::errors::*;
-use crate::manifest::ast;
-use crate::model::*;
-use crate::validation::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GeneratorError {
@@ -58,7 +50,7 @@ pub enum GeneratorError {
         actual: ast::Value,
     },
     UnexpectedValue {
-        expected_type: ScryptoValueKind,
+        expected_type: ManifestValueKind,
         actual: ast::Value,
     },
     InvalidPackageAddress(String),
@@ -88,7 +80,7 @@ pub enum GeneratorError {
     IdValidationError(ManifestIdValidationError),
     ArgumentEncodingError(EncodeError),
     ArgumentDecodingError(DecodeError),
-    InvalidEntityAddress(String),
+    InvalidAddress(String),
     InvalidLength {
         value_type: ast::Type,
         expected_length: usize,
@@ -163,7 +155,7 @@ pub fn generate_manifest(
     bech32_decoder: &Bech32Decoder,
     blobs: BTreeMap<Hash, Vec<u8>>,
 ) -> Result<TransactionManifest, GeneratorError> {
-    let mut id_validator = ManifestIdValidator::new();
+    let mut id_validator = ManifestValidator::new();
     let mut name_resolver = NameResolver::new();
     let mut output = Vec::new();
 
@@ -185,11 +177,11 @@ pub fn generate_manifest(
 
 pub fn generate_instruction(
     instruction: &ast::Instruction,
-    id_validator: &mut ManifestIdValidator,
+    id_validator: &mut ManifestValidator,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
     blobs: &BTreeMap<Hash, Vec<u8>>,
-) -> Result<BasicInstruction, GeneratorError> {
+) -> Result<Instruction, GeneratorError> {
     Ok(match instruction {
         ast::Instruction::TakeFromWorktop {
             resource_address,
@@ -200,7 +192,7 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
-            BasicInstruction::TakeFromWorktop {
+            Instruction::TakeFromWorktop {
                 resource_address: generate_resource_address(resource_address, bech32_decoder)?,
             }
         }
@@ -214,7 +206,7 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
-            BasicInstruction::TakeFromWorktopByAmount {
+            Instruction::TakeFromWorktopByAmount {
                 amount: generate_decimal(amount)?,
                 resource_address: generate_resource_address(resource_address, bech32_decoder)?,
             }
@@ -229,7 +221,7 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
-            BasicInstruction::TakeFromWorktopByIds {
+            Instruction::TakeFromWorktopByIds {
                 ids: generate_non_fungible_local_ids(ids)?,
                 resource_address: generate_resource_address(resource_address, bech32_decoder)?,
             }
@@ -239,24 +231,24 @@ pub fn generate_instruction(
             id_validator
                 .drop_bucket(&bucket_id)
                 .map_err(GeneratorError::IdValidationError)?;
-            BasicInstruction::ReturnToWorktop { bucket_id }
+            Instruction::ReturnToWorktop { bucket_id }
         }
         ast::Instruction::AssertWorktopContains { resource_address } => {
-            BasicInstruction::AssertWorktopContains {
+            Instruction::AssertWorktopContains {
                 resource_address: generate_resource_address(resource_address, bech32_decoder)?,
             }
         }
         ast::Instruction::AssertWorktopContainsByAmount {
             amount,
             resource_address,
-        } => BasicInstruction::AssertWorktopContainsByAmount {
+        } => Instruction::AssertWorktopContainsByAmount {
             amount: generate_decimal(amount)?,
             resource_address: generate_resource_address(resource_address, bech32_decoder)?,
         },
         ast::Instruction::AssertWorktopContainsByIds {
             ids,
             resource_address,
-        } => BasicInstruction::AssertWorktopContainsByIds {
+        } => Instruction::AssertWorktopContainsByIds {
             ids: generate_non_fungible_local_ids(ids)?,
             resource_address: generate_resource_address(resource_address, bech32_decoder)?,
         },
@@ -266,16 +258,16 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            BasicInstruction::PopFromAuthZone
+            Instruction::PopFromAuthZone
         }
         ast::Instruction::PushToAuthZone { proof } => {
             let proof_id = generate_proof(proof, resolver)?;
             id_validator
                 .drop_proof(&proof_id)
                 .map_err(GeneratorError::IdValidationError)?;
-            BasicInstruction::PushToAuthZone { proof_id }
+            Instruction::PushToAuthZone { proof_id }
         }
-        ast::Instruction::ClearAuthZone => BasicInstruction::ClearAuthZone,
+        ast::Instruction::ClearAuthZone => Instruction::ClearAuthZone,
 
         ast::Instruction::CreateProofFromAuthZone {
             resource_address,
@@ -287,7 +279,7 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            BasicInstruction::CreateProofFromAuthZone { resource_address }
+            Instruction::CreateProofFromAuthZone { resource_address }
         }
         ast::Instruction::CreateProofFromAuthZoneByAmount {
             amount,
@@ -301,7 +293,7 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            BasicInstruction::CreateProofFromAuthZoneByAmount {
+            Instruction::CreateProofFromAuthZoneByAmount {
                 amount,
                 resource_address,
             }
@@ -318,7 +310,7 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            BasicInstruction::CreateProofFromAuthZoneByIds {
+            Instruction::CreateProofFromAuthZoneByIds {
                 ids,
                 resource_address,
             }
@@ -330,7 +322,7 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            BasicInstruction::CreateProofFromBucket { bucket_id }
+            Instruction::CreateProofFromBucket { bucket_id }
         }
         ast::Instruction::CloneProof { proof, new_proof } => {
             let proof_id = generate_proof(proof, resolver)?;
@@ -339,20 +331,20 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_proof(new_proof, resolver, proof_id2)?;
 
-            BasicInstruction::CloneProof { proof_id }
+            Instruction::CloneProof { proof_id }
         }
         ast::Instruction::DropProof { proof } => {
             let proof_id = generate_proof(proof, resolver)?;
             id_validator
                 .drop_proof(&proof_id)
                 .map_err(GeneratorError::IdValidationError)?;
-            BasicInstruction::DropProof { proof_id }
+            Instruction::DropProof { proof_id }
         }
         ast::Instruction::DropAllProofs => {
             id_validator
                 .drop_all_proofs()
                 .map_err(GeneratorError::IdValidationError)?;
-            BasicInstruction::DropAllProofs
+            Instruction::DropAllProofs
         }
         ast::Instruction::CallFunction {
             package_address,
@@ -364,17 +356,15 @@ pub fn generate_instruction(
             let blueprint_name = generate_string(&blueprint_name)?;
             let function_name = generate_string(&function_name)?;
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
-
-            let indexed_args = IndexedScryptoValue::from_value(args);
             id_validator
-                .move_resources(&indexed_args.buckets(), &indexed_args.proofs())
+                .process_call_data(&args)
                 .map_err(GeneratorError::IdValidationError)?;
 
-            BasicInstruction::CallFunction {
+            Instruction::CallFunction {
                 package_address,
                 blueprint_name,
                 function_name,
-                args: indexed_args.to_vec(),
+                args: manifest_encode(&args).unwrap(),
             }
         }
         ast::Instruction::CallMethod {
@@ -385,16 +375,13 @@ pub fn generate_instruction(
             let component_address = generate_component_address(component_address, bech32_decoder)?;
             let method_name = generate_string(&method_name)?;
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
-
-            let indexed_args = IndexedScryptoValue::from_value(args);
             id_validator
-                .move_resources(&indexed_args.buckets(), &indexed_args.proofs())
+                .process_call_data(&args)
                 .map_err(GeneratorError::IdValidationError)?;
-
-            BasicInstruction::CallMethod {
+            Instruction::CallMethod {
                 component_address,
                 method_name,
-                args: indexed_args.into_vec(),
+                args: manifest_encode(&args).unwrap(),
             }
         }
         ast::Instruction::PublishPackage {
@@ -403,7 +390,7 @@ pub fn generate_instruction(
             royalty_config,
             metadata,
             access_rules,
-        } => BasicInstruction::PublishPackage {
+        } => Instruction::PublishPackage {
             code: generate_blob(code, blobs)?,
             abi: generate_blob(abi, blobs)?,
             royalty_config: generate_typed_value(royalty_config, resolver, bech32_decoder, blobs)?,
@@ -414,7 +401,7 @@ pub fn generate_instruction(
             code,
             abi,
             owner_badge,
-        } => BasicInstruction::PublishPackageWithOwner {
+        } => Instruction::PublishPackageWithOwner {
             code: generate_blob(code, blobs)?,
             abi: generate_blob(abi, blobs)?,
             owner_badge: generate_non_fungible_global_id(owner_badge, bech32_decoder)?,
@@ -424,9 +411,9 @@ pub fn generate_instruction(
             id_validator
                 .drop_bucket(&bucket_id)
                 .map_err(GeneratorError::IdValidationError)?;
-            BasicInstruction::BurnResource { bucket_id }
+            Instruction::BurnResource { bucket_id }
         }
-        ast::Instruction::RecallResource { vault_id, amount } => BasicInstruction::RecallResource {
+        ast::Instruction::RecallResource { vault_id, amount } => Instruction::RecallResource {
             vault_id: generate_typed_value(vault_id, resolver, bech32_decoder, blobs)?,
             amount: generate_decimal(amount)?,
         },
@@ -434,32 +421,32 @@ pub fn generate_instruction(
             entity_address,
             key,
             value,
-        } => BasicInstruction::SetMetadata {
-            entity_address: generate_entity_address(entity_address, bech32_decoder)?,
+        } => Instruction::SetMetadata {
+            entity_address: generate_address(entity_address, bech32_decoder)?,
             key: generate_string(key)?,
             value: generate_string(value)?,
         },
         ast::Instruction::SetPackageRoyaltyConfig {
             package_address,
             royalty_config,
-        } => BasicInstruction::SetPackageRoyaltyConfig {
+        } => Instruction::SetPackageRoyaltyConfig {
             package_address: generate_package_address(package_address, bech32_decoder)?,
             royalty_config: generate_typed_value(royalty_config, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::SetComponentRoyaltyConfig {
             component_address,
             royalty_config,
-        } => BasicInstruction::SetComponentRoyaltyConfig {
+        } => Instruction::SetComponentRoyaltyConfig {
             component_address: generate_component_address(component_address, bech32_decoder)?,
             royalty_config: generate_typed_value(royalty_config, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::ClaimPackageRoyalty { package_address } => {
-            BasicInstruction::ClaimPackageRoyalty {
+            Instruction::ClaimPackageRoyalty {
                 package_address: generate_package_address(package_address, bech32_decoder)?,
             }
         }
         ast::Instruction::ClaimComponentRoyalty { component_address } => {
-            BasicInstruction::ClaimComponentRoyalty {
+            Instruction::ClaimComponentRoyalty {
                 component_address: generate_component_address(component_address, bech32_decoder)?,
             }
         }
@@ -468,8 +455,8 @@ pub fn generate_instruction(
             index,
             key,
             rule,
-        } => BasicInstruction::SetMethodAccessRule {
-            entity_address: generate_entity_address(entity_address, bech32_decoder)?,
+        } => Instruction::SetMethodAccessRule {
+            entity_address: generate_address(entity_address, bech32_decoder)?,
             index: generate_typed_value(index, resolver, bech32_decoder, blobs)?,
             key: generate_typed_value(key, resolver, bech32_decoder, blobs)?,
             rule: generate_typed_value(rule, resolver, bech32_decoder, blobs)?,
@@ -478,21 +465,21 @@ pub fn generate_instruction(
         ast::Instruction::MintFungible {
             resource_address,
             amount,
-        } => BasicInstruction::MintFungible {
+        } => Instruction::MintFungible {
             resource_address: generate_resource_address(resource_address, bech32_decoder)?,
             amount: generate_decimal(amount)?,
         },
         ast::Instruction::MintNonFungible {
             resource_address,
             entries,
-        } => BasicInstruction::MintNonFungible {
+        } => Instruction::MintNonFungible {
             resource_address: generate_resource_address(resource_address, bech32_decoder)?,
             entries: generate_non_fungible_mint_params(entries, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::MintUuidNonFungible {
             resource_address,
             entries,
-        } => BasicInstruction::MintUuidNonFungible {
+        } => Instruction::MintUuidNonFungible {
             resource_address: generate_resource_address(resource_address, bech32_decoder)?,
             entries: generate_uuid_non_fungible_mint_params(
                 entries,
@@ -505,10 +492,10 @@ pub fn generate_instruction(
         ast::Instruction::CreateValidator {
             key,
             owner_access_rule,
-        } => BasicInstruction::CallMethod {
+        } => Instruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
-            args: scrypto_encode(&EpochManagerCreateValidatorInput {
+            args: manifest_encode(&EpochManagerCreateValidatorInput {
                 key: generate_typed_value(key, resolver, bech32_decoder, blobs)?,
                 owner_access_rule: generate_typed_value(
                     owner_access_rule,
@@ -523,11 +510,11 @@ pub fn generate_instruction(
             divisibility,
             metadata,
             access_rules,
-        } => BasicInstruction::CallFunction {
+        } => Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT.to_string(),
-            args: scrypto_encode(&ResourceManagerCreateFungibleInput {
+            args: manifest_encode(&ResourceManagerCreateFungibleInput {
                 divisibility: generate_u8(divisibility)?,
                 metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
                 access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
@@ -539,11 +526,11 @@ pub fn generate_instruction(
             metadata,
             access_rules,
             initial_supply,
-        } => BasicInstruction::CallFunction {
+        } => Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT.to_string(),
-            args: scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
+            args: manifest_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
                 divisibility: generate_u8(divisibility)?,
                 metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
                 access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
@@ -555,11 +542,11 @@ pub fn generate_instruction(
             id_type,
             metadata,
             access_rules,
-        } => BasicInstruction::CallFunction {
+        } => Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT.to_string(),
-            args: scrypto_encode(&ResourceManagerCreateNonFungibleInput {
+            args: manifest_encode(&ResourceManagerCreateNonFungibleInput {
                 id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
                 metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
                 access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
@@ -571,12 +558,12 @@ pub fn generate_instruction(
             metadata,
             access_rules,
             initial_supply,
-        } => BasicInstruction::CallFunction {
+        } => Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT
                 .to_string(),
-            args: scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
+            args: manifest_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
                 id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
                 metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
                 access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
@@ -593,11 +580,11 @@ pub fn generate_instruction(
             controlled_asset,
             rule_set,
             timed_recovery_delay_in_minutes,
-        } => BasicInstruction::CallFunction {
+        } => Instruction::CallFunction {
             package_address: ACCESS_CONTROLLER_PACKAGE,
             blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
             function_name: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
-            args: args!(
+            args: manifest_args!(
                 generate_typed_value::<ManifestBucket>(
                     controlled_asset,
                     resolver,
@@ -613,14 +600,14 @@ pub fn generate_instruction(
                 )?
             ),
         },
-        ast::Instruction::AssertAccessRule { access_rule } => BasicInstruction::AssertAccessRule {
+        ast::Instruction::AssertAccessRule { access_rule } => Instruction::AssertAccessRule {
             access_rule: generate_typed_value(access_rule, resolver, bech32_decoder, blobs)?,
         },
-        ast::Instruction::CreateIdentity { access_rule } => BasicInstruction::CallFunction {
+        ast::Instruction::CreateIdentity { access_rule } => Instruction::CallFunction {
             package_address: IDENTITY_PACKAGE,
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
             function_name: IDENTITY_CREATE_IDENT.to_string(),
-            args: scrypto_encode(&IdentityCreateInput {
+            args: manifest_encode(&IdentityCreateInput {
                 access_rule: generate_typed_value::<AccessRule>(
                     access_rule,
                     resolver,
@@ -630,11 +617,11 @@ pub fn generate_instruction(
             })
             .unwrap(),
         },
-        ast::Instruction::CreateAccount { withdraw_rule } => BasicInstruction::CallFunction {
+        ast::Instruction::CreateAccount { withdraw_rule } => Instruction::CallFunction {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
             function_name: ACCOUNT_CREATE_LOCAL_IDENT.to_string(),
-            args: scrypto_encode(&AccountCreateLocalInput {
+            args: manifest_encode(&AccountCreateLocalInput {
                 withdraw_rule: generate_typed_value(
                     withdraw_rule,
                     resolver,
@@ -657,16 +644,16 @@ macro_rules! invalid_type {
     };
 }
 
-fn generate_typed_value<T: ScryptoDecode>(
+fn generate_typed_value<T: ManifestDecode>(
     value: &ast::Value,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
     blobs: &BTreeMap<Hash, Vec<u8>>,
 ) -> Result<T, GeneratorError> {
     let value = generate_value(value, None, resolver, bech32_decoder, blobs)?;
-    let encoded = scrypto_encode(&value).map_err(GeneratorError::ArgumentEncodingError)?;
+    let encoded = manifest_encode(&value).map_err(GeneratorError::ArgumentEncodingError)?;
     let decoded: T =
-        scrypto_decode(&encoded).map_err(|e| GeneratorError::ArgumentDecodingError(e))?;
+        manifest_decode(&encoded).map_err(|e| GeneratorError::ArgumentDecodingError(e))?;
     Ok(decoded)
 }
 
@@ -675,13 +662,13 @@ fn generate_args(
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
     blobs: &BTreeMap<Hash, Vec<u8>>,
-) -> Result<ScryptoValue, GeneratorError> {
+) -> Result<ManifestValue, GeneratorError> {
     let mut fields = Vec::new();
     for v in values {
         fields.push(generate_value(v, None, resolver, bech32_decoder, blobs)?);
     }
 
-    Ok(ScryptoValue::Tuple { fields })
+    Ok(ManifestValue::Tuple { fields })
 }
 
 fn generate_string(value: &ast::Value) -> Result<String, GeneratorError> {
@@ -715,61 +702,10 @@ fn generate_precise_decimal(value: &ast::Value) -> Result<PreciseDecimal, Genera
         ast::Value::PreciseDecimal(inner) => match &**inner {
             ast::Value::String(s) => PreciseDecimal::from_str(s)
                 .map_err(|_| GeneratorError::InvalidPreciseDecimal(s.into())),
+
             v => invalid_type!(v, ast::Type::String),
         },
         v => invalid_type!(v, ast::Type::Decimal),
-    }
-}
-
-fn generate_ecdsa_secp256k1_public_key(
-    value: &ast::Value,
-) -> Result<EcdsaSecp256k1PublicKey, GeneratorError> {
-    match value {
-        ast::Value::EcdsaSecp256k1PublicKey(inner) => match &**inner {
-            ast::Value::String(s) => EcdsaSecp256k1PublicKey::from_str(s)
-                .map_err(|_| GeneratorError::InvalidEcdsaSecp256k1PublicKey(s.into())),
-            v => invalid_type!(v, ast::Type::String),
-        },
-        v => invalid_type!(v, ast::Type::EcdsaSecp256k1PublicKey),
-    }
-}
-
-fn generate_ecdsa_secp256k1_signature(
-    value: &ast::Value,
-) -> Result<EcdsaSecp256k1Signature, GeneratorError> {
-    match value {
-        ast::Value::EcdsaSecp256k1Signature(inner) => match &**inner {
-            ast::Value::String(s) => EcdsaSecp256k1Signature::from_str(s)
-                .map_err(|_| GeneratorError::InvalidEcdsaSecp256k1Signature(s.into())),
-            v => invalid_type!(v, ast::Type::String),
-        },
-        v => invalid_type!(v, ast::Type::EcdsaSecp256k1Signature),
-    }
-}
-
-fn generate_eddsa_ed25519_public_key(
-    value: &ast::Value,
-) -> Result<EddsaEd25519PublicKey, GeneratorError> {
-    match value {
-        ast::Value::EddsaEd25519PublicKey(inner) => match &**inner {
-            ast::Value::String(s) => EddsaEd25519PublicKey::from_str(s)
-                .map_err(|_| GeneratorError::InvalidEddsaEd25519PublicKey(s.into())),
-            v => invalid_type!(v, ast::Type::String),
-        },
-        v => invalid_type!(v, ast::Type::EddsaEd25519PublicKey),
-    }
-}
-
-fn generate_eddsa_ed25519_signature(
-    value: &ast::Value,
-) -> Result<EddsaEd25519Signature, GeneratorError> {
-    match value {
-        ast::Value::EddsaEd25519Signature(inner) => match &**inner {
-            ast::Value::String(s) => EddsaEd25519Signature::from_str(s)
-                .map_err(|_| GeneratorError::InvalidEddsaEd25519Signature(s.into())),
-            v => invalid_type!(v, ast::Type::String),
-        },
-        v => invalid_type!(v, ast::Type::EddsaEd25519Signature),
     }
 }
 
@@ -779,6 +715,12 @@ fn generate_package_address(
 ) -> Result<PackageAddress, GeneratorError> {
     match value {
         ast::Value::PackageAddress(inner) => match &**inner {
+            ast::Value::String(s) => bech32_decoder
+                .validate_and_decode_package_address(s)
+                .map_err(|_| GeneratorError::InvalidPackageAddress(s.into())),
+            v => invalid_type!(v, ast::Type::String),
+        },
+        ast::Value::Address(inner) => match &**inner {
             ast::Value::String(s) => bech32_decoder
                 .validate_and_decode_package_address(s)
                 .map_err(|_| GeneratorError::InvalidPackageAddress(s.into())),
@@ -799,19 +741,13 @@ fn generate_component_address(
                 .map_err(|_| GeneratorError::InvalidComponentAddress(s.into())),
             v => invalid_type!(v, ast::Type::String),
         },
-        v => invalid_type!(v, ast::Type::ComponentAddress),
-    }
-}
-
-fn generate_resource_address_internal(
-    value: &ast::Value,
-    bech32_decoder: &Bech32Decoder,
-) -> Result<ResourceAddress, GeneratorError> {
-    match value {
-        ast::Value::String(s) => bech32_decoder
-            .validate_and_decode_resource_address(s)
-            .map_err(|_| GeneratorError::InvalidResourceAddress(s.into())),
-        v => invalid_type!(v, ast::Type::String),
+        ast::Value::Address(inner) => match &**inner {
+            ast::Value::String(s) => bech32_decoder
+                .validate_and_decode_component_address(s)
+                .map_err(|_| GeneratorError::InvalidComponentAddress(s.into())),
+            v => invalid_type!(v, ast::Type::String),
+        },
+        v => invalid_type!(v, ast::Type::ComponentAddress, ast::Type::Address),
     }
 }
 
@@ -820,69 +756,72 @@ fn generate_resource_address(
     bech32_decoder: &Bech32Decoder,
 ) -> Result<ResourceAddress, GeneratorError> {
     match value {
-        ast::Value::ResourceAddress(inner) => {
-            generate_resource_address_internal(inner, bech32_decoder)
-        }
+        ast::Value::ResourceAddress(inner) => match inner.borrow() {
+            ast::Value::String(s) => bech32_decoder
+                .validate_and_decode_resource_address(s)
+                .map_err(|_| GeneratorError::InvalidResourceAddress(s.into())),
+            v => invalid_type!(v, ast::Type::String),
+        },
+        ast::Value::Address(inner) => match inner.borrow() {
+            ast::Value::String(s) => bech32_decoder
+                .validate_and_decode_resource_address(s)
+                .map_err(|_| GeneratorError::InvalidResourceAddress(s.into())),
+            v => invalid_type!(v, ast::Type::String),
+        },
         v => invalid_type!(v, ast::Type::ResourceAddress),
     }
 }
 
-fn generate_entity_address(
+fn generate_address(
     value: &ast::Value,
     bech32_decoder: &Bech32Decoder,
-) -> Result<GlobalAddress, GeneratorError> {
+) -> Result<ManifestAddress, GeneratorError> {
     match value {
+        ast::Value::Address(value) => match value.borrow() {
+            ast::Value::String(s) => bech32_decoder
+                .validate_and_decode_package_address(s)
+                .map(|a| Address::Package(a))
+                .or(bech32_decoder
+                    .validate_and_decode_component_address(s)
+                    .map(|a| Address::Component(a)))
+                .or(bech32_decoder
+                    .validate_and_decode_resource_address(s)
+                    .map(|a| Address::Resource(a)))
+                .map_err(|_| GeneratorError::InvalidAddress(s.into()))
+                .map(from_address),
+            v => return invalid_type!(v, ast::Type::String),
+        },
         ast::Value::PackageAddress(value) => match value.borrow() {
             ast::Value::String(s) => bech32_decoder
                 .validate_and_decode_package_address(s)
-                .map(|a| GlobalAddress::Package(a))
-                .map_err(|_| GeneratorError::InvalidEntityAddress(s.into())),
+                .map(|a| Address::Package(a))
+                .map_err(|_| GeneratorError::InvalidAddress(s.into()))
+                .map(from_address),
             v => return invalid_type!(v, ast::Type::String),
         },
         ast::Value::ComponentAddress(value) => match value.borrow() {
             ast::Value::String(s) => bech32_decoder
                 .validate_and_decode_component_address(s)
-                .map(|a| GlobalAddress::Component(a))
-                .map_err(|_| GeneratorError::InvalidEntityAddress(s.into())),
+                .map(|a| Address::Component(a))
+                .map_err(|_| GeneratorError::InvalidAddress(s.into()))
+                .map(from_address),
             v => return invalid_type!(v, ast::Type::String),
         },
         ast::Value::ResourceAddress(value) => match value.borrow() {
             ast::Value::String(s) => bech32_decoder
                 .validate_and_decode_resource_address(s)
-                .map(|a| GlobalAddress::Resource(a))
-                .map_err(|_| GeneratorError::InvalidEntityAddress(s.into())),
+                .map(|a| Address::Resource(a))
+                .map_err(|_| GeneratorError::InvalidAddress(s.into()))
+                .map(from_address),
             v => return invalid_type!(v, ast::Type::String),
         },
         v => invalid_type!(
             v,
+            ast::Type::Address,
             ast::Type::PackageAddress,
             ast::Type::ResourceAddress,
             ast::Type::ComponentAddress
         ),
-    }
-}
-
-fn generate_hash(value: &ast::Value) -> Result<Hash, GeneratorError> {
-    match value {
-        ast::Value::Hash(inner) => match &**inner {
-            ast::Value::String(s) => {
-                Hash::from_str(s).map_err(|_| GeneratorError::InvalidHash(s.into()))
-            }
-            v => invalid_type!(v, ast::Type::String),
-        },
-        v => invalid_type!(v, ast::Type::Hash),
-    }
-}
-
-fn generate_ownership(value: &ast::Value) -> Result<Own, GeneratorError> {
-    match value {
-        ast::Value::Own(inner) => match &**inner {
-            ast::Value::String(_) => {
-                todo!()
-            }
-            v => invalid_type!(v, ast::Type::String),
-        },
-        v => invalid_type!(v, ast::Type::Own),
     }
 }
 
@@ -1015,7 +954,7 @@ fn generate_blob(
                 blobs
                     .get(&hash)
                     .ok_or(GeneratorError::BlobNotFound(s.clone()))?;
-                Ok(ManifestBlobRef(hash))
+                Ok(ManifestBlobRef(hash.0))
             }
             v => invalid_type!(v, ast::Type::String),
         },
@@ -1061,7 +1000,7 @@ fn generate_args_from_tuple(
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
     blobs: &BTreeMap<Hash, Vec<u8>>,
-) -> Result<ScryptoValue, GeneratorError> {
+) -> Result<ManifestValue, GeneratorError> {
     match value {
         ast::Value::Tuple(values) => generate_args(values, resolver, bech32_decoder, blobs),
         v => invalid_type!(v, ast::Type::Tuple),
@@ -1113,14 +1052,14 @@ fn generate_non_fungible_mint_params(
                             });
                         }
 
-                        let immutable_data = scrypto_encode(&generate_args_from_tuple(
+                        let immutable_data = manifest_encode(&generate_args_from_tuple(
                             &values[0],
                             resolver,
                             bech32_decoder,
                             blobs,
                         )?)
                         .map_err(GeneratorError::ArgumentEncodingError)?;
-                        let mutable_data = scrypto_encode(&generate_args_from_tuple(
+                        let mutable_data = manifest_encode(&generate_args_from_tuple(
                             &values[1],
                             resolver,
                             bech32_decoder,
@@ -1168,14 +1107,14 @@ fn generate_uuid_non_fungible_mint_params(
                             });
                         }
 
-                        let immutable_data = scrypto_encode(&generate_args_from_tuple(
+                        let immutable_data = manifest_encode(&generate_args_from_tuple(
                             &values[0],
                             resolver,
                             bech32_decoder,
                             blobs,
                         )?)
                         .map_err(GeneratorError::ArgumentEncodingError)?;
-                        let mutable_data = scrypto_encode(&generate_args_from_tuple(
+                        let mutable_data = manifest_encode(&generate_args_from_tuple(
                             &values[1],
                             resolver,
                             bech32_decoder,
@@ -1197,11 +1136,11 @@ fn generate_uuid_non_fungible_mint_params(
 
 pub fn generate_value(
     value: &ast::Value,
-    expected_type: Option<ScryptoValueKind>,
+    expected_type: Option<ManifestValueKind>,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
     blobs: &BTreeMap<Hash, Vec<u8>>,
-) -> Result<ScryptoValue, GeneratorError> {
+) -> Result<ManifestValue, GeneratorError> {
     if let Some(ty) = expected_type {
         if ty != value.value_kind() {
             return Err(GeneratorError::UnexpectedValue {
@@ -1320,82 +1259,60 @@ pub fn generate_value(
             Ok(Value::Tuple {
                 fields: vec![
                     Value::Custom {
-                        value: ScryptoCustomValue::ResourceAddress(global_id.resource_address()),
+                        value: ManifestCustomValue::Address(from_address(Address::Resource(
+                            global_id.resource_address(),
+                        ))),
                     },
                     Value::Custom {
-                        value: ScryptoCustomValue::NonFungibleLocalId(global_id.local_id().clone()),
+                        value: ManifestCustomValue::NonFungibleLocalId(from_non_fungible_local_id(
+                            global_id.local_id().clone(),
+                        )),
                     },
                 ],
+            })
+        }
+        ast::Value::PackageAddress(_) => {
+            generate_package_address(value, bech32_decoder).map(|v| Value::Custom {
+                value: ManifestCustomValue::Address(from_address(Address::Package(v))),
+            })
+        }
+        ast::Value::ComponentAddress(_) => {
+            generate_component_address(value, bech32_decoder).map(|v| Value::Custom {
+                value: ManifestCustomValue::Address(from_address(Address::Component(v))),
+            })
+        }
+        ast::Value::ResourceAddress(_) => {
+            generate_resource_address(value, bech32_decoder).map(|v| Value::Custom {
+                value: ManifestCustomValue::Address(from_address(Address::Resource(v))),
             })
         }
         // ==============
         // Custom Types
         // ==============
-        ast::Value::PackageAddress(_) => {
-            generate_package_address(value, bech32_decoder).map(|v| Value::Custom {
-                value: ScryptoCustomValue::PackageAddress(v),
-            })
-        }
-        ast::Value::ComponentAddress(_) => {
-            generate_component_address(value, bech32_decoder).map(|v| Value::Custom {
-                value: ScryptoCustomValue::ComponentAddress(v),
-            })
-        }
-        ast::Value::ResourceAddress(_) => {
-            generate_resource_address(value, bech32_decoder).map(|v| Value::Custom {
-                value: ScryptoCustomValue::ResourceAddress(v),
-            })
-        }
-
-        ast::Value::Own(_) => generate_ownership(value).map(|v| Value::Custom {
-            value: ScryptoCustomValue::Own(v),
+        ast::Value::Address(_) => generate_address(value, bech32_decoder).map(|v| Value::Custom {
+            value: ManifestCustomValue::Address(v),
         }),
-        ast::Value::Blob(_) => generate_blob(value, blobs).map(|v| Value::Custom {
-            value: ScryptoCustomValue::Blob(v),
-        }),
-
         ast::Value::Bucket(_) => generate_bucket(value, resolver).map(|v| Value::Custom {
-            value: ScryptoCustomValue::Bucket(v),
+            value: ManifestCustomValue::Bucket(v),
         }),
         ast::Value::Proof(_) => generate_proof(value, resolver).map(|v| Value::Custom {
-            value: ScryptoCustomValue::Proof(v),
+            value: ManifestCustomValue::Proof(v),
         }),
         ast::Value::Expression(_) => generate_expression(value).map(|v| Value::Custom {
-            value: ScryptoCustomValue::Expression(v),
+            value: ManifestCustomValue::Expression(v),
         }),
-
-        ast::Value::Hash(_) => generate_hash(value).map(|v| Value::Custom {
-            value: ScryptoCustomValue::Hash(v),
+        ast::Value::Blob(_) => generate_blob(value, blobs).map(|v| Value::Custom {
+            value: ManifestCustomValue::Blob(v),
         }),
         ast::Value::Decimal(_) => generate_decimal(value).map(|v| Value::Custom {
-            value: ScryptoCustomValue::Decimal(v),
+            value: ManifestCustomValue::Decimal(from_decimal(v)),
         }),
         ast::Value::PreciseDecimal(_) => generate_precise_decimal(value).map(|v| Value::Custom {
-            value: ScryptoCustomValue::PreciseDecimal(v),
+            value: ManifestCustomValue::PreciseDecimal(from_precise_decimal(v)),
         }),
-        ast::Value::EcdsaSecp256k1PublicKey(_) => {
-            generate_ecdsa_secp256k1_public_key(value).map(|v| Value::Custom {
-                value: ScryptoCustomValue::EcdsaSecp256k1PublicKey(v),
-            })
-        }
-        ast::Value::EcdsaSecp256k1Signature(_) => {
-            generate_ecdsa_secp256k1_signature(value).map(|v| Value::Custom {
-                value: ScryptoCustomValue::EcdsaSecp256k1Signature(v),
-            })
-        }
-        ast::Value::EddsaEd25519PublicKey(_) => {
-            generate_eddsa_ed25519_public_key(value).map(|v| Value::Custom {
-                value: ScryptoCustomValue::EddsaEd25519PublicKey(v),
-            })
-        }
-        ast::Value::EddsaEd25519Signature(_) => {
-            generate_eddsa_ed25519_signature(value).map(|v| Value::Custom {
-                value: ScryptoCustomValue::EddsaEd25519Signature(v),
-            })
-        }
         ast::Value::NonFungibleLocalId(_) => {
             generate_non_fungible_local_id(value).map(|v| Value::Custom {
-                value: ScryptoCustomValue::NonFungibleLocalId(v),
+                value: ManifestCustomValue::NonFungibleLocalId(from_non_fungible_local_id(v)),
             })
         }
     }
@@ -1403,11 +1320,11 @@ pub fn generate_value(
 
 fn generate_singletons(
     elements: &Vec<ast::Value>,
-    expected_type: Option<ScryptoValueKind>,
+    expected_type: Option<ManifestValueKind>,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
     blobs: &BTreeMap<Hash, Vec<u8>>,
-) -> Result<Vec<ScryptoValue>, GeneratorError> {
+) -> Result<Vec<ManifestValue>, GeneratorError> {
     let mut result = vec![];
     for element in elements {
         result.push(generate_value(
@@ -1423,12 +1340,12 @@ fn generate_singletons(
 
 fn generate_kv_entries(
     elements: &Vec<ast::Value>,
-    key_value_kind: ScryptoValueKind,
-    value_value_kind: ScryptoValueKind,
+    key_value_kind: ManifestValueKind,
+    value_value_kind: ManifestValueKind,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
     blobs: &BTreeMap<Hash, Vec<u8>>,
-) -> Result<Vec<(ScryptoValue, ScryptoValue)>, GeneratorError> {
+) -> Result<Vec<(ManifestValue, ManifestValue)>, GeneratorError> {
     if elements.len() % 2 != 0 {
         return Err(GeneratorError::OddNumberOfElements);
     }
@@ -1457,11 +1374,10 @@ fn generate_kv_entries(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::Parser;
-    use crate::signing::EcdsaSecp256k1PrivateKey;
     use radix_engine_interface::address::Bech32Decoder;
-    use radix_engine_interface::args;
     use radix_engine_interface::blueprints::resource::{
         AccessRule, AccessRules, NonFungibleIdType, ResourceMethodAuthKey,
     };
@@ -1494,7 +1410,7 @@ mod tests {
             let instruction = Parser::new(tokenize($s).unwrap())
                 .parse_instruction()
                 .unwrap();
-            let mut id_validator = ManifestIdValidator::new();
+            let mut id_validator = ManifestValidator::new();
             let mut resolver = NameResolver::new();
             assert_eq!(
                 generate_instruction(
@@ -1548,10 +1464,10 @@ mod tests {
             Value::Tuple {
                 fields: vec![
                     Value::Custom {
-                        value: ScryptoCustomValue::Bucket(ManifestBucket(1))
+                        value: ManifestCustomValue::Bucket(ManifestBucket(1))
                     },
                     Value::Custom {
-                        value: ScryptoCustomValue::Proof(ManifestProof(2))
+                        value: ManifestCustomValue::Proof(ManifestProof(2))
                     },
                     Value::String {
                         value: "bar".into()
@@ -1560,21 +1476,13 @@ mod tests {
             }
         );
         generate_value_ok!(
-            r#"Tuple(Decimal("1"), Hash("aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c"))"#,
+            r#"Tuple(Decimal("1"))"#,
             Value::Tuple {
-                fields: vec![
-                    Value::Custom {
-                        value: ScryptoCustomValue::Decimal(dec!("1"))
-                    },
-                    Value::Custom {
-                        value: ScryptoCustomValue::Hash(
-                            Hash::from_str(
-                                "aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c"
-                            )
-                            .unwrap()
-                        )
-                    },
-                ]
+                fields: vec![Value::Custom {
+                    value: ManifestCustomValue::Decimal(from_decimal(
+                        Decimal::from_str("1").unwrap()
+                    ))
+                },]
             }
         );
         generate_value_ok!(r#"Tuple()"#, Value::Tuple { fields: vec![] });
@@ -1604,7 +1512,7 @@ mod tests {
         generate_value_ok!(
             r#"Expression("ENTIRE_WORKTOP")"#,
             Value::Custom {
-                value: ScryptoCustomValue::Expression(ManifestExpression::EntireWorktop)
+                value: ManifestCustomValue::Expression(ManifestExpression::EntireWorktop)
             }
         );
     }
@@ -1645,27 +1553,27 @@ mod tests {
 
         generate_instruction_ok!(
             r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Bucket("xrd_bucket");"#,
-            BasicInstruction::TakeFromWorktopByAmount {
+            Instruction::TakeFromWorktopByAmount {
                 amount: Decimal::from(1),
                 resource_address: resource,
             },
         );
         generate_instruction_ok!(
             r#"TAKE_FROM_WORKTOP  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Bucket("xrd_bucket");"#,
-            BasicInstruction::TakeFromWorktop {
+            Instruction::TakeFromWorktop {
                 resource_address: resource
             },
         );
         generate_instruction_ok!(
             r#"ASSERT_WORKTOP_CONTAINS_BY_AMOUNT  Decimal("1")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak");"#,
-            BasicInstruction::AssertWorktopContainsByAmount {
+            Instruction::AssertWorktopContainsByAmount {
                 amount: Decimal::from(1),
                 resource_address: resource,
             },
         );
         generate_instruction_ok!(
             r#"CALL_FUNCTION  PackageAddress("package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7")  "Airdrop"  "new"  500u32  PreciseDecimal("120");"#,
-            BasicInstruction::CallFunction {
+            Instruction::CallFunction {
                 package_address: Bech32Decoder::for_simulator()
                     .validate_and_decode_package_address(
                         "package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7".into()
@@ -1673,28 +1581,30 @@ mod tests {
                     .unwrap(),
                 blueprint_name: "Airdrop".into(),
                 function_name: "new".to_string(),
-                args: args!(500u32, pdec!("120"))
+                args: manifest_args!(500u32, pdec!("120"))
             },
         );
         generate_instruction_ok!(
             r#"CALL_METHOD  ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum")  "refill";"#,
-            BasicInstruction::CallMethod {
+            Instruction::CallMethod {
                 component_address: component,
                 method_name: "refill".to_string(),
-                args: args!()
+                args: manifest_args!()
             },
         );
         generate_instruction_ok!(
             r#"PUBLISH_PACKAGE Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Blob("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791") Map<String, Tuple>() Map<String, String>() Tuple(Map<Enum, Enum>(), Map<String, Enum>(), Enum("AccessRule::DenyAll"), Map<Enum, Enum>(), Map<String, Enum>(), Enum("AccessRule::DenyAll"));"#,
-            BasicInstruction::PublishPackage {
+            Instruction::PublishPackage {
                 code: ManifestBlobRef(
-                    "a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0"
-                        .parse()
+                    hex::decode("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0")
+                        .unwrap()
+                        .try_into()
                         .unwrap()
                 ),
                 abi: ManifestBlobRef(
-                    "554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791"
-                        .parse()
+                    hex::decode("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791")
+                        .unwrap()
+                        .try_into()
                         .unwrap()
                 ),
                 royalty_config: BTreeMap::new(),
@@ -1706,15 +1616,17 @@ mod tests {
         );
         generate_instruction_ok!(
             r#"PUBLISH_PACKAGE_WITH_OWNER Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Blob("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791") NonFungibleGlobalId("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak:#1#");"#,
-            BasicInstruction::PublishPackageWithOwner {
+            Instruction::PublishPackageWithOwner {
                 code: ManifestBlobRef(
-                    "a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0"
-                        .parse()
+                    hex::decode("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0")
+                        .unwrap()
+                        .try_into()
                         .unwrap()
                 ),
                 abi: ManifestBlobRef(
-                    "554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791"
-                        .parse()
+                    hex::decode("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791")
+                        .unwrap()
+                        .try_into()
                         .unwrap()
                 ),
                 owner_badge: owner_badge.clone()
@@ -1725,20 +1637,20 @@ mod tests {
 
         generate_instruction_ok!(
             r#"MINT_FUNGIBLE ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak") Decimal("100");"#,
-            BasicInstruction::MintFungible {
+            Instruction::MintFungible {
                 resource_address: resource,
                 amount: dec!("100")
             },
         );
         generate_instruction_ok!(
             r##"MINT_NON_FUNGIBLE ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak") Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128)));"##,
-            BasicInstruction::MintNonFungible {
+            Instruction::MintNonFungible {
                 resource_address: resource,
                 entries: BTreeMap::from([(
                     NonFungibleLocalId::integer(1),
                     (
-                        args!(String::from("Hello World"), dec!("12")),
-                        args!(12u8, 19u128)
+                        manifest_args!(String::from("Hello World"), dec!("12")),
+                        manifest_args!(12u8, 19u128)
                     )
                 )])
             },
@@ -1749,11 +1661,11 @@ mod tests {
     fn test_create_non_fungible_instruction() {
         generate_instruction_ok!(
             r#"CREATE_NON_FUNGIBLE_RESOURCE Enum("NonFungibleIdType::Integer") Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")));"#,
-            BasicInstruction::CallFunction {
+            Instruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT.to_string(),
-                args: scrypto_encode(&ResourceManagerCreateNonFungibleInput {
+                args: manifest_encode(&ResourceManagerCreateNonFungibleInput {
                     id_type: NonFungibleIdType::Integer,
                     metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
                     access_rules: BTreeMap::from([
@@ -1776,12 +1688,12 @@ mod tests {
     fn test_create_non_fungible_with_initial_supply_instruction() {
         generate_instruction_ok!(
             r##"CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY Enum("NonFungibleIdType::Integer") Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll"))) Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128)));"##,
-            BasicInstruction::CallFunction {
+            Instruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
-                args: scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
+                args: manifest_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
                     id_type: NonFungibleIdType::Integer,
                     metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
                     access_rules: BTreeMap::from([
@@ -1797,8 +1709,8 @@ mod tests {
                     entries: BTreeMap::from([(
                         NonFungibleLocalId::integer(1),
                         (
-                            args!(String::from("Hello World"), dec!("12")),
-                            args!(12u8, 19u128)
+                            manifest_args!(String::from("Hello World"), dec!("12")),
+                            manifest_args!(12u8, 19u128)
                         )
                     )]),
                 })
@@ -1811,11 +1723,11 @@ mod tests {
     fn test_create_fungible_instruction() {
         generate_instruction_ok!(
             r#"CREATE_FUNGIBLE_RESOURCE 18u8 Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")));"#,
-            BasicInstruction::CallFunction {
+            Instruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT.to_string(),
-                args: scrypto_encode(&ResourceManagerCreateFungibleInput {
+                args: manifest_encode(&ResourceManagerCreateFungibleInput {
                     divisibility: 18,
                     metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
                     access_rules: BTreeMap::from([
@@ -1838,12 +1750,12 @@ mod tests {
     fn test_create_fungible_with_initial_supply_instruction() {
         generate_instruction_ok!(
             r#"CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY 18u8 Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll"))) Decimal("500");"#,
-            BasicInstruction::CallFunction {
+            Instruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
-                args: scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
+                args: manifest_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
                     divisibility: 18,
                     metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
                     access_rules: BTreeMap::from([
@@ -1882,11 +1794,11 @@ mod tests {
                     )
                 );
             "#,
-            BasicInstruction::MintUuidNonFungible {
+            Instruction::MintUuidNonFungible {
                 resource_address: resource,
                 entries: Vec::from([(
-                    args!(String::from("Hello World"), dec!("12")),
-                    args!(12u8, 19u128)
+                    manifest_args!(String::from("Hello World"), dec!("12")),
+                    manifest_args!(12u8, 19u128)
                 )])
             },
         );
@@ -1896,12 +1808,12 @@ mod tests {
     fn test_create_validator_instruction() {
         generate_instruction_ok!(
             r#"
-            CREATE_VALIDATOR EcdsaSecp256k1PublicKey("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5") Enum("AccessRule::AllowAll");
+            CREATE_VALIDATOR Bytes("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5") Enum("AccessRule::AllowAll");
             "#,
-            BasicInstruction::CallMethod {
+            Instruction::CallMethod {
                 component_address: EPOCH_MANAGER,
                 method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
-                args: scrypto_encode(&EpochManagerCreateValidatorInput {
+                args: manifest_encode(&EpochManagerCreateValidatorInput {
                     key: EcdsaSecp256k1PrivateKey::from_u64(2u64)
                         .unwrap()
                         .public_key(),

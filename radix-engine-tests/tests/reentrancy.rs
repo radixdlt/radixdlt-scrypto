@@ -4,6 +4,7 @@ use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::data::manifest_args;
 
 #[test]
 fn mut_reentrancy_should_not_be_possible() {
@@ -12,7 +13,12 @@ fn mut_reentrancy_should_not_be_possible() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/reentrancy");
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .call_function(package_address, "ReentrantComponent", "new", args!())
+        .call_function(
+            package_address,
+            "ReentrantComponent",
+            "new",
+            manifest_args!(),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
@@ -24,7 +30,11 @@ fn mut_reentrancy_should_not_be_possible() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .call_method(component_address, "call_mut_self", args!(component_address))
+        .call_method(
+            component_address,
+            "call_mut_self",
+            manifest_args!(component_address),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -51,7 +61,12 @@ fn read_reentrancy_should_be_possible() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/reentrancy");
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .call_function(package_address, "ReentrantComponent", "new", args!())
+        .call_function(
+            package_address,
+            "ReentrantComponent",
+            "new",
+            manifest_args!(),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
@@ -63,7 +78,11 @@ fn read_reentrancy_should_be_possible() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .call_method(component_address, "call_self", args!(component_address))
+        .call_method(
+            component_address,
+            "call_self",
+            manifest_args!(component_address),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -78,7 +97,12 @@ fn read_then_mut_reentrancy_should_not_be_possible() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/reentrancy");
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .call_function(package_address, "ReentrantComponent", "new", args!())
+        .call_function(
+            package_address,
+            "ReentrantComponent",
+            "new",
+            manifest_args!(),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
@@ -93,7 +117,7 @@ fn read_then_mut_reentrancy_should_not_be_possible() {
         .call_method(
             component_address,
             "call_mut_self_2",
-            args!(component_address),
+            manifest_args!(component_address),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

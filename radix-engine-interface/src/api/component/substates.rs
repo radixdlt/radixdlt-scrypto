@@ -1,5 +1,5 @@
 use crate::api::types::*;
-use crate::data::types::Own;
+use crate::data::model::Own;
 use radix_engine_derive::*;
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq)]

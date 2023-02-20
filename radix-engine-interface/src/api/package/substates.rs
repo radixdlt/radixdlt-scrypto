@@ -1,6 +1,6 @@
 use crate::abi::*;
 use crate::api::types::*;
-use crate::data::types::Own;
+use crate::data::model::Own;
 use radix_engine_derive::*;
 use sbor::rust::collections::*;
 use sbor::rust::fmt::{Debug, Formatter};

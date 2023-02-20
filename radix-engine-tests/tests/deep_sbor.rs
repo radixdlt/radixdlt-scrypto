@@ -2,9 +2,10 @@ use radix_engine::errors::{InterpreterError, KernelError, RuntimeError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::MAX_SCRYPTO_SBOR_DEPTH;
+use radix_engine_interface::data::SCRYPTO_SBOR_V1_MAX_DEPTH;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::data::manifest_args;
 
 #[test]
 fn deep_auth_rules_on_component_create_creation_fails() {
@@ -20,7 +21,7 @@ fn deep_auth_rules_on_component_create_creation_fails() {
             package_address,
             "DeepAuthRulesOnCreate",
             "new",
-            args!(RADIX_TOKEN, depth),
+            manifest_args!(RADIX_TOKEN, depth),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -34,7 +35,7 @@ fn deep_auth_rules_on_component_create_creation_fails() {
             package_address,
             "DeepAuthRulesOnCreate",
             "new",
-            args!(RADIX_TOKEN, depth),
+            manifest_args!(RADIX_TOKEN, depth),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -59,7 +60,7 @@ fn setting_struct_with_deep_recursive_data_panics_inside_component() {
 
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package_address, "DeepStruct", "new", args!())
+        .call_function(package_address, "DeepStruct", "new", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
@@ -69,7 +70,11 @@ fn setting_struct_with_deep_recursive_data_panics_inside_component() {
     let depth = 10u8;
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_method(*component_address, "set_depth", args!(RADIX_TOKEN, depth))
+        .call_method(
+            *component_address,
+            "set_depth",
+            manifest_args!(RADIX_TOKEN, depth),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
@@ -78,7 +83,11 @@ fn setting_struct_with_deep_recursive_data_panics_inside_component() {
     let depth = 100u8;
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_method(*component_address, "set_depth", args!(RADIX_TOKEN, depth))
+        .call_method(
+            *component_address,
+            "set_depth",
+            manifest_args!(RADIX_TOKEN, depth),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_specific_failure(|f| {
@@ -100,11 +109,12 @@ fn malicious_component_replying_with_large_payload_is_handled_well_by_engine() {
     receipt.expect_commit_success();
 
     // Act 2 - Depth just under the limit
-    let receipt = publish_wasm_with_deep_sbor_response_and_execute_it(MAX_SCRYPTO_SBOR_DEPTH);
+    let receipt = publish_wasm_with_deep_sbor_response_and_execute_it(SCRYPTO_SBOR_V1_MAX_DEPTH);
     receipt.expect_commit_success();
 
     // Act 2 - Depth just over the limit
-    let receipt = publish_wasm_with_deep_sbor_response_and_execute_it(MAX_SCRYPTO_SBOR_DEPTH + 1);
+    let receipt =
+        publish_wasm_with_deep_sbor_response_and_execute_it(SCRYPTO_SBOR_V1_MAX_DEPTH + 1);
     receipt.expect_specific_failure(|f| {
         matches!(
             f,
@@ -133,7 +143,7 @@ fn publish_wasm_with_deep_sbor_response_and_execute_it(depth: u8) -> Transaction
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package_address, "Test", "f", args!())
+        .call_function(package_address, "Test", "f", manifest_args!())
         .build();
     test_runner.execute_manifest(manifest, vec![])
 }

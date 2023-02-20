@@ -1,6 +1,7 @@
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::data::manifest_args;
 
 #[test]
 fn stored_resource_is_invokeable() {
@@ -9,7 +10,7 @@ fn stored_resource_is_invokeable() {
     let package = test_runner.compile_and_publish("./tests/blueprints/stored_resource");
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package, "StoredResource", "create", args!())
+        .call_function(package, "StoredResource", "create", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
@@ -21,7 +22,7 @@ fn stored_resource_is_invokeable() {
     // Act
     let manifest2 = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_method(component, "total_supply", args!())
+        .call_method(component, "total_supply", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest2, vec![]);
 

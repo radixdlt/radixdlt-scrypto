@@ -5,7 +5,7 @@ use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetMethodAccessRuleInvocation, AccessRulesSetMethodMutabilityInvocation,
 };
 use radix_engine_interface::api::types::{
-    ComponentAddress, ComponentId, GlobalAddress, RENodeId, ToString,
+    Address, ComponentAddress, ComponentId, RENodeId, ToString,
 };
 use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::blueprints::resource::{AccessRule, AccessRuleEntry, AccessRuleKey};
@@ -62,7 +62,7 @@ impl ComponentAccessRules {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, LegacyDescribe)]
 pub enum ComponentIdentifier {
     RENodeId(ComponentId),
-    GlobalAddress(ComponentAddress),
+    Address(ComponentAddress),
 }
 
 impl From<ComponentId> for ComponentIdentifier {
@@ -73,7 +73,7 @@ impl From<ComponentId> for ComponentIdentifier {
 
 impl From<ComponentAddress> for ComponentIdentifier {
     fn from(value: ComponentAddress) -> Self {
-        ComponentIdentifier::GlobalAddress(value)
+        ComponentIdentifier::Address(value)
     }
 }
 
@@ -81,8 +81,8 @@ impl From<ComponentIdentifier> for RENodeId {
     fn from(value: ComponentIdentifier) -> Self {
         match value {
             ComponentIdentifier::RENodeId(node_id) => RENodeId::Component(node_id),
-            ComponentIdentifier::GlobalAddress(component_address) => {
-                RENodeId::Global(GlobalAddress::Component(component_address))
+            ComponentIdentifier::Address(component_address) => {
+                RENodeId::Global(Address::Component(component_address))
             }
         }
     }

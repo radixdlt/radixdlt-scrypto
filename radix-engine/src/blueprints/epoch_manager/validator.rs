@@ -1,7 +1,7 @@
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, LockFlags};
-use crate::system::global::GlobalAddressSubstate;
+use crate::system::global::GlobalSubstate;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
@@ -280,7 +280,7 @@ impl ValidatorBlueprint {
             lp_token_resman.burn(lp_tokens, api)?;
 
             let manager_handle = api.kernel_lock_substate(
-                RENodeId::Global(GlobalAddress::Component(manager)),
+                RENodeId::Global(Address::Component(manager)),
                 NodeModuleId::SELF,
                 SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
                 LockFlags::read_only(),
@@ -372,7 +372,7 @@ impl ValidatorBlueprint {
 
         let current_epoch = {
             let mgr_handle = api.kernel_lock_substate(
-                RENodeId::Global(GlobalAddress::Component(manager)),
+                RENodeId::Global(Address::Component(manager)),
                 NodeModuleId::SELF,
                 SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
                 LockFlags::read_only(),
@@ -712,7 +712,7 @@ impl ValidatorCreator {
         api.kernel_create_node(node_id, node, node_modules)?;
         api.kernel_create_node(
             global_node_id,
-            RENodeInit::Global(GlobalAddressSubstate::Validator(node_id.into())),
+            RENodeInit::Global(GlobalSubstate::Validator(node_id.into())),
             BTreeMap::new(),
         )?;
 
@@ -767,7 +767,7 @@ impl ValidatorCreator {
         api.kernel_create_node(node_id, node, node_modules)?;
         api.kernel_create_node(
             global_node_id,
-            RENodeInit::Global(GlobalAddressSubstate::Validator(node_id.into())),
+            RENodeInit::Global(GlobalSubstate::Validator(node_id.into())),
             BTreeMap::new(),
         )?;
 

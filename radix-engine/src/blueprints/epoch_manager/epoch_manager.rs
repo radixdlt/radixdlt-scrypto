@@ -3,7 +3,7 @@ use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::global::GlobalAddressSubstate;
+use crate::system::global::GlobalSubstate;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
@@ -66,9 +66,9 @@ impl EpochManagerBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let underlying_node_id = api.kernel_allocate_node_id(RENodeType::EpochManager)?;
-        let global_node_id = RENodeId::Global(GlobalAddress::Component(
-            ComponentAddress::EpochManager(input.component_address),
-        ));
+        let global_node_id = RENodeId::Global(Address::Component(ComponentAddress::EpochManager(
+            input.component_address,
+        )));
 
         let epoch_manager = EpochManagerSubstate {
             address: global_node_id.into(),
@@ -203,9 +203,7 @@ impl EpochManagerBlueprint {
 
         api.kernel_create_node(
             global_node_id,
-            RENodeInit::Global(GlobalAddressSubstate::EpochManager(
-                underlying_node_id.into(),
-            )),
+            RENodeInit::Global(GlobalSubstate::EpochManager(underlying_node_id.into())),
             BTreeMap::new(),
         )?;
 

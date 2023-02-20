@@ -2,6 +2,7 @@ use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::data::manifest_args;
 use utils::ContextualDisplay;
 
 #[test]
@@ -18,7 +19,7 @@ fn test_integer_basic_ops() {
             package_address,
             "Hello",
             "integer_basic_ops",
-            args!(String::from("55")),
+            manifest_args!(String::from("55")),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -44,7 +45,7 @@ fn test_native_and_safe_integer_interop() {
             package_address,
             "Hello",
             "native_and_safe_integer_interop",
-            args!(55u32),
+            manifest_args!(55u32),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

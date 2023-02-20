@@ -3,11 +3,12 @@ use crate::api::types::*;
 use crate::blueprints::resource::*;
 use crate::*;
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
-use radix_engine_interface::data::types::ManifestBucket;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
 use scrypto_abi::BlueprintAbi;
+use transaction_data::model::ManifestBucket;
+use transaction_data::*;
 
 pub struct EpochManagerAbi;
 
@@ -20,19 +21,17 @@ impl EpochManagerAbi {
 pub const EPOCH_MANAGER_BLUEPRINT: &str = "EpochManager";
 pub const VALIDATOR_BLUEPRINT: &str = "Validator";
 
-// TODO: Remove this and replace with a macro/function making it easy
-// TODO: to use manifest buckets for any input struct
-#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
-pub struct ManifestValidatorInit {
-    pub validator_account_address: ComponentAddress,
-    pub initial_stake: ManifestBucket,
-    pub stake_account_address: ComponentAddress,
-}
-
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct ValidatorInit {
     pub validator_account_address: ComponentAddress,
     pub initial_stake: Bucket,
+    pub stake_account_address: ComponentAddress,
+}
+
+#[derive(Debug, Eq, PartialEq, ManifestCategorize, ManifestEncode, ManifestDecode)]
+pub struct ManifestValidatorInit {
+    pub validator_account_address: ComponentAddress,
+    pub initial_stake: ManifestBucket,
     pub stake_account_address: ComponentAddress,
 }
 
@@ -75,26 +74,28 @@ impl Clone for EpochManagerCreateInput {
 
 pub const EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT: &str = "get_current_epoch";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct EpochManagerGetCurrentEpochInput;
 
 pub const EPOCH_MANAGER_SET_EPOCH_IDENT: &str = "set_epoch";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct EpochManagerSetEpochInput {
     pub epoch: u64,
 }
 
 pub const EPOCH_MANAGER_NEXT_ROUND_IDENT: &str = "next_round";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct EpochManagerNextRoundInput {
     pub round: u64,
 }
 
 pub const EPOCH_MANAGER_CREATE_VALIDATOR_IDENT: &str = "create_validator";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(
+    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
+)]
 pub struct EpochManagerCreateValidatorInput {
     pub key: EcdsaSecp256k1PublicKey,
     pub owner_access_rule: AccessRule,
@@ -102,13 +103,17 @@ pub struct EpochManagerCreateValidatorInput {
 
 pub const EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT: &str = "update_validator";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(
+    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
+)]
 pub enum UpdateValidator {
     Register(EcdsaSecp256k1PublicKey, Decimal),
     Unregister,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(
+    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
+)]
 pub struct EpochManagerUpdateValidatorInput {
     pub validator_address: ComponentAddress,
     pub update: UpdateValidator,
@@ -116,12 +121,12 @@ pub struct EpochManagerUpdateValidatorInput {
 
 pub const VALIDATOR_REGISTER_IDENT: &str = "register";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct ValidatorRegisterInput {}
 
 pub const VALIDATOR_UNREGISTER_IDENT: &str = "unregister";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct ValidatorUnregisterInput {}
 
 pub const VALIDATOR_STAKE_IDENT: &str = "stake";
@@ -147,14 +152,14 @@ pub struct ValidatorClaimXrdInput {
 
 pub const VALIDATOR_UPDATE_KEY_IDENT: &str = "update_key";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct ValidatorUpdateKeyInput {
     pub key: EcdsaSecp256k1PublicKey,
 }
 
 pub const VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT: &str = "update_accept_delegated_stake";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct ValidatorUpdateAcceptDelegatedStakeInput {
     pub accept_delegated_stake: bool,
 }

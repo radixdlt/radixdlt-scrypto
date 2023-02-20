@@ -4,6 +4,7 @@ use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::data::manifest_args;
 
 #[test]
 #[ignore = "disabled to enable client side address lookup. FIXME: should we re-enable this?"]
@@ -20,7 +21,7 @@ fn should_not_be_able_to_read_global_substate() {
             package_address,
             "Read",
             "read_global_substate",
-            args!(account),
+            manifest_args!(account),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -34,7 +35,7 @@ fn should_not_be_able_to_read_global_substate() {
                     identifier: FnIdentifier::Scrypto(..),
                     ..
                 },
-                node_id: RENodeId::Global(GlobalAddress::Component(..)),
+                node_id: RENodeId::Global(Address::Component(..)),
                 offset: SubstateOffset::Global(GlobalOffset::Global),
                 ..
             })

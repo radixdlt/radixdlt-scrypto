@@ -32,15 +32,8 @@ pub enum FeePayment {
 }
 
 #[derive(Debug)]
-pub enum InstructionList<'a> {
-    Basic(&'a [BasicInstruction]),
-    Any(&'a [Instruction]),
-    AnyOwned(Vec<Instruction>),
-}
-
-#[derive(Debug)]
 pub struct Executable<'a> {
-    instructions: InstructionList<'a>,
+    instructions: &'a [Instruction],
     blobs: &'a [Vec<u8>],
     pub context: ExecutionContext,
 }
@@ -83,7 +76,7 @@ impl RuntimeValidation {
 
 impl<'a> Executable<'a> {
     pub fn new(
-        instructions: InstructionList<'a>,
+        instructions: &'a [Instruction],
         blobs: &'a [Vec<u8>],
         context: ExecutionContext,
     ) -> Self {
@@ -94,7 +87,7 @@ impl<'a> Executable<'a> {
         }
     }
 
-    pub fn new_no_blobs(instructions: InstructionList<'a>, context: ExecutionContext) -> Self {
+    pub fn new_no_blobs(instructions: &'a [Instruction], context: ExecutionContext) -> Self {
         Self {
             instructions,
             blobs: &[],
@@ -110,8 +103,8 @@ impl<'a> Executable<'a> {
         &self.context.fee_payment
     }
 
-    pub fn instructions(&self) -> &InstructionList {
-        &self.instructions
+    pub fn instructions(&self) -> &[Instruction] {
+        self.instructions
     }
 
     pub fn auth_zone_params(&self) -> &AuthZoneParams {

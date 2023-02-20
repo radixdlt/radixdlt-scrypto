@@ -9,7 +9,7 @@ use radix_engine_interface::api::node_modules::metadata::MetadataSetInvocation;
 use radix_engine_interface::api::node_modules::royalty::{
     ComponentClaimRoyaltyInvocation, ComponentSetRoyaltyConfigInvocation,
 };
-use radix_engine_interface::api::types::{ComponentId, GlobalAddress, RENodeId};
+use radix_engine_interface::api::types::{Address, ComponentId, RENodeId};
 use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::api::{types::*, ClientComponentApi};
 use radix_engine_interface::blueprints::resource::{
@@ -172,7 +172,7 @@ impl Component for GlobalComponentRef {
     fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
         ScryptoEnv
             .call_native(MetadataSetInvocation {
-                receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
+                receiver: RENodeId::Global(Address::Component(self.0)),
                 key: name.as_ref().to_owned(),
                 value: value.as_ref().to_owned(),
             })
@@ -182,7 +182,7 @@ impl Component for GlobalComponentRef {
     fn add_access_check(&self, access_rules: AccessRules) {
         let mut env = ScryptoEnv;
         env.call_native(AccessRulesAddAccessCheckInvocation {
-            receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
+            receiver: RENodeId::Global(Address::Component(self.0)),
             access_rules,
         })
         .unwrap();
@@ -191,7 +191,7 @@ impl Component for GlobalComponentRef {
     fn set_royalty_config(&self, royalty_config: RoyaltyConfig) {
         let mut env = ScryptoEnv;
         env.call_native(ComponentSetRoyaltyConfigInvocation {
-            receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
+            receiver: RENodeId::Global(Address::Component(self.0)),
             royalty_config,
         })
         .unwrap();
@@ -200,7 +200,7 @@ impl Component for GlobalComponentRef {
     fn claim_royalty(&self) -> Bucket {
         let mut env = ScryptoEnv;
         env.call_native(ComponentClaimRoyaltyInvocation {
-            receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
+            receiver: RENodeId::Global(Address::Component(self.0)),
         })
         .unwrap()
     }
@@ -217,7 +217,7 @@ impl Component for GlobalComponentRef {
         let mut env = ScryptoEnv;
         let length = env
             .call_native(AccessRulesGetLengthInvocation {
-                receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
+                receiver: RENodeId::Global(Address::Component(self.0)),
             })
             .unwrap();
         (0..length)

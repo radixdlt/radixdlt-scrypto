@@ -242,12 +242,12 @@ macro_rules! access_rule_node {
 #[macro_export]
 macro_rules! rule {
     (allow_all) => {{
-        radix_engine_interface::blueprints::resource::AccessRule::AllowAll
+        $crate::radix_engine_interface::blueprints::resource::AccessRule::AllowAll
     }};
     (deny_all) => {{
-        radix_engine_interface::blueprints::resource::AccessRule::DenyAll
+        $crate::radix_engine_interface::blueprints::resource::AccessRule::DenyAll
     }};
     ($($tt:tt)+) => {{
-        radix_engine_interface::blueprints::resource::AccessRule::Protected($crate::access_rule_node!($($tt)+))
+        $crate::radix_engine_interface::blueprints::resource::AccessRule::Protected($crate::access_rule_node!($($tt)+))
     }};
 }

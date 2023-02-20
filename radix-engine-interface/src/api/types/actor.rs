@@ -67,7 +67,7 @@ impl ScryptoFnIdentifier {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor, LegacyDescribe)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor, LegacyDescribe)]
 pub enum NativeFn {
     AccessRulesChain(AccessRulesChainFn),
     ComponentRoyalty(ComponentRoyaltyFn),
@@ -104,7 +104,7 @@ impl NativeFn {
     IntoStaticStr,
     AsRefStr,
     Display,
-    ScryptoSbor,
+    Sbor,
     LegacyDescribe,
 )]
 #[strum(serialize_all = "snake_case")]
@@ -131,7 +131,7 @@ pub enum AccessRulesChainFn {
     IntoStaticStr,
     AsRefStr,
     Display,
-    ScryptoSbor,
+    Sbor,
     LegacyDescribe,
 )]
 #[strum(serialize_all = "snake_case")]
@@ -154,7 +154,7 @@ pub enum MetadataFn {
     IntoStaticStr,
     AsRefStr,
     Display,
-    ScryptoSbor,
+    Sbor,
     LegacyDescribe,
 )]
 #[strum(serialize_all = "snake_case")]
@@ -177,7 +177,7 @@ pub enum ComponentRoyaltyFn {
     IntoStaticStr,
     AsRefStr,
     Display,
-    ScryptoSbor,
+    Sbor,
     LegacyDescribe,
 )]
 #[strum(serialize_all = "snake_case")]
@@ -202,7 +202,7 @@ pub enum PackageFn {
     IntoStaticStr,
     AsRefStr,
     Display,
-    ScryptoSbor,
+    Sbor,
     LegacyDescribe,
 )]
 #[strum(serialize_all = "snake_case")]

@@ -4,6 +4,7 @@ use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::data::{manifest_args, ManifestExpression};
 
 enum Action {
     Mint,
@@ -72,7 +73,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             .call_method(
                 account,
                 "deposit_batch",
-                args!(ManifestExpression::EntireWorktop),
+                manifest_args!(ManifestExpression::EntireWorktop),
             ),
         Action::Burn => builder
             .create_proof_from_account(account, withdraw_auth)
@@ -81,25 +82,25 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             .call_method(
                 account,
                 "deposit_batch",
-                args!(ManifestExpression::EntireWorktop),
+                manifest_args!(ManifestExpression::EntireWorktop),
             ),
         Action::Withdraw => builder
             .withdraw_from_account(account, token_address, dec!("1.0"))
             .call_method(
                 account,
                 "deposit_batch",
-                args!(ManifestExpression::EntireWorktop),
+                manifest_args!(ManifestExpression::EntireWorktop),
             ),
         Action::Deposit => builder
             .create_proof_from_account(account, withdraw_auth)
             .withdraw_from_account(account, token_address, dec!("1.0"))
             .take_from_worktop(token_address, |builder, bucket_id| {
-                builder.call_method(account, "deposit", args!(bucket_id))
+                builder.call_method(account, "deposit", manifest_args!(bucket_id))
             })
             .call_method(
                 account,
                 "deposit_batch",
-                args!(ManifestExpression::EntireWorktop),
+                manifest_args!(ManifestExpression::EntireWorktop),
             ),
         Action::Recall => {
             let vaults = test_runner.get_component_vaults(account, token_address);
@@ -108,11 +109,11 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             builder.recall(vault_id, Decimal::ONE).call_method(
                 account,
                 "deposit_batch",
-                args!(ManifestExpression::EntireWorktop),
+                manifest_args!(ManifestExpression::EntireWorktop),
             )
         }
         Action::UpdateMetadata => builder.set_metadata(
-            GlobalAddress::Resource(token_address),
+            Address::Resource(token_address),
             "key".to_string(),
             "value".to_string(),
         ),
@@ -169,13 +170,13 @@ fn cannot_withdraw_with_wrong_auth() {
 }
 
 #[test]
-fn can_recall_with_auth() {
+fn can_reprocess_call_data_auth() {
     test_resource_auth(Action::Recall, false, false, false);
     test_resource_auth(Action::Recall, true, true, false);
 }
 
 #[test]
-fn cannot_recall_with_wrong_auth() {
+fn cannot_reprocess_call_data_wrong_auth() {
     test_resource_auth(Action::Recall, false, true, true);
     test_resource_auth(Action::Recall, true, false, true);
 }

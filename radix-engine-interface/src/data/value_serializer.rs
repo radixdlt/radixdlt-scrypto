@@ -1,4 +1,3 @@
-use super::types::ManifestExpression;
 use crate::api::types::*;
 use crate::blueprints::resource::*;
 use crate::data::*;
@@ -32,20 +31,20 @@ pub enum ScryptoValueSerializationType {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct ScryptoValueFormattingContext<'a> {
+pub struct ScryptoValueSerializationContext<'a> {
     pub serialization_type: ScryptoValueSerializationType,
-    pub display_context: ValueFormattingContext<'a>,
+    pub display_context: ScryptoValueDisplayContext<'a>,
 }
 
-impl<'a> ScryptoValueFormattingContext<'a> {
-    pub fn simple(display_context: ValueFormattingContext<'a>) -> Self {
+impl<'a> ScryptoValueSerializationContext<'a> {
+    pub fn simple(display_context: ScryptoValueDisplayContext<'a>) -> Self {
         Self {
             serialization_type: ScryptoValueSerializationType::Simple,
             display_context,
         }
     }
 
-    pub fn invertible(display_context: ValueFormattingContext<'a>) -> Self {
+    pub fn invertible(display_context: ScryptoValueDisplayContext<'a>) -> Self {
         Self {
             serialization_type: ScryptoValueSerializationType::Invertible,
             display_context,
@@ -54,28 +53,28 @@ impl<'a> ScryptoValueFormattingContext<'a> {
 }
 
 pub trait SerializableScryptoValue:
-    for<'a> ContextualSerialize<ScryptoValueFormattingContext<'a>>
+    for<'a> ContextualSerialize<ScryptoValueSerializationContext<'a>>
 {
-    fn simple_serializable<'a, 'b, TContext: Into<ValueFormattingContext<'b>>>(
+    fn simple_serializable<'a, 'b, TContext: Into<ScryptoValueDisplayContext<'b>>>(
         &'a self,
         context: TContext,
-    ) -> ContextSerializable<'a, Self, ScryptoValueFormattingContext<'b>> {
-        self.serializable(ScryptoValueFormattingContext::simple(context.into()))
+    ) -> ContextSerializable<'a, Self, ScryptoValueSerializationContext<'b>> {
+        self.serializable(ScryptoValueSerializationContext::simple(context.into()))
     }
 
-    fn invertible_serializable<'a, 'b, TContext: Into<ValueFormattingContext<'b>>>(
+    fn invertible_serializable<'a, 'b, TContext: Into<ScryptoValueDisplayContext<'b>>>(
         &'a self,
         context: TContext,
-    ) -> ContextSerializable<'a, Self, ScryptoValueFormattingContext<'b>> {
-        self.serializable(ScryptoValueFormattingContext::invertible(context.into()))
+    ) -> ContextSerializable<'a, Self, ScryptoValueSerializationContext<'b>> {
+        self.serializable(ScryptoValueSerializationContext::invertible(context.into()))
     }
 }
 
-impl<'a> ContextualSerialize<ScryptoValueFormattingContext<'a>> for ScryptoValue {
+impl<'a> ContextualSerialize<ScryptoValueSerializationContext<'a>> for ScryptoValue {
     fn contextual_serialize<S: Serializer>(
         &self,
         serializer: S,
-        context: &ScryptoValueFormattingContext<'a>,
+        context: &ScryptoValueSerializationContext<'a>,
     ) -> Result<S::Ok, S::Error> {
         serialize_schemaless_scrypto_value(serializer, self, context)
     }
@@ -86,7 +85,7 @@ impl SerializableScryptoValue for ScryptoValue {}
 pub fn serialize_schemaless_scrypto_value<S: Serializer>(
     serializer: S,
     value: &ScryptoValue,
-    context: &ScryptoValueFormattingContext,
+    context: &ScryptoValueSerializationContext,
 ) -> Result<S::Ok, S::Error> {
     match value {
         // primitive types
@@ -250,11 +249,11 @@ pub struct ArrayValue<'a> {
     elements: &'a [ScryptoValue],
 }
 
-impl<'a, 'b> ContextualSerialize<ScryptoValueFormattingContext<'a>> for ArrayValue<'b> {
+impl<'a, 'b> ContextualSerialize<ScryptoValueSerializationContext<'a>> for ArrayValue<'b> {
     fn contextual_serialize<S: Serializer>(
         &self,
         serializer: S,
-        context: &ScryptoValueFormattingContext<'a>,
+        context: &ScryptoValueSerializationContext<'a>,
     ) -> Result<S::Ok, S::Error> {
         if *self.element_value_kind == ValueKind::U8 {
             let length = self.elements.len();
@@ -276,11 +275,11 @@ pub struct MapValue<'a> {
     entries: &'a [(ScryptoValue, ScryptoValue)],
 }
 
-impl<'a, 'b> ContextualSerialize<ScryptoValueFormattingContext<'a>> for MapValue<'b> {
+impl<'a, 'b> ContextualSerialize<ScryptoValueSerializationContext<'a>> for MapValue<'b> {
     fn contextual_serialize<S: Serializer>(
         &self,
         serializer: S,
-        context: &ScryptoValueFormattingContext<'a>,
+        context: &ScryptoValueSerializationContext<'a>,
     ) -> Result<S::Ok, S::Error> {
         // Serialize map into JSON array instead of JSON map because SBOR map is a superset of JSON map.
         let mut tuple = serializer.serialize_tuple(self.entries.len())?;
@@ -298,11 +297,11 @@ pub struct BytesValue<'a> {
     bytes: &'a [u8],
 }
 
-impl<'a, 'b> ContextualSerialize<ScryptoValueFormattingContext<'a>> for BytesValue<'b> {
+impl<'a, 'b> ContextualSerialize<ScryptoValueSerializationContext<'a>> for BytesValue<'b> {
     fn contextual_serialize<S: Serializer>(
         &self,
         serializer: S,
-        _context: &ScryptoValueFormattingContext<'a>,
+        _context: &ScryptoValueSerializationContext<'a>,
     ) -> Result<S::Ok, S::Error> {
         serialize_hex(serializer, &self.bytes)
     }
@@ -323,11 +322,11 @@ pub struct EnumVariant<'a> {
     fields: &'a [ScryptoValue],
 }
 
-impl<'a, 'b> ContextualSerialize<ScryptoValueFormattingContext<'a>> for EnumVariant<'b> {
+impl<'a, 'b> ContextualSerialize<ScryptoValueSerializationContext<'a>> for EnumVariant<'b> {
     fn contextual_serialize<S: Serializer>(
         &self,
         serializer: S,
-        context: &ScryptoValueFormattingContext<'a>,
+        context: &ScryptoValueSerializationContext<'a>,
     ) -> Result<S::Ok, S::Error> {
         let mut map = serializer.serialize_map(Some(2))?;
         map.serialize_entry("variant", &self.discriminator)?;
@@ -336,11 +335,11 @@ impl<'a, 'b> ContextualSerialize<ScryptoValueFormattingContext<'a>> for EnumVari
     }
 }
 
-impl<'a> ContextualSerialize<ScryptoValueFormattingContext<'a>> for [ScryptoValue] {
+impl<'a> ContextualSerialize<ScryptoValueSerializationContext<'a>> for [ScryptoValue] {
     fn contextual_serialize<S: Serializer>(
         &self,
         serializer: S,
-        context: &ScryptoValueFormattingContext<'a>,
+        context: &ScryptoValueSerializationContext<'a>,
     ) -> Result<S::Ok, S::Error> {
         serialize_schemaless_scrypto_value_slice(serializer, self, context)
     }
@@ -351,7 +350,7 @@ impl SerializableScryptoValue for [ScryptoValue] {}
 pub fn serialize_schemaless_scrypto_value_slice<S: Serializer>(
     serializer: S,
     elements: &[ScryptoValue],
-    context: &ScryptoValueFormattingContext,
+    context: &ScryptoValueSerializationContext,
 ) -> Result<S::Ok, S::Error> {
     // Tuple is the serde type corresponding to a known-length list
     // See https://serde.rs/data-model.html
@@ -365,42 +364,18 @@ pub fn serialize_schemaless_scrypto_value_slice<S: Serializer>(
 pub fn serialize_custom_value<S: Serializer>(
     serializer: S,
     value: &ScryptoCustomValue,
-    context: &ScryptoValueFormattingContext,
+    context: &ScryptoValueSerializationContext,
 ) -> Result<S::Ok, S::Error> {
     match value {
-        // RE interpreted types
-        ScryptoCustomValue::PackageAddress(value) => {
+        ScryptoCustomValue::Address(value) => {
             let string_address =
                 format!("{}", value.display(context.display_context.bech32_encoder));
+
             serialize_value(
                 ValueEncoding::NoType,
                 serializer,
                 context,
-                ScryptoCustomValueKind::PackageAddress,
-                &string_address,
-            )
-        }
-        ScryptoCustomValue::ComponentAddress(value) => {
-            let string_address =
-                format!("{}", value.display(context.display_context.bech32_encoder));
-            serialize_value(
-                // The fact it's an address is obvious, so favour simplicity over verbosity
-                ValueEncoding::NoType,
-                serializer,
-                context,
-                ScryptoCustomValueKind::ComponentAddress,
-                &string_address,
-            )
-        }
-        ScryptoCustomValue::ResourceAddress(value) => {
-            let string_address =
-                format!("{}", value.display(context.display_context.bech32_encoder));
-            serialize_value(
-                // The fact it's an address is obvious, so favour simplicity over verbosity
-                ValueEncoding::NoType,
-                serializer,
-                context,
-                ScryptoCustomValueKind::ResourceAddress,
+                ScryptoCustomValueKind::Address,
                 &string_address,
             )
         }
@@ -409,103 +384,7 @@ pub fn serialize_custom_value<S: Serializer>(
             serializer,
             context,
             ScryptoCustomValueKind::Own,
-            &format!("{:?}", value), // TODO: fix syntax
-        ),
-        // TX interpreted types
-        ScryptoCustomValue::Bucket(value) => {
-            if let Some(name) = context.display_context.get_bucket_name(&value) {
-                serialize_value(
-                    ValueEncoding::WithType,
-                    serializer,
-                    context,
-                    ScryptoCustomValueKind::Bucket,
-                    name,
-                )
-            } else {
-                serialize_value(
-                    ValueEncoding::WithType,
-                    serializer,
-                    context,
-                    ScryptoCustomValueKind::Bucket,
-                    &value.0,
-                )
-            }
-        }
-        ScryptoCustomValue::Proof(value) => {
-            if let Some(name) = context.display_context.get_proof_name(&value) {
-                serialize_value(
-                    ValueEncoding::WithType,
-                    serializer,
-                    context,
-                    ScryptoCustomValueKind::Proof,
-                    name,
-                )
-            } else {
-                serialize_value(
-                    ValueEncoding::WithType,
-                    serializer,
-                    context,
-                    ScryptoCustomValueKind::Proof,
-                    &value.0,
-                )
-            }
-        }
-        ScryptoCustomValue::Expression(value) => serialize_value(
-            // The fact it's an expression isn't so relevant, so favour simplicity over verbosity
-            ValueEncoding::NoType,
-            serializer,
-            context,
-            ScryptoCustomValueKind::Expression,
-            &format!(
-                "{}",
-                match value {
-                    ManifestExpression::EntireWorktop => "ENTIRE_WORKTOP",
-                    ManifestExpression::EntireAuthZone => "ENTIRE_AUTH_ZONE",
-                }
-            ),
-        ),
-        ScryptoCustomValue::Blob(value) => serialize_value(
-            ValueEncoding::WithType,
-            serializer,
-            context,
-            ScryptoCustomValueKind::Blob,
-            &format!("{}", hex::encode(&value.0 .0)),
-        ),
-        // Uninterpreted
-        ScryptoCustomValue::Hash(value) => serialize_value(
-            ValueEncoding::WithType,
-            serializer,
-            context,
-            ScryptoCustomValueKind::Hash,
-            &format!("{}", value),
-        ),
-        ScryptoCustomValue::EcdsaSecp256k1PublicKey(value) => serialize_value(
-            ValueEncoding::WithType,
-            serializer,
-            context,
-            ScryptoCustomValueKind::EcdsaSecp256k1PublicKey,
-            &format!("{}", value),
-        ),
-        ScryptoCustomValue::EcdsaSecp256k1Signature(value) => serialize_value(
-            ValueEncoding::WithType,
-            serializer,
-            context,
-            ScryptoCustomValueKind::EcdsaSecp256k1Signature,
-            &format!("{}", value),
-        ),
-        ScryptoCustomValue::EddsaEd25519PublicKey(value) => serialize_value(
-            ValueEncoding::WithType,
-            serializer,
-            context,
-            ScryptoCustomValueKind::EddsaEd25519PublicKey,
-            &format!("{}", value),
-        ),
-        ScryptoCustomValue::EddsaEd25519Signature(value) => serialize_value(
-            ValueEncoding::WithType,
-            serializer,
-            context,
-            ScryptoCustomValueKind::EddsaEd25519Signature,
-            &format!("{}", value),
+            &format!("{}", hex::encode(value.to_vec())),
         ),
         ScryptoCustomValue::Decimal(value) => serialize_value(
             // The fact it's a decimal number will be obvious from context, so favour simplicity over verbosity
@@ -533,11 +412,11 @@ pub fn serialize_custom_value<S: Serializer>(
     }
 }
 
-impl<'a> ContextualSerialize<ScryptoValueFormattingContext<'a>> for NonFungibleGlobalId {
+impl<'a> ContextualSerialize<ScryptoValueSerializationContext<'a>> for NonFungibleGlobalId {
     fn contextual_serialize<S: Serializer>(
         &self,
         serializer: S,
-        context: &ScryptoValueFormattingContext<'a>,
+        context: &ScryptoValueSerializationContext<'a>,
     ) -> Result<S::Ok, S::Error> {
         let mut tuple = serializer.serialize_tuple(2)?;
         tuple.serialize_element(
@@ -566,7 +445,7 @@ enum ValueEncoding {
 fn serialize_value<S: Serializer, T: Serialize + ?Sized, K: Into<ScryptoValueKind>>(
     value_encoding_type: ValueEncoding,
     serializer: S,
-    context: &ScryptoValueFormattingContext,
+    context: &ScryptoValueSerializationContext,
     value_kind: K,
     value: &T,
 ) -> Result<S::Ok, S::Error> {
@@ -589,7 +468,7 @@ fn serialize_value_with_element_type<
 >(
     value_encoding_type: ValueEncoding,
     serializer: S,
-    context: &ScryptoValueFormattingContext,
+    context: &ScryptoValueSerializationContext,
     value_kind: K,
     element_value_kind: K,
     value: &T,
@@ -617,7 +496,7 @@ fn serialize_value_with_kv_types<
 >(
     value_encoding_type: ValueEncoding,
     serializer: S,
-    context: &ScryptoValueFormattingContext,
+    context: &ScryptoValueSerializationContext,
     value_kind: K,
     key_value_kind: K,
     value_value_kind: K,
@@ -646,13 +525,11 @@ mod tests {
     use super::*;
     use crate::address::Bech32Encoder;
     use radix_engine_derive::*;
-    use sbor::rust::collections::HashMap;
     use sbor::rust::vec;
     use serde::Serialize;
     use serde_json::{json, to_string, to_value, Value as JsonValue};
 
     use crate::{
-        address::NO_NETWORK,
         constants::RADIX_TOKEN,
         data::{scrypto_decode, scrypto_encode, ScryptoValue},
     };
@@ -678,16 +555,17 @@ mod tests {
     fn test_address_encoding_no_network() {
         let value = RADIX_TOKEN;
 
-        let no_network_radix_token_address = RADIX_TOKEN.display(NO_NETWORK).to_string();
+        let expected =
+            json!("NormalResource[000000000000000000000000000000000000000000000000000000]");
+        let expected_invertible = json!({
+            "type": "Address",
+            "value": "NormalResource[000000000000000000000000000000000000000000000000000000]"
+        });
 
-        let expected = json!(no_network_radix_token_address);
-        let expected_invertible =
-            json!({ "type": "ResourceAddress", "value": no_network_radix_token_address });
-
-        assert_simple_json_matches(&value, ValueFormattingContext::no_context(), expected);
+        assert_simple_json_matches(&value, ScryptoValueDisplayContext::no_context(), expected);
         assert_invertible_json_matches(
             &value,
-            ValueFormattingContext::no_context(),
+            ScryptoValueDisplayContext::no_context(),
             expected_invertible,
         );
     }
@@ -698,11 +576,12 @@ mod tests {
         let value = RADIX_TOKEN;
         let encoder = Bech32Encoder::for_simulator();
 
-        let radix_token_address = RADIX_TOKEN.display(&encoder).to_string();
-
-        let expected_simple = json!(radix_token_address);
-        let expected_invertible =
-            json!({ "type": "ResourceAddress", "value": radix_token_address });
+        let expected_simple =
+            json!("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqz8qety");
+        let expected_invertible = json!({
+            "type": "Address",
+            "value": "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqz8qety"
+        });
 
         assert_simple_json_matches(&value, &encoder, expected_simple);
         assert_invertible_json_matches(&value, &encoder, expected_invertible);
@@ -712,22 +591,11 @@ mod tests {
     #[cfg(feature = "serde")] // Workaround for VS Code "Run Test" feature
     fn test_complex_encoding_with_network() {
         use crate::{
-            constants::{EPOCH_MANAGER, FAUCET_COMPONENT},
-            crypto::{
-                EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey,
-                EddsaEd25519Signature,
-            },
-            data::types::{
-                ManifestBlobRef, ManifestBucket, ManifestExpression, ManifestProof, Own,
-            },
+            data::model::*,
             math::{Decimal, PreciseDecimal},
         };
 
         let encoder = Bech32Encoder::for_simulator();
-        let faucet_address = FAUCET_COMPONENT.display(&encoder).to_string();
-        let radix_token_address = RADIX_TOKEN.display(&encoder).to_string();
-        let epoch_manager_address = EPOCH_MANAGER.display(&encoder).to_string();
-
         let value = ScryptoValue::Tuple {
             fields: vec![
                 Value::Bool { value: true },
@@ -771,56 +639,10 @@ mod tests {
                 Value::Tuple {
                     fields: vec![
                         Value::Custom {
-                            value: ScryptoCustomValue::ComponentAddress(FAUCET_COMPONENT),
-                        },
-                        Value::Custom {
-                            value: ScryptoCustomValue::ResourceAddress(RADIX_TOKEN),
-                        },
-                        Value::Custom {
-                            value: ScryptoCustomValue::ComponentAddress(EPOCH_MANAGER),
+                            value: ScryptoCustomValue::Address(Address::Resource(RADIX_TOKEN)),
                         },
                         Value::Custom {
                             value: ScryptoCustomValue::Own(Own::Vault([0; 36])),
-                        },
-                        Value::Custom {
-                            value: ScryptoCustomValue::Bucket(ManifestBucket(1)), // Will be mapped by context to "Hello"
-                        },
-                        Value::Custom {
-                            value: ScryptoCustomValue::Bucket(ManifestBucket(10)),
-                        },
-                        Value::Custom {
-                            value: ScryptoCustomValue::Proof(ManifestProof(2)),
-                        },
-                        Value::Custom {
-                            value: ScryptoCustomValue::Expression(
-                                ManifestExpression::EntireWorktop,
-                            ),
-                        },
-                        Value::Custom {
-                            value: ScryptoCustomValue::Blob(ManifestBlobRef(Hash([0; 32]))),
-                        },
-                        Value::Custom {
-                            value: ScryptoCustomValue::Hash(Hash([0; 32])),
-                        },
-                        Value::Custom {
-                            value: ScryptoCustomValue::EcdsaSecp256k1PublicKey(
-                                EcdsaSecp256k1PublicKey([0; 33]),
-                            ),
-                        },
-                        Value::Custom {
-                            value: ScryptoCustomValue::EcdsaSecp256k1Signature(
-                                EcdsaSecp256k1Signature([0; 65]),
-                            ),
-                        },
-                        Value::Custom {
-                            value: ScryptoCustomValue::EddsaEd25519PublicKey(
-                                EddsaEd25519PublicKey([0; 32]),
-                            ),
-                        },
-                        Value::Custom {
-                            value: ScryptoCustomValue::EddsaEd25519Signature(
-                                EddsaEd25519Signature([0; 64]),
-                            ),
                         },
                         Value::Custom {
                             value: ScryptoCustomValue::Decimal(Decimal::ONE),
@@ -869,108 +691,238 @@ mod tests {
             -5,
             "-5",
             "-5",
-            { "hex": "3a92" },
-            [153, 62],
-            { "variant": 0, "fields": [] },
-            { "variant": 1, "fields": [153] },
-            { "variant": 2, "fields": [153, true] },
-            [[153, 62]],
+            {
+                "hex": "3a92"
+            },
             [
-                faucet_address,
-                radix_token_address,
-                epoch_manager_address,
-                { "type": "Own", "value": "Vault([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])" },
-                { "type": "Bucket", "value": "Hello" },
-                { "type": "Bucket", "value": 10 },
-                { "type": "Proof", "value": 2 },
-                "ENTIRE_WORKTOP",
-                { "type": "Blob", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
-                { "type": "Hash", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
-                { "type": "EcdsaSecp256k1PublicKey", "value": "000000000000000000000000000000000000000000000000000000000000000000" },
-                { "type": "EcdsaSecp256k1Signature", "value": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" },
-                { "type": "EddsaEd25519PublicKey", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
-                { "type": "EddsaEd25519Signature", "value": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" },
+                153,
+                62
+            ],
+            {
+                "fields": [],
+                "variant": 0
+            },
+            {
+                "fields": [
+                    153
+                ],
+                "variant": 1
+            },
+            {
+                "fields": [
+                    153,
+                    true
+                ],
+                "variant": 2
+            },
+            [
+                [
+                    153,
+                    62
+                ]
+            ],
+            [
+                "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqz8qety",
+                {
+                    "type": "Own",
+                    "value": "02000000000000000000000000000000000000000000000000000000000000000000000000"
+                },
                 "1",
                 "0.01",
                 "0",
-                { "type": "NonFungibleLocalId", "value": "<hello>" },
-                { "type": "NonFungibleLocalId", "value": "#123#" },
-                { "type": "NonFungibleLocalId", "value": "[2345]" },
-                { "type": "NonFungibleLocalId", "value": "{1f52cb1e-86c4-47ae-9847-9cdb14662ebd}" },
+                {
+                    "type": "NonFungibleLocalId",
+                    "value": "<hello>"
+                },
+                {
+                    "type": "NonFungibleLocalId",
+                    "value": "#123#"
+                },
+                {
+                    "type": "NonFungibleLocalId",
+                    "value": "[2345]"
+                },
+                {
+                    "type": "NonFungibleLocalId",
+                    "value": "{1f52cb1e-86c4-47ae-9847-9cdb14662ebd}"
+                }
             ]
         ]);
 
         let expected_invertible = json!({
             "type": "Tuple",
             "value": [
-                { "type": "Bool", "value": true },
-                { "type": "U8", "value": 5 },
-                { "type": "U16", "value": 5 },
-                { "type": "U32", "value": 5 },
-                { "type": "U64", "value": "18446744073709551615" },
-                { "type": "U128", "value": "9912313323213" },
-                { "type": "I8", "value": -5 },
-                { "type": "I16", "value": -5 },
-                { "type": "I32", "value": -5 },
-                { "type": "I64", "value": "-5" },
-                { "type": "I128", "value": "-5" },
-                { "type": "Array", "element_type": "U8", "value": { "hex": "3a92" } },
                 {
+                    "type": "Bool",
+                    "value": true
+                },
+                {
+                    "type": "U8",
+                    "value": 5
+                },
+                {
+                    "type": "U16",
+                    "value": 5
+                },
+                {
+                    "type": "U32",
+                    "value": 5
+                },
+                {
+                    "type": "U64",
+                    "value": "18446744073709551615"
+                },
+                {
+                    "type": "U128",
+                    "value": "9912313323213"
+                },
+                {
+                    "type": "I8",
+                    "value": -5
+                },
+                {
+                    "type": "I16",
+                    "value": -5
+                },
+                {
+                    "type": "I32",
+                    "value": -5
+                },
+                {
+                    "type": "I64",
+                    "value": "-5"
+                },
+                {
+                    "type": "I128",
+                    "value": "-5"
+                },
+                {
+                    "element_type": "U8",
                     "type": "Array",
+                    "value": {
+                        "hex": "3a92"
+                    }
+                },
+                {
                     "element_type": "U32",
+                    "type": "Array",
                     "value": [
-                        { "type": "U32", "value": 153 },
-                        { "type": "U32", "value": 62 },
+                        {
+                            "type": "U32",
+                            "value": 153
+                        },
+                        {
+                            "type": "U32",
+                            "value": 62
+                        }
                     ]
                 },
-                { "type": "Enum", "value": { "variant": 0, "fields": [] } },
-                { "type": "Enum", "value": { "variant": 1, "fields": [{ "type": "U32", "value": 153 }] } },
-                { "type": "Enum", "value": { "variant": 2, "fields": [{ "type": "U32", "value": 153 }, { "type": "Bool", "value": true }] } },
-                { "type": "Map", "key_type": "U32", "value_type": "U32", "value": [{"type":"Tuple","value":[{"type":"U32","value":153},{"type":"U32","value":62}]}] },
+                {
+                    "type": "Enum",
+                    "value": {
+                        "fields": [],
+                        "variant": 0
+                    }
+                },
+                {
+                    "type": "Enum",
+                    "value": {
+                        "fields": [
+                            {
+                                "type": "U32",
+                                "value": 153
+                            }
+                        ],
+                        "variant": 1
+                    }
+                },
+                {
+                    "type": "Enum",
+                    "value": {
+                        "fields": [
+                            {
+                                "type": "U32",
+                                "value": 153
+                            },
+                            {
+                                "type": "Bool",
+                                "value": true
+                            }
+                        ],
+                        "variant": 2
+                    }
+                },
+                {
+                    "key_type": "U32",
+                    "type": "Map",
+                    "value": [
+                        {
+                            "type": "Tuple",
+                            "value": [
+                                {
+                                    "type": "U32",
+                                    "value": 153
+                                },
+                                {
+                                    "type": "U32",
+                                    "value": 62
+                                }
+                            ]
+                        }
+                    ],
+                    "value_type": "U32"
+                },
                 {
                     "type": "Tuple",
                     "value": [
-                        { "type": "ComponentAddress", "value": faucet_address },
-                        { "type": "ResourceAddress", "value": radix_token_address },
-                        { "type": "ComponentAddress", "value": epoch_manager_address },
-                        { "type": "Own", "value": "Vault([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])" },
-                        { "type": "Bucket", "value": "Hello" },
-                        { "type": "Bucket", "value": 10 },
-                        { "type": "Proof", "value": 2 },
-                        { "type": "Expression", "value": "ENTIRE_WORKTOP" },
-                        { "type": "Blob", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
-                        { "type": "Hash", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
-                        { "type": "EcdsaSecp256k1PublicKey", "value": "000000000000000000000000000000000000000000000000000000000000000000" },
-                        { "type": "EcdsaSecp256k1Signature", "value": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" },
-                        { "type": "EddsaEd25519PublicKey", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
-                        { "type": "EddsaEd25519Signature", "value": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" },
-                        { "type": "Decimal", "value": "1" },
-                        { "type": "Decimal", "value": "0.01" },
-                        { "type": "PreciseDecimal", "value": "0" },
-                        { "type": "NonFungibleLocalId", "value": "<hello>" },
-                        { "type": "NonFungibleLocalId", "value": "#123#" },
-                        { "type": "NonFungibleLocalId", "value": "[2345]" },
-                        { "type": "NonFungibleLocalId", "value": "{1f52cb1e-86c4-47ae-9847-9cdb14662ebd}" },
+                        {
+                            "type": "Address",
+                            "value": "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqz8qety"
+                        },
+                        {
+                            "type": "Own",
+                            "value": "02000000000000000000000000000000000000000000000000000000000000000000000000"
+                        },
+                        {
+                            "type": "Decimal",
+                            "value": "1"
+                        },
+                        {
+                            "type": "Decimal",
+                            "value": "0.01"
+                        },
+                        {
+                            "type": "PreciseDecimal",
+                            "value": "0"
+                        },
+                        {
+                            "type": "NonFungibleLocalId",
+                            "value": "<hello>"
+                        },
+                        {
+                            "type": "NonFungibleLocalId",
+                            "value": "#123#"
+                        },
+                        {
+                            "type": "NonFungibleLocalId",
+                            "value": "[2345]"
+                        },
+                        {
+                            "type": "NonFungibleLocalId",
+                            "value": "{1f52cb1e-86c4-47ae-9847-9cdb14662ebd}"
+                        }
                     ]
                 }
             ]
         });
 
-        let mut bucket_names = HashMap::new();
-        bucket_names.insert(ManifestBucket(1), "Hello".to_owned());
-        let proof_names = HashMap::new();
-
-        let context = ValueFormattingContext::with_manifest_context(
-            Some(&encoder),
-            &bucket_names,
-            &proof_names,
-        );
+        let context = ScryptoValueDisplayContext::with_optional_bench32(Some(&encoder));
 
         assert_simple_json_matches(&value, context, expected_simple);
         assert_invertible_json_matches(&value, context, expected_invertible);
     }
 
-    fn assert_simple_json_matches<'a, T: ScryptoEncode, C: Into<ValueFormattingContext<'a>>>(
+    fn assert_simple_json_matches<'a, T: ScryptoEncode, C: Into<ScryptoValueDisplayContext<'a>>>(
         value: &T,
         context: C,
         expected: JsonValue,
@@ -983,7 +935,11 @@ mod tests {
         assert_json_eq(serializable, expected);
     }
 
-    fn assert_invertible_json_matches<'a, T: ScryptoEncode, C: Into<ValueFormattingContext<'a>>>(
+    fn assert_invertible_json_matches<
+        'a,
+        T: ScryptoEncode,
+        C: Into<ScryptoValueDisplayContext<'a>>,
+    >(
         value: &T,
         context: C,
         expected: JsonValue,

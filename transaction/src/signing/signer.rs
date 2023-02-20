@@ -1,5 +1,7 @@
-use super::{EcdsaSecp256k1PrivateKey, EddsaEd25519PrivateKey};
-use crate::model::SignatureWithPublicKey;
+use crate::{
+    ecdsa_secp256k1::EcdsaSecp256k1PrivateKey, eddsa_ed25519::EddsaEd25519PrivateKey,
+    model::SignatureWithPublicKey,
+};
 use radix_engine_interface::crypto::Hash;
 
 pub trait Signer {

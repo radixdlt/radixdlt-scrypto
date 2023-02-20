@@ -4,6 +4,7 @@ use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::data::{manifest_args, ManifestExpression};
 
 #[test]
 fn test_set_mintable_with_self_resource_address() {
@@ -19,7 +20,7 @@ fn test_set_mintable_with_self_resource_address() {
             package_address,
             "ResourceTest",
             "set_mintable_with_self_resource_address",
-            args!(),
+            manifest_args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -41,19 +42,24 @@ fn test_resource_manager() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package_address, "ResourceTest", "create_fungible", args!())
-        .call_function(package_address, "ResourceTest", "query", args!())
-        .call_function(package_address, "ResourceTest", "burn", args!())
+        .call_function(
+            package_address,
+            "ResourceTest",
+            "create_fungible",
+            manifest_args!(),
+        )
+        .call_function(package_address, "ResourceTest", "query", manifest_args!())
+        .call_function(package_address, "ResourceTest", "burn", manifest_args!())
         .call_function(
             package_address,
             "ResourceTest",
             "update_resource_metadata",
-            args!(),
+            manifest_args!(),
         )
         .call_method(
             account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -79,12 +85,12 @@ fn mint_with_bad_granularity_should_fail() {
             package_address,
             "ResourceTest",
             "create_fungible_and_mint",
-            args!(0u8, dec!("0.1")),
+            manifest_args!(0u8, dec!("0.1")),
         )
         .call_method(
             account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -119,12 +125,12 @@ fn mint_too_much_should_fail() {
             package_address,
             "ResourceTest",
             "create_fungible_and_mint",
-            args!(0u8, dec!("1000000000000000001")),
+            manifest_args!(0u8, dec!("1000000000000000001")),
         )
         .call_method(
             account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(

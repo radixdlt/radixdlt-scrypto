@@ -3,6 +3,7 @@ use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::data::manifest_args;
 
 #[test]
 fn can_insert_in_child_nodes() {
@@ -13,7 +14,12 @@ fn can_insert_in_child_nodes() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package_address, "SuperKeyValueStore", "new", args!())
+        .call_function(
+            package_address,
+            "SuperKeyValueStore",
+            "new",
+            manifest_args!(),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -34,7 +40,7 @@ fn create_mutable_kv_store_into_map_and_referencing_before_storing() {
             package_address,
             "KeyValueStoreTest",
             "new_kv_store_into_map_then_get",
-            args!(),
+            manifest_args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -52,7 +58,7 @@ fn cyclic_map_fails_execution() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package_address, "CyclicMap", "new", args!())
+        .call_function(package_address, "CyclicMap", "new", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -74,7 +80,12 @@ fn self_cyclic_map_fails_execution() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package_address, "CyclicMap", "new_self_cyclic", args!())
+        .call_function(
+            package_address,
+            "CyclicMap",
+            "new_self_cyclic",
+            manifest_args!(),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -98,7 +109,7 @@ fn cannot_remove_kv_stores() {
             package_address,
             "KeyValueStoreTest",
             "new_kv_store_into_vector",
-            args!(),
+            manifest_args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -110,7 +121,7 @@ fn cannot_remove_kv_stores() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_method(component_address, "clear_vector", args!())
+        .call_method(component_address, "clear_vector", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -134,7 +145,7 @@ fn cannot_overwrite_kv_stores() {
             package_address,
             "KeyValueStoreTest",
             "new_kv_store_into_kv_store",
-            args!(),
+            manifest_args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -146,7 +157,7 @@ fn cannot_overwrite_kv_stores() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_method(component_address, "overwrite_kv_store", args!())
+        .call_method(component_address, "overwrite_kv_store", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -172,7 +183,7 @@ fn create_kv_store_and_get() {
             package_address,
             "KeyValueStoreTest",
             "new_kv_store_with_get",
-            args!(),
+            manifest_args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -194,7 +205,7 @@ fn create_kv_store_and_put() {
             package_address,
             "KeyValueStoreTest",
             "new_kv_store_with_put",
-            args!(),
+            manifest_args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -216,7 +227,7 @@ fn can_reference_in_memory_vault() {
             package_address,
             "Precommitted",
             "can_reference_precommitted_vault",
-            args!(),
+            manifest_args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -238,7 +249,7 @@ fn can_reference_deep_in_memory_value() {
             package_address,
             "Precommitted",
             "can_reference_deep_precommitted_value",
-            args!(),
+            manifest_args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -260,7 +271,7 @@ fn can_reference_deep_in_memory_vault() {
             package_address,
             "Precommitted",
             "can_reference_deep_precommitted_vault",
-            args!(),
+            manifest_args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -282,7 +293,7 @@ fn cannot_directly_reference_inserted_vault() {
             package_address,
             "RefCheck",
             "cannot_directly_reference_inserted_vault",
-            args!(),
+            manifest_args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -309,7 +320,7 @@ fn cannot_directly_reference_vault_after_container_moved() {
             package_address,
             "RefCheck",
             "cannot_directly_reference_vault_after_container_moved",
-            args!(),
+            manifest_args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -336,7 +347,7 @@ fn cannot_directly_reference_vault_after_container_stored() {
             package_address,
             "RefCheck",
             "cannot_directly_reference_vault_after_container_stored",
-            args!(),
+            manifest_args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -359,7 +370,12 @@ fn multiple_reads_should_work() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package_address, "MultipleReads", "multiple_reads", args!())
+        .call_function(
+            package_address,
+            "MultipleReads",
+            "multiple_reads",
+            manifest_args!(),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 

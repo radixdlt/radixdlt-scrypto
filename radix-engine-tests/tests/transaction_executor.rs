@@ -10,9 +10,9 @@ use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
+use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::errors::{HeaderValidationError, TransactionValidationError};
 use transaction::model::{Executable, NotarizedTransaction, TransactionHeader};
-use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::{
     NotarizedTransactionValidator, TestIntentHashManager, TransactionValidator, ValidationConfig,
 };

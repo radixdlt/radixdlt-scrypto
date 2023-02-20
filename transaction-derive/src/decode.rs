@@ -4,7 +4,7 @@ use syn::Result;
 pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
     sbor_derive_common::decode::handle_decode(
         input,
-        Some("transaction::data::ManifestCustomValueKind"),
+        Some("transaction_data::ManifestCustomValueKind"),
     )
 }
 
@@ -27,13 +27,13 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl<D: ::sbor::Decoder<transaction::data::ManifestCustomValueKind> >
-                    ::sbor::Decode<transaction::data::ManifestCustomValueKind, D> for MyStruct
+                impl<D: ::sbor::Decoder<transaction_data::ManifestCustomValueKind> >
+                    ::sbor::Decode<transaction_data::ManifestCustomValueKind, D> for MyStruct
                 {
                     #[inline]
                     fn decode_body_with_value_kind(
                         decoder: &mut D,
-                        value_kind: ::sbor::ValueKind<transaction::data::ManifestCustomValueKind>
+                        value_kind: ::sbor::ValueKind<transaction_data::ManifestCustomValueKind>
                     ) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
                         decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Tuple)?;
@@ -55,14 +55,17 @@ mod tests {
             output,
             quote! {
                 impl<
-                        T: Bound + ::sbor::Decode<transaction::data::ManifestCustomValueKind, D>,
-                        D: ::sbor::Decoder<transaction::data::ManifestCustomValueKind>
-                    > ::sbor::Decode<transaction::data::ManifestCustomValueKind, D> for MyEnum<T>
+                        T: Bound,
+                        D: ::sbor::Decoder<transaction_data::ManifestCustomValueKind>
+                    > ::sbor::Decode<transaction_data::ManifestCustomValueKind, D> for MyEnum<T>
+                where
+                    T: ::sbor::Decode<transaction_data::ManifestCustomValueKind, D>,
+                    T: ::sbor::Categorize<transaction_data::ManifestCustomValueKind>
                 {
                     #[inline]
                     fn decode_body_with_value_kind(
                         decoder: &mut D,
-                        value_kind: ::sbor::ValueKind<transaction::data::ManifestCustomValueKind>
+                        value_kind: ::sbor::ValueKind<transaction_data::ManifestCustomValueKind>
                     ) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
                         decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Enum)?;

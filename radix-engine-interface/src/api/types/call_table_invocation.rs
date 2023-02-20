@@ -12,6 +12,7 @@ use sbor::rust::collections::HashSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
+use transaction_data::*;
 
 // TODO: Remove enum
 #[derive(Debug, ScryptoSbor)]
@@ -47,7 +48,9 @@ impl Into<CallTableInvocation> for ScryptoInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(
+    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
+)]
 pub enum NativeInvocation {
     AccessRulesChain(AccessRulesChainInvocation),
     Metadata(MetadataInvocation),
@@ -61,7 +64,9 @@ impl Into<CallTableInvocation> for NativeInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(
+    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
+)]
 pub enum AccessRulesChainInvocation {
     AddAccessCheck(AccessRulesAddAccessCheckInvocation),
     SetMethodAccessRule(AccessRulesSetMethodAccessRuleInvocation),
@@ -71,19 +76,25 @@ pub enum AccessRulesChainInvocation {
     GetLength(AccessRulesGetLengthInvocation),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(
+    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
+)]
 pub enum MetadataInvocation {
     Set(MetadataSetInvocation),
     Get(MetadataGetInvocation),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(
+    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
+)]
 pub enum ComponentInvocation {
     SetRoyaltyConfig(ComponentSetRoyaltyConfigInvocation),
     ClaimRoyalty(ComponentClaimRoyaltyInvocation),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(
+    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
+)]
 pub enum PackageInvocation {
     Publish(PackagePublishInvocation),
     PublishNative(PackagePublishNativeInvocation),
@@ -107,14 +118,10 @@ impl NativeInvocation {
                 PackageInvocation::Publish(..) => {}
                 PackageInvocation::PublishNative(..) => {}
                 PackageInvocation::SetRoyaltyConfig(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Package(
-                        invocation.receiver,
-                    )));
+                    refs.insert(RENodeId::Global(Address::Package(invocation.receiver)));
                 }
                 PackageInvocation::ClaimRoyalty(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::Package(
-                        invocation.receiver,
-                    )));
+                    refs.insert(RENodeId::Global(Address::Package(invocation.receiver)));
                 }
             },
             NativeInvocation::AccessRulesChain(access_rules_method) => match access_rules_method {

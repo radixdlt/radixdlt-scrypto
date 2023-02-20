@@ -68,7 +68,7 @@ pub struct Track<'s> {
     application_logs: Vec<(Level, String)>,
     substate_store: &'s dyn ReadableSubstateStore,
     loaded_substates: HashMap<SubstateId, LoadedSubstate>,
-    new_global_addresses: Vec<GlobalAddress>,
+    new_global_addresses: Vec<Address>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -565,7 +565,7 @@ fn determine_result_type(
 /// This is just used when finalizing track into a commit
 struct FinalizingTrack<'s> {
     substate_store: &'s dyn ReadableSubstateStore,
-    new_global_addresses: Vec<GlobalAddress>,
+    new_global_addresses: Vec<Address>,
     loaded_substates: BTreeMap<SubstateId, LoadedSubstate>,
 }
 

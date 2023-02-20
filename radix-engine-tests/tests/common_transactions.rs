@@ -8,8 +8,8 @@ use radix_engine_interface::rule;
 use scrypto::NonFungibleData;
 use scrypto_unit::TestRunner;
 use transaction::builder::ManifestBuilder;
+use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::manifest::compile;
-use transaction::signing::EcdsaSecp256k1PrivateKey;
 use utils::ContextualDisplay;
 
 macro_rules! replace_variables {

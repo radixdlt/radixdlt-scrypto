@@ -6,7 +6,7 @@ use crate::system::node_properties::SubstateProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use radix_engine_interface::api::types::{
-    GlobalAddress, LockHandle, NonFungibleStoreOffset, RENodeId, SubstateId, SubstateOffset,
+    Address, LockHandle, NonFungibleStoreOffset, RENodeId, SubstateId, SubstateOffset,
 };
 
 use super::heap::{Heap, HeapRENode};
@@ -64,8 +64,8 @@ pub enum RENodeVisibilityOrigin {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SubstateLock {
     pub substate_pointer: (RENodeLocation, RENodeId, NodeModuleId, SubstateOffset),
-    pub global_references: HashSet<GlobalAddress>,
-    pub substate_owned_nodes: HashSet<RENodeId>,
+    pub global_references: HashSet<RENodeId>,
+    pub substate_owned_nodes: Vec<RENodeId>,
     pub flags: LockFlags,
 }
 
@@ -145,10 +145,9 @@ impl CallFrame {
 
         // Expand references
         {
-            for global_address in &global_references {
-                let node_id = RENodeId::Global(global_address.clone());
+            for node_id in &global_references {
                 self.node_refs.insert(
-                    node_id,
+                    node_id.clone(),
                     RENodeRefData::new(RENodeLocation::Store, RENodeVisibilityOrigin::Normal),
                 );
             }
@@ -199,8 +198,15 @@ impl CallFrame {
             let substate_ref =
                 self.get_substate(heap, track, location, node_id, module_id, &offset)?;
 
-            let (_new_global_references, mut new_children) =
-                substate_ref.references_and_owned_nodes();
+            // Reserving original Vec element order with `IndexSet`
+            let mut new_children: IndexSet<RENodeId> = index_set_new();
+            for own in substate_ref.references_and_owned_nodes().1 {
+                if !new_children.insert(own) {
+                    return Err(RuntimeError::KernelError(
+                        KernelError::ContainsDuplicatedOwns,
+                    ));
+                }
+            }
 
             for old_child in &substate_lock.substate_owned_nodes {
                 if !new_children.remove(old_child) {
@@ -232,7 +238,7 @@ impl CallFrame {
             match location {
                 RENodeLocation::Heap => {}
                 RENodeLocation::Store => {
-                    heap.move_nodes_to_store(track, new_children)?;
+                    heap.move_nodes_to_store(track, new_children.into_iter().collect())?;
                 }
             }
         }
@@ -301,35 +307,35 @@ impl CallFrame {
 
         // Add well-known global refs to current frame
         frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)),
+            RENodeId::Global(Address::Resource(RADIX_TOKEN)),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::Resource(SYSTEM_TOKEN)),
+            RENodeId::Global(Address::Resource(SYSTEM_TOKEN)),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::Resource(ECDSA_SECP256K1_TOKEN)),
+            RENodeId::Global(Address::Resource(ECDSA_SECP256K1_TOKEN)),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::Resource(EDDSA_ED25519_TOKEN)),
+            RENodeId::Global(Address::Resource(EDDSA_ED25519_TOKEN)),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)),
+            RENodeId::Global(Address::Resource(PACKAGE_TOKEN)),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)),
+            RENodeId::Global(Address::Component(EPOCH_MANAGER)),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::Component(CLOCK)),
+            RENodeId::Global(Address::Component(CLOCK)),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::Package(FAUCET_PACKAGE)),
+            RENodeId::Global(Address::Package(FAUCET_PACKAGE)),
             RENodeVisibilityOrigin::Normal,
         );
 

@@ -13,7 +13,7 @@ use crate::system::node_modules::auth::AuthZoneStackSubstate;
 use crate::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::types::{
-    AuthZoneStackOffset, ComponentOffset, GlobalAddress, PackageOffset, RENodeId, SubstateOffset,
+    Address, AuthZoneStackOffset, ComponentOffset, PackageOffset, RENodeId, SubstateOffset,
     VaultOffset,
 };
 use radix_engine_interface::blueprints::clock::{CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT};
@@ -52,7 +52,7 @@ impl AuthModule {
             ResolvedActor {
                 identifier: FnIdentifier::Scrypto(..),
                 receiver: Some(ResolvedReceiver {
-                    derefed_from: Some((RENodeId::Global(GlobalAddress::Component(..)), _)),
+                    derefed_from: Some((RENodeId::Global(Address::Component(..)), _)),
                     ..
                 })
             }
@@ -219,7 +219,7 @@ impl KernelModule for AuthModule {
                     resource_address
                 };
                 let handle = api.kernel_lock_substate(
-                    RENodeId::Global(GlobalAddress::Resource(resource_address)),
+                    RENodeId::Global(Address::Resource(resource_address)),
                     NodeModuleId::AccessRules1,
                     SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                     LockFlags::read_only(),
@@ -297,8 +297,7 @@ impl KernelModule for AuthModule {
                         ..
                     }),
             } => {
-                let node_id =
-                    RENodeId::Global(GlobalAddress::Package(method_identifier.package_address));
+                let node_id = RENodeId::Global(Address::Package(method_identifier.package_address));
                 let offset = SubstateOffset::Package(PackageOffset::Info);
                 let handle = api.kernel_lock_substate(
                     node_id,

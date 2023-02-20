@@ -5,6 +5,8 @@ use radix_engine_interface::blueprints::resource::{require, FromPublicKey};
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::rule;
 use rand::Rng;
+use transaction::data::manifest_args;
+use transaction::data::model::*;
 use utils::ContextualDisplay;
 
 use crate::resim::Error::TransactionFailed;
@@ -59,11 +61,11 @@ impl NewAccount {
             let account = commit_result.entity_changes.new_component_addresses[0];
             let manifest = ManifestBuilder::new()
                 .lock_fee(FAUCET_COMPONENT, 100.into())
-                .call_method(FAUCET_COMPONENT, "free", args!())
+                .call_method(FAUCET_COMPONENT, "free", manifest_args!())
                 .call_method(
                     account,
                     "deposit_batch",
-                    args!(ManifestExpression::EntireWorktop),
+                    manifest_args!(ManifestExpression::EntireWorktop),
                 )
                 .build();
             handle_manifest(

@@ -1,4 +1,5 @@
 mod access_rules;
+mod address;
 mod bucket;
 mod non_fungible_data;
 mod non_fungible_global_id;
@@ -13,6 +14,7 @@ mod vault;
 mod worktop;
 
 pub use access_rules::*;
+pub use address::*;
 pub use bucket::*;
 pub use non_fungible_data::*;
 pub use non_fungible_global_id::*;
