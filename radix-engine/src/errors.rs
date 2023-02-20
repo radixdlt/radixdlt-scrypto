@@ -13,7 +13,7 @@ use crate::system::kernel_modules::auth::AuthError;
 use crate::system::kernel_modules::costing::CostingError;
 use crate::system::kernel_modules::node_move::NodeMoveError;
 use crate::system::kernel_modules::transaction_limits::TransactionLimitsError;
-use crate::system::node_modules::auth::{AccessRulesChainError, AuthZoneError};
+use crate::system::node_modules::access_rules::{AccessRulesChainError, AuthZoneError};
 use crate::system::package::PackageError;
 use crate::transaction::AbortReason;
 use radix_engine_interface::api::types::{Address, LockHandle, RENodeId, SubstateOffset};
@@ -202,9 +202,8 @@ pub enum InterpreterError {
     NativeInvalidCodeId(u8),
 
     InvalidInvocation,
-    DisallowedInvocation(NativeFn),
 
-    InvalidScryptoInvocation(PackageAddress, String, String, ScryptoFnResolvingError),
+    InvalidScryptoInvocation(FnIdentifier, ScryptoFnResolvingError),
     InvalidScryptoReturn(DecodeError),
 }
 

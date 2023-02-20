@@ -6,12 +6,11 @@ use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::global::GlobalSubstate;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::auth::AccessRulesChainSubstate;
+use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use crate::types::*;
 use native_sdk::resource::{ResourceManager, SysBucket};
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::account::{AccountDepositInput, ACCOUNT_DEPOSIT_IDENT};
 use radix_engine_interface::blueprints::epoch_manager::*;
@@ -58,8 +57,7 @@ impl EpochManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: EpochManagerCreateInput = scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -84,10 +82,9 @@ impl EpochManagerBlueprint {
 
             // TODO: remove mint and premint all tokens
             {
-                let non_fungible_local_id = NonFungibleLocalId::bytes(
-                    scrypto_encode(&PackageIdentifier::Scrypto(EPOCH_MANAGER_PACKAGE)).unwrap(),
-                )
-                .unwrap();
+                let non_fungible_local_id =
+                    NonFungibleLocalId::bytes(scrypto_encode(&EPOCH_MANAGER_PACKAGE).unwrap())
+                        .unwrap();
                 let global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
                 access_rules.insert(Mint, (rule!(require(global_id)), rule!(deny_all)));
             }
@@ -119,7 +116,7 @@ impl EpochManagerBlueprint {
             let owner_token_bucket =
                 olympia_validator_token_resman.mint_non_fungible(local_id, api)?;
             api.call_method(
-                ScryptoReceiver::Global(validator_init.validator_account_address),
+                RENodeId::Global(validator_init.validator_account_address.into()),
                 ACCOUNT_DEPOSIT_IDENT,
                 scrypto_encode(&AccountDepositInput {
                     bucket: owner_token_bucket,
@@ -140,7 +137,7 @@ impl EpochManagerBlueprint {
             validator_set.insert(address, validator);
 
             api.call_method(
-                ScryptoReceiver::Global(validator_init.stake_account_address),
+                RENodeId::Global(validator_init.stake_account_address.into()),
                 ACCOUNT_DEPOSIT_IDENT,
                 scrypto_encode(&AccountDepositInput { bucket: lp_bucket }).unwrap(),
             )?;
@@ -158,35 +155,48 @@ impl EpochManagerBlueprint {
 
         let mut access_rules = AccessRules::new();
         access_rules.set_method_access_rule(
-            AccessRuleKey::ScryptoMethod(EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string()),
+            AccessRuleKey::new(
+                NodeModuleId::SELF,
+                EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
+            ),
             rule!(require(AuthAddresses::validator_role())),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::ScryptoMethod(EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string()),
+            AccessRuleKey::new(
+                NodeModuleId::SELF,
+                EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
+            ),
             rule!(allow_all),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::ScryptoMethod(EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string()),
+            AccessRuleKey::new(
+                NodeModuleId::SELF,
+                EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
+            ),
             rule!(allow_all),
         );
-        let non_fungible_local_id = NonFungibleLocalId::bytes(
-            scrypto_encode(&PackageIdentifier::Scrypto(EPOCH_MANAGER_PACKAGE)).unwrap(),
-        )
-        .unwrap();
+        let non_fungible_local_id =
+            NonFungibleLocalId::bytes(scrypto_encode(&EPOCH_MANAGER_PACKAGE).unwrap()).unwrap();
         let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
         access_rules.set_method_access_rule(
-            AccessRuleKey::ScryptoMethod(EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT.to_string()),
+            AccessRuleKey::new(
+                NodeModuleId::SELF,
+                EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT.to_string(),
+            ),
             rule!(require(non_fungible_global_id)),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::ScryptoMethod(EPOCH_MANAGER_SET_EPOCH_IDENT.to_string()),
+            AccessRuleKey::new(
+                NodeModuleId::SELF,
+                EPOCH_MANAGER_SET_EPOCH_IDENT.to_string(),
+            ),
             rule!(require(AuthAddresses::system_role())), // Set epoch only used for debugging
         );
 
         let mut node_modules = BTreeMap::new();
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::AccessRulesChain(AccessRulesChainSubstate {
+            RENodeModuleInit::ComponentAccessRulesChain(ObjectAccessRulesChainSubstate {
                 access_rules_chain: vec![access_rules],
             }),
         );
@@ -212,7 +222,7 @@ impl EpochManagerBlueprint {
     }
 
     pub(crate) fn get_current_epoch<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -220,15 +230,14 @@ impl EpochManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let _input: EpochManagerGetCurrentEpochInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let handle = api.kernel_lock_substate(
-            RENodeId::EpochManager(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
             LockFlags::read_only(),
@@ -241,7 +250,7 @@ impl EpochManagerBlueprint {
     }
 
     pub(crate) fn next_round<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -249,19 +258,14 @@ impl EpochManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let input: EpochManagerNextRoundInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
-        let mgr_handle = api.kernel_lock_substate(
-            RENodeId::EpochManager(receiver),
-            NodeModuleId::SELF,
-            offset,
-            LockFlags::MUTABLE,
-        )?;
+        let mgr_handle =
+            api.kernel_lock_substate(receiver, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
         let mut substate_mut = api.kernel_get_substate_ref_mut(mgr_handle)?;
         let epoch_manager = substate_mut.epoch_manager();
 
@@ -276,12 +280,8 @@ impl EpochManagerBlueprint {
 
         if input.round >= epoch_manager.rounds_per_epoch {
             let offset = SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet);
-            let handle = api.kernel_lock_substate(
-                RENodeId::EpochManager(receiver),
-                NodeModuleId::SELF,
-                offset,
-                LockFlags::MUTABLE,
-            )?;
+            let handle =
+                api.kernel_lock_substate(receiver, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
             let mut substate_mut = api.kernel_get_substate_ref_mut(handle)?;
             let preparing_validator_set = substate_mut.validator_set();
             let prepared_epoch = preparing_validator_set.epoch;
@@ -294,12 +294,8 @@ impl EpochManagerBlueprint {
             epoch_manager.round = 0;
 
             let offset = SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet);
-            let handle = api.kernel_lock_substate(
-                RENodeId::EpochManager(receiver),
-                NodeModuleId::SELF,
-                offset,
-                LockFlags::MUTABLE,
-            )?;
+            let handle =
+                api.kernel_lock_substate(receiver, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
             let mut substate_mut = api.kernel_get_substate_ref_mut(handle)?;
             let validator_set = substate_mut.validator_set();
             validator_set.epoch = prepared_epoch;
@@ -312,7 +308,7 @@ impl EpochManagerBlueprint {
     }
 
     pub(crate) fn set_epoch<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -320,14 +316,13 @@ impl EpochManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let input: EpochManagerSetEpochInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let handle = api.kernel_lock_substate(
-            RENodeId::EpochManager(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
             LockFlags::MUTABLE,
@@ -340,7 +335,7 @@ impl EpochManagerBlueprint {
     }
 
     pub(crate) fn create_validator<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -348,15 +343,14 @@ impl EpochManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let input: EpochManagerCreateValidatorInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let handle = api.kernel_lock_substate(
-            RENodeId::EpochManager(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
             LockFlags::read_only(),
@@ -371,7 +365,7 @@ impl EpochManagerBlueprint {
     }
 
     pub(crate) fn update_validator<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -379,15 +373,14 @@ impl EpochManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let input: EpochManagerUpdateValidatorInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let handle = api.kernel_lock_substate(
-            RENodeId::EpochManager(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet),
             LockFlags::MUTABLE,

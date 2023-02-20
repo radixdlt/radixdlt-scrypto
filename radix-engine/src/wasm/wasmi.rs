@@ -114,6 +114,7 @@ fn call_method(
     mut caller: Caller<'_, HostState>,
     receiver_ptr: u32,
     receiver_len: u32,
+    node_module_id: u32,
     ident_ptr: u32,
     ident_len: u32,
     args_ptr: u32,
@@ -134,7 +135,7 @@ fn call_method(
     runtime.update_wasm_memory_usage(mem)?;
 
     runtime
-        .call_method(receiver, ident, args)
+        .call_method(receiver, node_module_id, ident, args)
         .map(|buffer| buffer.0)
 }
 
@@ -176,33 +177,6 @@ fn call_function(
 
     runtime
         .call_function(package_address, blueprint_ident, ident, args)
-        .map(|buffer| buffer.0)
-}
-
-fn call_native(
-    mut caller: Caller<'_, HostState>,
-    native_fn_ptr: u32,
-    native_fn_len: u32,
-    invocation_ptr: u32,
-    invocation_len: u32,
-) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
-
-    let native_fn = read_memory(
-        caller.as_context_mut(),
-        memory,
-        native_fn_ptr,
-        native_fn_len,
-    )?;
-    let invocation = read_memory(
-        caller.as_context_mut(),
-        memory,
-        invocation_ptr,
-        invocation_len,
-    )?;
-
-    runtime
-        .call_native(native_fn, invocation)
         .map(|buffer| buffer.0)
 }
 
@@ -466,6 +440,7 @@ impl WasmiModule {
             |caller: Caller<'_, HostState>,
              receiver_ptr: u32,
              receiver_len: u32,
+             node_module_id: u32,
              ident_ptr: u32,
              ident_len: u32,
              args_ptr: u32,
@@ -475,6 +450,7 @@ impl WasmiModule {
                     caller,
                     receiver_ptr,
                     receiver_len,
+                    node_module_id,
                     ident_ptr,
                     ident_len,
                     args_ptr,
@@ -506,25 +482,6 @@ impl WasmiModule {
                     ident_len,
                     args_ptr,
                     args_len,
-                )
-                .map_err(|e| e.into())
-            },
-        );
-
-        let host_call_native = Func::wrap(
-            store.as_context_mut(),
-            |caller: Caller<'_, HostState>,
-             native_fn_ptr: u32,
-             native_fn_len: u32,
-             invocation_ptr: u32,
-             invocation_len: u32|
-             -> Result<u64, Trap> {
-                call_native(
-                    caller,
-                    native_fn_ptr,
-                    native_fn_len,
-                    invocation_ptr,
-                    invocation_len,
                 )
                 .map_err(|e| e.into())
             },
@@ -706,7 +663,6 @@ impl WasmiModule {
         linker_define!(linker, CONSUME_BUFFER_FUNCTION_NAME, host_consume_buffer);
         linker_define!(linker, CALL_METHOD_FUNCTION_NAME, host_call_method);
         linker_define!(linker, CALL_FUNCTION_FUNCTION_NAME, host_call_function);
-        linker_define!(linker, CALL_NATIVE_FUNCTION_NAME, host_call_native);
         linker_define!(linker, NEW_PACKAGE_FUNCTION_NAME, host_new_package);
         linker_define!(linker, NEW_COMPONENT_FUNCTION_NAME, host_new_component);
         linker_define!(

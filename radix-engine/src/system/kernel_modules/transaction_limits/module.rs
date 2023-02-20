@@ -114,7 +114,7 @@ impl TransactionLimitsModule {
 impl KernelModule for TransactionLimitsModule {
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        _actor: &ResolvedActor,
+        _actor: &Option<ResolvedActor>,
         _down_movement: &mut CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         // push new empty wasm memory value refencing current call frame to internal stack

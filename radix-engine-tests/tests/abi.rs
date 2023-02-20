@@ -1,7 +1,7 @@
 use radix_engine::errors::{
     ApplicationError, InterpreterError, KernelError, RuntimeError, ScryptoFnResolvingError,
 };
-use radix_engine::system::node_modules::auth::AccessRulesChainError;
+use radix_engine::system::node_modules::access_rules::AccessRulesChainError;
 use radix_engine::types::*;
 use scrypto_unit::*;
 use serde::Serialize;
@@ -207,8 +207,6 @@ fn test_arg(method_name: &str, args: Vec<u8>, expected_result: ExpectedResult) {
                 matches!(
                     e,
                     RuntimeError::InterpreterError(InterpreterError::InvalidScryptoInvocation(
-                        _,
-                        _,
                         _,
                         ScryptoFnResolvingError::InvalidInput
                     ))

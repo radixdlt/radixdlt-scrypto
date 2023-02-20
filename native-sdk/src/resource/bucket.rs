@@ -1,4 +1,4 @@
-use radix_engine_interface::api::types::ScryptoReceiver;
+use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::{ClientApi, ClientComponentApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{
@@ -90,7 +90,7 @@ impl SysBucket for Bucket {
         Y: ClientComponentApi<E>,
     {
         let rtn = api.call_method(
-            ScryptoReceiver::Resource(receiver),
+            RENodeId::Global(receiver.into()),
             RESOURCE_MANAGER_CREATE_BUCKET_IDENT,
             scrypto_encode(&ResourceManagerCreateBucketInput {}).unwrap(),
         )?;
@@ -105,7 +105,7 @@ impl SysBucket for Bucket {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            ScryptoReceiver::Bucket(self.0),
+            RENodeId::Bucket(self.0),
             BUCKET_GET_AMOUNT_IDENT,
             scrypto_encode(&BucketGetAmountInput {}).unwrap(),
         )?;
@@ -121,7 +121,7 @@ impl SysBucket for Bucket {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            ScryptoReceiver::Bucket(self.0),
+            RENodeId::Bucket(self.0),
             BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
             scrypto_encode(&BucketGetNonFungibleLocalIdsInput {}).unwrap(),
         )?;
@@ -138,7 +138,7 @@ impl SysBucket for Bucket {
         Y: ClientApi<E>,
     {
         let _rtn = api.call_method(
-            ScryptoReceiver::Bucket(self.0),
+            RENodeId::Bucket(self.0),
             BUCKET_PUT_IDENT,
             scrypto_encode(&BucketPutInput { bucket: other }).unwrap(),
         )?;
@@ -155,7 +155,7 @@ impl SysBucket for Bucket {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            ScryptoReceiver::Bucket(self.0),
+            RENodeId::Bucket(self.0),
             BUCKET_TAKE_IDENT,
             scrypto_encode(&BucketTakeInput { amount }).unwrap(),
         )?;
@@ -172,7 +172,7 @@ impl SysBucket for Bucket {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            ScryptoReceiver::Bucket(self.0),
+            RENodeId::Bucket(self.0),
             BUCKET_TAKE_NON_FUNGIBLES_IDENT,
             scrypto_encode(&BucketTakeNonFungiblesInput { ids }).unwrap(),
         )?;
@@ -186,7 +186,7 @@ impl SysBucket for Bucket {
     {
         let receiver = self.sys_resource_address(api)?;
         let rtn = api.call_method(
-            ScryptoReceiver::Resource(receiver),
+            RENodeId::Global(receiver.into()),
             RESOURCE_MANAGER_BURN_IDENT,
             scrypto_encode(&ResourceManagerBurnInput {
                 bucket: Bucket(self.0),
@@ -202,7 +202,7 @@ impl SysBucket for Bucket {
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let rtn = api.call_method(
-            ScryptoReceiver::Bucket(self.0),
+            RENodeId::Bucket(self.0),
             BUCKET_GET_RESOURCE_ADDRESS_IDENT,
             scrypto_encode(&BucketGetResourceAddressInput {}).unwrap(),
         )?;
@@ -217,7 +217,7 @@ impl SysBucket for Bucket {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            ScryptoReceiver::Bucket(self.0),
+            RENodeId::Bucket(self.0),
             BUCKET_CREATE_PROOF_IDENT,
             scrypto_encode(&BucketCreateProofInput {}).unwrap(),
         )?;

@@ -163,7 +163,7 @@ pub struct BucketBlueprint;
 
 impl BucketBlueprint {
     pub(crate) fn take<Y>(
-        receiver: BucketId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -175,7 +175,7 @@ impl BucketBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let bucket_handle = api.kernel_lock_substate(
-            RENodeId::Bucket(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Bucket(BucketOffset::Bucket),
             LockFlags::MUTABLE,
@@ -201,7 +201,7 @@ impl BucketBlueprint {
     }
 
     pub(crate) fn take_non_fungibles<Y>(
-        receiver: BucketId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -214,7 +214,7 @@ impl BucketBlueprint {
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let bucket_handle = api.kernel_lock_substate(
-            RENodeId::Bucket(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Bucket(BucketOffset::Bucket),
             LockFlags::MUTABLE,
@@ -240,7 +240,7 @@ impl BucketBlueprint {
     }
 
     pub(crate) fn put<Y>(
-        receiver: BucketId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -252,7 +252,7 @@ impl BucketBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let bucket_handle = api.kernel_lock_substate(
-            RENodeId::Bucket(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Bucket(BucketOffset::Bucket),
             LockFlags::MUTABLE,
@@ -273,7 +273,7 @@ impl BucketBlueprint {
     }
 
     pub(crate) fn create_proof<Y>(
-        receiver: BucketId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -285,7 +285,7 @@ impl BucketBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let bucket_handle = api.kernel_lock_substate(
-            RENodeId::Bucket(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Bucket(BucketOffset::Bucket),
             LockFlags::MUTABLE,
@@ -293,7 +293,7 @@ impl BucketBlueprint {
 
         let mut substate_mut = api.kernel_get_substate_ref_mut(bucket_handle)?;
         let bucket = substate_mut.bucket();
-        let proof = bucket.create_proof(receiver).map_err(|e| {
+        let proof = bucket.create_proof(receiver.into()).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(BucketError::ProofError(
                 e,
             )))
@@ -307,7 +307,7 @@ impl BucketBlueprint {
     }
 
     pub(crate) fn get_non_fungible_local_ids<Y>(
-        receiver: BucketId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -320,7 +320,7 @@ impl BucketBlueprint {
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let bucket_handle = api.kernel_lock_substate(
-            RENodeId::Bucket(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Bucket(BucketOffset::Bucket),
             LockFlags::read_only(),
@@ -337,7 +337,7 @@ impl BucketBlueprint {
     }
 
     pub(crate) fn get_amount<Y>(
-        receiver: BucketId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -349,7 +349,7 @@ impl BucketBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let bucket_handle = api.kernel_lock_substate(
-            RENodeId::Bucket(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Bucket(BucketOffset::Bucket),
             LockFlags::read_only(),
@@ -361,7 +361,7 @@ impl BucketBlueprint {
     }
 
     pub(crate) fn get_resource_address<Y>(
-        receiver: BucketId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -374,7 +374,7 @@ impl BucketBlueprint {
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let bucket_handle = api.kernel_lock_substate(
-            RENodeId::Bucket(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Bucket(BucketOffset::Bucket),
             LockFlags::read_only(),

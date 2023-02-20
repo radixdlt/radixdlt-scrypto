@@ -1,9 +1,13 @@
-use radix_engine_interface::api::node_modules::auth::AccessRulesAddAccessCheckInvocation;
-use radix_engine_interface::api::node_modules::royalty::ComponentSetRoyaltyConfigInvocation;
+use radix_engine_interface::api::node_modules::auth::{
+    AccessRulesAddAccessCheckInput, ACCESS_RULES_ADD_ACCESS_CHECK_IDENT,
+};
+use radix_engine_interface::api::node_modules::royalty::{
+    ComponentSetRoyaltyConfigInput, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+};
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::{ClientNativeInvokeApi, ClientNodeApi, ClientSubstateApi};
+use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::AccessRules;
-use radix_engine_interface::data::ScryptoDecode;
+use radix_engine_interface::data::{scrypto_encode, ScryptoDecode};
 use sbor::rust::fmt::Debug;
 
 #[derive(PartialEq, Eq, Hash, Clone)]
@@ -16,12 +20,14 @@ impl Component {
         api: &mut Y,
     ) -> Result<&mut Self, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
+        Y: ClientApi<E>,
     {
-        api.call_native(AccessRulesAddAccessCheckInvocation {
-            receiver: RENodeId::Component(self.0),
-            access_rules,
-        })?;
+        api.call_module_method(
+            RENodeId::Component(self.0),
+            NodeModuleId::AccessRules,
+            ACCESS_RULES_ADD_ACCESS_CHECK_IDENT,
+            scrypto_encode(&AccessRulesAddAccessCheckInput { access_rules }).unwrap(),
+        )?;
 
         Ok(self)
     }
@@ -32,12 +38,14 @@ impl Component {
         api: &mut Y,
     ) -> Result<&mut Self, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
+        Y: ClientApi<E>,
     {
-        api.call_native(ComponentSetRoyaltyConfigInvocation {
-            receiver: RENodeId::Component(self.0),
-            royalty_config,
-        })?;
+        api.call_module_method(
+            RENodeId::Component(self.0),
+            NodeModuleId::ComponentRoyalty,
+            COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+            scrypto_encode(&ComponentSetRoyaltyConfigInput { royalty_config }).unwrap(),
+        )?;
 
         Ok(self)
     }

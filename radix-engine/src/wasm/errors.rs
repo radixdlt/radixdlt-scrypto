@@ -116,7 +116,7 @@ pub enum WasmRuntimeError {
     /// Invalid RE node ID
     InvalidNodeId(DecodeError),
     /// Invalid RE module ID
-    InvalidModuleId(DecodeError),
+    InvalidModuleId(u32),
     /// Invalid substate offset
     InvalidOffset(DecodeError),
     /// Invalid package abi
@@ -125,6 +125,8 @@ pub enum WasmRuntimeError {
     InvalidAppStates(DecodeError),
     /// Invalid access rules
     InvalidAccessRulesChain(DecodeError),
+    /// Invalid access rules
+    InvalidAbi(DecodeError),
     /// Invalid royalty config
     InvalidRoyaltyConfig(DecodeError),
     /// Invalid metadata

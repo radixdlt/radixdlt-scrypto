@@ -1,4 +1,4 @@
-use radix_engine_interface::api::types::{FnIdentifier, PackageIdentifier, ScryptoFnIdentifier};
+use radix_engine_interface::api::types::FnIdentifier;
 use radix_engine_interface::api::ClientActorApi;
 use radix_engine_interface::api::{types::*, ClientComponentApi, ClientPackageApi};
 use radix_engine_interface::blueprints::epoch_manager::{
@@ -23,7 +23,7 @@ impl Runtime {
     pub fn current_epoch() -> u64 {
         let rtn = ScryptoEnv
             .call_method(
-                ScryptoReceiver::Global(EPOCH_MANAGER),
+                RENodeId::Global(EPOCH_MANAGER.into()),
                 EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
                 scrypto_encode(&EpochManagerGetCurrentEpochInput).unwrap(),
             )
@@ -33,19 +33,15 @@ impl Runtime {
     }
 
     pub fn package_token() -> NonFungibleGlobalId {
-        let non_fungible_local_id = NonFungibleLocalId::bytes(
-            scrypto_encode(&PackageIdentifier::Scrypto(Runtime::package_address())).unwrap(),
-        )
-        .unwrap();
+        let non_fungible_local_id =
+            NonFungibleLocalId::bytes(scrypto_encode(&Runtime::package_address()).unwrap())
+                .unwrap();
         NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id)
     }
 
     /// Returns the running entity.
-    pub fn actor() -> ScryptoFnIdentifier {
-        match ScryptoEnv.get_fn_identifier().unwrap() {
-            FnIdentifier::Scrypto(identifier) => identifier,
-            _ => panic!("Unexpected actor"),
-        }
+    pub fn actor() -> FnIdentifier {
+        ScryptoEnv.get_fn_identifier().unwrap()
     }
 
     /// Returns the current package address.
@@ -79,7 +75,7 @@ impl Runtime {
     ) -> T {
         let output = ScryptoEnv
             .call_method(
-                ScryptoReceiver::Global(component_address),
+                RENodeId::Global(component_address.into()),
                 method.as_ref(),
                 args,
             )
@@ -91,7 +87,7 @@ impl Runtime {
     pub fn transaction_hash() -> Hash {
         let output = ScryptoEnv
             .call_method(
-                ScryptoReceiver::TransactionRuntime,
+                RENodeId::TransactionRuntime,
                 TRANSACTION_RUNTIME_GET_HASH_IDENT,
                 scrypto_encode(&TransactionRuntimeGetHashInput {}).unwrap(),
             )
@@ -103,7 +99,7 @@ impl Runtime {
     pub fn generate_uuid() -> u128 {
         let output = ScryptoEnv
             .call_method(
-                ScryptoReceiver::TransactionRuntime,
+                RENodeId::TransactionRuntime,
                 TRANSACTION_RUNTIME_GENERATE_UUID_IDENT,
                 scrypto_encode(&TransactionRuntimeGenerateUuid {}).unwrap(),
             )

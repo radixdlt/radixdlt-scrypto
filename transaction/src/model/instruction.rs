@@ -104,13 +104,6 @@ pub enum Instruction {
         access_rules: AccessRules,
     },
 
-    /// Publish a package with owner.
-    PublishPackageWithOwner {
-        code: ManifestBlobRef,
-        abi: ManifestBlobRef,
-        owner_badge: NonFungibleGlobalId,
-    },
-
     BurnResource {
         bucket_id: ManifestBucket,
     },
@@ -187,7 +180,4 @@ pub enum Instruction {
         method_name: String,
         args: Vec<u8>,
     },
-
-    // TODO: remove
-    NativeInvocation(NativeInvocation),
 }

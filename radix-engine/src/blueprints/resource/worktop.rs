@@ -32,7 +32,7 @@ pub struct WorktopBlueprint;
 
 impl WorktopBlueprint {
     pub(crate) fn put<Y>(
-        _ignored: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -43,7 +43,7 @@ impl WorktopBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let worktop_handle = api.kernel_lock_substate(
-            RENodeId::Worktop,
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Worktop(WorktopOffset::Worktop),
             LockFlags::MUTABLE,
@@ -67,7 +67,7 @@ impl WorktopBlueprint {
     }
 
     pub(crate) fn take<Y>(
-        _ignored: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -78,7 +78,7 @@ impl WorktopBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let worktop_handle = api.kernel_lock_substate(
-            RENodeId::Worktop,
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Worktop(WorktopOffset::Worktop),
             LockFlags::MUTABLE,
@@ -108,7 +108,7 @@ impl WorktopBlueprint {
     }
 
     pub(crate) fn take_all<Y>(
-        _ignored: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -119,7 +119,7 @@ impl WorktopBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let worktop_handle = api.kernel_lock_substate(
-            RENodeId::Worktop,
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Worktop(WorktopOffset::Worktop),
             LockFlags::MUTABLE,
@@ -141,7 +141,7 @@ impl WorktopBlueprint {
     }
 
     pub(crate) fn take_non_fungibles<Y>(
-        _ignored: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -152,7 +152,7 @@ impl WorktopBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let worktop_handle = api.kernel_lock_substate(
-            RENodeId::Worktop,
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Worktop(WorktopOffset::Worktop),
             LockFlags::MUTABLE,
@@ -183,7 +183,7 @@ impl WorktopBlueprint {
     }
 
     pub(crate) fn assert_contains<Y>(
-        _ignored: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -194,7 +194,7 @@ impl WorktopBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let worktop_handle = api.kernel_lock_substate(
-            RENodeId::Worktop,
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Worktop(WorktopOffset::Worktop),
             LockFlags::read_only(),
@@ -219,7 +219,7 @@ impl WorktopBlueprint {
     }
 
     pub(crate) fn assert_contains_amount<Y>(
-        _ignored: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -231,7 +231,7 @@ impl WorktopBlueprint {
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let worktop_handle = api.kernel_lock_substate(
-            RENodeId::Worktop,
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Worktop(WorktopOffset::Worktop),
             LockFlags::read_only(),
@@ -255,7 +255,7 @@ impl WorktopBlueprint {
     }
 
     pub(crate) fn assert_contains_non_fungibles<Y>(
-        _ignored: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -267,7 +267,7 @@ impl WorktopBlueprint {
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let worktop_handle = api.kernel_lock_substate(
-            RENodeId::Worktop,
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Worktop(WorktopOffset::Worktop),
             LockFlags::read_only(),
@@ -292,7 +292,7 @@ impl WorktopBlueprint {
     }
 
     pub(crate) fn drain<Y>(
-        _ignored: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -303,7 +303,7 @@ impl WorktopBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let worktop_handle = api.kernel_lock_substate(
-            RENodeId::Worktop,
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Worktop(WorktopOffset::Worktop),
             LockFlags::MUTABLE,

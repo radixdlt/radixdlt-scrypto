@@ -1,4 +1,4 @@
-use radix_engine_interface::api::types::{RENodeId, ScryptoReceiver};
+use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::{ClientComponentApi, ClientNodeApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{
@@ -30,7 +30,7 @@ impl SysProof for Proof {
         Y: ClientNodeApi<E> + ClientComponentApi<E>,
     {
         let rtn = api.call_method(
-            ScryptoReceiver::Proof(self.0),
+            RENodeId::Proof(self.0),
             PROOF_CLONE_IDENT,
             scrypto_encode(&ProofCloneInput {}).unwrap(),
         )?;

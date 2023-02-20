@@ -1,4 +1,4 @@
-use radix_engine_interface::api::types::ScryptoReceiver;
+use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::ClientComponentApi;
 use radix_engine_interface::blueprints::logger::{Level, LoggerLogInput, LOGGER_LOG_IDENT};
 use radix_engine_interface::data::scrypto_encode;
@@ -14,7 +14,7 @@ impl Logger {
     pub fn log(level: Level, message: String) {
         ScryptoEnv
             .call_method(
-                ScryptoReceiver::Logger,
+                RENodeId::Logger,
                 LOGGER_LOG_IDENT,
                 scrypto_encode(&LoggerLogInput { level, message }).unwrap(),
             )
