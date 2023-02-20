@@ -50,18 +50,6 @@ impl<P: Clone> TreeNode<P> {
             Node::Null => TreeNode::Null,
         }
     }
-
-    pub fn map_payload<R, F: FnOnce(P) -> R>(self, mapper: F) -> TreeNode<R> {
-        match self {
-            TreeNode::Internal(internal) => TreeNode::Internal(internal),
-            TreeNode::Leaf(leaf) => TreeNode::Leaf(TreeLeafNode {
-                key_suffix: leaf.key_suffix,
-                payload: mapper(leaf.payload),
-                value_hash: leaf.value_hash,
-            }),
-            TreeNode::Null => TreeNode::Null,
-        }
-    }
 }
 
 impl InternalNode {

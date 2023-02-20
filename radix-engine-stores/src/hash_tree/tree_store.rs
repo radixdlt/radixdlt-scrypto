@@ -6,7 +6,7 @@ use sbor::*;
 pub use super::types::{Nibble, NibblePath, NodeKey, Version};
 use radix_engine_interface::api::types::{NodeModuleId, RENodeId, SubstateOffset};
 use radix_engine_interface::crypto::Hash;
-use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
+use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode};
 
 /// A physical tree node, to be used in the storage.
 #[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoSbor)]
@@ -155,7 +155,7 @@ impl SerializedInMemoryTreeStore {
     }
 }
 
-impl<P: Payload> ReadableTreeStore<P> for SerializedInMemoryTreeStore {
+impl<P: ScryptoDecode> ReadableTreeStore<P> for SerializedInMemoryTreeStore {
     fn get_node(&self, key: &NodeKey) -> Option<TreeNode<P>> {
         self.memory
             .get(&encode_key(key))
@@ -163,7 +163,7 @@ impl<P: Payload> ReadableTreeStore<P> for SerializedInMemoryTreeStore {
     }
 }
 
-impl<P: Payload> WriteableTreeStore<P> for SerializedInMemoryTreeStore {
+impl<P: ScryptoEncode> WriteableTreeStore<P> for SerializedInMemoryTreeStore {
     fn insert_node(&mut self, key: NodeKey, node: TreeNode<P>) {
         self.memory
             .insert(encode_key(&key), scrypto_encode(&node).unwrap());
