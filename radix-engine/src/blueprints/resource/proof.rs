@@ -1,4 +1,4 @@
-use crate::errors::{InterpreterError, InvokeError, RuntimeError};
+use crate::errors::{ApplicationError, InterpreterError, RuntimeError};
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::execution_trace::ProofSnapshot;
@@ -19,10 +19,91 @@ pub enum ProofError {
     /// The base proofs are not enough to cover the requested amount or non-fungible ids.
     InsufficientBaseProofs,
     /// Can't apply a non-fungible operation on fungible proofs.
-    NonFungibleOperationNotAllowed,
-    /// Can't apply a fungible operation on non-fungible proofs.
-    FungibleOperationNotAllowed,
+    UnsupportedNonFungibleOperation,
     InvalidRequestData(DecodeError),
+}
+
+#[derive(Debug)]
+pub enum ProofSubstate {
+    Fungible(FungibleProof),
+    NonFungible(NonFungibleProof),
+}
+
+impl From<FungibleProof> for ProofSubstate {
+    fn from(value: FungibleProof) -> Self {
+        Self::Fungible(value)
+    }
+}
+
+impl From<NonFungibleProof> for ProofSubstate {
+    fn from(value: NonFungibleProof) -> Self {
+        Self::NonFungible(value)
+    }
+}
+
+impl ProofSubstate {
+    pub fn change_to_unrestricted(&mut self) {
+        match self {
+            ProofSubstate::Fungible(f) => f.change_to_unrestricted(),
+            ProofSubstate::NonFungible(nf) => nf.change_to_unrestricted(),
+        }
+    }
+
+    pub fn change_to_restricted(&mut self) {
+        match self {
+            ProofSubstate::Fungible(f) => f.change_to_restricted(),
+            ProofSubstate::NonFungible(nf) => nf.change_to_restricted(),
+        }
+    }
+
+    pub fn resource_address(&self) -> ResourceAddress {
+        match self {
+            ProofSubstate::Fungible(f) => f.resource_address(),
+            ProofSubstate::NonFungible(nf) => nf.resource_address(),
+        }
+    }
+
+    pub fn total_amount(&self) -> Decimal {
+        match self {
+            ProofSubstate::Fungible(f) => f.total_amount(),
+            ProofSubstate::NonFungible(nf) => nf.total_amount(),
+        }
+    }
+
+    pub fn total_ids(&self) -> Option<&BTreeSet<NonFungibleLocalId>> {
+        match self {
+            ProofSubstate::Fungible(f) => None,
+            ProofSubstate::NonFungible(nf) => Some(nf.total_ids()),
+        }
+    }
+
+    pub fn is_restricted(&self) -> bool {
+        match self {
+            ProofSubstate::Fungible(f) => f.is_restricted(),
+            ProofSubstate::NonFungible(nf) => nf.is_restricted(),
+        }
+    }
+
+    pub fn clone_proof(&self) -> ProofSubstate {
+        match self {
+            ProofSubstate::Fungible(f) => f.clone_proof().into(),
+            ProofSubstate::NonFungible(nf) => nf.clone_proof().into(),
+        }
+    }
+
+    pub fn drop_proof(&mut self) {
+        match self {
+            ProofSubstate::Fungible(f) => f.drop_proof(),
+            ProofSubstate::NonFungible(nf) => nf.drop_proof(),
+        }
+    }
+
+    pub fn snapshot(&self) -> ProofSnapshot {
+        match self {
+            ProofSubstate::Fungible(f) => f.snapshot(),
+            ProofSubstate::NonFungible(nf) => nf.snapshot(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq, PartialOrd, Ord)]
@@ -32,7 +113,7 @@ pub enum ResourceContainerId {
 }
 
 #[derive(Debug)]
-pub struct FungibleProofSubstate {
+pub struct FungibleProof {
     /// The resource address.
     pub resource_address: ResourceAddress,
     /// Whether movement of this proof is restricted.
@@ -43,12 +124,12 @@ pub struct FungibleProofSubstate {
     pub evidence: BTreeMap<ResourceContainerId, (Rc<RefCell<FungibleResource>>, Decimal)>,
 }
 
-impl FungibleProofSubstate {
+impl FungibleProof {
     pub fn new(
         resource_address: ResourceAddress,
         total_locked: Decimal,
         evidence: BTreeMap<ResourceContainerId, (Rc<RefCell<FungibleResource>>, Decimal)>,
-    ) -> Result<FungibleProofSubstate, ProofError> {
+    ) -> Result<FungibleProof, ProofError> {
         if total_locked.is_zero() {
             return Err(ProofError::EmptyProofNotAllowed);
         }
@@ -62,11 +143,11 @@ impl FungibleProofSubstate {
     }
 
     fn compute_max_locked(
-        proofs: &[FungibleProofSubstate],
+        proofs: &[FungibleProof],
         resource_address: ResourceAddress,
     ) -> (Decimal, BTreeMap<ResourceContainerId, Decimal>) {
         // filter proofs by resource address and restricted flag
-        let proofs: Vec<&FungibleProofSubstate> = proofs
+        let proofs: Vec<&FungibleProof> = proofs
             .iter()
             .filter(|p| p.resource_address() == resource_address && !p.is_restricted())
             .collect();
@@ -91,11 +172,11 @@ impl FungibleProofSubstate {
         (total, per_container)
     }
 
-    pub fn compose(
-        proofs: &[FungibleProofSubstate],
+    pub fn compose_by_amount(
+        proofs: &[FungibleProof],
         resource_address: ResourceAddress,
         amount: Option<Decimal>,
-    ) -> Result<FungibleProofSubstate, ProofError> {
+    ) -> Result<FungibleProof, ProofError> {
         let (total_locked, mut per_container) = Self::compute_max_locked(proofs, resource_address);
         let amount = amount.unwrap_or(total_locked);
 
@@ -125,7 +206,7 @@ impl FungibleProofSubstate {
             }
         }
 
-        FungibleProofSubstate::new(resource_address, amount, evidence)
+        FungibleProof::new(resource_address, amount, evidence)
     }
 
     /// Makes a clone of this proof.
@@ -183,7 +264,7 @@ impl FungibleProofSubstate {
 }
 
 #[derive(Debug)]
-pub struct NonFungibleProofSubstate {
+pub struct NonFungibleProof {
     /// The resource address.
     pub resource_address: ResourceAddress,
     /// Whether movement of this proof is restricted.
@@ -200,7 +281,7 @@ pub struct NonFungibleProofSubstate {
     >,
 }
 
-impl NonFungibleProofSubstate {
+impl NonFungibleProof {
     pub fn new(
         resource_address: ResourceAddress,
         total_locked: BTreeSet<NonFungibleLocalId>,
@@ -211,7 +292,7 @@ impl NonFungibleProofSubstate {
                 BTreeSet<NonFungibleLocalId>,
             ),
         >,
-    ) -> Result<NonFungibleProofSubstate, ProofError> {
+    ) -> Result<NonFungibleProof, ProofError> {
         if total_locked.is_empty() {
             return Err(ProofError::EmptyProofNotAllowed);
         }
@@ -226,14 +307,14 @@ impl NonFungibleProofSubstate {
 
     /// Computes the locked amount or non-fungible IDs, in total and per resource container.
     pub fn compute_max_locked(
-        proofs: &[NonFungibleProofSubstate],
+        proofs: &[NonFungibleProof],
         resource_address: ResourceAddress,
     ) -> (
         BTreeSet<NonFungibleLocalId>,
         HashMap<ResourceContainerId, BTreeSet<NonFungibleLocalId>>,
     ) {
         // filter proofs by resource address and restricted flag
-        let proofs: Vec<&NonFungibleProofSubstate> = proofs
+        let proofs: Vec<&NonFungibleProof> = proofs
             .iter()
             .filter(|p| p.resource_address() == resource_address && !p.is_restricted())
             .collect();
@@ -259,10 +340,10 @@ impl NonFungibleProofSubstate {
     }
 
     pub fn compose_by_amount(
-        proofs: &[NonFungibleProofSubstate],
+        proofs: &[NonFungibleProof],
         resource_address: ResourceAddress,
         amount: Option<Decimal>,
-    ) -> Result<NonFungibleProofSubstate, ProofError> {
+    ) -> Result<NonFungibleProof, ProofError> {
         let (total_locked, mut per_container) = Self::compute_max_locked(proofs, resource_address);
         let total_amount = total_locked.len().into();
         let amount = amount.unwrap_or(total_amount);
@@ -280,10 +361,10 @@ impl NonFungibleProofSubstate {
     }
 
     pub fn compose_by_ids(
-        proofs: &[NonFungibleProofSubstate],
+        proofs: &[NonFungibleProof],
         resource_address: ResourceAddress,
         ids: Option<BTreeSet<NonFungibleLocalId>>,
-    ) -> Result<NonFungibleProofSubstate, ProofError> {
+    ) -> Result<NonFungibleProof, ProofError> {
         let (total_locked, mut per_container) = Self::compute_max_locked(proofs, resource_address);
         let ids = ids.unwrap_or(total_locked.clone());
 
@@ -293,7 +374,7 @@ impl NonFungibleProofSubstate {
 
         // Locked the max (or needed) ids from the containers, in the order that the containers were referenced.
         // TODO: observe the performance/feedback of this container selection algorithm and decide next steps
-        let mut evidence = HashMap::new();
+        let mut evidence = BTreeMap::new();
         let mut remaining = ids.clone();
         'outer: for proof in proofs {
             for (container_id, (container, _)) in &proof.evidence {
@@ -315,7 +396,7 @@ impl NonFungibleProofSubstate {
             }
         }
 
-        NonFungibleProofSubstate::new(resource_address, ids.clone(), evidence)
+        NonFungibleProof::new(resource_address, ids.clone(), evidence)
     }
 
     /// Makes a clone of this proof.
@@ -403,7 +484,7 @@ impl ProofBlueprint {
         )?;
         let substate_ref = api.kernel_get_substate_ref(handle)?;
         let proof = substate_ref.proof();
-        let cloned_proof = proof.clone();
+        let cloned_proof = proof.clone_proof();
 
         let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
         api.kernel_create_node(node_id, RENodeInit::Proof(cloned_proof), BTreeMap::new())?;
@@ -464,7 +545,9 @@ impl ProofBlueprint {
         )?;
         let substate_ref = api.kernel_get_substate_ref(handle)?;
         let proof = substate_ref.proof();
-        let ids = proof.total_ids()?;
+        let ids = proof.total_ids().ok_or(RuntimeError::ApplicationError(
+            ApplicationError::ProofError(ProofError::UnsupportedNonFungibleOperation),
+        ))?;
         Ok(IndexedScryptoValue::from_typed(&ids))
     }
 
@@ -492,6 +575,6 @@ impl ProofBlueprint {
         )?;
         let substate_ref = api.kernel_get_substate_ref(handle)?;
         let proof = substate_ref.proof();
-        Ok(IndexedScryptoValue::from_typed(&proof.resource_address))
+        Ok(IndexedScryptoValue::from_typed(&proof.resource_address()))
     }
 }

@@ -745,9 +745,9 @@ impl KernelModule for KernelModuleMixer {
     fn on_credit_cost_units<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         vault_id: VaultId,
-        mut fee: Resource,
+        mut fee: LiquidFungibleResource,
         contingent: bool,
-    ) -> Result<Resource, RuntimeError> {
+    ) -> Result<LiquidFungibleResource, RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             fee = KernelDebugModule::on_credit_cost_units(api, vault_id, fee, contingent)?;

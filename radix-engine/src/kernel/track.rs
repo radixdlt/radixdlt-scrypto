@@ -22,7 +22,7 @@ use crate::types::*;
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::logger::Level;
-use radix_engine_interface::blueprints::resource::{Resource, ResourceType};
+use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::crypto::hash;
 use sbor::rust::collections::*;
 
@@ -645,8 +645,7 @@ impl<'s> FinalizingTrack<'s> {
         let mut required = fee_summary.total_execution_cost_xrd
             + fee_summary.total_royalty_cost_xrd
             - fee_summary.bad_debt_xrd;
-        let mut fees: Resource =
-            Resource::new_empty(RADIX_TOKEN, ResourceType::Fungible { divisibility: 18 });
+        let mut fees: LiquidFungibleResource = LiquidFungibleResource::new_empty(RADIX_TOKEN, 18);
         for (vault_id, mut locked, contingent) in fee_summary.vault_locks.iter().cloned().rev() {
             let amount = if contingent {
                 if is_success {

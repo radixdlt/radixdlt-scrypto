@@ -156,7 +156,7 @@ impl AuthZoneBlueprint {
         let substate_ref = api.kernel_get_substate_ref(handle)?;
         let proof = substate_ref.proof();
         // Take control of the proof lock as the proof in the call frame will lose it's lock once dropped
-        let mut cloned_proof = proof.clone();
+        let mut cloned_proof = proof.clone_proof();
         cloned_proof.change_to_unrestricted();
 
         let mut substate_mut = api.kernel_get_substate_ref_mut(auth_zone_handle)?;
@@ -185,25 +185,12 @@ impl AuthZoneBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let resource_type = {
-            let resource_id = RENodeId::Global(Address::Resource(input.resource_address));
-            let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-            let resource_handle = api.kernel_lock_substate(
-                resource_id,
-                NodeModuleId::SELF,
-                offset,
-                LockFlags::read_only(),
-            )?;
-            let substate_ref = api.kernel_get_substate_ref(resource_handle)?;
-            substate_ref.resource_manager().resource_type
-        };
-
         let proof = {
             let mut substate_mut = api.kernel_get_substate_ref_mut(auth_zone_handle)?;
             let auth_zone_stack = substate_mut.auth_zone_stack();
             let proof = auth_zone_stack
                 .cur_auth_zone()
-                .create_proof(input.resource_address, resource_type)?;
+                .create_proof_by_amount(input.resource_address, None)?;
             proof
         };
 
@@ -233,27 +220,12 @@ impl AuthZoneBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let resource_type = {
-            let resource_id = RENodeId::Global(Address::Resource(input.resource_address));
-            let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-            let resource_handle = api.kernel_lock_substate(
-                resource_id,
-                NodeModuleId::SELF,
-                offset,
-                LockFlags::read_only(),
-            )?;
-            let substate_ref = api.kernel_get_substate_ref(resource_handle)?;
-            substate_ref.resource_manager().resource_type
-        };
-
         let proof = {
             let mut substate_mut = api.kernel_get_substate_ref_mut(auth_zone_handle)?;
             let auth_zone_stack = substate_mut.auth_zone_stack();
-            let proof = auth_zone_stack.cur_auth_zone().create_proof_by_amount(
-                input.amount,
-                input.resource_address,
-                resource_type,
-            )?;
+            let proof = auth_zone_stack
+                .cur_auth_zone()
+                .create_proof_by_amount(input.resource_address, Some(input.amount))?;
 
             proof
         };

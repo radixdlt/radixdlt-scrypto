@@ -49,10 +49,7 @@ impl BucketSubstate {
         self.borrow_resource_mut().take_by_ids(ids)
     }
 
-    pub fn create_proof(
-        &mut self,
-        self_bucket_id: BucketId,
-    ) -> Result<FungibleProofSubstate, ProofError> {
+    pub fn create_proof(&mut self, self_bucket_id: BucketId) -> Result<ProofSubstate, ProofError> {
         let container_id = ResourceContainerId::Bucket(self_bucket_id);
         match self.resource_type() {
             ResourceType::Fungible { .. } => {
@@ -71,7 +68,7 @@ impl BucketSubstate {
         &mut self,
         amount: Decimal,
         container_id: ResourceContainerId,
-    ) -> Result<FungibleProofSubstate, ProofError> {
+    ) -> Result<ProofSubstate, ProofError> {
         // lock the specified amount
         let locked_amount_or_ids = self
             .borrow_resource_mut()
@@ -84,7 +81,7 @@ impl BucketSubstate {
             container_id,
             (self.resource.clone(), locked_amount_or_ids.clone()),
         );
-        FungibleProofSubstate::new(
+        ProofSubstate::new(
             self.resource_address(),
             self.resource_type(),
             locked_amount_or_ids,
@@ -96,7 +93,7 @@ impl BucketSubstate {
         &mut self,
         ids: &BTreeSet<NonFungibleLocalId>,
         container_id: ResourceContainerId,
-    ) -> Result<FungibleProofSubstate, ProofError> {
+    ) -> Result<ProofSubstate, ProofError> {
         // lock the specified id set
         let locked_amount_or_ids = self
             .borrow_resource_mut()
@@ -109,7 +106,7 @@ impl BucketSubstate {
             container_id,
             (self.resource.clone(), locked_amount_or_ids.clone()),
         );
-        FungibleProofSubstate::new(
+        ProofSubstate::new(
             self.resource_address(),
             self.resource_type(),
             locked_amount_or_ids,

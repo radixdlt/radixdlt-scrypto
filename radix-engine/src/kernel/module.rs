@@ -194,7 +194,7 @@ pub trait KernelModule {
         _vault_id: VaultId,
         locked_fee: LiquidFungibleResource,
         _contingent: bool,
-    ) -> Result<Resource, RuntimeError> {
+    ) -> Result<LiquidFungibleResource, RuntimeError> {
         Ok(locked_fee)
     }
 

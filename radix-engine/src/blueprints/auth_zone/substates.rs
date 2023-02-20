@@ -2,24 +2,21 @@ use super::AuthZoneError;
 use crate::errors::InvokeError;
 use crate::system::kernel_modules::auth::MethodAuthorizationError::*;
 use crate::system::kernel_modules::auth::*;
-use crate::{blueprints::resource::FungibleProofSubstate, types::*};
+use crate::{blueprints::resource::ProofSubstate, types::*};
 use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::ops::Fn;
 
 struct AuthVerification;
 
 impl AuthVerification {
-    pub fn proof_matches(
-        resource_rule: &HardResourceOrNonFungible,
-        proof: &FungibleProofSubstate,
-    ) -> bool {
+    pub fn proof_matches(resource_rule: &HardResourceOrNonFungible, proof: &ProofSubstate) -> bool {
         match resource_rule {
             HardResourceOrNonFungible::NonFungible(non_fungible_global_id) => {
                 let proof_resource_address = proof.resource_address();
                 proof_resource_address == non_fungible_global_id.resource_address()
                     && match proof.total_ids() {
-                        Ok(ids) => ids.contains(non_fungible_global_id.local_id()),
-                        Err(_) => false,
+                        Some(ids) => ids.contains(non_fungible_global_id.local_id()),
+                        NOne => false,
                     }
             }
             HardResourceOrNonFungible::Resource(resource_address) => {
@@ -227,7 +224,7 @@ pub struct AuthZoneStackSubstate {
 
 impl AuthZoneStackSubstate {
     pub fn new(
-        proofs: Vec<FungibleProofSubstate>,
+        proofs: Vec<ProofSubstate>,
         virtual_resources: BTreeSet<ResourceAddress>,
         virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
     ) -> Self {
@@ -292,7 +289,7 @@ impl AuthZoneStackSubstate {
 
 #[derive(Debug)]
 pub struct AuthZone {
-    proofs: Vec<FungibleProofSubstate>,
+    proofs: Vec<ProofSubstate>,
     // Virtualized resources, note that one cannot create proofs with virtual resources but only be used for AuthZone checks
     virtual_resources: BTreeSet<ResourceAddress>,
     virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
@@ -315,7 +312,7 @@ impl AuthZone {
     }
 
     fn new_with_virtual_proofs(
-        proofs: Vec<FungibleProofSubstate>,
+        proofs: Vec<ProofSubstate>,
         virtual_resources: BTreeSet<ResourceAddress>,
         virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
         barrier: bool,
@@ -329,7 +326,7 @@ impl AuthZone {
         }
     }
 
-    pub fn pop(&mut self) -> Result<FungibleProofSubstate, InvokeError<AuthZoneError>> {
+    pub fn pop(&mut self) -> Result<ProofSubstate, InvokeError<AuthZoneError>> {
         if self.proofs.is_empty() {
             return Err(InvokeError::SelfError(AuthZoneError::EmptyAuthZone));
         }
@@ -337,18 +334,18 @@ impl AuthZone {
         Ok(self.proofs.remove(self.proofs.len() - 1))
     }
 
-    pub fn push(&mut self, proof: FungibleProofSubstate) {
+    pub fn push(&mut self, proof: ProofSubstate) {
         self.proofs.push(proof);
     }
 
-    pub fn drain(&mut self) -> Vec<FungibleProofSubstate> {
+    pub fn drain(&mut self) -> Vec<ProofSubstate> {
         self.proofs.drain(0..).collect()
     }
 
     pub fn clear(&mut self) {
         loop {
             if let Some(mut proof) = self.proofs.pop() {
-                proof.drop();
+                proof.drop_proof();
             } else {
                 break;
             }
@@ -358,25 +355,18 @@ impl AuthZone {
     pub fn create_proof(
         &self,
         resource_address: ResourceAddress,
-        resource_type: ResourceType,
-    ) -> Result<FungibleProofSubstate, InvokeError<AuthZoneError>> {
-        FungibleProofSubstate::compose(&self.proofs, resource_address, resource_type)
+    ) -> Result<ProofSubstate, InvokeError<AuthZoneError>> {
+        ProofSubstate::compose(&self.proofs, resource_address, resource_type)
             .map_err(|e| InvokeError::SelfError(AuthZoneError::ProofError(e)))
     }
 
     pub fn create_proof_by_amount(
         &self,
-        amount: Decimal,
         resource_address: ResourceAddress,
-        resource_type: ResourceType,
-    ) -> Result<FungibleProofSubstate, InvokeError<AuthZoneError>> {
-        FungibleProofSubstate::compose_by_amount(
-            &self.proofs,
-            amount,
-            resource_address,
-            resource_type,
-        )
-        .map_err(|e| InvokeError::SelfError(AuthZoneError::ProofError(e)))
+        amount: Option<Decimal>,
+    ) -> Result<ProofSubstate, InvokeError<AuthZoneError>> {
+        ProofSubstate::compose_by_amount(&self.proofs, amount, resource_address, resource_type)
+            .map_err(|e| InvokeError::SelfError(AuthZoneError::ProofError(e)))
     }
 
     pub fn create_proof_by_ids(
@@ -384,8 +374,8 @@ impl AuthZone {
         ids: &BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
         resource_type: ResourceType,
-    ) -> Result<FungibleProofSubstate, InvokeError<AuthZoneError>> {
-        FungibleProofSubstate::compose_by_ids(&self.proofs, ids, resource_address, resource_type)
+    ) -> Result<ProofSubstate, InvokeError<AuthZoneError>> {
+        ProofSubstate::compose_by_ids(&self.proofs, ids, resource_address, resource_type)
             .map_err(|e| InvokeError::SelfError(AuthZoneError::ProofError(e)))
     }
 }

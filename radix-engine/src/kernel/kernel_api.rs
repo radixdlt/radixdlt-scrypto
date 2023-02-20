@@ -1,4 +1,11 @@
+use super::actor::ResolvedActor;
+use super::call_frame::CallFrameUpdate;
+use super::call_frame::RENodeVisibilityOrigin;
+use super::heap::HeapRENode;
+use super::interpreters::ScryptoInterpreter;
+use super::module_mixer::KernelModuleMixer;
 use crate::errors::*;
+use crate::system::kernel_modules::execution_trace::BucketSnapshot;
 use crate::system::kernel_modules::execution_trace::ProofSnapshot;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
@@ -15,14 +22,6 @@ use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientDerefApi;
-use radix_engine_interface::blueprints::resource::*;
-
-use super::actor::ResolvedActor;
-use super::call_frame::CallFrameUpdate;
-use super::call_frame::RENodeVisibilityOrigin;
-use super::heap::HeapRENode;
-use super::interpreters::ScryptoInterpreter;
-use super::module_mixer::KernelModuleMixer;
 
 bitflags! {
     #[derive(Sbor)]
@@ -164,7 +163,7 @@ pub trait KernelInternalApi {
     fn kernel_get_current_actor(&self) -> ResolvedActor;
 
     /* Super unstable interface, specifically for `ExecutionTrace` kernel module */
-    fn kernel_read_bucket(&mut self, bucket_id: BucketId) -> Option<Resource>;
+    fn kernel_read_bucket(&mut self, bucket_id: BucketId) -> Option<BucketSnapshot>;
     fn kernel_read_proof(&mut self, proof_id: BucketId) -> Option<ProofSnapshot>;
 }
 

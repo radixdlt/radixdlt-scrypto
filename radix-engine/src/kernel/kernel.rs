@@ -3,7 +3,7 @@ use crate::blueprints::identity::Identity;
 use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::system::global::GlobalSubstate;
-use crate::system::kernel_modules::execution_trace::ProofSnapshot;
+use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
@@ -31,8 +31,8 @@ use radix_engine_interface::blueprints::epoch_manager::{
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::logger::LOGGER_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::{
-    require, AccessRule, AccessRuleKey, AccessRules, Bucket, Resource, BUCKET_BLUEPRINT,
-    PROOF_BLUEPRINT, RESOURCE_MANAGER_BLUEPRINT, VAULT_BLUEPRINT, WORKTOP_BLUEPRINT,
+    require, AccessRule, AccessRuleKey, AccessRules, Bucket, BUCKET_BLUEPRINT, PROOF_BLUEPRINT,
+    RESOURCE_MANAGER_BLUEPRINT, VAULT_BLUEPRINT, WORKTOP_BLUEPRINT,
 };
 use radix_engine_interface::blueprints::transaction_runtime::TRANSACTION_RUNTIME_BLUEPRINT;
 use radix_engine_interface::rule;
@@ -304,7 +304,7 @@ where
                 )?;
                 let mut substate_ref_mut = api.kernel_get_substate_ref_mut(handle)?;
                 let proof = substate_ref_mut.proof();
-                proof.drop();
+                proof.drop_proof();
                 api.kernel_drop_lock(handle)?;
                 Ok(())
             }
@@ -940,7 +940,7 @@ where
         self.current_frame.actor.clone()
     }
 
-    fn kernel_read_bucket(&mut self, bucket_id: BucketId) -> Option<Resource> {
+    fn kernel_read_bucket(&mut self, bucket_id: BucketId) -> Option<BucketSnapshot> {
         self.heap
             .get_substate(
                 RENodeId::Bucket(bucket_id),
