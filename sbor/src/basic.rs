@@ -131,7 +131,7 @@ impl<'de, R: PayloadTraverser<'de, NoCustomValueKind>> CustomTraverser<'de, R>
 /// Creates a traverser from the buffer
 pub fn basic_traverser<'b>(buf: &'b [u8]) -> Result<BasicTraverser<'b>, DecodeError> {
     let mut traverser = BasicTraverser::new(buf);
-    traverser.start_and_check_payload_prefix(BASIC_SBOR_V1_PAYLOAD_PREFIX)?;
+    traverser.read_and_check_payload_prefix(BASIC_SBOR_V1_PAYLOAD_PREFIX)?;
     Ok(traverser)
 }
 

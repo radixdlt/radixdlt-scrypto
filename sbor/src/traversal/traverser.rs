@@ -29,6 +29,8 @@ pub struct CurrentChild<X: CustomValueKind> {
     pub current_child_index: usize,
 }
 
+/// The `VecTraverser` is for streamed decoding of a payload.
+/// It turns payload decoding into a pull-based event stream
 pub struct VecTraverser<
     'de,
     X: CustomValueKind,
@@ -101,7 +103,7 @@ impl<
         }
     }
 
-    pub fn start_and_check_payload_prefix(
+    pub fn read_and_check_payload_prefix(
         &mut self,
         expected_prefix: u8,
     ) -> Result<(), DecodeError> {
@@ -153,11 +155,15 @@ impl<
 
     fn exit_child(&mut self) -> TraversalEvent<'de, X, C::CustomTraversalEvent> {
         let child = self.stack.pop().unwrap();
+        let resultant_stack_depth = self.get_stack_depth();
+        if resultant_stack_depth == 0 {
+            err_to_event!(self, self.decoder.check_end());
+        }
         TraversalEvent::EndOwnerValue(VisitFullOwnerValue {
             header: child.owner_header,
             start_offset: child.start_offset,
             end_offset: self.get_offset(),
-            stack_depth: self.get_stack_depth(),
+            stack_depth: resultant_stack_depth,
         })
     }
 
@@ -315,7 +321,6 @@ impl<
 #[cfg(test)]
 mod tests {
     use crate::rust::prelude::*;
-    use crate::*;
 
     use super::*;
 
