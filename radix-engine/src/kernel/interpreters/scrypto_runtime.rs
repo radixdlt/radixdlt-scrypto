@@ -131,6 +131,8 @@ where
         royalty_config: Vec<u8>,
         metadata: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let abi = scrypto_decode::<BTreeMap<String, BlueprintAbi>>(&abi)
+            .map_err(WasmRuntimeError::InvalidAbi)?;
         let access_rules = scrypto_decode::<AccessRules>(&access_rules)
             .map_err(WasmRuntimeError::InvalidAccessRulesChain)?;
         let royalty_config = scrypto_decode::<BTreeMap<String, RoyaltyConfig>>(&royalty_config)

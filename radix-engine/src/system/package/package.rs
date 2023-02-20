@@ -87,12 +87,6 @@ impl Package {
         let access_rules = ObjectAccessRulesChainSubstate {
             access_rules_chain: vec![input.access_rules],
         };
-        let blueprint_abis =
-            scrypto_decode::<BTreeMap<String, BlueprintAbi>>(&input.abi).map_err(|e| {
-                RuntimeError::ApplicationError(ApplicationError::PackageError(
-                    PackageError::InvalidAbi(e),
-                ))
-            })?;
 
         let mut node_modules = BTreeMap::new();
         node_modules.insert(
@@ -114,7 +108,7 @@ impl Package {
         let info = PackageInfoSubstate {
             dependent_resources: input.dependent_resources.into_iter().collect(),
             dependent_components: input.dependent_components.into_iter().collect(),
-            blueprint_abis,
+            blueprint_abis: input.abi,
         };
         let code = NativeCodeSubstate {
             native_package_code_id: input.native_package_code_id,
@@ -154,15 +148,8 @@ impl Package {
 
         let royalty_vault_id = ResourceManager(RADIX_TOKEN).new_vault(api)?.vault_id();
 
-        let blueprint_abis =
-            scrypto_decode::<BTreeMap<String, BlueprintAbi>>(&input.abi).map_err(|e| {
-                RuntimeError::ApplicationError(ApplicationError::PackageError(
-                    PackageError::InvalidAbi(e),
-                ))
-            })?;
-
         WasmValidator::default()
-            .validate(&input.code, &blueprint_abis)
+            .validate(&input.code, &input.abi)
             .map_err(|e| {
                 RuntimeError::ApplicationError(ApplicationError::PackageError(
                     PackageError::InvalidWasm(e),
@@ -171,7 +158,7 @@ impl Package {
 
         let wasm_code_substate = WasmCodeSubstate { code: input.code };
         let package_info_substate = PackageInfoSubstate {
-            blueprint_abis,
+            blueprint_abis: input.abi,
             dependent_resources: BTreeSet::new(),
             dependent_components: BTreeSet::new(),
         };

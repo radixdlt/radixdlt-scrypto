@@ -69,7 +69,7 @@ pub fn create_genesis(
             args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: METADATA_CODE_ID,
-                abi: scrypto_encode(&MetadataAbi::blueprint_abis()).unwrap(),
+                abi: MetadataAbi::blueprint_abis(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
@@ -93,7 +93,7 @@ pub fn create_genesis(
             args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: ROYALTY_CODE_ID,
-                abi: scrypto_encode(&RoyaltyAbi::blueprint_abis()).unwrap(),
+                abi: RoyaltyAbi::blueprint_abis(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
@@ -116,7 +116,7 @@ pub fn create_genesis(
             args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: ACCESS_RULES_CODE_ID,
-                abi: scrypto_encode(&AccessRulesAbi::blueprint_abis()).unwrap(),
+                abi: AccessRulesAbi::blueprint_abis(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
@@ -139,7 +139,7 @@ pub fn create_genesis(
             args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: RESOURCE_MANAGER_PACKAGE_CODE_ID,
-                abi: scrypto_encode(&ResourceManagerAbi::blueprint_abis()).unwrap(),
+                abi: ResourceManagerAbi::blueprint_abis(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
@@ -213,7 +213,7 @@ pub fn create_genesis(
             function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                abi: scrypto_encode(&IdentityAbi::blueprint_abis()).unwrap(),
+                abi: IdentityAbi::blueprint_abis(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
                 native_package_code_id: IDENTITY_PACKAGE_CODE_ID,
@@ -236,7 +236,7 @@ pub fn create_genesis(
             function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                abi: scrypto_encode(&EpochManagerAbi::blueprint_abis()).unwrap(),
+                abi: EpochManagerAbi::blueprint_abis(),
                 native_package_code_id: EPOCH_MANAGER_PACKAGE_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
@@ -259,7 +259,7 @@ pub fn create_genesis(
             function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                abi: scrypto_encode(&ClockAbi::blueprint_abis()).unwrap(),
+                abi: ClockAbi::blueprint_abis(),
                 native_package_code_id: CLOCK_PACKAGE_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
@@ -282,7 +282,7 @@ pub fn create_genesis(
             function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                abi: scrypto_encode(&AccountAbi::blueprint_abis()).unwrap(),
+                abi: AccountAbi::blueprint_abis(),
                 native_package_code_id: ACCOUNT_PACKAGE_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
@@ -307,7 +307,7 @@ pub fn create_genesis(
             function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                abi: scrypto_encode(&AccessControllerAbi::blueprint_abis()).unwrap(),
+                abi: AccessControllerAbi::blueprint_abis(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
                 native_package_code_id: ACCESS_CONTROLLER_PACKAGE_CODE_ID,
@@ -330,7 +330,7 @@ pub fn create_genesis(
             function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                abi: scrypto_encode(&TransactionRuntimeAbi::blueprint_abis()).unwrap(),
+                abi: TransactionRuntimeAbi::blueprint_abis(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
                 native_package_code_id: LOGGER_CODE_ID,
@@ -355,7 +355,7 @@ pub fn create_genesis(
             function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                abi: scrypto_encode(&LoggerAbi::blueprint_abis()).unwrap(),
+                abi: LoggerAbi::blueprint_abis(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
                 native_package_code_id: TRANSACTION_RUNTIME_CODE_ID,
@@ -378,7 +378,7 @@ pub fn create_genesis(
             function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                abi: scrypto_encode(&AuthZoneAbi::blueprint_abis()).unwrap(),
+                abi: AuthZoneAbi::blueprint_abis(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
                 native_package_code_id: AUTH_ZONE_CODE_ID,
@@ -468,7 +468,7 @@ pub fn create_genesis(
             args: manifest_encode(&PackageLoaderPublishWasmInput {
                 package_address: Some(package_address),
                 code: faucet_code, // TODO: Use blob here instead?
-                abi: faucet_abi,   // TODO: Use blob here instead?
+                abi: scrypto_decode(&faucet_abi).unwrap(), // TODO: Use blob here instead?
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll),

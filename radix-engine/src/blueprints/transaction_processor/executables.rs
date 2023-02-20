@@ -5,6 +5,7 @@ use crate::kernel::actor::ResolvedActor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi};
 use crate::system::node::RENodeInit;
+use crate::system::package::PackageError;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
@@ -26,13 +27,13 @@ use radix_engine_interface::api::ClientComponentApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::IndexedScryptoValue;
 use sbor::rust::borrow::Cow;
-use transaction::data::{manifest_decode, manifest_encode};
 use transaction::data::model::*;
 use transaction::data::to_address;
 use transaction::data::transform;
 use transaction::data::ManifestCustomValue;
 use transaction::data::ManifestValue;
 use transaction::data::TransformHandler;
+use transaction::data::{manifest_decode, manifest_encode};
 use transaction::errors::ManifestIdAllocationError;
 use transaction::model::*;
 use transaction::validation::*;
@@ -469,6 +470,11 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 } => {
                     let code = processor.get_blob(&code)?;
                     let abi = processor.get_blob(&abi)?;
+                    let abi = scrypto_decode(abi).map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::PackageError(
+                            PackageError::InvalidAbi(e),
+                        ))
+                    })?;
 
                     // TODO: remove clone by allowing invocation to have references, like in TransactionProcessorRunInvocation.
                     let result = api.call_function(
@@ -478,7 +484,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         scrypto_encode(&PackageLoaderPublishWasmInput {
                             package_address: None,
                             code: code.clone(),
-                            abi: abi.clone(),
+                            abi,
                             access_rules: access_rules.clone(),
                             royalty_config: royalty_config.clone(),
                             metadata: metadata.clone(),

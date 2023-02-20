@@ -113,7 +113,7 @@ where
     fn new_package(
         &mut self,
         code: Vec<u8>,
-        abi: Vec<u8>,
+        abi: BTreeMap<String, BlueprintAbi>,
         access_rules: AccessRules,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
@@ -124,11 +124,11 @@ where
             PACKAGE_LOADER_PUBLISH_WASM_IDENT,
             scrypto_encode(&PackageLoaderPublishWasmInput {
                 package_address: None,
-                code: code.clone().clone(),
-                abi: abi.clone().clone(),
-                access_rules: access_rules.clone(),
-                royalty_config: royalty_config.clone(),
-                metadata: metadata.clone(),
+                code,
+                abi,
+                access_rules,
+                royalty_config,
+                metadata,
             })
             .unwrap(),
         )?;

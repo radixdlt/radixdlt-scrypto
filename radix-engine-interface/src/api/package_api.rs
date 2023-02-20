@@ -8,7 +8,7 @@ pub trait ClientPackageApi<E> {
     fn new_package(
         &mut self,
         code: Vec<u8>,
-        abi: Vec<u8>,
+        abi: BTreeMap<String, BlueprintAbi>,
         access_rules: AccessRules,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,

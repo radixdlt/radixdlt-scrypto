@@ -9,6 +9,7 @@ use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
 use sbor::rust::collections::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
+use scrypto_abi::BlueprintAbi;
 
 #[derive(Debug, Sbor)]
 pub enum ClientApiError {
@@ -136,7 +137,7 @@ impl ClientPackageApi<ClientApiError> for ScryptoEnv {
     fn new_package(
         &mut self,
         code: Vec<u8>,
-        abi: Vec<u8>,
+        abi: BTreeMap<String, BlueprintAbi>,
         access_rules: AccessRules,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
