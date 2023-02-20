@@ -1466,7 +1466,7 @@ mod tests {
         AccessRule, AccessRules, NonFungibleIdType, ResourceMethodAuthKey,
     };
     use radix_engine_interface::network::NetworkDefinition;
-    use radix_engine_interface::pdec;
+    use radix_engine_interface::{dec, pdec};
 
     #[macro_export]
     macro_rules! generate_value_ok {
@@ -1564,7 +1564,7 @@ mod tests {
             Value::Tuple {
                 fields: vec![
                     Value::Custom {
-                        value: ScryptoCustomValue::Decimal(Decimal::from_str("1").unwrap())
+                        value: ScryptoCustomValue::Decimal(dec!("1"))
                     },
                     Value::Custom {
                         value: ScryptoCustomValue::Hash(
@@ -1727,7 +1727,7 @@ mod tests {
             r#"MINT_FUNGIBLE ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak") Decimal("100");"#,
             BasicInstruction::MintFungible {
                 resource_address: resource,
-                amount: Decimal::from_str("100").unwrap()
+                amount: dec!("100")
             },
         );
         generate_instruction_ok!(
@@ -1737,7 +1737,7 @@ mod tests {
                 entries: BTreeMap::from([(
                     NonFungibleLocalId::integer(1),
                     (
-                        args!(String::from("Hello World"), Decimal::from("12")),
+                        args!(String::from("Hello World"), dec!("12")),
                         args!(12u8, 19u128)
                     )
                 )])
@@ -1797,7 +1797,7 @@ mod tests {
                     entries: BTreeMap::from([(
                         NonFungibleLocalId::integer(1),
                         (
-                            args!(String::from("Hello World"), Decimal::from("12")),
+                            args!(String::from("Hello World"), dec!("12")),
                             args!(12u8, 19u128)
                         )
                     )]),
@@ -1885,7 +1885,7 @@ mod tests {
             BasicInstruction::MintUuidNonFungible {
                 resource_address: resource,
                 entries: Vec::from([(
-                    args!(String::from("Hello World"), Decimal::from("12")),
+                    args!(String::from("Hello World"), dec!("12")),
                     args!(12u8, 19u128)
                 )])
             },

@@ -144,6 +144,12 @@ pub trait CheckedSub {
         Self: Sized;
 }
 
+pub trait CheckedMul {
+    fn checked_mul(self, other: Self) -> Option<Self>
+    where
+        Self: Sized;
+}
+
 macro_rules! forward_ref_unop {
     (impl $imp:ident, $method:ident for $t:ty) => {
         impl $imp for &$t {
@@ -342,6 +348,14 @@ macro_rules! op_impl {
                 {
                     fn checked_sub(self, other: Self) -> Option<Self> {
                         let opt = self.0.checked_sub(other.0);
+                        opt.map(|v| Self(v))
+                    }
+                }
+
+                impl CheckedMul for $t
+                {
+                    fn checked_mul(self, other: Self) -> Option<Self> {
+                        let opt = self.0.checked_mul(other.0);
                         opt.map(|v| Self(v))
                     }
                 }
