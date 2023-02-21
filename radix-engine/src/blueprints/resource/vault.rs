@@ -453,6 +453,16 @@ impl VaultBlueprint {
         let input: VaultLockFeeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
+        let resource_address = VaultNode::get_info(receiver, api)?.0;
+
+        // Check resource address
+        if resource_address != RADIX_TOKEN {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::LockFeeNotRadixToken),
+            ));
+        }
+
+        // Lock the substate (with special flags)
         let vault_handle = api.kernel_lock_substate(
             receiver,
             NodeModuleId::SELF,
@@ -463,17 +473,10 @@ impl VaultBlueprint {
         // Take by amount
         let fee = {
             let mut substate_mut = api.kernel_get_substate_ref_mut(vault_handle)?;
-            let vault = substate_mut.vault_info();
-
-            // Check resource and take amount
-            if vault.resource_address() != RADIX_TOKEN {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::VaultError(VaultError::LockFeeNotRadixToken),
-                ));
-            }
+            let vault = substate_mut.vault_liquid_fungible();
 
             // Take fee from the vault
-            vault.take(input.amount).map_err(|_| {
+            vault.take_by_amount(input.amount).map_err(|_| {
                 RuntimeError::ApplicationError(ApplicationError::VaultError(
                     VaultError::LockFeeInsufficientBalance,
                 ))
@@ -481,17 +484,13 @@ impl VaultBlueprint {
         };
 
         // Credit cost units
-        let changes: Resource = api.credit_cost_units(receiver.into(), fee, input.contingent)?;
+        let changes = api.credit_cost_units(receiver.into(), fee, input.contingent)?;
 
         // Keep changes
         {
             let mut substate_mut = api.kernel_get_substate_ref_mut(vault_handle)?;
-            let vault = substate_mut.vault_info();
-            vault.put(BucketSubstate::new(changes)).map_err(|e| {
-                RuntimeError::ApplicationError(ApplicationError::VaultError(
-                    VaultError::ResourceError(e),
-                ))
-            })?;
+            let vault = substate_mut.vault_liquid_fungible();
+            vault.put(changes).expect("Failed to put fee changes");
         }
 
         Ok(IndexedScryptoValue::from_typed(&()))
@@ -511,9 +510,25 @@ impl VaultBlueprint {
         let input: VaultRecallInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let bucket = Self::take_internal(receiver, input.amount, api)?;
+        let taken = VaultNode::take(receiver, input.amount, api)?;
+        let info = BucketInfoSubstate {
+            resource_address: taken.resource_address(),
+            resource_type: taken.resource_type(),
+        };
 
-        Ok(IndexedScryptoValue::from_typed(&bucket))
+        // Create node
+        let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
+        api.kernel_create_node(
+            node_id,
+            match taken {
+                LiquidResource::Fungible(f) => RENodeInit::FungibleBucket(info, f),
+                LiquidResource::NonFungible(nf) => RENodeInit::NonFungibleBucket(info, nf),
+            },
+            BTreeMap::new(),
+        )?;
+        let bucket_id = node_id.into();
+
+        Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
 
     pub(crate) fn recall_non_fungibles<Y>(
@@ -530,10 +545,22 @@ impl VaultBlueprint {
         let input: VaultRecallNonFungiblesInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let bucket =
-            Self::take_non_fungibles_internal(receiver, input.non_fungible_local_ids, api)?;
+        let taken = VaultNode::take_non_fungibles(receiver, &input.non_fungible_local_ids, api)?;
+        let info = BucketInfoSubstate {
+            resource_address: taken.resource_address(),
+            resource_type: taken.resource_type(),
+        };
 
-        Ok(IndexedScryptoValue::from_typed(&bucket))
+        // Create node
+        let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
+        api.kernel_create_node(
+            node_id,
+            RENodeInit::NonFungibleBucket(info, taken),
+            BTreeMap::new(),
+        )?;
+        let bucket_id = node_id.into();
+
+        Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
 
     pub(crate) fn create_proof<Y>(

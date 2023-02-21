@@ -1584,6 +1584,13 @@ impl<'a> SubstateRefMut<'a> {
         }
     }
 
+    pub fn vault_liquid_fungible(&mut self) -> &mut LiquidFungibleResource {
+        match self {
+            SubstateRefMut::VaultLiquidFungible(value) => *value,
+            _ => panic!("Not a vault"),
+        }
+    }
+
     pub fn proof(&mut self) -> &mut ProofSubstate {
         match self {
             SubstateRefMut::Proof(value) => *value,
