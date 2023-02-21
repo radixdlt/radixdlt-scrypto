@@ -10,7 +10,7 @@ use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::{
     builder::ManifestBuilder,
-    data::{manifest_args, ManifestExpression},
+    data::manifest_args,
     model::TestTransaction,
 };
 
@@ -103,31 +103,25 @@ fn transaction_limit_memory_exceeded() {
 fn transaction_limit_exceeded_substate_reads_should_fail() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("tests/blueprints/transaction_limits");
 
     // Act
-    let mut builder = ManifestBuilder::new();
-    builder.lock_fee(account, 100u32.into());
-    builder.withdraw_from_account(account, RADIX_TOKEN, 100u32.into());
-    for _ in 0..400 {
-        builder.take_from_worktop_by_amount(1.into(), RADIX_TOKEN, |builder, bid| {
-            builder.return_to_worktop(bid)
-        });
-    }
-    builder.call_method(
-        account,
-        "deposit_batch",
-        manifest_args!(ManifestExpression::EntireWorktop),
-    );
-    let manifest = builder.build();
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(
+            package_address,
+            "TransactionLimitTest",
+            "read_kv_stores",
+            manifest_args!(100 as u32),
+        )
+        .build();
 
     let transactions = TestTransaction::new(manifest, 10, DEFAULT_COST_UNIT_LIMIT);
-    let executable =
-        transactions.get_executable(vec![NonFungibleGlobalId::from_public_key(&public_key)]);
+    let executable = transactions.get_executable(vec![]);
     let fee_config = FeeReserveConfig::default();
     let mut execution_config = ExecutionConfig::default();
-    // extend max writes count to let the substate reads count to exceed the limit
-    execution_config.max_substate_writes_per_transaction = 10000;
+    // lower substate reads limit to avoid Fee limit transaction result
+    execution_config.max_substate_reads_per_transaction = 150;
     let receipt =
         test_runner.execute_transaction_with_config(executable, &fee_config, &execution_config);
 
@@ -150,7 +144,7 @@ fn transaction_limit_exceeded_substate_writes_should_fail() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 1000.into())
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
             "TransactionLimitTest",
@@ -163,6 +157,7 @@ fn transaction_limit_exceeded_substate_writes_should_fail() {
     let executable = transactions.get_executable(vec![]);
     let fee_config = FeeReserveConfig::default();
     let mut execution_config = ExecutionConfig::default();
+    // lower substate writes limit to avoid Fee limit transaction result
     execution_config.max_substate_writes_per_transaction = 100;
     let receipt =
         test_runner.execute_transaction_with_config(executable, &fee_config, &execution_config);

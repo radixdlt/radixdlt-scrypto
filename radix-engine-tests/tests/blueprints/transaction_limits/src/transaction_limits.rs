@@ -18,6 +18,16 @@ mod transaction_limits {
             TransactionLimitTest { kv_store }.instantiate().globalize()
         }
 
+        pub fn read_kv_stores(n: u32) -> ComponentAddress {
+            let kv_store = KeyValueStore::new();
+            kv_store.insert(0, 0);
+            for i in 0..n {
+                kv_store.get(&0);
+            }
+
+            TransactionLimitTest { kv_store }.instantiate().globalize()
+        }
+
         pub fn recursive_with_memory(n: u32, m: usize) {
             if n > 1 {
                 let _v: Vec<u8> = Vec::with_capacity(m);
