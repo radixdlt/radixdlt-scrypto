@@ -99,8 +99,10 @@ impl VisibilityProperties {
                     }
                 }
                 RENodeInit::ResourceManager(..)
-                | RENodeInit::Vault(..)
-                | RENodeInit::Bucket(..)
+                | RENodeInit::FungibleVault(..)
+                | RENodeInit::NonFungibleVault(..)
+                | RENodeInit::FungibleBucket(..)
+                | RENodeInit::NonFungibleBucket(..)
                 | RENodeInit::NonFungibleStore(..)
                 | RENodeInit::Proof(..) => {
                     package_address.eq(&RESOURCE_MANAGER_PACKAGE)
@@ -155,12 +157,12 @@ impl VisibilityProperties {
                 SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo) => read_only,
                 SubstateOffset::Package(PackageOffset::Info) => read_only,
                 SubstateOffset::PackageTypeInfo => read_only,
-                SubstateOffset::Bucket(BucketOffset::Bucket) => read_only,
+                SubstateOffset::Bucket(BucketOffset::Info) => read_only,
                 _ => false,
             },
             (ExecutionMode::DropNode, offset) => match offset {
                 SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo) => true,
-                SubstateOffset::Bucket(BucketOffset::Bucket) => true,
+                SubstateOffset::Bucket(BucketOffset::Info) => true,
                 SubstateOffset::Proof(ProofOffset::Proof) => true,
                 SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack) => true,
                 SubstateOffset::Worktop(WorktopOffset::Worktop) => true,
@@ -172,9 +174,9 @@ impl VisibilityProperties {
                 SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => {
                     read_only
                 }
-                SubstateOffset::Bucket(BucketOffset::Bucket) => read_only,
+                SubstateOffset::Vault(VaultOffset::Info) => true,
+                SubstateOffset::Bucket(BucketOffset::Info) => read_only,
                 SubstateOffset::Proof(ProofOffset::Proof) => true,
-                SubstateOffset::Vault(VaultOffset::Vault) => true,
                 SubstateOffset::Global(GlobalOffset::Global) => read_only,
                 SubstateOffset::Package(PackageOffset::Info) => read_only,
                 SubstateOffset::Package(PackageOffset::NativeCode) => read_only,

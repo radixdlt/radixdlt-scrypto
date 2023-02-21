@@ -18,13 +18,18 @@ use radix_engine_interface::api::types::{
     NonFungibleStoreOffset, PackageOffset, ProofOffset, ResourceManagerOffset, SubstateOffset,
     VaultOffset, WorktopOffset,
 };
+use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
+use radix_engine_interface::blueprints::resource::LiquidNonFungibleResource;
 
 #[derive(Debug)]
 pub enum RENodeModuleInit {
-    TypeInfo(PackageTypeInfoSubstate),
-    Metadata(MetadataSubstate),
-    AccessRulesChain(AccessRulesChainSubstate),
+    PackageTypeInfo(PackageTypeInfoSubstate),
     ComponentTypeInfo(ComponentTypeInfoSubstate),
+
+    Metadata(MetadataSubstate),
+
+    AccessRulesChain(AccessRulesChainSubstate),
+
     ComponentRoyalty(
         ComponentRoyaltyConfigSubstate,
         ComponentRoyaltyAccumulatorSubstate,
@@ -39,7 +44,7 @@ impl RENodeModuleInit {
     pub fn to_substates(self) -> HashMap<SubstateOffset, RuntimeSubstate> {
         let mut substates = HashMap::<SubstateOffset, RuntimeSubstate>::new();
         match self {
-            RENodeModuleInit::TypeInfo(type_info) => {
+            RENodeModuleInit::PackageTypeInfo(type_info) => {
                 substates.insert(SubstateOffset::PackageTypeInfo, type_info.into());
             }
             RENodeModuleInit::Metadata(metadata) => {
@@ -89,10 +94,12 @@ impl RENodeModuleInit {
 #[derive(Debug)]
 pub enum RENodeInit {
     Global(GlobalSubstate),
-    Bucket(BucketSubstate),
+    FungibleVault(VaultInfoSubstate, LiquidFungibleResource),
+    NonFungibleVault(VaultInfoSubstate, LiquidNonFungibleResource),
+    FungibleBucket(BucketInfoSubstate, LiquidFungibleResource),
+    NonFungibleBucket(BucketInfoSubstate, LiquidNonFungibleResource),
     Proof(ProofSubstate),
     AuthZoneStack(AuthZoneStackSubstate),
-    Vault(VaultSubstate),
     Worktop(WorktopSubstate),
     KeyValueStore,
     NonFungibleStore(NonFungibleStore),
@@ -118,10 +125,44 @@ impl RENodeInit {
     pub fn to_substates(self) -> HashMap<SubstateOffset, RuntimeSubstate> {
         let mut substates = HashMap::<SubstateOffset, RuntimeSubstate>::new();
         match self {
-            RENodeInit::Bucket(bucket) => {
+            RENodeInit::FungibleVault(info, liquid) => {
                 substates.insert(
-                    SubstateOffset::Bucket(BucketOffset::Bucket),
-                    RuntimeSubstate::Bucket(bucket),
+                    SubstateOffset::Vault(VaultOffset::Info),
+                    RuntimeSubstate::VaultInfo(info),
+                );
+                substates.insert(
+                    SubstateOffset::Vault(VaultOffset::LiquidFungible),
+                    RuntimeSubstate::VaultLiquidFungible(liquid),
+                );
+            }
+            RENodeInit::NonFungibleVault(info, liquid) => {
+                substates.insert(
+                    SubstateOffset::Vault(VaultOffset::Info),
+                    RuntimeSubstate::VaultInfo(info),
+                );
+                substates.insert(
+                    SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
+                    RuntimeSubstate::VaultLiquidNonFungible(liquid),
+                );
+            }
+            RENodeInit::FungibleBucket(info, liquid) => {
+                substates.insert(
+                    SubstateOffset::Bucket(BucketOffset::Info),
+                    RuntimeSubstate::BucketInfo(info),
+                );
+                substates.insert(
+                    SubstateOffset::Bucket(BucketOffset::LiquidFungible),
+                    RuntimeSubstate::BucketLiquidFungible(liquid),
+                );
+            }
+            RENodeInit::NonFungibleBucket(info, liquid) => {
+                substates.insert(
+                    SubstateOffset::Bucket(BucketOffset::Info),
+                    RuntimeSubstate::BucketInfo(info),
+                );
+                substates.insert(
+                    SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
+                    RuntimeSubstate::BucketLiquidNonFungible(liquid),
                 );
             }
             RENodeInit::Proof(proof) => {
@@ -141,9 +182,6 @@ impl RENodeInit {
                     SubstateOffset::Global(GlobalOffset::Global),
                     RuntimeSubstate::Global(global_node),
                 );
-            }
-            RENodeInit::Vault(vault) => {
-                substates.insert(SubstateOffset::Vault(VaultOffset::Vault), vault.into());
             }
             RENodeInit::KeyValueStore => {}
             RENodeInit::Identity() => {}

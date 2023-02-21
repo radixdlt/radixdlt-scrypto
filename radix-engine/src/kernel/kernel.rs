@@ -815,13 +815,13 @@ where
             (RENodeId::Package(..), RENodeInit::NativePackage(..)) => {
                 module_init.insert(
                     NodeModuleId::PackageTypeInfo,
-                    RENodeModuleInit::TypeInfo(PackageTypeInfoSubstate::NativePackage),
+                    RENodeModuleInit::PackageTypeInfo(PackageTypeInfoSubstate::NativePackage),
                 );
             }
             (RENodeId::Package(..), RENodeInit::WasmPackage(..)) => {
                 module_init.insert(
                     NodeModuleId::PackageTypeInfo,
-                    RENodeModuleInit::TypeInfo(PackageTypeInfoSubstate::WasmPackage),
+                    RENodeModuleInit::PackageTypeInfo(PackageTypeInfoSubstate::WasmPackage),
                 );
             }
             (RENodeId::ResourceManager(..), RENodeInit::ResourceManager(..)) => {
