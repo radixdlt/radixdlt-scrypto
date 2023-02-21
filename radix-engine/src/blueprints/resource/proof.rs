@@ -72,7 +72,7 @@ impl ProofSubstate {
 
     pub fn total_ids(&self) -> Option<&BTreeSet<NonFungibleLocalId>> {
         match self {
-            ProofSubstate::Fungible(f) => None,
+            ProofSubstate::Fungible(_) => None,
             ProofSubstate::NonFungible(nf) => Some(nf.total_ids()),
         }
     }
@@ -106,12 +106,6 @@ impl ProofSubstate {
     }
 }
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq, PartialOrd, Ord)]
-pub enum ResourceContainerId {
-    Bucket(BucketId),
-    Vault(VaultId),
-}
-
 #[derive(Debug)]
 pub struct FungibleProof {
     /// The resource address.
@@ -121,14 +115,14 @@ pub struct FungibleProof {
     /// The total locked amount or non-fungible ids.
     pub total_locked: Decimal,
     /// The supporting containers.
-    pub evidence: BTreeMap<ResourceContainerId, (Rc<RefCell<FungibleResource>>, Decimal)>,
+    pub evidence: BTreeMap<RENodeId, Decimal>,
 }
 
 impl FungibleProof {
     pub fn new(
         resource_address: ResourceAddress,
         total_locked: Decimal,
-        evidence: BTreeMap<ResourceContainerId, (Rc<RefCell<FungibleResource>>, Decimal)>,
+        evidence: BTreeMap<RENodeId, Decimal>,
     ) -> Result<FungibleProof, ProofError> {
         if total_locked.is_zero() {
             return Err(ProofError::EmptyProofNotAllowed);
@@ -145,7 +139,7 @@ impl FungibleProof {
     fn compute_max_locked(
         proofs: &[FungibleProof],
         resource_address: ResourceAddress,
-    ) -> (Decimal, BTreeMap<ResourceContainerId, Decimal>) {
+    ) -> (Decimal, BTreeMap<RENodeId, Decimal>) {
         // filter proofs by resource address and restricted flag
         let proofs: Vec<&FungibleProof> = proofs
             .iter()
@@ -153,9 +147,9 @@ impl FungibleProof {
             .collect();
 
         // calculate the max locked amount of each container
-        let mut max = BTreeMap::<ResourceContainerId, Decimal>::new();
+        let mut max = BTreeMap::<RENodeId, Decimal>::new();
         for proof in &proofs {
-            for (container_id, (_, locked_amount)) in &proof.evidence {
+            for (container_id, locked_amount) in &proof.evidence {
                 if let Some(existing) = max.get_mut(container_id) {
                     *existing = Decimal::max(*existing, locked_amount.clone());
                 } else {
@@ -214,7 +208,7 @@ impl FungibleProof {
     /// Note that cloning a proof will update the ref count of the locked
     /// resources in the source containers.
     pub fn clone_proof(&self) -> Self {
-        for (_, (container, locked_amount)) in &self.evidence {
+        for (_, locked_amount) in &self.evidence {
             container
                 .borrow_mut()
                 .lock_by_amount(*locked_amount)
@@ -273,7 +267,7 @@ pub struct NonFungibleProof {
     pub total_locked: BTreeSet<NonFungibleLocalId>,
     /// The supporting containers.
     pub evidence: BTreeMap<
-        ResourceContainerId,
+        RENodeId,
         (
             Rc<RefCell<NonFungibleResource>>,
             BTreeSet<NonFungibleLocalId>,
@@ -286,7 +280,7 @@ impl NonFungibleProof {
         resource_address: ResourceAddress,
         total_locked: BTreeSet<NonFungibleLocalId>,
         evidence: BTreeMap<
-            ResourceContainerId,
+            RENodeId,
             (
                 Rc<RefCell<NonFungibleResource>>,
                 BTreeSet<NonFungibleLocalId>,
@@ -311,7 +305,7 @@ impl NonFungibleProof {
         resource_address: ResourceAddress,
     ) -> (
         BTreeSet<NonFungibleLocalId>,
-        HashMap<ResourceContainerId, BTreeSet<NonFungibleLocalId>>,
+        HashMap<RENodeId, BTreeSet<NonFungibleLocalId>>,
     ) {
         // filter proofs by resource address and restricted flag
         let proofs: Vec<&NonFungibleProof> = proofs
@@ -320,7 +314,7 @@ impl NonFungibleProof {
             .collect();
 
         // calculate the max locked amount (or ids) of each container
-        let mut max = HashMap::<ResourceContainerId, BTreeSet<NonFungibleLocalId>>::new();
+        let mut max = HashMap::<RENodeId, BTreeSet<NonFungibleLocalId>>::new();
         for proof in &proofs {
             for (container_id, (_, locked_ids)) in &proof.evidence {
                 let new_ids = locked_ids.clone();

@@ -9,65 +9,81 @@ use crate::blueprints::epoch_manager::EpochManagerSubstate;
 use crate::blueprints::epoch_manager::ValidatorSetSubstate;
 use crate::blueprints::epoch_manager::ValidatorSubstate;
 use crate::blueprints::logger::LoggerSubstate;
-use crate::blueprints::resource::BucketSubstate;
+use crate::blueprints::resource::BucketInfoSubstate;
 use crate::blueprints::resource::NonFungibleSubstate;
 use crate::blueprints::resource::ProofSubstate;
 use crate::blueprints::resource::ResourceManagerSubstate;
-use crate::blueprints::resource::VaultRuntimeSubstate;
-use crate::blueprints::resource::VaultSubstate;
+use crate::blueprints::resource::VaultInfoSubstate;
 use crate::blueprints::resource::WorktopSubstate;
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::errors::*;
-use crate::system::type_info::TypeInfoSubstate;
+use crate::system::type_info::PackageTypeInfoSubstate;
 use crate::types::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::{
     Address, ComponentOffset, KeyValueStoreOffset, NonFungibleStoreOffset, RENodeId, SubstateOffset,
 };
+use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
+use radix_engine_interface::blueprints::resource::LiquidNonFungibleResource;
+use radix_engine_interface::blueprints::resource::LockedFungibleResource;
+use radix_engine_interface::blueprints::resource::LockedNonFungibleResource;
 use radix_engine_interface::data::IndexedScryptoValue;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PersistedSubstate {
+    /* Type info */
+    PackageTypeInfo(PackageTypeInfoSubstate),
+    ComponentTypeInfo(ComponentTypeInfoSubstate),
+
+    /* SELF */
     Global(GlobalSubstate),
-    TypeInfo(TypeInfoSubstate),
     EpochManager(EpochManagerSubstate),
     ValidatorSet(ValidatorSetSubstate),
     Validator(ValidatorSubstate),
     CurrentTimeRoundedToMinutes(CurrentTimeRoundedToMinutesSubstate),
     ResourceManager(ResourceManagerSubstate),
-    AccessRulesChain(AccessRulesChainSubstate),
-    Metadata(MetadataSubstate),
-    ComponentInfo(ComponentInfoSubstate),
     ComponentState(ComponentStateSubstate),
-    ComponentRoyaltyConfig(ComponentRoyaltyConfigSubstate),
-    ComponentRoyaltyAccumulator(ComponentRoyaltyAccumulatorSubstate),
     PackageInfo(PackageInfoSubstate),
-    WasmCode(WasmCodeSubstate),
     NativePackageInfo(NativeCodeSubstate),
-    PackageRoyaltyConfig(PackageRoyaltyConfigSubstate),
-    PackageRoyaltyAccumulator(PackageRoyaltyAccumulatorSubstate),
-    Vault(VaultSubstate),
-    NonFungible(NonFungibleSubstate),
-    KeyValueStoreEntry(KeyValueStoreEntrySubstate),
+    WasmCode(WasmCodeSubstate),
     Account(AccountSubstate),
     AccessController(AccessControllerSubstate),
+    VaultInfo(VaultInfoSubstate),
+    VaultLiquidFungible(LiquidFungibleResource),
+    VaultLiquidNonFungible(LiquidNonFungibleResource),
+
+    /* Access rules */
+    AccessRulesChain(AccessRulesChainSubstate),
+
+    /* Metadata */
+    Metadata(MetadataSubstate),
+
+    /* Royalty */
+    ComponentRoyaltyConfig(ComponentRoyaltyConfigSubstate),
+    ComponentRoyaltyAccumulator(ComponentRoyaltyAccumulatorSubstate),
+    PackageRoyaltyConfig(PackageRoyaltyConfigSubstate),
+    PackageRoyaltyAccumulator(PackageRoyaltyAccumulatorSubstate),
+
+    /* KVStore entry */
+    NonFungible(NonFungibleSubstate),
+    KeyValueStoreEntry(KeyValueStoreEntrySubstate),
 }
 
 impl PersistedSubstate {
-    pub fn vault(&self) -> &VaultSubstate {
-        if let PersistedSubstate::Vault(vault) = self {
+    pub fn vault_info(&self) -> &VaultInfoSubstate {
+        if let PersistedSubstate::VaultInfo(vault) = self {
             vault
         } else {
-            panic!("Not a vault");
+            panic!("Not a vault info");
         }
     }
 
-    pub fn vault_mut(&mut self) -> &mut VaultSubstate {
-        if let PersistedSubstate::Vault(vault) = self {
+    pub fn vault_info_mut(&mut self) -> &mut VaultInfoSubstate {
+        if let PersistedSubstate::VaultInfo(vault) = self {
             vault
         } else {
-            panic!("Not a vault");
+            panic!("Not a vault info");
         }
     }
 
@@ -104,9 +120,9 @@ impl PersistedSubstate {
     }
 }
 
-impl Into<VaultSubstate> for PersistedSubstate {
-    fn into(self) -> VaultSubstate {
-        if let PersistedSubstate::Vault(vault) = self {
+impl Into<VaultInfoSubstate> for PersistedSubstate {
+    fn into(self) -> VaultInfoSubstate {
+        if let PersistedSubstate::VaultInfo(vault) = self {
             vault
         } else {
             panic!("Not a vault");
@@ -118,7 +134,7 @@ impl PersistedSubstate {
     pub fn to_runtime(self) -> RuntimeSubstate {
         match self {
             PersistedSubstate::Global(value) => RuntimeSubstate::Global(value),
-            PersistedSubstate::TypeInfo(value) => RuntimeSubstate::TypeInfo(value),
+            PersistedSubstate::PackageTypeInfo(value) => RuntimeSubstate::PackageTypeInfo(value),
             PersistedSubstate::EpochManager(value) => RuntimeSubstate::EpochManager(value),
             PersistedSubstate::ValidatorSet(value) => RuntimeSubstate::ValidatorSet(value),
             PersistedSubstate::Validator(value) => RuntimeSubstate::Validator(value),
@@ -128,7 +144,9 @@ impl PersistedSubstate {
             PersistedSubstate::AccessRulesChain(value) => RuntimeSubstate::AccessRulesChain(value),
             PersistedSubstate::Metadata(value) => RuntimeSubstate::Metadata(value),
             PersistedSubstate::ResourceManager(value) => RuntimeSubstate::ResourceManager(value),
-            PersistedSubstate::ComponentInfo(value) => RuntimeSubstate::ComponentInfo(value),
+            PersistedSubstate::ComponentTypeInfo(value) => {
+                RuntimeSubstate::ComponentTypeInfo(value)
+            }
             PersistedSubstate::ComponentState(value) => RuntimeSubstate::ComponentState(value),
             PersistedSubstate::ComponentRoyaltyConfig(value) => {
                 RuntimeSubstate::ComponentRoyaltyConfig(value)
@@ -145,8 +163,12 @@ impl PersistedSubstate {
             PersistedSubstate::PackageRoyaltyAccumulator(value) => {
                 RuntimeSubstate::PackageRoyaltyAccumulator(value)
             }
-            PersistedSubstate::Vault(value) => {
-                RuntimeSubstate::Vault(VaultRuntimeSubstate::new(value.0))
+            PersistedSubstate::VaultInfo(value) => RuntimeSubstate::VaultInfo(value),
+            PersistedSubstate::VaultLiquidFungible(value) => {
+                RuntimeSubstate::VaultLiquidFungible(value)
+            }
+            PersistedSubstate::VaultLiquidNonFungible(value) => {
+                RuntimeSubstate::VaultLiquidNonFungible(value)
             }
             PersistedSubstate::NonFungible(value) => RuntimeSubstate::NonFungible(value),
             PersistedSubstate::KeyValueStoreEntry(value) => {
@@ -164,42 +186,65 @@ pub enum PersistError {
 
 #[derive(Debug)]
 pub enum RuntimeSubstate {
+    /* Type info */
+    PackageTypeInfo(PackageTypeInfoSubstate),
+    ComponentTypeInfo(ComponentTypeInfoSubstate),
+
+    /* SELF */
     Global(GlobalSubstate),
-    TypeInfo(TypeInfoSubstate),
     EpochManager(EpochManagerSubstate),
     ValidatorSet(ValidatorSetSubstate),
     Validator(ValidatorSubstate),
     CurrentTimeRoundedToMinutes(CurrentTimeRoundedToMinutesSubstate),
     ResourceManager(ResourceManagerSubstate),
-    AccessRulesChain(AccessRulesChainSubstate),
-    Metadata(MetadataSubstate),
-    ComponentInfo(ComponentInfoSubstate),
     ComponentState(ComponentStateSubstate),
-    ComponentRoyaltyConfig(ComponentRoyaltyConfigSubstate),
-    ComponentRoyaltyAccumulator(ComponentRoyaltyAccumulatorSubstate),
     NativeCode(NativeCodeSubstate),
     WasmCode(WasmCodeSubstate),
     PackageInfo(PackageInfoSubstate),
-    PackageRoyaltyConfig(PackageRoyaltyConfigSubstate),
-    PackageRoyaltyAccumulator(PackageRoyaltyAccumulatorSubstate),
-    Vault(VaultRuntimeSubstate),
-    NonFungible(NonFungibleSubstate),
-    KeyValueStoreEntry(KeyValueStoreEntrySubstate),
     AuthZoneStack(AuthZoneStackSubstate),
-    Bucket(BucketSubstate),
     Proof(ProofSubstate),
     Worktop(WorktopSubstate),
     Logger(LoggerSubstate),
     TransactionRuntime(TransactionRuntimeSubstate),
     Account(AccountSubstate),
     AccessController(AccessControllerSubstate),
+
+    VaultInfo(VaultInfoSubstate),
+    VaultLiquidFungible(LiquidFungibleResource),
+    VaultLiquidNonFungible(LiquidNonFungibleResource),
+    VaultLockedFungible(LockedFungibleResource),
+    VaultLockedNonFungible(LockedNonFungibleResource),
+
+    BucketInfo(BucketInfoSubstate),
+    BucketLiquidFungible(LiquidFungibleResource),
+    BucketLiquidNonFungible(LiquidNonFungibleResource),
+    BucketLockedFungible(LockedFungibleResource),
+    BucketLockedNonFungible(LockedNonFungibleResource),
+
+    /* Access rules */
+    AccessRulesChain(AccessRulesChainSubstate),
+
+    /* Metadata */
+    Metadata(MetadataSubstate),
+
+    /* Royalty */
+    ComponentRoyaltyConfig(ComponentRoyaltyConfigSubstate),
+    ComponentRoyaltyAccumulator(ComponentRoyaltyAccumulatorSubstate),
+    PackageRoyaltyConfig(PackageRoyaltyConfigSubstate),
+    PackageRoyaltyAccumulator(PackageRoyaltyAccumulatorSubstate),
+
+    /* KVStore entry */
+    NonFungible(NonFungibleSubstate),
+    KeyValueStoreEntry(KeyValueStoreEntrySubstate),
 }
 
 impl RuntimeSubstate {
     pub fn clone_to_persisted(&self) -> PersistedSubstate {
         match self {
             RuntimeSubstate::Global(value) => PersistedSubstate::Global(value.clone()),
-            RuntimeSubstate::TypeInfo(value) => PersistedSubstate::TypeInfo(value.clone()),
+            RuntimeSubstate::PackageTypeInfo(value) => {
+                PersistedSubstate::PackageTypeInfo(value.clone())
+            }
             RuntimeSubstate::EpochManager(value) => PersistedSubstate::EpochManager(value.clone()),
             RuntimeSubstate::ValidatorSet(value) => PersistedSubstate::ValidatorSet(value.clone()),
             RuntimeSubstate::Validator(value) => PersistedSubstate::Validator(value.clone()),
@@ -213,8 +258,8 @@ impl RuntimeSubstate {
             RuntimeSubstate::ResourceManager(value) => {
                 PersistedSubstate::ResourceManager(value.clone())
             }
-            RuntimeSubstate::ComponentInfo(value) => {
-                PersistedSubstate::ComponentInfo(value.clone())
+            RuntimeSubstate::ComponentTypeInfo(value) => {
+                PersistedSubstate::ComponentTypeInfo(value.clone())
             }
             RuntimeSubstate::ComponentState(value) => {
                 PersistedSubstate::ComponentState(value.clone())
@@ -240,16 +285,25 @@ impl RuntimeSubstate {
             RuntimeSubstate::KeyValueStoreEntry(value) => {
                 PersistedSubstate::KeyValueStoreEntry(value.clone())
             }
-            RuntimeSubstate::Vault(value) => {
-                let persisted_vault = value.clone_to_persisted();
-                PersistedSubstate::Vault(persisted_vault)
+            RuntimeSubstate::VaultInfo(value) => PersistedSubstate::VaultInfo(value.clone()),
+            RuntimeSubstate::VaultLiquidFungible(value) => {
+                PersistedSubstate::VaultLiquidFungible(value.clone())
+            }
+            RuntimeSubstate::VaultLiquidNonFungible(value) => {
+                PersistedSubstate::VaultLiquidNonFungible(value.clone())
             }
             RuntimeSubstate::Account(value) => PersistedSubstate::Account(value.clone()),
             RuntimeSubstate::AccessController(value) => {
                 PersistedSubstate::AccessController(value.clone())
             }
             RuntimeSubstate::AuthZoneStack(..)
-            | RuntimeSubstate::Bucket(..)
+            | RuntimeSubstate::BucketInfo(..)
+            | RuntimeSubstate::BucketLiquidFungible(..)
+            | RuntimeSubstate::BucketLiquidNonFungible(..)
+            | RuntimeSubstate::BucketLockedFungible(..)
+            | RuntimeSubstate::BucketLockedNonFungible(..)
+            | RuntimeSubstate::VaultLockedFungible(..)
+            | RuntimeSubstate::VaultLockedNonFungible(..)
             | RuntimeSubstate::Proof(..)
             | RuntimeSubstate::Worktop(..)
             | RuntimeSubstate::Logger(..)
@@ -262,7 +316,7 @@ impl RuntimeSubstate {
     pub fn to_persisted(self) -> PersistedSubstate {
         match self {
             RuntimeSubstate::Global(value) => PersistedSubstate::Global(value),
-            RuntimeSubstate::TypeInfo(value) => PersistedSubstate::TypeInfo(value),
+            RuntimeSubstate::PackageTypeInfo(value) => PersistedSubstate::PackageTypeInfo(value),
             RuntimeSubstate::EpochManager(value) => PersistedSubstate::EpochManager(value),
             RuntimeSubstate::ValidatorSet(value) => PersistedSubstate::ValidatorSet(value),
             RuntimeSubstate::Validator(value) => PersistedSubstate::Validator(value),
@@ -272,7 +326,9 @@ impl RuntimeSubstate {
             }
             RuntimeSubstate::Metadata(value) => PersistedSubstate::Metadata(value),
             RuntimeSubstate::ResourceManager(value) => PersistedSubstate::ResourceManager(value),
-            RuntimeSubstate::ComponentInfo(value) => PersistedSubstate::ComponentInfo(value),
+            RuntimeSubstate::ComponentTypeInfo(value) => {
+                PersistedSubstate::ComponentTypeInfo(value)
+            }
             RuntimeSubstate::ComponentState(value) => PersistedSubstate::ComponentState(value),
             RuntimeSubstate::ComponentRoyaltyConfig(value) => {
                 PersistedSubstate::ComponentRoyaltyConfig(value)
@@ -293,16 +349,23 @@ impl RuntimeSubstate {
             RuntimeSubstate::KeyValueStoreEntry(value) => {
                 PersistedSubstate::KeyValueStoreEntry(value)
             }
-            RuntimeSubstate::Vault(value) => {
-                let persisted_vault = value
-                    .to_persisted()
-                    .expect("Vault should be liquid at end of successful transaction");
-                PersistedSubstate::Vault(persisted_vault)
+            RuntimeSubstate::VaultInfo(value) => PersistedSubstate::VaultInfo(value.clone()),
+            RuntimeSubstate::VaultLiquidFungible(value) => {
+                PersistedSubstate::VaultLiquidFungible(value.clone())
+            }
+            RuntimeSubstate::VaultLiquidNonFungible(value) => {
+                PersistedSubstate::VaultLiquidNonFungible(value.clone())
             }
             RuntimeSubstate::Account(value) => PersistedSubstate::Account(value),
             RuntimeSubstate::AccessController(value) => PersistedSubstate::AccessController(value),
             RuntimeSubstate::AuthZoneStack(..)
-            | RuntimeSubstate::Bucket(..)
+            | RuntimeSubstate::BucketInfo(..)
+            | RuntimeSubstate::BucketLiquidFungible(..)
+            | RuntimeSubstate::BucketLiquidNonFungible(..)
+            | RuntimeSubstate::BucketLockedFungible(..)
+            | RuntimeSubstate::BucketLockedNonFungible(..)
+            | RuntimeSubstate::VaultLockedFungible(..)
+            | RuntimeSubstate::VaultLockedNonFungible(..)
             | RuntimeSubstate::Proof(..)
             | RuntimeSubstate::Worktop(..)
             | RuntimeSubstate::Logger(..)
@@ -345,7 +408,7 @@ impl RuntimeSubstate {
     pub fn to_ref_mut(&mut self) -> SubstateRefMut {
         match self {
             RuntimeSubstate::Global(value) => SubstateRefMut::Global(value),
-            RuntimeSubstate::TypeInfo(value) => SubstateRefMut::TypeInfo(value),
+            RuntimeSubstate::PackageTypeInfo(value) => SubstateRefMut::TypeInfo(value),
             RuntimeSubstate::EpochManager(value) => SubstateRefMut::EpochManager(value),
             RuntimeSubstate::ValidatorSet(value) => SubstateRefMut::ValidatorSet(value),
             RuntimeSubstate::Validator(value) => SubstateRefMut::Validator(value),
@@ -355,7 +418,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::AccessRulesChain(value) => SubstateRefMut::AccessRulesChain(value),
             RuntimeSubstate::Metadata(value) => SubstateRefMut::Metadata(value),
             RuntimeSubstate::ResourceManager(value) => SubstateRefMut::ResourceManager(value),
-            RuntimeSubstate::ComponentInfo(value) => SubstateRefMut::ComponentInfo(value),
+            RuntimeSubstate::ComponentTypeInfo(value) => SubstateRefMut::ComponentTypeInfo(value),
             RuntimeSubstate::ComponentState(value) => SubstateRefMut::ComponentState(value),
             RuntimeSubstate::ComponentRoyaltyConfig(value) => {
                 SubstateRefMut::ComponentRoyaltyConfig(value)
@@ -372,11 +435,35 @@ impl RuntimeSubstate {
             RuntimeSubstate::PackageRoyaltyAccumulator(value) => {
                 SubstateRefMut::PackageRoyaltyAccumulator(value)
             }
-            RuntimeSubstate::Vault(value) => SubstateRefMut::Vault(value),
+            RuntimeSubstate::VaultInfo(value) => SubstateRefMut::VaultInfo(value),
+            RuntimeSubstate::VaultLiquidFungible(value) => {
+                SubstateRefMut::VaultLiquidFungible(value)
+            }
+            RuntimeSubstate::VaultLiquidNonFungible(value) => {
+                SubstateRefMut::VaultLiquidNonFungible(value)
+            }
+            RuntimeSubstate::VaultLockedFungible(value) => {
+                SubstateRefMut::VaultLockedFungible(value)
+            }
+            RuntimeSubstate::VaultLockedNonFungible(value) => {
+                SubstateRefMut::VaultLockedNonFungible(value)
+            }
+            RuntimeSubstate::BucketInfo(value) => SubstateRefMut::BucketInfo(value),
+            RuntimeSubstate::BucketLiquidFungible(value) => {
+                SubstateRefMut::BucketLiquidFungible(value)
+            }
+            RuntimeSubstate::BucketLiquidNonFungible(value) => {
+                SubstateRefMut::BucketLiquidNonFungible(value)
+            }
+            RuntimeSubstate::BucketLockedFungible(value) => {
+                SubstateRefMut::BucketLockedFungible(value)
+            }
+            RuntimeSubstate::BucketLockedNonFungible(value) => {
+                SubstateRefMut::BucketLockedNonFungible(value)
+            }
             RuntimeSubstate::NonFungible(value) => SubstateRefMut::NonFungible(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => SubstateRefMut::KeyValueStoreEntry(value),
             RuntimeSubstate::AuthZoneStack(value) => SubstateRefMut::AuthZoneStack(value),
-            RuntimeSubstate::Bucket(value) => SubstateRefMut::Bucket(value),
             RuntimeSubstate::Proof(value) => SubstateRefMut::Proof(value),
             RuntimeSubstate::Worktop(value) => SubstateRefMut::Worktop(value),
             RuntimeSubstate::Logger(value) => SubstateRefMut::Logger(value),
@@ -389,7 +476,7 @@ impl RuntimeSubstate {
     pub fn to_ref(&self) -> SubstateRef {
         match self {
             RuntimeSubstate::Global(value) => SubstateRef::Global(value),
-            RuntimeSubstate::TypeInfo(value) => SubstateRef::TypeInfo(value),
+            RuntimeSubstate::PackageTypeInfo(value) => SubstateRef::TypeInfo(value),
             RuntimeSubstate::EpochManager(value) => SubstateRef::EpochManager(value),
             RuntimeSubstate::ValidatorSet(value) => SubstateRef::ValidatorSet(value),
             RuntimeSubstate::Validator(value) => SubstateRef::Validator(value),
@@ -399,7 +486,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::AccessRulesChain(value) => SubstateRef::AccessRulesChain(value),
             RuntimeSubstate::Metadata(value) => SubstateRef::Metadata(value),
             RuntimeSubstate::ResourceManager(value) => SubstateRef::ResourceManager(value),
-            RuntimeSubstate::ComponentInfo(value) => SubstateRef::ComponentInfo(value),
+            RuntimeSubstate::ComponentTypeInfo(value) => SubstateRef::ComponentTypeInfo(value),
             RuntimeSubstate::ComponentState(value) => SubstateRef::ComponentState(value),
             RuntimeSubstate::ComponentRoyaltyConfig(value) => {
                 SubstateRef::ComponentRoyaltyConfig(value)
@@ -416,11 +503,31 @@ impl RuntimeSubstate {
             RuntimeSubstate::PackageRoyaltyAccumulator(value) => {
                 SubstateRef::PackageRoyaltyAccumulator(value)
             }
-            RuntimeSubstate::Vault(value) => SubstateRef::Vault(value),
+            RuntimeSubstate::VaultInfo(value) => SubstateRef::VaultInfo(value),
+            RuntimeSubstate::VaultLiquidFungible(value) => SubstateRef::VaultLiquidFungible(value),
+            RuntimeSubstate::VaultLiquidNonFungible(value) => {
+                SubstateRef::VaultLiquidNonFungible(value)
+            }
+            RuntimeSubstate::VaultLockedFungible(value) => SubstateRef::VaultLockedFungible(value),
+            RuntimeSubstate::VaultLockedNonFungible(value) => {
+                SubstateRef::VaultLockedNonFungible(value)
+            }
+            RuntimeSubstate::BucketInfo(value) => SubstateRef::BucketInfo(value),
+            RuntimeSubstate::BucketLiquidFungible(value) => {
+                SubstateRef::BucketLiquidFungible(value)
+            }
+            RuntimeSubstate::BucketLiquidNonFungible(value) => {
+                SubstateRef::BucketLiquidNonFungible(value)
+            }
+            RuntimeSubstate::BucketLockedFungible(value) => {
+                SubstateRef::BucketLockedFungible(value)
+            }
+            RuntimeSubstate::BucketLockedNonFungible(value) => {
+                SubstateRef::BucketLockedNonFungible(value)
+            }
             RuntimeSubstate::NonFungible(value) => SubstateRef::NonFungible(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => SubstateRef::KeyValueStoreEntry(value),
             RuntimeSubstate::AuthZoneStack(value) => SubstateRef::AuthZoneStack(value),
-            RuntimeSubstate::Bucket(value) => SubstateRef::Bucket(value),
             RuntimeSubstate::Proof(value) => SubstateRef::Proof(value),
             RuntimeSubstate::Worktop(value) => SubstateRef::Worktop(value),
             RuntimeSubstate::Logger(value) => SubstateRef::Logger(value),
@@ -438,16 +545,16 @@ impl RuntimeSubstate {
         }
     }
 
-    pub fn vault(&self) -> &VaultRuntimeSubstate {
-        if let RuntimeSubstate::Vault(vault) = self {
+    pub fn vault_info(&self) -> &VaultInfoSubstate {
+        if let RuntimeSubstate::VaultInfo(vault) = self {
             vault
         } else {
             panic!("Not a vault");
         }
     }
 
-    pub fn vault_mut(&mut self) -> &mut VaultRuntimeSubstate {
-        if let RuntimeSubstate::Vault(vault) = self {
+    pub fn vault_info_mut(&mut self) -> &mut VaultInfoSubstate {
+        if let RuntimeSubstate::VaultInfo(vault) = self {
             vault
         } else {
             panic!("Not a vault");
@@ -597,15 +704,15 @@ impl Into<RuntimeSubstate> for NativeCodeSubstate {
     }
 }
 
-impl Into<RuntimeSubstate> for TypeInfoSubstate {
+impl Into<RuntimeSubstate> for PackageTypeInfoSubstate {
     fn into(self) -> RuntimeSubstate {
-        RuntimeSubstate::TypeInfo(self)
+        RuntimeSubstate::PackageTypeInfo(self)
     }
 }
 
-impl Into<RuntimeSubstate> for ComponentInfoSubstate {
+impl Into<RuntimeSubstate> for ComponentTypeInfoSubstate {
     fn into(self) -> RuntimeSubstate {
-        RuntimeSubstate::ComponentInfo(self)
+        RuntimeSubstate::ComponentTypeInfo(self)
     }
 }
 
@@ -633,9 +740,9 @@ impl Into<RuntimeSubstate> for ComponentRoyaltyAccumulatorSubstate {
     }
 }
 
-impl Into<RuntimeSubstate> for VaultRuntimeSubstate {
+impl Into<RuntimeSubstate> for VaultInfoSubstate {
     fn into(self) -> RuntimeSubstate {
-        RuntimeSubstate::Vault(self)
+        RuntimeSubstate::VaultInfo(self)
     }
 }
 
@@ -691,9 +798,9 @@ impl Into<LoggerSubstate> for RuntimeSubstate {
     }
 }
 
-impl Into<ComponentInfoSubstate> for RuntimeSubstate {
-    fn into(self) -> ComponentInfoSubstate {
-        if let RuntimeSubstate::ComponentInfo(component) = self {
+impl Into<ComponentTypeInfoSubstate> for RuntimeSubstate {
+    fn into(self) -> ComponentTypeInfoSubstate {
+        if let RuntimeSubstate::ComponentTypeInfo(component) = self {
             component
         } else {
             panic!("Not a component info");
@@ -791,9 +898,9 @@ impl Into<KeyValueStoreEntrySubstate> for RuntimeSubstate {
     }
 }
 
-impl Into<VaultRuntimeSubstate> for RuntimeSubstate {
-    fn into(self) -> VaultRuntimeSubstate {
-        if let RuntimeSubstate::Vault(vault) = self {
+impl Into<VaultInfoSubstate> for RuntimeSubstate {
+    fn into(self) -> VaultInfoSubstate {
+        if let RuntimeSubstate::VaultInfo(vault) = self {
             vault
         } else {
             panic!("Not a vault");
@@ -831,9 +938,9 @@ impl Into<GlobalSubstate> for RuntimeSubstate {
     }
 }
 
-impl Into<BucketSubstate> for RuntimeSubstate {
-    fn into(self) -> BucketSubstate {
-        if let RuntimeSubstate::Bucket(substate) = self {
+impl Into<BucketInfoSubstate> for RuntimeSubstate {
+    fn into(self) -> BucketInfoSubstate {
+        if let RuntimeSubstate::BucketInfo(substate) = self {
             substate
         } else {
             panic!("Not a bucket");
@@ -906,8 +1013,7 @@ pub enum SubstateRef<'a> {
     Worktop(&'a WorktopSubstate),
     Logger(&'a LoggerSubstate),
     Proof(&'a ProofSubstate),
-    Bucket(&'a BucketSubstate),
-    ComponentInfo(&'a ComponentInfoSubstate),
+    ComponentTypeInfo(&'a ComponentTypeInfoSubstate),
     ComponentState(&'a ComponentStateSubstate),
     ComponentRoyaltyConfig(&'a ComponentRoyaltyConfigSubstate),
     ComponentRoyaltyAccumulator(&'a ComponentRoyaltyAccumulatorSubstate),
@@ -918,7 +1024,16 @@ pub enum SubstateRef<'a> {
     NativeCode(&'a NativeCodeSubstate),
     PackageRoyaltyConfig(&'a PackageRoyaltyConfigSubstate),
     PackageRoyaltyAccumulator(&'a PackageRoyaltyAccumulatorSubstate),
-    Vault(&'a VaultRuntimeSubstate),
+    VaultInfo(&'a VaultInfoSubstate),
+    VaultLiquidFungible(&'a LiquidFungibleResource),
+    VaultLiquidNonFungible(&'a LiquidNonFungibleResource),
+    VaultLockedFungible(&'a LockedFungibleResource),
+    VaultLockedNonFungible(&'a LockedNonFungibleResource),
+    BucketInfo(&'a BucketInfoSubstate),
+    BucketLiquidFungible(&'a LiquidFungibleResource),
+    BucketLiquidNonFungible(&'a LiquidNonFungibleResource),
+    BucketLockedFungible(&'a LockedFungibleResource),
+    BucketLockedNonFungible(&'a LockedNonFungibleResource),
     ResourceManager(&'a ResourceManagerSubstate),
     EpochManager(&'a EpochManagerSubstate),
     ValidatorSet(&'a ValidatorSetSubstate),
@@ -927,7 +1042,7 @@ pub enum SubstateRef<'a> {
     AccessRulesChain(&'a AccessRulesChainSubstate),
     Metadata(&'a MetadataSubstate),
     Global(&'a GlobalSubstate),
-    TypeInfo(&'a TypeInfoSubstate),
+    TypeInfo(&'a PackageTypeInfoSubstate),
     TransactionRuntime(&'a TransactionRuntimeSubstate),
     Account(&'a AccountSubstate),
     AccessController(&'a AccessControllerSubstate),
@@ -943,7 +1058,7 @@ impl<'a> SubstateRef<'a> {
                 IndexedScryptoValue::from_typed(*value)
             }
             SubstateRef::ResourceManager(value) => IndexedScryptoValue::from_typed(*value),
-            SubstateRef::ComponentInfo(value) => IndexedScryptoValue::from_typed(*value),
+            SubstateRef::ComponentTypeInfo(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::ComponentState(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::ComponentRoyaltyConfig(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::ComponentRoyaltyAccumulator(value) => {
@@ -990,9 +1105,9 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
-    pub fn component_info(&self) -> &ComponentInfoSubstate {
+    pub fn component_info(&self) -> &ComponentTypeInfoSubstate {
         match self {
-            SubstateRef::ComponentInfo(info) => *info,
+            SubstateRef::ComponentTypeInfo(info) => *info,
             _ => panic!("Not a component info"),
         }
     }
@@ -1046,16 +1161,16 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
-    pub fn bucket(&self) -> &BucketSubstate {
+    pub fn bucket_info(&self) -> &BucketInfoSubstate {
         match self {
-            SubstateRef::Bucket(value) => *value,
+            SubstateRef::BucketInfo(value) => *value,
             _ => panic!("Not a bucket"),
         }
     }
 
-    pub fn vault(&self) -> &VaultRuntimeSubstate {
+    pub fn vault_info(&self) -> &VaultInfoSubstate {
         match self {
-            SubstateRef::Vault(value) => *value,
+            SubstateRef::VaultInfo(value) => *value,
             _ => panic!("Not a vault"),
         }
     }
@@ -1074,7 +1189,7 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
-    pub fn type_info(&self) -> &TypeInfoSubstate {
+    pub fn type_info(&self) -> &PackageTypeInfoSubstate {
         match self {
             SubstateRef::TypeInfo(value) => *value,
             _ => panic!("Not type info"),
@@ -1193,11 +1308,9 @@ impl<'a> SubstateRef<'a> {
                     .collect();
                 (HashSet::new(), nodes)
             }
-            SubstateRef::Vault(vault) => {
+            SubstateRef::VaultInfo(vault) => {
                 let mut references = HashSet::new();
-                references.insert(RENodeId::Global(Address::Resource(
-                    vault.resource_address(),
-                )));
+                references.insert(RENodeId::Global(Address::Resource(vault.resource_address)));
                 (references, Vec::new())
             }
             SubstateRef::Proof(proof) => {
@@ -1207,11 +1320,9 @@ impl<'a> SubstateRef<'a> {
                 )));
                 (references, Vec::new())
             }
-            SubstateRef::Bucket(bucket) => {
+            SubstateRef::BucketInfo(bucket) => {
                 let mut references = HashSet::new();
-                references.insert(RENodeId::Global(Address::Resource(
-                    bucket.resource_address(),
-                )));
+                references.insert(RENodeId::Global(Address::Resource(bucket.resource_address)));
                 (references, Vec::new())
             }
             SubstateRef::PackageInfo(substate) => {
@@ -1224,7 +1335,7 @@ impl<'a> SubstateRef<'a> {
                 }
                 (references, Vec::new())
             }
-            SubstateRef::ComponentInfo(substate) => {
+            SubstateRef::ComponentTypeInfo(substate) => {
                 let mut references = HashSet::new();
                 references.insert(RENodeId::Global(Address::Package(substate.package_address)));
                 (references, Vec::new())
@@ -1302,7 +1413,7 @@ impl<'a> SubstateRef<'a> {
 }
 
 pub enum SubstateRefMut<'a> {
-    ComponentInfo(&'a mut ComponentInfoSubstate),
+    ComponentTypeInfo(&'a mut ComponentTypeInfoSubstate),
     ComponentState(&'a mut ComponentStateSubstate),
     ComponentRoyaltyConfig(&'a mut ComponentRoyaltyConfigSubstate),
     ComponentRoyaltyAccumulator(&'a mut ComponentRoyaltyAccumulatorSubstate),
@@ -1313,7 +1424,16 @@ pub enum SubstateRefMut<'a> {
     PackageRoyaltyAccumulator(&'a mut PackageRoyaltyAccumulatorSubstate),
     NonFungible(&'a mut NonFungibleSubstate),
     KeyValueStoreEntry(&'a mut KeyValueStoreEntrySubstate),
-    Vault(&'a mut VaultRuntimeSubstate),
+    VaultInfo(&'a mut VaultInfoSubstate),
+    VaultLiquidFungible(&'a mut LiquidFungibleResource),
+    VaultLiquidNonFungible(&'a mut LiquidNonFungibleResource),
+    VaultLockedFungible(&'a mut LockedFungibleResource),
+    VaultLockedNonFungible(&'a mut LockedNonFungibleResource),
+    BucketInfo(&'a mut BucketInfoSubstate),
+    BucketLiquidFungible(&'a mut LiquidFungibleResource),
+    BucketLiquidNonFungible(&'a mut LiquidNonFungibleResource),
+    BucketLockedFungible(&'a mut LockedFungibleResource),
+    BucketLockedNonFungible(&'a mut LockedNonFungibleResource),
     ResourceManager(&'a mut ResourceManagerSubstate),
     EpochManager(&'a mut EpochManagerSubstate),
     ValidatorSet(&'a mut ValidatorSetSubstate),
@@ -1322,8 +1442,7 @@ pub enum SubstateRefMut<'a> {
     AccessRulesChain(&'a mut AccessRulesChainSubstate),
     Metadata(&'a mut MetadataSubstate),
     Global(&'a mut GlobalSubstate),
-    TypeInfo(&'a mut TypeInfoSubstate),
-    Bucket(&'a mut BucketSubstate),
+    TypeInfo(&'a mut PackageTypeInfoSubstate),
     Proof(&'a mut ProofSubstate),
     Worktop(&'a mut WorktopSubstate),
     Logger(&'a mut LoggerSubstate),
@@ -1349,9 +1468,9 @@ impl<'a> SubstateRefMut<'a> {
         }
     }
 
-    pub fn vault(&mut self) -> &mut VaultRuntimeSubstate {
+    pub fn vault_info(&mut self) -> &mut VaultInfoSubstate {
         match self {
-            SubstateRefMut::Vault(value) => *value,
+            SubstateRefMut::VaultInfo(value) => *value,
             _ => panic!("Not a vault"),
         }
     }
@@ -1363,9 +1482,9 @@ impl<'a> SubstateRefMut<'a> {
         }
     }
 
-    pub fn bucket(&mut self) -> &mut BucketSubstate {
+    pub fn bucket_info(&mut self) -> &mut BucketInfoSubstate {
         match self {
-            SubstateRefMut::Bucket(value) => *value,
+            SubstateRefMut::BucketInfo(value) => *value,
             _ => panic!("Not a bucket"),
         }
     }
@@ -1398,9 +1517,9 @@ impl<'a> SubstateRefMut<'a> {
         }
     }
 
-    pub fn component_info(&mut self) -> &mut ComponentInfoSubstate {
+    pub fn component_info(&mut self) -> &mut ComponentTypeInfoSubstate {
         match self {
-            SubstateRefMut::ComponentInfo(value) => *value,
+            SubstateRefMut::ComponentTypeInfo(value) => *value,
             _ => panic!("Not component info"),
         }
     }

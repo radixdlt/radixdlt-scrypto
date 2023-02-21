@@ -1235,7 +1235,7 @@ impl ResourceManagerBlueprint {
         let node_id = api.kernel_allocate_node_id(RENodeType::Vault)?;
         api.kernel_create_node(
             node_id,
-            RENodeInit::Vault(VaultRuntimeSubstate::new(resource)),
+            RENodeInit::Vault(VaultSubstate::new(resource)),
             BTreeMap::new(),
         )?;
         let vault_id = node_id.into();

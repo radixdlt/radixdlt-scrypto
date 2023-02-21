@@ -14,7 +14,7 @@ use crate::kernel::kernel_api::{
     ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockFlags,
 };
 use crate::system::node_modules::auth::AuthZoneNativePackage;
-use crate::system::type_info::TypeInfoSubstate;
+use crate::system::type_info::PackageTypeInfoSubstate;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
 use radix_engine_interface::api::package::*;
@@ -126,12 +126,12 @@ impl ExecutableInvocation for ScryptoInvocation {
         api.kernel_drop_lock(handle)?;
 
         let export_name = match type_info {
-            TypeInfoSubstate::NativePackage => {
+            PackageTypeInfoSubstate::NativePackage => {
                 // TODO: Do we need to check against the abi? Probably not since we should be able to verify this
                 // TODO: in the native package itself.
                 self.fn_name.to_string() // TODO: Clean this up
             }
-            TypeInfoSubstate::WasmPackage => {
+            PackageTypeInfoSubstate::WasmPackage => {
                 node_refs_to_copy.insert(RENodeId::Global(Address::Component(EPOCH_MANAGER)));
                 node_refs_to_copy.insert(RENodeId::Global(Address::Component(CLOCK)));
                 node_refs_to_copy.insert(RENodeId::Global(Address::Resource(RADIX_TOKEN)));
@@ -267,7 +267,7 @@ impl Executor for ScryptoExecutor {
         api.kernel_drop_lock(handle)?;
 
         let output = match type_info {
-            TypeInfoSubstate::NativePackage => {
+            PackageTypeInfoSubstate::NativePackage => {
                 let handle = api.kernel_lock_substate(
                     RENodeId::Global(Address::Package(self.package_address)),
                     NodeModuleId::SELF,
@@ -285,7 +285,7 @@ impl Executor for ScryptoExecutor {
                     api,
                 )?
             }
-            TypeInfoSubstate::WasmPackage => {
+            PackageTypeInfoSubstate::WasmPackage => {
                 let rtn_type = {
                     let handle = api.kernel_lock_substate(
                         RENodeId::Global(Address::Package(self.package_address)),

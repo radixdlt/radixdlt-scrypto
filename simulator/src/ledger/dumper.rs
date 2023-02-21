@@ -102,10 +102,10 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
     };
 
     // Some branching logic is needed here to deal well with native components. Only `Normal`
-    // components have a `ComponentInfoSubstate`. Other components require some special handling.
+    // components have a `ComponentTypeInfoSubstate`. Other components require some special handling.
     let component_state_dump = match component_address {
         ComponentAddress::Normal(..) => {
-            let component_info_substate: ComponentInfoSubstate = substate_store
+            let component_info_substate: ComponentTypeInfoSubstate = substate_store
                 .get_substate(&SubstateId(
                     component_id,
                     NodeModuleId::ComponentTypeInfo,

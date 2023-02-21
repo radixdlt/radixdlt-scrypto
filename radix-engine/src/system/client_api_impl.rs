@@ -25,8 +25,8 @@ use crate::wasm::WasmEngine;
 use crate::wasm::WasmValidator;
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::component::{
-    ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
-    ComponentStateSubstate,
+    ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate,
+    ComponentTypeInfoSubstate,
 };
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
@@ -358,7 +358,7 @@ where
             RENodeInit::Component(ComponentStateSubstate::new(abi_enforced_app_substate)),
             btreemap!(
                 NodeModuleId::ComponentTypeInfo => RENodeModuleInit::ComponentTypeInfo(
-                    ComponentInfoSubstate::new(package_address, blueprint_ident.to_string())
+                    ComponentTypeInfoSubstate::new(package_address, blueprint_ident.to_string())
                 ),
                 NodeModuleId::ComponentRoyalty => RENodeModuleInit::ComponentRoyalty(
                     royalty_config_substate,

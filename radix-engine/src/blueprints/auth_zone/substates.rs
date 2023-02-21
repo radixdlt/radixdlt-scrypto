@@ -16,7 +16,7 @@ impl AuthVerification {
                 proof_resource_address == non_fungible_global_id.resource_address()
                     && match proof.total_ids() {
                         Some(ids) => ids.contains(non_fungible_global_id.local_id()),
-                        NOne => false,
+                        None => false,
                     }
             }
             HardResourceOrNonFungible::Resource(resource_address) => {

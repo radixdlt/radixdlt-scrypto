@@ -9,11 +9,11 @@ use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_properties::VisibilityProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
-use crate::system::type_info::TypeInfoSubstate;
+use crate::system::type_info::PackageTypeInfoSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::SysBucket;
-use radix_engine_interface::api::component::ComponentInfoSubstate;
+use radix_engine_interface::api::component::ComponentTypeInfoSubstate;
 // TODO: clean this up!
 use radix_engine_interface::api::types::{
     Address, AuthZoneStackOffset, GlobalOffset, LockHandle, ProofOffset, RENodeId, SubstateId,
@@ -752,7 +752,7 @@ where
             (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {
                 module_init.insert(
                     NodeModuleId::ComponentTypeInfo,
-                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                    RENodeModuleInit::ComponentTypeInfo(ComponentTypeInfoSubstate {
                         package_address: AUTH_ZONE_PACKAGE,
                         blueprint_name: AUTH_ZONE_BLUEPRINT.to_string(),
                     }),
@@ -761,7 +761,7 @@ where
             (RENodeId::TransactionRuntime, RENodeInit::TransactionRuntime(..)) => {
                 module_init.insert(
                     NodeModuleId::ComponentTypeInfo,
-                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                    RENodeModuleInit::ComponentTypeInfo(ComponentTypeInfoSubstate {
                         package_address: TRANSACTION_RUNTIME_PACKAGE,
                         blueprint_name: TRANSACTION_RUNTIME_BLUEPRINT.to_string(),
                     }),
@@ -770,7 +770,7 @@ where
             (RENodeId::Logger, RENodeInit::Logger(..)) => {
                 module_init.insert(
                     NodeModuleId::ComponentTypeInfo,
-                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                    RENodeModuleInit::ComponentTypeInfo(ComponentTypeInfoSubstate {
                         package_address: LOGGER_PACKAGE,
                         blueprint_name: LOGGER_BLUEPRINT.to_string(),
                     }),
@@ -779,7 +779,7 @@ where
             (RENodeId::Worktop, RENodeInit::Worktop(..)) => {
                 module_init.insert(
                     NodeModuleId::ComponentTypeInfo,
-                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                    RENodeModuleInit::ComponentTypeInfo(ComponentTypeInfoSubstate {
                         package_address: RESOURCE_MANAGER_PACKAGE,
                         blueprint_name: WORKTOP_BLUEPRINT.to_string(),
                     }),
@@ -788,7 +788,7 @@ where
             (RENodeId::Bucket(..), RENodeInit::Bucket(..)) => {
                 module_init.insert(
                     NodeModuleId::ComponentTypeInfo,
-                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                    RENodeModuleInit::ComponentTypeInfo(ComponentTypeInfoSubstate {
                         package_address: RESOURCE_MANAGER_PACKAGE,
                         blueprint_name: BUCKET_BLUEPRINT.to_string(),
                     }),
@@ -797,7 +797,7 @@ where
             (RENodeId::Proof(..), RENodeInit::Proof(..)) => {
                 module_init.insert(
                     NodeModuleId::ComponentTypeInfo,
-                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                    RENodeModuleInit::ComponentTypeInfo(ComponentTypeInfoSubstate {
                         package_address: RESOURCE_MANAGER_PACKAGE,
                         blueprint_name: PROOF_BLUEPRINT.to_string(),
                     }),
@@ -806,7 +806,7 @@ where
             (RENodeId::Vault(..), RENodeInit::Vault(..)) => {
                 module_init.insert(
                     NodeModuleId::ComponentTypeInfo,
-                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                    RENodeModuleInit::ComponentTypeInfo(ComponentTypeInfoSubstate {
                         package_address: RESOURCE_MANAGER_PACKAGE,
                         blueprint_name: VAULT_BLUEPRINT.to_string(),
                     }),
@@ -815,19 +815,19 @@ where
             (RENodeId::Package(..), RENodeInit::NativePackage(..)) => {
                 module_init.insert(
                     NodeModuleId::PackageTypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate::NativePackage),
+                    RENodeModuleInit::TypeInfo(PackageTypeInfoSubstate::NativePackage),
                 );
             }
             (RENodeId::Package(..), RENodeInit::WasmPackage(..)) => {
                 module_init.insert(
                     NodeModuleId::PackageTypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate::WasmPackage),
+                    RENodeModuleInit::TypeInfo(PackageTypeInfoSubstate::WasmPackage),
                 );
             }
             (RENodeId::ResourceManager(..), RENodeInit::ResourceManager(..)) => {
                 module_init.insert(
                     NodeModuleId::ComponentTypeInfo,
-                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                    RENodeModuleInit::ComponentTypeInfo(ComponentTypeInfoSubstate {
                         package_address: RESOURCE_MANAGER_PACKAGE,
                         blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
                     }),
@@ -836,7 +836,7 @@ where
             (RENodeId::EpochManager(..), RENodeInit::EpochManager(..)) => {
                 module_init.insert(
                     NodeModuleId::ComponentTypeInfo,
-                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                    RENodeModuleInit::ComponentTypeInfo(ComponentTypeInfoSubstate {
                         package_address: EPOCH_MANAGER_PACKAGE,
                         blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
                     }),
@@ -845,7 +845,7 @@ where
             (RENodeId::Validator(..), RENodeInit::Validator(..)) => {
                 module_init.insert(
                     NodeModuleId::ComponentTypeInfo,
-                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                    RENodeModuleInit::ComponentTypeInfo(ComponentTypeInfoSubstate {
                         package_address: EPOCH_MANAGER_PACKAGE,
                         blueprint_name: VALIDATOR_BLUEPRINT.to_string(),
                     }),
@@ -854,7 +854,7 @@ where
             (RENodeId::Clock(..), RENodeInit::Clock(..)) => {
                 module_init.insert(
                     NodeModuleId::ComponentTypeInfo,
-                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                    RENodeModuleInit::ComponentTypeInfo(ComponentTypeInfoSubstate {
                         package_address: CLOCK_PACKAGE,
                         blueprint_name: CLOCK_BLUEPRINT.to_string(),
                     }),
@@ -863,7 +863,7 @@ where
             (RENodeId::Identity(..), RENodeInit::Identity(..)) => {
                 module_init.insert(
                     NodeModuleId::ComponentTypeInfo,
-                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                    RENodeModuleInit::ComponentTypeInfo(ComponentTypeInfoSubstate {
                         package_address: IDENTITY_PACKAGE,
                         blueprint_name: IDENTITY_BLUEPRINT.to_string(),
                     }),
@@ -872,7 +872,7 @@ where
             (RENodeId::AccessController(..), RENodeInit::AccessController(..)) => {
                 module_init.insert(
                     NodeModuleId::ComponentTypeInfo,
-                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                    RENodeModuleInit::ComponentTypeInfo(ComponentTypeInfoSubstate {
                         package_address: ACCESS_CONTROLLER_PACKAGE,
                         blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
                     }),
@@ -881,7 +881,7 @@ where
             (RENodeId::Account(..), RENodeInit::Account(..)) => {
                 module_init.insert(
                     NodeModuleId::ComponentTypeInfo,
-                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                    RENodeModuleInit::ComponentTypeInfo(ComponentTypeInfoSubstate {
                         package_address: ACCOUNT_PACKAGE,
                         blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
                     }),

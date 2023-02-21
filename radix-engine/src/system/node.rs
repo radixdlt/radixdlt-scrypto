@@ -9,7 +9,7 @@ use crate::system::global::GlobalSubstate;
 use crate::system::node_modules::auth::*;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_substates::*;
-use crate::system::type_info::TypeInfoSubstate;
+use crate::system::type_info::PackageTypeInfoSubstate;
 use crate::types::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::package::*;
@@ -21,10 +21,10 @@ use radix_engine_interface::api::types::{
 
 #[derive(Debug)]
 pub enum RENodeModuleInit {
-    TypeInfo(TypeInfoSubstate),
+    TypeInfo(PackageTypeInfoSubstate),
     Metadata(MetadataSubstate),
     AccessRulesChain(AccessRulesChainSubstate),
-    ComponentTypeInfo(ComponentInfoSubstate),
+    ComponentTypeInfo(ComponentTypeInfoSubstate),
     ComponentRoyalty(
         ComponentRoyaltyConfigSubstate,
         ComponentRoyaltyAccumulatorSubstate,
@@ -92,7 +92,7 @@ pub enum RENodeInit {
     Bucket(BucketSubstate),
     Proof(ProofSubstate),
     AuthZoneStack(AuthZoneStackSubstate),
-    Vault(VaultRuntimeSubstate),
+    Vault(VaultSubstate),
     Worktop(WorktopSubstate),
     KeyValueStore,
     NonFungibleStore(NonFungibleStore),
