@@ -102,10 +102,10 @@ impl RENodeModuleInit {
 #[derive(Debug)]
 pub enum RENodeInit {
     Global(GlobalSubstate),
-    FungibleVault(VaultInfoSubstate, LiquidFungibleResource),
-    NonFungibleVault(VaultInfoSubstate, LiquidNonFungibleResource),
-    FungibleBucket(BucketInfoSubstate, LiquidFungibleResource),
-    NonFungibleBucket(BucketInfoSubstate, LiquidNonFungibleResource),
+    FungibleVault(LiquidFungibleResource),
+    NonFungibleVault(LiquidNonFungibleResource),
+    FungibleBucket(LiquidFungibleResource),
+    NonFungibleBucket(LiquidNonFungibleResource),
     Proof(ProofSubstate),
     AuthZoneStack(AuthZoneStackSubstate),
     Worktop(WorktopSubstate),
@@ -133,40 +133,52 @@ impl RENodeInit {
     pub fn to_substates(self) -> HashMap<SubstateOffset, RuntimeSubstate> {
         let mut substates = HashMap::<SubstateOffset, RuntimeSubstate>::new();
         match self {
-            RENodeInit::FungibleVault(info, liquid) => {
+            RENodeInit::FungibleVault(liquid) => {
                 substates.insert(
                     SubstateOffset::Vault(VaultOffset::Info),
-                    RuntimeSubstate::VaultInfo(info),
+                    RuntimeSubstate::VaultInfo(VaultInfoSubstate {
+                        resource_address: liquid.resource_address(),
+                        resource_type: liquid.resource_type(),
+                    }),
                 );
                 substates.insert(
                     SubstateOffset::Vault(VaultOffset::LiquidFungible),
                     RuntimeSubstate::VaultLiquidFungible(liquid),
                 );
             }
-            RENodeInit::NonFungibleVault(info, liquid) => {
+            RENodeInit::NonFungibleVault(liquid) => {
                 substates.insert(
                     SubstateOffset::Vault(VaultOffset::Info),
-                    RuntimeSubstate::VaultInfo(info),
+                    RuntimeSubstate::VaultInfo(VaultInfoSubstate {
+                        resource_address: liquid.resource_address(),
+                        resource_type: liquid.resource_type(),
+                    }),
                 );
                 substates.insert(
                     SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
                     RuntimeSubstate::VaultLiquidNonFungible(liquid),
                 );
             }
-            RENodeInit::FungibleBucket(info, liquid) => {
+            RENodeInit::FungibleBucket(liquid) => {
                 substates.insert(
                     SubstateOffset::Bucket(BucketOffset::Info),
-                    RuntimeSubstate::BucketInfo(info),
+                    RuntimeSubstate::VaultInfo(VaultInfoSubstate {
+                        resource_address: liquid.resource_address(),
+                        resource_type: liquid.resource_type(),
+                    }),
                 );
                 substates.insert(
                     SubstateOffset::Bucket(BucketOffset::LiquidFungible),
                     RuntimeSubstate::BucketLiquidFungible(liquid),
                 );
             }
-            RENodeInit::NonFungibleBucket(info, liquid) => {
+            RENodeInit::NonFungibleBucket(liquid) => {
                 substates.insert(
                     SubstateOffset::Bucket(BucketOffset::Info),
-                    RuntimeSubstate::BucketInfo(info),
+                    RuntimeSubstate::VaultInfo(VaultInfoSubstate {
+                        resource_address: liquid.resource_address(),
+                        resource_type: liquid.resource_type(),
+                    }),
                 );
                 substates.insert(
                     SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),

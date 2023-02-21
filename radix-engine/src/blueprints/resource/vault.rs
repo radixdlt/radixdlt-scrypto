@@ -303,18 +303,14 @@ impl VaultBlueprint {
 
         // Take
         let taken = VaultNode::take(receiver, input.amount, api)?;
-        let info = BucketInfoSubstate {
-            resource_address: taken.resource_address(),
-            resource_type: taken.resource_type(),
-        };
 
         // Create node
         let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
         api.kernel_create_node(
             node_id,
             match taken {
-                LiquidResource::Fungible(f) => RENodeInit::FungibleBucket(info, f),
-                LiquidResource::NonFungible(nf) => RENodeInit::NonFungibleBucket(info, nf),
+                LiquidResource::Fungible(f) => RENodeInit::FungibleBucket(f),
+                LiquidResource::NonFungible(nf) => RENodeInit::NonFungibleBucket(nf),
             },
             BTreeMap::new(),
         )?;
@@ -339,16 +335,12 @@ impl VaultBlueprint {
 
         // Take
         let taken = VaultNode::take_non_fungibles(receiver, &input.non_fungible_local_ids, api)?;
-        let info = BucketInfoSubstate {
-            resource_address: taken.resource_address(),
-            resource_type: taken.resource_type(),
-        };
 
         // Create node
         let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
         api.kernel_create_node(
             node_id,
-            RENodeInit::NonFungibleBucket(info, taken),
+            RENodeInit::NonFungibleBucket(taken),
             BTreeMap::new(),
         )?;
         let bucket_id = node_id.into();
@@ -511,18 +503,14 @@ impl VaultBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let taken = VaultNode::take(receiver, input.amount, api)?;
-        let info = BucketInfoSubstate {
-            resource_address: taken.resource_address(),
-            resource_type: taken.resource_type(),
-        };
 
         // Create node
         let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
         api.kernel_create_node(
             node_id,
             match taken {
-                LiquidResource::Fungible(f) => RENodeInit::FungibleBucket(info, f),
-                LiquidResource::NonFungible(nf) => RENodeInit::NonFungibleBucket(info, nf),
+                LiquidResource::Fungible(f) => RENodeInit::FungibleBucket(f),
+                LiquidResource::NonFungible(nf) => RENodeInit::NonFungibleBucket(nf),
             },
             BTreeMap::new(),
         )?;
@@ -546,16 +534,12 @@ impl VaultBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let taken = VaultNode::take_non_fungibles(receiver, &input.non_fungible_local_ids, api)?;
-        let info = BucketInfoSubstate {
-            resource_address: taken.resource_address(),
-            resource_type: taken.resource_type(),
-        };
 
         // Create node
         let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
         api.kernel_create_node(
             node_id,
-            RENodeInit::NonFungibleBucket(info, taken),
+            RENodeInit::NonFungibleBucket(taken),
             BTreeMap::new(),
         )?;
         let bucket_id = node_id.into();

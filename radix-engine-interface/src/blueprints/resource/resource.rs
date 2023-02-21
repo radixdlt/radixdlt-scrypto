@@ -273,6 +273,20 @@ impl LiquidResource {
         }
     }
 
+    pub fn amount(&self) -> Decimal {
+        match self {
+            LiquidResource::Fungible(f) => f.amount(),
+            LiquidResource::NonFungible(nf) => nf.amount(),
+        }
+    }
+
+    pub fn non_fungible_ids(&self) -> Option<&BTreeSet<NonFungibleLocalId>> {
+        match self {
+            LiquidResource::Fungible(f) => None,
+            LiquidResource::NonFungible(nf) => Some(nf.ids()),
+        }
+    }
+
     pub fn into_fungible(self) -> Option<LiquidFungibleResource> {
         match self {
             LiquidResource::Fungible(f) => Some(f),
