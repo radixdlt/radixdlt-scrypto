@@ -202,7 +202,7 @@ impl KernelModule for CostingModule {
             let vault_handle = api.kernel_lock_substate(
                 vault_node_id,
                 NodeModuleId::SELF,
-                SubstateOffset::Vault(VaultOffset::Vault),
+                SubstateOffset::Vault(VaultOffset::Info),
                 LockFlags::MUTABLE,
             )?;
             api.kernel_drop_lock(vault_handle)?;
@@ -249,7 +249,7 @@ impl KernelModule for CostingModule {
                 let vault_handle = api.kernel_lock_substate(
                     vault_node_id,
                     NodeModuleId::SELF,
-                    SubstateOffset::Vault(VaultOffset::Vault),
+                    SubstateOffset::Vault(VaultOffset::Info),
                     LockFlags::MUTABLE,
                 )?;
                 api.kernel_drop_lock(vault_handle)?;

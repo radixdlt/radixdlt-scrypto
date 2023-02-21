@@ -235,6 +235,28 @@ pub struct LockedFungibleResource {
     amounts: BTreeMap<Decimal, usize>,
 }
 
+impl LockedFungibleResource {
+    pub fn is_locked(&self) -> bool {
+        !self.amounts.is_empty()
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct LockedNonFungibleResource {
+    /// The locked non-fungible ids and the corresponding times of being locked.
+    ids: BTreeMap<NonFungibleLocalId, usize>,
+}
+
+impl LockedNonFungibleResource {
+    pub fn is_locked(&self) -> bool {
+        !self.ids.is_empty()
+    }
+}
+
+//=============================
+// TODO: remove code below
+//=============================
+
 #[derive(Debug)]
 pub struct FungibleResource {
     liquid: LiquidFungibleResource,
@@ -367,12 +389,6 @@ impl FungibleResource {
             amount: self.liquid_amount(),
         }
     }
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub struct LockedNonFungibleResource {
-    /// The locked non-fungible ids and the corresponding times of being locked.
-    ids: BTreeMap<NonFungibleLocalId, usize>,
 }
 
 #[derive(Debug)]

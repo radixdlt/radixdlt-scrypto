@@ -1,6 +1,6 @@
 use super::track::Track;
 use crate::blueprints::logger::LoggerSubstate;
-use crate::blueprints::resource::{BucketSubstate, NonFungibleSubstate, ProofSubstate};
+use crate::blueprints::resource::{BucketInfoSubstate, NonFungibleSubstate, ProofSubstate};
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::errors::CallFrameError;
 use crate::system::node_modules::access_rules::AuthZoneStackSubstate;
@@ -139,12 +139,12 @@ pub struct HeapRENode {
     pub substates: BTreeMap<(NodeModuleId, SubstateOffset), RuntimeSubstate>,
 }
 
-impl Into<BucketSubstate> for HeapRENode {
-    fn into(mut self) -> BucketSubstate {
+impl Into<BucketInfoSubstate> for HeapRENode {
+    fn into(mut self) -> BucketInfoSubstate {
         self.substates
             .remove(&(
                 NodeModuleId::SELF,
-                SubstateOffset::Bucket(BucketOffset::Bucket),
+                SubstateOffset::Bucket(BucketOffset::Info),
             ))
             .unwrap()
             .into()

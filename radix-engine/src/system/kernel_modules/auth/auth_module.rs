@@ -185,7 +185,7 @@ impl KernelModule for AuthModule {
                     )?;
 
                     let resource_address = {
-                        let offset = SubstateOffset::Vault(VaultOffset::Vault);
+                        let offset = SubstateOffset::Vault(VaultOffset::Info);
                         let handle = api.kernel_lock_substate(
                             vault_node_id,
                             NodeModuleId::SELF,
@@ -193,7 +193,7 @@ impl KernelModule for AuthModule {
                             LockFlags::read_only(),
                         )?;
                         let substate_ref = api.kernel_get_substate_ref(handle)?;
-                        let resource_address = substate_ref.vault().resource_address();
+                        let resource_address = substate_ref.vault_info().resource_address;
                         api.kernel_drop_lock(handle)?;
                         resource_address
                     };

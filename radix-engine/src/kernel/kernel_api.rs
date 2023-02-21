@@ -7,12 +7,15 @@ use super::module_mixer::KernelModuleMixer;
 use crate::errors::*;
 use crate::system::kernel_modules::execution_trace::BucketSnapshot;
 use crate::system::kernel_modules::execution_trace::ProofSnapshot;
+use crate::system::node::RENodeInit;
+use crate::system::node::RENodeModuleInit;
+use crate::system::node_substates::SubstateRef;
+use crate::system::node_substates::SubstateRefMut;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use bitflags::bitflags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::resource::*;
 
 bitflags! {
     #[derive(Sbor)]

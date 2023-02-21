@@ -295,9 +295,9 @@ impl TestRunner {
                 .get_substate(&SubstateId(
                     RENodeId::Vault(royalty_vault.vault_id()),
                     NodeModuleId::SELF,
-                    SubstateOffset::Vault(VaultOffset::Vault),
+                    SubstateOffset::Vault(VaultOffset::Info),
                 ))
-                .map(|output| output.substate.vault().0.amount())
+                .map(|output| output.substate.vault_info().0.amount())
         } else {
             None
         }
@@ -321,9 +321,9 @@ impl TestRunner {
                 .get_substate(&SubstateId(
                     RENodeId::Vault(royalty_vault.vault_id()),
                     NodeModuleId::SELF,
-                    SubstateOffset::Vault(VaultOffset::Vault),
+                    SubstateOffset::Vault(VaultOffset::Info),
                 ))
-                .map(|output| output.substate.vault().0.amount())
+                .map(|output| output.substate.vault_info().0.amount())
         } else {
             None
         }
@@ -370,9 +370,9 @@ impl TestRunner {
             .get_substate(&SubstateId(
                 RENodeId::Vault(vault_id),
                 NodeModuleId::SELF,
-                SubstateOffset::Vault(VaultOffset::Vault),
+                SubstateOffset::Vault(VaultOffset::Info),
             ))
-            .map(|output| output.substate.vault().0.amount())
+            .map(|output| output.substate.vault_info().0.amount())
     }
 
     pub fn inspect_nft_vault(&mut self, vault_id: VaultId) -> Option<BTreeSet<NonFungibleLocalId>> {
@@ -380,9 +380,9 @@ impl TestRunner {
             .get_substate(&SubstateId(
                 RENodeId::Vault(vault_id),
                 NodeModuleId::SELF,
-                SubstateOffset::Vault(VaultOffset::Vault),
+                SubstateOffset::Vault(VaultOffset::Info),
             ))
-            .map(|output| output.substate.vault().0.ids().clone())
+            .map(|output| output.substate.vault_info().0.ids().clone())
     }
 
     pub fn get_component_resources(

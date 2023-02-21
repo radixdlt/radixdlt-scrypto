@@ -595,7 +595,7 @@ where
                     }
                     RENodeId::Vault(..) => {
                         if self.current_frame.get_node_location(*node_id).is_err() {
-                            let offset = SubstateOffset::Vault(VaultOffset::Vault);
+                            let offset = SubstateOffset::Vault(VaultOffset::Info);
                             self.track
                                 .acquire_lock(
                                     SubstateId(*node_id, NodeModuleId::SELF, offset.clone()),
@@ -785,7 +785,8 @@ where
                     }),
                 );
             }
-            (RENodeId::Bucket(..), RENodeInit::Bucket(..)) => {
+            (RENodeId::Bucket(..), RENodeInit::FungibleBucket(..))
+            | (RENodeId::Bucket(..), RENodeInit::NonFungibleBucket(..)) => {
                 module_init.insert(
                     NodeModuleId::ComponentTypeInfo,
                     RENodeModuleInit::ComponentTypeInfo(ComponentTypeInfoSubstate {
@@ -803,7 +804,8 @@ where
                     }),
                 );
             }
-            (RENodeId::Vault(..), RENodeInit::Vault(..)) => {
+            (RENodeId::Vault(..), RENodeInit::FungibleVault(..))
+            | (RENodeId::Vault(..), RENodeInit::NonFungibleVault(..)) => {
                 module_init.insert(
                     NodeModuleId::ComponentTypeInfo,
                     RENodeModuleInit::ComponentTypeInfo(ComponentTypeInfoSubstate {
@@ -945,9 +947,9 @@ where
             .get_substate(
                 RENodeId::Bucket(bucket_id),
                 NodeModuleId::SELF,
-                &SubstateOffset::Bucket(BucketOffset::Bucket),
+                &SubstateOffset::Bucket(BucketOffset::Info),
             )
-            .and_then(|substate| Ok(substate.bucket().peek_resource()))
+            .and_then(|substate| Ok(substate.bucket_info().peek_resource()))
             .ok()
     }
 

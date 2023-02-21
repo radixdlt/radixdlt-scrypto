@@ -49,13 +49,13 @@ impl VaultBlueprint {
         let vault_handle = api.kernel_lock_substate(
             receiver,
             NodeModuleId::SELF,
-            SubstateOffset::Vault(VaultOffset::Vault),
+            SubstateOffset::Vault(VaultOffset::Info),
             LockFlags::MUTABLE,
         )?;
 
         let container = {
             let mut substate_mut = api.kernel_get_substate_ref_mut(vault_handle)?;
-            let vault = substate_mut.vault();
+            let vault = substate_mut.vault_info();
             vault.take(amount)?
         };
 
@@ -83,13 +83,13 @@ impl VaultBlueprint {
         let vault_handle = api.kernel_lock_substate(
             receiver,
             NodeModuleId::SELF,
-            SubstateOffset::Vault(VaultOffset::Vault),
+            SubstateOffset::Vault(VaultOffset::Info),
             LockFlags::MUTABLE,
         )?;
 
         let container = {
             let mut substate_mut = api.kernel_get_substate_ref_mut(vault_handle)?;
-            let vault = substate_mut.vault();
+            let vault = substate_mut.vault_info();
             vault.take_non_fungibles(&non_fungible_local_ids)?
         };
 
@@ -160,7 +160,7 @@ impl VaultBlueprint {
         let vault_handle = api.kernel_lock_substate(
             receiver,
             NodeModuleId::SELF,
-            SubstateOffset::Vault(VaultOffset::Vault),
+            SubstateOffset::Vault(VaultOffset::Info),
             LockFlags::MUTABLE,
         )?;
 
@@ -169,7 +169,7 @@ impl VaultBlueprint {
             .into();
 
         let mut substate_mut = api.kernel_get_substate_ref_mut(vault_handle)?;
-        let vault = substate_mut.vault();
+        let vault = substate_mut.vault_info();
         vault.put(bucket).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ResourceError(
                 e,
@@ -196,12 +196,12 @@ impl VaultBlueprint {
         let vault_handle = api.kernel_lock_substate(
             receiver,
             NodeModuleId::SELF,
-            SubstateOffset::Vault(VaultOffset::Vault),
+            SubstateOffset::Vault(VaultOffset::Info),
             LockFlags::read_only(),
         )?;
 
         let substate_ref = api.kernel_get_substate_ref(vault_handle)?;
-        let vault = substate_ref.vault();
+        let vault = substate_ref.vault_info();
         let amount = vault.total_amount();
 
         Ok(IndexedScryptoValue::from_typed(&amount))
@@ -224,12 +224,12 @@ impl VaultBlueprint {
         let vault_handle = api.kernel_lock_substate(
             receiver,
             NodeModuleId::SELF,
-            SubstateOffset::Vault(VaultOffset::Vault),
+            SubstateOffset::Vault(VaultOffset::Info),
             LockFlags::read_only(),
         )?;
 
         let substate_ref = api.kernel_get_substate_ref(vault_handle)?;
-        let vault = substate_ref.vault();
+        let vault = substate_ref.vault_info();
         let resource_address = vault.resource_address();
 
         Ok(IndexedScryptoValue::from_typed(&resource_address))
@@ -253,12 +253,12 @@ impl VaultBlueprint {
         let vault_handle = api.kernel_lock_substate(
             receiver,
             NodeModuleId::SELF,
-            SubstateOffset::Vault(VaultOffset::Vault),
+            SubstateOffset::Vault(VaultOffset::Info),
             LockFlags::read_only(),
         )?;
 
         let substate_ref = api.kernel_get_substate_ref(vault_handle)?;
-        let vault = substate_ref.vault();
+        let vault = substate_ref.vault_info();
         let ids = vault.total_ids().map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ResourceError(
                 e,
@@ -285,14 +285,14 @@ impl VaultBlueprint {
         let vault_handle = api.kernel_lock_substate(
             receiver,
             NodeModuleId::SELF,
-            SubstateOffset::Vault(VaultOffset::Vault),
+            SubstateOffset::Vault(VaultOffset::Info),
             LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE,
         )?;
 
         // Take by amount
         let fee = {
             let mut substate_mut = api.kernel_get_substate_ref_mut(vault_handle)?;
-            let vault = substate_mut.vault();
+            let vault = substate_mut.vault_info();
 
             // Check resource and take amount
             if vault.resource_address() != RADIX_TOKEN {
@@ -315,7 +315,7 @@ impl VaultBlueprint {
         // Keep changes
         {
             let mut substate_mut = api.kernel_get_substate_ref_mut(vault_handle)?;
-            let vault = substate_mut.vault();
+            let vault = substate_mut.vault_info();
             vault.put(BucketSubstate::new(changes)).map_err(|e| {
                 RuntimeError::ApplicationError(ApplicationError::VaultError(
                     VaultError::ResourceError(e),
@@ -382,13 +382,13 @@ impl VaultBlueprint {
         let vault_handle = api.kernel_lock_substate(
             receiver,
             NodeModuleId::SELF,
-            SubstateOffset::Vault(VaultOffset::Vault),
+            SubstateOffset::Vault(VaultOffset::Info),
             LockFlags::MUTABLE,
         )?;
 
         let proof = {
             let mut substate_mut = api.kernel_get_substate_ref_mut(vault_handle)?;
-            let vault = substate_mut.vault();
+            let vault = substate_mut.vault_info();
             vault
                 .create_proof(ResourceContainerId::Vault(receiver.into()))
                 .map_err(|e| {
@@ -422,13 +422,13 @@ impl VaultBlueprint {
         let vault_handle = api.kernel_lock_substate(
             receiver,
             NodeModuleId::SELF,
-            SubstateOffset::Vault(VaultOffset::Vault),
+            SubstateOffset::Vault(VaultOffset::Info),
             LockFlags::MUTABLE,
         )?;
 
         let proof = {
             let mut substate_mut = api.kernel_get_substate_ref_mut(vault_handle)?;
-            let vault = substate_mut.vault();
+            let vault = substate_mut.vault_info();
             vault
                 .create_proof_by_amount(input.amount, ResourceContainerId::Vault(receiver.into()))
                 .map_err(|e| {
@@ -462,13 +462,13 @@ impl VaultBlueprint {
         let vault_handle = api.kernel_lock_substate(
             receiver,
             NodeModuleId::SELF,
-            SubstateOffset::Vault(VaultOffset::Vault),
+            SubstateOffset::Vault(VaultOffset::Info),
             LockFlags::MUTABLE,
         )?;
 
         let proof = {
             let mut substate_mut = api.kernel_get_substate_ref_mut(vault_handle)?;
-            let vault = substate_mut.vault();
+            let vault = substate_mut.vault_info();
             vault
                 .create_proof_by_ids(&input.ids, ResourceContainerId::Vault(receiver.into()))
                 .map_err(|e| {

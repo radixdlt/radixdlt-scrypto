@@ -666,7 +666,7 @@ impl<'s> FinalizingTrack<'s> {
             let substate_id = SubstateId(
                 RENodeId::Vault(vault_id),
                 NodeModuleId::SELF,
-                SubstateOffset::Vault(VaultOffset::Vault),
+                SubstateOffset::Vault(VaultOffset::Info),
             );
 
             // Update substate
@@ -705,7 +705,7 @@ impl<'s> FinalizingTrack<'s> {
                         .get_mut(&SubstateId(
                             RENodeId::Vault(royalty_vault_id),
                             NodeModuleId::SELF,
-                            SubstateOffset::Vault(VaultOffset::Vault),
+                            SubstateOffset::Vault(VaultOffset::Info),
                         ))
                         .unwrap();
                     royalty_vault_substate
@@ -734,7 +734,7 @@ impl<'s> FinalizingTrack<'s> {
                         .get_mut(&SubstateId(
                             RENodeId::Vault(royalty_vault_id),
                             NodeModuleId::SELF,
-                            SubstateOffset::Vault(VaultOffset::Vault),
+                            SubstateOffset::Vault(VaultOffset::Info),
                         ))
                         .unwrap();
                     royalty_vault_substate

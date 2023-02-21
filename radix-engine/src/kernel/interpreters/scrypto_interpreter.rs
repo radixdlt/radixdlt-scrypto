@@ -17,7 +17,7 @@ use crate::system::node_modules::access_rules::{AccessRulesNativePackage, AuthZo
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::package::Package;
-use crate::system::type_info::TypeInfoSubstate;
+use crate::system::type_info::PackageTypeInfoSubstate;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
 use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
@@ -115,7 +115,7 @@ impl ExecutableInvocation for MethodInvocation {
         let type_info = if package_address.eq(&PACKAGE_LOADER) {
             // TODO: Remove this weirdness
             node_refs_to_copy.insert(RENodeId::Global(Address::Resource(RADIX_TOKEN)));
-            TypeInfoSubstate::NativePackage
+            PackageTypeInfoSubstate::NativePackage
         } else {
             let handle = api.kernel_lock_substate(
                 RENodeId::Global(Address::Package(package_address)),
@@ -236,7 +236,7 @@ impl ExecutableInvocation for FunctionInvocation {
         let type_info = if self.fn_identifier.package_address.eq(&PACKAGE_LOADER) {
             // TODO: Remove this weirdness
             node_refs_to_copy.insert(RENodeId::Global(Address::Resource(RADIX_TOKEN)));
-            TypeInfoSubstate::NativePackage
+            PackageTypeInfoSubstate::NativePackage
         } else {
             let handle = api.kernel_lock_substate(
                 RENodeId::Global(Address::Package(self.fn_identifier.package_address)),
@@ -251,12 +251,12 @@ impl ExecutableInvocation for FunctionInvocation {
         };
 
         let export_name = match type_info {
-            TypeInfoSubstate::NativePackage => {
+            PackageTypeInfoSubstate::NativePackage => {
                 // TODO: Do we need to check against the abi? Probably not since we should be able to verify this
                 // TODO: in the native package itself.
                 self.fn_identifier.ident.to_string() // TODO: Clean this up
             }
-            TypeInfoSubstate::WasmPackage => {
+            PackageTypeInfoSubstate::WasmPackage => {
                 node_refs_to_copy.insert(RENodeId::Global(Address::Component(EPOCH_MANAGER)));
                 node_refs_to_copy.insert(RENodeId::Global(Address::Component(CLOCK)));
                 node_refs_to_copy.insert(RENodeId::Global(Address::Resource(RADIX_TOKEN)));
@@ -388,7 +388,7 @@ impl Executor for ScryptoExecutor {
             };
 
             let output = match type_info {
-                TypeInfoSubstate::NativePackage => {
+                PackageTypeInfoSubstate::NativePackage => {
                     let handle = api.kernel_lock_substate(
                         RENodeId::Global(Address::Package(self.package_address)),
                         NodeModuleId::SELF,
@@ -406,7 +406,7 @@ impl Executor for ScryptoExecutor {
                         api,
                     )?
                 }
-                TypeInfoSubstate::WasmPackage => {
+                PackageTypeInfoSubstate::WasmPackage => {
                     let rtn_type = {
                         let handle = api.kernel_lock_substate(
                             RENodeId::Global(Address::Package(self.package_address)),

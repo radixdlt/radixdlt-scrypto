@@ -687,9 +687,9 @@ impl ExecutionTraceReceipt {
             .get(&SubstateId(
                 RENodeId::Vault(vault_id),
                 NodeModuleId::SELF,
-                SubstateOffset::Vault(VaultOffset::Vault),
+                SubstateOffset::Vault(VaultOffset::Info),
             ))
             .expect("Failed to find the vault substate");
-        substate.vault().resource_address()
+        substate.vault_info().resource_address
     }
 }

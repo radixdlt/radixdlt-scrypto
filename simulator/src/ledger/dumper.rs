@@ -435,7 +435,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             .get_substate(&SubstateId(
                 RENodeId::Vault(*vault_id),
                 NodeModuleId::SELF,
-                SubstateOffset::Vault(VaultOffset::Vault),
+                SubstateOffset::Vault(VaultOffset::Info),
             ))
             .map(|s| s.substate)
             .map(|s| s.into())

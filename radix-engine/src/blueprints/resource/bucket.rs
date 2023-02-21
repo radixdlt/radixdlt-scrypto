@@ -51,7 +51,7 @@ impl BucketBlueprint {
         )?;
 
         let mut substate_mut = api.kernel_get_substate_ref_mut(bucket_handle)?;
-        let bucket = substate_mut.bucket();
+        let bucket = substate_mut.bucket_info();
         let container = bucket.take(input.amount).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
                 BucketError::ResourceError(e),
@@ -90,7 +90,7 @@ impl BucketBlueprint {
         )?;
 
         let mut substate_mut = api.kernel_get_substate_ref_mut(bucket_handle)?;
-        let bucket = substate_mut.bucket();
+        let bucket = substate_mut.bucket_info();
         let container = bucket.take_non_fungibles(&input.ids).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
                 BucketError::ResourceError(e),
@@ -131,7 +131,7 @@ impl BucketBlueprint {
             .kernel_drop_node(RENodeId::Bucket(input.bucket.0))?
             .into();
         let mut substate_mut = api.kernel_get_substate_ref_mut(bucket_handle)?;
-        let bucket = substate_mut.bucket();
+        let bucket = substate_mut.bucket_info();
         bucket.put(other_bucket).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
                 BucketError::ResourceError(e),
@@ -161,7 +161,7 @@ impl BucketBlueprint {
         )?;
 
         let mut substate_mut = api.kernel_get_substate_ref_mut(bucket_handle)?;
-        let bucket = substate_mut.bucket();
+        let bucket = substate_mut.bucket_info();
         let proof = bucket.create_proof(receiver.into()).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(BucketError::ProofError(
                 e,
@@ -195,7 +195,7 @@ impl BucketBlueprint {
             LockFlags::read_only(),
         )?;
         let substate_ref = api.kernel_get_substate_ref(bucket_handle)?;
-        let bucket = substate_ref.bucket();
+        let bucket = substate_ref.bucket_info();
         let ids = bucket.total_ids().map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
                 BucketError::ResourceError(e),
@@ -225,7 +225,7 @@ impl BucketBlueprint {
         )?;
 
         let substate = api.kernel_get_substate_ref(bucket_handle)?;
-        let bucket = substate.bucket();
+        let bucket = substate.bucket_info();
         Ok(IndexedScryptoValue::from_typed(&bucket.total_amount()))
     }
 
@@ -250,7 +250,7 @@ impl BucketBlueprint {
         )?;
 
         let substate = api.kernel_get_substate_ref(bucket_handle)?;
-        let bucket = substate.bucket();
+        let bucket = substate.bucket_info();
 
         Ok(IndexedScryptoValue::from_typed(&bucket.resource_address()))
     }

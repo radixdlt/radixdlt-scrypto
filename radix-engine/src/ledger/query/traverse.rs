@@ -1,4 +1,3 @@
-use crate::blueprints::resource::VaultSubstate;
 use crate::ledger::{QueryableSubstateStore, ReadableSubstateStore};
 use crate::system::global::GlobalSubstate;
 use crate::system::node_substates::PersistedSubstate;
@@ -79,7 +78,7 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                 let substate_id = SubstateId(
                     RENodeId::Vault(vault_id),
                     NodeModuleId::SELF,
-                    SubstateOffset::Vault(VaultOffset::Vault),
+                    SubstateOffset::Vault(VaultOffset::Info),
                 );
                 if let Some(output_value) = self.substate_store.get_substate(&substate_id) {
                     let vault_substate: VaultSubstate = output_value.substate.into();

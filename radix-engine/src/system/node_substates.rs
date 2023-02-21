@@ -1196,9 +1196,65 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
+    pub fn bucket_liquid_fungible(&self) -> &LiquidFungibleResource {
+        match self {
+            SubstateRef::BucketLiquidFungible(value) => *value,
+            _ => panic!("Not a bucket"),
+        }
+    }
+
+    pub fn bucket_liquid_non_fungible(&self) -> &LiquidNonFungibleResource {
+        match self {
+            SubstateRef::BucketLiquidNonFungible(value) => *value,
+            _ => panic!("Not a bucket"),
+        }
+    }
+
+    pub fn bucket_locked_fungible(&self) -> &LockedFungibleResource {
+        match self {
+            SubstateRef::BucketLockedFungible(value) => *value,
+            _ => panic!("Not a bucket"),
+        }
+    }
+
+    pub fn bucket_locked_non_fungible(&self) -> &LockedNonFungibleResource {
+        match self {
+            SubstateRef::BucketLockedNonFungible(value) => *value,
+            _ => panic!("Not a bucket"),
+        }
+    }
+
     pub fn vault_info(&self) -> &VaultInfoSubstate {
         match self {
             SubstateRef::VaultInfo(value) => *value,
+            _ => panic!("Not a vault"),
+        }
+    }
+
+    pub fn vault_liquid_fungible(&self) -> &LiquidFungibleResource {
+        match self {
+            SubstateRef::VaultLiquidFungible(value) => *value,
+            _ => panic!("Not a vault"),
+        }
+    }
+
+    pub fn vault_liquid_non_fungible(&self) -> &LiquidNonFungibleResource {
+        match self {
+            SubstateRef::VaultLiquidNonFungible(value) => *value,
+            _ => panic!("Not a vault"),
+        }
+    }
+
+    pub fn vault_locked_fungible(&self) -> &LockedFungibleResource {
+        match self {
+            SubstateRef::VaultLockedFungible(value) => *value,
+            _ => panic!("Not a vault"),
+        }
+    }
+
+    pub fn vault_locked_non_fungible(&self) -> &LockedNonFungibleResource {
+        match self {
+            SubstateRef::VaultLockedNonFungible(value) => *value,
             _ => panic!("Not a vault"),
         }
     }

@@ -1,4 +1,3 @@
-use crate::blueprints::resource::VaultSubstate;
 use crate::ledger::{
     QueryableSubstateStore, ReadableSubstateStore, StateTreeTraverser, StateTreeTraverserError,
     StateTreeVisitor,
