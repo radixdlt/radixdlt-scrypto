@@ -1,24 +1,27 @@
+use super::*;
 use crate::*;
 
 use super::CustomTraversal;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TraversalEvent<'de, C: CustomTraversal> {
-    ContainerStart(LocatedEvent<ContainerHeader<C::CustomContainerHeader>>),
-    ContainerEnd(LocatedEvent<ContainerHeader<C::CustomContainerHeader>>),
-    TerminalValue(LocatedEvent<TerminalValueRef<'de, C::CustomTerminalValueRef>>),
-    TerminalValueBatch(LocatedEvent<TerminalValueBatchRef<'de, C::CustomTerminalValueBatchRef>>),
-    DecodeError(LocatedEvent<DecodeError>),
+    ContainerStart(LocatedDecoding<ContainerHeader<C::CustomContainerHeader>>),
+    ContainerEnd(LocatedDecoding<ContainerHeader<C::CustomContainerHeader>>),
+    TerminalValue(LocatedDecoding<TerminalValueRef<'de, C::CustomTerminalValueRef>>),
+    TerminalValueBatch(LocatedDecoding<TerminalValueBatchRef<'de, C::CustomTerminalValueBatchRef>>),
+    PayloadEnd(Location),
+    DecodeError(LocatedError<DecodeError>),
 }
 
 impl<'de, C: CustomTraversal> TraversalEvent<'de, C> {
     pub fn get_next_sbor_depth(&self) -> u8 {
         match self {
-            TraversalEvent::ContainerStart(le) => le.sbor_depth + 1,
-            TraversalEvent::ContainerEnd(le) => le.sbor_depth,
-            TraversalEvent::TerminalValue(le) => le.sbor_depth,
-            TraversalEvent::TerminalValueBatch(le) => le.sbor_depth,
-            TraversalEvent::DecodeError(le) => le.sbor_depth,
+            TraversalEvent::ContainerStart(le) => le.location.sbor_depth + 1,
+            TraversalEvent::ContainerEnd(le) => le.location.sbor_depth,
+            TraversalEvent::TerminalValue(le) => le.location.sbor_depth,
+            TraversalEvent::TerminalValueBatch(le) => le.location.sbor_depth,
+            TraversalEvent::PayloadEnd(location) => location.sbor_depth,
+            TraversalEvent::DecodeError(le) => le.location.sbor_depth,
         }
     }
 
@@ -30,13 +33,25 @@ impl<'de, C: CustomTraversal> TraversalEvent<'de, C> {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LocatedError<E> {
+    pub error: E,
+    pub location: Location,
+}
+
 /// A wrapper for traversal event bodies, given the context inside the payload.
 /// The `start_offset` and `end_offset` have meanings in the context of the event.
 /// * For ContainerValueStart, they're the start/end of the header
 /// * For ContainerValueEnd, they're the start/end of the whole value (including the header)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct LocatedEvent<T> {
-    pub event: T,
+pub struct LocatedDecoding<T> {
+    pub inner: T,
+    pub parent_relationship: ParentRelationship,
+    pub location: Location,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Location {
     pub start_offset: usize,
     pub end_offset: usize,
     pub sbor_depth: u8,
@@ -44,36 +59,61 @@ pub struct LocatedEvent<T> {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ContainerHeader<H: CustomContainerHeader> {
-    Root,
     Tuple(usize),
     EnumVariant(u8, usize),
     Array(ValueKind<H::CustomValueKind>, usize),
-    Map(ValueKind<H::CustomValueKind>, ValueKind<H::CustomValueKind>, usize),
+    Map(
+        ValueKind<H::CustomValueKind>,
+        ValueKind<H::CustomValueKind>,
+        usize,
+    ),
     Custom(H),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ParentRelationship {
+    Root,
+    Element { index: usize },
+    ElementBatch { from_index: usize, to_index: usize },
+    MapKey { index: usize },
+    MapValue { index: usize },
 }
 
 impl<H: CustomContainerHeader> ContainerHeader<H> {
     pub fn get_child_count(&self) -> usize {
         match self {
-            ContainerHeader::Root => 1,
             ContainerHeader::Tuple(size) => *size,
             ContainerHeader::EnumVariant(_, size) => *size,
             ContainerHeader::Array(_, size) => *size,
             ContainerHeader::Map(_, _, size) => *size * 2,
-            ContainerHeader::Custom(custom_header) => custom_header.get_child_count(), 
+            ContainerHeader::Custom(custom_header) => custom_header.get_child_count(),
         }
     }
 
-    pub fn get_implicit_child_value_kind(&self, index: usize) -> Option<ValueKind<H::CustomValueKind>> {
+    pub fn get_implicit_child_value_kind(
+        &self,
+        index: usize,
+    ) -> (ParentRelationship, Option<ValueKind<H::CustomValueKind>>) {
         match self {
-            ContainerHeader::Root => None,
-            ContainerHeader::Tuple(_) => None,
-            ContainerHeader::EnumVariant(_, _) => None,
-            ContainerHeader::Array(element_value_kind, _) => Some(*element_value_kind),
+            ContainerHeader::Tuple(_) => (ParentRelationship::Element { index }, None),
+            ContainerHeader::EnumVariant(_, _) => (ParentRelationship::Element { index }, None),
+            ContainerHeader::Array(element_value_kind, _) => (
+                ParentRelationship::Element { index },
+                Some(*element_value_kind),
+            ),
             ContainerHeader::Map(key, value, _) => {
-                Some(if index % 2 == 0 { *key } else { *value })
+                if index % 2 == 0 {
+                    (ParentRelationship::MapKey { index: index / 2 }, Some(*key))
+                } else {
+                    (
+                        ParentRelationship::MapValue { index: index / 2 },
+                        Some(*value),
+                    )
+                }
             }
-            ContainerHeader::Custom(custom_header) => custom_header.get_implicit_child_value_kind(index),
+            ContainerHeader::Custom(custom_header) => {
+                custom_header.get_implicit_child_value_kind(index)
+            }
         }
     }
 }

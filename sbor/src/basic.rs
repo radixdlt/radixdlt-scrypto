@@ -1,6 +1,7 @@
 use crate::decoder::PayloadTraverser;
 use crate::rust::collections::*;
 use crate::rust::vec::Vec;
+use crate::traversal::*;
 use crate::*;
 
 #[cfg_attr(
@@ -117,7 +118,10 @@ impl CustomContainerHeader for NoCustomContainerHeader {
         unreachable!("NoCustomContainerHeader can't exist")
     }
 
-    fn get_implicit_child_value_kind(&self, _: usize) -> Option<ValueKind<Self::CustomValueKind>> {
+    fn get_implicit_child_value_kind(
+        &self,
+        _: usize,
+    ) -> (ParentRelationship, Option<ValueKind<Self::CustomValueKind>>) {
         unreachable!("NoCustomContainerHeader can't exist")
     }
 }
