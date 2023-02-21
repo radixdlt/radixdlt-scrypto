@@ -7,7 +7,7 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
 };
-use radix_engine_interface::blueprints::account::{ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_LOCAL_IDENT};
+use radix_engine_interface::blueprints::account::{ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_GLOBAL_IDENT};
 use radix_engine_interface::blueprints::epoch_manager::EPOCH_MANAGER_CREATE_VALIDATOR_IDENT;
 use radix_engine_interface::blueprints::identity::{IDENTITY_BLUEPRINT, IDENTITY_CREATE_IDENT};
 use radix_engine_interface::blueprints::resource::{
@@ -349,7 +349,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 blueprint_name.as_str(),
                 function_name.as_str(),
             ) {
-                (&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_LOCAL_IDENT) => {
+                (&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_GLOBAL_IDENT) => {
                     write!(f, "CREATE_ACCOUNT")?;
                 }
                 (&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT, IDENTITY_CREATE_IDENT) => {
