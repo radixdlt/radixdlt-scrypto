@@ -666,18 +666,12 @@ impl<'s> FinalizingTrack<'s> {
             let substate_id = SubstateId(
                 RENodeId::Vault(vault_id),
                 NodeModuleId::SELF,
-                SubstateOffset::Vault(VaultOffset::Info),
+                SubstateOffset::Vault(VaultOffset::LiquidFungible),
             );
 
             // Update substate
-            let (substate, old_version) = to_persist.remove(&substate_id).unwrap();
-            let mut runtime_substate = substate.to_runtime();
-            runtime_substate
-                .vault_mut()
-                .borrow_resource_mut()
-                .put(locked)
-                .unwrap();
-            to_persist.insert(substate_id, (runtime_substate.to_persisted(), old_version));
+            let (substate, old_version) = to_persist.get_mut(&substate_id).unwrap();
+            substate.vault_liquid_fungible_mut().put(locked).unwrap();
 
             // Record final payments
             *actual_fee_payments.entry(vault_id).or_default() += amount;
@@ -705,13 +699,12 @@ impl<'s> FinalizingTrack<'s> {
                         .get_mut(&SubstateId(
                             RENodeId::Vault(royalty_vault_id),
                             NodeModuleId::SELF,
-                            SubstateOffset::Vault(VaultOffset::Info),
+                            SubstateOffset::Vault(VaultOffset::LiquidFungible),
                         ))
                         .unwrap();
                     royalty_vault_substate
                         .0
-                        .vault_mut()
-                        .0
+                        .vault_liquid_fungible_mut()
                         .put(
                             fees.take_by_amount(fee_summary.cost_unit_price * amount.clone())
                                 .unwrap(),
@@ -739,8 +732,7 @@ impl<'s> FinalizingTrack<'s> {
                         .unwrap();
                     royalty_vault_substate
                         .0
-                        .vault_mut()
-                        .0
+                        .vault_liquid_fungible_mut()
                         .put(
                             fees.take_by_amount(fee_summary.cost_unit_price * amount.clone())
                                 .unwrap(),

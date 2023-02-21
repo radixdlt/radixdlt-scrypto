@@ -81,6 +81,14 @@ impl PersistedSubstate {
         }
     }
 
+    pub fn vault_liquid_fungible_mut(&mut self) -> &mut LiquidFungibleResource {
+        if let PersistedSubstate::VaultLiquidFungible(vault) = self {
+            vault
+        } else {
+            panic!("Not a vault");
+        }
+    }
+
     pub fn vault_info_mut(&mut self) -> &mut VaultInfoSubstate {
         if let PersistedSubstate::VaultInfo(vault) = self {
             vault
@@ -589,6 +597,14 @@ impl RuntimeSubstate {
 
     pub fn vault_info_mut(&mut self) -> &mut VaultInfoSubstate {
         if let RuntimeSubstate::VaultInfo(vault) = self {
+            vault
+        } else {
+            panic!("Not a vault");
+        }
+    }
+
+    pub fn vault_liquid_fungible_mut(&mut self) -> &mut LiquidFungibleResource {
+        if let RuntimeSubstate::VaultLiquidFungible(vault) = self {
             vault
         } else {
             panic!("Not a vault");

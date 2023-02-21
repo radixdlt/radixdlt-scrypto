@@ -31,8 +31,8 @@ use radix_engine_interface::blueprints::epoch_manager::{
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::logger::LOGGER_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::{
-    require, AccessRule, AccessRuleKey, AccessRules, Bucket, BUCKET_BLUEPRINT, PROOF_BLUEPRINT,
-    RESOURCE_MANAGER_BLUEPRINT, VAULT_BLUEPRINT, WORKTOP_BLUEPRINT,
+    require, AccessRule, AccessRuleKey, AccessRules, Bucket, ResourceType, BUCKET_BLUEPRINT,
+    PROOF_BLUEPRINT, RESOURCE_MANAGER_BLUEPRINT, VAULT_BLUEPRINT, WORKTOP_BLUEPRINT,
 };
 use radix_engine_interface::blueprints::transaction_runtime::TRANSACTION_RUNTIME_BLUEPRINT;
 use radix_engine_interface::rule;
@@ -943,14 +943,46 @@ where
     }
 
     fn kernel_read_bucket(&mut self, bucket_id: BucketId) -> Option<BucketSnapshot> {
-        self.heap
-            .get_substate(
-                RENodeId::Bucket(bucket_id),
-                NodeModuleId::SELF,
-                &SubstateOffset::Bucket(BucketOffset::Info),
-            )
-            .and_then(|substate| Ok(substate.bucket_info().peek_resource()))
-            .ok()
+        if let Ok(substate) = self.heap.get_substate(
+            RENodeId::Bucket(bucket_id),
+            NodeModuleId::SELF,
+            &SubstateOffset::Bucket(BucketOffset::Info),
+        ) {
+            let resource_type = substate.bucket_info().resource_type;
+
+            match resource_type {
+                ResourceType::Fungible { divisibility } => {
+                    let substate = self
+                        .heap
+                        .get_substate(
+                            RENodeId::Bucket(bucket_id),
+                            NodeModuleId::SELF,
+                            &SubstateOffset::Bucket(BucketOffset::LiquidFungible),
+                        )
+                        .unwrap();
+
+                    Some(BucketSnapshot::Fungible(
+                        substate.bucket_liquid_fungible().clone(),
+                    ))
+                }
+                ResourceType::NonFungible { id_type } => {
+                    let substate = self
+                        .heap
+                        .get_substate(
+                            RENodeId::Bucket(bucket_id),
+                            NodeModuleId::SELF,
+                            &SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
+                        )
+                        .unwrap();
+
+                    Some(BucketSnapshot::NonFungible(
+                        substate.bucket_liquid_non_fungible().clone(),
+                    ))
+                }
+            }
+        } else {
+            None
+        }
     }
 
     fn kernel_read_proof(&mut self, proof_id: BucketId) -> Option<ProofSnapshot> {
