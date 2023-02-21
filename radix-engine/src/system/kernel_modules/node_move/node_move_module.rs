@@ -1,11 +1,11 @@
+use crate::blueprints::resource::BucketNode;
 use crate::errors::{ModuleError, RuntimeError};
 use crate::kernel::actor::ResolvedActor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{KernelModuleApi, LockFlags};
 use crate::kernel::module::KernelModule;
 use crate::types::*;
-use radix_engine_interface::api::types::{BucketOffset, ProofOffset, RENodeId, SubstateOffset};
-use radix_engine_interface::blueprints::resource::ResourceType;
+use radix_engine_interface::api::types::{  ProofOffset, RENodeId, SubstateOffset}; 
 use radix_engine_interface::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -18,58 +18,13 @@ pub enum NodeMoveError {
 pub struct NodeMoveModule {}
 
 impl NodeMoveModule {
-    fn is_bucket_locked<Y: KernelModuleApi<RuntimeError>>(
-        node_id: RENodeId,
-        api: &mut Y,
-    ) -> Result<bool, RuntimeError> {
-        let resource_type = {
-            let handle = api.kernel_lock_substate(
-                node_id,
-                NodeModuleId::SELF,
-                SubstateOffset::Bucket(BucketOffset::Info),
-                LockFlags::read_only(),
-            )?;
-            let substate_ref = api.kernel_get_substate_ref(handle)?;
-            let resource_type = substate_ref.bucket_info().resource_type;
-            api.kernel_drop_lock(handle)?;
-            resource_type
-        };
-
-        match resource_type {
-            ResourceType::Fungible { divisibility } => {
-                let handle = api.kernel_lock_substate(
-                    node_id,
-                    NodeModuleId::SELF,
-                    SubstateOffset::Bucket(BucketOffset::LockedFungible),
-                    LockFlags::read_only(),
-                )?;
-                let substate_ref = api.kernel_get_substate_ref(handle)?;
-                let locked = substate_ref.bucket_locked_fungible().is_locked();
-                api.kernel_drop_lock(handle)?;
-                Ok(locked)
-            }
-            ResourceType::NonFungible { id_type } => {
-                let handle = api.kernel_lock_substate(
-                    node_id,
-                    NodeModuleId::SELF,
-                    SubstateOffset::Bucket(BucketOffset::LockedNonFungible),
-                    LockFlags::read_only(),
-                )?;
-                let substate_ref = api.kernel_get_substate_ref(handle)?;
-                let locked = substate_ref.bucket_locked_non_fungible().is_locked();
-                api.kernel_drop_lock(handle)?;
-                Ok(locked)
-            }
-        }
-    }
-
     fn prepare_move_downstream<Y: KernelModuleApi<RuntimeError>>(
         node_id: RENodeId,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
         match node_id {
             RENodeId::Bucket(..) => {
-                if Self::is_bucket_locked(node_id, api)? {
+                if BucketNode::is_locked(node_id, api)? {
                     Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
                         NodeMoveError::CantMoveDownstream(node_id),
                     )))
@@ -129,7 +84,7 @@ impl NodeMoveModule {
     ) -> Result<(), RuntimeError> {
         match node_id {
             RENodeId::Bucket(..) => {
-                if Self::is_bucket_locked(node_id, api)? {
+                if BucketNode::is_locked(node_id, api)? {
                     Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
                         NodeMoveError::CantMoveUpstream(node_id),
                     )))

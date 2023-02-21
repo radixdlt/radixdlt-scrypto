@@ -3,7 +3,6 @@ use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::kernel_modules::execution_trace::BucketSnapshot;
 use crate::system::node::RENodeInit;
 use crate::types::*;
 use radix_engine_interface::api::types::*;
@@ -26,6 +25,62 @@ pub enum BucketError {
     ResourceError(ResourceError),
     ProofError(ProofError),
     CouldNotCreateProof,
+}
+
+pub struct BucketNode;
+
+impl BucketNode {
+    pub(crate) fn get_info<Y>(
+        node_id: RENodeId,
+        api: &mut Y,
+    ) -> Result<(ResourceAddress, ResourceType), RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi,
+    {
+        let handle = api.kernel_lock_substate(
+            node_id,
+            NodeModuleId::SELF,
+            SubstateOffset::Bucket(BucketOffset::Info),
+            LockFlags::read_only(),
+        )?;
+        let substate_ref = api.kernel_get_substate_ref(handle)?;
+        let resource_address = substate_ref.bucket_info().resource_address;
+        let resource_type = substate_ref.bucket_info().resource_type;
+        api.kernel_drop_lock(handle)?;
+        Ok((resource_address, resource_type))
+    }
+
+    pub(crate) fn is_locked<Y>(node_id: RENodeId, api: &mut Y) -> Result<bool, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi,
+    {
+        match Self::get_info(node_id, api)?.1 {
+            ResourceType::Fungible { divisibility } => {
+                let handle = api.kernel_lock_substate(
+                    node_id,
+                    NodeModuleId::SELF,
+                    SubstateOffset::Bucket(BucketOffset::LockedFungible),
+                    LockFlags::read_only(),
+                )?;
+                let substate_ref = api.kernel_get_substate_ref(handle)?;
+                let locked = substate_ref.bucket_locked_fungible().is_locked();
+                api.kernel_drop_lock(handle)?;
+                Ok(locked)
+            }
+            ResourceType::NonFungible { id_type } => {
+                let handle = api.kernel_lock_substate(
+                    node_id,
+                    NodeModuleId::SELF,
+                    SubstateOffset::Bucket(BucketOffset::LockedNonFungible),
+                    LockFlags::read_only(),
+                )?;
+                let substate_ref = api.kernel_get_substate_ref(handle)?;
+                let locked = substate_ref.bucket_locked_non_fungible().is_locked();
+                api.kernel_drop_lock(handle)?;
+                Ok(locked)
+            }
+        }
+    }
 }
 
 pub struct BucketBlueprint;
