@@ -144,7 +144,11 @@ impl KernelModule for AuthModule {
                 ResolvedActor {
                     receiver:
                         Some(ResolvedReceiver {
-                            receiver: MethodReceiver(_, NodeModuleId::AccessRules | NodeModuleId::AccessRules1),
+                            receiver:
+                                MethodReceiver(
+                                    _,
+                                    NodeModuleId::AccessRules | NodeModuleId::AccessRules1,
+                                ),
                             ..
                         }),
                     ..

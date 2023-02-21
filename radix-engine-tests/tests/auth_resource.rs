@@ -159,7 +159,7 @@ fn cannot_burn_with_wrong_auth() {
 
 #[test]
 fn can_withdraw_with_auth() {
-    //test_resource_auth(Action::Withdraw, false, false, false);
+    test_resource_auth(Action::Withdraw, false, false, false);
     test_resource_auth(Action::Withdraw, true, true, false);
 }
 

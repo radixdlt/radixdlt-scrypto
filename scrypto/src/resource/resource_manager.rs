@@ -93,7 +93,7 @@ impl ResourceManager {
                     name: "withdraw".to_string(),
                     rule: access_rule,
                 })
-                    .unwrap(),
+                .unwrap(),
             )
             .unwrap();
     }
@@ -109,7 +109,7 @@ impl ResourceManager {
                     key: AccessRuleKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string()),
                     rule: AccessRuleEntry::AccessRule(access_rule),
                 })
-                    .unwrap(),
+                .unwrap(),
             )
             .unwrap();
     }
@@ -125,7 +125,7 @@ impl ResourceManager {
                     name: "recall".to_string(),
                     rule: access_rule,
                 })
-                    .unwrap(),
+                .unwrap(),
             )
             .unwrap();
     }
@@ -236,48 +236,45 @@ impl ResourceManager {
     }
 
     pub fn lock_withdrawable(&mut self) {
-        let _rtn = ScryptoEnv
-            .call_module_method(
-                RENodeId::Global(self.0.into()),
-                NodeModuleId::AccessRules1,
-                ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
-                scrypto_encode(&AccessRulesSetGroupMutabilityInput {
-                    index: 0,
-                    name: "withdraw".to_string(),
-                    mutability: AccessRule::DenyAll,
-                })
-                    .unwrap(),
-            );
+        let _rtn = ScryptoEnv.call_module_method(
+            RENodeId::Global(self.0.into()),
+            NodeModuleId::AccessRules1,
+            ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
+            scrypto_encode(&AccessRulesSetGroupMutabilityInput {
+                index: 0,
+                name: "withdraw".to_string(),
+                mutability: AccessRule::DenyAll,
+            })
+            .unwrap(),
+        );
     }
 
     pub fn lock_depositable(&mut self) {
-        let _rtn = ScryptoEnv
-            .call_module_method(
-                RENodeId::Global(self.0.into()),
-                NodeModuleId::AccessRules1,
-                ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
-                scrypto_encode(&AccessRulesSetMethodMutabilityInput {
-                    index: 0,
-                    key: AccessRuleKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string()),
-                    mutability: AccessRule::DenyAll,
-                })
-                    .unwrap(),
-            );
+        let _rtn = ScryptoEnv.call_module_method(
+            RENodeId::Global(self.0.into()),
+            NodeModuleId::AccessRules1,
+            ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
+            scrypto_encode(&AccessRulesSetMethodMutabilityInput {
+                index: 0,
+                key: AccessRuleKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string()),
+                mutability: AccessRule::DenyAll,
+            })
+            .unwrap(),
+        );
     }
 
     pub fn lock_recallable(&mut self) {
-        let _rtn = ScryptoEnv
-            .call_module_method(
-                RENodeId::Global(self.0.into()),
-                NodeModuleId::AccessRules1,
-                ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
-                scrypto_encode(&AccessRulesSetGroupMutabilityInput {
-                    index: 0,
-                    name: "recall".to_string(),
-                    mutability: AccessRule::DenyAll,
-                })
-                    .unwrap(),
-            );
+        let _rtn = ScryptoEnv.call_module_method(
+            RENodeId::Global(self.0.into()),
+            NodeModuleId::AccessRules1,
+            ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
+            scrypto_encode(&AccessRulesSetGroupMutabilityInput {
+                index: 0,
+                name: "recall".to_string(),
+                mutability: AccessRule::DenyAll,
+            })
+            .unwrap(),
+        );
     }
 
     fn update_non_fungible_data_internal(&mut self, id: NonFungibleLocalId, data: Vec<u8>) {
