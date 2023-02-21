@@ -257,12 +257,12 @@ fn test_decode_deep_typed_codecs() {
 }
 
 fn encode_ignore_depth<
-    V: for<'a> Encode<ScryptoCustomValueKind, VecEncoder<'a, ScryptoCustomValueKind, 255>>,
+    V: ScryptoEncode,
 >(
     value: &V,
 ) -> Vec<u8> {
     let mut buf = Vec::new();
-    let encoder = VecEncoder::<ScryptoCustomValueKind, 255>::new(&mut buf);
+    let encoder = VecEncoder::<ScryptoCustomValueKind>::new(&mut buf, 255);
     encoder
         .encode_payload(value, SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)
         .unwrap();
@@ -271,11 +271,11 @@ fn encode_ignore_depth<
 
 fn decode_ignore_depth<
     'a,
-    T: Decode<ScryptoCustomValueKind, VecDecoder<'a, ScryptoCustomValueKind, 255>>,
+    T: ScryptoDecode,
 >(
     payload: &'a [u8],
 ) -> T {
-    let decoder = VecDecoder::<ScryptoCustomValueKind, 255>::new(payload);
+    let decoder = VecDecoder::<ScryptoCustomValueKind>::new(payload, 255);
     decoder
         .decode_payload(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)
         .unwrap()

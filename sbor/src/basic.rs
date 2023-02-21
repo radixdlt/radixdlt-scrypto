@@ -20,9 +20,9 @@ pub enum NoCustomValueKind {}
 pub enum NoCustomValue {}
 
 pub const DEFAULT_BASIC_MAX_DEPTH: u8 = 64;
-pub type BasicEncoder<'a> = VecEncoder<'a, NoCustomValueKind, DEFAULT_BASIC_MAX_DEPTH>;
-pub type BasicDecoder<'a> = VecDecoder<'a, NoCustomValueKind, DEFAULT_BASIC_MAX_DEPTH>;
-pub type BasicTraverser<'a> = VecTraverser<'a, NoCustomTraversal, DEFAULT_BASIC_MAX_DEPTH>;
+pub type BasicEncoder<'a> = VecEncoder<'a, NoCustomValueKind>;
+pub type BasicDecoder<'a> = VecDecoder<'a, NoCustomValueKind>;
+pub type BasicTraverser<'a> = VecTraverser<'a, NoCustomTraversal>;
 pub type BasicValue = Value<NoCustomValueKind, NoCustomValue>;
 pub type BasicValueKind = ValueKind<NoCustomValueKind>;
 
@@ -58,14 +58,14 @@ impl<T: BasicCategorize + BasicDecode + BasicEncode + BasicDescribe> BasicSbor f
 /// Encode a `T` into byte array.
 pub fn basic_encode<T: BasicEncode + ?Sized>(v: &T) -> Result<Vec<u8>, EncodeError> {
     let mut buf = Vec::with_capacity(512);
-    let encoder = BasicEncoder::new(&mut buf);
+    let encoder = BasicEncoder::new(&mut buf, DEFAULT_BASIC_MAX_DEPTH);
     encoder.encode_payload(v, BASIC_SBOR_V1_PAYLOAD_PREFIX)?;
     Ok(buf)
 }
 
 /// Decode an instance of `T` from a slice.
 pub fn basic_decode<T: BasicDecode>(buf: &[u8]) -> Result<T, DecodeError> {
-    BasicDecoder::new(buf).decode_payload(BASIC_SBOR_V1_PAYLOAD_PREFIX)
+    BasicDecoder::new(buf, DEFAULT_BASIC_MAX_DEPTH).decode_payload(BASIC_SBOR_V1_PAYLOAD_PREFIX)
 }
 
 impl CustomValueKind for NoCustomValueKind {
@@ -139,11 +139,13 @@ impl CustomTraversal for NoCustomTraversal {
 
 pub enum NoCustomTraverser {}
 
-impl CustomValueTraverser for NoCustomTraverser
-{
+impl CustomValueTraverser for NoCustomTraverser {
     type CustomTraversal = NoCustomTraversal;
 
-    fn next_event<'de, R: PayloadTraverser<'de, <Self::CustomTraversal as CustomTraversal>::CustomValueKind>> (
+    fn next_event<
+        'de,
+        R: PayloadTraverser<'de, <Self::CustomTraversal as CustomTraversal>::CustomValueKind>,
+    >(
         &mut self,
         _: &mut R,
     ) -> TraversalEvent<'de, Self::CustomTraversal> {
@@ -153,7 +155,7 @@ impl CustomValueTraverser for NoCustomTraverser
 
 /// Creates a traverser from the buffer
 pub fn basic_traverser<'b>(buf: &'b [u8]) -> Result<BasicTraverser<'b>, DecodeError> {
-    let mut traverser = BasicTraverser::new(buf);
+    let mut traverser = BasicTraverser::new(buf, DEFAULT_BASIC_MAX_DEPTH);
     traverser.read_and_check_payload_prefix(BASIC_SBOR_V1_PAYLOAD_PREFIX)?;
     Ok(traverser)
 }

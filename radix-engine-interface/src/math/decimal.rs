@@ -1057,23 +1057,9 @@ mod tests {
     }
 
     #[test]
-    fn test_encode_decimal_type_decimal() {
-        let mut bytes = Vec::with_capacity(512);
-        let mut enc = ScryptoEncoder::new(&mut bytes);
-        dec!("1").encode_value_kind(&mut enc).unwrap();
-        assert_eq!(
-            bytes,
-            vec![ScryptoValueKind::Custom(ScryptoCustomValueKind::Decimal).as_u8()]
-        );
-    }
-
-    #[test]
     fn test_encode_decimal_value_decimal() {
         let dec = dec!("0");
-        let mut bytes = Vec::with_capacity(512);
-        let mut enc = ScryptoEncoder::new(&mut bytes);
-        dec.encode_value_kind(&mut enc).unwrap();
-        dec.encode_body(&mut enc).unwrap();
+        let bytes = scrypto_encode(&dec).unwrap();
         assert_eq!(bytes, {
             let mut a = [0; 33];
             a[0] = ScryptoValueKind::Custom(ScryptoCustomValueKind::Decimal).as_u8();
@@ -1082,25 +1068,11 @@ mod tests {
     }
 
     #[test]
-    fn test_decode_decimal_type_decimal() {
-        let mut bytes = Vec::with_capacity(512);
-        let mut enc = ScryptoEncoder::new(&mut bytes);
-        dec!("1").encode_value_kind(&mut enc).unwrap();
-        let mut decoder = ScryptoDecoder::new(&bytes);
-        let typ = decoder.read_value_kind().unwrap();
-        assert_eq!(typ, Decimal::value_kind());
-    }
-
-    #[test]
     fn test_decode_decimal_value_decimal() {
         let dec = dec!("1.23456789");
-        let mut bytes = Vec::with_capacity(512);
-        let mut enc = ScryptoEncoder::new(&mut bytes);
-        dec.encode_value_kind(&mut enc).unwrap();
-        dec.encode_body(&mut enc).unwrap();
-        let mut decoder = ScryptoDecoder::new(&bytes);
-        let val = decoder.decode::<Decimal>().unwrap();
-        assert_eq!(val, dec!("1.23456789"));
+        let bytes = scrypto_encode(&dec).unwrap();
+        let decoded: Decimal = scrypto_decode(&bytes).unwrap();
+        assert_eq!(decoded, dec!("1.23456789"));
     }
 
     #[test]

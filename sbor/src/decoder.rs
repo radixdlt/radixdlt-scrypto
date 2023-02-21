@@ -173,19 +173,21 @@ pub trait BorrowingDecoder<'de, X: CustomValueKind>: Decoder<X> {
 }
 
 /// A `Decoder` abstracts the logic for decoding basic types.
-pub struct VecDecoder<'de, X: CustomValueKind, const MAX_DEPTH: u8> {
+pub struct VecDecoder<'de, X: CustomValueKind> {
     input: &'de [u8],
     offset: usize,
     stack_depth: u8,
+    max_depth: u8,
     phantom: PhantomData<X>,
 }
 
-impl<'de, X: CustomValueKind, const MAX_DEPTH: u8> VecDecoder<'de, X, MAX_DEPTH> {
-    pub fn new(input: &'de [u8]) -> Self {
+impl<'de, X: CustomValueKind> VecDecoder<'de, X> {
+    pub fn new(input: &'de [u8], max_depth: u8) -> Self {
         Self {
             input,
             offset: 0,
             stack_depth: 0,
+            max_depth,
             phantom: PhantomData,
         }
     }
@@ -210,8 +212,8 @@ impl<'de, X: CustomValueKind, const MAX_DEPTH: u8> VecDecoder<'de, X, MAX_DEPTH>
     #[inline]
     fn track_stack_depth_increase(&mut self) -> Result<(), DecodeError> {
         self.stack_depth += 1;
-        if self.stack_depth > MAX_DEPTH {
-            return Err(DecodeError::MaxDepthExceeded(MAX_DEPTH));
+        if self.stack_depth > self.max_depth {
+            return Err(DecodeError::MaxDepthExceeded(self.max_depth));
         }
         Ok(())
     }
@@ -223,7 +225,7 @@ impl<'de, X: CustomValueKind, const MAX_DEPTH: u8> VecDecoder<'de, X, MAX_DEPTH>
     }
 }
 
-impl<'de, X: CustomValueKind, const MAX_DEPTH: u8> Decoder<X> for VecDecoder<'de, X, MAX_DEPTH> {
+impl<'de, X: CustomValueKind> Decoder<X> for VecDecoder<'de, X> {
     fn decode_deeper_body_with_value_kind<T: Decode<X, Self>>(
         &mut self,
         value_kind: ValueKind<X>,
@@ -259,9 +261,7 @@ impl<'de, X: CustomValueKind, const MAX_DEPTH: u8> Decoder<X> for VecDecoder<'de
     }
 }
 
-impl<'de, X: CustomValueKind, const MAX_DEPTH: u8> BorrowingDecoder<'de, X>
-    for VecDecoder<'de, X, MAX_DEPTH>
-{
+impl<'de, X: CustomValueKind> BorrowingDecoder<'de, X> for VecDecoder<'de, X> {
     #[inline]
     fn read_slice_from_payload(&mut self, n: usize) -> Result<&'de [u8], DecodeError> {
         self.require_remaining(n)?;
@@ -284,9 +284,7 @@ pub trait PayloadTraverser<'de, X: CustomValueKind>: BorrowingDecoder<'de, X> {
     fn peek_byte(&self) -> Result<u8, DecodeError>;
 }
 
-impl<'de, X: CustomValueKind, const MAX_DEPTH: u8> PayloadTraverser<'de, X>
-    for VecDecoder<'de, X, MAX_DEPTH>
-{
+impl<'de, X: CustomValueKind> PayloadTraverser<'de, X> for VecDecoder<'de, X> {
     #[inline]
     fn get_stack_depth(&self) -> u8 {
         self.stack_depth
@@ -320,10 +318,10 @@ mod tests {
     fn encode_decode_size(size: usize) -> Result<(), DecodeError> {
         // Encode
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = BasicEncoder::new(&mut bytes);
+        let mut enc = BasicEncoder::new(&mut bytes, 255);
         enc.write_size(size).unwrap();
 
-        let mut dec = BasicDecoder::new(&bytes);
+        let mut dec = BasicDecoder::new(&bytes, 255);
         dec.read_and_check_size(size)?;
         dec.check_end()?;
         Ok(())
@@ -345,7 +343,7 @@ mod tests {
 
     #[test]
     pub fn test_vlq_too_large() {
-        let mut dec = BasicDecoder::new(&[0xff, 0xff, 0xff, 0xff, 0x00]);
+        let mut dec = BasicDecoder::new(&[0xff, 0xff, 0xff, 0xff, 0x00], 255);
         assert_eq!(dec.read_size(), Err(DecodeError::SizeTooLarge));
     }
 
@@ -412,14 +410,14 @@ mod tests {
             34, 0, 1, 9, 1, 0, 0, 0, // Ok<T>
             34, 1, 1, 12, 5, 104, 101, 108, 108, 111, // Err<T>
         ];
-        let mut dec = BasicDecoder::new(&bytes);
+        let mut dec = BasicDecoder::new(&bytes, 255);
         assert_decoding(&mut dec);
     }
 
     #[test]
     pub fn test_decode_box() {
         let bytes = vec![7u8, 5u8];
-        let mut dec = BasicDecoder::new(&bytes);
+        let mut dec = BasicDecoder::new(&bytes, 255);
         let x = dec.decode::<Box<u8>>().unwrap();
         assert_eq!(Box::new(5u8), x);
     }
@@ -427,7 +425,7 @@ mod tests {
     #[test]
     pub fn test_decode_rc() {
         let bytes = vec![7u8, 5u8];
-        let mut dec = BasicDecoder::new(&bytes);
+        let mut dec = BasicDecoder::new(&bytes, 255);
         let x = dec.decode::<Rc<u8>>().unwrap();
         assert_eq!(Rc::new(5u8), x);
     }
@@ -435,7 +433,7 @@ mod tests {
     #[test]
     pub fn test_decode_ref_cell() {
         let bytes = vec![7u8, 5u8];
-        let mut dec = BasicDecoder::new(&bytes);
+        let mut dec = BasicDecoder::new(&bytes, 255);
         let x = dec.decode::<RefCell<u8>>().unwrap();
         assert_eq!(RefCell::new(5u8), x);
     }
@@ -461,10 +459,10 @@ mod tests {
 
         // Encode
         let mut bytes = Vec::with_capacity(512);
-        let mut encoder = BasicEncoder::new(&mut bytes);
+        let mut encoder = BasicEncoder::new(&mut bytes, 255);
         encoder.encode(&value1).unwrap();
 
-        let mut decoder = BasicDecoder::new(&bytes);
+        let mut decoder = BasicDecoder::new(&bytes, 255);
         let value2 = decoder.decode::<[NFA; 2]>().unwrap();
         assert_eq!(value1, value2);
     }

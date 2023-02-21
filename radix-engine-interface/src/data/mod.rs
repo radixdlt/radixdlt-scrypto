@@ -37,8 +37,8 @@ pub use value_serializer::*;
 pub const SCRYPTO_SBOR_V1_PAYLOAD_PREFIX: u8 = 0x5c;
 pub const SCRYPTO_SBOR_V1_MAX_DEPTH: u8 = 64;
 
-pub type ScryptoEncoder<'a> = VecEncoder<'a, ScryptoCustomValueKind, SCRYPTO_SBOR_V1_MAX_DEPTH>;
-pub type ScryptoDecoder<'a> = VecDecoder<'a, ScryptoCustomValueKind, SCRYPTO_SBOR_V1_MAX_DEPTH>;
+pub type ScryptoEncoder<'a> = VecEncoder<'a, ScryptoCustomValueKind>;
+pub type ScryptoDecoder<'a> = VecDecoder<'a, ScryptoCustomValueKind>;
 pub type ScryptoValueKind = ValueKind<ScryptoCustomValueKind>;
 pub type ScryptoValue = Value<ScryptoCustomValueKind, ScryptoCustomValue>;
 
@@ -71,14 +71,14 @@ impl<T: ScryptoCategorize + ScryptoDecode + ScryptoEncode + ScryptoDescribe> Scr
 /// Encodes a data structure into byte array.
 pub fn scrypto_encode<T: ScryptoEncode + ?Sized>(value: &T) -> Result<Vec<u8>, EncodeError> {
     let mut buf = Vec::with_capacity(512);
-    let encoder = ScryptoEncoder::new(&mut buf);
+    let encoder = ScryptoEncoder::new(&mut buf, SCRYPTO_SBOR_V1_MAX_DEPTH);
     encoder.encode_payload(value, SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
     Ok(buf)
 }
 
 /// Decodes a data structure from a byte array.
 pub fn scrypto_decode<T: ScryptoDecode>(buf: &[u8]) -> Result<T, DecodeError> {
-    ScryptoDecoder::new(buf).decode_payload(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)
+    ScryptoDecoder::new(buf, SCRYPTO_SBOR_V1_MAX_DEPTH).decode_payload(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)
 }
 
 #[macro_export]
@@ -93,15 +93,10 @@ macro_rules! scrypto_args {
     ($($args: expr),*) => {{
         use ::sbor::Encoder;
         let mut buf = ::sbor::rust::vec::Vec::new();
-        let mut encoder = $crate::data::ScryptoEncoder::new(&mut buf);
+        let mut encoder = $crate::data::ScryptoEncoder::new(&mut buf, radix_engine_interface::data::SCRYPTO_SBOR_V1_MAX_DEPTH);
         encoder.write_payload_prefix($crate::data::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX).unwrap();
         encoder.write_value_kind($crate::data::ScryptoValueKind::Tuple).unwrap();
         // Hack: stringify to skip ownership move semantics
-        encoder.write_size($crate::count!($(stringify!($args)),*)).unwrap();
-        $(
-            let arg = $args;
-            encoder.encode(&arg).unwrap();
-        )*
         buf
     }};
 }

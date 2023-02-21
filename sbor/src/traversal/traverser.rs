@@ -50,10 +50,10 @@ pub struct ContainerChildIndex<H: CustomContainerHeader> {
 pub struct VecTraverser<
     'de,
     C: CustomTraversal,
-    const MAX_DEPTH: u8,
 > {
-    decoder: VecDecoder<'de, C::CustomValueKind, MAX_DEPTH>,
+    decoder: VecDecoder<'de, C::CustomValueKind>,
     container_stack: Vec<ContainerChildIndex<C::CustomContainerHeader>>,
+    max_depth: u8,
     next_event_override: NextEventOverride<C::CustomValueTraverser>,
 }
 
@@ -104,13 +104,13 @@ macro_rules! err_to_event {
 impl<
     'de,
     T: CustomTraversal,
-    const MAX_DEPTH: u8,
-> VecTraverser<'de, T, MAX_DEPTH>
+> VecTraverser<'de, T>
 {
-    pub fn new(input: &'de [u8]) -> Self {
+    pub fn new(input: &'de [u8], max_depth: u8) -> Self {
         Self {
-            decoder: VecDecoder::new(input),
-            container_stack: Vec::with_capacity(MAX_DEPTH as usize),
+            decoder: VecDecoder::new(input, max_depth),
+            container_stack: Vec::with_capacity(max_depth as usize),
+            max_depth,
             next_event_override: NextEventOverride::Start,
         }
     }
@@ -147,8 +147,8 @@ impl<
         start_offset: usize,
         owner_header: ContainerHeader<T::CustomContainerHeader>,
     ) -> TraversalEvent<'de, T> {
-        if self.container_stack.len() >= MAX_DEPTH as usize {
-            return self.map_error(DecodeError::MaxDepthExceeded(MAX_DEPTH));
+        if self.container_stack.len() >= self.max_depth as usize {
+            return self.map_error(DecodeError::MaxDepthExceeded(self.max_depth));
         }
         let previous_stack_depth = self.get_stack_depth();
         self.container_stack.push(ContainerChildIndex {
@@ -217,7 +217,7 @@ impl<
             ValueKind::Tuple => err_to_event!(self, self.decode_tuple_header(start_offset)),
             ValueKind::Custom(custom_value_kind) => {
                 self.next_event_override =
-                    NextEventOverride::Custom(T::new_value_traversal(custom_value_kind, self.get_stack_depth(), MAX_DEPTH));
+                    NextEventOverride::Custom(T::new_value_traversal(custom_value_kind, self.get_stack_depth(), self.max_depth));
                 self.custom_event_override()
             }
         };

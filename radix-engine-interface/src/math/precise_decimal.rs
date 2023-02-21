@@ -1133,23 +1133,9 @@ mod tests {
     }
 
     #[test]
-    fn test_encode_decimal_type_precise_decimal() {
-        let mut bytes = Vec::with_capacity(512);
-        let mut enc = ScryptoEncoder::new(&mut bytes);
-        pdec!("1").encode_value_kind(&mut enc).unwrap();
-        assert_eq!(
-            bytes,
-            vec![ScryptoValueKind::Custom(ScryptoCustomValueKind::PreciseDecimal).as_u8()]
-        );
-    }
-
-    #[test]
     fn test_encode_decimal_value_precise_decimal() {
         let pdec = pdec!("0");
-        let mut bytes = Vec::with_capacity(512);
-        let mut enc = ScryptoEncoder::new(&mut bytes);
-        pdec.encode_value_kind(&mut enc).unwrap();
-        pdec.encode_body(&mut enc).unwrap();
+        let bytes = scrypto_encode(&pdec).unwrap();
         assert_eq!(bytes, {
             let mut a = [0; 65];
             a[0] = ScryptoValueKind::Custom(ScryptoCustomValueKind::PreciseDecimal).as_u8();
@@ -1158,25 +1144,11 @@ mod tests {
     }
 
     #[test]
-    fn test_decode_decimal_type_precise_decimal() {
-        let mut bytes = Vec::with_capacity(512);
-        let mut enc = ScryptoEncoder::new(&mut bytes);
-        pdec!("1").encode_value_kind(&mut enc).unwrap();
-        let mut decoder = ScryptoDecoder::new(&bytes);
-        let typ = decoder.read_value_kind().unwrap();
-        assert_eq!(typ, PreciseDecimal::value_kind());
-    }
-
-    #[test]
     fn test_decode_decimal_value_precise_decimal() {
         let pdec = pdec!("1.23456789");
-        let mut bytes = Vec::with_capacity(512);
-        let mut enc = ScryptoEncoder::new(&mut bytes);
-        pdec.encode_value_kind(&mut enc).unwrap();
-        pdec.encode_body(&mut enc).unwrap();
-        let mut decoder = ScryptoDecoder::new(&bytes);
-        let val = decoder.decode::<PreciseDecimal>().unwrap();
-        assert_eq!(val, pdec!("1.23456789"));
+        let bytes = scrypto_encode(&pdec).unwrap();
+        let decoded: PreciseDecimal = scrypto_decode(&bytes).unwrap();
+        assert_eq!(decoded, pdec!("1.23456789"));
     }
 
     #[test]
