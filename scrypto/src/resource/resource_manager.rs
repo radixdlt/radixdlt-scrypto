@@ -83,46 +83,49 @@ impl ResourceManager {
     }
 
     pub fn set_withdrawable(&mut self, access_rule: AccessRule) {
-        let mut env = ScryptoEnv;
-        let _rtn = env
-            .call_method(
+        let _rtn = ScryptoEnv
+            .call_module_method(
                 RENodeId::Global(self.0.into()),
-                RESOURCE_MANAGER_UPDATE_VAULT_AUTH_IDENT,
-                scrypto_encode(&ResourceManagerUpdateVaultAuthInput {
-                    method: VaultMethodAuthKey::Withdraw,
-                    access_rule,
+                NodeModuleId::AccessRules1,
+                ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
+                scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
+                    index: 0,
+                    name: "withdraw".to_string(),
+                    rule: access_rule,
                 })
-                .unwrap(),
+                    .unwrap(),
             )
             .unwrap();
     }
 
     pub fn set_depositable(&mut self, access_rule: AccessRule) {
-        let mut env = ScryptoEnv;
-        let _rtn = env
-            .call_method(
+        let _rtn = ScryptoEnv
+            .call_module_method(
                 RENodeId::Global(self.0.into()),
-                RESOURCE_MANAGER_UPDATE_VAULT_AUTH_IDENT,
-                scrypto_encode(&ResourceManagerUpdateVaultAuthInput {
-                    method: VaultMethodAuthKey::Deposit,
-                    access_rule,
+                NodeModuleId::AccessRules1,
+                ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
+                scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
+                    index: 0,
+                    key: AccessRuleKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string()),
+                    rule: AccessRuleEntry::AccessRule(access_rule),
                 })
-                .unwrap(),
+                    .unwrap(),
             )
             .unwrap();
     }
 
     pub fn set_recallable(&mut self, access_rule: AccessRule) {
-        let mut env = ScryptoEnv;
-        let _rtn = env
-            .call_method(
+        let _rtn = ScryptoEnv
+            .call_module_method(
                 RENodeId::Global(self.0.into()),
-                RESOURCE_MANAGER_UPDATE_VAULT_AUTH_IDENT,
-                scrypto_encode(&ResourceManagerUpdateVaultAuthInput {
-                    method: VaultMethodAuthKey::Recall,
-                    access_rule,
+                NodeModuleId::AccessRules1,
+                ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
+                scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
+                    index: 0,
+                    name: "recall".to_string(),
+                    rule: access_rule,
                 })
-                .unwrap(),
+                    .unwrap(),
             )
             .unwrap();
     }
@@ -233,48 +236,48 @@ impl ResourceManager {
     }
 
     pub fn lock_withdrawable(&mut self) {
-        let mut env = ScryptoEnv;
-        let _rtn = env
-            .call_method(
+        let _rtn = ScryptoEnv
+            .call_module_method(
                 RENodeId::Global(self.0.into()),
-                RESOURCE_MANAGER_SET_VAULT_AUTH_MUTABILITY_IDENT,
-                scrypto_encode(&ResourceManagerSetVaultAuthMutabilityInput {
-                    method: VaultMethodAuthKey::Withdraw,
+                NodeModuleId::AccessRules1,
+                ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
+                scrypto_encode(&AccessRulesSetGroupMutabilityInput {
+                    index: 0,
+                    name: "withdraw".to_string(),
                     mutability: AccessRule::DenyAll,
                 })
-                .unwrap(),
-            )
-            .unwrap();
+                    .unwrap(),
+            );
     }
 
     pub fn lock_depositable(&mut self) {
-        let mut env = ScryptoEnv;
-        let _rtn = env
-            .call_method(
+        let _rtn = ScryptoEnv
+            .call_module_method(
                 RENodeId::Global(self.0.into()),
-                RESOURCE_MANAGER_SET_VAULT_AUTH_MUTABILITY_IDENT,
-                scrypto_encode(&ResourceManagerSetVaultAuthMutabilityInput {
-                    method: VaultMethodAuthKey::Deposit,
+                NodeModuleId::AccessRules1,
+                ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
+                scrypto_encode(&AccessRulesSetMethodMutabilityInput {
+                    index: 0,
+                    key: AccessRuleKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string()),
                     mutability: AccessRule::DenyAll,
                 })
-                .unwrap(),
-            )
-            .unwrap();
+                    .unwrap(),
+            );
     }
 
     pub fn lock_recallable(&mut self) {
-        let mut env = ScryptoEnv;
-        let _rtn = env
-            .call_method(
+        let _rtn = ScryptoEnv
+            .call_module_method(
                 RENodeId::Global(self.0.into()),
-                RESOURCE_MANAGER_SET_VAULT_AUTH_MUTABILITY_IDENT,
-                scrypto_encode(&ResourceManagerSetVaultAuthMutabilityInput {
-                    method: VaultMethodAuthKey::Recall,
+                NodeModuleId::AccessRules1,
+                ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
+                scrypto_encode(&AccessRulesSetGroupMutabilityInput {
+                    index: 0,
+                    name: "recall".to_string(),
                     mutability: AccessRule::DenyAll,
                 })
-                .unwrap(),
-            )
-            .unwrap();
+                    .unwrap(),
+            );
     }
 
     fn update_non_fungible_data_internal(&mut self, id: NonFungibleLocalId, data: Vec<u8>) {

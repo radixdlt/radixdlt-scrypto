@@ -76,8 +76,8 @@ impl ExecutableInvocation for MethodInvocation {
                 // TODO: Check if type has royalty
                 (ROYALTY_PACKAGE, PACKAGE_ROYALTY_BLUEPRINT.to_string())
             }
-            NodeModuleId::AccessRules => {
-                // TODO: Check if type has royalty
+            NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {
+                // TODO: Check if type has access ruls
                 (ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT.to_string())
             }
             _ => todo!(),

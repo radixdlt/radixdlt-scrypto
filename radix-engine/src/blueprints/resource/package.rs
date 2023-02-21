@@ -153,22 +153,6 @@ impl ResourceManagerNativePackage {
                 ))?;
                 ResourceManagerBlueprint::create_vault(receiver, input, api)
             }
-            RESOURCE_MANAGER_UPDATE_VAULT_AUTH_IDENT => {
-                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunPrecompiled)?;
-
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                ResourceManagerBlueprint::update_vault_auth(receiver, input, api)
-            }
-            RESOURCE_MANAGER_SET_VAULT_AUTH_MUTABILITY_IDENT => {
-                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunPrecompiled)?;
-
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                ResourceManagerBlueprint::set_vault_auth_mutability(receiver, input, api)
-            }
             RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunPrecompiled)?;
 
