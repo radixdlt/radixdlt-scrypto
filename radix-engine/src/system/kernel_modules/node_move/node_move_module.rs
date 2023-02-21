@@ -1,4 +1,3 @@
-use crate::blueprints::resource::BucketNode;
 use crate::errors::{ModuleError, RuntimeError};
 use crate::kernel::actor::ResolvedActor;
 use crate::kernel::call_frame::CallFrameUpdate;
@@ -23,15 +22,6 @@ impl NodeMoveModule {
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
         match node_id {
-            RENodeId::Bucket(..) => {
-                if BucketNode::is_locked(node_id, api)? {
-                    Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
-                        NodeMoveError::CantMoveDownstream(node_id),
-                    )))
-                } else {
-                    Ok(())
-                }
-            }
             RENodeId::Proof(..) => {
                 let handle = api.kernel_lock_substate(
                     node_id,
@@ -55,7 +45,7 @@ impl NodeMoveModule {
 
                 rtn
             }
-            RENodeId::Component(..) => Ok(()),
+            RENodeId::Bucket(..) | RENodeId::Component(..) => Ok(()),
 
             RENodeId::TransactionRuntime
             | RENodeId::AuthZoneStack
@@ -83,16 +73,8 @@ impl NodeMoveModule {
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
         match node_id {
-            RENodeId::Bucket(..) => {
-                if BucketNode::is_locked(node_id, api)? {
-                    Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
-                        NodeMoveError::CantMoveUpstream(node_id),
-                    )))
-                } else {
-                    Ok(())
-                }
-            }
-            RENodeId::Proof(..)
+            RENodeId::Bucket(..)
+            | RENodeId::Proof(..)
             | RENodeId::Component(..)
             | RENodeId::Vault(..)
             | RENodeId::Account(..) => Ok(()),
