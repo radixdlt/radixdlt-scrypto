@@ -1,8 +1,10 @@
 use crate::errors::{InterpreterError, RuntimeError};
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::logger::*;
 use radix_engine_interface::data::{
@@ -18,7 +20,7 @@ pub struct LoggerNativePackage;
 impl LoggerNativePackage {
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<ComponentId>,
+        receiver: Option<RENodeId>,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -27,6 +29,8 @@ impl LoggerNativePackage {
     {
         match export_name {
             LOGGER_LOG_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
@@ -34,13 +38,13 @@ impl LoggerNativePackage {
                 Self::log(receiver, input, api)
             }
             _ => Err(RuntimeError::InterpreterError(
-                InterpreterError::InvalidInvocation,
+                InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
             )),
         }
     }
 
     pub(crate) fn log<Y>(
-        _ignored: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -51,7 +55,7 @@ impl LoggerNativePackage {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let handle = api.kernel_lock_substate(
-            RENodeId::Logger,
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Logger(LoggerOffset::Logger),
             LockFlags::MUTABLE,

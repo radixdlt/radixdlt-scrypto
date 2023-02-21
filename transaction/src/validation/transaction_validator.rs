@@ -276,7 +276,6 @@ impl NotarizedTransactionValidator {
                         .map_err(TransactionValidationError::CallDataValidationError)?;
                 }
                 Instruction::PublishPackage { .. } => {}
-                Instruction::PublishPackageWithOwner { .. } => {}
                 Instruction::BurnResource { bucket_id } => {
                     id_validator
                         .drop_bucket(bucket_id)
@@ -293,9 +292,6 @@ impl NotarizedTransactionValidator {
                 | Instruction::MintNonFungible { .. }
                 | Instruction::MintUuidNonFungible { .. }
                 | Instruction::AssertAccessRule { .. } => {}
-                Instruction::NativeInvocation(_) => {
-                    // TODO: remove
-                }
             }
         }
 

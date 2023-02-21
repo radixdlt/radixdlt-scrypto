@@ -29,12 +29,12 @@ fn should_not_be_able_to_node_create_with_invalid_blueprint() {
             e,
             RuntimeError::KernelError(KernelError::InvalidCreateNodeAccess {
                 actor: ResolvedActor {
-                    identifier: FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                    identifier: FnIdentifier {
                         package_address: addr,
                         blueprint_name: blueprint,
                         ident
-                    }),
-                        ..
+                    },
+                    ..
                 },
                 ..
             }) if addr.eq(&package_address) && blueprint.eq("NodeCreate") && ident.eq("create_node_with_invalid_blueprint")

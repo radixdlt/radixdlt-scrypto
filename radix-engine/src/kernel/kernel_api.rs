@@ -6,15 +6,8 @@ use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use bitflags::bitflags;
-use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::node_modules::metadata::*;
-use radix_engine_interface::api::node_modules::royalty::{
-    ComponentClaimRoyaltyInvocation, ComponentSetRoyaltyConfigInvocation,
-};
-use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::api::ClientDerefApi;
 use radix_engine_interface::blueprints::resource::*;
 
 use super::actor::ResolvedActor;
@@ -51,10 +44,6 @@ pub struct LockInfo {
 
 // Following the convention of Linux Kernel API, https://www.kernel.org/doc/htmldocs/kernel-api/,
 // all methods are prefixed by the subsystem of kernel.
-
-pub trait KernelActorApi<E> {
-    fn kernel_get_fn_identifier(&mut self) -> Result<FnIdentifier, E>;
-}
 
 pub trait KernelNodeApi {
     /// Removes an RENode and all of it's children from the Heap
@@ -121,34 +110,15 @@ pub trait Executor {
 pub trait ExecutableInvocation: Invocation {
     type Exec: Executor<Output = Self::Output>;
 
-    fn resolve<Y: KernelSubstateApi + ClientDerefApi<RuntimeError>>(
+    fn resolve<Y: KernelSubstateApi>(
         self,
         api: &mut Y,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>;
 }
 
-pub trait KernelInvokeApi<E>:
-    Invokable<MetadataSetInvocation, E>
-    + Invokable<MetadataGetInvocation, E>
-    + Invokable<AccessRulesAddAccessCheckInvocation, E>
-    + Invokable<AccessRulesSetMethodAccessRuleInvocation, E>
-    + Invokable<AccessRulesSetMethodMutabilityInvocation, E>
-    + Invokable<AccessRulesSetGroupAccessRuleInvocation, E>
-    + Invokable<AccessRulesSetGroupMutabilityInvocation, E>
-    + Invokable<AccessRulesGetLengthInvocation, E>
-    + Invokable<AccessRulesAddAccessCheckInvocation, E>
-    + Invokable<ComponentSetRoyaltyConfigInvocation, E>
-    + Invokable<ComponentClaimRoyaltyInvocation, E>
-    + Invokable<PackageSetRoyaltyConfigInvocation, E>
-    + Invokable<PackageClaimRoyaltyInvocation, E>
-    + Invokable<PackagePublishInvocation, E>
-    + Invokable<PackagePublishNativeInvocation, E>
-{
-}
-
 /// Interface of the Kernel, for Kernel modules.
 pub trait KernelApi<W: WasmEngine, E>:
-    KernelActorApi<E> + KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + KernelInvokeApi<E>
+    KernelNodeApi + KernelSubstateApi + KernelWasmApi<W>
 {
 }
 
@@ -161,7 +131,9 @@ pub trait KernelInternalApi {
         node_id: RENodeId,
     ) -> Option<RENodeVisibilityOrigin>;
     fn kernel_get_current_depth(&self) -> usize;
-    fn kernel_get_current_actor(&self) -> ResolvedActor;
+
+    // TODO: Remove
+    fn kernel_get_current_actor(&self) -> Option<ResolvedActor>;
 
     /* Super unstable interface, specifically for `ExecutionTrace` kernel module */
     fn kernel_read_bucket(&mut self, bucket_id: BucketId) -> Option<Resource>;

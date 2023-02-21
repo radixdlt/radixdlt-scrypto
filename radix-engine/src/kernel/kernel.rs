@@ -5,7 +5,6 @@ use crate::errors::*;
 use crate::system::global::GlobalSubstate;
 use crate::system::kernel_modules::execution_trace::ProofSnapshot;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
-use crate::system::node_modules::auth::AccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_properties::VisibilityProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
@@ -15,6 +14,7 @@ use crate::wasm::WasmEngine;
 use native_sdk::resource::SysBucket;
 use radix_engine_interface::api::component::ComponentInfoSubstate;
 // TODO: clean this up!
+use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use radix_engine_interface::api::types::{
     Address, AuthZoneStackOffset, GlobalOffset, LockHandle, ProofOffset, RENodeId, SubstateId,
     SubstateOffset, WorktopOffset,
@@ -44,9 +44,8 @@ use super::heap::{Heap, HeapRENode};
 use super::id_allocator::IdAllocator;
 use super::interpreters::ScryptoInterpreter;
 use super::kernel_api::{
-    ExecutableInvocation, Executor, Invokable, KernelActorApi, KernelApi, KernelInternalApi,
-    KernelInvokeApi, KernelModuleApi, KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockFlags,
-    LockInfo,
+    ExecutableInvocation, Executor, Invokable, KernelApi, KernelInternalApi, KernelModuleApi,
+    KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockFlags, LockInfo,
 };
 use super::module::KernelModule;
 use super::module_mixer::KernelModuleMixer;
@@ -151,12 +150,12 @@ where
             let access_rules = {
                 let mut access_rules = AccessRules::new();
                 access_rules.set_access_rule_and_mutability(
-                    AccessRuleKey::ScryptoMethod(ACCOUNT_DEPOSIT_IDENT.to_string()),
+                    AccessRuleKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_IDENT.to_string()),
                     AccessRule::AllowAll,
                     AccessRule::DenyAll,
                 );
                 access_rules.set_access_rule_and_mutability(
-                    AccessRuleKey::ScryptoMethod(ACCOUNT_DEPOSIT_BATCH_IDENT.to_string()),
+                    AccessRuleKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_BATCH_IDENT.to_string()),
                     AccessRule::AllowAll,
                     AccessRule::DenyAll,
                 );
@@ -171,12 +170,12 @@ where
                         metadata: BTreeMap::new(),
                     }),
                 );
-                let access_rules_substate = AccessRulesChainSubstate {
+                let access_rules_substate = ObjectAccessRulesChainSubstate {
                     access_rules_chain: vec![access_rules],
                 };
                 node_modules.insert(
                     NodeModuleId::AccessRules,
-                    RENodeModuleInit::AccessRulesChain(access_rules_substate),
+                    RENodeModuleInit::ComponentAccessRulesChain(access_rules_substate),
                 );
                 let account_substate = AccountSubstate {
                     vaults: Own::KeyValueStore(kv_store_id.into()),
@@ -394,7 +393,11 @@ where
         // Before push call frame
         {
             self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-                KernelModuleMixer::before_push_frame(api, &actor, &mut call_frame_update)
+                KernelModuleMixer::before_push_frame(
+                    api,
+                    &Some(actor.clone()),
+                    &mut call_frame_update,
+                )
             })?;
         }
 
@@ -522,6 +525,12 @@ where
 
                             // TODO: Cleanup
                             {
+                                if matches!(global_address, Address::Package(PACKAGE_LOADER)) {
+                                    self.current_frame
+                                        .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                                    continue;
+                                }
+
                                 if matches!(
                                     global_address,
                                     Address::Package(RESOURCE_MANAGER_PACKAGE)
@@ -638,15 +647,6 @@ where
     }
 }
 
-impl<'g, 's, W> KernelActorApi<RuntimeError> for Kernel<'g, 's, W>
-where
-    W: WasmEngine,
-{
-    fn kernel_get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
-        Ok(self.current_frame.actor.identifier.clone())
-    }
-}
-
 impl<'g, 's, W> KernelNodeApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
@@ -658,18 +658,16 @@ where
         let current_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        if !VisibilityProperties::check_drop_node_visibility(
-            current_mode,
-            &self.current_frame.actor,
-            node_id,
-        ) {
-            return Err(RuntimeError::KernelError(
-                KernelError::InvalidDropNodeAccess {
-                    mode: current_mode,
-                    actor: self.current_frame.actor.clone(),
-                    node_id,
-                },
-            ));
+        if let Some(actor) = &self.current_frame.actor {
+            if !VisibilityProperties::check_drop_node_visibility(current_mode, actor, node_id) {
+                return Err(RuntimeError::KernelError(
+                    KernelError::InvalidDropNodeAccess {
+                        mode: current_mode,
+                        actor: actor.clone(),
+                        node_id,
+                    },
+                ));
+            }
         }
 
         let node = self.drop_node_internal(node_id)?;
@@ -701,18 +699,20 @@ where
         let current_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        if !VisibilityProperties::check_create_node_access(
-            current_mode,
-            &self.current_frame.actor,
-            &re_node,
-            &module_init,
-        ) {
-            return Err(RuntimeError::KernelError(
-                KernelError::InvalidCreateNodeAccess {
-                    mode: current_mode,
-                    actor: self.current_frame.actor.clone(),
-                },
-            ));
+        if let Some(actor) = &self.current_frame.actor {
+            if !VisibilityProperties::check_create_node_access(
+                current_mode,
+                actor,
+                &re_node,
+                &module_init,
+            ) {
+                return Err(RuntimeError::KernelError(
+                    KernelError::InvalidCreateNodeAccess {
+                        mode: current_mode,
+                        actor: actor.clone(),
+                    },
+                ));
+            }
         }
 
         match (node_id, &re_node) {
@@ -936,7 +936,7 @@ where
         self.current_frame.depth
     }
 
-    fn kernel_get_current_actor(&self) -> ResolvedActor {
+    fn kernel_get_current_actor(&self) -> Option<ResolvedActor> {
         self.current_frame.actor.clone()
     }
 
@@ -1000,23 +1000,24 @@ where
         // TODO: Check if valid offset for node_id
 
         // Authorization
-        let actor = &self.current_frame.actor;
-        if !VisibilityProperties::check_substate_access(
-            current_mode,
-            actor,
-            node_id,
-            offset.clone(),
-            flags,
-        ) {
-            return Err(RuntimeError::KernelError(
-                KernelError::InvalidSubstateAccess {
-                    mode: current_mode,
-                    actor: actor.clone(),
-                    node_id,
-                    offset,
-                    flags,
-                },
-            ));
+        if let Some(actor) = &self.current_frame.actor {
+            if !VisibilityProperties::check_substate_access(
+                current_mode,
+                actor,
+                node_id,
+                offset.clone(),
+                flags,
+            ) {
+                return Err(RuntimeError::KernelError(
+                    KernelError::InvalidSubstateAccess {
+                        mode: current_mode,
+                        actor: actor.clone(),
+                        node_id,
+                        offset,
+                        flags,
+                    },
+                ));
+            }
         }
 
         let maybe_lock_handle = self.current_frame.acquire_lock(
@@ -1169,13 +1170,12 @@ where
 impl<'g, 's, W, N> Invokable<N, RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
-
     N: ExecutableInvocation,
 {
     fn kernel_invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
         KernelModuleMixer::before_invoke(
             self,
-            &invocation.fn_identifier(),
+            &invocation.identifier(),
             0, // TODO: Pass the right size
         )?;
 
@@ -1198,8 +1198,6 @@ where
         Ok(rtn)
     }
 }
-
-impl<'g, 's, W> KernelInvokeApi<RuntimeError> for Kernel<'g, 's, W> where W: WasmEngine {}
 
 impl<'g, 's, W> KernelApi<W, RuntimeError> for Kernel<'g, 's, W> where W: WasmEngine {}
 

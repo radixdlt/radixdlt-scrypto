@@ -1,4 +1,4 @@
-use radix_engine_interface::api::types::ScryptoReceiver;
+use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::{ClientApi, ClientComponentApi};
 use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
@@ -20,7 +20,7 @@ impl Runtime {
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let rtn = api.call_method(
-            ScryptoReceiver::Global(EPOCH_MANAGER),
+            RENodeId::Global(EPOCH_MANAGER.into()),
             EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
             scrypto_encode(&EpochManagerGetCurrentEpochInput).unwrap(),
         )?;
@@ -34,7 +34,7 @@ impl Runtime {
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let rtn = api.call_method(
-            ScryptoReceiver::Global(CLOCK),
+            RENodeId::Global(CLOCK.into()),
             CLOCK_GET_CURRENT_TIME_IDENT,
             scrypto_encode(&ClockGetCurrentTimeInput { precision }).unwrap(),
         )?;
@@ -53,7 +53,7 @@ impl Runtime {
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let rtn = api.call_method(
-            ScryptoReceiver::Global(CLOCK),
+            RENodeId::Global(CLOCK.into()),
             CLOCK_COMPARE_CURRENT_TIME_IDENT,
             scrypto_encode(&ClockCompareCurrentTimeInput {
                 precision,
@@ -73,7 +73,7 @@ impl Runtime {
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let rtn = api.call_method(
-            ScryptoReceiver::TransactionRuntime,
+            RENodeId::TransactionRuntime,
             TRANSACTION_RUNTIME_GENERATE_UUID_IDENT,
             scrypto_encode(&TransactionRuntimeGenerateUuid {}).unwrap(),
         )?;

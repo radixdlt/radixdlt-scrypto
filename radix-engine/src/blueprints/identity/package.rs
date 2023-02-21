@@ -3,13 +3,16 @@ use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::global::GlobalSubstate;
+use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::auth::AccessRulesChainSubstate;
+use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
+use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::{ClientApi, ClientNativeInvokeApi, ClientSubstateApi};
+use radix_engine_interface::api::unsafe_api::ClientCostingReason;
+use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
@@ -18,7 +21,7 @@ pub struct IdentityNativePackage;
 impl IdentityNativePackage {
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<ComponentId>,
+        receiver: Option<RENodeId>,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -26,11 +29,12 @@ impl IdentityNativePackage {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         match export_name {
             IDENTITY_CREATE_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 if receiver.is_some() {
                     return Err(RuntimeError::InterpreterError(
                         InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
@@ -76,12 +80,12 @@ impl Identity {
 
         let mut access_rules = AccessRules::new();
         access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Set)),
+            AccessRuleKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
             access_rule.clone(),
             access_rule,
         );
         access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Get)),
+            AccessRuleKey::new(NodeModuleId::Metadata, METADATA_GET_IDENT.to_string()),
             AccessRule::AllowAll,
             AccessRule::DenyAll,
         );
@@ -95,7 +99,7 @@ impl Identity {
         );
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::AccessRulesChain(AccessRulesChainSubstate {
+            RENodeModuleInit::ComponentAccessRulesChain(ObjectAccessRulesChainSubstate {
                 access_rules_chain: vec![access_rules],
             }),
         );

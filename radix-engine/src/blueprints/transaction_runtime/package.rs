@@ -1,8 +1,10 @@
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, LockFlags};
+use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::transaction_runtime::*;
 use radix_engine_interface::data::ScryptoValue;
@@ -22,7 +24,7 @@ pub struct TransactionRuntimeNativePackage;
 impl TransactionRuntimeNativePackage {
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<ComponentId>,
+        receiver: Option<RENodeId>,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -31,6 +33,8 @@ impl TransactionRuntimeNativePackage {
     {
         match export_name {
             TRANSACTION_RUNTIME_GET_HASH_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
@@ -38,6 +42,8 @@ impl TransactionRuntimeNativePackage {
                 Self::get_hash(receiver, input, api)
             }
             TRANSACTION_RUNTIME_GENERATE_UUID_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
@@ -51,7 +57,7 @@ impl TransactionRuntimeNativePackage {
     }
 
     pub(crate) fn get_hash<Y>(
-        _ignored: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -63,7 +69,7 @@ impl TransactionRuntimeNativePackage {
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let handle = api.kernel_lock_substate(
-            RENodeId::TransactionRuntime,
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime),
             LockFlags::read_only(),
@@ -76,7 +82,7 @@ impl TransactionRuntimeNativePackage {
     }
 
     pub(crate) fn generate_uuid<Y>(
-        _ignored: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -88,7 +94,7 @@ impl TransactionRuntimeNativePackage {
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let handle = api.kernel_lock_substate(
-            RENodeId::TransactionRuntime,
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime),
             LockFlags::MUTABLE,

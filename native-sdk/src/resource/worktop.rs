@@ -20,7 +20,7 @@ impl Worktop {
         Y: ClientApi<E>,
     {
         let _rtn = api.call_method(
-            ScryptoReceiver::Worktop,
+            RENodeId::Worktop,
             WORKTOP_PUT_IDENT,
             scrypto_encode(&WorktopPutInput { bucket }).unwrap(),
         )?;
@@ -37,7 +37,7 @@ impl Worktop {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            ScryptoReceiver::Worktop,
+            RENodeId::Worktop,
             WORKTOP_TAKE_IDENT,
             scrypto_encode(&WorktopTakeInput {
                 resource_address,
@@ -58,7 +58,7 @@ impl Worktop {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            ScryptoReceiver::Worktop,
+            RENodeId::Worktop,
             WORKTOP_TAKE_NON_FUNGIBLES_IDENT,
             scrypto_encode(&WorktopTakeNonFungiblesInput {
                 resource_address,
@@ -78,7 +78,7 @@ impl Worktop {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            ScryptoReceiver::Worktop,
+            RENodeId::Worktop,
             WORKTOP_TAKE_ALL_IDENT,
             scrypto_encode(&WorktopTakeAllInput { resource_address }).unwrap(),
         )?;
@@ -93,7 +93,7 @@ impl Worktop {
         Y: ClientApi<E>,
     {
         let _rtn = api.call_method(
-            ScryptoReceiver::Worktop,
+            RENodeId::Worktop,
             WORKTOP_ASSERT_CONTAINS_IDENT,
             scrypto_encode(&WorktopAssertContainsInput { resource_address }).unwrap(),
         )?;
@@ -109,7 +109,7 @@ impl Worktop {
         Y: ClientApi<E>,
     {
         let _rtn = api.call_method(
-            ScryptoReceiver::Worktop,
+            RENodeId::Worktop,
             WORKTOP_ASSERT_CONTAINS_AMOUNT_IDENT,
             scrypto_encode(&WorktopAssertContainsAmountInput {
                 resource_address,
@@ -129,7 +129,7 @@ impl Worktop {
         Y: ClientApi<E>,
     {
         let _rtn = api.call_method(
-            ScryptoReceiver::Worktop,
+            RENodeId::Worktop,
             WORKTOP_ASSERT_CONTAINS_NON_FUNGIBLES_IDENT,
             scrypto_encode(&WorktopAssertContainsNonFungiblesInput {
                 resource_address,
@@ -147,7 +147,7 @@ impl Worktop {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            ScryptoReceiver::Worktop,
+            RENodeId::Worktop,
             WORKTOP_DRAIN_IDENT,
             scrypto_encode(&WorktopDrainInput {}).unwrap(),
         )?;

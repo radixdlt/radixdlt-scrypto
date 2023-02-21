@@ -4,145 +4,50 @@ use crate::*;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
+use scrypto_abi::BlueprintAbi;
 use transaction_data::*;
+
+pub struct PackageAbi;
+
+impl PackageAbi {
+    pub fn blueprint_abis() -> BTreeMap<String, BlueprintAbi> {
+        BTreeMap::new()
+    }
+}
+pub const PACKAGE_LOADER_BLUEPRINT: &str = "PackageLoader";
+
+pub const PACKAGE_LOADER_PUBLISH_WASM_IDENT: &str = "publish_wasm";
 
 #[derive(
     Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
 )]
-pub struct PackagePublishInvocation {
+pub struct PackageLoaderPublishWasmInput {
     pub package_address: Option<[u8; 26]>, // TODO: Clean this up
     pub code: Vec<u8>,
-    pub abi: Vec<u8>,
+    pub abi: BTreeMap<String, BlueprintAbi>,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: AccessRules,
 }
 
-impl Invocation for PackagePublishInvocation {
-    type Output = PackageAddress;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Package(PackageFn::Publish))
-    }
-}
-
-impl SerializableInvocation for PackagePublishInvocation {
-    type ScryptoOutput = PackageAddress;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Package(PackageFn::Publish)
-    }
-}
-
-impl Into<CallTableInvocation> for PackagePublishInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Package(PackageInvocation::Publish(self)).into()
-    }
-}
+pub const PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT: &str = "publish_precompiled";
 
 #[derive(
     Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
 )]
-pub struct PackagePublishNativeInvocation {
+pub struct PackageLoaderPublishPrecompiledInput {
     pub package_address: Option<[u8; 26]>, // TODO: Clean this up
     pub native_package_code_id: u8,
-    pub abi: Vec<u8>,
+    pub abi: BTreeMap<String, BlueprintAbi>,
     pub dependent_resources: Vec<ResourceAddress>,
     pub dependent_components: Vec<ComponentAddress>,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: AccessRules,
+
+    pub package_access_rules: BTreeMap<(String, String), AccessRule>,
+    pub default_package_access_rule: AccessRule,
 }
 
-impl Invocation for PackagePublishNativeInvocation {
-    type Output = PackageAddress;
+pub const TRANSACTION_PROCESSOR_BLUEPRINT: &str = "TransactionProcessor";
 
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Package(PackageFn::PublishNative))
-    }
-}
-
-impl SerializableInvocation for PackagePublishNativeInvocation {
-    type ScryptoOutput = PackageAddress;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Package(PackageFn::PublishNative)
-    }
-}
-
-impl Into<CallTableInvocation> for PackagePublishNativeInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Package(PackageInvocation::PublishNative(self)).into()
-    }
-}
-
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
-)]
-pub struct PackageSetRoyaltyConfigInvocation {
-    pub receiver: PackageAddress,
-    pub royalty_config: BTreeMap<String, RoyaltyConfig>, // TODO: optimize to allow per blueprint configuration.
-}
-
-impl Invocation for PackageSetRoyaltyConfigInvocation {
-    type Output = ();
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Package(PackageFn::SetRoyaltyConfig))
-    }
-}
-
-impl SerializableInvocation for PackageSetRoyaltyConfigInvocation {
-    type ScryptoOutput = ();
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Package(PackageFn::SetRoyaltyConfig)
-    }
-}
-
-impl Into<CallTableInvocation> for PackageSetRoyaltyConfigInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Package(PackageInvocation::SetRoyaltyConfig(self)).into()
-    }
-}
-
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
-)]
-pub struct PackageSetRoyaltyConfigExecutable {
-    pub receiver: RENodeId,
-    pub royalty_config: BTreeMap<String, RoyaltyConfig>,
-}
-
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
-)]
-pub struct PackageClaimRoyaltyInvocation {
-    pub receiver: PackageAddress,
-}
-
-impl Invocation for PackageClaimRoyaltyInvocation {
-    type Output = Bucket;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Package(PackageFn::ClaimRoyalty))
-    }
-}
-
-impl SerializableInvocation for PackageClaimRoyaltyInvocation {
-    type ScryptoOutput = Bucket;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Package(PackageFn::ClaimRoyalty)
-    }
-}
-
-impl Into<CallTableInvocation> for PackageClaimRoyaltyInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Package(PackageInvocation::ClaimRoyalty(self)).into()
-    }
-}
-
-#[derive(Debug, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode)]
-pub struct PackageClaimRoyaltyExecutable {
-    pub receiver: RENodeId,
-}
+pub const TRANSACTION_PROCESSOR_RUN_IDENT: &str = "run";

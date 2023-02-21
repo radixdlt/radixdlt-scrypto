@@ -3,12 +3,14 @@ use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, LockFlags};
 use crate::system::kernel_modules::auth::convert_contextless;
 use crate::system::kernel_modules::auth::*;
+use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE};
 use crate::system::node::RENodeInit;
 use crate::types::*;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::types::{
     Address, AuthZoneStackOffset, ProofOffset, RENodeId, ResourceManagerOffset, SubstateOffset,
 };
+use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
@@ -31,7 +33,7 @@ pub struct AuthZoneNativePackage;
 impl AuthZoneNativePackage {
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<ComponentId>,
+        receiver: Option<RENodeId>,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -40,48 +42,64 @@ impl AuthZoneNativePackage {
     {
         match export_name {
             AUTH_ZONE_POP_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 AuthZoneBlueprint::pop(receiver, input, api)
             }
             AUTH_ZONE_PUSH_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 AuthZoneBlueprint::push(receiver, input, api)
             }
             AUTH_ZONE_CREATE_PROOF_IDENT => {
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 AuthZoneBlueprint::create_proof(receiver, input, api)
             }
             AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_IDENT => {
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 AuthZoneBlueprint::create_proof_by_amount(receiver, input, api)
             }
             AUTH_ZONE_CREATE_PROOF_BY_IDS_IDENT => {
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 AuthZoneBlueprint::create_proof_by_ids(receiver, input, api)
             }
             AUTH_ZONE_CLEAR_IDENT => {
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 AuthZoneBlueprint::clear(receiver, input, api)
             }
             AUTH_ZONE_DRAIN_IDENT => {
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 AuthZoneBlueprint::drain(receiver, input, api)
             }
             AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT => {
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
@@ -98,7 +116,7 @@ pub struct AuthZoneBlueprint;
 
 impl AuthZoneBlueprint {
     pub(crate) fn pop<Y>(
-        _ignored: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -109,7 +127,7 @@ impl AuthZoneBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let auth_zone_handle = api.kernel_lock_substate(
-            RENodeId::AuthZoneStack,
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,
@@ -130,7 +148,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn push<Y>(
-        _ignored: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -141,7 +159,7 @@ impl AuthZoneBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let auth_zone_handle = api.kernel_lock_substate(
-            RENodeId::AuthZoneStack,
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,
@@ -168,7 +186,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn create_proof<Y>(
-        _ignored: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -179,7 +197,7 @@ impl AuthZoneBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let auth_zone_handle = api.kernel_lock_substate(
-            RENodeId::AuthZoneStack,
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,
@@ -215,7 +233,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn create_proof_by_amount<Y>(
-        _ignored: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -227,7 +245,7 @@ impl AuthZoneBlueprint {
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let auth_zone_handle = api.kernel_lock_substate(
-            RENodeId::AuthZoneStack,
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,
@@ -266,7 +284,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn create_proof_by_ids<Y>(
-        _ignored: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -277,7 +295,7 @@ impl AuthZoneBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let auth_zone_handle = api.kernel_lock_substate(
-            RENodeId::AuthZoneStack,
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,
@@ -316,7 +334,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn clear<Y>(
-        _ignored: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -327,7 +345,7 @@ impl AuthZoneBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let auth_zone_handle = api.kernel_lock_substate(
-            RENodeId::AuthZoneStack,
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,
@@ -340,7 +358,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn drain<Y>(
-        _ignored: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -351,7 +369,7 @@ impl AuthZoneBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let auth_zone_handle = api.kernel_lock_substate(
-            RENodeId::AuthZoneStack,
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,
@@ -378,7 +396,7 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn assert_access_rule<Y>(
-        _ignored: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -389,7 +407,7 @@ impl AuthZoneBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let handle = api.kernel_lock_substate(
-            RENodeId::AuthZoneStack,
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::read_only(),

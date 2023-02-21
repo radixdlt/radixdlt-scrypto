@@ -4,13 +4,15 @@ use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, LockFlags};
 use crate::system::global::GlobalSubstate;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::auth::AccessRulesChainSubstate;
+use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use native_sdk::resource::{ResourceManager, SysBucket, Vault};
-use radix_engine_interface::api::node_modules::auth::AccessRulesSetMethodAccessRuleInvocation;
+use radix_engine_interface::api::node_modules::auth::{
+    AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
+};
+use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -46,7 +48,7 @@ pub struct ValidatorBlueprint;
 
 impl ValidatorBlueprint {
     pub fn register<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -54,8 +56,7 @@ impl ValidatorBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let _input: ValidatorRegisterInput = scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -63,7 +64,7 @@ impl ValidatorBlueprint {
 
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
         let handle = api.kernel_lock_substate(
-            RENodeId::Validator(receiver),
+            receiver,
             NodeModuleId::SELF,
             offset.clone(),
             LockFlags::MUTABLE,
@@ -94,7 +95,7 @@ impl ValidatorBlueprint {
                 let validator_address = validator.address;
                 let manager = validator.manager;
                 api.call_method(
-                    ScryptoReceiver::Global(manager),
+                    RENodeId::Global(manager.into()),
                     EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
                     scrypto_encode(&EpochManagerUpdateValidatorInput {
                         update: UpdateValidator::Register(key, stake_amount),
@@ -109,7 +110,7 @@ impl ValidatorBlueprint {
     }
 
     pub fn unregister<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -117,8 +118,7 @@ impl ValidatorBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let _input: ValidatorUnregisterInput = scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -126,7 +126,7 @@ impl ValidatorBlueprint {
 
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
         let handle = api.kernel_lock_substate(
-            RENodeId::Validator(receiver),
+            receiver,
             NodeModuleId::SELF,
             offset.clone(),
             LockFlags::MUTABLE,
@@ -149,7 +149,7 @@ impl ValidatorBlueprint {
             let manager = validator.manager;
             let validator_address = validator.address;
             api.call_method(
-                ScryptoReceiver::Global(manager),
+                RENodeId::Global(manager.into()),
                 EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
                 scrypto_encode(&EpochManagerUpdateValidatorInput {
                     validator_address,
@@ -163,7 +163,7 @@ impl ValidatorBlueprint {
     }
 
     pub fn stake<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -171,15 +171,14 @@ impl ValidatorBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ValidatorStakeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let handle = api.kernel_lock_substate(
-            RENodeId::Validator(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Validator(ValidatorOffset::Validator),
             LockFlags::read_only(),
@@ -219,7 +218,7 @@ impl ValidatorBlueprint {
                 let xrd_amount = xrd_vault.sys_amount(api)?;
 
                 api.call_method(
-                    ScryptoReceiver::Global(receiver),
+                    RENodeId::Global(receiver.into()),
                     EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
                     scrypto_encode(&EpochManagerUpdateValidatorInput {
                         validator_address,
@@ -234,7 +233,7 @@ impl ValidatorBlueprint {
     }
 
     pub fn unstake<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -242,15 +241,14 @@ impl ValidatorBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ValidatorUnstakeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let handle = api.kernel_lock_substate(
-            RENodeId::Validator(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Validator(ValidatorOffset::Validator),
             LockFlags::read_only(),
@@ -319,7 +317,7 @@ impl ValidatorBlueprint {
                 };
 
                 api.call_method(
-                    ScryptoReceiver::Global(manager),
+                    RENodeId::Global(manager.into()),
                     EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
                     scrypto_encode(&EpochManagerUpdateValidatorInput {
                         validator_address,
@@ -334,7 +332,7 @@ impl ValidatorBlueprint {
     }
 
     pub fn claim_xrd<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -342,15 +340,14 @@ impl ValidatorBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ValidatorClaimXrdInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let handle = api.kernel_lock_substate(
-            RENodeId::Validator(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Validator(ValidatorOffset::Validator),
             LockFlags::read_only(),
@@ -402,7 +399,7 @@ impl ValidatorBlueprint {
     }
 
     pub fn update_key<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -410,15 +407,14 @@ impl ValidatorBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ValidatorUpdateKeyInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let handle = api.kernel_lock_substate(
-            RENodeId::Validator(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Validator(ValidatorOffset::Validator),
             LockFlags::MUTABLE,
@@ -438,7 +434,7 @@ impl ValidatorBlueprint {
                 if !stake_amount.is_zero() {
                     let update = UpdateValidator::Register(key, stake_amount);
                     api.call_method(
-                        ScryptoReceiver::Global(manager),
+                        RENodeId::Global(manager.into()),
                         EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
                         scrypto_encode(&EpochManagerUpdateValidatorInput {
                             validator_address,
@@ -454,7 +450,7 @@ impl ValidatorBlueprint {
     }
 
     pub fn update_accept_delegated_stake<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -462,8 +458,7 @@ impl ValidatorBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ValidatorUpdateAcceptDelegatedStakeInput =
@@ -476,12 +471,17 @@ impl ValidatorBlueprint {
             AccessRuleEntry::Group("owner".to_string())
         };
 
-        api.call_native(AccessRulesSetMethodAccessRuleInvocation {
-            receiver: RENodeId::Validator(receiver),
-            index: 0u32,
-            key: AccessRuleKey::ScryptoMethod(VALIDATOR_STAKE_IDENT.to_string()),
-            rule,
-        })?;
+        api.call_module_method(
+            receiver.into(),
+            NodeModuleId::AccessRules,
+            ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
+            scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
+                index: 0u32,
+                key: AccessRuleKey::new(NodeModuleId::SELF, VALIDATOR_STAKE_IDENT.to_string()),
+                rule,
+            })
+            .unwrap(),
+        )?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -495,16 +495,11 @@ impl ValidatorCreator {
         api: &mut Y,
     ) -> Result<(ResourceAddress, Bucket), RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let mut liquidity_token_auth = BTreeMap::new();
-        let non_fungible_id = NonFungibleLocalId::bytes(
-            scrypto_encode(&PackageIdentifier::Scrypto(EPOCH_MANAGER_PACKAGE)).unwrap(),
-        )
-        .unwrap();
+        let non_fungible_id =
+            NonFungibleLocalId::bytes(scrypto_encode(&EPOCH_MANAGER_PACKAGE).unwrap()).unwrap();
         let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_id);
         liquidity_token_auth.insert(
             Mint,
@@ -534,16 +529,11 @@ impl ValidatorCreator {
 
     fn create_liquidity_token<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let mut liquidity_token_auth = BTreeMap::new();
-        let non_fungible_local_id = NonFungibleLocalId::bytes(
-            scrypto_encode(&PackageIdentifier::Scrypto(EPOCH_MANAGER_PACKAGE)).unwrap(),
-        )
-        .unwrap();
+        let non_fungible_local_id =
+            NonFungibleLocalId::bytes(scrypto_encode(&EPOCH_MANAGER_PACKAGE).unwrap()).unwrap();
         let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
 
         liquidity_token_auth.insert(
@@ -568,16 +558,11 @@ impl ValidatorCreator {
 
     fn create_unstake_nft<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let mut unstake_token_auth = BTreeMap::new();
-        let non_fungible_local_id = NonFungibleLocalId::bytes(
-            scrypto_encode(&PackageIdentifier::Scrypto(EPOCH_MANAGER_PACKAGE)).unwrap(),
-        )
-        .unwrap();
+        let non_fungible_local_id =
+            NonFungibleLocalId::bytes(scrypto_encode(&EPOCH_MANAGER_PACKAGE).unwrap()).unwrap();
         let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
 
         unstake_token_auth.insert(
@@ -612,47 +597,48 @@ impl ValidatorCreator {
             AccessRule::DenyAll,
         );
         access_rules.set_method_access_rule_to_group(
-            AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Set)),
+            AccessRuleKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
             "owner".to_string(),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::ScryptoMethod(VALIDATOR_REGISTER_IDENT.to_string()),
+            AccessRuleKey::new(NodeModuleId::SELF, VALIDATOR_REGISTER_IDENT.to_string()),
             "owner".to_string(),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::ScryptoMethod(VALIDATOR_UNREGISTER_IDENT.to_string()),
+            AccessRuleKey::new(NodeModuleId::SELF, VALIDATOR_UNREGISTER_IDENT.to_string()),
             "owner".to_string(),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::ScryptoMethod(VALIDATOR_UPDATE_KEY_IDENT.to_string()),
+            AccessRuleKey::new(NodeModuleId::SELF, VALIDATOR_UPDATE_KEY_IDENT.to_string()),
             "owner".to_string(),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::ScryptoMethod(VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT.to_string()),
+            AccessRuleKey::new(
+                NodeModuleId::SELF,
+                VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT.to_string(),
+            ),
             "owner".to_string(),
         );
 
-        let non_fungible_local_id = NonFungibleLocalId::bytes(
-            scrypto_encode(&PackageIdentifier::Scrypto(EPOCH_MANAGER_PACKAGE)).unwrap(),
-        )
-        .unwrap();
+        let non_fungible_local_id =
+            NonFungibleLocalId::bytes(scrypto_encode(&EPOCH_MANAGER_PACKAGE).unwrap()).unwrap();
         let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
         access_rules.set_group_and_mutability(
-            AccessRuleKey::ScryptoMethod(VALIDATOR_STAKE_IDENT.to_string()),
+            AccessRuleKey::new(NodeModuleId::SELF, VALIDATOR_STAKE_IDENT.to_string()),
             "owner".to_string(),
             rule!(require(non_fungible_global_id)),
         );
 
         access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Get)),
+            AccessRuleKey::new(NodeModuleId::Metadata, METADATA_GET_IDENT.to_string()),
             rule!(allow_all),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::ScryptoMethod(VALIDATOR_UNSTAKE_IDENT.to_string()),
+            AccessRuleKey::new(NodeModuleId::SELF, VALIDATOR_UNSTAKE_IDENT.to_string()),
             rule!(allow_all),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::ScryptoMethod(VALIDATOR_CLAIM_XRD_IDENT.to_string()),
+            AccessRuleKey::new(NodeModuleId::SELF, VALIDATOR_CLAIM_XRD_IDENT.to_string()),
             rule!(allow_all),
         );
 
@@ -668,10 +654,7 @@ impl ValidatorCreator {
         api: &mut Y,
     ) -> Result<(ComponentAddress, Bucket), RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let node_id = api.kernel_allocate_node_id(RENodeType::Validator)?;
         let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalValidator)?;
@@ -693,7 +676,7 @@ impl ValidatorCreator {
         );
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::AccessRulesChain(AccessRulesChainSubstate {
+            RENodeModuleInit::ComponentAccessRulesChain(ObjectAccessRulesChainSubstate {
                 access_rules_chain: vec![Self::build_access_rules(owner_access_rule)],
             }),
         );
@@ -727,10 +710,7 @@ impl ValidatorCreator {
         api: &mut Y,
     ) -> Result<ComponentAddress, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let node_id = api.kernel_allocate_node_id(RENodeType::Validator)?;
         let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalValidator)?;
@@ -748,7 +728,7 @@ impl ValidatorCreator {
         );
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::AccessRulesChain(AccessRulesChainSubstate {
+            RENodeModuleInit::ComponentAccessRulesChain(ObjectAccessRulesChainSubstate {
                 access_rules_chain: vec![Self::build_access_rules(owner_access_rule)],
             }),
         );

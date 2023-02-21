@@ -107,7 +107,7 @@ pub enum CostingReason {
     DropLock,
     InstantiateWasm,
     RunWasm,
-    RunNative,
+    RunPrecompiled,
 }
 
 #[derive(Debug, Clone, ScryptoSbor)]

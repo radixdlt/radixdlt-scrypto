@@ -3,7 +3,7 @@ use crate::blueprints::logger::LoggerSubstate;
 use crate::blueprints::resource::{BucketSubstate, NonFungibleSubstate, ProofSubstate};
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::errors::CallFrameError;
-use crate::system::node_modules::auth::AuthZoneStackSubstate;
+use crate::system::node_modules::access_rules::AuthZoneStackSubstate;
 use crate::system::node_substates::{RuntimeSubstate, SubstateRef, SubstateRefMut};
 use crate::types::HashMap;
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;

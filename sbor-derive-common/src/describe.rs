@@ -486,7 +486,7 @@ mod tests {
                 where
                     T: ::sbor::Describe<C>,
                     T2: ::sbor::Describe<C>,
-                    T2: ::sbor::Categorize<C::CustomValueKind>
+                    T2: ::sbor::Categorize< <C as ::sbor::CustomTypeKind<::sbor::GlobalTypeId> >::CustomValueKind>
                 {
                     const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(Test),

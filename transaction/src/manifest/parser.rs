@@ -168,11 +168,6 @@ impl Parser {
                 metadata: self.parse_value()?,
                 access_rules: self.parse_value()?,
             },
-            TokenKind::PublishPackageWithOwner => Instruction::PublishPackageWithOwner {
-                code: self.parse_value()?,
-                abi: self.parse_value()?,
-                owner_badge: self.parse_value()?,
-            },
             TokenKind::BurnResource => Instruction::BurnResource {
                 bucket: self.parse_value()?,
             },

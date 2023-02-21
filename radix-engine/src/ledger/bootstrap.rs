@@ -1,3 +1,5 @@
+use crate::blueprints::clock::ClockNativePackage;
+use crate::blueprints::epoch_manager::EpochManagerNativePackage;
 use crate::kernel::interpreters::ScryptoInterpreter;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::transaction::{
@@ -5,10 +7,12 @@ use crate::transaction::{
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_interface::api::node_modules::auth::{AccessRulesAbi, AuthAddresses};
+use radix_engine_interface::api::node_modules::metadata::MetadataAbi;
+use radix_engine_interface::api::node_modules::royalty::RoyaltyAbi;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::package::{
-    PackagePublishInvocation, PackagePublishNativeInvocation,
+    PackageLoaderPublishPrecompiledInput, PackageLoaderPublishWasmInput,
 };
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::access_controller::AccessControllerAbi;
@@ -54,21 +58,97 @@ pub fn create_genesis(
     let mut instructions = Vec::new();
     let mut pre_allocated_ids = BTreeSet::new();
 
-    // Resource Package
+    // Metadata Package
     {
-        pre_allocated_ids.insert(RENodeId::Global(Address::Package(RESOURCE_MANAGER_PACKAGE)));
-        let package_address = RESOURCE_MANAGER_PACKAGE.to_array_without_entity_id();
-        instructions.push(Instruction::NativeInvocation(NativeInvocation::Package(
-            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+        pre_allocated_ids.insert(RENodeId::Global(Address::Package(METADATA_PACKAGE)));
+        let package_address = METADATA_PACKAGE.to_array_without_entity_id();
+        instructions.push(Instruction::CallFunction {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                native_package_code_id: RESOURCE_MANAGER_PACKAGE_CODE_ID,
-                abi: scrypto_encode(&ResourceManagerAbi::blueprint_abis()).unwrap(),
+                native_package_code_id: METADATA_CODE_ID,
+                abi: MetadataAbi::blueprint_abis(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
-            }),
-        )));
+                package_access_rules: BTreeMap::new(),
+                default_package_access_rule: AccessRule::DenyAll,
+            })
+            .unwrap(),
+        });
+    }
+
+    // Royalty Package
+    {
+        pre_allocated_ids.insert(RENodeId::Global(Address::Package(ROYALTY_PACKAGE)));
+        let package_address = ROYALTY_PACKAGE.to_array_without_entity_id();
+
+        instructions.push(Instruction::CallFunction {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
+                package_address: Some(package_address), // TODO: Clean this up
+                native_package_code_id: ROYALTY_CODE_ID,
+                abi: RoyaltyAbi::blueprint_abis(),
+                dependent_resources: vec![],
+                dependent_components: vec![],
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new(),
+                package_access_rules: BTreeMap::new(),
+                default_package_access_rule: AccessRule::DenyAll,
+            })
+            .unwrap(),
+        });
+    }
+
+    // Access Rules Package
+    {
+        pre_allocated_ids.insert(RENodeId::Global(Address::Package(ACCESS_RULES_PACKAGE)));
+        let package_address = ACCESS_RULES_PACKAGE.to_array_without_entity_id();
+        instructions.push(Instruction::CallFunction {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
+                package_address: Some(package_address), // TODO: Clean this up
+                native_package_code_id: ACCESS_RULES_CODE_ID,
+                abi: AccessRulesAbi::blueprint_abis(),
+                dependent_resources: vec![],
+                dependent_components: vec![],
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new(),
+                package_access_rules: BTreeMap::new(),
+                default_package_access_rule: AccessRule::DenyAll,
+            })
+            .unwrap(),
+        });
+    }
+
+    // Resource Package
+    {
+        pre_allocated_ids.insert(RENodeId::Global(Address::Package(RESOURCE_MANAGER_PACKAGE)));
+        let package_address = RESOURCE_MANAGER_PACKAGE.to_array_without_entity_id();
+        instructions.push(Instruction::CallFunction {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
+                package_address: Some(package_address), // TODO: Clean this up
+                native_package_code_id: RESOURCE_MANAGER_PACKAGE_CODE_ID,
+                abi: ResourceManagerAbi::blueprint_abis(),
+                dependent_resources: vec![],
+                dependent_components: vec![],
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new(),
+                package_access_rules: BTreeMap::new(),
+                default_package_access_rule: AccessRule::AllowAll,
+            })
+            .unwrap(),
+        });
     }
 
     // XRD Token
@@ -127,68 +207,92 @@ pub fn create_genesis(
     {
         pre_allocated_ids.insert(RENodeId::Global(Address::Package(IDENTITY_PACKAGE)));
         let package_address = IDENTITY_PACKAGE.to_array_without_entity_id();
-        instructions.push(Instruction::NativeInvocation(NativeInvocation::Package(
-            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+        instructions.push(Instruction::CallFunction {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                abi: scrypto_encode(&IdentityAbi::blueprint_abis()).unwrap(),
+                abi: IdentityAbi::blueprint_abis(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
                 native_package_code_id: IDENTITY_PACKAGE_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
-            }),
-        )));
+                package_access_rules: BTreeMap::new(),
+                default_package_access_rule: AccessRule::AllowAll,
+            })
+            .unwrap(),
+        });
     }
 
     // EpochManager Package
     {
         pre_allocated_ids.insert(RENodeId::Global(Address::Package(EPOCH_MANAGER_PACKAGE)));
         let package_address = EPOCH_MANAGER_PACKAGE.to_array_without_entity_id();
-        instructions.push(Instruction::NativeInvocation(NativeInvocation::Package(
-            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+        instructions.push(Instruction::CallFunction {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                abi: scrypto_encode(&EpochManagerAbi::blueprint_abis()).unwrap(),
+                abi: EpochManagerAbi::blueprint_abis(),
                 native_package_code_id: EPOCH_MANAGER_PACKAGE_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
                 dependent_resources: vec![RADIX_TOKEN, PACKAGE_TOKEN],
                 dependent_components: vec![],
-            }),
-        )));
+                package_access_rules: EpochManagerNativePackage::package_access_rules(),
+                default_package_access_rule: AccessRule::DenyAll,
+            })
+            .unwrap(),
+        });
     }
 
     // Clock Package
     {
         pre_allocated_ids.insert(RENodeId::Global(Address::Package(CLOCK_PACKAGE)));
         let package_address = CLOCK_PACKAGE.to_array_without_entity_id();
-        instructions.push(Instruction::NativeInvocation(NativeInvocation::Package(
-            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+        instructions.push(Instruction::CallFunction {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                abi: scrypto_encode(&ClockAbi::blueprint_abis()).unwrap(),
+                abi: ClockAbi::blueprint_abis(),
                 native_package_code_id: CLOCK_PACKAGE_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
-            }),
-        )));
+                package_access_rules: ClockNativePackage::package_access_rules(),
+                default_package_access_rule: AccessRule::DenyAll,
+            })
+            .unwrap(),
+        });
     }
 
     // Account Package
     {
         pre_allocated_ids.insert(RENodeId::Global(Address::Package(ACCOUNT_PACKAGE)));
         let package_address = ACCOUNT_PACKAGE.to_array_without_entity_id();
-        instructions.push(Instruction::NativeInvocation(NativeInvocation::Package(
-            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+        instructions.push(Instruction::CallFunction {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                abi: scrypto_encode(&AccountAbi::blueprint_abis()).unwrap(),
+                abi: AccountAbi::blueprint_abis(),
                 native_package_code_id: ACCOUNT_PACKAGE_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
-            }),
-        )));
+                package_access_rules: BTreeMap::new(),
+                default_package_access_rule: AccessRule::AllowAll,
+            })
+            .unwrap(),
+        });
     }
 
     // AccessRules Package
@@ -197,34 +301,46 @@ pub fn create_genesis(
             ACCESS_CONTROLLER_PACKAGE,
         )));
         let package_address = ACCESS_CONTROLLER_PACKAGE.to_array_without_entity_id();
-        instructions.push(Instruction::NativeInvocation(NativeInvocation::Package(
-            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+        instructions.push(Instruction::CallFunction {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                abi: scrypto_encode(&AccessControllerAbi::blueprint_abis()).unwrap(),
+                abi: AccessControllerAbi::blueprint_abis(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
                 native_package_code_id: ACCESS_CONTROLLER_PACKAGE_CODE_ID,
                 dependent_resources: vec![],
                 dependent_components: vec![CLOCK],
-            }),
-        )));
+                package_access_rules: BTreeMap::new(),
+                default_package_access_rule: AccessRule::AllowAll,
+            })
+            .unwrap(),
+        });
     }
 
     // Logger Package
     {
         pre_allocated_ids.insert(RENodeId::Global(Address::Package(LOGGER_PACKAGE)));
         let package_address = LOGGER_PACKAGE.to_array_without_entity_id();
-        instructions.push(Instruction::NativeInvocation(NativeInvocation::Package(
-            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+        instructions.push(Instruction::CallFunction {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                abi: scrypto_encode(&TransactionRuntimeAbi::blueprint_abis()).unwrap(),
+                abi: TransactionRuntimeAbi::blueprint_abis(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
                 native_package_code_id: LOGGER_CODE_ID,
                 dependent_resources: vec![],
                 dependent_components: vec![],
-            }),
-        )));
+                package_access_rules: BTreeMap::new(),
+                default_package_access_rule: AccessRule::AllowAll,
+            })
+            .unwrap(),
+        });
     }
 
     // TransactionRuntime Package
@@ -233,34 +349,46 @@ pub fn create_genesis(
             TRANSACTION_RUNTIME_PACKAGE,
         )));
         let package_address = TRANSACTION_RUNTIME_PACKAGE.to_array_without_entity_id();
-        instructions.push(Instruction::NativeInvocation(NativeInvocation::Package(
-            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+        instructions.push(Instruction::CallFunction {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                abi: scrypto_encode(&LoggerAbi::blueprint_abis()).unwrap(),
+                abi: LoggerAbi::blueprint_abis(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
                 native_package_code_id: TRANSACTION_RUNTIME_CODE_ID,
                 dependent_resources: vec![],
                 dependent_components: vec![],
-            }),
-        )));
+                package_access_rules: BTreeMap::new(),
+                default_package_access_rule: AccessRule::DenyAll,
+            })
+            .unwrap(),
+        });
     }
 
     // AuthZone Package
     {
         pre_allocated_ids.insert(RENodeId::Global(Address::Package(AUTH_ZONE_PACKAGE)));
         let package_address = AUTH_ZONE_PACKAGE.to_array_without_entity_id();
-        instructions.push(Instruction::NativeInvocation(NativeInvocation::Package(
-            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+        instructions.push(Instruction::CallFunction {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                abi: scrypto_encode(&AuthZoneAbi::blueprint_abis()).unwrap(),
+                abi: AuthZoneAbi::blueprint_abis(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
                 native_package_code_id: AUTH_ZONE_CODE_ID,
                 dependent_resources: vec![],
                 dependent_components: vec![],
-            }),
-        )));
+                package_access_rules: BTreeMap::new(),
+                default_package_access_rule: AccessRule::DenyAll,
+            })
+            .unwrap(),
+        });
     }
 
     // ECDSA
@@ -333,16 +461,20 @@ pub fn create_genesis(
         let faucet_abi = include_bytes!("../../../assets/faucet.abi").to_vec();
         let package_address = FAUCET_PACKAGE.to_array_without_entity_id();
         pre_allocated_ids.insert(RENodeId::Global(Address::Package(FAUCET_PACKAGE)));
-        instructions.push(Instruction::NativeInvocation(NativeInvocation::Package(
-            PackageInvocation::Publish(PackagePublishInvocation {
+        instructions.push(Instruction::CallFunction {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_WASM_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishWasmInput {
                 package_address: Some(package_address),
                 code: faucet_code, // TODO: Use blob here instead?
-                abi: faucet_abi,   // TODO: Use blob here instead?
+                abi: scrypto_decode(&faucet_abi).unwrap(), // TODO: Use blob here instead?
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll),
-            }),
-        )));
+            })
+            .unwrap(),
+        });
     }
 
     {
@@ -548,6 +680,8 @@ mod tests {
         );
         #[cfg(not(feature = "alloc"))]
         println!("{:?}", transaction_receipt);
+
+        transaction_receipt.expect_commit_success();
 
         let genesis_receipt = genesis_result(&transaction_receipt);
         assert_eq!(genesis_receipt.faucet_component, FAUCET_COMPONENT);
