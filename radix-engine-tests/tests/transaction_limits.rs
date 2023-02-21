@@ -8,11 +8,7 @@ use radix_engine::{
 use radix_engine_constants::*;
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
-use transaction::{
-    builder::ManifestBuilder,
-    data::manifest_args,
-    model::TestTransaction,
-};
+use transaction::{builder::ManifestBuilder, data::manifest_args, model::TestTransaction};
 
 #[test]
 fn transaction_limit_call_frame_memory_exceeded() {
