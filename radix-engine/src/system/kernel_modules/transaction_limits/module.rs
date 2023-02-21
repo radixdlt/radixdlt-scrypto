@@ -120,7 +120,6 @@ impl TransactionLimitsModule {
                     TransactionLimitsError::MaxSubstateWritesCountExceeded,
                 ),
             ))
-
         } else {
             Ok(())
         }

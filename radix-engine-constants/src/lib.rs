@@ -53,4 +53,4 @@ pub const DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME: usize = 4 * 1024 * 1024;
 pub const DEFAULT_MAX_SUBSTATE_READS_PER_TRANSACTION: usize = 20_000;
 
 /// The default maximum substates writes count per transaction.
-pub const DEFAULT_MAX_SUBSTATE_WRITES_PER_TRANSACTION: usize = 10_000;
+pub const DEFAULT_MAX_SUBSTATE_WRITES_PER_TRANSACTION: usize = 5_000;

@@ -1,22 +1,21 @@
 use radix_engine::{
-    errors::{ModuleError, RuntimeError, KernelError},
+    errors::{ModuleError, RuntimeError},
     system::kernel_modules::transaction_limits::TransactionLimitsError,
+    transaction::{ExecutionConfig, FeeReserveConfig},
     types::*,
     wasm::WASM_MEMORY_PAGE_SIZE,
 };
-use radix_engine_constants::{
-    DEFAULT_MAX_CALL_DEPTH, DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME,
-    DEFAULT_MAX_WASM_MEM_PER_TRANSACTION,
-};
+use radix_engine_constants::*;
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
-use transaction::data::{manifest_args, ManifestExpression};
-
-
+use transaction::{
+    builder::ManifestBuilder,
+    data::{manifest_args, ManifestExpression},
+    model::TestTransaction,
+};
 
 #[test]
-fn test_max_call_frame_memory_exceeded() {
+fn transaction_limit_call_frame_memory_exceeded() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
 
@@ -55,10 +54,10 @@ fn test_max_call_frame_memory_exceeded() {
 }
 
 #[test]
-fn test_max_transaction_memory_exceeded() {
+fn transaction_limit_memory_exceeded() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
-    let package_address = test_runner.compile_and_publish("tests/blueprints/recursion");
+    let package_address = test_runner.compile_and_publish("tests/blueprints/transaction_limits");
 
     // Calculate value of additional bytes to allocate per call to exceed
     // max wasm memory per transaction limit in nested calls.
@@ -69,7 +68,7 @@ fn test_max_transaction_memory_exceeded() {
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
-            "Caller",
+            "TransactionLimitTest",
             "recursive_with_memory",
             manifest_args!(DEFAULT_MAX_CALL_DEPTH as u32, grow_value),
         )
@@ -101,18 +100,16 @@ fn test_max_transaction_memory_exceeded() {
 }
 
 #[test]
-fn too_large_manifest_fails_on_substate_read_limit() {
+fn transaction_limit_exceeded_substate_reads_should_fail() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
-
-    // Act
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
     let mut builder = ManifestBuilder::new();
     builder.lock_fee(account, 100u32.into());
     builder.withdraw_from_account(account, RADIX_TOKEN, 100u32.into());
-    for _ in 0..350 {
+    for _ in 0..400 {
         builder.take_from_worktop_by_amount(1.into(), RADIX_TOKEN, |builder, bid| {
             builder.return_to_worktop(bid)
         });
@@ -124,7 +121,15 @@ fn too_large_manifest_fails_on_substate_read_limit() {
     );
     let manifest = builder.build();
 
-    let receipt = test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&public_key)]);
+    let transactions = TestTransaction::new(manifest, 10, DEFAULT_COST_UNIT_LIMIT);
+    let executable =
+        transactions.get_executable(vec![NonFungibleGlobalId::from_public_key(&public_key)]);
+    let fee_config = FeeReserveConfig::default();
+    let mut execution_config = ExecutionConfig::default();
+    // extend max writes count to let the substate reads count to exceed the limit
+    execution_config.max_substate_writes_per_transaction = 10000;
+    let receipt =
+        test_runner.execute_transaction_with_config(executable, &fee_config, &execution_config);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -141,34 +146,34 @@ fn too_large_manifest_fails_on_substate_read_limit() {
 fn transaction_limit_exceeded_substate_writes_should_fail() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
-    let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(
-            package_address,
-            "KeyValueStoreTest",
-            "new_kv_store_into_vector",
-            manifest_args!(),
-        )
-        .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let component_address = receipt
-        .expect_commit()
-        .entity_changes
-        .new_component_addresses[0];
+    let package_address = test_runner.compile_and_publish("tests/blueprints/transaction_limits");
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_method(component_address, "clear_vector", manifest_args!())
+        .lock_fee(FAUCET_COMPONENT, 1000.into())
+        .call_function(
+            package_address,
+            "TransactionLimitTest",
+            "write_kv_stores",
+            manifest_args!(100 as u32),
+        )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    let transactions = TestTransaction::new(manifest, 10, DEFAULT_COST_UNIT_LIMIT);
+    let executable = transactions.get_executable(vec![]);
+    let fee_config = FeeReserveConfig::default();
+    let mut execution_config = ExecutionConfig::default();
+    execution_config.max_substate_writes_per_transaction = 100;
+    let receipt =
+        test_runner.execute_transaction_with_config(executable, &fee_config, &execution_config);
 
     // Assert
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::StoredNodeRemoved(_))
+            RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
+                TransactionLimitsError::MaxSubstateWritesCountExceeded
+            ))
         )
     });
 }
