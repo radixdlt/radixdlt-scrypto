@@ -79,7 +79,7 @@ impl LiquidFungibleResource {
     ) -> Result<LiquidFungibleResource, ResourceError> {
         // check amount granularity
         let divisibility = self.resource_type().divisibility();
-        Self::check_amount(amount_to_take, divisibility)?;
+        check_amount(amount_to_take, divisibility)?;
 
         // deduct from liquidity pool
         if self.amount < amount_to_take {
@@ -96,17 +96,6 @@ impl LiquidFungibleResource {
     pub fn take_all(&mut self) -> LiquidFungibleResource {
         self.take_by_amount(self.amount())
             .expect("Take all from `Resource` should not fail")
-    }
-
-    pub fn check_amount(amount: Decimal, divisibility: u8) -> Result<(), ResourceError> {
-        if amount.is_negative()
-            || amount.0 % BnumI256::from(10i128.pow((18 - divisibility).into()))
-                != BnumI256::from(0)
-        {
-            Err(ResourceError::InvalidAmount(amount, divisibility))
-        } else {
-            Ok(())
-        }
     }
 }
 
@@ -139,6 +128,10 @@ impl LiquidNonFungibleResource {
 
     pub fn ids(&self) -> &BTreeSet<NonFungibleLocalId> {
         &self.ids
+    }
+
+    pub fn into_ids(self) -> BTreeSet<NonFungibleLocalId> {
+        self.ids
     }
 
     pub fn amount(&self) -> Decimal {
@@ -180,7 +173,7 @@ impl LiquidNonFungibleResource {
     ) -> Result<LiquidNonFungibleResource, ResourceError> {
         // check amount granularity
         let divisibility = self.resource_type().divisibility();
-        Self::check_amount(amount_to_take, divisibility)?;
+        check_amount(amount_to_take, divisibility)?;
 
         // deduct from liquidity pool
         if Decimal::from(self.ids.len()) < amount_to_take {
@@ -215,42 +208,6 @@ impl LiquidNonFungibleResource {
         self.take_by_amount(self.amount())
             .expect("Take all from `Resource` should not fail")
     }
-
-    pub fn check_amount(amount: Decimal, divisibility: u8) -> Result<(), ResourceError> {
-        if amount.is_negative()
-            || amount.0 % BnumI256::from(10i128.pow((18 - divisibility).into()))
-                != BnumI256::from(0)
-        {
-            Err(ResourceError::InvalidAmount(amount, divisibility))
-        } else {
-            Ok(())
-        }
-    }
-}
-
-/// Resource that can be partially or completely locked for proofs.
-#[derive(Debug, PartialEq, Eq)]
-pub struct LockedFungibleResource {
-    /// The locked amounts and the corresponding times of being locked.
-    amounts: BTreeMap<Decimal, usize>,
-}
-
-impl LockedFungibleResource {
-    pub fn is_locked(&self) -> bool {
-        !self.amounts.is_empty()
-    }
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub struct LockedNonFungibleResource {
-    /// The locked non-fungible ids and the corresponding times of being locked.
-    ids: BTreeMap<NonFungibleLocalId, usize>,
-}
-
-impl LockedNonFungibleResource {
-    pub fn is_locked(&self) -> bool {
-        !self.ids.is_empty()
-    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -278,6 +235,10 @@ impl LiquidResource {
             LiquidResource::Fungible(f) => f.amount(),
             LiquidResource::NonFungible(nf) => nf.amount(),
         }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.amount().is_zero()
     }
 
     pub fn non_fungible_ids(&self) -> Option<&BTreeSet<NonFungibleLocalId>> {
@@ -311,6 +272,53 @@ impl From<LiquidFungibleResource> for LiquidResource {
 impl From<LiquidNonFungibleResource> for LiquidResource {
     fn from(value: LiquidNonFungibleResource) -> Self {
         Self::NonFungible(value)
+    }
+}
+
+/// Resource that can be partially or completely locked for proofs.
+#[derive(Debug, PartialEq, Eq)]
+pub struct LockedFungibleResource {
+    /// The locked amounts and the corresponding times of being locked.
+    pub amounts: BTreeMap<Decimal, usize>,
+}
+
+impl LockedFungibleResource {
+    pub fn is_locked(&self) -> bool {
+        !self.amounts.is_empty()
+    }
+
+    pub fn amount(&self) -> Decimal {
+        self.amounts
+            .last_key_value()
+            .map(|(k, _)| k)
+            .cloned()
+            .unwrap_or(Decimal::zero())
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct LockedNonFungibleResource {
+    /// The locked non-fungible ids and the corresponding times of being locked.
+    pub ids: BTreeMap<NonFungibleLocalId, usize>,
+}
+
+impl LockedNonFungibleResource {
+    pub fn is_locked(&self) -> bool {
+        !self.ids.is_empty()
+    }
+
+    pub fn amount(&self) -> Decimal {
+        self.ids.len().into()
+    }
+}
+
+pub fn check_amount(amount: Decimal, divisibility: u8) -> Result<(), ResourceError> {
+    if amount.is_negative()
+        || amount.0 % BnumI256::from(10i128.pow((18 - divisibility).into())) != BnumI256::from(0)
+    {
+        Err(ResourceError::InvalidAmount(amount, divisibility))
+    } else {
+        Ok(())
     }
 }
 
@@ -357,12 +365,21 @@ impl FungibleResource {
         self.take_by_amount(self.liquid_amount())
     }
 
+    pub fn amount(&self) -> Decimal {
+        self.locked
+            .amounts
+            .last_key_value()
+            .map(|(k, _)| k)
+            .cloned()
+            .unwrap_or(Decimal::zero())
+    }
+
     pub fn lock_by_amount(&mut self, amount: Decimal) -> Result<Decimal, ResourceError> {
         // check amount granularity
         let divisibility = self.resource_type().divisibility();
-        Self::check_amount(amount, divisibility)?;
+        check_amount(amount, divisibility)?;
 
-        let max_locked = self.max_locked_amount();
+        let max_locked = self.amount();
         if amount > max_locked {
             let delta = amount - max_locked;
             if self.liquid.amount >= delta {
@@ -381,7 +398,7 @@ impl FungibleResource {
     }
 
     pub fn unlock(&mut self, amount: Decimal) {
-        let max_locked = self.max_locked_amount();
+        let max_locked = self.amount();
         let count = self
             .locked
             .amounts
@@ -390,18 +407,9 @@ impl FungibleResource {
         if count > 1 {
             self.locked.amounts.insert(amount, count - 1);
         } else {
-            let new_max_locked = self.max_locked_amount();
+            let new_max_locked = self.amount();
             self.liquid.amount += max_locked - new_max_locked;
         }
-    }
-
-    pub fn max_locked_amount(&self) -> Decimal {
-        self.locked
-            .amounts
-            .last_key_value()
-            .map(|(k, _)| k)
-            .cloned()
-            .unwrap_or(Decimal::zero())
     }
 
     pub fn liquid_amount(&self) -> Decimal {
@@ -409,7 +417,7 @@ impl FungibleResource {
     }
 
     pub fn total_amount(&self) -> Decimal {
-        self.max_locked_amount() + self.liquid_amount()
+        self.amount() + self.liquid_amount()
     }
 
     pub fn is_locked(&self) -> bool {
@@ -430,17 +438,6 @@ impl FungibleResource {
 
     pub fn resource_type(&self) -> ResourceType {
         self.liquid.resource_type()
-    }
-
-    fn check_amount(amount: Decimal, divisibility: u8) -> Result<(), ResourceError> {
-        if amount.is_negative()
-            || amount.0 % BnumI256::from(10i128.pow((18 - divisibility).into()))
-                != BnumI256::from(0)
-        {
-            Err(ResourceError::InvalidAmount(amount, divisibility))
-        } else {
-            Ok(())
-        }
     }
 
     pub fn peek_resource(&self) -> LiquidFungibleResource {
@@ -486,7 +483,7 @@ impl NonFungibleResource {
     ) -> Result<LiquidNonFungibleResource, ResourceError> {
         // check amount granularity
         let divisibility = self.resource_type().divisibility();
-        Self::check_amount(amount, divisibility)?;
+        check_amount(amount, divisibility)?;
 
         // calculate the non-fungible id to take
         if Decimal::from(self.liquid.ids.len()) < amount {
@@ -527,7 +524,7 @@ impl NonFungibleResource {
     ) -> Result<BTreeSet<NonFungibleLocalId>, ResourceError> {
         // check amount granularity
         let divisibility = self.resource_type().divisibility();
-        Self::check_amount(amount, divisibility)?;
+        check_amount(amount, divisibility)?;
 
         if Decimal::from(self.locked.ids.len() + self.liquid.ids.len()) < amount {
             return Err(ResourceError::InsufficientBalance);
@@ -578,7 +575,7 @@ impl NonFungibleResource {
         }
     }
 
-    pub fn max_locked_amount(&self) -> Decimal {
+    pub fn amount(&self) -> Decimal {
         self.locked.ids.len().into()
     }
 
@@ -595,7 +592,7 @@ impl NonFungibleResource {
     }
 
     pub fn total_amount(&self) -> Decimal {
-        self.max_locked_amount() + self.liquid_amount()
+        self.amount() + self.liquid_amount()
     }
 
     pub fn total_ids(&self) -> BTreeSet<NonFungibleLocalId> {
@@ -624,17 +621,6 @@ impl NonFungibleResource {
     pub fn resource_type(&self) -> ResourceType {
         ResourceType::NonFungible {
             id_type: self.liquid.id_type,
-        }
-    }
-
-    fn check_amount(amount: Decimal, divisibility: u8) -> Result<(), ResourceError> {
-        if amount.is_negative()
-            || amount.0 % BnumI256::from(10i128.pow((18 - divisibility).into()))
-                != BnumI256::from(0)
-        {
-            Err(ResourceError::InvalidAmount(amount, divisibility))
-        } else {
-            Ok(())
         }
     }
 

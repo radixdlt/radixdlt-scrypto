@@ -266,26 +266,14 @@ pub struct NonFungibleProof {
     /// The total locked amount or non-fungible ids.
     pub total_locked: BTreeSet<NonFungibleLocalId>,
     /// The supporting containers.
-    pub evidence: BTreeMap<
-        RENodeId,
-        (
-            Rc<RefCell<NonFungibleResource>>,
-            BTreeSet<NonFungibleLocalId>,
-        ),
-    >,
+    pub evidence: BTreeMap<RENodeId, BTreeSet<NonFungibleLocalId>>,
 }
 
 impl NonFungibleProof {
     pub fn new(
         resource_address: ResourceAddress,
         total_locked: BTreeSet<NonFungibleLocalId>,
-        evidence: BTreeMap<
-            RENodeId,
-            (
-                Rc<RefCell<NonFungibleResource>>,
-                BTreeSet<NonFungibleLocalId>,
-            ),
-        >,
+        evidence: BTreeMap<RENodeId, BTreeSet<NonFungibleLocalId>>,
     ) -> Result<NonFungibleProof, ProofError> {
         if total_locked.is_empty() {
             return Err(ProofError::EmptyProofNotAllowed);
