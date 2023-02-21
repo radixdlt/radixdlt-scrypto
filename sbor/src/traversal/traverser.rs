@@ -1,29 +1,45 @@
 use super::*;
 use crate::decoder::PayloadTraverser;
-use crate::rust::marker::PhantomData;
 use crate::rust::str;
+use crate::rust::fmt::Debug;
 use crate::value_kind::*;
 use crate::*;
 
-pub trait CustomTraverser<'de, R: PayloadTraverser<'de, Self::CustomValueKind>> {
-    type CustomTraversalEvent;
+pub trait CustomTraversal: Copy + Debug + Clone + PartialEq + Eq {
     type CustomValueKind: CustomValueKind;
+    type CustomTerminalValueRef: CustomTerminalValueRef;
+    type CustomTerminalValueBatchRef: CustomTerminalValueBatchRef;
+    type CustomContainerHeader: CustomContainerHeader<CustomValueKind = Self::CustomValueKind>;
+    type CustomValueTraverser: CustomValueTraverser<CustomTraversal = Self>;
 
-    fn new_traversal(custom_value_kind: Self::CustomValueKind) -> Self;
-    fn next_event(
-        &mut self,
-        reader: &mut R,
-    ) -> Result<
-        (
-            TraversalEvent<'de, Self::CustomValueKind, Self::CustomTraversalEvent>,
-            bool,
-        ),
-        DecodeError,
-    >;
+    fn new_value_traversal(custom_value_kind: Self::CustomValueKind, current_depth: u8, max_depth: u8) -> Self::CustomValueTraverser;
 }
 
-pub struct CurrentChild<X: CustomValueKind> {
-    pub owner_header: OwnerValueHeader<X>,
+pub trait CustomTerminalValueRef: Copy + Debug + Clone + PartialEq + Eq {}
+pub trait CustomTerminalValueBatchRef: Copy + Debug + Clone + PartialEq + Eq {}
+pub trait CustomContainerHeader: Copy + Debug + Clone + PartialEq + Eq {
+    type CustomValueKind: CustomValueKind;
+    fn get_child_count(&self) -> usize;
+    fn get_implicit_child_value_kind(&self, index: usize) -> Option<ValueKind<Self::CustomValueKind>>;
+}
+
+/// A `CustomValueTraverser` is responsible for emitting traversal events for a single custom value - and therefore is either:
+/// - Emitting a single event for a terminal value at the current depth
+/// - Emitting multiple events representing a single container value, which will return to the current depth
+///
+/// If traversing a container type, the `CustomValueTraverser` is responsible for keeping track of the depth itself,
+/// and erroring if the max depth is exceeded.
+pub trait CustomValueTraverser {
+    type CustomTraversal: CustomTraversal;
+
+    fn next_event<'de, R: PayloadTraverser<'de, <Self::CustomTraversal as CustomTraversal>::CustomValueKind>> (
+        &mut self,
+        reader: &mut R,
+    ) -> TraversalEvent<'de, Self::CustomTraversal>;
+}
+
+pub struct ContainerChildIndex<H: CustomContainerHeader> {
+    pub owner_header: ContainerHeader<H>,
     pub start_offset: usize,
     pub total_child_count: usize,
     pub current_child_index: usize,
@@ -33,14 +49,12 @@ pub struct CurrentChild<X: CustomValueKind> {
 /// It turns payload decoding into a pull-based event stream
 pub struct VecTraverser<
     'de,
-    X: CustomValueKind,
-    C: CustomTraverser<'de, VecDecoder<'de, X, MAX_DEPTH>, CustomValueKind = X>,
+    C: CustomTraversal,
     const MAX_DEPTH: u8,
 > {
     decoder: VecDecoder<'de, C::CustomValueKind, MAX_DEPTH>,
-    stack: Vec<CurrentChild<X>>,
-    next_event_override: NextEventOverride<C>,
-    phantom_custom_value_kind: PhantomData<X>,
+    container_stack: Vec<ContainerChildIndex<C::CustomContainerHeader>>,
+    next_event_override: NextEventOverride<C::CustomValueTraverser>,
 }
 
 pub enum NextEventOverride<C> {
@@ -66,11 +80,11 @@ macro_rules! terminal_value_from_body {
 macro_rules! terminal_value {
     ($self: expr, $value_type: ident, $start_offset: expr, $decoded: expr) => {{
         match $decoded {
-            Ok(value) => TraversalEvent::VisitTerminalValue(VisitTerminalValue {
-                value: TerminalValue::$value_type(value),
+            Ok(value) => TraversalEvent::TerminalValue(LocatedEvent {
+                event: TerminalValueRef::$value_type(value),
                 start_offset: $start_offset,
-                stack_depth: $self.get_stack_depth(),
                 end_offset: $self.get_offset(),
+                sbor_depth: $self.get_stack_depth(),
             }),
             Err(error) => $self.map_error(error),
         }
@@ -88,18 +102,16 @@ macro_rules! err_to_event {
 }
 
 impl<
-        'de,
-        X: CustomValueKind,
-        C: CustomTraverser<'de, VecDecoder<'de, X, MAX_DEPTH>, CustomValueKind = X>,
-        const MAX_DEPTH: u8,
-    > VecTraverser<'de, X, C, MAX_DEPTH>
+    'de,
+    T: CustomTraversal,
+    const MAX_DEPTH: u8,
+> VecTraverser<'de, T, MAX_DEPTH>
 {
     pub fn new(input: &'de [u8]) -> Self {
         Self {
             decoder: VecDecoder::new(input),
-            stack: Vec::with_capacity(MAX_DEPTH as usize),
+            container_stack: Vec::with_capacity(MAX_DEPTH as usize),
             next_event_override: NextEventOverride::Start,
-            phantom_custom_value_kind: PhantomData,
         }
     }
 
@@ -110,7 +122,7 @@ impl<
         self.decoder.read_and_check_payload_prefix(expected_prefix)
     }
 
-    pub fn next_event(&mut self) -> TraversalEvent<'_, X, C::CustomTraversalEvent> {
+    pub fn next_event(&mut self) -> TraversalEvent<'de, T> {
         match &mut self.next_event_override {
             NextEventOverride::Start => self.start_event_override(),
             NextEventOverride::Custom(_) => self.custom_event_override(),
@@ -126,50 +138,50 @@ impl<
     }
 
     fn is_end_of_current_depth(&self) -> bool {
-        let current_child = self.stack.last().unwrap();
+        let current_child = self.container_stack.last().unwrap();
         current_child.current_child_index >= current_child.total_child_count
     }
 
     fn enter_child(
         &mut self,
         start_offset: usize,
-        owner_header: OwnerValueHeader<X>,
-    ) -> TraversalEvent<'de, X, C::CustomTraversalEvent> {
-        if self.stack.len() >= MAX_DEPTH as usize {
+        owner_header: ContainerHeader<T::CustomContainerHeader>,
+    ) -> TraversalEvent<'de, T> {
+        if self.container_stack.len() >= MAX_DEPTH as usize {
             return self.map_error(DecodeError::MaxDepthExceeded(MAX_DEPTH));
         }
         let previous_stack_depth = self.get_stack_depth();
-        self.stack.push(CurrentChild {
+        self.container_stack.push(ContainerChildIndex {
             owner_header,
             start_offset,
             total_child_count: owner_header.get_child_count(),
             current_child_index: 0,
         });
-        TraversalEvent::StartOwnerValue(VisitOwnerValueHeader {
-            header: owner_header,
+        TraversalEvent::ContainerStart(LocatedEvent {
+            event: owner_header,
             start_offset,
             end_offset: self.get_offset(),
-            stack_depth: previous_stack_depth,
+            sbor_depth: previous_stack_depth,
         })
     }
 
-    fn exit_child(&mut self) -> TraversalEvent<'de, X, C::CustomTraversalEvent> {
-        let child = self.stack.pop().unwrap();
-        let resultant_stack_depth = self.get_stack_depth();
-        if resultant_stack_depth == 0 {
+    fn exit_child(&mut self) -> TraversalEvent<'de, T> {
+        let container = self.container_stack.pop().unwrap();
+        let sbor_depth = self.get_stack_depth();
+        if sbor_depth == 0 {
             err_to_event!(self, self.decoder.check_end());
         }
-        TraversalEvent::EndOwnerValue(VisitFullOwnerValue {
-            header: child.owner_header,
-            start_offset: child.start_offset,
+        TraversalEvent::ContainerEnd(LocatedEvent {
+            event: container.owner_header,
+            start_offset: container.start_offset,
             end_offset: self.get_offset(),
-            stack_depth: resultant_stack_depth,
+            sbor_depth,
         })
     }
 
-    fn next_value_start(&mut self) -> TraversalEvent<'de, X, C::CustomTraversalEvent> {
+    fn next_value_start(&mut self) -> TraversalEvent<'de, T> {
         let start_offset = self.decoder.get_offset();
-        let current_child = self.stack.last_mut().unwrap();
+        let current_child = self.container_stack.last_mut().unwrap();
         let value_kind = match current_child
             .owner_header
             .get_implicit_child_value_kind(current_child.current_child_index)
@@ -205,25 +217,27 @@ impl<
             ValueKind::Tuple => err_to_event!(self, self.decode_tuple_header(start_offset)),
             ValueKind::Custom(custom_value_kind) => {
                 self.next_event_override =
-                    NextEventOverride::Custom(C::new_traversal(custom_value_kind));
+                    NextEventOverride::Custom(T::new_value_traversal(custom_value_kind, self.get_stack_depth(), MAX_DEPTH));
                 self.custom_event_override()
             }
         };
         event
     }
 
-    fn map_error(&self, error: DecodeError) -> TraversalEvent<'de, X, C::CustomTraversalEvent> {
-        TraversalEvent::DecodeError(DecodeErrorEvent {
-            error,
-            stack_depth: self.get_stack_depth(),
-            offset: self.get_offset(),
+    fn map_error(&self, error: DecodeError) -> TraversalEvent<'de, T> {
+        let offset = self.get_offset();
+        TraversalEvent::DecodeError(LocatedEvent {
+            event: error,
+            start_offset: offset,
+            end_offset: offset,
+            sbor_depth: self.get_stack_depth(),
         })
     }
 
     #[inline]
     fn get_stack_depth(&self) -> u8 {
         // Safe because stack's size is limited by MAX_DEPTH: u8
-        self.stack.len() as u8
+        self.container_stack.len() as u8
     }
 
     #[inline]
@@ -241,24 +255,24 @@ impl<
     fn decode_enum_variant_header(
         &mut self,
         start_offset: usize,
-    ) -> Result<TraversalEvent<'de, X, C::CustomTraversalEvent>, DecodeError> {
+    ) -> Result<TraversalEvent<'de, T>, DecodeError> {
         let variant = self.decoder.read_byte()?;
         let size = self.decoder.read_size()?;
-        Ok(self.enter_child(start_offset, OwnerValueHeader::EnumVariant(variant, size)))
+        Ok(self.enter_child(start_offset, ContainerHeader::EnumVariant(variant, size)))
     }
 
     fn decode_tuple_header(
         &mut self,
         start_offset: usize,
-    ) -> Result<TraversalEvent<'de, X, C::CustomTraversalEvent>, DecodeError> {
+    ) -> Result<TraversalEvent<'de, T>, DecodeError> {
         let size = self.decoder.read_size()?;
-        Ok(self.enter_child(start_offset, OwnerValueHeader::Tuple(size)))
+        Ok(self.enter_child(start_offset, ContainerHeader::Tuple(size)))
     }
 
     fn decode_array_header(
         &mut self,
         start_offset: usize,
-    ) -> Result<TraversalEvent<'de, X, C::CustomTraversalEvent>, DecodeError> {
+    ) -> Result<TraversalEvent<'de, T>, DecodeError> {
         let element_value_kind = self.decoder.read_value_kind()?;
         let size = self.decoder.read_size()?;
         if element_value_kind == ValueKind::U8 && size > 0 {
@@ -266,54 +280,58 @@ impl<
         }
         Ok(self.enter_child(
             start_offset,
-            OwnerValueHeader::Array(element_value_kind, size),
+            ContainerHeader::Array(element_value_kind, size),
         ))
     }
 
     fn decode_map_header(
         &mut self,
         start_offset: usize,
-    ) -> Result<TraversalEvent<'de, X, C::CustomTraversalEvent>, DecodeError> {
+    ) -> Result<TraversalEvent<'de, T>, DecodeError> {
         let key_value_kind = self.decoder.read_value_kind()?;
         let value_value_kind = self.decoder.read_value_kind()?;
         let size = self.decoder.read_size()?;
         Ok(self.enter_child(
             start_offset,
-            OwnerValueHeader::Map(key_value_kind, value_value_kind, size),
+            ContainerHeader::Map(key_value_kind, value_value_kind, size),
         ))
     }
 
-    fn start_event_override(&mut self) -> TraversalEvent<'de, X, C::CustomTraversalEvent> {
+    fn start_event_override(&mut self) -> TraversalEvent<'de, T> {
         self.next_event_override = NextEventOverride::None;
-        self.enter_child(self.decoder.get_offset(), OwnerValueHeader::Root)
+        self.enter_child(self.decoder.get_offset(), ContainerHeader::Root)
     }
 
-    fn custom_event_override(&mut self) -> TraversalEvent<'de, X, C::CustomTraversalEvent> {
+    fn custom_event_override(&mut self) -> TraversalEvent<'de, T> {
         let NextEventOverride::Custom(custom_traverser) = &mut self.next_event_override else {
-            unreachable!()
+            panic!("self.next_event_override expected to be NextEventOverride::Custom to hit this code")
         };
-        let (traversal_event, is_finished) =
-            err_to_event!(self, custom_traverser.next_event(&mut self.decoder));
-        if is_finished {
+        let traversal_event = custom_traverser.next_event(&mut self.decoder);
+        // We assume the custom traverser is for a single value - and therefore is either:
+        // - Emitting a single event for a terminal value at the current depth
+        // - Emitting multiple events representing a single container value, which will return to the current depth
+        // Either way, when the traversal_event's next sbor depth matches the current sbor depth, the custom traverser
+        // has returned 
+        if traversal_event.get_next_sbor_depth() == self.get_stack_depth() {
             self.next_event_override = NextEventOverride::None;
         }
         traversal_event
     }
 
-    fn read_bytes_event_override(&mut self) -> TraversalEvent<'de, X, C::CustomTraversalEvent> {
+    fn read_bytes_event_override(&mut self) -> TraversalEvent<'de, T> {
         let NextEventOverride::ReadBytes(size) = self.next_event_override else {
-            unreachable!()
+            panic!("self.next_event_override expected to be NextEventOverride::ReadBytes to hit this code")
         };
         let start_offset = self.get_offset();
         let bytes = err_to_event!(self, self.decoder.read_slice_from_payload(size));
         // Set it up so that we jump to the end of the child iteration
-        self.stack.last_mut().unwrap().current_child_index = size;
+        self.container_stack.last_mut().unwrap().current_child_index = size;
         self.next_event_override = NextEventOverride::None;
-        TraversalEvent::VisitTerminalValueSlice(VisitTerminalValueSlice {
-            value_slice: TerminalValueSlice::U8(bytes),
+        TraversalEvent::TerminalValueBatch(LocatedEvent {
+            event: TerminalValueBatchRef::U8(bytes),
             start_offset,
             end_offset: self.get_offset(),
-            stack_depth: self.get_stack_depth(),
+            sbor_depth: self.get_stack_depth(),
         })
     }
 }
@@ -353,200 +371,220 @@ mod tests {
         let mut traverser = basic_traverser(&payload).unwrap();
 
         // Start:
-        next_event_is_owner_header(&mut traverser, OwnerValueHeader::Root, 0, 1, 1);
-        next_event_is_owner_header(&mut traverser, OwnerValueHeader::Tuple(7), 1, 1, 3);
+        next_event_is_container_start_header(&mut traverser, ContainerHeader::Root, 0, 1, 1);
+        next_event_is_container_start_header(&mut traverser, ContainerHeader::Tuple(7), 1, 1, 3);
         // First line
-        next_event_is_terminal_value(&mut traverser, TerminalValue::U8(2), 2, 3, 5);
+        next_event_is_terminal_value(&mut traverser, TerminalValueRef::U8(2), 2, 3, 5);
         // Second line
-        next_event_is_owner_header(
+        next_event_is_container_start_header(
             &mut traverser,
-            OwnerValueHeader::Array(ValueKind::U8, 2),
+            ContainerHeader::Array(ValueKind::U8, 2),
             2,
             5,
             8,
         );
         next_event_is_terminal_value_slice(
             &mut traverser,
-            TerminalValueSlice::U8(&[3u8, 7u8]),
+            TerminalValueBatchRef::U8(&[3u8, 7u8]),
             3,
             8,
             10,
         );
-        next_event_is_full_owner(
+        next_event_is_container_end(
             &mut traverser,
-            OwnerValueHeader::Array(ValueKind::U8, 2),
+            ContainerHeader::Array(ValueKind::U8, 2),
             2,
             5,
             10,
         );
         // Third line
-        next_event_is_owner_header(&mut traverser, OwnerValueHeader::Tuple(2), 2, 10, 12);
-        next_event_is_terminal_value(&mut traverser, TerminalValue::U32(3), 3, 12, 17);
-        next_event_is_owner_header(
+        next_event_is_container_start_header(&mut traverser, ContainerHeader::Tuple(2), 2, 10, 12);
+        next_event_is_terminal_value(&mut traverser, TerminalValueRef::U32(3), 3, 12, 17);
+        next_event_is_container_start_header(
             &mut traverser,
-            OwnerValueHeader::Map(ValueKind::U8, ValueKind::U32, 1),
+            ContainerHeader::Map(ValueKind::U8, ValueKind::U32, 1),
             3,
             17,
             21,
         );
-        next_event_is_terminal_value(&mut traverser, TerminalValue::U8(16), 4, 21, 22);
-        next_event_is_terminal_value(&mut traverser, TerminalValue::U32(18), 4, 22, 26);
-        next_event_is_full_owner(
+        next_event_is_terminal_value(&mut traverser, TerminalValueRef::U8(16), 4, 21, 22);
+        next_event_is_terminal_value(&mut traverser, TerminalValueRef::U32(18), 4, 22, 26);
+        next_event_is_container_end(
             &mut traverser,
-            OwnerValueHeader::Map(ValueKind::U8, ValueKind::U32, 1),
+            ContainerHeader::Map(ValueKind::U8, ValueKind::U32, 1),
             3,
             17,
             26,
         );
-        next_event_is_full_owner(&mut traverser, OwnerValueHeader::Tuple(2), 2, 10, 26);
+        next_event_is_container_end(&mut traverser, ContainerHeader::Tuple(2), 2, 10, 26);
         // Fourth line
-        next_event_is_owner_header(
+        next_event_is_container_start_header(
             &mut traverser,
-            OwnerValueHeader::EnumVariant(1, 1),
+            ContainerHeader::EnumVariant(1, 1),
             2,
             26,
             29,
         );
-        next_event_is_terminal_value(&mut traverser, TerminalValue::U32(4), 3, 29, 34);
-        next_event_is_full_owner(
+        next_event_is_terminal_value(&mut traverser, TerminalValueRef::U32(4), 3, 29, 34);
+        next_event_is_container_end(
             &mut traverser,
-            OwnerValueHeader::EnumVariant(1, 1),
+            ContainerHeader::EnumVariant(1, 1),
             2,
             26,
             34,
         );
         // Fifth line - empty Vec<u8> - no bytes event is output
-        next_event_is_owner_header(
+        next_event_is_container_start_header(
             &mut traverser,
-            OwnerValueHeader::Array(ValueKind::U8, 0),
+            ContainerHeader::Array(ValueKind::U8, 0),
             2,
             34,
             37,
         );
-        next_event_is_full_owner(
+        next_event_is_container_end(
             &mut traverser,
-            OwnerValueHeader::Array(ValueKind::U8, 0),
+            ContainerHeader::Array(ValueKind::U8, 0),
             2,
             34,
             37,
         );
         // Sixth line - empty Vec<i32>
-        next_event_is_owner_header(
+        next_event_is_container_start_header(
             &mut traverser,
-            OwnerValueHeader::Array(ValueKind::I32, 0),
+            ContainerHeader::Array(ValueKind::I32, 0),
             2,
             37,
             40,
         );
-        next_event_is_full_owner(
+        next_event_is_container_end(
             &mut traverser,
-            OwnerValueHeader::Array(ValueKind::I32, 0),
+            ContainerHeader::Array(ValueKind::I32, 0),
             2,
             37,
             40,
         );
         // Seventh line - Vec<Vec<(i64)>>
-        next_event_is_owner_header(
+        next_event_is_container_start_header(
             &mut traverser,
-            OwnerValueHeader::Array(ValueKind::Array, 1),
+            ContainerHeader::Array(ValueKind::Array, 1),
             2,
             40,
             43,
         );
-        next_event_is_owner_header(
+        next_event_is_container_start_header(
             &mut traverser,
-            OwnerValueHeader::Array(ValueKind::Tuple, 1),
+            ContainerHeader::Array(ValueKind::Tuple, 1),
             3,
             43,
             45,
         );
-        next_event_is_owner_header(&mut traverser, OwnerValueHeader::Tuple(1), 4, 45, 46);
-        next_event_is_terminal_value(&mut traverser, TerminalValue::I64(-2), 5, 46, 55);
-        next_event_is_full_owner(&mut traverser, OwnerValueHeader::Tuple(1), 4, 45, 55);
-        next_event_is_full_owner(
+        next_event_is_container_start_header(&mut traverser, ContainerHeader::Tuple(1), 4, 45, 46);
+        next_event_is_terminal_value(&mut traverser, TerminalValueRef::I64(-2), 5, 46, 55);
+        next_event_is_container_end(&mut traverser, ContainerHeader::Tuple(1), 4, 45, 55);
+        next_event_is_container_end(
             &mut traverser,
-            OwnerValueHeader::Array(ValueKind::Tuple, 1),
+            ContainerHeader::Array(ValueKind::Tuple, 1),
             3,
             43,
             55,
         );
-        next_event_is_full_owner(
+        next_event_is_container_end(
             &mut traverser,
-            OwnerValueHeader::Array(ValueKind::Array, 1),
+            ContainerHeader::Array(ValueKind::Array, 1),
             2,
             40,
             55,
         );
 
         // End
-        next_event_is_full_owner(&mut traverser, OwnerValueHeader::Tuple(7), 1, 1, 55);
-        next_event_is_full_owner(&mut traverser, OwnerValueHeader::Root, 0, 1, 55);
+        next_event_is_container_end(&mut traverser, ContainerHeader::Tuple(7), 1, 1, 55);
+        next_event_is_container_end(&mut traverser, ContainerHeader::Root, 0, 1, 55);
     }
 
-    pub fn next_event_is_owner_header(
+    pub fn next_event_is_container_start_header(
         traverser: &mut BasicTraverser,
-        expected_header: OwnerValueHeader<NoCustomValueKind>,
+        expected_header: ContainerHeader<NoCustomContainerHeader>,
         expected_depth: u8,
         expected_start_offset: usize,
         expected_end_offset: usize,
     ) {
         let event = traverser.next_event();
-        let TraversalEvent::StartOwnerValue(VisitOwnerValueHeader { header, stack_depth, start_offset, end_offset }) = event else {
-            panic!("Invalid event - expected VisitOwnerValueHeader, was {:?}", event);
+        let TraversalEvent::ContainerStart(LocatedEvent {
+            event: header,
+            sbor_depth,
+            start_offset,
+            end_offset
+        }) = event else {
+            panic!("Invalid event - expected ContainerStart, was {:?}", event);
         };
         assert_eq!(header, expected_header);
-        assert_eq!(stack_depth, expected_depth);
+        assert_eq!(sbor_depth, expected_depth);
         assert_eq!(start_offset, expected_start_offset);
         assert_eq!(end_offset, expected_end_offset);
     }
 
-    pub fn next_event_is_full_owner(
+    pub fn next_event_is_container_end(
         traverser: &mut BasicTraverser,
-        expected_header: OwnerValueHeader<NoCustomValueKind>,
+        expected_header: ContainerHeader<NoCustomContainerHeader>,
         expected_depth: u8,
         expected_start_offset: usize,
         expected_end_offset: usize,
     ) {
         let event = traverser.next_event();
-        let TraversalEvent::EndOwnerValue(VisitFullOwnerValue { header, stack_depth, start_offset, end_offset }) = event else {
-            panic!("Invalid event - expected VisitFullOwnerValue, was {:?}", event);
+        let TraversalEvent::ContainerEnd(LocatedEvent {
+            event: header,
+            sbor_depth,
+            start_offset,
+            end_offset
+        }) = event else {
+            panic!("Invalid event - expected ContainerEnd, was {:?}", event);
         };
         assert_eq!(header, expected_header);
-        assert_eq!(stack_depth, expected_depth);
+        assert_eq!(sbor_depth, expected_depth);
         assert_eq!(start_offset, expected_start_offset);
         assert_eq!(end_offset, expected_end_offset);
     }
 
     pub fn next_event_is_terminal_value(
         traverser: &mut BasicTraverser,
-        expected_value: TerminalValue,
+        expected_value: TerminalValueRef<NoCustomTerminalValueRef>,
         expected_stack_depth: u8,
         expected_start_offset: usize,
         expected_end_offset: usize,
     ) {
         let event = traverser.next_event();
-        let TraversalEvent::VisitTerminalValue(VisitTerminalValue { value, stack_depth, start_offset, end_offset }) = event else {
-            panic!("Invalid event - expected VisitTerminalValue, was {:?}", event);
+        let TraversalEvent::TerminalValue(LocatedEvent {
+            event: value,
+            sbor_depth,
+            start_offset,
+            end_offset
+        }) = event else {
+            panic!("Invalid event - expected TerminalValue, was {:?}", event);
         };
         assert_eq!(value, expected_value);
-        assert_eq!(stack_depth, expected_stack_depth);
+        assert_eq!(sbor_depth, expected_stack_depth);
         assert_eq!(start_offset, expected_start_offset);
         assert_eq!(end_offset, expected_end_offset);
     }
 
     pub fn next_event_is_terminal_value_slice(
         traverser: &mut BasicTraverser,
-        expected_value_slice: TerminalValueSlice,
+        expected_value_batch: TerminalValueBatchRef<NoCustomTerminalValueBatchRef>,
         expected_stack_depth: u8,
         expected_start_offset: usize,
         expected_end_offset: usize,
     ) {
         let event = traverser.next_event();
-        let TraversalEvent::VisitTerminalValueSlice(VisitTerminalValueSlice { value_slice, stack_depth, start_offset, end_offset }) = event else {
-            panic!("Invalid event - expected VisitTerminalValueSlice, was {:?}", event);
+        let TraversalEvent::TerminalValueBatch(LocatedEvent {
+            event: value_batch,
+            sbor_depth,
+            start_offset,
+            end_offset
+        }) = event else {
+            panic!("Invalid event - expected TerminalValueBatch, was {:?}", event);
         };
-        assert_eq!(value_slice, expected_value_slice);
-        assert_eq!(stack_depth, expected_stack_depth);
+        assert_eq!(value_batch, expected_value_batch);
+        assert_eq!(sbor_depth, expected_stack_depth);
         assert_eq!(start_offset, expected_start_offset);
         assert_eq!(end_offset, expected_end_offset);
     }

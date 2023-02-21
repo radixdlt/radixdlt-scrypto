@@ -44,6 +44,7 @@ pub use decoder::{BorrowingDecoder, DecodeError, Decoder, VecDecoder};
 pub use encode::Encode;
 pub use encoder::{EncodeError, Encoder, VecEncoder};
 pub use path::{SborPath, SborPathBuf};
+pub use traversal::*;
 
 pub use schema::*;
 pub use value::*;

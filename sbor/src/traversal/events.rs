@@ -1,81 +1,85 @@
 use crate::*;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TraversalEvent<'a, X: CustomValueKind, C> {
-    StartOwnerValue(VisitOwnerValueHeader<X>),
-    EndOwnerValue(VisitFullOwnerValue<X>),
-    VisitTerminalValue(VisitTerminalValue<'a>),
-    VisitTerminalValueSlice(VisitTerminalValueSlice<'a>),
-    DecodeError(DecodeErrorEvent),
-    Custom(C),
-}
+use super::CustomTraversal;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct DecodeErrorEvent {
-    pub error: DecodeError,
-    pub stack_depth: u8,
-    pub offset: usize,
+pub enum TraversalEvent<'de, C: CustomTraversal> {
+    ContainerStart(LocatedEvent<ContainerHeader<C::CustomContainerHeader>>),
+    ContainerEnd(LocatedEvent<ContainerHeader<C::CustomContainerHeader>>),
+    TerminalValue(LocatedEvent<TerminalValueRef<'de, C::CustomTerminalValueRef>>),
+    TerminalValueBatch(LocatedEvent<TerminalValueBatchRef<'de, C::CustomTerminalValueBatchRef>>),
+    DecodeError(LocatedEvent<DecodeError>),
 }
 
+impl<'de, C: CustomTraversal> TraversalEvent<'de, C> {
+    pub fn get_next_sbor_depth(&self) -> u8 {
+        match self {
+            TraversalEvent::ContainerStart(le) => le.sbor_depth + 1,
+            TraversalEvent::ContainerEnd(le) => le.sbor_depth,
+            TraversalEvent::TerminalValue(le) => le.sbor_depth,
+            TraversalEvent::TerminalValueBatch(le) => le.sbor_depth,
+            TraversalEvent::DecodeError(le) => le.sbor_depth,
+        }
+    }
+
+    pub fn is_error(&self) -> bool {
+        match self {
+            TraversalEvent::DecodeError(_) => true,
+            _ => false,
+        }
+    }
+}
+
+/// A wrapper for traversal event bodies, given the context inside the payload.
+/// The `start_offset` and `end_offset` have meanings in the context of the event.
+/// * For ContainerValueStart, they're the start/end of the header
+/// * For ContainerValueEnd, they're the start/end of the whole value (including the header)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct VisitOwnerValueHeader<X: CustomValueKind> {
-    pub header: OwnerValueHeader<X>,
-    pub stack_depth: u8,
+pub struct LocatedEvent<T> {
+    pub event: T,
     pub start_offset: usize,
     pub end_offset: usize,
+    pub sbor_depth: u8,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct VisitFullOwnerValue<X: CustomValueKind> {
-    pub header: OwnerValueHeader<X>,
-    pub stack_depth: u8,
-    pub start_offset: usize,
-    pub end_offset: usize,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum OwnerValueHeader<X: CustomValueKind> {
+pub enum ContainerHeader<H: CustomContainerHeader> {
     Root,
     Tuple(usize),
     EnumVariant(u8, usize),
-    Array(ValueKind<X>, usize),
-    Map(ValueKind<X>, ValueKind<X>, usize),
+    Array(ValueKind<H::CustomValueKind>, usize),
+    Map(ValueKind<H::CustomValueKind>, ValueKind<H::CustomValueKind>, usize),
+    Custom(H),
 }
 
-impl<X: CustomValueKind> OwnerValueHeader<X> {
+impl<H: CustomContainerHeader> ContainerHeader<H> {
     pub fn get_child_count(&self) -> usize {
         match self {
-            OwnerValueHeader::Root => 1,
-            OwnerValueHeader::Tuple(size) => *size,
-            OwnerValueHeader::EnumVariant(_, size) => *size,
-            OwnerValueHeader::Array(_, size) => *size,
-            OwnerValueHeader::Map(_, _, size) => *size * 2,
+            ContainerHeader::Root => 1,
+            ContainerHeader::Tuple(size) => *size,
+            ContainerHeader::EnumVariant(_, size) => *size,
+            ContainerHeader::Array(_, size) => *size,
+            ContainerHeader::Map(_, _, size) => *size * 2,
+            ContainerHeader::Custom(custom_header) => custom_header.get_child_count(), 
         }
     }
 
-    pub fn get_implicit_child_value_kind(&self, index: usize) -> Option<ValueKind<X>> {
+    pub fn get_implicit_child_value_kind(&self, index: usize) -> Option<ValueKind<H::CustomValueKind>> {
         match self {
-            OwnerValueHeader::Root => None,
-            OwnerValueHeader::Tuple(_) => None,
-            OwnerValueHeader::EnumVariant(_, _) => None,
-            OwnerValueHeader::Array(element_value_kind, _) => Some(*element_value_kind),
-            OwnerValueHeader::Map(key, value, _) => {
+            ContainerHeader::Root => None,
+            ContainerHeader::Tuple(_) => None,
+            ContainerHeader::EnumVariant(_, _) => None,
+            ContainerHeader::Array(element_value_kind, _) => Some(*element_value_kind),
+            ContainerHeader::Map(key, value, _) => {
                 Some(if index % 2 == 0 { *key } else { *value })
             }
+            ContainerHeader::Custom(custom_header) => custom_header.get_implicit_child_value_kind(index),
         }
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct VisitTerminalValue<'a> {
-    pub value: TerminalValue<'a>,
-    pub stack_depth: u8,
-    pub start_offset: usize,
-    pub end_offset: usize,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TerminalValue<'a> {
+pub enum TerminalValueRef<'a, V> {
     Bool(bool),
     I8(i8),
     I16(i16),
@@ -88,17 +92,11 @@ pub enum TerminalValue<'a> {
     U64(u64),
     U128(u128),
     String(&'a str),
+    Custom(V),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct VisitTerminalValueSlice<'a> {
-    pub value_slice: TerminalValueSlice<'a>,
-    pub stack_depth: u8,
-    pub start_offset: usize,
-    pub end_offset: usize,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TerminalValueSlice<'a> {
+pub enum TerminalValueBatchRef<'a, B> {
     U8(&'a [u8]),
+    Custom(B),
 }
