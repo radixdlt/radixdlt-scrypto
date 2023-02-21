@@ -282,7 +282,7 @@ impl LiquidResource {
 
     pub fn non_fungible_ids(&self) -> Option<&BTreeSet<NonFungibleLocalId>> {
         match self {
-            LiquidResource::Fungible(f) => None,
+            LiquidResource::Fungible(_) => None,
             LiquidResource::NonFungible(nf) => Some(nf.ids()),
         }
     }

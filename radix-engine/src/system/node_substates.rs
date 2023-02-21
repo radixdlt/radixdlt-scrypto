@@ -132,6 +132,26 @@ impl Into<VaultInfoSubstate> for PersistedSubstate {
     }
 }
 
+impl Into<LiquidFungibleResource> for PersistedSubstate {
+    fn into(self) -> LiquidFungibleResource {
+        if let PersistedSubstate::VaultLiquidFungible(vault) = self {
+            vault
+        } else {
+            panic!("Not a vault");
+        }
+    }
+}
+
+impl Into<LiquidNonFungibleResource> for PersistedSubstate {
+    fn into(self) -> LiquidNonFungibleResource {
+        if let PersistedSubstate::VaultLiquidNonFungible(vault) = self {
+            vault
+        } else {
+            panic!("Not a vault");
+        }
+    }
+}
+
 impl PersistedSubstate {
     pub fn to_runtime(self) -> RuntimeSubstate {
         match self {

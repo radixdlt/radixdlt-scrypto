@@ -1,5 +1,8 @@
 use crate::ledger::StateTreeVisitor;
-use radix_engine_interface::api::types::{ResourceAddress, VaultId};
+use radix_engine_interface::{
+    api::types::{ResourceAddress, VaultId},
+    blueprints::resource::LiquidResource,
+};
 use sbor::rust::vec::Vec;
 
 pub struct VaultFinder {
@@ -21,8 +24,8 @@ impl VaultFinder {
 }
 
 impl StateTreeVisitor for VaultFinder {
-    fn visit_vault(&mut self, vault_id: VaultId, vault: &VaultSubstate) {
-        if self.resource_address.eq(&vault.0.resource_address()) {
+    fn visit_vault(&mut self, vault_id: VaultId, vault: &LiquidResource) {
+        if self.resource_address.eq(&vault.resource_address()) {
             self.vaults.push(vault_id);
         }
     }
