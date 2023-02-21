@@ -81,38 +81,15 @@ lazy_static! {
 
         known_enum!(
             m,
-            enum AccessRuleKey {
-                Scrypto = 0;
-                Native = 1;
-            }
-        );
-
-        known_enum!(
-            m,
-            enum NativeFn {
-                AccessRulesChain = 0;
-                ComponentRoyalty = 1;
-                Package = 2;
+            enum NodeModuleId {
+                PackageTypeInfo = 0;
+                SELF = 1;
+                ComponentTypeInfo = 2;
                 Metadata = 3;
-                TransactionProcessor = 4;
-                Root = 5;
-            }
-        );
-
-        known_enum!(
-            m,
-            enum PackageFn {
-                Publish = 0;
-                SetRoyaltyConfig = 1;
-                ClaimRoyalty = 2;
-            }
-        );
-
-        known_enum!(
-            m,
-            enum MetadataFn {
-                Set = 0;
-                Get = 1;
+                AccessRules = 4;
+                AccessRules1 = 5;
+                ComponentRoyalty = 6;
+                PackageRoyalty = 7;
             }
         );
 

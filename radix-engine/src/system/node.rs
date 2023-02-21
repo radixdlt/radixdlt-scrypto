@@ -6,7 +6,7 @@ use crate::blueprints::logger::LoggerSubstate;
 use crate::blueprints::resource::*;
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::system::global::GlobalSubstate;
-use crate::system::node_modules::auth::*;
+use crate::system::node_modules::access_rules::*;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_substates::*;
 use crate::system::type_info::PackageTypeInfoSubstate;
@@ -28,7 +28,8 @@ pub enum RENodeModuleInit {
 
     Metadata(MetadataSubstate),
 
-    AccessRulesChain(AccessRulesChainSubstate),
+    ComponentAccessRulesChain(ObjectAccessRulesChainSubstate),
+    PackageAccessRules(PackageAccessRulesSubstate),
 
     ComponentRoyalty(
         ComponentRoyaltyConfigSubstate,
@@ -53,7 +54,7 @@ impl RENodeModuleInit {
                     metadata.into(),
                 );
             }
-            RENodeModuleInit::AccessRulesChain(access_rules) => {
+            RENodeModuleInit::ComponentAccessRulesChain(access_rules) => {
                 substates.insert(
                     SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                     access_rules.into(),
@@ -84,6 +85,9 @@ impl RENodeModuleInit {
                     SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                     accumulator.into(),
                 );
+            }
+            RENodeModuleInit::PackageAccessRules(access_rules) => {
+                substates.insert(SubstateOffset::PackageAccessRules, access_rules.into());
             }
         }
 

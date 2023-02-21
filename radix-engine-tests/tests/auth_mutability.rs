@@ -1,7 +1,7 @@
 extern crate core;
 
 use radix_engine::errors::{ApplicationError, RuntimeError};
-use radix_engine::system::node_modules::auth::{AccessRulesChainError, AuthZoneError};
+use radix_engine::system::node_modules::access_rules::{AccessRulesChainError, AuthZoneError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;

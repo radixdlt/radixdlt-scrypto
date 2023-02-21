@@ -1,7 +1,7 @@
 mod abi_extractor;
-mod executables;
+mod package;
 mod package_extractor;
 
 pub use abi_extractor::*;
-pub use executables::*;
+pub use package::*;
 pub use package_extractor::*;

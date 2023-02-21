@@ -117,7 +117,7 @@ mod clock_test {
         pub fn set_current_time(clock: ComponentAddress, current_time_ms: i64) {
             ScryptoEnv
                 .call_method(
-                    ScryptoReceiver::Global(clock),
+                    RENodeId::Global(clock.into()),
                     CLOCK_SET_CURRENT_TIME_IDENT,
                     scrypto_encode(&ClockSetCurrentTimeInput { current_time_ms }).unwrap(),
                 )

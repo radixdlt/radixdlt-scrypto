@@ -43,7 +43,7 @@ impl KernelModule for TransactionRuntimeModule {
 
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
-        _actor: &ResolvedActor,
+        _actor: &Option<ResolvedActor>,
         call_frame_update: &mut CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         call_frame_update

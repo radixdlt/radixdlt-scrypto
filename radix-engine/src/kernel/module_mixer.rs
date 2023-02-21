@@ -12,13 +12,15 @@ use crate::system::kernel_modules::execution_trace::ExecutionTraceModule;
 use crate::system::kernel_modules::kernel_debug::KernelDebugModule;
 use crate::system::kernel_modules::logger::LoggerModule;
 use crate::system::kernel_modules::node_move::NodeMoveModule;
-use crate::system::kernel_modules::transaction_limits::TransactionLimitsModule;
+use crate::system::kernel_modules::transaction_limits::{
+    TransactionLimitsConfig, TransactionLimitsModule,
+};
 use crate::system::kernel_modules::transaction_runtime::TransactionRuntimeModule;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::types::api::unsafe_api::ClientCostingReason;
 use bitflags::bitflags;
-use radix_engine_interface::api::types::FnIdentifier;
+use radix_engine_interface::api::types::InvocationIdentifier;
 use radix_engine_interface::api::types::LockHandle;
 use radix_engine_interface::api::types::NodeModuleId;
 use radix_engine_interface::api::types::RENodeId;
@@ -68,7 +70,8 @@ impl KernelModuleMixer {
         max_call_depth: usize,
         max_kernel_call_depth_traced: Option<usize>,
         max_wasm_memory: usize,
-        max_wasm_call_frame_memory: usize,
+        max_wasm_memory_per_call_frame: usize,
+        max_substate_reads: usize,
     ) -> Self {
         let mut modules = EnabledModules::empty();
         if debug {
@@ -98,10 +101,11 @@ impl KernelModuleMixer {
             },
             logger: LoggerModule {},
             transaction_runtime: TransactionRuntimeModule { tx_hash },
-            transaction_limits: TransactionLimitsModule::new(
+            transaction_limits: TransactionLimitsModule::new(TransactionLimitsConfig {
                 max_wasm_memory,
-                max_wasm_call_frame_memory,
-            ),
+                max_wasm_memory_per_call_frame,
+                max_substate_reads,
+            }),
             execution_trace: ExecutionTraceModule::new(max_kernel_call_depth_traced.unwrap_or(0)),
         }
     }
@@ -189,40 +193,40 @@ impl KernelModule for KernelModuleMixer {
 
     fn before_invoke<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        fn_identifier: &FnIdentifier,
+        identifier: &InvocationIdentifier,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
-            KernelDebugModule::before_invoke(api, fn_identifier, input_size)?;
+            KernelDebugModule::before_invoke(api, identifier, input_size)?;
         }
         if modules.contains(EnabledModules::COSTING) {
-            CostingModule::before_invoke(api, fn_identifier, input_size)?;
+            CostingModule::before_invoke(api, identifier, input_size)?;
         }
         if modules.contains(EnabledModules::NODE_MOVE) {
-            NodeMoveModule::before_invoke(api, fn_identifier, input_size)?;
+            NodeMoveModule::before_invoke(api, identifier, input_size)?;
         }
         if modules.contains(EnabledModules::AUTH) {
-            AuthModule::before_invoke(api, fn_identifier, input_size)?;
+            AuthModule::before_invoke(api, identifier, input_size)?;
         }
         if modules.contains(EnabledModules::LOGGER) {
-            LoggerModule::before_invoke(api, fn_identifier, input_size)?;
+            LoggerModule::before_invoke(api, identifier, input_size)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
-            TransactionRuntimeModule::before_invoke(api, fn_identifier, input_size)?;
+            TransactionRuntimeModule::before_invoke(api, identifier, input_size)?;
         }
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
-            ExecutionTraceModule::before_invoke(api, fn_identifier, input_size)?;
+            ExecutionTraceModule::before_invoke(api, identifier, input_size)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
-            TransactionLimitsModule::before_invoke(api, fn_identifier, input_size)?;
+            TransactionLimitsModule::before_invoke(api, identifier, input_size)?;
         }
         Ok(())
     }
 
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        actor: &ResolvedActor,
+        actor: &Option<ResolvedActor>,
         update: &mut CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
@@ -255,7 +259,7 @@ impl KernelModule for KernelModuleMixer {
 
     fn on_execution_start<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        caller: &ResolvedActor,
+        caller: &Option<ResolvedActor>,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
@@ -287,7 +291,7 @@ impl KernelModule for KernelModuleMixer {
 
     fn on_execution_finish<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        caller: &ResolvedActor,
+        caller: &Option<ResolvedActor>,
         update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;

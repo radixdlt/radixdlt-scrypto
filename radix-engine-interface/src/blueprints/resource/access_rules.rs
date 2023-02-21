@@ -1,15 +1,16 @@
-use super::AccessRule;
-use crate::api::types::MetadataFn;
-use crate::api::types::PackageFn;
+use crate::api::node_modules::metadata::*;
+use crate::api::node_modules::royalty::*;
+use crate::api::types::NodeModuleId;
 use crate::blueprints::resource::*;
 use crate::rule;
 use crate::*;
-use radix_engine_interface::api::types::NativeFn;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::str;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use transaction_data::*;
+
+use super::AccessRule;
 
 #[derive(
     Debug,
@@ -25,9 +26,18 @@ use transaction_data::*;
     ManifestDecode,
     LegacyDescribe,
 )]
-pub enum AccessRuleKey {
-    ScryptoMethod(String),
-    Native(NativeFn),
+pub struct AccessRuleKey {
+    pub node_module_id: NodeModuleId,
+    pub method_ident: String,
+}
+
+impl AccessRuleKey {
+    pub fn new(node_module_id: NodeModuleId, method_ident: String) -> Self {
+        Self {
+            node_module_id,
+            method_ident,
+        }
+    }
 }
 
 #[derive(
@@ -101,7 +111,7 @@ impl AccessRules {
         method_auth: AccessRule,
         mutability: R,
     ) -> Self {
-        let key = AccessRuleKey::ScryptoMethod(method_name.to_string());
+        let key = AccessRuleKey::new(NodeModuleId::SELF, method_name.to_string());
         let mutability = mutability.into();
 
         self.method_auth
@@ -242,22 +252,28 @@ impl AccessRules {
 pub fn package_access_rules_from_owner_badge(owner_badge: &NonFungibleGlobalId) -> AccessRules {
     let mut access_rules = AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll);
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Get)),
+        AccessRuleKey::new(NodeModuleId::Metadata, METADATA_GET_IDENT.to_string()),
         AccessRule::AllowAll,
         rule!(require(owner_badge.clone())),
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Set)),
+        AccessRuleKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Package(PackageFn::SetRoyaltyConfig)),
+        AccessRuleKey::new(
+            NodeModuleId::PackageRoyalty,
+            PACKAGE_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(),
+        ),
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Package(PackageFn::ClaimRoyalty)),
+        AccessRuleKey::new(
+            NodeModuleId::PackageRoyalty,
+            PACKAGE_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
+        ),
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
     );

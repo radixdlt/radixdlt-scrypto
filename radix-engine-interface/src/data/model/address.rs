@@ -56,6 +56,24 @@ impl Address {
     }
 }
 
+impl From<ComponentAddress> for Address {
+    fn from(value: ComponentAddress) -> Self {
+        Address::Component(value)
+    }
+}
+
+impl From<ResourceAddress> for Address {
+    fn from(value: ResourceAddress) -> Self {
+        Address::Resource(value)
+    }
+}
+
+impl From<PackageAddress> for Address {
+    fn from(value: PackageAddress) -> Self {
+        Address::Package(value)
+    }
+}
+
 // TODO: replace with TryInto
 
 impl Into<ComponentAddress> for Address {

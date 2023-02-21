@@ -1,3 +1,5 @@
+use radix_engine::errors::{ModuleError, RuntimeError};
+use radix_engine::system::kernel_modules::transaction_limits::TransactionLimitsError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
@@ -67,13 +69,13 @@ fn test_basic_transfer() {
     // (cd radix-engine && cargo test --test metering -- test_basic_transfer)
     assert_eq!(
         15000 /* CreateNode */
-        + 72000 /* DropLock */
+        + 65500 /* DropLock */
         + 12500 /* DropNode */
         + 0 /* InstantiateWasm */
         + 6500 /* Invoke */
-        + 109000 /* LockSubstate */
-        + 84500 /* ReadSubstate */
-        + 5000 /* RunNative */
+        + 101000 /* LockSubstate */
+        + 76500 /* ReadSubstate */
+        + 62500 /* RunPrecompiled */
         + 0 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1320 /* TxPayloadCost */
@@ -200,13 +202,13 @@ fn test_radiswap() {
     // (cd radix-engine && cargo test --test metering -- test_radiswap)
     assert_eq!(
         25000 /* CreateNode */
-        + 208000 /* DropLock */
+        + 189000 /* DropLock */
         + 17500 /* DropNode */
         + 19000 /* Invoke */
-        + 318000 /* LockSubstate */
-        + 252000 /* ReadSubstate */
-        + 5000 /* RunNative */
-        + 1612990 /* RunWasm */
+        + 296000 /* LockSubstate */
+        + 230000 /* ReadSubstate */
+        + 162500 /* RunPrecompiled */
+        + 1644360 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1705 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
@@ -255,17 +257,17 @@ fn test_publish_large_package() {
     );
 }
 
-#[test]
-fn should_be_able_run_large_manifest() {
-    // Arrange
-    let mut test_runner = TestRunner::builder().build();
+fn prepare_large_manifest(
+    test_runner: &mut TestRunner,
+    take_count: usize,
+) -> (TransactionManifest, EcdsaSecp256k1PublicKey) {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
     let mut builder = ManifestBuilder::new();
     builder.lock_fee(account, 100u32.into());
     builder.withdraw_from_account(account, RADIX_TOKEN, 100u32.into());
-    for _ in 0..300 {
+    for _ in 0..take_count {
         builder.take_from_worktop_by_amount(1.into(), RADIX_TOKEN, |builder, bid| {
             builder.return_to_worktop(bid)
         });
@@ -277,6 +279,17 @@ fn should_be_able_run_large_manifest() {
     );
     let manifest = builder.build();
 
+    (manifest, public_key)
+}
+
+#[test]
+fn should_be_able_run_large_manifest() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+
+    // Act
+    let (manifest, public_key) = prepare_large_manifest(&mut test_runner, 300);
+
     let (receipt, _) = execute_with_time_logging(
         &mut test_runner,
         manifest,
@@ -285,6 +298,31 @@ fn should_be_able_run_large_manifest() {
 
     // Assert
     receipt.expect_commit_success();
+}
+
+#[test]
+fn too_large_manifest_fails_on_substate_read_limit() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+
+    // Act
+    let (manifest, public_key) = prepare_large_manifest(&mut test_runner, 400);
+
+    let (receipt, _) = execute_with_time_logging(
+        &mut test_runner,
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
+                TransactionLimitsError::MaxSubstateReadsCountExceeded
+            ))
+        )
+    });
 }
 
 #[test]

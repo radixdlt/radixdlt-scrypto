@@ -5,13 +5,12 @@ use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::global::GlobalSubstate;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::auth::AccessRulesChainSubstate;
+use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use crate::types::*;
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{RENodeId, SubstateOffset};
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::api::ClientNodeApi;
 use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::blueprints::account::*;
@@ -19,8 +18,10 @@ use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::blueprints::resource::AccessRuleKey;
 use radix_engine_interface::blueprints::resource::AccessRules;
 
+use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use native_sdk::resource::{SysBucket, Vault};
+use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::data::ScryptoValue;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -50,7 +51,7 @@ pub struct AccountNativePackage;
 impl AccountNativePackage {
     pub fn invoke_export<Y>(
         export_name: &str,
-        receiver: Option<ComponentId>,
+        receiver: Option<RENodeId>,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -58,11 +59,12 @@ impl AccountNativePackage {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         match export_name {
             ACCOUNT_CREATE_GLOBAL_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 if receiver.is_some() {
                     return Err(RuntimeError::InterpreterError(
                         InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
@@ -71,6 +73,8 @@ impl AccountNativePackage {
                 Self::create_global(input, api)
             }
             ACCOUNT_CREATE_LOCAL_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 if receiver.is_some() {
                     return Err(RuntimeError::InterpreterError(
                         InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
@@ -79,78 +83,104 @@ impl AccountNativePackage {
                 Self::create_local(input, api)
             }
             ACCOUNT_LOCK_FEE_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::lock_fee(receiver, input, api)
             }
             ACCOUNT_LOCK_CONTINGENT_FEE_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::lock_contingent_fee(receiver, input, api)
             }
             ACCOUNT_DEPOSIT_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::deposit(receiver, input, api)
             }
             ACCOUNT_DEPOSIT_BATCH_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::deposit_batch(receiver, input, api)
             }
             ACCOUNT_WITHDRAW_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::withdraw(receiver, input, api)
             }
             ACCOUNT_WITHDRAW_ALL_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::withdraw_all(receiver, input, api)
             }
             ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::withdraw_non_fungibles(receiver, input, api)
             }
             ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::lock_fee_and_withdraw(receiver, input, api)
             }
             ACCOUNT_LOCK_FEE_AND_WITHDRAW_ALL_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::lock_fee_and_withdraw_all(receiver, input, api)
             }
             ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::lock_fee_and_withdraw_non_fungibles(receiver, input, api)
             }
             ACCOUNT_CREATE_PROOF_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::create_proof(receiver, input, api)
             }
             ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::create_proof_by_amount(receiver, input, api)
             }
             ACCOUNT_CREATE_PROOF_BY_IDS_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
@@ -170,7 +200,6 @@ impl AccountNativePackage {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>
             + ClientNodeApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
@@ -198,12 +227,12 @@ impl AccountNativePackage {
                     metadata: BTreeMap::new(),
                 }),
             );
-            let access_rules_substate = AccessRulesChainSubstate {
+            let access_rules_substate = ObjectAccessRulesChainSubstate {
                 access_rules_chain: [access_rules].into(),
             };
             node_modules.insert(
                 NodeModuleId::AccessRules,
-                RENodeModuleInit::AccessRulesChain(access_rules_substate),
+                RENodeModuleInit::ComponentAccessRulesChain(access_rules_substate),
             );
 
             let account_substate = AccountSubstate {
@@ -236,7 +265,6 @@ impl AccountNativePackage {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>
             + ClientNodeApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
@@ -264,12 +292,12 @@ impl AccountNativePackage {
                     metadata: BTreeMap::new(),
                 }),
             );
-            let access_rules_substate = AccessRulesChainSubstate {
+            let access_rules_substate = ObjectAccessRulesChainSubstate {
                 access_rules_chain: [access_rules].into(),
             };
             node_modules.insert(
                 NodeModuleId::AccessRules,
-                RENodeModuleInit::AccessRulesChain(access_rules_substate),
+                RENodeModuleInit::ComponentAccessRulesChain(access_rules_substate),
             );
             let account_substate = AccountSubstate {
                 vaults: Own::KeyValueStore(kv_store_id.into()),
@@ -287,7 +315,7 @@ impl AccountNativePackage {
     }
 
     fn lock_fee_internal<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         amount: Decimal,
         contingent: bool,
         api: &mut Y,
@@ -299,7 +327,7 @@ impl AccountNativePackage {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
         let handle = api.kernel_lock_substate(
-            RENodeId::Account(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Account(AccountOffset::Account),
             LockFlags::read_only(),
@@ -354,7 +382,7 @@ impl AccountNativePackage {
     }
 
     fn lock_fee<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -371,7 +399,7 @@ impl AccountNativePackage {
     }
 
     fn lock_contingent_fee<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -388,7 +416,7 @@ impl AccountNativePackage {
     }
 
     fn deposit<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -403,7 +431,7 @@ impl AccountNativePackage {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
         let handle = api.kernel_lock_substate(
-            RENodeId::Account(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Account(AccountOffset::Account),
             LockFlags::read_only(),
@@ -461,7 +489,7 @@ impl AccountNativePackage {
     }
 
     fn deposit_batch<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -473,7 +501,7 @@ impl AccountNativePackage {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let handle = api.kernel_lock_substate(
-            RENodeId::Account(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Account(AccountOffset::Account),
             LockFlags::read_only(),
@@ -546,7 +574,7 @@ impl AccountNativePackage {
     }
 
     fn get_vault<F, Y, R>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         resource_address: ResourceAddress,
         vault_fn: F,
         api: &mut Y,
@@ -555,14 +583,13 @@ impl AccountNativePackage {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>
             + ClientNodeApi<RuntimeError>,
         F: FnOnce(&mut Vault, &mut Y) -> Result<R, RuntimeError>,
     {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
         let handle = api.kernel_lock_substate(
-            RENodeId::Account(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Account(AccountOffset::Account),
             LockFlags::read_only(),
@@ -613,7 +640,7 @@ impl AccountNativePackage {
     }
 
     fn withdraw<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -635,7 +662,7 @@ impl AccountNativePackage {
     }
 
     fn withdraw_all<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -657,7 +684,7 @@ impl AccountNativePackage {
     }
 
     fn withdraw_non_fungibles<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -680,7 +707,7 @@ impl AccountNativePackage {
     }
 
     fn lock_fee_and_withdraw<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -705,7 +732,7 @@ impl AccountNativePackage {
     }
 
     fn lock_fee_and_withdraw_all<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -730,7 +757,7 @@ impl AccountNativePackage {
     }
 
     fn lock_fee_and_withdraw_non_fungibles<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -755,7 +782,7 @@ impl AccountNativePackage {
     }
 
     fn create_proof<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -777,7 +804,7 @@ impl AccountNativePackage {
     }
 
     fn create_proof_by_amount<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -800,7 +827,7 @@ impl AccountNativePackage {
     }
 
     fn create_proof_by_ids<Y>(
-        receiver: ComponentId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -829,12 +856,12 @@ impl AccountNativePackage {
 fn access_rules_from_withdraw_rule(withdraw_rule: AccessRule) -> AccessRules {
     let mut access_rules = AccessRules::new();
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::ScryptoMethod(ACCOUNT_DEPOSIT_IDENT.to_string()),
+        AccessRuleKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_IDENT.to_string()),
         AccessRule::AllowAll,
         AccessRule::DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::ScryptoMethod(ACCOUNT_DEPOSIT_BATCH_IDENT.to_string()),
+        AccessRuleKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_BATCH_IDENT.to_string()),
         AccessRule::AllowAll,
         AccessRule::DenyAll,
     );

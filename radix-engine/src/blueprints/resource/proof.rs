@@ -6,7 +6,7 @@ use crate::system::node::RENodeInit;
 use crate::types::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{ProofOffset, RENodeId, SubstateOffset};
-use radix_engine_interface::api::{ClientApi, ClientNativeInvokeApi, ClientSubstateApi};
+use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
 
@@ -455,7 +455,7 @@ pub struct ProofBlueprint;
 
 impl ProofBlueprint {
     pub(crate) fn clone<Y>(
-        receiver: ProofId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -463,15 +463,14 @@ impl ProofBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let _input: ProofCloneInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let handle = api.kernel_lock_substate(
-            RENodeId::Proof(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Proof(ProofOffset::Proof),
             LockFlags::read_only(),
@@ -488,7 +487,7 @@ impl ProofBlueprint {
     }
 
     pub(crate) fn get_amount<Y>(
-        receiver: ProofId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -496,15 +495,14 @@ impl ProofBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let _input: ProofGetAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let handle = api.kernel_lock_substate(
-            RENodeId::Proof(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Proof(ProofOffset::Proof),
             LockFlags::read_only(),
@@ -515,7 +513,7 @@ impl ProofBlueprint {
     }
 
     pub(crate) fn get_non_fungible_local_ids<Y>(
-        receiver: ProofId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -523,8 +521,7 @@ impl ProofBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let _input: ProofGetNonFungibleLocalIdsInput =
@@ -532,7 +529,7 @@ impl ProofBlueprint {
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let handle = api.kernel_lock_substate(
-            RENodeId::Proof(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Proof(ProofOffset::Proof),
             LockFlags::read_only(),
@@ -546,7 +543,7 @@ impl ProofBlueprint {
     }
 
     pub(crate) fn get_resource_address<Y>(
-        receiver: ProofId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -554,15 +551,14 @@ impl ProofBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let _input: ProofGetResourceAddressInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let handle = api.kernel_lock_substate(
-            RENodeId::Proof(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Proof(ProofOffset::Proof),
             LockFlags::read_only(),

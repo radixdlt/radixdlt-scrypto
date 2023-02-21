@@ -2,13 +2,15 @@ use crate::engine::scrypto_env::ScryptoEnv;
 use radix_engine_derive::LegacyDescribe;
 use radix_engine_derive::*;
 use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesSetMethodAccessRuleInvocation, AccessRulesSetMethodMutabilityInvocation,
+    AccessRulesSetMethodAccessRuleInput, AccessRulesSetMethodMutabilityInput,
+    ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT, ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
 };
 use radix_engine_interface::api::types::{
-    Address, ComponentAddress, ComponentId, RENodeId, ToString,
+    Address, ComponentAddress, ComponentId, NodeModuleId, RENodeId, ToString,
 };
-use radix_engine_interface::api::ClientNativeInvokeApi;
+use radix_engine_interface::api::ClientComponentApi;
 use radix_engine_interface::blueprints::resource::{AccessRule, AccessRuleEntry, AccessRuleKey};
+use radix_engine_interface::data::scrypto_encode;
 
 // TODO: Should `Encode` and `Decode` be removed so that `ComponentAccessRules` can not be passed
 // between components?
@@ -35,26 +37,36 @@ impl ComponentAccessRules {
     }
 
     pub fn set_method_auth(&mut self, method_name: &str, access_rule: AccessRule) {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .call_native(AccessRulesSetMethodAccessRuleInvocation {
-                receiver: self.component.clone().into(),
-                index: self.index,
-                key: AccessRuleKey::ScryptoMethod(method_name.to_string()),
-                rule: AccessRuleEntry::AccessRule(access_rule),
-            })
+        // TODO: allow setting method auth on other modules besides self
+        ScryptoEnv
+            .call_module_method(
+                self.component.clone().into(),
+                NodeModuleId::AccessRules,
+                ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
+                scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
+                    index: self.index,
+                    key: AccessRuleKey::new(NodeModuleId::SELF, method_name.to_string()),
+                    rule: AccessRuleEntry::AccessRule(access_rule),
+                })
+                .unwrap(),
+            )
             .unwrap();
     }
 
     pub fn lock_method_auth(&mut self, method_name: &str) {
-        let mut syscalls = ScryptoEnv;
-        syscalls
-            .call_native(AccessRulesSetMethodMutabilityInvocation {
-                receiver: self.component.clone().into(),
-                index: self.index,
-                key: AccessRuleKey::ScryptoMethod(method_name.to_string()),
-                mutability: AccessRule::DenyAll,
-            })
+        // TODO: allow locking method auth on other modules besides self
+        ScryptoEnv
+            .call_module_method(
+                self.component.clone().into(),
+                NodeModuleId::AccessRules,
+                ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
+                scrypto_encode(&AccessRulesSetMethodMutabilityInput {
+                    index: self.index,
+                    key: AccessRuleKey::new(NodeModuleId::SELF, method_name.to_string()),
+                    mutability: AccessRule::DenyAll,
+                })
+                .unwrap(),
+            )
             .unwrap();
     }
 }

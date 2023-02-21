@@ -9,7 +9,7 @@ use crate::system::kernel_modules::costing::FinalizingFeeReserve;
 use crate::system::kernel_modules::costing::RoyaltyReceiver;
 use crate::system::kernel_modules::costing::{CostingError, FeeReserveError};
 use crate::system::kernel_modules::costing::{FeeSummary, SystemLoanFeeReserve};
-use crate::system::kernel_modules::execution_trace::{ExecutionTraceReceipt, VaultOp};
+use crate::system::kernel_modules::execution_trace::{ExecutionTraceReceipt, TraceActor, VaultOp};
 use crate::system::node_substates::{
     PersistedSubstate, RuntimeSubstate, SubstateRef, SubstateRefMut,
 };
@@ -26,7 +26,6 @@ use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::crypto::hash;
 use sbor::rust::collections::*;
 
-use super::actor::ResolvedActor;
 use super::event::TrackedEvent;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]
@@ -455,7 +454,7 @@ impl<'s> Track<'s> {
         self,
         mut invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
         mut fee_reserve: SystemLoanFeeReserve,
-        vault_ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
+        vault_ops: Vec<(TraceActor, VaultId, VaultOp)>,
         events: Vec<TrackedEvent>,
     ) -> TrackReceipt {
         // A `SuccessButFeeLoanNotRepaid` error is issued if a transaction finishes before SYSTEM_LOAN_AMOUNT is reached
@@ -574,7 +573,7 @@ impl<'s> FinalizingTrack<'s> {
         self,
         invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
         fee_summary: &mut FeeSummary,
-        vault_ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
+        vault_ops: Vec<(TraceActor, VaultId, VaultOp)>,
     ) -> TransactionResult {
         let is_success = invoke_result.is_ok();
 

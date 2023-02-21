@@ -1,5 +1,5 @@
 use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::types::ScryptoReceiver;
+use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{
@@ -20,7 +20,7 @@ impl ComponentAuthZone {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            ScryptoReceiver::AuthZoneStack,
+            RENodeId::AuthZoneStack,
             AUTH_ZONE_DRAIN_IDENT,
             scrypto_encode(&AuthZoneDrainInput {}).unwrap(),
         )?;
@@ -32,7 +32,7 @@ impl ComponentAuthZone {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            ScryptoReceiver::AuthZoneStack,
+            RENodeId::AuthZoneStack,
             AUTH_ZONE_CLEAR_IDENT,
             scrypto_encode(&AuthZoneClearInput {}).unwrap(),
         )?;
@@ -44,7 +44,7 @@ impl ComponentAuthZone {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            ScryptoReceiver::AuthZoneStack,
+            RENodeId::AuthZoneStack,
             AUTH_ZONE_POP_IDENT,
             scrypto_encode(&AuthZonePopInput {}).unwrap(),
         )?;
@@ -60,7 +60,7 @@ impl ComponentAuthZone {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            ScryptoReceiver::AuthZoneStack,
+            RENodeId::AuthZoneStack,
             AUTH_ZONE_CREATE_PROOF_IDENT,
             scrypto_encode(&AuthZoneCreateProofInput { resource_address }).unwrap(),
         )?;
@@ -77,7 +77,7 @@ impl ComponentAuthZone {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            ScryptoReceiver::AuthZoneStack,
+            RENodeId::AuthZoneStack,
             AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_IDENT,
             scrypto_encode(&AuthZoneCreateProofByAmountInput {
                 resource_address,
@@ -98,7 +98,7 @@ impl ComponentAuthZone {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            ScryptoReceiver::AuthZoneStack,
+            RENodeId::AuthZoneStack,
             AUTH_ZONE_CREATE_PROOF_BY_IDS_IDENT,
             scrypto_encode(&AuthZoneCreateProofByIdsInput {
                 resource_address,
@@ -120,7 +120,7 @@ impl ComponentAuthZone {
         let proof: Proof = proof.into();
 
         let _rtn = api.call_method(
-            ScryptoReceiver::AuthZoneStack,
+            RENodeId::AuthZoneStack,
             AUTH_ZONE_PUSH_IDENT,
             scrypto_encode(&AuthZonePushInput { proof }).unwrap(),
         )?;
@@ -134,7 +134,7 @@ impl ComponentAuthZone {
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let _rtn = api.call_method(
-            ScryptoReceiver::AuthZoneStack,
+            RENodeId::AuthZoneStack,
             AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
             scrypto_encode(&AuthZoneAssertAccessRuleInput { access_rule }).unwrap(),
         )?;

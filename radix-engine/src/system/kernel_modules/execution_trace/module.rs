@@ -38,7 +38,7 @@ pub struct ExecutionTraceModule {
     kernel_call_traces_stacks: HashMap<usize, Vec<KernelCallTrace>>,
 
     /// Vault operations: (Caller, Vault ID, operation)
-    vault_ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
+    vault_ops: Vec<(TraceActor, VaultId, VaultOp)>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -113,11 +113,18 @@ pub struct ResourceSummary {
     pub proofs: HashMap<ProofId, ProofSnapshot>,
 }
 
+// TODO: Clean up
+#[derive(Debug, Clone, ScryptoSbor)]
+pub enum TraceActor {
+    Root,
+    Actor(ResolvedActor),
+}
+
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct KernelCallTrace {
     pub origin: KernelCallOrigin,
     pub kernel_call_depth: usize,
-    pub current_frame_actor: ResolvedActor,
+    pub current_frame_actor: TraceActor,
     pub current_frame_depth: usize,
     pub instruction_index: usize,
     pub input: ResourceSummary,
@@ -127,9 +134,8 @@ pub struct KernelCallTrace {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub enum KernelCallOrigin {
-    ScryptoFunction(ScryptoFnIdentifier),
-    ScryptoMethod(ScryptoFnIdentifier),
-    NativeFn(NativeFn),
+    ScryptoFunction(FnIdentifier),
+    ScryptoMethod(FnIdentifier),
     CreateNode,
     DropNode,
 }
@@ -238,7 +244,7 @@ impl KernelModule for ExecutionTraceModule {
 
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        callee: &ResolvedActor,
+        callee: &Option<ResolvedActor>,
         update: &mut CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         let current_actor = api.kernel_get_current_actor();
@@ -251,7 +257,7 @@ impl KernelModule for ExecutionTraceModule {
 
     fn on_execution_finish<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        caller: &ResolvedActor,
+        caller: &Option<ResolvedActor>,
         update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         let current_actor = api.kernel_get_current_actor();
@@ -303,7 +309,7 @@ impl ExecutionTraceModule {
 
     fn handle_after_create_node(
         &mut self,
-        current_actor: ResolvedActor,
+        current_actor: Option<ResolvedActor>,
         current_depth: usize,
         resource_summary: ResourceSummary,
     ) {
@@ -315,6 +321,10 @@ impl ExecutionTraceModule {
             return;
         }
 
+        let current_actor = current_actor
+            .clone()
+            .map(|a| TraceActor::Actor(a))
+            .unwrap_or(TraceActor::Root);
         self.finalize_kernel_call_trace(resource_summary, current_actor, current_depth)
     }
 
@@ -333,7 +343,11 @@ impl ExecutionTraceModule {
         self.current_kernel_call_depth += 1;
     }
 
-    fn handle_after_drop_node(&mut self, current_actor: ResolvedActor, current_depth: usize) {
+    fn handle_after_drop_node(
+        &mut self,
+        current_actor: Option<ResolvedActor>,
+        current_depth: usize,
+    ) {
         // Important to always update the counter (even if we're over the depth limit).
         self.current_kernel_call_depth -= 1;
 
@@ -344,25 +358,32 @@ impl ExecutionTraceModule {
 
         let traced_output = ResourceSummary::new_empty();
 
+        let current_actor = current_actor
+            .clone()
+            .map(|a| TraceActor::Actor(a))
+            .unwrap_or(TraceActor::Root);
         self.finalize_kernel_call_trace(traced_output, current_actor, current_depth)
     }
 
     fn handle_before_push_frame(
         &mut self,
-        current_actor: ResolvedActor,
-        callee: &ResolvedActor,
+        current_actor: Option<ResolvedActor>,
+        callee: &Option<ResolvedActor>,
         resource_summary: ResourceSummary,
     ) {
         if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
-            let origin = match &callee.identifier {
-                FnIdentifier::Scrypto(scrypto_fn) => {
-                    if callee.receiver.is_some() {
-                        KernelCallOrigin::ScryptoMethod(scrypto_fn.clone())
+            let origin = match &callee {
+                Some(ResolvedActor {
+                    identifier,
+                    receiver,
+                }) => {
+                    if receiver.is_some() {
+                        KernelCallOrigin::ScryptoMethod(identifier.clone())
                     } else {
-                        KernelCallOrigin::ScryptoFunction(scrypto_fn.clone())
+                        KernelCallOrigin::ScryptoFunction(identifier.clone())
                     }
                 }
-                FnIdentifier::Native(native_fn) => KernelCallOrigin::NativeFn(native_fn.clone()),
+                _ => panic!("Should not get here."),
             };
 
             let instruction_index = self.instruction_index();
@@ -377,37 +398,37 @@ impl ExecutionTraceModule {
         self.current_kernel_call_depth += 1;
 
         match &callee {
-            ResolvedActor {
+            Some(ResolvedActor {
                 identifier:
-                    FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                    FnIdentifier {
                         package_address,
                         blueprint_name,
                         ident,
-                    }),
+                    },
                 receiver:
                     Some(ResolvedReceiver {
-                        receiver: RENodeId::Vault(vault_id),
+                        receiver: MethodReceiver(RENodeId::Vault(vault_id), ..),
                         ..
                     }),
-            } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+            }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_PUT_IDENT) =>
             {
                 self.handle_vault_put_input(&resource_summary, &current_actor, vault_id)
             }
-            ResolvedActor {
+            Some(ResolvedActor {
                 identifier:
-                    FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                    FnIdentifier {
                         package_address,
                         blueprint_name,
                         ident,
-                    }),
+                    },
                 receiver:
                     Some(ResolvedReceiver {
-                        receiver: RENodeId::Vault(vault_id),
+                        receiver: MethodReceiver(RENodeId::Vault(vault_id), ..),
                         ..
                     }),
-            } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+            }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_LOCK_FEE_IDENT) =>
             {
@@ -419,25 +440,25 @@ impl ExecutionTraceModule {
 
     fn handle_on_execution_finish(
         &mut self,
-        current_actor: ResolvedActor,
+        current_actor: Option<ResolvedActor>,
         current_depth: usize,
-        caller: &ResolvedActor,
+        caller: &Option<ResolvedActor>,
         resource_summary: ResourceSummary,
     ) {
         match &current_actor {
-            ResolvedActor {
+            Some(ResolvedActor {
                 identifier:
-                    FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                    FnIdentifier {
                         package_address,
                         blueprint_name,
                         ident,
-                    }),
+                    },
                 receiver:
                     Some(ResolvedReceiver {
-                        receiver: RENodeId::Vault(vault_id),
+                        receiver: MethodReceiver(RENodeId::Vault(vault_id), ..),
                         ..
                     }),
-            } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+            }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_TAKE_IDENT) =>
             {
@@ -454,13 +475,17 @@ impl ExecutionTraceModule {
             return;
         }
 
+        let current_actor = current_actor
+            .clone()
+            .map(|a| TraceActor::Actor(a))
+            .unwrap_or(TraceActor::Root);
         self.finalize_kernel_call_trace(resource_summary, current_actor, current_depth)
     }
 
     fn finalize_kernel_call_trace(
         &mut self,
         traced_output: ResourceSummary,
-        current_actor: ResolvedActor,
+        current_actor: TraceActor,
         current_depth: usize,
     ) {
         let child_traces = self
@@ -498,7 +523,7 @@ impl ExecutionTraceModule {
         }
     }
 
-    pub fn collect_events(mut self) -> (Vec<(ResolvedActor, VaultId, VaultOp)>, Vec<TrackedEvent>) {
+    pub fn collect_events(mut self) -> (Vec<(TraceActor, VaultId, VaultOp)>, Vec<TrackedEvent>) {
         let mut events = Vec::new();
         for (_, traces) in self.kernel_call_traces_stacks.drain() {
             // Emit an output event for each "root" kernel call trace
@@ -517,32 +542,48 @@ impl ExecutionTraceModule {
     fn handle_vault_put_input<'s>(
         &mut self,
         resource_summary: &ResourceSummary,
-        caller: &ResolvedActor,
+        caller: &Option<ResolvedActor>,
         vault_id: &VaultId,
     ) {
+        let actor = caller
+            .clone()
+            .map(|a| TraceActor::Actor(a))
+            .unwrap_or(TraceActor::Root);
         for (_, resource) in &resource_summary.buckets {
             self.vault_ops.push((
-                caller.clone(),
+                actor.clone(),
                 vault_id.clone(),
                 VaultOp::Put(resource.amount()),
             ));
         }
     }
 
-    fn handle_vault_lock_fee_input<'s>(&mut self, caller: &ResolvedActor, vault_id: &VaultId) {
+    fn handle_vault_lock_fee_input<'s>(
+        &mut self,
+        caller: &Option<ResolvedActor>,
+        vault_id: &VaultId,
+    ) {
+        let actor = caller
+            .clone()
+            .map(|a| TraceActor::Actor(a))
+            .unwrap_or(TraceActor::Root);
         self.vault_ops
-            .push((caller.clone(), vault_id.clone(), VaultOp::LockFee));
+            .push((actor, vault_id.clone(), VaultOp::LockFee));
     }
 
     fn handle_vault_take_output<'s>(
         &mut self,
         resource_summary: &ResourceSummary,
-        caller: &ResolvedActor,
+        caller: &Option<ResolvedActor>,
         vault_id: &VaultId,
     ) {
+        let actor = caller
+            .clone()
+            .map(|a| TraceActor::Actor(a))
+            .unwrap_or(TraceActor::Root);
         for (_, resource) in &resource_summary.buckets {
             self.vault_ops.push((
-                caller.clone(),
+                actor.clone(),
                 vault_id.clone(),
                 VaultOp::Take(resource.amount()),
             ));
@@ -555,7 +596,7 @@ impl ExecutionTraceReceipt {
     // The current approach relies on various runtime invariants.
 
     pub fn new(
-        ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
+        ops: Vec<(TraceActor, VaultId, VaultOp)>,
         actual_fee_payments: &BTreeMap<VaultId, Decimal>,
         to_persist: &HashMap<SubstateId, (PersistedSubstate, Option<u32>)>,
         is_commit_success: bool,
@@ -565,8 +606,12 @@ impl ExecutionTraceReceipt {
         let mut vault_changes = HashMap::<ComponentId, HashMap<VaultId, Decimal>>::new();
         let mut vault_locked_by = HashMap::<VaultId, ComponentId>::new();
         for (actor, vault_id, vault_op) in ops {
-            if let Some(resolved_receiver) = actor.receiver {
-                match resolved_receiver.receiver {
+            if let TraceActor::Actor(ResolvedActor {
+                receiver: Some(resolved_receiver),
+                ..
+            }) = actor
+            {
+                match resolved_receiver.receiver.0 {
                     RENodeId::Component(component_id) | RENodeId::Account(component_id) => {
                         match vault_op {
                             VaultOp::Create(_) => todo!("Not supported yet!"),

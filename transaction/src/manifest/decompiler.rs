@@ -440,17 +440,6 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, access_rules)?;
             f.write_str(";")?;
         }
-        Instruction::PublishPackageWithOwner {
-            code,
-            abi,
-            owner_badge,
-        } => {
-            f.write_str("PUBLISH_PACKAGE_WITH_OWNER")?;
-            format_typed_value(f, context, code)?;
-            format_typed_value(f, context, abi)?;
-            format_typed_value(f, context, owner_badge)?;
-            f.write_str(";")?;
-        }
         Instruction::BurnResource { bucket_id } => {
             write!(
                 f,
@@ -556,7 +545,6 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, access_rule)?;
             f.write_str(";")?;
         }
-        Instruction::NativeInvocation(_) => todo!(),
     }
     Ok(())
 }

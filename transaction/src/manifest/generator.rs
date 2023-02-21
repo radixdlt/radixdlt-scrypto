@@ -397,15 +397,6 @@ pub fn generate_instruction(
             metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
             access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
         },
-        ast::Instruction::PublishPackageWithOwner {
-            code,
-            abi,
-            owner_badge,
-        } => Instruction::PublishPackageWithOwner {
-            code: generate_blob(code, blobs)?,
-            abi: generate_blob(abi, blobs)?,
-            owner_badge: generate_non_fungible_global_id(owner_badge, bech32_decoder)?,
-        },
         ast::Instruction::BurnResource { bucket } => {
             let bucket_id = generate_bucket(bucket, resolver)?;
             id_validator
@@ -899,33 +890,6 @@ fn generate_non_fungible_local_id(
             v => invalid_type!(v, ast::Type::String)?,
         },
         v => invalid_type!(v, ast::Type::NonFungibleLocalId),
-    }
-}
-
-fn generate_non_fungible_global_id(
-    value: &ast::Value,
-    bech32_decoder: &Bech32Decoder,
-) -> Result<NonFungibleGlobalId, GeneratorError> {
-    match value {
-        ast::Value::Tuple(elements) => {
-            if elements.len() != 2 {
-                return Err(GeneratorError::InvalidNonFungibleGlobalId);
-            }
-            let resource_address = generate_resource_address(&elements[0], bech32_decoder)?;
-            let non_fungible_local_id = generate_non_fungible_local_id(&elements[1])?;
-            Ok(NonFungibleGlobalId::new(
-                resource_address,
-                non_fungible_local_id,
-            ))
-        }
-        ast::Value::NonFungibleGlobalId(value) => match value.as_ref() {
-            ast::Value::String(s) => {
-                NonFungibleGlobalId::try_from_canonical_string(bech32_decoder, s.as_str())
-                    .map_err(|_| GeneratorError::InvalidNonFungibleGlobalId)
-            }
-            v => invalid_type!(v, ast::Type::String)?,
-        },
-        v => invalid_type!(v, ast::Type::NonFungibleGlobalId, ast::Type::Tuple),
     }
 }
 
@@ -1549,7 +1513,6 @@ mod tests {
                 "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak",
             )
             .unwrap();
-        let owner_badge = NonFungibleGlobalId::new(resource, NonFungibleLocalId::integer(1));
 
         generate_instruction_ok!(
             r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Bucket("xrd_bucket");"#,
@@ -1593,7 +1556,31 @@ mod tests {
             },
         );
         generate_instruction_ok!(
-            r#"PUBLISH_PACKAGE Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Blob("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791") Map<String, Tuple>() Map<String, String>() Tuple(Map<Enum, Enum>(), Map<String, Enum>(), Enum("AccessRule::DenyAll"), Map<Enum, Enum>(), Map<String, Enum>(), Enum("AccessRule::DenyAll"));"#,
+            r#"MINT_FUNGIBLE ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak") Decimal("100");"#,
+            Instruction::MintFungible {
+                resource_address: resource,
+                amount: dec!("100")
+            },
+        );
+        generate_instruction_ok!(
+            r##"MINT_NON_FUNGIBLE ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak") Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128)));"##,
+            Instruction::MintNonFungible {
+                resource_address: resource,
+                entries: BTreeMap::from([(
+                    NonFungibleLocalId::integer(1),
+                    (
+                        manifest_args!(String::from("Hello World"), dec!("12")),
+                        manifest_args!(12u8, 19u128)
+                    )
+                )])
+            },
+        );
+    }
+
+    #[test]
+    fn test_publish_instruction() {
+        generate_instruction_ok!(
+            r#"PUBLISH_PACKAGE Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Blob("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791") Map<String, Tuple>() Map<String, String>() Tuple(Map<Tuple, Enum>(), Map<String, Enum>(), Enum("AccessRule::DenyAll"), Map<Tuple, Enum>(), Map<String, Enum>(), Enum("AccessRule::DenyAll"));"#,
             Instruction::PublishPackage {
                 code: ManifestBlobRef(
                     hex::decode("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0")
@@ -1613,47 +1600,6 @@ mod tests {
             },
             "a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0",
             "554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791"
-        );
-        generate_instruction_ok!(
-            r#"PUBLISH_PACKAGE_WITH_OWNER Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Blob("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791") NonFungibleGlobalId("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak:#1#");"#,
-            Instruction::PublishPackageWithOwner {
-                code: ManifestBlobRef(
-                    hex::decode("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0")
-                        .unwrap()
-                        .try_into()
-                        .unwrap()
-                ),
-                abi: ManifestBlobRef(
-                    hex::decode("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791")
-                        .unwrap()
-                        .try_into()
-                        .unwrap()
-                ),
-                owner_badge: owner_badge.clone()
-            },
-            "a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0",
-            "554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791"
-        );
-
-        generate_instruction_ok!(
-            r#"MINT_FUNGIBLE ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak") Decimal("100");"#,
-            Instruction::MintFungible {
-                resource_address: resource,
-                amount: dec!("100")
-            },
-        );
-        generate_instruction_ok!(
-            r##"MINT_NON_FUNGIBLE ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak") Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128)));"##,
-            Instruction::MintNonFungible {
-                resource_address: resource,
-                entries: BTreeMap::from([(
-                    NonFungibleLocalId::integer(1),
-                    (
-                        manifest_args!(String::from("Hello World"), dec!("12")),
-                        manifest_args!(12u8, 19u128)
-                    )
-                )])
-            },
         );
     }
 
