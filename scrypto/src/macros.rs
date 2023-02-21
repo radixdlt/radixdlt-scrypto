@@ -167,7 +167,7 @@ macro_rules! include_abi {
 ///     }
 /// }
 ///
-/// #[derive(Categorize, Encode, Decode, LegacyDescribe)]
+/// #[derive(Sbor, LegacyDescribe)]
 /// enum DepositResult {
 ///     Success,
 ///     Failure
@@ -203,7 +203,7 @@ macro_rules! external_blueprint {
         }
     ) => {
 
-        #[derive(ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
+        #[derive(ScryptoSbor, LegacyDescribe)]
         struct $blueprint_ident {
             package_address: ::scrypto::model::PackageAddress,
             blueprint_name: ::sbor::rust::string::String,
@@ -283,7 +283,7 @@ macro_rules! external_blueprint_members {
                 self.package_address,
                 &self.blueprint_name,
                 stringify!($func_name),
-                args!($($func_args),*)
+                scrypto_args!($($func_args),*)
             )
         }
         ::scrypto::external_blueprint_members!($($rest)*);
@@ -298,7 +298,7 @@ macro_rules! external_blueprint_members {
                 self.package_address,
                 &self.blueprint_name,
                 stringify!($func_name),
-                args!($($func_args),*)
+                scrypto_args!($($func_args),*)
             )
         }
         ::scrypto::external_blueprint_members!($($rest)*);
@@ -312,7 +312,7 @@ macro_rules! external_blueprint_members {
 /// ```no_run
 /// use scrypto::prelude::*;
 ///
-/// #[derive(Categorize, Encode, Decode, LegacyDescribe)]
+/// #[derive(Sbor, LegacyDescribe)]
 /// enum DepositResult {
 ///     Success,
 ///     Failure
@@ -343,7 +343,7 @@ macro_rules! external_component {
             $($component_methods:tt)*
         }
     ) => {
-        #[derive(ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
+        #[derive(ScryptoSbor, LegacyDescribe)]
         struct $component_ident {
             component_address: ::scrypto::model::ComponentAddress,
         }
@@ -387,7 +387,7 @@ macro_rules! external_component_members {
             ::scrypto::runtime::Runtime::call_method(
                 self.component_address,
                 stringify!($method_name),
-                args!($($method_args),*)
+                scrypto_args!($($method_args),*)
             )
         }
         ::scrypto::external_component_members!($($rest)*);
@@ -400,7 +400,7 @@ macro_rules! external_component_members {
             ::scrypto::runtime::Runtime::call_method(
                 self.component_address,
                 stringify!($method_name),
-                args!($($method_args),*)
+                scrypto_args!($($method_args),*)
             )
         }
         ::scrypto::external_component_members!($($rest)*);
@@ -413,7 +413,7 @@ macro_rules! external_component_members {
             ::scrypto::runtime::Runtime::call_method(
                 self.component_address,
                 stringify!($method_name),
-                args!($($method_args),*)
+                scrypto_args!($($method_args),*)
             )
         }
         ::scrypto::external_component_members!($($rest)*);
@@ -426,7 +426,7 @@ macro_rules! external_component_members {
             ::scrypto::runtime::Runtime::call_method(
                 self.component_address,
                 stringify!($method_name),
-                args!($($method_args),*)
+                scrypto_args!($($method_args),*)
             )
         }
         ::scrypto::external_component_members!($($rest)*);

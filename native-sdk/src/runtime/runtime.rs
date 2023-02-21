@@ -1,7 +1,5 @@
-use radix_engine_interface::api::types::{RENodeId, ScryptoReceiver};
-use radix_engine_interface::api::{
-    ClientComponentApi, ClientNativeInvokeApi, ClientNodeApi, ClientSubstateApi,
-};
+use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::api::{ClientApi, ClientComponentApi};
 use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::transaction_runtime::*;
@@ -22,7 +20,7 @@ impl Runtime {
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let rtn = api.call_method(
-            ScryptoReceiver::Global(EPOCH_MANAGER),
+            RENodeId::Global(EPOCH_MANAGER.into()),
             EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
             scrypto_encode(&EpochManagerGetCurrentEpochInput).unwrap(),
         )?;
@@ -36,7 +34,7 @@ impl Runtime {
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let rtn = api.call_method(
-            ScryptoReceiver::Global(CLOCK),
+            RENodeId::Global(CLOCK.into()),
             CLOCK_GET_CURRENT_TIME_IDENT,
             scrypto_encode(&ClockGetCurrentTimeInput { precision }).unwrap(),
         )?;
@@ -55,7 +53,7 @@ impl Runtime {
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let rtn = api.call_method(
-            ScryptoReceiver::Global(CLOCK),
+            RENodeId::Global(CLOCK.into()),
             CLOCK_COMPARE_CURRENT_TIME_IDENT,
             scrypto_encode(&ClockCompareCurrentTimeInput {
                 precision,
@@ -71,11 +69,14 @@ impl Runtime {
     /// Generates a UUID.
     pub fn generate_uuid<Y, E>(api: &mut Y) -> Result<u128, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientNativeInvokeApi<E>,
+        Y: ClientApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        api.call_native(TransactionRuntimeGenerateUuidInvocation {
-            receiver: RENodeId::TransactionRuntime.into(),
-        })
+        let rtn = api.call_method(
+            RENodeId::TransactionRuntime,
+            TRANSACTION_RUNTIME_GENERATE_UUID_IDENT,
+            scrypto_encode(&TransactionRuntimeGenerateUuid {}).unwrap(),
+        )?;
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 }

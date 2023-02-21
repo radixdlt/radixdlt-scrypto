@@ -4,7 +4,7 @@ use syn::Result;
 pub fn handle_categorize(input: TokenStream) -> Result<TokenStream> {
     sbor_derive_common::categorize::handle_categorize(
         input,
-        Some("transaction::data::ManifestCustomValueKind"),
+        Some("transaction_data::ManifestCustomValueKind"),
     )
 }
 
@@ -27,9 +27,9 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl ::sbor::Categorize<transaction::data::ManifestCustomValueKind> for MyStruct {
+                impl ::sbor::Categorize<transaction_data::ManifestCustomValueKind> for MyStruct {
                     #[inline]
-                    fn value_kind() -> ::sbor::ValueKind<transaction::data::ManifestCustomValueKind> {
+                    fn value_kind() -> ::sbor::ValueKind<transaction_data::ManifestCustomValueKind> {
                         ::sbor::ValueKind::Tuple
                     }
                 }
@@ -46,11 +46,11 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl<T: Bound> ::sbor::Categorize<transaction::data::ManifestCustomValueKind>
+                impl<T: Bound> ::sbor::Categorize<transaction_data::ManifestCustomValueKind>
                     for MyEnum<T>
                 {
                     #[inline]
-                    fn value_kind() -> ::sbor::ValueKind<transaction::data::ManifestCustomValueKind> {
+                    fn value_kind() -> ::sbor::ValueKind<transaction_data::ManifestCustomValueKind> {
                         ::sbor::ValueKind::Enum
                     }
                 }

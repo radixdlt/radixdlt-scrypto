@@ -3,7 +3,8 @@ use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::model::*;
+use transaction::data::*;
+use transaction::model::Instruction;
 
 fn can_withdraw_from_my_account_internal(use_virtual: bool) {
     // Arrange
@@ -17,7 +18,7 @@ fn can_withdraw_from_my_account_internal(use_virtual: bool) {
         .call_method(
             other_account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -63,7 +64,7 @@ fn can_withdraw_non_fungible_from_my_account_internal(use_virtual: bool) {
         .call_method(
             other_account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -96,7 +97,7 @@ fn cannot_withdraw_from_other_account_internal(is_virtual: bool) {
         .call_method(
             account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
 
@@ -128,10 +129,10 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
         .lock_fee_and_withdraw_all(account, 10u32.into(), RADIX_TOKEN)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder
-                .add_instruction(BasicInstruction::CallMethod {
+                .add_instruction(Instruction::CallMethod {
                     component_address: account,
                     method_name: "deposit".to_string(),
-                    args: args!(bucket_id),
+                    args: manifest_args!(bucket_id),
                 })
                 .0
         })

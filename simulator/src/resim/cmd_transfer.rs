@@ -1,6 +1,8 @@
 use clap::Parser;
 use radix_engine::types::*;
 use transaction::builder::ManifestBuilder;
+use transaction::data::manifest_args;
+use transaction::data::model::*;
 
 use crate::resim::*;
 use crate::utils::*;
@@ -65,7 +67,7 @@ impl Transfer {
             .call_method(
                 self.recipient.0,
                 "deposit_batch",
-                args!(ManifestExpression::EntireWorktop),
+                manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
         handle_manifest(

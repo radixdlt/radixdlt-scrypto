@@ -1,33 +1,33 @@
-use radix_engine::types::{ScryptoDecode, ScryptoEncode};
+use radix_engine_interface::ScryptoSbor;
 use sbor::rust::collections::HashMap;
 use sbor::rust::vec::Vec;
+use sbor::*;
 
 pub use super::types::{Nibble, NibblePath, NodeKey, Version};
-use radix_engine_interface::api::types::SubstateId;
+use radix_engine_interface::api::types::{NodeModuleId, RENodeId, SubstateOffset};
 use radix_engine_interface::crypto::Hash;
-use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoCustomValueKind};
-use sbor::{Categorize, Decode, DecodeError, Decoder, Encode, EncodeError, Encoder, ValueKind};
+use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoSbor};
 
 /// A physical tree node, to be used in the storage.
-#[derive(Clone, PartialEq, Eq, Hash, Debug, Categorize, ScryptoEncode, ScryptoDecode)]
-pub enum TreeNode {
+#[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoSbor)]
+pub enum TreeNode<P> {
     /// Internal node - always metadata-only, as per JMT design.
     Internal(TreeInternalNode),
     /// Leaf node.
-    Leaf(TreeLeafNode),
+    Leaf(TreeLeafNode<P>),
     /// An "empty tree" indicator, which may only be used as a root.
     Null,
 }
 
 /// Internal node.
-#[derive(Clone, PartialEq, Eq, Hash, Debug, Categorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoSbor)]
 pub struct TreeInternalNode {
     /// Metadata of each existing child.
     pub children: Vec<TreeChildEntry>,
 }
 
 /// Child node metadata.
-#[derive(Clone, PartialEq, Eq, Hash, Debug, Categorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoSbor)]
 pub struct TreeChildEntry {
     /// First of the remaining nibbles in the key.
     pub nibble: Nibble,
@@ -39,27 +39,54 @@ pub struct TreeChildEntry {
     pub is_leaf: bool,
 }
 
-/// Physical leaf node (which may represent a ReNode or a Substate).
-#[derive(Clone, PartialEq, Eq, Hash, Debug, Categorize, ScryptoEncode, ScryptoDecode)]
-pub struct TreeLeafNode {
-    /// All the remaining nibbles in the _hashed_ `substate_id`.
+#[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoSbor)]
+pub struct TreeLeafNode<P> {
+    /// All the remaining nibbles in the _hashed_ payload's key.
     pub key_suffix: NibblePath,
-    /// ID of the substate's value in an external storage.
-    pub substate_id: SubstateId,
-    /// An externally-provided hash of the Substate's value.
+    /// Payload; contents depend on the layer.
+    pub payload: P,
+    /// An externally-provided hash of the payload.
     pub value_hash: Hash,
 }
 
+/// Payload of the leafs within the upper (ReNode+Module) layer.
+/// Please note that a ReNode leaf is conceptually identical to a root of the Substates' subtree
+/// (i.e. one exists if and only if the other exists). For this reason, this payload does _not_
+/// just reference the subtree root, but actually contains it inside.
+/// This design decision also brings minor space and runtime benefits, and avoids special-casing
+/// the physical `NodeKey`s (no clashes can occur between ReNode leaf and Substates' root).
+#[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoSbor)]
+pub struct ReNodeModulePayload {
+    /// ReNode ID.
+    pub re_node_id: RENodeId,
+    /// Module ID.
+    pub node_mode_id: NodeModuleId,
+    /// An embedded root of the descendant Substate layer tree.
+    pub substates_root: TreeNode<SubstateOffset>,
+}
+
+/// A payload carried by a physical leaf.
+/// The top ReNodeModule tree carries an `ReNodeModulePayload` payload.
+/// The sub-trees carry  a `SubstateOffset` payload.
+pub trait Payload:
+    Clone + PartialEq + Eq + rust::hash::Hash + rust::fmt::Debug + ScryptoSbor
+{
+}
+
+impl Payload for ReNodeModulePayload {}
+
+impl Payload for SubstateOffset {}
+
 /// The "read" part of a physical tree node storage SPI.
-pub trait ReadableTreeStore {
+pub trait ReadableTreeStore<P: Payload> {
     /// Gets node by key, if it exists.
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode>;
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<P>>;
 }
 
 /// The "write" part of a physical tree node storage SPI.
-pub trait WriteableTreeStore {
+pub trait WriteableTreeStore<P: Payload> {
     /// Inserts the node under a new, unique key (i.e. never an update).
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode);
+    fn insert_node(&mut self, key: NodeKey, node: TreeNode<P>);
 
     /// Marks the given node for a (potential) future removal by an arbitrary
     /// external pruning process.
@@ -67,13 +94,14 @@ pub trait WriteableTreeStore {
 }
 
 /// A complete tree node storage SPI.
-pub trait TreeStore: ReadableTreeStore + WriteableTreeStore {}
-impl<S: ReadableTreeStore + WriteableTreeStore> TreeStore for S {}
+pub trait TreeStore<P: Payload>: ReadableTreeStore<P> + WriteableTreeStore<P> {}
+impl<S: ReadableTreeStore<P> + WriteableTreeStore<P>, P: Payload> TreeStore<P> for S {}
 
 /// A `TreeStore` based on memory object copies (i.e. no serialization).
 #[derive(Debug, PartialEq, Eq)]
 pub struct TypedInMemoryTreeStore {
-    pub memory: HashMap<NodeKey, TreeNode>,
+    pub root_tree_nodes: HashMap<NodeKey, TreeNode<ReNodeModulePayload>>,
+    pub sub_tree_nodes: HashMap<NodeKey, TreeNode<SubstateOffset>>,
     pub stale_key_buffer: Vec<NodeKey>,
 }
 
@@ -81,21 +109,38 @@ impl TypedInMemoryTreeStore {
     /// A constructor of a newly-initialized, empty store.
     pub fn new() -> TypedInMemoryTreeStore {
         TypedInMemoryTreeStore {
-            memory: HashMap::new(),
+            root_tree_nodes: HashMap::new(),
+            sub_tree_nodes: HashMap::new(),
             stale_key_buffer: Vec::new(),
         }
     }
 }
 
-impl ReadableTreeStore for TypedInMemoryTreeStore {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
-        self.memory.get(key).cloned()
+impl ReadableTreeStore<SubstateOffset> for TypedInMemoryTreeStore {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<SubstateOffset>> {
+        self.sub_tree_nodes.get(key).cloned()
     }
 }
 
-impl WriteableTreeStore for TypedInMemoryTreeStore {
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode) {
-        self.memory.insert(key, node);
+impl WriteableTreeStore<SubstateOffset> for TypedInMemoryTreeStore {
+    fn insert_node(&mut self, key: NodeKey, node: TreeNode<SubstateOffset>) {
+        self.sub_tree_nodes.insert(key, node);
+    }
+
+    fn record_stale_node(&mut self, key: NodeKey) {
+        self.stale_key_buffer.push(key);
+    }
+}
+
+impl ReadableTreeStore<ReNodeModulePayload> for TypedInMemoryTreeStore {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<ReNodeModulePayload>> {
+        self.root_tree_nodes.get(key).cloned()
+    }
+}
+
+impl WriteableTreeStore<ReNodeModulePayload> for TypedInMemoryTreeStore {
+    fn insert_node(&mut self, key: NodeKey, node: TreeNode<ReNodeModulePayload>) {
+        self.root_tree_nodes.insert(key, node);
     }
 
     fn record_stale_node(&mut self, key: NodeKey) {
@@ -120,16 +165,16 @@ impl SerializedInMemoryTreeStore {
     }
 }
 
-impl ReadableTreeStore for SerializedInMemoryTreeStore {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
+impl<P: Payload> ReadableTreeStore<P> for SerializedInMemoryTreeStore {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<P>> {
         self.memory
             .get(&encode_key(key))
             .map(|bytes| scrypto_decode(bytes).unwrap())
     }
 }
 
-impl WriteableTreeStore for SerializedInMemoryTreeStore {
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode) {
+impl<P: Payload> WriteableTreeStore<P> for SerializedInMemoryTreeStore {
+    fn insert_node(&mut self, key: NodeKey, node: TreeNode<P>) {
         self.memory
             .insert(encode_key(&key), scrypto_encode(&node).unwrap());
     }
@@ -152,14 +197,14 @@ pub fn encode_key(key: &NodeKey) -> Vec<u8> {
 // structures can simply use SBOR, with only the most efficiency-sensitive parts having custom
 // codecs, implemented below:
 
-impl Categorize<ScryptoCustomValueKind> for Nibble {
+impl<X: CustomValueKind> Categorize<X> for Nibble {
     #[inline]
-    fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
+    fn value_kind() -> ValueKind<X> {
         ValueKind::U8
     }
 }
 
-impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for Nibble {
+impl<X: CustomValueKind, E: Encoder<X>> Encode<X, E> for Nibble {
     #[inline]
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
         encoder.write_value_kind(Self::value_kind())
@@ -171,10 +216,10 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for N
     }
 }
 
-impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for Nibble {
+impl<X: CustomValueKind, D: Decoder<X>> Decode<X, D> for Nibble {
     fn decode_body_with_value_kind(
         decoder: &mut D,
-        value_kind: ValueKind<ScryptoCustomValueKind>,
+        value_kind: ValueKind<X>,
     ) -> Result<Self, DecodeError> {
         Ok(Nibble::from(u8::decode_body_with_value_kind(
             decoder, value_kind,
@@ -182,14 +227,18 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for N
     }
 }
 
-impl Categorize<ScryptoCustomValueKind> for NibblePath {
+impl<T: CustomTypeKind<GlobalTypeId>> Describe<T> for Nibble {
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(basic_well_known_types::U8_ID);
+}
+
+impl<X: CustomValueKind> Categorize<X> for NibblePath {
     #[inline]
-    fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
+    fn value_kind() -> ValueKind<X> {
         ValueKind::Tuple
     }
 }
 
-impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for NibblePath {
+impl<X: CustomValueKind, E: Encoder<X>> Encode<X, E> for NibblePath {
     #[inline]
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
         encoder.write_value_kind(Self::value_kind())
@@ -202,13 +251,13 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for N
     }
 }
 
-impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for NibblePath {
+impl<X: CustomValueKind, D: Decoder<X>> Decode<X, D> for NibblePath {
     fn decode_body_with_value_kind(
         decoder: &mut D,
-        value_kind: ValueKind<ScryptoCustomValueKind>,
+        value_kind: ValueKind<X>,
     ) -> Result<Self, DecodeError> {
         let (even, bytes): (bool, Vec<u8>) =
-            Decode::<ScryptoCustomValueKind, D>::decode_body_with_value_kind(decoder, value_kind)?;
+            Decode::<X, D>::decode_body_with_value_kind(decoder, value_kind)?;
         let path = if even {
             NibblePath::new_even(bytes)
         } else {
@@ -216,4 +265,8 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for N
         };
         Ok(path)
     }
+}
+
+impl<T: CustomTypeKind<GlobalTypeId>> Describe<T> for NibblePath {
+    const TYPE_ID: GlobalTypeId = <(bool, Vec<u8>) as Describe<T>>::TYPE_ID;
 }

@@ -4,7 +4,7 @@ use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-#[derive(Debug, PartialEq, Categorize, Encode, Decode)]
+#[derive(Debug, PartialEq, Sbor)]
 pub struct TestStructNamed {
     #[allow(unused_variables)]
     #[sbor(skip)]
@@ -12,13 +12,13 @@ pub struct TestStructNamed {
     pub y: u32,
 }
 
-#[derive(Debug, PartialEq, Categorize, Encode, Decode)]
+#[derive(Debug, PartialEq, Sbor)]
 pub struct TestStructUnnamed(#[sbor(skip)] u32, u32);
 
-#[derive(Debug, PartialEq, Categorize, Encode, Decode)]
+#[derive(Debug, PartialEq, Sbor)]
 pub struct TestStructUnit;
 
-#[derive(Debug, PartialEq, Categorize, Encode, Decode)]
+#[derive(Debug, PartialEq, Sbor)]
 pub enum TestEnum {
     A {
         #[sbor(skip)]

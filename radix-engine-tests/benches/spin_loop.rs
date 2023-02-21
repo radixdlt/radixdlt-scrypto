@@ -1,7 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use radix_engine::types::*;
 use scrypto_unit::TestRunner;
-use transaction::builder::ManifestBuilder;
+use transaction::{builder::ManifestBuilder, data::manifest_args};
 
 fn bench_spin_loop(c: &mut Criterion) {
     // Set up environment.
@@ -12,9 +12,9 @@ fn bench_spin_loop(c: &mut Criterion) {
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_fee(FAUCET_COMPONENT, 10u32.into())
-                .call_method(FAUCET_COMPONENT, "free", args!())
+                .call_method(FAUCET_COMPONENT, "free", manifest_args!())
                 .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                    builder.call_function(package_address, "Fee", "new", args!(bucket_id));
+                    builder.call_function(package_address, "Fee", "new", manifest_args!(bucket_id));
                     builder
                 })
                 .build(),
@@ -27,9 +27,13 @@ fn bench_spin_loop(c: &mut Criterion) {
     // Create a transfer manifest
     let manifest = ManifestBuilder::new()
         // First, lock the fee so that the loan will be repaid
-        .call_method(FAUCET_COMPONENT, "lock_fee", args!(Decimal::from(10)))
+        .call_method(
+            FAUCET_COMPONENT,
+            "lock_fee",
+            manifest_args!(Decimal::from(10)),
+        )
         // Now spin-loop to wait for the fee loan to burn through
-        .call_method(component_address, "spin_loop", args!())
+        .call_method(component_address, "spin_loop", manifest_args!())
         .build();
 
     // Loop

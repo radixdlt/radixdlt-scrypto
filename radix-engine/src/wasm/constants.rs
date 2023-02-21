@@ -1,3 +1,5 @@
+use radix_engine_constants::DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME;
+
 pub const CONSUME_BUFFER_FUNCTION_ID: usize = 0x10;
 pub const CONSUME_BUFFER_FUNCTION_NAME: &str = "consume_buffer";
 pub const CONSUME_COST_UNITS_FUNCTION_ID: usize = 0x11;
@@ -33,16 +35,17 @@ pub const DROP_LOCK_FUNCTION_NAME: &str = "drop_lock";
 // Under active refactoring
 pub const GET_ACTOR_FUNCTION_ID: usize = 0xf0;
 pub const GET_ACTOR_FUNCTION_NAME: &str = "get_actor";
-pub const CALL_NATIVE_FUNCTION_ID: usize = 0xf1;
-pub const CALL_NATIVE_FUNCTION_NAME: &str = "call_native";
-pub const DROP_NODE_FUNCTION_ID: usize = 0xf2;
+pub const DROP_NODE_FUNCTION_ID: usize = 0xf1;
 pub const DROP_NODE_FUNCTION_NAME: &str = "drop_node";
 
 pub const MODULE_ENV_NAME: &str = "env";
 pub const EXPORT_MEMORY: &str = "memory";
 
-/// The maximum initial memory size: `64 Pages * 64 KiB per Page = 4 MiB`
-pub const DEFAULT_MAX_INITIAL_MEMORY_SIZE_PAGES: u32 = 64;
+pub const WASM_MEMORY_PAGE_SIZE: u32 = 64 * 1024;
+
+/// The maximum initial memory size calculated basing on Wasm call frame size: 4MiB
+pub const DEFAULT_MAX_INITIAL_MEMORY_SIZE_PAGES: u32 =
+    DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME as u32 / WASM_MEMORY_PAGE_SIZE;
 
 /// The maximum initial table size
 pub const DEFAULT_MAX_INITIAL_TABLE_SIZE: u32 = 1024;

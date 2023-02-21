@@ -1,3 +1,5 @@
+use crate::blueprints::clock::ClockNativePackage;
+use crate::blueprints::epoch_manager::EpochManagerNativePackage;
 use crate::kernel::interpreters::ScryptoInterpreter;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::transaction::{
@@ -5,14 +7,17 @@ use crate::transaction::{
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_interface::api::node_modules::auth::{AccessRulesAbi, AuthAddresses};
+use radix_engine_interface::api::node_modules::metadata::MetadataAbi;
+use radix_engine_interface::api::node_modules::royalty::RoyaltyAbi;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::package::{
-    PackagePublishInvocation, PackagePublishNativeInvocation,
+    PackageLoaderPublishPrecompiledInput, PackageLoaderPublishWasmInput,
 };
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::access_controller::AccessControllerAbi;
 use radix_engine_interface::blueprints::account::AccountAbi;
+use radix_engine_interface::blueprints::auth_zone::AuthZoneAbi;
 use radix_engine_interface::blueprints::clock::{
     ClockAbi, ClockCreateInput, CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT,
 };
@@ -20,10 +25,13 @@ use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerAbi, ManifestValidatorInit, EPOCH_MANAGER_BLUEPRINT, EPOCH_MANAGER_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::identity::IdentityAbi;
+use radix_engine_interface::blueprints::logger::LoggerAbi;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::blueprints::transaction_runtime::TransactionRuntimeAbi;
 use radix_engine_interface::data::*;
 use radix_engine_interface::rule;
-use transaction::model::{BasicInstruction, Instruction, SystemTransaction};
+use transaction::data::{manifest_args, manifest_encode};
+use transaction::model::{Instruction, SystemTransaction};
 use transaction::validation::ManifestIdAllocator;
 
 const XRD_SYMBOL: &str = "XRD";
@@ -50,23 +58,97 @@ pub fn create_genesis(
     let mut instructions = Vec::new();
     let mut pre_allocated_ids = BTreeSet::new();
 
-    // Resource Package
+    // Metadata Package
     {
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(
-            RESOURCE_MANAGER_PACKAGE,
-        )));
-        let package_address = RESOURCE_MANAGER_PACKAGE.raw();
-        instructions.push(Instruction::System(NativeInvocation::Package(
-            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+        pre_allocated_ids.insert(RENodeId::Global(Address::Package(METADATA_PACKAGE)));
+        let package_address = METADATA_PACKAGE.to_array_without_entity_id();
+        instructions.push(Instruction::CallFunction {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                native_package_code_id: RESOURCE_MANAGER_PACKAGE_CODE_ID,
-                abi: scrypto_encode(&ResourceManagerAbi::blueprint_abis()).unwrap(),
+                native_package_code_id: METADATA_CODE_ID,
+                abi: MetadataAbi::blueprint_abis(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
-            }),
-        )));
+                package_access_rules: BTreeMap::new(),
+                default_package_access_rule: AccessRule::DenyAll,
+            })
+            .unwrap(),
+        });
+    }
+
+    // Royalty Package
+    {
+        pre_allocated_ids.insert(RENodeId::Global(Address::Package(ROYALTY_PACKAGE)));
+        let package_address = ROYALTY_PACKAGE.to_array_without_entity_id();
+
+        instructions.push(Instruction::CallFunction {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
+                package_address: Some(package_address), // TODO: Clean this up
+                native_package_code_id: ROYALTY_CODE_ID,
+                abi: RoyaltyAbi::blueprint_abis(),
+                dependent_resources: vec![],
+                dependent_components: vec![],
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new(),
+                package_access_rules: BTreeMap::new(),
+                default_package_access_rule: AccessRule::DenyAll,
+            })
+            .unwrap(),
+        });
+    }
+
+    // Access Rules Package
+    {
+        pre_allocated_ids.insert(RENodeId::Global(Address::Package(ACCESS_RULES_PACKAGE)));
+        let package_address = ACCESS_RULES_PACKAGE.to_array_without_entity_id();
+        instructions.push(Instruction::CallFunction {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
+                package_address: Some(package_address), // TODO: Clean this up
+                native_package_code_id: ACCESS_RULES_CODE_ID,
+                abi: AccessRulesAbi::blueprint_abis(),
+                dependent_resources: vec![],
+                dependent_components: vec![],
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new(),
+                package_access_rules: BTreeMap::new(),
+                default_package_access_rule: AccessRule::DenyAll,
+            })
+            .unwrap(),
+        });
+    }
+
+    // Resource Package
+    {
+        pre_allocated_ids.insert(RENodeId::Global(Address::Package(RESOURCE_MANAGER_PACKAGE)));
+        let package_address = RESOURCE_MANAGER_PACKAGE.to_array_without_entity_id();
+        instructions.push(Instruction::CallFunction {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
+                package_address: Some(package_address), // TODO: Clean this up
+                native_package_code_id: RESOURCE_MANAGER_PACKAGE_CODE_ID,
+                abi: ResourceManagerAbi::blueprint_abis(),
+                dependent_resources: vec![],
+                dependent_components: vec![],
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new(),
+                package_access_rules: BTreeMap::new(),
+                default_package_access_rule: AccessRule::AllowAll,
+            })
+            .unwrap(),
+        });
     }
 
     // XRD Token
@@ -80,14 +162,14 @@ pub fn create_genesis(
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let initial_supply: Decimal = XRD_MAX_SUPPLY.into();
-        let resource_address = RADIX_TOKEN.raw();
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
-        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+        let resource_address = RADIX_TOKEN.to_array_without_entity_id();
+        pre_allocated_ids.insert(RENodeId::Global(Address::Resource(RADIX_TOKEN)));
+        instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT
                 .to_string(),
-            args: scrypto_encode(
+            args: manifest_encode(
                 &ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput {
                     divisibility: 18,
                     metadata,
@@ -97,7 +179,7 @@ pub fn create_genesis(
                 },
             )
             .unwrap(),
-        }));
+        });
     }
 
     // Package Token
@@ -105,109 +187,208 @@ pub fn create_genesis(
         let metadata: BTreeMap<String, String> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let resource_address = PACKAGE_TOKEN.raw();
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)));
-        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+        let resource_address = PACKAGE_TOKEN.to_array_without_entity_id();
+        pre_allocated_ids.insert(RENodeId::Global(Address::Resource(PACKAGE_TOKEN)));
+        instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT.to_string(),
-            args: scrypto_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
+            args: manifest_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
                 id_type: NonFungibleIdType::Bytes,
                 metadata,
                 access_rules,
                 resource_address,
             })
             .unwrap(),
-        }));
+        });
     }
 
     // Identity Package
     {
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(IDENTITY_PACKAGE)));
-        let package_address = IDENTITY_PACKAGE.raw();
-        instructions.push(Instruction::System(NativeInvocation::Package(
-            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+        pre_allocated_ids.insert(RENodeId::Global(Address::Package(IDENTITY_PACKAGE)));
+        let package_address = IDENTITY_PACKAGE.to_array_without_entity_id();
+        instructions.push(Instruction::CallFunction {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                abi: scrypto_encode(&IdentityAbi::blueprint_abis()).unwrap(),
+                abi: IdentityAbi::blueprint_abis(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
                 native_package_code_id: IDENTITY_PACKAGE_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
-            }),
-        )));
+                package_access_rules: BTreeMap::new(),
+                default_package_access_rule: AccessRule::AllowAll,
+            })
+            .unwrap(),
+        });
     }
 
     // EpochManager Package
     {
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(
-            EPOCH_MANAGER_PACKAGE,
-        )));
-        let package_address = EPOCH_MANAGER_PACKAGE.raw();
-        instructions.push(Instruction::System(NativeInvocation::Package(
-            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+        pre_allocated_ids.insert(RENodeId::Global(Address::Package(EPOCH_MANAGER_PACKAGE)));
+        let package_address = EPOCH_MANAGER_PACKAGE.to_array_without_entity_id();
+        instructions.push(Instruction::CallFunction {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                abi: scrypto_encode(&EpochManagerAbi::blueprint_abis()).unwrap(),
+                abi: EpochManagerAbi::blueprint_abis(),
                 native_package_code_id: EPOCH_MANAGER_PACKAGE_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
                 dependent_resources: vec![RADIX_TOKEN, PACKAGE_TOKEN],
                 dependent_components: vec![],
-            }),
-        )));
+                package_access_rules: EpochManagerNativePackage::package_access_rules(),
+                default_package_access_rule: AccessRule::DenyAll,
+            })
+            .unwrap(),
+        });
     }
 
     // Clock Package
     {
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(CLOCK_PACKAGE)));
-        let package_address = CLOCK_PACKAGE.raw();
-        instructions.push(Instruction::System(NativeInvocation::Package(
-            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+        pre_allocated_ids.insert(RENodeId::Global(Address::Package(CLOCK_PACKAGE)));
+        let package_address = CLOCK_PACKAGE.to_array_without_entity_id();
+        instructions.push(Instruction::CallFunction {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                abi: scrypto_encode(&ClockAbi::blueprint_abis()).unwrap(),
+                abi: ClockAbi::blueprint_abis(),
                 native_package_code_id: CLOCK_PACKAGE_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
-            }),
-        )));
+                package_access_rules: ClockNativePackage::package_access_rules(),
+                default_package_access_rule: AccessRule::DenyAll,
+            })
+            .unwrap(),
+        });
     }
 
     // Account Package
     {
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
-        let package_address = ACCOUNT_PACKAGE.raw();
-        instructions.push(Instruction::System(NativeInvocation::Package(
-            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+        pre_allocated_ids.insert(RENodeId::Global(Address::Package(ACCOUNT_PACKAGE)));
+        let package_address = ACCOUNT_PACKAGE.to_array_without_entity_id();
+        instructions.push(Instruction::CallFunction {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                abi: scrypto_encode(&AccountAbi::blueprint_abis()).unwrap(),
+                abi: AccountAbi::blueprint_abis(),
                 native_package_code_id: ACCOUNT_PACKAGE_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
-            }),
-        )));
+                package_access_rules: BTreeMap::new(),
+                default_package_access_rule: AccessRule::AllowAll,
+            })
+            .unwrap(),
+        });
     }
 
     // AccessRules Package
     {
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(
+        pre_allocated_ids.insert(RENodeId::Global(Address::Package(
             ACCESS_CONTROLLER_PACKAGE,
         )));
-        let package_address = ACCESS_CONTROLLER_PACKAGE.raw();
-        instructions.push(Instruction::System(NativeInvocation::Package(
-            PackageInvocation::PublishNative(PackagePublishNativeInvocation {
+        let package_address = ACCESS_CONTROLLER_PACKAGE.to_array_without_entity_id();
+        instructions.push(Instruction::CallFunction {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                abi: scrypto_encode(&AccessControllerAbi::blueprint_abis()).unwrap(),
+                abi: AccessControllerAbi::blueprint_abis(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
                 native_package_code_id: ACCESS_CONTROLLER_PACKAGE_CODE_ID,
                 dependent_resources: vec![],
                 dependent_components: vec![CLOCK],
-            }),
+                package_access_rules: BTreeMap::new(),
+                default_package_access_rule: AccessRule::AllowAll,
+            })
+            .unwrap(),
+        });
+    }
+
+    // Logger Package
+    {
+        pre_allocated_ids.insert(RENodeId::Global(Address::Package(LOGGER_PACKAGE)));
+        let package_address = LOGGER_PACKAGE.to_array_without_entity_id();
+        instructions.push(Instruction::CallFunction {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
+                package_address: Some(package_address), // TODO: Clean this up
+                abi: TransactionRuntimeAbi::blueprint_abis(),
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new(),
+                native_package_code_id: LOGGER_CODE_ID,
+                dependent_resources: vec![],
+                dependent_components: vec![],
+                package_access_rules: BTreeMap::new(),
+                default_package_access_rule: AccessRule::AllowAll,
+            })
+            .unwrap(),
+        });
+    }
+
+    // TransactionRuntime Package
+    {
+        pre_allocated_ids.insert(RENodeId::Global(Address::Package(
+            TRANSACTION_RUNTIME_PACKAGE,
         )));
+        let package_address = TRANSACTION_RUNTIME_PACKAGE.to_array_without_entity_id();
+        instructions.push(Instruction::CallFunction {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
+                package_address: Some(package_address), // TODO: Clean this up
+                abi: LoggerAbi::blueprint_abis(),
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new(),
+                native_package_code_id: TRANSACTION_RUNTIME_CODE_ID,
+                dependent_resources: vec![],
+                dependent_components: vec![],
+                package_access_rules: BTreeMap::new(),
+                default_package_access_rule: AccessRule::DenyAll,
+            })
+            .unwrap(),
+        });
+    }
+
+    // AuthZone Package
+    {
+        pre_allocated_ids.insert(RENodeId::Global(Address::Package(AUTH_ZONE_PACKAGE)));
+        let package_address = AUTH_ZONE_PACKAGE.to_array_without_entity_id();
+        instructions.push(Instruction::CallFunction {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
+                package_address: Some(package_address), // TODO: Clean this up
+                abi: AuthZoneAbi::blueprint_abis(),
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new(),
+                native_package_code_id: AUTH_ZONE_CODE_ID,
+                dependent_resources: vec![],
+                dependent_components: vec![],
+                package_access_rules: BTreeMap::new(),
+                default_package_access_rule: AccessRule::DenyAll,
+            })
+            .unwrap(),
+        });
     }
 
     // ECDSA
@@ -215,22 +396,20 @@ pub fn create_genesis(
         let metadata: BTreeMap<String, String> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let resource_address = ECDSA_SECP256K1_TOKEN.raw();
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(
-            ECDSA_SECP256K1_TOKEN,
-        )));
-        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+        let resource_address = ECDSA_SECP256K1_TOKEN.to_array_without_entity_id();
+        pre_allocated_ids.insert(RENodeId::Global(Address::Resource(ECDSA_SECP256K1_TOKEN)));
+        instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT.to_string(),
-            args: scrypto_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
+            args: manifest_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
                 id_type: NonFungibleIdType::Bytes,
                 metadata,
                 access_rules,
                 resource_address,
             })
             .unwrap(),
-        }));
+        });
     }
 
     // TODO: Perhaps combine with ecdsa token?
@@ -239,22 +418,20 @@ pub fn create_genesis(
         let metadata: BTreeMap<String, String> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let resource_address = EDDSA_ED25519_TOKEN.raw();
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(
-            EDDSA_ED25519_TOKEN,
-        )));
-        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+        let resource_address = EDDSA_ED25519_TOKEN.to_array_without_entity_id();
+        pre_allocated_ids.insert(RENodeId::Global(Address::Resource(EDDSA_ED25519_TOKEN)));
+        instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT.to_string(),
-            args: scrypto_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
+            args: manifest_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
                 id_type: NonFungibleIdType::Bytes,
                 metadata,
                 access_rules,
                 resource_address,
             })
             .unwrap(),
-        }));
+        });
     }
 
     // TODO: Perhaps combine with ecdsa token?
@@ -263,48 +440,52 @@ pub fn create_genesis(
         let metadata: BTreeMap<String, String> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let resource_address = SYSTEM_TOKEN.raw();
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(SYSTEM_TOKEN)));
-        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+        let resource_address = SYSTEM_TOKEN.to_array_without_entity_id();
+        pre_allocated_ids.insert(RENodeId::Global(Address::Resource(SYSTEM_TOKEN)));
+        instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT.to_string(),
-            args: scrypto_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
+            args: manifest_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
                 id_type: NonFungibleIdType::Bytes,
                 metadata,
                 access_rules,
                 resource_address,
             })
             .unwrap(),
-        }));
+        });
     }
 
     {
         let faucet_code = include_bytes!("../../../assets/faucet.wasm").to_vec();
         let faucet_abi = include_bytes!("../../../assets/faucet.abi").to_vec();
-        let package_address = FAUCET_PACKAGE.raw();
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(FAUCET_PACKAGE)));
-        instructions.push(Instruction::System(NativeInvocation::Package(
-            PackageInvocation::Publish(PackagePublishInvocation {
+        let package_address = FAUCET_PACKAGE.to_array_without_entity_id();
+        pre_allocated_ids.insert(RENodeId::Global(Address::Package(FAUCET_PACKAGE)));
+        instructions.push(Instruction::CallFunction {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_WASM_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishWasmInput {
                 package_address: Some(package_address),
                 code: faucet_code, // TODO: Use blob here instead?
-                abi: faucet_abi,   // TODO: Use blob here instead?
+                abi: scrypto_decode(&faucet_abi).unwrap(), // TODO: Use blob here instead?
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll),
-            }),
-        )));
+            })
+            .unwrap(),
+        });
     }
 
     {
-        let component_address = CLOCK.raw();
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(CLOCK)));
-        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+        let component_address = CLOCK.to_array_without_entity_id();
+        pre_allocated_ids.insert(RENodeId::Global(Address::Component(CLOCK)));
+        instructions.push(Instruction::CallFunction {
             package_address: CLOCK_PACKAGE,
             blueprint_name: CLOCK_BLUEPRINT.to_string(),
             function_name: CLOCK_CREATE_IDENT.to_string(),
-            args: scrypto_encode(&ClockCreateInput { component_address }).unwrap(),
-        }));
+            args: manifest_encode(&ClockCreateInput { component_address }).unwrap(),
+        });
     }
 
     {
@@ -312,7 +493,7 @@ pub fn create_genesis(
         for (key, (amount, stake_account_address)) in validator_set_and_stake_owners {
             let initial_stake = id_allocator.new_bucket_id().unwrap();
             instructions.push(
-                BasicInstruction::TakeFromWorktopByAmount {
+                Instruction::TakeFromWorktopByAmount {
                     resource_address: RADIX_TOKEN,
                     amount,
                 }
@@ -329,17 +510,15 @@ pub fn create_genesis(
             );
         }
 
-        let component_address = EPOCH_MANAGER.raw();
-        let olympia_validator_token_address = OLYMPIA_VALIDATOR_TOKEN.raw();
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(
-            OLYMPIA_VALIDATOR_TOKEN,
-        )));
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)));
-        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+        let component_address = EPOCH_MANAGER.to_array_without_entity_id();
+        let olympia_validator_token_address = OLYMPIA_VALIDATOR_TOKEN.to_array_without_entity_id();
+        pre_allocated_ids.insert(RENodeId::Global(Address::Resource(OLYMPIA_VALIDATOR_TOKEN)));
+        pre_allocated_ids.insert(RENodeId::Global(Address::Component(EPOCH_MANAGER)));
+        instructions.push(Instruction::CallFunction {
             package_address: EPOCH_MANAGER_PACKAGE,
             blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
             function_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
-            args: args!(
+            args: manifest_args!(
                 olympia_validator_token_address,
                 component_address,
                 validators,
@@ -347,13 +526,13 @@ pub fn create_genesis(
                 rounds_per_epoch,
                 num_unstake_epochs
             ),
-        }));
+        });
     }
 
     for (public_key, amount) in account_xrd_allocations.into_iter() {
         let bucket_id = id_allocator.new_bucket_id().unwrap();
         instructions.push(
-            BasicInstruction::TakeFromWorktopByAmount {
+            Instruction::TakeFromWorktopByAmount {
                 resource_address: RADIX_TOKEN,
                 amount,
             }
@@ -363,10 +542,10 @@ pub fn create_genesis(
             &PublicKey::EcdsaSecp256k1(public_key),
         );
         instructions.push(
-            BasicInstruction::CallMethod {
+            Instruction::CallMethod {
                 component_address: component_address,
                 method_name: "deposit".to_string(),
-                args: args!(bucket_id),
+                args: manifest_args!(bucket_id),
             }
             .into(),
         );
@@ -375,19 +554,19 @@ pub fn create_genesis(
     // Faucet
     {
         instructions.push(
-            BasicInstruction::TakeFromWorktop {
+            Instruction::TakeFromWorktop {
                 resource_address: RADIX_TOKEN,
             }
             .into(),
         );
 
         let bucket = id_allocator.new_bucket_id().unwrap();
-        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+        instructions.push(Instruction::CallFunction {
             package_address: FAUCET_PACKAGE,
             blueprint_name: FAUCET_BLUEPRINT.to_string(),
             function_name: "new".to_string(),
-            args: args!(bucket),
-        }));
+            args: manifest_args!(bucket),
+        });
     };
 
     SystemTransaction {
@@ -438,7 +617,7 @@ where
 {
     if substate_store
         .get_substate(&SubstateId(
-            RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)),
+            RENodeId::Global(Address::Resource(RADIX_TOKEN)),
             NodeModuleId::SELF,
             SubstateOffset::Global(GlobalOffset::Global),
         ))
@@ -472,9 +651,11 @@ where
 
 #[cfg(test)]
 mod tests {
+    use transaction::data::{manifest_decode, manifest_encode};
+    use transaction::{data::ManifestBucket, ecdsa_secp256k1::EcdsaSecp256k1PrivateKey};
+
     use super::*;
     use crate::{ledger::TypedInMemorySubstateStore, wasm::DefaultWasmEngine};
-    use transaction::signing::EcdsaSecp256k1PrivateKey;
 
     #[test]
     fn bootstrap_receipt_should_match_constants() {
@@ -499,6 +680,8 @@ mod tests {
         );
         #[cfg(not(feature = "alloc"))]
         println!("{:?}", transaction_receipt);
+
+        transaction_receipt.expect_commit_success();
 
         let genesis_receipt = genesis_result(&transaction_receipt);
         assert_eq!(genesis_receipt.faucet_component, FAUCET_COMPONENT);
@@ -531,7 +714,7 @@ mod tests {
 
         let global_substate = substate_store
             .get_substate(&SubstateId(
-                RENodeId::Global(GlobalAddress::Component(account_component_address)),
+                RENodeId::Global(Address::Component(account_component_address)),
                 NodeModuleId::SELF,
                 SubstateOffset::Global(GlobalOffset::Global),
             ))
@@ -545,5 +728,18 @@ mod tests {
             .any(|rc| rc.resource_address == RADIX_TOKEN
                 && rc.amount == allocation_amount
                 && rc.component_id == derefed_component_id));
+    }
+
+    #[test]
+    fn test_encode_and_decode_validator_init() {
+        let t = ManifestValidatorInit {
+            validator_account_address: ComponentAddress::AccessController([0u8; 26]),
+            initial_stake: ManifestBucket(1),
+            stake_account_address: ComponentAddress::AccessController([0u8; 26]),
+        };
+
+        let bytes = manifest_encode(&t).unwrap();
+        let decoded: ManifestValidatorInit = manifest_decode(&bytes).unwrap();
+        assert_eq!(decoded, t);
     }
 }

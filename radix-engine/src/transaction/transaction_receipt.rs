@@ -10,18 +10,17 @@ use colored::*;
 use radix_engine_interface::address::{AddressDisplayContext, NO_NETWORK};
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::logger::Level;
-use radix_engine_interface::data::{IndexedScryptoValue, ScryptoDecode};
-use transaction::manifest::decompiler::DecompilationContext;
+use radix_engine_interface::data::{ScryptoDecode, ScryptoValueDisplayContext};
 use utils::ContextualDisplay;
 
-#[derive(Debug, Clone, Default, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Default, ScryptoSbor)]
 pub struct ResourcesUsage {
     pub heap_allocations_sum: usize,
     pub heap_peak_memory: usize,
     pub cpu_cycles: u64,
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct TransactionExecution {
     pub fee_summary: FeeSummary,
     pub events: Vec<TrackedEvent>,
@@ -82,7 +81,7 @@ impl TransactionOutcome {
     }
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct EntityChanges {
     pub new_package_addresses: Vec<PackageAddress>,
     pub new_component_addresses: Vec<ComponentAddress>,
@@ -90,7 +89,7 @@ pub struct EntityChanges {
 }
 
 impl EntityChanges {
-    pub fn new(new_global_addresses: Vec<GlobalAddress>) -> Self {
+    pub fn new(new_global_addresses: Vec<Address>) -> Self {
         let mut entity_changes = Self {
             new_package_addresses: Vec::new(),
             new_component_addresses: Vec::new(),
@@ -99,13 +98,13 @@ impl EntityChanges {
 
         for new_global_address in new_global_addresses {
             match new_global_address {
-                GlobalAddress::Package(package_address) => {
+                Address::Package(package_address) => {
                     entity_changes.new_package_addresses.push(package_address)
                 }
-                GlobalAddress::Component(component_address) => entity_changes
+                Address::Component(component_address) => entity_changes
                     .new_component_addresses
                     .push(component_address),
-                GlobalAddress::Resource(resource_address) => {
+                Address::Resource(resource_address) => {
                     entity_changes.new_resource_addresses.push(resource_address)
                 }
             }
@@ -115,17 +114,17 @@ impl EntityChanges {
     }
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct RejectResult {
     pub error: RejectionError,
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct AbortResult {
     pub reason: AbortReason,
 }
 
-#[derive(Debug, Clone, Display, PartialEq, Eq, Encode, Decode, Categorize)]
+#[derive(Debug, Clone, Display, PartialEq, Eq, Sbor)]
 pub enum AbortReason {
     ConfiguredAbortTriggeredOnFeeLoanRepayment,
 }
@@ -257,15 +256,10 @@ impl TransactionReceipt {
 
     pub fn output<T: ScryptoDecode>(&self, nth: usize) -> T {
         match &self.expect_commit_success()[nth] {
-            InstructionOutput::Native(native) => {
-                // TODO: Use downcast
-                IndexedScryptoValue::from_typed(&native.as_ref())
-                    .as_typed()
-                    .expect("Wrong native instruction output type!")
+            InstructionOutput::CallReturn(value) => {
+                value.as_typed().expect("Output can't be converted")
             }
-            InstructionOutput::Scrypto(value) => value
-                .as_typed()
-                .expect("Wrong scrypto instruction output type!"),
+            InstructionOutput::None => panic!("No call return from the instruction"),
         }
     }
 
@@ -366,7 +360,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
             }
         }
 
-        let decompilation_context = DecompilationContext::new_with_optional_network(bech32_encoder);
+        let context = ScryptoValueDisplayContext::with_optional_bench32(bech32_encoder);
 
         if let TransactionResult::Commit(c) = &result {
             if let TransactionOutcome::Success(outputs) = &c.outcome {
@@ -376,9 +370,10 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                         f,
                         "\n{} {}",
                         prefix!(i, outputs),
-                        IndexedScryptoValue::from_slice(&output.as_vec())
-                            .expect("Failed to parse return data")
-                            .display(decompilation_context.for_value_display())
+                        match output {
+                            InstructionOutput::CallReturn(x) => x.to_string(context),
+                            InstructionOutput::None => "None".to_string(),
+                        }
                     )?;
                 }
             }

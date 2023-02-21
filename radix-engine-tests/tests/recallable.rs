@@ -1,5 +1,4 @@
 use radix_engine::errors::{KernelError, ModuleError, RejectionError, RuntimeError};
-use radix_engine::kernel::actor::{ResolvedActor, ResolvedReceiver};
 use radix_engine::system::kernel_modules::auth::AuthError;
 use radix_engine::system::kernel_modules::auth::MethodAuthorizationError;
 use radix_engine::types::*;
@@ -7,6 +6,7 @@ use radix_engine_interface::api::types::RENodeId;
 use scrypto_unit::*;
 use std::ops::Sub;
 use transaction::builder::ManifestBuilder;
+use transaction::data::{manifest_args, ManifestExpression};
 
 #[test]
 fn non_existing_vault_should_cause_error() {
@@ -23,7 +23,7 @@ fn non_existing_vault_should_cause_error() {
         .call_method(
             account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -55,7 +55,7 @@ fn cannot_take_on_non_recallable_vault() {
         .call_method(
             account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -65,16 +65,6 @@ fn cannot_take_on_non_recallable_vault() {
         matches!(
             e,
             RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized {
-                actor: ResolvedActor {
-                    identifier: FnIdentifier::Scrypto(ScryptoFnIdentifier {
-                        package_address: RESOURCE_MANAGER_PACKAGE,
-                        ..
-                    }),
-                    receiver: Some(ResolvedReceiver {
-                        receiver: RENodeId::Vault(..),
-                        ..
-                    })
-                },
                 error: MethodAuthorizationError::NotAuthorized,
                 ..
             },))
@@ -100,7 +90,7 @@ fn can_take_on_recallable_vault() {
         .call_method(
             other_account,
             "deposit_batch",
-            args!(ManifestExpression::EntireWorktop),
+            manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

@@ -272,7 +272,13 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <T: ::sbor::Decode<X, D0>, D: Clashing + ::sbor::Decode<X, D0>, D0: ::sbor::Decoder<X>, X: ::sbor::CustomValueKind > ::sbor::Decode<X, D0> for Test<T, D > {
+                impl <T, D: Clashing, D0: ::sbor::Decoder<X>, X: ::sbor::CustomValueKind> ::sbor::Decode<X, D0> for Test<T, D>
+                    where
+                        T : ::sbor::Decode<X, D0>,
+                        D : ::sbor::Decode<X, D0>,
+                        T : ::sbor::Categorize<X>,
+                        D : ::sbor::Categorize<X>
+                {
                     #[inline]
                     fn decode_body_with_value_kind(decoder: &mut D0, value_kind: ::sbor::ValueKind<X>) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
@@ -316,13 +322,20 @@ mod tests {
 
     #[test]
     fn test_decode_struct_with_generic_params() {
-        let input = TokenStream::from_str("#[sbor(generic_categorize_bounds = \"T1, T2\")] struct Test<'a, S, T1, T2> {a: &'a u32, b: S, c: Vec<T1>, d: Vec<T2>}").unwrap();
+        let input = TokenStream::from_str("#[sbor(categorize_types = \"T1, T2\")] struct Test<'a, S, T1, T2> {a: &'a u32, b: S, c: Vec<T1>, d: Vec<T2>}").unwrap();
         let output = handle_decode(input, None).unwrap();
 
         assert_code_eq(
             output,
             quote! {
-                impl <'a, S: ::sbor::Decode<X, D>, T1: ::sbor::Decode<X,D> + ::sbor::Categorize<X>, T2: ::sbor::Decode <X, D>, D: ::sbor::Decoder<X>, X: ::sbor::CustomValueKind > ::sbor::Decode<X, D> for Test<'a, S, T1, T2> {
+                impl <'a, S, T1, T2, D: ::sbor::Decoder<X>, X: ::sbor::CustomValueKind > ::sbor::Decode<X, D> for Test<'a, S, T1, T2>
+                where
+                    S: ::sbor::Decode<X, D>,
+                    T1: ::sbor::Decode<X, D>,
+                    T2: ::sbor::Decode<X, D>,
+                    T1: ::sbor::Categorize<X>,
+                    T2: ::sbor::Categorize<X>
+                {
                     #[inline]
                     fn decode_body_with_value_kind(decoder: &mut D, value_kind: ::sbor::ValueKind<X>) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};

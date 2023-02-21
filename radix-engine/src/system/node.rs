@@ -5,8 +5,8 @@ use crate::blueprints::epoch_manager::*;
 use crate::blueprints::logger::LoggerSubstate;
 use crate::blueprints::resource::*;
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
-use crate::system::global::GlobalAddressSubstate;
-use crate::system::node_modules::auth::*;
+use crate::system::global::GlobalSubstate;
+use crate::system::node_modules::access_rules::*;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_substates::*;
 use crate::system::type_info::TypeInfoSubstate;
@@ -23,7 +23,7 @@ use radix_engine_interface::api::types::{
 pub enum RENodeModuleInit {
     TypeInfo(TypeInfoSubstate),
     Metadata(MetadataSubstate),
-    AccessRulesChain(AccessRulesChainSubstate),
+    ComponentAccessRulesChain(ObjectAccessRulesChainSubstate),
     ComponentTypeInfo(ComponentInfoSubstate),
     ComponentRoyalty(
         ComponentRoyaltyConfigSubstate,
@@ -33,6 +33,7 @@ pub enum RENodeModuleInit {
         PackageRoyaltyConfigSubstate,
         PackageRoyaltyAccumulatorSubstate,
     ),
+    PackageAccessRules(PackageAccessRulesSubstate),
 }
 
 impl RENodeModuleInit {
@@ -48,7 +49,7 @@ impl RENodeModuleInit {
                     metadata.into(),
                 );
             }
-            RENodeModuleInit::AccessRulesChain(access_rules) => {
+            RENodeModuleInit::ComponentAccessRulesChain(access_rules) => {
                 substates.insert(
                     SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                     access_rules.into(),
@@ -80,6 +81,9 @@ impl RENodeModuleInit {
                     accumulator.into(),
                 );
             }
+            RENodeModuleInit::PackageAccessRules(access_rules) => {
+                substates.insert(SubstateOffset::PackageAccessRules, access_rules.into());
+            }
         }
 
         substates
@@ -88,7 +92,7 @@ impl RENodeModuleInit {
 
 #[derive(Debug)]
 pub enum RENodeInit {
-    Global(GlobalAddressSubstate),
+    Global(GlobalSubstate),
     Bucket(BucketSubstate),
     Proof(ProofSubstate),
     AuthZoneStack(AuthZoneStackSubstate),

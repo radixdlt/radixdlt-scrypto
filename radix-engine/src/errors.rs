@@ -12,17 +12,17 @@ use crate::kernel::track::TrackError;
 use crate::system::kernel_modules::auth::AuthError;
 use crate::system::kernel_modules::costing::CostingError;
 use crate::system::kernel_modules::node_move::NodeMoveError;
-use crate::system::node_modules::auth::{AccessRulesChainError, AuthZoneError};
+use crate::system::kernel_modules::transaction_limits::TransactionLimitsError;
+use crate::system::node_modules::access_rules::{AccessRulesChainError, AuthZoneError};
 use crate::system::package::PackageError;
 use crate::transaction::AbortReason;
-use radix_engine_interface::api::types::{GlobalAddress, LockHandle, RENodeId, SubstateOffset};
-use radix_engine_interface::data::ReadOwnedNodesError;
+use radix_engine_interface::api::types::{Address, LockHandle, RENodeId, SubstateOffset};
 use sbor::*;
 
 use crate::types::*;
 use crate::wasm::WasmRuntimeError;
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum IdAllocationError {
     RENodeIdWasNotAllocated(RENodeId),
     AllocatedIDsNotEmpty,
@@ -34,7 +34,7 @@ pub trait CanBeAbortion {
 }
 
 /// Represents an error which causes a tranasction to be rejected.
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum RejectionError {
     SuccessButFeeLoanNotRepaid,
     ErrorBeforeFeeLoanRepaid(RuntimeError),
@@ -55,7 +55,7 @@ impl fmt::Display for RejectionError {
 }
 
 /// Represents an error when executing a transaction.
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum RuntimeError {
     /// An error occurred within the kernel.
     KernelError(KernelError),
@@ -115,14 +115,14 @@ impl CanBeAbortion for RuntimeError {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum KernelError {
     InvalidModeTransition(ExecutionMode, ExecutionMode),
 
     // invocation
     WasmRuntimeError(WasmRuntimeError),
 
-    InvalidReferenceWrite(GlobalAddress),
+    InvalidReferenceWrite(Address),
 
     RENodeNotFound(RENodeId),
 
@@ -134,9 +134,9 @@ pub enum KernelError {
     // SBOR decoding
     SborDecodeError(DecodeError),
     SborEncodeError(EncodeError),
-    ReadOwnedNodesError(ReadOwnedNodesError), // semantic error
 
     // RENode
+    ContainsDuplicatedOwns,
     StoredNodeRemoved(RENodeId),
     RENodeGlobalizeTypeNotAllowed(RENodeId),
     TrackError(TrackError),
@@ -179,7 +179,7 @@ impl CanBeAbortion for KernelError {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameError {
     OffsetDoesNotExist(RENodeId, SubstateOffset),
     RENodeNotVisible(RENodeId),
@@ -187,31 +187,32 @@ pub enum CallFrameError {
     MovingLockedRENode(RENodeId),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum ScryptoFnResolvingError {
     BlueprintNotFound,
     MethodNotFound,
     InvalidInput,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum InterpreterError {
     NativeUnexpectedReceiver(String),
     NativeExpectedReceiver(String),
     NativeExportDoesNotExist(String),
+    NativeInvalidCodeId(u8),
 
     InvalidInvocation,
-    DisallowedInvocation(NativeFn),
 
-    InvalidScryptoInvocation(PackageAddress, String, String, ScryptoFnResolvingError),
+    InvalidScryptoInvocation(FnIdentifier, ScryptoFnResolvingError),
     InvalidScryptoReturn(DecodeError),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ModuleError {
     NodeMoveError(NodeMoveError),
     AuthError(AuthError),
     CostingError(CostingError),
+    TransactionLimitsError(TransactionLimitsError),
 }
 
 impl CanBeAbortion for ModuleError {
@@ -293,7 +294,7 @@ impl<E: SelfError> From<InvokeError<E>> for RuntimeError {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ApplicationError {
     TransactionProcessorError(TransactionProcessorError),
 

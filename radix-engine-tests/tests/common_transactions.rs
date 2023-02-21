@@ -3,12 +3,13 @@ use radix_engine::types::{
     NonFungibleGlobalId, NonFungibleLocalId, ResourceAddress, FAUCET_COMPONENT, RADIX_TOKEN,
 };
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::dec;
 use radix_engine_interface::rule;
 use scrypto::NonFungibleData;
 use scrypto_unit::TestRunner;
 use transaction::builder::ManifestBuilder;
+use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::manifest::compile;
-use transaction::signing::EcdsaSecp256k1PrivateKey;
 use utils::ContextualDisplay;
 
 macro_rules! replace_variables {
@@ -90,7 +91,7 @@ fn creating_a_fungible_resource_with_no_initial_supply_succeeds() {
 #[test]
 fn creating_a_fungible_resource_with_initial_supply_succeeds() {
     test_manifest(|account_component_address, bech32_encoder| {
-        let initial_supply = Decimal::from("10000000");
+        let initial_supply = dec!("10000000");
 
         let manifest = replace_variables!(
             include_str!(
@@ -153,28 +154,6 @@ fn publish_package_succeeds() {
     });
 }
 
-/// A sample manifest that publishes a package with an owner badge.
-#[test]
-fn publish_package_with_owner_succeeds() {
-    test_manifest(|account_component_address, bech32_encoder| {
-        // TODO: Update the code.blob and abi.blob files that are used for testing.
-        // Using the WASM and ABI from the account blueprint here as they are up to date. The
-        // abi.blob and code.blob files from the transaction crate are not.
-        let code_blob = include_bytes!("../../assets/faucet.wasm").to_vec();
-        let abi_blob = include_bytes!("../../assets/faucet.abi").to_vec();
-
-        let manifest = replace_variables!(
-            include_str!("../../transaction/examples/package/publish_with_owner.rtm"),
-            code_blob_hash = hash(&code_blob),
-            abi_blob_hash = hash(&abi_blob),
-            account_component_address = account_component_address.display(bech32_encoder),
-            owner_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
-            owner_badge_non_fungible_local_id = "#1#"
-        );
-        (manifest, vec![code_blob, abi_blob])
-    });
-}
-
 /// A sample manifest for minting of a fungible resource
 #[test]
 fn minting_of_fungible_resource_succeeds() {
@@ -184,7 +163,7 @@ fn minting_of_fungible_resource_succeeds() {
          minter_badge_resource_address,
          mintable_resource_address,
          bech32_encoder| {
-            let mint_amount = Decimal::from("800");
+            let mint_amount = dec!("800");
 
             let manifest = replace_variables!(
                 include_str!("../../transaction/examples/resources/mint/fungible/mint.rtm"),
@@ -272,7 +251,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
 
     // Creating the minter badge and the requested resource
     let minter_badge_resource_address =
-        test_runner.create_fungible_resource("1".into(), 0, component_address);
+        test_runner.create_fungible_resource(dec!("1"), 0, component_address);
 
     let access_rules = BTreeMap::from([(
         ResourceMethodAuthKey::Mint,

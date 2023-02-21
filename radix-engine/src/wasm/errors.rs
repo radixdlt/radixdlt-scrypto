@@ -6,7 +6,7 @@ use crate::transaction::AbortReason;
 use crate::types::*;
 
 /// Represents an error when validating a WASM file.
-#[derive(Debug, PartialEq, Eq, Clone, Categorize, Encode, Decode)]
+#[derive(Debug, PartialEq, Eq, Clone, Sbor)]
 pub enum PrepareError {
     /// Failed to deserialize.
     /// See <https://webassembly.github.io/spec/core/syntax/index.html>
@@ -50,13 +50,13 @@ pub enum PrepareError {
     NotCompilable,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Categorize, Encode, Decode)]
+#[derive(Debug, PartialEq, Eq, Clone, Sbor)]
 pub enum InvalidImport {
     /// The import is not allowed
     ImportNotAllowed,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Categorize, Encode, Decode)]
+#[derive(Debug, PartialEq, Eq, Clone, Sbor)]
 pub enum InvalidMemory {
     /// The wasm module has no memory section.
     NoMemorySection,
@@ -70,7 +70,7 @@ pub enum InvalidMemory {
     MemoryNotExported,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Categorize, Encode, Decode)]
+#[derive(Debug, PartialEq, Eq, Clone, Sbor)]
 pub enum InvalidTable {
     /// More than one table defined, against WebAssembly MVP spec
     MoreThanOneTable,
@@ -79,7 +79,7 @@ pub enum InvalidTable {
 }
 
 /// Represents an error when invoking an export of a Scrypto module.
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum WasmRuntimeError {
     /// Error when reading wasm memory.
     MemoryAccessError,
@@ -116,7 +116,7 @@ pub enum WasmRuntimeError {
     /// Invalid RE node ID
     InvalidNodeId(DecodeError),
     /// Invalid RE module ID
-    InvalidModuleId(DecodeError),
+    InvalidModuleId(u32),
     /// Invalid substate offset
     InvalidOffset(DecodeError),
     /// Invalid package abi
@@ -125,6 +125,8 @@ pub enum WasmRuntimeError {
     InvalidAppStates(DecodeError),
     /// Invalid access rules
     InvalidAccessRulesChain(DecodeError),
+    /// Invalid access rules
+    InvalidAbi(DecodeError),
     /// Invalid royalty config
     InvalidRoyaltyConfig(DecodeError),
     /// Invalid metadata

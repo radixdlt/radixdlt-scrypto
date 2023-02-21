@@ -7,7 +7,7 @@ use crate::{
     system::node::{RENodeInit, RENodeModuleInit},
 };
 use radix_engine_interface::api::types::{
-    FnIdentifier, LockHandle, NodeModuleId, RENodeId, RENodeType, SubstateOffset,
+    InvocationIdentifier, LockHandle, NodeModuleId, RENodeId, RENodeType, SubstateOffset,
 };
 use sbor::rust::collections::BTreeMap;
 
@@ -26,13 +26,13 @@ macro_rules! log {
 impl KernelModule for KernelDebugModule {
     fn before_invoke<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        fn_identifier: &FnIdentifier,
+        identifier: &InvocationIdentifier,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
         log!(
             api,
             "Invoking: fn = {:?}, input size = {}",
-            fn_identifier,
+            identifier,
             input_size
         );
         Ok(())
@@ -40,7 +40,7 @@ impl KernelModule for KernelDebugModule {
 
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        callee: &ResolvedActor,
+        callee: &Option<ResolvedActor>,
         nodes_and_refs: &mut CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         log!(api, "Sending nodes: {:?}", nodes_and_refs.nodes_to_move);
@@ -50,7 +50,7 @@ impl KernelModule for KernelDebugModule {
 
     fn on_execution_finish<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        caller: &ResolvedActor,
+        caller: &Option<ResolvedActor>,
         nodes_and_refs: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         log!(api, "Returning nodes: {:?}", nodes_and_refs.nodes_to_move);

@@ -9,7 +9,7 @@ use crate::system::kernel_modules::costing::FinalizingFeeReserve;
 use crate::system::kernel_modules::costing::RoyaltyReceiver;
 use crate::system::kernel_modules::costing::{CostingError, FeeReserveError};
 use crate::system::kernel_modules::costing::{FeeSummary, SystemLoanFeeReserve};
-use crate::system::kernel_modules::execution_trace::{ExecutionTraceReceipt, VaultOp};
+use crate::system::kernel_modules::execution_trace::{ExecutionTraceReceipt, TraceActor, VaultOp};
 use crate::system::node_substates::{
     PersistedSubstate, RuntimeSubstate, SubstateRef, SubstateRefMut,
 };
@@ -26,10 +26,9 @@ use radix_engine_interface::blueprints::resource::{Resource, ResourceType};
 use radix_engine_interface::crypto::hash;
 use sbor::rust::collections::*;
 
-use super::actor::ResolvedActor;
 use super::event::TrackedEvent;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]
 pub enum LockState {
     Read(usize),
     Write,
@@ -68,10 +67,10 @@ pub struct Track<'s> {
     application_logs: Vec<(Level, String)>,
     substate_store: &'s dyn ReadableSubstateStore,
     loaded_substates: HashMap<SubstateId, LoadedSubstate>,
-    new_global_addresses: Vec<GlobalAddress>,
+    new_global_addresses: Vec<Address>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TrackError {
     NotFound(SubstateId),
     SubstateLocked(SubstateId, LockState),
@@ -455,7 +454,7 @@ impl<'s> Track<'s> {
         self,
         mut invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
         mut fee_reserve: SystemLoanFeeReserve,
-        vault_ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
+        vault_ops: Vec<(TraceActor, VaultId, VaultOp)>,
         events: Vec<TrackedEvent>,
     ) -> TrackReceipt {
         // A `SuccessButFeeLoanNotRepaid` error is issued if a transaction finishes before SYSTEM_LOAN_AMOUNT is reached
@@ -565,7 +564,7 @@ fn determine_result_type(
 /// This is just used when finalizing track into a commit
 struct FinalizingTrack<'s> {
     substate_store: &'s dyn ReadableSubstateStore,
-    new_global_addresses: Vec<GlobalAddress>,
+    new_global_addresses: Vec<Address>,
     loaded_substates: BTreeMap<SubstateId, LoadedSubstate>,
 }
 
@@ -574,7 +573,7 @@ impl<'s> FinalizingTrack<'s> {
         self,
         invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
         fee_summary: &mut FeeSummary,
-        vault_ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
+        vault_ops: Vec<(TraceActor, VaultId, VaultOp)>,
     ) -> TransactionResult {
         let is_success = invoke_result.is_ok();
 

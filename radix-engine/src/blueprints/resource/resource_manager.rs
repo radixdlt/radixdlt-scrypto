@@ -4,32 +4,33 @@ use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::global::GlobalAddressSubstate;
+use crate::system::global::GlobalSubstate;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::auth::AccessRulesChainSubstate;
+use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use native_sdk::resource::SysBucket;
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::node_modules::auth::AuthZoneAssertAccessRuleInvocation;
+use radix_engine_interface::api::node_modules::auth::AuthZoneAssertAccessRuleInput;
+use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
-    GlobalAddress, NativeFn, NonFungibleStoreId, NonFungibleStoreOffset, RENodeId,
-    ResourceManagerOffset, SubstateOffset,
+    Address, NonFungibleStoreId, NonFungibleStoreOffset, RENodeId, ResourceManagerOffset,
+    SubstateOffset,
 };
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::api::ClientSubstateApi;
+use radix_engine_interface::blueprints::auth_zone::AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT;
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
 use radix_engine_interface::blueprints::resource::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::types::Own;
+use radix_engine_interface::data::model::Own;
 use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ResourceManagerSubstate {
     pub resource_address: ResourceAddress, // TODO: Figure out a way to remove?
     pub resource_type: ResourceType,
@@ -72,7 +73,7 @@ impl ResourceManagerSubstate {
 }
 
 /// Represents an error when accessing a bucket.
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ResourceManagerError {
     InvalidAmount(Decimal, u8),
     MaxMintAmountExceeded,
@@ -193,7 +194,10 @@ where
 
 fn build_substates(
     mut access_rules_map: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-) -> (AccessRulesChainSubstate, AccessRulesChainSubstate) {
+) -> (
+    ObjectAccessRulesChainSubstate,
+    ObjectAccessRulesChainSubstate,
+) {
     let (mint_access_rule, mint_mutability) = access_rules_map
         .remove(&Mint)
         .unwrap_or((DenyAll, rule!(deny_all)));
@@ -210,12 +214,12 @@ fn build_substates(
 
     let mut access_rules = AccessRules::new();
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Set)),
+        AccessRuleKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
         update_metadata_access_rule,
         update_metadata_mutability,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Get)),
+        AccessRuleKey::new(NodeModuleId::Metadata, METADATA_GET_IDENT.to_string()),
         AllowAll,
         DenyAll,
     );
@@ -225,73 +229,109 @@ fn build_substates(
         mint_mutability,
     );
     access_rules.set_group_and_mutability(
-        AccessRuleKey::ScryptoMethod(RESOURCE_MANAGER_MINT_NON_FUNGIBLE.to_string()),
+        AccessRuleKey::new(
+            NodeModuleId::SELF,
+            RESOURCE_MANAGER_MINT_NON_FUNGIBLE.to_string(),
+        ),
         "mint".to_string(),
         DenyAll,
     );
     access_rules.set_group_and_mutability(
-        AccessRuleKey::ScryptoMethod(RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE.to_string()),
+        AccessRuleKey::new(
+            NodeModuleId::SELF,
+            RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE.to_string(),
+        ),
         "mint".to_string(),
         DenyAll,
     );
     access_rules.set_group_and_mutability(
-        AccessRuleKey::ScryptoMethod(RESOURCE_MANAGER_MINT_FUNGIBLE.to_string()),
+        AccessRuleKey::new(
+            NodeModuleId::SELF,
+            RESOURCE_MANAGER_MINT_FUNGIBLE.to_string(),
+        ),
         "mint".to_string(),
         DenyAll,
     );
 
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::ScryptoMethod(RESOURCE_MANAGER_BURN_IDENT.to_string()),
+        AccessRuleKey::new(NodeModuleId::SELF, RESOURCE_MANAGER_BURN_IDENT.to_string()),
         burn_access_rule,
         burn_mutability,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::ScryptoMethod(RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT.to_string()),
+        AccessRuleKey::new(
+            NodeModuleId::SELF,
+            RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT.to_string(),
+        ),
         update_non_fungible_data_access_rule,
         update_non_fungible_data_mutability,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::ScryptoMethod(RESOURCE_MANAGER_CREATE_BUCKET_IDENT.to_string()),
+        AccessRuleKey::new(
+            NodeModuleId::SELF,
+            RESOURCE_MANAGER_CREATE_BUCKET_IDENT.to_string(),
+        ),
         AllowAll,
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::ScryptoMethod(RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT.to_string()),
+        AccessRuleKey::new(
+            NodeModuleId::SELF,
+            RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT.to_string(),
+        ),
         AllowAll,
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::ScryptoMethod(RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT.to_string()),
+        AccessRuleKey::new(
+            NodeModuleId::SELF,
+            RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT.to_string(),
+        ),
         AllowAll,
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::ScryptoMethod(RESOURCE_MANAGER_CREATE_VAULT_IDENT.to_string()),
+        AccessRuleKey::new(
+            NodeModuleId::SELF,
+            RESOURCE_MANAGER_CREATE_VAULT_IDENT.to_string(),
+        ),
         AllowAll,
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::ScryptoMethod(RESOURCE_MANAGER_NON_FUNGIBLE_EXISTS_IDENT.to_string()),
+        AccessRuleKey::new(
+            NodeModuleId::SELF,
+            RESOURCE_MANAGER_NON_FUNGIBLE_EXISTS_IDENT.to_string(),
+        ),
         AllowAll,
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::ScryptoMethod(RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT.to_string()),
+        AccessRuleKey::new(
+            NodeModuleId::SELF,
+            RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT.to_string(),
+        ),
         AllowAll,
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::ScryptoMethod(RESOURCE_MANAGER_UPDATE_VAULT_AUTH_IDENT.to_string()),
+        AccessRuleKey::new(
+            NodeModuleId::SELF,
+            RESOURCE_MANAGER_UPDATE_VAULT_AUTH_IDENT.to_string(),
+        ),
         AllowAll, // Access verification occurs within method
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::ScryptoMethod(RESOURCE_MANAGER_SET_VAULT_AUTH_MUTABILITY_IDENT.to_string()),
+        AccessRuleKey::new(
+            NodeModuleId::SELF,
+            RESOURCE_MANAGER_SET_VAULT_AUTH_MUTABILITY_IDENT.to_string(),
+        ),
         AllowAll, // Access verification occurs within method
         DenyAll,
     );
 
-    let substate = AccessRulesChainSubstate {
+    let substate = ObjectAccessRulesChainSubstate {
         access_rules_chain: vec![access_rules],
     };
 
@@ -317,58 +357,73 @@ fn build_substates(
         recall_mutability,
     );
     vault_access_rules.set_group_and_mutability(
-        AccessRuleKey::ScryptoMethod(VAULT_TAKE_IDENT.to_string()),
+        AccessRuleKey::new(NodeModuleId::SELF, VAULT_TAKE_IDENT.to_string()),
         "withdraw".to_string(),
         DenyAll,
     );
     vault_access_rules.set_group_and_mutability(
-        AccessRuleKey::ScryptoMethod(VAULT_TAKE_NON_FUNGIBLES_IDENT.to_string()),
+        AccessRuleKey::new(
+            NodeModuleId::SELF,
+            VAULT_TAKE_NON_FUNGIBLES_IDENT.to_string(),
+        ),
         "withdraw".to_string(),
         DenyAll,
     );
     vault_access_rules.set_group_and_mutability(
-        AccessRuleKey::ScryptoMethod(VAULT_LOCK_FEE_IDENT.to_string()),
+        AccessRuleKey::new(NodeModuleId::SELF, VAULT_LOCK_FEE_IDENT.to_string()),
         "withdraw".to_string(),
         DenyAll,
     );
 
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::ScryptoMethod(VAULT_PUT_IDENT.to_string()),
+        AccessRuleKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string()),
         deposit_access_rule,
         deposit_mutability,
     );
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::ScryptoMethod(VAULT_GET_AMOUNT_IDENT.to_string()),
+        AccessRuleKey::new(NodeModuleId::SELF, VAULT_GET_AMOUNT_IDENT.to_string()),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::ScryptoMethod(VAULT_GET_RESOURCE_ADDRESS_IDENT.to_string()),
+        AccessRuleKey::new(
+            NodeModuleId::SELF,
+            VAULT_GET_RESOURCE_ADDRESS_IDENT.to_string(),
+        ),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::ScryptoMethod(VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string()),
+        AccessRuleKey::new(
+            NodeModuleId::SELF,
+            VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
+        ),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::ScryptoMethod(VAULT_CREATE_PROOF_IDENT.to_string()),
+        AccessRuleKey::new(NodeModuleId::SELF, VAULT_CREATE_PROOF_IDENT.to_string()),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::ScryptoMethod(VAULT_CREATE_PROOF_BY_AMOUNT_IDENT.to_string()),
+        AccessRuleKey::new(
+            NodeModuleId::SELF,
+            VAULT_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
+        ),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::ScryptoMethod(VAULT_CREATE_PROOF_BY_IDS_IDENT.to_string()),
+        AccessRuleKey::new(
+            NodeModuleId::SELF,
+            VAULT_CREATE_PROOF_BY_IDS_IDENT.to_string(),
+        ),
         AllowAll,
         DenyAll,
     );
 
-    let vault_substate = AccessRulesChainSubstate {
+    let vault_substate = ObjectAccessRulesChainSubstate {
         access_rules_chain: vec![vault_access_rules],
     };
 
@@ -409,11 +464,11 @@ where
     );
     node_modules.insert(
         NodeModuleId::AccessRules,
-        RENodeModuleInit::AccessRulesChain(access_rules_substate),
+        RENodeModuleInit::ComponentAccessRulesChain(access_rules_substate),
     );
     node_modules.insert(
         NodeModuleId::AccessRules1,
-        RENodeModuleInit::AccessRulesChain(vault_substate),
+        RENodeModuleInit::ComponentAccessRulesChain(vault_substate),
     );
 
     let underlying_node_id = api.kernel_allocate_node_id(RENodeType::ResourceManager)?;
@@ -424,7 +479,7 @@ where
     )?;
     api.kernel_create_node(
         global_node_id,
-        RENodeInit::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
+        RENodeInit::Global(GlobalSubstate::Resource(underlying_node_id.into())),
         BTreeMap::new(),
     )?;
 
@@ -442,8 +497,7 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateNonFungibleInput =
@@ -469,8 +523,7 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateNonFungibleWithAddressInput =
@@ -479,7 +532,7 @@ impl ResourceManagerBlueprint {
 
         // If address isn't user frame allocated or pre_allocated then
         // using this node_id will fail on create_node below
-        let global_node_id = RENodeId::Global(GlobalAddress::Resource(ResourceAddress::Normal(
+        let global_node_id = RENodeId::Global(Address::Resource(ResourceAddress::Normal(
             input.resource_address,
         )));
         let address = create_non_fungible_resource_manager(
@@ -501,8 +554,7 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateNonFungibleWithInitialSupplyInput =
@@ -540,11 +592,11 @@ impl ResourceManagerBlueprint {
         );
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::AccessRulesChain(access_rules_substate),
+            RENodeModuleInit::ComponentAccessRulesChain(access_rules_substate),
         );
         node_modules.insert(
             NodeModuleId::AccessRules1,
-            RENodeModuleInit::AccessRulesChain(vault_substate),
+            RENodeModuleInit::ComponentAccessRulesChain(vault_substate),
         );
 
         let underlying_node_id = api.kernel_allocate_node_id(RENodeType::ResourceManager)?;
@@ -556,7 +608,7 @@ impl ResourceManagerBlueprint {
 
         api.kernel_create_node(
             global_node_id,
-            RENodeInit::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
+            RENodeInit::Global(GlobalSubstate::Resource(underlying_node_id.into())),
             BTreeMap::new(),
         )?;
 
@@ -571,8 +623,7 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateUuidNonFungibleWithInitialSupplyInput =
@@ -608,11 +659,11 @@ impl ResourceManagerBlueprint {
         );
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::AccessRulesChain(access_rules_substate),
+            RENodeModuleInit::ComponentAccessRulesChain(access_rules_substate),
         );
         node_modules.insert(
             NodeModuleId::AccessRules1,
-            RENodeModuleInit::AccessRulesChain(vault_substate),
+            RENodeModuleInit::ComponentAccessRulesChain(vault_substate),
         );
 
         let underlying_node_id = api.kernel_allocate_node_id(RENodeType::ResourceManager)?;
@@ -624,7 +675,7 @@ impl ResourceManagerBlueprint {
 
         api.kernel_create_node(
             global_node_id,
-            RENodeInit::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
+            RENodeInit::Global(GlobalSubstate::Resource(underlying_node_id.into())),
             BTreeMap::new(),
         )?;
 
@@ -639,8 +690,7 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateFungibleInput =
@@ -663,10 +713,7 @@ impl ResourceManagerBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateFungibleWithInitialSupplyInput =
@@ -695,11 +742,11 @@ impl ResourceManagerBlueprint {
         );
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::AccessRulesChain(access_rules_substate),
+            RENodeModuleInit::ComponentAccessRulesChain(access_rules_substate),
         );
         node_modules.insert(
             NodeModuleId::AccessRules1,
-            RENodeModuleInit::AccessRulesChain(vault_substate),
+            RENodeModuleInit::ComponentAccessRulesChain(vault_substate),
         );
 
         let underlying_node_id = api.kernel_allocate_node_id(RENodeType::ResourceManager)?;
@@ -711,7 +758,7 @@ impl ResourceManagerBlueprint {
 
         api.kernel_create_node(
             global_node_id,
-            RENodeInit::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
+            RENodeInit::Global(GlobalSubstate::Resource(underlying_node_id.into())),
             BTreeMap::new(),
         )?;
 
@@ -726,15 +773,14 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let global_node_id = RENodeId::Global(GlobalAddress::Resource(ResourceAddress::Normal(
+        let global_node_id = RENodeId::Global(Address::Resource(ResourceAddress::Normal(
             input.resource_address,
         )));
         let resource_address: ResourceAddress = global_node_id.into();
@@ -758,11 +804,11 @@ impl ResourceManagerBlueprint {
         );
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::AccessRulesChain(access_rules_substate),
+            RENodeModuleInit::ComponentAccessRulesChain(access_rules_substate),
         );
         node_modules.insert(
             NodeModuleId::AccessRules1,
-            RENodeModuleInit::AccessRulesChain(vault_substate),
+            RENodeModuleInit::ComponentAccessRulesChain(vault_substate),
         );
 
         let underlying_node_id = api.kernel_allocate_node_id(RENodeType::ResourceManager)?;
@@ -774,7 +820,7 @@ impl ResourceManagerBlueprint {
 
         api.kernel_create_node(
             global_node_id,
-            RENodeInit::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
+            RENodeInit::Global(GlobalSubstate::Resource(underlying_node_id.into())),
             BTreeMap::new(),
         )?;
 
@@ -789,8 +835,7 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let input: ResourceManagerBurnBucketInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -802,7 +847,7 @@ impl ResourceManagerBlueprint {
     }
 
     pub(crate) fn mint_non_fungible<Y>(
-        receiver: ResourceManagerId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -810,15 +855,14 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let input: ResourceManagerMintNonFungibleInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let resman_handle = api.kernel_lock_substate(
-            RENodeId::ResourceManager(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::MUTABLE,
@@ -923,7 +967,7 @@ impl ResourceManagerBlueprint {
     }
 
     pub(crate) fn mint_uuid_non_fungible<Y>(
-        receiver: ResourceManagerId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -931,15 +975,14 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let input: ResourceManagerMintUuidNonFungibleInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let resman_handle = api.kernel_lock_substate(
-            RENodeId::ResourceManager(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::MUTABLE,
@@ -1016,7 +1059,7 @@ impl ResourceManagerBlueprint {
     }
 
     pub(crate) fn mint_fungible<Y>(
-        receiver: ResourceManagerId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -1024,15 +1067,14 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let input: ResourceManagerMintFungibleInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let resman_handle = api.kernel_lock_substate(
-            RENodeId::ResourceManager(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::MUTABLE,
@@ -1083,7 +1125,7 @@ impl ResourceManagerBlueprint {
     }
 
     pub(crate) fn burn<Y>(
-        receiver: ResourceManagerId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -1091,14 +1133,13 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let input: ResourceManagerBurnInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let resman_handle = api.kernel_lock_substate(
-            RENodeId::ResourceManager(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::MUTABLE,
@@ -1161,7 +1202,7 @@ impl ResourceManagerBlueprint {
     }
 
     pub(crate) fn create_bucket<Y>(
-        receiver: ResourceManagerId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -1169,15 +1210,14 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let _input: ResourceManagerCreateBucketInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let resman_handle = api.kernel_lock_substate(
-            RENodeId::ResourceManager(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::MUTABLE,
@@ -1202,7 +1242,7 @@ impl ResourceManagerBlueprint {
     }
 
     pub(crate) fn create_vault<Y>(
-        receiver: ResourceManagerId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -1210,15 +1250,14 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let _input: ResourceManagerCreateVaultInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let resman_handle = api.kernel_lock_substate(
-            RENodeId::ResourceManager(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::MUTABLE,
@@ -1243,7 +1282,7 @@ impl ResourceManagerBlueprint {
     }
 
     pub(crate) fn update_vault_auth<Y>(
-        receiver: ResourceManagerId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -1251,15 +1290,14 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let input: ResourceManagerUpdateVaultAuthInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let handle = api.kernel_lock_substate(
-            RENodeId::ResourceManager(receiver),
+            receiver,
             NodeModuleId::AccessRules1,
             SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
             LockFlags::MUTABLE,
@@ -1272,7 +1310,7 @@ impl ResourceManagerBlueprint {
 
             let access_rule = match input.method {
                 Deposit => {
-                    let key = AccessRuleKey::ScryptoMethod(VAULT_PUT_IDENT.to_string());
+                    let key = AccessRuleKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string());
                     substate.access_rules_chain[0].get_mutability(&key)
                 }
                 Withdraw => substate.access_rules_chain[0].get_group_mutability("withdraw"),
@@ -1280,10 +1318,11 @@ impl ResourceManagerBlueprint {
             }
             .clone();
 
-            api.call_native(AuthZoneAssertAccessRuleInvocation {
-                receiver: RENodeId::AuthZoneStack.into(),
-                access_rule,
-            })?;
+            api.call_method(
+                RENodeId::AuthZoneStack,
+                AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
+                scrypto_encode(&AuthZoneAssertAccessRuleInput { access_rule }).unwrap(),
+            )?;
         }
 
         let mut substate_mut = api.kernel_get_substate_ref_mut(handle)?;
@@ -1291,7 +1330,7 @@ impl ResourceManagerBlueprint {
 
         match input.method {
             Deposit => {
-                let key = AccessRuleKey::ScryptoMethod(VAULT_PUT_IDENT.to_string());
+                let key = AccessRuleKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string());
                 substate.access_rules_chain[0].set_method_access_rule(key, input.access_rule);
             }
             Withdraw => {
@@ -1308,7 +1347,7 @@ impl ResourceManagerBlueprint {
     }
 
     pub(crate) fn set_vault_auth_mutability<Y>(
-        receiver: ResourceManagerId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -1316,15 +1355,14 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let input: ResourceManagerSetVaultAuthMutabilityInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let handle = api.kernel_lock_substate(
-            RENodeId::ResourceManager(receiver),
+            receiver,
             NodeModuleId::AccessRules1,
             SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
             LockFlags::MUTABLE,
@@ -1337,7 +1375,7 @@ impl ResourceManagerBlueprint {
 
             let access_rule = match input.method {
                 Deposit => {
-                    let key = AccessRuleKey::ScryptoMethod(VAULT_PUT_IDENT.to_string());
+                    let key = AccessRuleKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string());
                     substate.access_rules_chain[0].get_mutability(&key)
                 }
                 Withdraw => substate.access_rules_chain[0].get_group_mutability("withdraw"),
@@ -1345,10 +1383,11 @@ impl ResourceManagerBlueprint {
             }
             .clone();
 
-            api.call_native(AuthZoneAssertAccessRuleInvocation {
-                receiver: RENodeId::AuthZoneStack.into(),
-                access_rule,
-            })?;
+            api.call_method(
+                RENodeId::AuthZoneStack,
+                AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
+                scrypto_encode(&AuthZoneAssertAccessRuleInput { access_rule }).unwrap(),
+            )?;
         }
 
         let mut substate_mut = api.kernel_get_substate_ref_mut(handle)?;
@@ -1356,7 +1395,7 @@ impl ResourceManagerBlueprint {
 
         match input.method {
             Deposit => {
-                let key = AccessRuleKey::ScryptoMethod(VAULT_PUT_IDENT.to_string());
+                let key = AccessRuleKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string());
                 substate.access_rules_chain[0].set_mutability(key, input.mutability);
             }
             Withdraw => {
@@ -1373,7 +1412,7 @@ impl ResourceManagerBlueprint {
     }
 
     pub(crate) fn update_non_fungible_data<Y>(
-        receiver: ResourceManagerId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -1381,15 +1420,14 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let input: ResourceManagerUpdateNonFungibleDataInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let resman_handle = api.kernel_lock_substate(
-            RENodeId::ResourceManager(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::MUTABLE,
@@ -1427,7 +1465,7 @@ impl ResourceManagerBlueprint {
     }
 
     pub(crate) fn non_fungible_exists<Y>(
-        receiver: ResourceManagerId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -1435,15 +1473,14 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let input: ResourceManagerNonFungibleExistsInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let resman_handle = api.kernel_lock_substate(
-            RENodeId::ResourceManager(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::read_only(),
@@ -1466,7 +1503,7 @@ impl ResourceManagerBlueprint {
     }
 
     pub(crate) fn get_resource_type<Y>(
-        receiver: ResourceManagerId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -1474,15 +1511,14 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let _input: ResourceManagerGetResourceTypeInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let resman_handle = api.kernel_lock_substate(
-            RENodeId::ResourceManager(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::read_only(),
@@ -1495,7 +1531,7 @@ impl ResourceManagerBlueprint {
     }
 
     pub(crate) fn get_total_supply<Y>(
-        receiver: ResourceManagerId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -1503,14 +1539,13 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let _input: ResourceManagerGetTotalSupplyInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
         let resman_handle = api.kernel_lock_substate(
-            RENodeId::ResourceManager(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::read_only(),
@@ -1521,7 +1556,7 @@ impl ResourceManagerBlueprint {
     }
 
     pub(crate) fn get_non_fungible<Y>(
-        receiver: ResourceManagerId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -1529,15 +1564,14 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let input: ResourceManagerGetNonFungibleInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let resman_handle = api.kernel_lock_substate(
-            RENodeId::ResourceManager(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::read_only(),
@@ -1602,11 +1636,11 @@ where
     );
     node_modules.insert(
         NodeModuleId::AccessRules,
-        RENodeModuleInit::AccessRulesChain(access_rules_substate),
+        RENodeModuleInit::ComponentAccessRulesChain(access_rules_substate),
     );
     node_modules.insert(
         NodeModuleId::AccessRules1,
-        RENodeModuleInit::AccessRulesChain(vault_substate),
+        RENodeModuleInit::ComponentAccessRulesChain(vault_substate),
     );
 
     let underlying_node_id = api.kernel_allocate_node_id(RENodeType::ResourceManager)?;
@@ -1617,7 +1651,7 @@ where
     )?;
     api.kernel_create_node(
         global_node_id,
-        RENodeInit::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
+        RENodeInit::Global(GlobalSubstate::Resource(underlying_node_id.into())),
         BTreeMap::new(),
     )?;
 

@@ -1,6 +1,6 @@
-use super::global::GlobalAddressSubstate;
-use super::node_modules::auth::AccessRulesChainSubstate;
-use super::node_modules::auth::AuthZoneStackSubstate;
+use super::global::GlobalSubstate;
+use super::node_modules::access_rules::AuthZoneStackSubstate;
+use super::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use super::node_modules::metadata::MetadataSubstate;
 use crate::blueprints::access_controller::AccessControllerSubstate;
 use crate::blueprints::account::AccountSubstate;
@@ -18,26 +18,26 @@ use crate::blueprints::resource::VaultSubstate;
 use crate::blueprints::resource::WorktopSubstate;
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::errors::*;
+use crate::system::node_modules::access_rules::PackageAccessRulesSubstate;
 use crate::system::type_info::TypeInfoSubstate;
 use crate::types::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::{
-    ComponentOffset, GlobalAddress, KeyValueStoreOffset, NonFungibleStoreOffset, RENodeId,
-    SubstateOffset,
+    Address, ComponentOffset, KeyValueStoreOffset, NonFungibleStoreOffset, RENodeId, SubstateOffset,
 };
 use radix_engine_interface::data::IndexedScryptoValue;
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PersistedSubstate {
-    Global(GlobalAddressSubstate),
+    Global(GlobalSubstate),
     TypeInfo(TypeInfoSubstate),
     EpochManager(EpochManagerSubstate),
     ValidatorSet(ValidatorSetSubstate),
     Validator(ValidatorSubstate),
     CurrentTimeRoundedToMinutes(CurrentTimeRoundedToMinutesSubstate),
     ResourceManager(ResourceManagerSubstate),
-    AccessRulesChain(AccessRulesChainSubstate),
+    AccessRulesChain(ObjectAccessRulesChainSubstate),
     Metadata(MetadataSubstate),
     ComponentInfo(ComponentInfoSubstate),
     ComponentState(ComponentStateSubstate),
@@ -48,6 +48,7 @@ pub enum PersistedSubstate {
     NativePackageInfo(NativeCodeSubstate),
     PackageRoyaltyConfig(PackageRoyaltyConfigSubstate),
     PackageRoyaltyAccumulator(PackageRoyaltyAccumulatorSubstate),
+    PackageAccessRules(PackageAccessRulesSubstate),
     Vault(VaultSubstate),
     NonFungible(NonFungibleSubstate),
     KeyValueStoreEntry(KeyValueStoreEntrySubstate),
@@ -88,7 +89,7 @@ impl PersistedSubstate {
         }
     }
 
-    pub fn global(&self) -> &GlobalAddressSubstate {
+    pub fn global(&self) -> &GlobalSubstate {
         if let PersistedSubstate::Global(state) = self {
             state
         } else {
@@ -146,6 +147,9 @@ impl PersistedSubstate {
             PersistedSubstate::PackageRoyaltyAccumulator(value) => {
                 RuntimeSubstate::PackageRoyaltyAccumulator(value)
             }
+            PersistedSubstate::PackageAccessRules(value) => {
+                RuntimeSubstate::PackageAccessRules(value)
+            }
             PersistedSubstate::Vault(value) => {
                 RuntimeSubstate::Vault(VaultRuntimeSubstate::new(value.0))
             }
@@ -165,14 +169,14 @@ pub enum PersistError {
 
 #[derive(Debug)]
 pub enum RuntimeSubstate {
-    Global(GlobalAddressSubstate),
+    Global(GlobalSubstate),
     TypeInfo(TypeInfoSubstate),
     EpochManager(EpochManagerSubstate),
     ValidatorSet(ValidatorSetSubstate),
     Validator(ValidatorSubstate),
     CurrentTimeRoundedToMinutes(CurrentTimeRoundedToMinutesSubstate),
     ResourceManager(ResourceManagerSubstate),
-    AccessRulesChain(AccessRulesChainSubstate),
+    AccessRulesChain(ObjectAccessRulesChainSubstate),
     Metadata(MetadataSubstate),
     ComponentInfo(ComponentInfoSubstate),
     ComponentState(ComponentStateSubstate),
@@ -183,6 +187,7 @@ pub enum RuntimeSubstate {
     PackageInfo(PackageInfoSubstate),
     PackageRoyaltyConfig(PackageRoyaltyConfigSubstate),
     PackageRoyaltyAccumulator(PackageRoyaltyAccumulatorSubstate),
+    PackageAccessRules(PackageAccessRulesSubstate),
     Vault(VaultRuntimeSubstate),
     NonFungible(NonFungibleSubstate),
     KeyValueStoreEntry(KeyValueStoreEntrySubstate),
@@ -237,6 +242,9 @@ impl RuntimeSubstate {
             RuntimeSubstate::PackageRoyaltyAccumulator(value) => {
                 PersistedSubstate::PackageRoyaltyAccumulator(value.clone())
             }
+            RuntimeSubstate::PackageAccessRules(value) => {
+                PersistedSubstate::PackageAccessRules(value.clone())
+            }
             RuntimeSubstate::NonFungible(value) => PersistedSubstate::NonFungible(value.clone()),
             RuntimeSubstate::KeyValueStoreEntry(value) => {
                 PersistedSubstate::KeyValueStoreEntry(value.clone())
@@ -289,6 +297,9 @@ impl RuntimeSubstate {
             }
             RuntimeSubstate::PackageRoyaltyAccumulator(value) => {
                 PersistedSubstate::PackageRoyaltyAccumulator(value)
+            }
+            RuntimeSubstate::PackageAccessRules(value) => {
+                PersistedSubstate::PackageAccessRules(value)
             }
             RuntimeSubstate::NonFungible(value) => PersistedSubstate::NonFungible(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => {
@@ -373,6 +384,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::PackageRoyaltyAccumulator(value) => {
                 SubstateRefMut::PackageRoyaltyAccumulator(value)
             }
+            RuntimeSubstate::PackageAccessRules(value) => SubstateRefMut::PackageAccessRules(value),
             RuntimeSubstate::Vault(value) => SubstateRefMut::Vault(value),
             RuntimeSubstate::NonFungible(value) => SubstateRefMut::NonFungible(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => SubstateRefMut::KeyValueStoreEntry(value),
@@ -417,6 +429,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::PackageRoyaltyAccumulator(value) => {
                 SubstateRef::PackageRoyaltyAccumulator(value)
             }
+            RuntimeSubstate::PackageAccessRules(value) => SubstateRef::PackageAccessRules(value),
             RuntimeSubstate::Vault(value) => SubstateRef::Vault(value),
             RuntimeSubstate::NonFungible(value) => SubstateRef::NonFungible(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => SubstateRef::KeyValueStoreEntry(value),
@@ -431,7 +444,7 @@ impl RuntimeSubstate {
         }
     }
 
-    pub fn global(&self) -> &GlobalAddressSubstate {
+    pub fn global(&self) -> &GlobalSubstate {
         if let RuntimeSubstate::Global(global) = self {
             global
         } else {
@@ -527,7 +540,7 @@ impl RuntimeSubstate {
         }
     }
 
-    pub fn access_rules_chain(&self) -> &AccessRulesChainSubstate {
+    pub fn access_rules_chain(&self) -> &ObjectAccessRulesChainSubstate {
         if let RuntimeSubstate::AccessRulesChain(access_rules_chain) = self {
             access_rules_chain
         } else {
@@ -544,7 +557,7 @@ impl RuntimeSubstate {
     }
 }
 
-impl Into<RuntimeSubstate> for AccessRulesChainSubstate {
+impl Into<RuntimeSubstate> for ObjectAccessRulesChainSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::AccessRulesChain(self)
     }
@@ -661,6 +674,12 @@ impl Into<RuntimeSubstate> for PackageRoyaltyConfigSubstate {
 impl Into<RuntimeSubstate> for PackageRoyaltyAccumulatorSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::PackageRoyaltyAccumulator(self)
+    }
+}
+
+impl Into<RuntimeSubstate> for PackageAccessRulesSubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::PackageAccessRules(self)
     }
 }
 
@@ -822,8 +841,8 @@ impl Into<ValidatorSubstate> for RuntimeSubstate {
     }
 }
 
-impl Into<GlobalAddressSubstate> for RuntimeSubstate {
-    fn into(self) -> GlobalAddressSubstate {
+impl Into<GlobalSubstate> for RuntimeSubstate {
+    fn into(self) -> GlobalSubstate {
         if let RuntimeSubstate::Global(substate) = self {
             substate
         } else {
@@ -852,8 +871,8 @@ impl Into<ProofSubstate> for RuntimeSubstate {
     }
 }
 
-impl Into<AccessRulesChainSubstate> for RuntimeSubstate {
-    fn into(self) -> AccessRulesChainSubstate {
+impl Into<ObjectAccessRulesChainSubstate> for RuntimeSubstate {
+    fn into(self) -> ObjectAccessRulesChainSubstate {
         if let RuntimeSubstate::AccessRulesChain(substate) = self {
             substate
         } else {
@@ -919,15 +938,16 @@ pub enum SubstateRef<'a> {
     NativeCode(&'a NativeCodeSubstate),
     PackageRoyaltyConfig(&'a PackageRoyaltyConfigSubstate),
     PackageRoyaltyAccumulator(&'a PackageRoyaltyAccumulatorSubstate),
+    PackageAccessRules(&'a PackageAccessRulesSubstate),
     Vault(&'a VaultRuntimeSubstate),
     ResourceManager(&'a ResourceManagerSubstate),
     EpochManager(&'a EpochManagerSubstate),
     ValidatorSet(&'a ValidatorSetSubstate),
     Validator(&'a ValidatorSubstate),
     CurrentTimeRoundedToMinutes(&'a CurrentTimeRoundedToMinutesSubstate),
-    AccessRulesChain(&'a AccessRulesChainSubstate),
+    AccessRulesChain(&'a ObjectAccessRulesChainSubstate),
     Metadata(&'a MetadataSubstate),
-    Global(&'a GlobalAddressSubstate),
+    Global(&'a GlobalSubstate),
     TypeInfo(&'a TypeInfoSubstate),
     TransactionRuntime(&'a TransactionRuntimeSubstate),
     Account(&'a AccountSubstate),
@@ -1026,6 +1046,13 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
+    pub fn package_access_rules(&self) -> &PackageAccessRulesSubstate {
+        match self {
+            SubstateRef::PackageAccessRules(info) => *info,
+            _ => panic!("Not package access rules"),
+        }
+    }
+
     pub fn proof(&self) -> &ProofSubstate {
         match self {
             SubstateRef::Proof(value) => *value,
@@ -1103,14 +1130,14 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
-    pub fn access_rules_chain(&self) -> &AccessRulesChainSubstate {
+    pub fn access_rules_chain(&self) -> &ObjectAccessRulesChainSubstate {
         match self {
             SubstateRef::AccessRulesChain(value) => *value,
             _ => panic!("Not access rules chain"),
         }
     }
 
-    pub fn global_address(&self) -> &GlobalAddressSubstate {
+    pub fn global_address(&self) -> &GlobalSubstate {
         match self {
             SubstateRef::Global(value) => *value,
             _ => panic!("Not a global address"),
@@ -1152,37 +1179,35 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
-    pub fn references_and_owned_nodes(&self) -> (HashSet<GlobalAddress>, HashSet<RENodeId>) {
+    pub fn references_and_owned_nodes(&self) -> (HashSet<RENodeId>, Vec<RENodeId>) {
         match self {
             SubstateRef::Global(global) => {
-                let mut owned_nodes = HashSet::new();
+                let mut owned_nodes = Vec::new();
                 match global {
-                    GlobalAddressSubstate::Resource(resource_manager_id) => {
-                        owned_nodes.insert(RENodeId::ResourceManager(*resource_manager_id))
+                    GlobalSubstate::Resource(resource_manager_id) => {
+                        owned_nodes.push(RENodeId::ResourceManager(*resource_manager_id))
                     }
-                    GlobalAddressSubstate::Component(component_id) => {
-                        owned_nodes.insert(RENodeId::Component(*component_id))
+                    GlobalSubstate::Component(component_id) => {
+                        owned_nodes.push(RENodeId::Component(*component_id))
                     }
-                    GlobalAddressSubstate::Identity(identity_id) => {
-                        owned_nodes.insert(RENodeId::Identity(*identity_id))
+                    GlobalSubstate::Identity(identity_id) => {
+                        owned_nodes.push(RENodeId::Identity(*identity_id))
                     }
-                    GlobalAddressSubstate::EpochManager(epoch_manager_id) => {
-                        owned_nodes.insert(RENodeId::EpochManager(*epoch_manager_id))
+                    GlobalSubstate::EpochManager(epoch_manager_id) => {
+                        owned_nodes.push(RENodeId::EpochManager(*epoch_manager_id))
                     }
-                    GlobalAddressSubstate::Clock(clock_id) => {
-                        owned_nodes.insert(RENodeId::Clock(*clock_id))
+                    GlobalSubstate::Clock(clock_id) => owned_nodes.push(RENodeId::Clock(*clock_id)),
+                    GlobalSubstate::Package(package_id) => {
+                        owned_nodes.push(RENodeId::Package(*package_id))
                     }
-                    GlobalAddressSubstate::Package(package_id) => {
-                        owned_nodes.insert(RENodeId::Package(*package_id))
+                    GlobalSubstate::Validator(validator_id) => {
+                        owned_nodes.push(RENodeId::Validator(*validator_id))
                     }
-                    GlobalAddressSubstate::Validator(validator_id) => {
-                        owned_nodes.insert(RENodeId::Validator(*validator_id))
+                    GlobalSubstate::Account(account_id) => {
+                        owned_nodes.push(RENodeId::Account(*account_id))
                     }
-                    GlobalAddressSubstate::Account(account_id) => {
-                        owned_nodes.insert(RENodeId::Account(*account_id))
-                    }
-                    GlobalAddressSubstate::AccessController(access_controller_id) => {
-                        owned_nodes.insert(RENodeId::AccessController(*access_controller_id))
+                    GlobalSubstate::AccessController(access_controller_id) => {
+                        owned_nodes.push(RENodeId::AccessController(*access_controller_id))
                     }
                 };
 
@@ -1198,74 +1223,83 @@ impl<'a> SubstateRef<'a> {
             }
             SubstateRef::Vault(vault) => {
                 let mut references = HashSet::new();
-                references.insert(GlobalAddress::Resource(vault.resource_address()));
-                (references, HashSet::new())
+                references.insert(RENodeId::Global(Address::Resource(
+                    vault.resource_address(),
+                )));
+                (references, Vec::new())
             }
             SubstateRef::Proof(proof) => {
                 let mut references = HashSet::new();
-                references.insert(GlobalAddress::Resource(proof.resource_address()));
-                (references, HashSet::new())
+                references.insert(RENodeId::Global(Address::Resource(
+                    proof.resource_address(),
+                )));
+                (references, Vec::new())
             }
             SubstateRef::Bucket(bucket) => {
                 let mut references = HashSet::new();
-                references.insert(GlobalAddress::Resource(bucket.resource_address()));
-                (references, HashSet::new())
+                references.insert(RENodeId::Global(Address::Resource(
+                    bucket.resource_address(),
+                )));
+                (references, Vec::new())
             }
             SubstateRef::PackageInfo(substate) => {
                 let mut references = HashSet::new();
                 for component_ref in &substate.dependent_components {
-                    references.insert(GlobalAddress::Component(*component_ref));
+                    references.insert(RENodeId::Global(Address::Component(*component_ref)));
                 }
                 for resource_ref in &substate.dependent_resources {
-                    references.insert(GlobalAddress::Resource(*resource_ref));
+                    references.insert(RENodeId::Global(Address::Resource(*resource_ref)));
                 }
-                (references, HashSet::new())
+                (references, Vec::new())
             }
             SubstateRef::ComponentInfo(substate) => {
                 let mut references = HashSet::new();
-                references.insert(GlobalAddress::Package(substate.package_address));
-                (references, HashSet::new())
+                references.insert(RENodeId::Global(Address::Package(substate.package_address)));
+                (references, Vec::new())
             }
             SubstateRef::ResourceManager(substate) => {
-                let mut owned_nodes = HashSet::new();
+                let mut owned_nodes = Vec::new();
                 if let Some(nf_store_id) = substate.nf_store_id {
-                    owned_nodes.insert(RENodeId::NonFungibleStore(nf_store_id));
+                    owned_nodes.push(RENodeId::NonFungibleStore(nf_store_id));
                 }
                 (HashSet::new(), owned_nodes)
             }
             SubstateRef::Validator(substate) => {
                 let mut references = HashSet::new();
-                let mut owned_nodes = HashSet::new();
-                references.insert(GlobalAddress::Component(substate.manager));
-                references.insert(GlobalAddress::Component(substate.address));
-                references.insert(GlobalAddress::Resource(substate.unstake_nft));
-                references.insert(GlobalAddress::Resource(substate.liquidity_token));
-                owned_nodes.insert(RENodeId::Vault(substate.stake_xrd_vault_id));
-                owned_nodes.insert(RENodeId::Vault(substate.pending_xrd_withdraw_vault_id));
+                let mut owned_nodes = Vec::new();
+                references.insert(RENodeId::Global(Address::Component(substate.manager)));
+                references.insert(RENodeId::Global(Address::Component(substate.address)));
+                references.insert(RENodeId::Global(Address::Resource(substate.unstake_nft)));
+                references.insert(RENodeId::Global(Address::Resource(
+                    substate.liquidity_token,
+                )));
+                owned_nodes.push(RENodeId::Vault(substate.stake_xrd_vault_id));
+                owned_nodes.push(RENodeId::Vault(substate.pending_xrd_withdraw_vault_id));
                 (references, owned_nodes)
             }
+            SubstateRef::AccessRulesChain(substate) => {
+                let (_, _, owns, refs) = IndexedScryptoValue::from_typed(&substate).unpack();
+                (refs, owns)
+            }
             SubstateRef::AccessController(substate) => {
-                let mut owned_nodes = HashSet::new();
-                owned_nodes.insert(RENodeId::Vault(substate.controlled_asset));
+                let mut owned_nodes = Vec::new();
+                owned_nodes.push(RENodeId::Vault(substate.controlled_asset));
                 (HashSet::new(), owned_nodes)
             }
             SubstateRef::PackageRoyaltyAccumulator(substate) => {
-                let mut owned_nodes = HashSet::new();
-                owned_nodes.insert(RENodeId::Vault(substate.royalty.vault_id()));
+                let mut owned_nodes = Vec::new();
+                owned_nodes.push(RENodeId::Vault(substate.royalty.vault_id()));
                 (HashSet::new(), owned_nodes)
             }
             SubstateRef::ComponentState(substate) => {
-                let scrypto_value = IndexedScryptoValue::from_slice(&substate.raw).unwrap();
-                (
-                    scrypto_value.global_references(),
-                    scrypto_value
-                        .owned_node_ids()
-                        .expect("No duplicates expected"),
-                )
+                let (_, _, owns, refs) = IndexedScryptoValue::from_slice(&substate.raw)
+                    .unwrap()
+                    .unpack();
+                (refs, owns)
             }
             SubstateRef::ComponentRoyaltyAccumulator(substate) => {
-                let mut owned_nodes = HashSet::new();
-                owned_nodes.insert(RENodeId::Vault(substate.royalty.vault_id()));
+                let mut owned_nodes = Vec::new();
+                owned_nodes.push(RENodeId::Vault(substate.royalty.vault_id()));
                 (HashSet::new(), owned_nodes)
             }
             SubstateRef::KeyValueStoreEntry(substate) => {
@@ -1277,24 +1311,20 @@ impl<'a> SubstateRef<'a> {
                     .as_ref()
                     .map(|non_fungible| IndexedScryptoValue::from_typed(non_fungible));
                 if let Some(scrypto_value) = maybe_scrypto_value {
-                    (
-                        scrypto_value.global_references(),
-                        scrypto_value
-                            .owned_node_ids()
-                            .expect("No duplicates expected"),
-                    )
+                    let (_, _, owns, refs) = scrypto_value.unpack();
+                    (refs, owns)
                 } else {
-                    (HashSet::new(), HashSet::new())
+                    (HashSet::new(), Vec::new())
                 }
             }
             SubstateRef::Account(substate) => {
-                let mut owned_nodes = HashSet::new();
-                owned_nodes.insert(RENodeId::KeyValueStore(
+                let mut owned_nodes = Vec::new();
+                owned_nodes.push(RENodeId::KeyValueStore(
                     substate.vaults.key_value_store_id(),
                 ));
                 (HashSet::new(), owned_nodes)
             }
-            _ => (HashSet::new(), HashSet::new()),
+            _ => (HashSet::new(), Vec::new()),
         }
     }
 }
@@ -1309,6 +1339,7 @@ pub enum SubstateRefMut<'a> {
     NativePackageInfo(&'a mut NativeCodeSubstate),
     PackageRoyaltyConfig(&'a mut PackageRoyaltyConfigSubstate),
     PackageRoyaltyAccumulator(&'a mut PackageRoyaltyAccumulatorSubstate),
+    PackageAccessRules(&'a mut PackageAccessRulesSubstate),
     NonFungible(&'a mut NonFungibleSubstate),
     KeyValueStoreEntry(&'a mut KeyValueStoreEntrySubstate),
     Vault(&'a mut VaultRuntimeSubstate),
@@ -1317,9 +1348,9 @@ pub enum SubstateRefMut<'a> {
     ValidatorSet(&'a mut ValidatorSetSubstate),
     Validator(&'a mut ValidatorSubstate),
     CurrentTimeRoundedToMinutes(&'a mut CurrentTimeRoundedToMinutesSubstate),
-    AccessRulesChain(&'a mut AccessRulesChainSubstate),
+    AccessRulesChain(&'a mut ObjectAccessRulesChainSubstate),
     Metadata(&'a mut MetadataSubstate),
-    Global(&'a mut GlobalAddressSubstate),
+    Global(&'a mut GlobalSubstate),
     TypeInfo(&'a mut TypeInfoSubstate),
     Bucket(&'a mut BucketSubstate),
     Proof(&'a mut ProofSubstate),
@@ -1473,7 +1504,7 @@ impl<'a> SubstateRefMut<'a> {
         }
     }
 
-    pub fn access_rules_chain(&mut self) -> &mut AccessRulesChainSubstate {
+    pub fn access_rules_chain(&mut self) -> &mut ObjectAccessRulesChainSubstate {
         match self {
             SubstateRefMut::AccessRulesChain(value) => *value,
             _ => panic!("Not access rules"),

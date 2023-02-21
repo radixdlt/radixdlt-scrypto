@@ -1,7 +1,5 @@
 pub mod client_api_impl;
-pub mod component;
 pub mod global;
-pub mod invocation;
 pub mod kernel_modules;
 pub mod node;
 pub mod node_modules;

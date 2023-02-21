@@ -46,7 +46,7 @@ fn handle_transparent_describe(
         generics,
         ..
     } = parsed;
-    let (impl_generics, ty_generics, where_clause, custom_type_kind_generic) =
+    let (impl_generics, ty_generics, where_clause, _, custom_type_kind_generic) =
         build_describe_generics(&generics, &attrs, context_custom_type_kind)?;
 
     let output = match data {
@@ -99,13 +99,8 @@ fn handle_normal_describe(
         generics,
         ..
     } = parsed;
-    let (impl_generics, ty_generics, where_clause, custom_type_kind_generic) =
+    let (impl_generics, ty_generics, where_clause, child_types, custom_type_kind_generic) =
         build_describe_generics(&generics, &attrs, context_custom_type_kind)?;
-
-    let generic_type_idents = ty_generics
-        .type_params()
-        .map(|t| &t.ident)
-        .collect::<Vec<_>>();
 
     let output = match data {
         Data::Struct(s) => match s.fields {
@@ -137,7 +132,7 @@ fn handle_normal_describe(
                             // Note that it might seem possible to still hit issues with infinite recursion, if you pass a type as its own generic type parameter.
                             // EG (via a type alias B = A<B>), but these types won't come up in practice because they require an infinite generic depth
                             // which the compiler will throw out for other reasons.
-                            &[#(<#generic_type_idents>::TYPE_ID,)*],
+                            &[#(<#child_types>::TYPE_ID,)*],
                             &#code_hash
                         );
 
@@ -176,7 +171,7 @@ fn handle_normal_describe(
                             // Note that it might seem possible to still hit issues with infinite recursion, if you pass a type as its own generic type parameter.
                             // EG (via a type alias B = A<B>), but these types won't come up in practice because they require an infinite generic depth
                             // which the compiler will throw out for other reasons.
-                            &[#(#generic_type_idents::TYPE_ID,)*],
+                            &[#(<#child_types>::TYPE_ID,)*],
                             &#code_hash
                         );
 
@@ -200,7 +195,7 @@ fn handle_normal_describe(
                     impl #impl_generics ::sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
                         const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                             stringify!(#ident),
-                            &[#(#generic_type_idents::TYPE_ID,)*],
+                            &[#(<#child_types>::TYPE_ID,)*],
                             &#code_hash
                         );
 
@@ -280,7 +275,7 @@ fn handle_normal_describe(
                 impl #impl_generics ::sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
                     const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(#ident),
-                        &[#(#generic_type_idents::TYPE_ID,)*],
+                        &[#(<#child_types>::TYPE_ID,)*],
                         &#code_hash
                     );
 
@@ -322,6 +317,7 @@ mod tests {
     #[test]
     fn test_named_field_struct_schema() {
         let input = TokenStream::from_str("struct Test {a: u32, b: Vec<u8>, c: u32}").unwrap();
+        let code_hash = get_code_hash_const_array_token_stream(&input);
         let output = handle_describe(input, None).unwrap();
 
         assert_code_eq(
@@ -331,7 +327,7 @@ mod tests {
                     const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(Test),
                         &[],
-                        &[63u8, 255u8, 173u8, 220u8, 251u8, 214u8, 95u8, 139u8, 106u8, 20u8, 23u8, 4u8, 15u8, 10u8, 124u8, 49u8, 219u8, 44u8, 235u8, 215u8]
+                        &#code_hash
                     );
 
                     fn type_data() -> Option<::sbor::TypeData <C, ::sbor::GlobalTypeId>> {
@@ -357,6 +353,7 @@ mod tests {
     #[test]
     fn test_named_field_struct_schema_custom() {
         let input = TokenStream::from_str("struct Test {a: u32, b: Vec<u8>, c: u32}").unwrap();
+        let code_hash = get_code_hash_const_array_token_stream(&input);
         let output = handle_describe(
             input,
             Some("radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId>"),
@@ -372,9 +369,7 @@ mod tests {
                     const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(Test),
                         &[],
-                        &[
-                            63u8, 255u8, 173u8, 220u8, 251u8, 214u8, 95u8, 139u8, 106u8, 20u8, 23u8, 4u8, 15u8, 10u8, 124u8, 49u8, 219u8, 44u8, 235u8, 215u8
-                        ]
+                        &#code_hash
                     );
                     fn type_data() -> Option<
                         ::sbor::TypeData<
@@ -420,6 +415,7 @@ mod tests {
     #[test]
     fn test_unnamed_field_struct_schema() {
         let input = TokenStream::from_str("struct Test(u32, Vec<u8>, u32);").unwrap();
+        let code_hash = get_code_hash_const_array_token_stream(&input);
         let output = handle_describe(input, None).unwrap();
 
         assert_code_eq(
@@ -429,7 +425,7 @@ mod tests {
                     const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(Test),
                         &[],
-                        &[85u8, 53u8, 15u8, 85u8, 176u8, 230u8, 4u8, 110u8, 15u8, 96u8, 35u8, 64u8, 192u8, 210u8, 254u8, 146u8, 192u8, 7u8, 246u8, 5u8]
+                        &#code_hash
                     );
 
                     fn type_data() -> Option<::sbor::TypeData <C, ::sbor::GlobalTypeId>> {
@@ -455,6 +451,7 @@ mod tests {
     #[test]
     fn test_unit_struct_schema() {
         let input = TokenStream::from_str("struct Test;").unwrap();
+        let code_hash = get_code_hash_const_array_token_stream(&input);
         let output = handle_describe(input, None).unwrap();
 
         assert_code_eq(
@@ -464,7 +461,7 @@ mod tests {
                     const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(Test),
                         &[],
-                        &[167u8, 108u8, 181u8, 130u8, 168u8, 229u8, 85u8, 237u8, 66u8, 69u8, 34u8, 138u8, 113u8, 220u8, 225u8, 107u8, 0u8, 247u8, 189u8, 58u8]
+                        &#code_hash
                     );
 
                     fn type_data() -> Option<::sbor::TypeData <C, ::sbor::GlobalTypeId>> {
@@ -478,17 +475,23 @@ mod tests {
     #[test]
     fn test_complex_enum_schema() {
         let input =
-            TokenStream::from_str("#[sbor(generic_categorize_bounds = \"T2\")] enum Test<T: SomeTrait, T2> {A, B (T, Vec<T2>, #[sbor(skip)] i32), C {x: [u8; 5]}}").unwrap();
+            TokenStream::from_str("#[sbor(categorize_types = \"T2\")] enum Test<T: SomeTrait, T2> {A, B (T, Vec<T2>, #[sbor(skip)] i32), C {x: [u8; 5]}}").unwrap();
+        let code_hash = get_code_hash_const_array_token_stream(&input);
         let output = handle_describe(input, None).unwrap();
 
         assert_code_eq(
             output,
             quote! {
-                impl <T: SomeTrait + ::sbor::Describe<C>, T2: ::sbor::Describe<C> + ::sbor::Categorize<C::CustomValueKind>, C: ::sbor::CustomTypeKind<::sbor::GlobalTypeId> > ::sbor::Describe<C> for Test<T, T2> {
+                impl <T: SomeTrait, T2, C: ::sbor::CustomTypeKind<::sbor::GlobalTypeId> > ::sbor::Describe<C> for Test<T, T2>
+                where
+                    T: ::sbor::Describe<C>,
+                    T2: ::sbor::Describe<C>,
+                    T2: ::sbor::Categorize< <C as ::sbor::CustomTypeKind<::sbor::GlobalTypeId> >::CustomValueKind>
+                {
                     const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(Test),
-                        &[T::TYPE_ID, T2::TYPE_ID,],
-                        &[107u8, 144u8, 17u8, 82u8, 110u8, 162u8, 58u8, 11u8, 170u8, 99u8, 11u8, 157u8, 132u8, 243u8, 106u8, 138u8, 8u8, 152u8, 239u8, 22u8]
+                        &[<T>::TYPE_ID, <T2>::TYPE_ID,],
+                        &#code_hash
                     );
 
                     fn type_data() -> Option<::sbor::TypeData <C, ::sbor::GlobalTypeId>> {

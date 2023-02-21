@@ -3,14 +3,14 @@
 #[macro_export]
 macro_rules! dec {
     ($x:literal) => {
-        Decimal::from($x)
+        Decimal::try_from($x).unwrap()
     };
 
     ($base:literal, $shift:literal) => {
         // Base can be any type that converts into a Decimal, and shift must support
         // comparison and `-` unary operation, enforced by rustc.
         {
-            let base = Decimal::from($base);
+            let base = Decimal::try_from($base).unwrap();
             if $shift >= 0 {
                 base * Decimal::try_from(
                     BnumI256::from(10u8).pow(u32::try_from($shift).expect("Shift overflow")),
@@ -42,14 +42,14 @@ macro_rules! i {
 #[macro_export]
 macro_rules! pdec {
     ($x:literal) => {
-        PreciseDecimal::from($x)
+        PreciseDecimal::try_from($x).unwrap()
     };
 
     ($base:literal, $shift:literal) => {
         // Base can be any type that converts into a PreciseDecimal, and shift must support
         // comparison and `-` unary operation, enforced by rustc.
         {
-            let base = PreciseDecimal::from($base);
+            let base = PreciseDecimal::try_from($base).unwrap();
             if $shift >= 0 {
                 base * PreciseDecimal::try_from(
                     BnumI512::from(10u8).pow(u32::try_from($shift).expect("Shift overflow")),
@@ -67,9 +67,9 @@ macro_rules! pdec {
 
 /// A macro for implementing sbor traits (for statically sized types).
 #[macro_export]
-macro_rules! scrypto_type {
+macro_rules! well_known_scrypto_custom_type {
     // with describe
-    ($t:ty, $value_kind:expr, $schema_type: expr, $size: expr) => {
+    ($t:ty, $value_kind:expr, $schema_type:expr, $size:expr, $well_known_id:ident) => {
         impl sbor::Categorize<crate::data::ScryptoCustomValueKind> for $t {
             #[inline]
             fn value_kind() -> sbor::ValueKind<crate::data::ScryptoCustomValueKind> {
@@ -109,7 +109,17 @@ macro_rules! scrypto_type {
                 $schema_type
             }
         }
+
+        impl Describe<crate::data::ScryptoCustomTypeKind<GlobalTypeId>> for $t {
+            const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(
+                crate::data::well_known_scrypto_custom_types::$well_known_id,
+            );
+        }
     };
+}
+
+#[macro_export]
+macro_rules! schemaless_scrypto_custom_type {
     // without describe
     ($t:ty, $value_kind:expr, $size: expr) => {
         impl sbor::Categorize<crate::data::ScryptoCustomValueKind> for $t {
@@ -232,12 +242,12 @@ macro_rules! access_rule_node {
 #[macro_export]
 macro_rules! rule {
     (allow_all) => {{
-        radix_engine_interface::blueprints::resource::AccessRule::AllowAll
+        $crate::radix_engine_interface::blueprints::resource::AccessRule::AllowAll
     }};
     (deny_all) => {{
-        radix_engine_interface::blueprints::resource::AccessRule::DenyAll
+        $crate::radix_engine_interface::blueprints::resource::AccessRule::DenyAll
     }};
     ($($tt:tt)+) => {{
-        radix_engine_interface::blueprints::resource::AccessRule::Protected($crate::access_rule_node!($($tt)+))
+        $crate::radix_engine_interface::blueprints::resource::AccessRule::Protected($crate::access_rule_node!($($tt)+))
     }};
 }

@@ -42,3 +42,12 @@ pub const DEFAULT_MAX_CALL_DEPTH: usize = 8;
 
 /// The default cost unit price.
 pub const DEFAULT_COST_UNIT_PRICE: u128 = 100_000_000_000u128;
+
+/// The default maximum WASM memory per transaction (multiple WASM instances up to call depth).
+pub const DEFAULT_MAX_WASM_MEM_PER_TRANSACTION: usize = 10 * 1024 * 1024;
+
+/// The default maximum WASM memory per WASM call frame.
+pub const DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME: usize = 4 * 1024 * 1024;
+
+/// The default maximum substates reads count per transaction.
+pub const DEFAULT_MAX_SUBSTATE_READS_PER_TRANSACTION: usize = 20_000;

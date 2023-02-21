@@ -6,8 +6,8 @@ use crate::wasm::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::{
-    ClientActorApi, ClientComponentApi, ClientNativeInvokeApi, ClientNodeApi, ClientPackageApi,
-    ClientSubstateApi, ClientUnsafeApi,
+    ClientActorApi, ClientComponentApi, ClientNodeApi, ClientPackageApi, ClientSubstateApi,
+    ClientUnsafeApi,
 };
 use radix_engine_interface::blueprints::resource::AccessRules;
 use sbor::rust::vec::Vec;
@@ -20,8 +20,7 @@ where
         + ClientSubstateApi<RuntimeError>
         + ClientPackageApi<RuntimeError>
         + ClientComponentApi<RuntimeError>
-        + ClientActorApi<RuntimeError>
-        + ClientNativeInvokeApi<RuntimeError>,
+        + ClientActorApi<RuntimeError>,
 {
     api: &'y mut Y,
     buffers: BTreeMap<BufferId, Vec<u8>>,
@@ -35,8 +34,7 @@ where
         + ClientSubstateApi<RuntimeError>
         + ClientPackageApi<RuntimeError>
         + ClientComponentApi<RuntimeError>
-        + ClientActorApi<RuntimeError>
-        + ClientNativeInvokeApi<RuntimeError>,
+        + ClientActorApi<RuntimeError>,
 {
     pub fn new(api: &'y mut Y) -> Self {
         ScryptoRuntime {
@@ -54,8 +52,7 @@ where
         + ClientSubstateApi<RuntimeError>
         + ClientPackageApi<RuntimeError>
         + ClientComponentApi<RuntimeError>
-        + ClientActorApi<RuntimeError>
-        + ClientNativeInvokeApi<RuntimeError>,
+        + ClientActorApi<RuntimeError>,
 {
     fn allocate_buffer(
         &mut self,
@@ -86,15 +83,21 @@ where
     fn call_method(
         &mut self,
         receiver: Vec<u8>,
+        module_id: u32,
         ident: Vec<u8>,
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let receiver = scrypto_decode::<ScryptoReceiver>(&receiver)
-            .map_err(WasmRuntimeError::InvalidReceiver)?;
+        let receiver =
+            scrypto_decode::<RENodeId>(&receiver).map_err(WasmRuntimeError::InvalidReceiver)?;
 
         let ident = String::from_utf8(ident).map_err(|_| WasmRuntimeError::InvalidIdent)?;
 
-        let return_data = self.api.call_method(receiver, ident.as_str(), args)?;
+        let node_module_id = NodeModuleId::from_u32(module_id)
+            .ok_or(WasmRuntimeError::InvalidModuleId(module_id))?;
+
+        let return_data =
+            self.api
+                .call_module_method(receiver, node_module_id, ident.as_str(), args)?;
 
         self.allocate_buffer(return_data)
     }
@@ -120,28 +123,17 @@ where
         self.allocate_buffer(return_data)
     }
 
-    fn call_native(
-        &mut self,
-        native_fn: Vec<u8>,
-        invocation: Vec<u8>,
-    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let native_fn = scrypto_decode::<NativeFn>(&native_fn)
-            .map_err(WasmRuntimeError::InvalidNativeFnIdentifier)?;
-
-        let return_data = self.api.call_native_raw(native_fn, invocation)?;
-
-        self.allocate_buffer(return_data)
-    }
-
     fn new_package(
         &mut self,
         code: Vec<u8>,
         abi: Vec<u8>,
-        access_rules_chain: Vec<u8>,
+        access_rules: Vec<u8>,
         royalty_config: Vec<u8>,
         metadata: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let access_rules_chain = scrypto_decode::<Vec<AccessRules>>(&access_rules_chain)
+        let abi = scrypto_decode::<BTreeMap<String, BlueprintAbi>>(&abi)
+            .map_err(WasmRuntimeError::InvalidAbi)?;
+        let access_rules = scrypto_decode::<AccessRules>(&access_rules)
             .map_err(WasmRuntimeError::InvalidAccessRulesChain)?;
         let royalty_config = scrypto_decode::<BTreeMap<String, RoyaltyConfig>>(&royalty_config)
             .map_err(WasmRuntimeError::InvalidRoyaltyConfig)?;
@@ -150,7 +142,7 @@ where
 
         let package_address =
             self.api
-                .new_package(code, abi, access_rules_chain, royalty_config, metadata)?;
+                .new_package(code, abi, access_rules, royalty_config, metadata)?;
         let package_address_encoded =
             scrypto_encode(&package_address).expect("Failed to encode package address");
 
@@ -296,6 +288,15 @@ where
         let buffer = scrypto_encode(&type_info).expect("Failed to encode type_info");
         self.allocate_buffer(buffer)
     }
+
+    fn update_wasm_memory_usage(
+        &mut self,
+        size: usize,
+    ) -> Result<(), InvokeError<WasmRuntimeError>> {
+        self.api
+            .update_wasm_memory_usage(size)
+            .map_err(InvokeError::downstream)
+    }
 }
 
 /// A `Nop` runtime accepts any external function calls by doing nothing and returning void.
@@ -328,6 +329,7 @@ impl WasmRuntime for NopWasmRuntime {
     fn call_method(
         &mut self,
         receiver: Vec<u8>,
+        node_module_id: u32,
         ident: Vec<u8>,
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
@@ -340,14 +342,6 @@ impl WasmRuntime for NopWasmRuntime {
         blueprint_ident: Vec<u8>,
         ident: Vec<u8>,
         args: Vec<u8>,
-    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
-    }
-
-    fn call_native(
-        &mut self,
-        native_fn_identifier: Vec<u8>,
-        invocation: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
@@ -435,6 +429,13 @@ impl WasmRuntime for NopWasmRuntime {
         &mut self,
         component_id: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn update_wasm_memory_usage(
+        &mut self,
+        size: usize,
+    ) -> Result<(), InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 }

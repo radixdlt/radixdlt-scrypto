@@ -7,7 +7,7 @@ use crate::types::*;
 use radix_engine_interface::api::types::{BucketOffset, ProofOffset, RENodeId, SubstateOffset};
 use radix_engine_interface::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum NodeMoveError {
     CantMoveDownstream(RENodeId),
     CantMoveUpstream(RENodeId),
@@ -139,7 +139,7 @@ impl NodeMoveModule {
 impl KernelModule for NodeMoveModule {
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        _actor: &ResolvedActor,
+        _actor: &Option<ResolvedActor>,
         call_frame_update: &mut CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         for node_id in &call_frame_update.nodes_to_move {
@@ -151,7 +151,7 @@ impl KernelModule for NodeMoveModule {
 
     fn on_execution_finish<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        _caller: &ResolvedActor,
+        _caller: &Option<ResolvedActor>,
         call_frame_update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         for node_id in &call_frame_update.nodes_to_move {

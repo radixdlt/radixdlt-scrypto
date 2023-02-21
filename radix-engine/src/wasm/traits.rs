@@ -18,6 +18,7 @@ pub trait WasmRuntime {
     fn call_method(
         &mut self,
         receiver: Vec<u8>,
+        module_id: u32,
         ident: Vec<u8>,
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
@@ -28,12 +29,6 @@ pub trait WasmRuntime {
         blueprint_ident: Vec<u8>,
         ident: Vec<u8>,
         args: Vec<u8>,
-    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
-
-    fn call_native(
-        &mut self,
-        native_fn_identifier: Vec<u8>,
-        invocation: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn new_package(
@@ -96,6 +91,11 @@ pub trait WasmRuntime {
     fn get_actor(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmRuntimeError>>;
+
+    fn update_wasm_memory_usage(
+        &mut self,
+        size: usize,
+    ) -> Result<(), InvokeError<WasmRuntimeError>>;
 }
 
 /// Represents an instantiated, invokable Scrypto module.
@@ -113,6 +113,9 @@ pub trait WasmInstance {
         args: Vec<Buffer>,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
     ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>>;
+
+    /// Retruns memory consumed by this instance during invoke_export() call
+    fn consumed_memory(&self) -> Result<usize, InvokeError<WasmRuntimeError>>;
 }
 
 /// A Scrypto WASM engine validates, instruments and runs Scrypto modules.

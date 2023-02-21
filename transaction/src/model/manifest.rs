@@ -1,8 +1,8 @@
-use crate::model::BasicInstruction;
-use radix_engine_interface::*;
+use crate::model::Instruction;
+use transaction_data::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestCategorize, ManifestEncode, ManifestDecode)]
 pub struct TransactionManifest {
-    pub instructions: Vec<BasicInstruction>,
+    pub instructions: Vec<Instruction>,
     pub blobs: Vec<Vec<u8>>,
 }

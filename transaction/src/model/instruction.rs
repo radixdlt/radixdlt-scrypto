@@ -1,14 +1,14 @@
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::resource::{AccessRule, AccessRuleKey, AccessRules};
-use radix_engine_interface::data::types::{ManifestBlobRef, ManifestBucket, ManifestProof};
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::*;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
+use transaction_data::model::*;
+use transaction_data::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum BasicInstruction {
+#[derive(Debug, Clone, PartialEq, Eq, ManifestCategorize, ManifestEncode, ManifestDecode)]
+pub enum Instruction {
     /// Takes resource from worktop.
     TakeFromWorktop {
         resource_address: ResourceAddress,
@@ -104,13 +104,6 @@ pub enum BasicInstruction {
         access_rules: AccessRules,
     },
 
-    /// Publish a package with owner.
-    PublishPackageWithOwner {
-        code: ManifestBlobRef,
-        abi: ManifestBlobRef,
-        owner_badge: NonFungibleGlobalId,
-    },
-
     BurnResource {
         bucket_id: ManifestBucket,
     },
@@ -121,7 +114,7 @@ pub enum BasicInstruction {
     },
 
     SetMetadata {
-        entity_address: GlobalAddress,
+        entity_address: ManifestAddress,
         key: String,
         value: String,
     },
@@ -145,7 +138,7 @@ pub enum BasicInstruction {
     },
 
     SetMethodAccessRule {
-        entity_address: GlobalAddress,
+        entity_address: ManifestAddress,
         index: u32,
         key: AccessRuleKey,
         rule: AccessRule,
@@ -187,16 +180,4 @@ pub enum BasicInstruction {
         method_name: String,
         args: Vec<u8>,
     },
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum Instruction {
-    Basic(BasicInstruction),
-    System(NativeInvocation),
-}
-
-impl From<BasicInstruction> for Instruction {
-    fn from(i: BasicInstruction) -> Self {
-        Instruction::Basic(i)
-    }
 }

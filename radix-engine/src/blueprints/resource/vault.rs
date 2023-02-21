@@ -8,13 +8,12 @@ use crate::system::node::RENodeInit;
 use crate::types::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{RENodeId, SubstateOffset, VaultOffset};
-use radix_engine_interface::api::ClientNativeInvokeApi;
 use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
 use sbor::rust::ops::Deref;
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct VaultSubstate(pub Resource);
 
 impl VaultSubstate {
@@ -200,7 +199,7 @@ impl VaultRuntimeSubstate {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum VaultError {
     InvalidRequestData(DecodeError),
     ResourceOperationError(ResourceOperationError),
@@ -217,7 +216,7 @@ pub struct VaultBlueprint;
 
 impl VaultBlueprint {
     fn take_internal<Y>(
-        receiver: VaultId,
+        receiver: RENodeId,
         amount: Decimal,
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
@@ -225,11 +224,10 @@ impl VaultBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let vault_handle = api.kernel_lock_substate(
-            RENodeId::Vault(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::Vault),
             LockFlags::MUTABLE,
@@ -252,7 +250,7 @@ impl VaultBlueprint {
     }
 
     fn take_non_fungibles_internal<Y>(
-        receiver: VaultId,
+        receiver: RENodeId,
         non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
@@ -260,11 +258,10 @@ impl VaultBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let vault_handle = api.kernel_lock_substate(
-            RENodeId::Vault(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::Vault),
             LockFlags::MUTABLE,
@@ -288,7 +285,7 @@ impl VaultBlueprint {
     }
 
     pub(crate) fn take<Y>(
-        receiver: VaultId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -296,8 +293,7 @@ impl VaultBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let input: VaultTakeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
@@ -308,7 +304,7 @@ impl VaultBlueprint {
     }
 
     pub(crate) fn take_non_fungibles<Y>(
-        receiver: VaultId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -316,8 +312,7 @@ impl VaultBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let input: VaultTakeNonFungiblesInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
@@ -329,7 +324,7 @@ impl VaultBlueprint {
     }
 
     pub(crate) fn put<Y>(
-        receiver: VaultId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -337,14 +332,13 @@ impl VaultBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let input: VaultPutInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let vault_handle = api.kernel_lock_substate(
-            RENodeId::Vault(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::Vault),
             LockFlags::MUTABLE,
@@ -366,7 +360,7 @@ impl VaultBlueprint {
     }
 
     pub(crate) fn get_amount<Y>(
-        receiver: VaultId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -374,14 +368,13 @@ impl VaultBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let _input: VaultGetAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let vault_handle = api.kernel_lock_substate(
-            RENodeId::Vault(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::Vault),
             LockFlags::read_only(),
@@ -395,7 +388,7 @@ impl VaultBlueprint {
     }
 
     pub(crate) fn get_resource_address<Y>(
-        receiver: VaultId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -403,14 +396,13 @@ impl VaultBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let _input: VaultGetResourceAddressInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let vault_handle = api.kernel_lock_substate(
-            RENodeId::Vault(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::Vault),
             LockFlags::read_only(),
@@ -424,7 +416,7 @@ impl VaultBlueprint {
     }
 
     pub(crate) fn get_non_fungible_local_ids<Y>(
-        receiver: VaultId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -432,15 +424,14 @@ impl VaultBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let _input: VaultGetNonFungibleLocalIdsInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let vault_handle = api.kernel_lock_substate(
-            RENodeId::Vault(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::Vault),
             LockFlags::read_only(),
@@ -458,7 +449,7 @@ impl VaultBlueprint {
     }
 
     pub(crate) fn lock_fee<Y>(
-        receiver: VaultId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -466,14 +457,13 @@ impl VaultBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let input: VaultLockFeeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let vault_handle = api.kernel_lock_substate(
-            RENodeId::Vault(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::Vault),
             LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE,
@@ -500,7 +490,7 @@ impl VaultBlueprint {
         };
 
         // Credit cost units
-        let changes: Resource = api.credit_cost_units(receiver, fee, input.contingent)?;
+        let changes: Resource = api.credit_cost_units(receiver.into(), fee, input.contingent)?;
 
         // Keep changes
         {
@@ -517,7 +507,7 @@ impl VaultBlueprint {
     }
 
     pub(crate) fn recall<Y>(
-        receiver: VaultId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -525,8 +515,7 @@ impl VaultBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let input: VaultRecallInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
@@ -537,7 +526,7 @@ impl VaultBlueprint {
     }
 
     pub(crate) fn recall_non_fungibles<Y>(
-        receiver: VaultId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -545,8 +534,7 @@ impl VaultBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let input: VaultRecallNonFungiblesInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
@@ -558,7 +546,7 @@ impl VaultBlueprint {
     }
 
     pub(crate) fn create_proof<Y>(
-        receiver: VaultId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -566,14 +554,13 @@ impl VaultBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let _input: VaultCreateProofInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let vault_handle = api.kernel_lock_substate(
-            RENodeId::Vault(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::Vault),
             LockFlags::MUTABLE,
@@ -583,7 +570,7 @@ impl VaultBlueprint {
             let mut substate_mut = api.kernel_get_substate_ref_mut(vault_handle)?;
             let vault = substate_mut.vault();
             vault
-                .create_proof(ResourceContainerId::Vault(receiver))
+                .create_proof(ResourceContainerId::Vault(receiver.into()))
                 .map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::VaultError(
                         VaultError::ProofError(e),
@@ -599,7 +586,7 @@ impl VaultBlueprint {
     }
 
     pub(crate) fn create_proof_by_amount<Y>(
-        receiver: VaultId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -607,14 +594,13 @@ impl VaultBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let input: VaultCreateProofByAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let vault_handle = api.kernel_lock_substate(
-            RENodeId::Vault(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::Vault),
             LockFlags::MUTABLE,
@@ -624,7 +610,7 @@ impl VaultBlueprint {
             let mut substate_mut = api.kernel_get_substate_ref_mut(vault_handle)?;
             let vault = substate_mut.vault();
             vault
-                .create_proof_by_amount(input.amount, ResourceContainerId::Vault(receiver))
+                .create_proof_by_amount(input.amount, ResourceContainerId::Vault(receiver.into()))
                 .map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::VaultError(
                         VaultError::ProofError(e),
@@ -640,7 +626,7 @@ impl VaultBlueprint {
     }
 
     pub(crate) fn create_proof_by_ids<Y>(
-        receiver: VaultId,
+        receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -648,14 +634,13 @@ impl VaultBlueprint {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>
-            + ClientNativeInvokeApi<RuntimeError>,
+            + ClientApi<RuntimeError>,
     {
         let input: VaultCreateProofByIdsInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let vault_handle = api.kernel_lock_substate(
-            RENodeId::Vault(receiver),
+            receiver,
             NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::Vault),
             LockFlags::MUTABLE,
@@ -665,7 +650,7 @@ impl VaultBlueprint {
             let mut substate_mut = api.kernel_get_substate_ref_mut(vault_handle)?;
             let vault = substate_mut.vault();
             vault
-                .create_proof_by_ids(&input.ids, ResourceContainerId::Vault(receiver))
+                .create_proof_by_ids(&input.ids, ResourceContainerId::Vault(receiver.into()))
                 .map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::VaultError(
                         VaultError::ProofError(e),

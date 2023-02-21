@@ -3,8 +3,8 @@ use crate::rust::collections::BTreeMap;
 use crate::rust::vec::Vec;
 
 /// A schema for the values that a codec can decode / views as valid
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
-#[sbor(generic_categorize_bounds = "L")]
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+#[sbor(child_types = "C,L")]
 pub enum TypeKind<X: CustomValueKind, C: CustomTypeKind<L, CustomValueKind = X>, L: SchemaTypeLink>
 {
     Any,

@@ -1,3 +1,7 @@
+use crate::data::*;
+use crate::errors::*;
+use crate::model::*;
+use crate::validation::*;
 use radix_engine_interface::address::{AddressError, Bech32Encoder};
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::access_controller::{
@@ -16,16 +20,15 @@ use radix_engine_interface::constants::{
     ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, EPOCH_MANAGER, IDENTITY_PACKAGE,
     RESOURCE_MANAGER_PACKAGE,
 };
-use radix_engine_interface::data::types::{ManifestBucket, ManifestProof};
-use radix_engine_interface::data::*;
 use radix_engine_interface::network::NetworkDefinition;
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
+use transaction_data::manifest_decode;
+use transaction_data::manifest_encode;
+use transaction_data::ManifestCustomValue;
+use transaction_data::ManifestEncode;
+use transaction_data::ManifestValue;
 use utils::ContextualDisplay;
-
-use crate::errors::*;
-use crate::model::*;
-use crate::validation::*;
 
 #[derive(Debug, Clone)]
 pub enum DecompileError {
@@ -81,8 +84,8 @@ impl<'a> DecompilationContext<'a> {
         }
     }
 
-    pub fn for_value_display(&'a self) -> ValueFormattingContext<'a> {
-        ValueFormattingContext::with_manifest_context(
+    pub fn for_value_display(&'a self) -> ManifestValueDisplayContext<'a> {
+        ManifestValueDisplayContext::with_bech32_and_names(
             self.bech32_encoder,
             &self.bucket_names,
             &self.proof_names,
@@ -93,7 +96,7 @@ impl<'a> DecompilationContext<'a> {
 /// Contract: if the instructions are from a validated notarized transaction, no error
 /// should be returned.
 pub fn decompile(
-    instructions: &[BasicInstruction],
+    instructions: &[Instruction],
     network: &NetworkDefinition,
 ) -> Result<String, DecompileError> {
     let bech32_encoder = Bech32Encoder::new(network);
@@ -109,11 +112,11 @@ pub fn decompile(
 
 pub fn decompile_instruction<F: fmt::Write>(
     f: &mut F,
-    instruction: &BasicInstruction,
+    instruction: &Instruction,
     context: &mut DecompilationContext,
 ) -> Result<(), DecompileError> {
     match instruction {
-        BasicInstruction::TakeFromWorktop { resource_address } => {
+        Instruction::TakeFromWorktop { resource_address } => {
             let bucket_id = context
                 .id_allocator
                 .new_bucket_id()
@@ -121,13 +124,13 @@ pub fn decompile_instruction<F: fmt::Write>(
             let name = format!("bucket{}", context.bucket_names.len() + 1);
             write!(
                 f,
-                "TAKE_FROM_WORKTOP\n    ResourceAddress(\"{}\")\n    Bucket(\"{}\");",
+                "TAKE_FROM_WORKTOP\n    Address(\"{}\")\n    Bucket(\"{}\");",
                 resource_address.display(context.bech32_encoder),
                 name
             )?;
             context.bucket_names.insert(bucket_id, name);
         }
-        BasicInstruction::TakeFromWorktopByAmount {
+        Instruction::TakeFromWorktopByAmount {
             amount,
             resource_address,
         } => {
@@ -139,13 +142,13 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.bucket_names.insert(bucket_id, name.clone());
             write!(
                 f,
-                "TAKE_FROM_WORKTOP_BY_AMOUNT\n    Decimal(\"{}\")\n    ResourceAddress(\"{}\")\n    Bucket(\"{}\");",
+                "TAKE_FROM_WORKTOP_BY_AMOUNT\n    Decimal(\"{}\")\n    Address(\"{}\")\n    Bucket(\"{}\");",
                 amount,
                 resource_address.display(context.bech32_encoder),
                 name
             )?;
         }
-        BasicInstruction::TakeFromWorktopByIds {
+        Instruction::TakeFromWorktopByIds {
             ids,
             resource_address,
         } => {
@@ -157,16 +160,16 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.bucket_names.insert(bucket_id, name.clone());
             write!(
                 f,
-                "TAKE_FROM_WORKTOP_BY_IDS\n    Array<NonFungibleLocalId>({})\n    ResourceAddress(\"{}\")\n    Bucket(\"{}\");",
+                "TAKE_FROM_WORKTOP_BY_IDS\n    Array<NonFungibleLocalId>({})\n    Address(\"{}\")\n    Bucket(\"{}\");",
                 ids.iter()
-                    .map(|k| ScryptoCustomValue::NonFungibleLocalId(k.clone()).to_string(context.for_value_display()))
+                    .map(|k| ManifestCustomValue::NonFungibleLocalId(from_non_fungible_local_id(k.clone())).to_string(context.for_value_display()))
                     .collect::<Vec<String>>()
                     .join(", "),
                 resource_address.display(context.bech32_encoder),
                 name
             )?;
         }
-        BasicInstruction::ReturnToWorktop { bucket_id } => {
+        Instruction::ReturnToWorktop { bucket_id } => {
             write!(
                 f,
                 "RETURN_TO_WORKTOP\n    Bucket({});",
@@ -177,40 +180,40 @@ pub fn decompile_instruction<F: fmt::Write>(
                     .unwrap_or(format!("{}u32", bucket_id.0))
             )?;
         }
-        BasicInstruction::AssertWorktopContains { resource_address } => {
+        Instruction::AssertWorktopContains { resource_address } => {
             write!(
                 f,
-                "ASSERT_WORKTOP_CONTAINS\n    ResourceAddress(\"{}\");",
+                "ASSERT_WORKTOP_CONTAINS\n    Address(\"{}\");",
                 resource_address.display(context.bech32_encoder)
             )?;
         }
-        BasicInstruction::AssertWorktopContainsByAmount {
+        Instruction::AssertWorktopContainsByAmount {
             amount,
             resource_address,
         } => {
             write!(
                 f,
-                "ASSERT_WORKTOP_CONTAINS_BY_AMOUNT\n    Decimal(\"{}\")\n    ResourceAddress(\"{}\");",
+                "ASSERT_WORKTOP_CONTAINS_BY_AMOUNT\n    Decimal(\"{}\")\n    Address(\"{}\");",
                 amount,
                 resource_address.display(context.bech32_encoder)
             )?;
         }
-        BasicInstruction::AssertWorktopContainsByIds {
+        Instruction::AssertWorktopContainsByIds {
             ids,
             resource_address,
         } => {
             write!(
                 f,
-                "ASSERT_WORKTOP_CONTAINS_BY_IDS\n    Array<NonFungibleLocalId>({})\n    ResourceAddress(\"{}\");",
+                "ASSERT_WORKTOP_CONTAINS_BY_IDS\n    Array<NonFungibleLocalId>({})\n    Address(\"{}\");",
                 ids.iter()
-                    .map(|k| ScryptoCustomValue::NonFungibleLocalId(k.clone())
+                    .map(|k| ManifestCustomValue::NonFungibleLocalId(from_non_fungible_local_id(k.clone()))
                         .to_string(context.for_value_display()))
                     .collect::<Vec<String>>()
                     .join(", "),
                 resource_address.display(context.bech32_encoder)
             )?;
         }
-        BasicInstruction::PopFromAuthZone => {
+        Instruction::PopFromAuthZone => {
             let proof_id = context
                 .id_allocator
                 .new_proof_id()
@@ -219,7 +222,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.proof_names.insert(proof_id, name.clone());
             write!(f, "POP_FROM_AUTH_ZONE\n    Proof(\"{}\");", name)?;
         }
-        BasicInstruction::PushToAuthZone { proof_id } => {
+        Instruction::PushToAuthZone { proof_id } => {
             write!(
                 f,
                 "PUSH_TO_AUTH_ZONE\n    Proof({});",
@@ -230,10 +233,10 @@ pub fn decompile_instruction<F: fmt::Write>(
                     .unwrap_or(format!("{}u32", proof_id.0))
             )?;
         }
-        BasicInstruction::ClearAuthZone => {
+        Instruction::ClearAuthZone => {
             f.write_str("CLEAR_AUTH_ZONE;")?;
         }
-        BasicInstruction::CreateProofFromAuthZone { resource_address } => {
+        Instruction::CreateProofFromAuthZone { resource_address } => {
             let proof_id = context
                 .id_allocator
                 .new_proof_id()
@@ -242,12 +245,12 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.proof_names.insert(proof_id, name.clone());
             write!(
                 f,
-                "CREATE_PROOF_FROM_AUTH_ZONE\n    ResourceAddress(\"{}\")\n    Proof(\"{}\");",
+                "CREATE_PROOF_FROM_AUTH_ZONE\n    Address(\"{}\")\n    Proof(\"{}\");",
                 resource_address.display(context.bech32_encoder),
                 name
             )?;
         }
-        BasicInstruction::CreateProofFromAuthZoneByAmount {
+        Instruction::CreateProofFromAuthZoneByAmount {
             amount,
             resource_address,
         } => {
@@ -259,13 +262,13 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.proof_names.insert(proof_id, name.clone());
             write!(
                 f,
-                "CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT\n    Decimal(\"{}\")\n    ResourceAddress(\"{}\")\n    Proof(\"{}\");",
+                "CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT\n    Decimal(\"{}\")\n    Address(\"{}\")\n    Proof(\"{}\");",
                 amount,
                 resource_address.display(context.bech32_encoder),
                 name
             )?;
         }
-        BasicInstruction::CreateProofFromAuthZoneByIds {
+        Instruction::CreateProofFromAuthZoneByIds {
             ids,
             resource_address,
         } => {
@@ -277,15 +280,15 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.proof_names.insert(proof_id, name.clone());
             write!(
                 f,
-                "CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS\n    Array<NonFungibleLocalId>({})\n    ResourceAddress(\"{}\")\n    Proof(\"{}\");",ids.iter()
-                .map(|k| ScryptoCustomValue::NonFungibleLocalId(k.clone()).to_string(context.for_value_display()))
+                "CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS\n    Array<NonFungibleLocalId>({})\n    Address(\"{}\")\n    Proof(\"{}\");",ids.iter()
+                .map(|k| ManifestCustomValue::NonFungibleLocalId(from_non_fungible_local_id(k.clone())).to_string(context.for_value_display()))
                 .collect::<Vec<String>>()
                 .join(", "),
                 resource_address.display(context.bech32_encoder),
                 name
             )?;
         }
-        BasicInstruction::CreateProofFromBucket { bucket_id } => {
+        Instruction::CreateProofFromBucket { bucket_id } => {
             let proof_id = context
                 .id_allocator
                 .new_proof_id()
@@ -303,7 +306,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 name
             )?;
         }
-        BasicInstruction::CloneProof { proof_id } => {
+        Instruction::CloneProof { proof_id } => {
             let proof_id2 = context
                 .id_allocator
                 .new_proof_id()
@@ -321,7 +324,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 name
             )?;
         }
-        BasicInstruction::DropProof { proof_id } => {
+        Instruction::DropProof { proof_id } => {
             write!(
                 f,
                 "DROP_PROOF\n    Proof({});",
@@ -332,10 +335,10 @@ pub fn decompile_instruction<F: fmt::Write>(
                     .unwrap_or(format!("{}u32", proof_id.0)),
             )?;
         }
-        BasicInstruction::DropAllProofs => {
+        Instruction::DropAllProofs => {
             f.write_str("DROP_ALL_PROOFS;")?;
         }
-        BasicInstruction::CallFunction {
+        Instruction::CallFunction {
             package_address,
             blueprint_name,
             function_name,
@@ -390,7 +393,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 _ => {
                     write!(
                         f,
-                        "CALL_FUNCTION\n    PackageAddress(\"{}\")\n    \"{}\"\n    \"{}\"",
+                        "CALL_FUNCTION\n    Address(\"{}\")\n    \"{}\"\n    \"{}\"",
                         package_address.display(context.bech32_encoder),
                         blueprint_name,
                         function_name,
@@ -398,10 +401,10 @@ pub fn decompile_instruction<F: fmt::Write>(
                 }
             }
 
-            format_args(f, context, args)?;
+            format_encoded_args(f, context, args)?;
             f.write_str(";")?;
         }
-        BasicInstruction::CallMethod {
+        Instruction::CallMethod {
             component_address,
             method_name,
             args,
@@ -412,17 +415,17 @@ pub fn decompile_instruction<F: fmt::Write>(
                 }
                 _ => {
                     f.write_str(&format!(
-                        "CALL_METHOD\n    ComponentAddress(\"{}\")\n    \"{}\"",
+                        "CALL_METHOD\n    Address(\"{}\")\n    \"{}\"",
                         component_address.display(context.bech32_encoder),
                         method_name
                     ))?;
                 }
             }
 
-            format_args(f, context, args)?;
+            format_encoded_args(f, context, args)?;
             f.write_str(";")?;
         }
-        BasicInstruction::PublishPackage {
+        Instruction::PublishPackage {
             code,
             abi,
             royalty_config,
@@ -437,18 +440,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, access_rules)?;
             f.write_str(";")?;
         }
-        BasicInstruction::PublishPackageWithOwner {
-            code,
-            abi,
-            owner_badge,
-        } => {
-            f.write_str("PUBLISH_PACKAGE_WITH_OWNER")?;
-            format_typed_value(f, context, code)?;
-            format_typed_value(f, context, abi)?;
-            format_typed_value(f, context, owner_badge)?;
-            f.write_str(";")?;
-        }
-        BasicInstruction::BurnResource { bucket_id } => {
+        Instruction::BurnResource { bucket_id } => {
             write!(
                 f,
                 "BURN_RESOURCE\n    Bucket({});",
@@ -459,24 +451,24 @@ pub fn decompile_instruction<F: fmt::Write>(
                     .unwrap_or(format!("{}u32", bucket_id.0)),
             )?;
         }
-        BasicInstruction::RecallResource { vault_id, amount } => {
+        Instruction::RecallResource { vault_id, amount } => {
             f.write_str("RECALL_RESOURCE")?;
             format_typed_value(f, context, vault_id)?;
             format_typed_value(f, context, amount)?;
             f.write_str(";")?;
         }
-        BasicInstruction::SetMetadata {
+        Instruction::SetMetadata {
             entity_address,
             key,
             value,
         } => {
             f.write_str("SET_METADATA")?;
-            format_entity_address(f, context, entity_address)?;
+            format_typed_value(f, context, entity_address)?;
             format_typed_value(f, context, key)?;
             format_typed_value(f, context, value)?;
             f.write_str(";")?;
         }
-        BasicInstruction::SetPackageRoyaltyConfig {
+        Instruction::SetPackageRoyaltyConfig {
             package_address,
             royalty_config,
         } => {
@@ -485,7 +477,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, royalty_config)?;
             f.write_str(";")?;
         }
-        BasicInstruction::SetComponentRoyaltyConfig {
+        Instruction::SetComponentRoyaltyConfig {
             component_address,
             royalty_config,
         } => {
@@ -494,30 +486,30 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, royalty_config)?;
             f.write_str(";")?;
         }
-        BasicInstruction::ClaimPackageRoyalty { package_address } => {
+        Instruction::ClaimPackageRoyalty { package_address } => {
             f.write_str("CLAIM_PACKAGE_ROYALTY")?;
             format_typed_value(f, context, package_address)?;
             f.write_str(";")?;
         }
-        BasicInstruction::ClaimComponentRoyalty { component_address } => {
+        Instruction::ClaimComponentRoyalty { component_address } => {
             f.write_str("CLAIM_COMPONENT_ROYALTY")?;
             format_typed_value(f, context, component_address)?;
             f.write_str(";")?;
         }
-        BasicInstruction::SetMethodAccessRule {
+        Instruction::SetMethodAccessRule {
             entity_address,
             index,
             key,
             rule,
         } => {
             f.write_str("SET_METHOD_ACCESS_RULE")?;
-            format_entity_address(f, context, entity_address)?;
+            format_typed_value(f, context, entity_address)?;
             format_typed_value(f, context, index)?;
             format_typed_value(f, context, key)?;
             format_typed_value(f, context, rule)?;
             f.write_str(";")?;
         }
-        BasicInstruction::MintFungible {
+        Instruction::MintFungible {
             resource_address,
             amount,
         } => {
@@ -526,7 +518,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, amount)?;
             f.write_str(";")?;
         }
-        BasicInstruction::MintNonFungible {
+        Instruction::MintNonFungible {
             resource_address,
             entries,
         } => {
@@ -537,7 +529,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, &entries)?;
             f.write_str(";")?;
         }
-        BasicInstruction::MintUuidNonFungible {
+        Instruction::MintUuidNonFungible {
             resource_address,
             entries,
         } => {
@@ -548,7 +540,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, &entries)?;
             f.write_str(";")?;
         }
-        BasicInstruction::AssertAccessRule { access_rule } => {
+        Instruction::AssertAccessRule { access_rule } => {
             f.write_str("ASSERT_ACCESS_RULE")?;
             format_typed_value(f, context, access_rule)?;
             f.write_str(";")?;
@@ -557,64 +549,28 @@ pub fn decompile_instruction<F: fmt::Write>(
     Ok(())
 }
 
-pub fn format_typed_value<F: fmt::Write, T: ScryptoEncode>(
+pub fn format_typed_value<F: fmt::Write, T: ManifestEncode>(
     f: &mut F,
     context: &mut DecompilationContext,
     value: &T,
 ) -> Result<(), DecompileError> {
-    let value = IndexedScryptoValue::from_typed(value);
     f.write_str("\n    ")?;
-    write!(f, "{}", &value.display(context.for_value_display()))?;
+    let value: ManifestValue = manifest_decode(&(manifest_encode(value).unwrap())).unwrap();
+    format_manifest_value(f, &value, &context.for_value_display())?;
     Ok(())
 }
 
-pub fn format_entity_address<F: fmt::Write>(
-    f: &mut F,
-    context: &mut DecompilationContext,
-    address: &GlobalAddress,
-) -> Result<(), DecompileError> {
-    f.write_char(' ')?;
-    match address {
-        GlobalAddress::Component(address) => {
-            write!(
-                f,
-                "ComponentAddress(\"{}\")",
-                &address.display(context.bech32_encoder)
-            )?;
-        }
-        GlobalAddress::Package(address) => {
-            write!(
-                f,
-                "PackageAddress(\"{}\")",
-                &address.display(context.bech32_encoder)
-            )?;
-        }
-        GlobalAddress::Resource(address) => {
-            write!(
-                f,
-                "ResourceAddress(\"{}\")",
-                &address.display(context.bech32_encoder)
-            )?;
-        }
-    }
-
-    Ok(())
-}
-
-pub fn format_args<F: fmt::Write>(
+pub fn format_encoded_args<F: fmt::Write>(
     f: &mut F,
     context: &mut DecompilationContext,
     args: &Vec<u8>,
 ) -> Result<(), DecompileError> {
-    let value =
-        IndexedScryptoValue::from_slice(&args).map_err(|_| DecompileError::InvalidArguments)?;
-    if let Value::Tuple { fields } = value.as_value() {
+    let value: ManifestValue =
+        manifest_decode(&args).map_err(|_| DecompileError::InvalidArguments)?;
+    if let Value::Tuple { fields } = value {
         for field in fields {
-            let bytes = scrypto_encode(&field)?;
-            let arg = IndexedScryptoValue::from_slice(&bytes)
-                .map_err(|_| DecompileError::InvalidArguments)?;
             f.write_str("\n    ")?;
-            write!(f, "{}", &arg.display(context.for_value_display()))?;
+            format_manifest_value(f, &field, &context.for_value_display())?;
         }
     } else {
         return Err(DecompileError::InvalidArguments);
@@ -625,30 +581,30 @@ pub fn format_args<F: fmt::Write>(
 
 fn transform_non_fungible_mint_params(
     mint_params: &BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>,
-) -> Result<BTreeMap<NonFungibleLocalId, (ScryptoValue, ScryptoValue)>, DecodeError> {
-    let mut mint_params_scrypto_value =
-        BTreeMap::<NonFungibleLocalId, (ScryptoValue, ScryptoValue)>::new();
+) -> Result<BTreeMap<NonFungibleLocalId, (ManifestValue, ManifestValue)>, DecodeError> {
+    let mut mint_params_manifest_value =
+        BTreeMap::<NonFungibleLocalId, (ManifestValue, ManifestValue)>::new();
     for (id, (immutable_data, mutable_data)) in mint_params.into_iter() {
-        mint_params_scrypto_value.insert(
+        mint_params_manifest_value.insert(
             id.clone(),
             (
-                scrypto_decode(&immutable_data)?,
-                scrypto_decode(&mutable_data)?,
+                manifest_decode(&immutable_data)?,
+                manifest_decode(&mutable_data)?,
             ),
         );
     }
-    Ok(mint_params_scrypto_value)
+    Ok(mint_params_manifest_value)
 }
 
 fn transform_uuid_non_fungible_mint_params(
     mint_params: &Vec<(Vec<u8>, Vec<u8>)>,
-) -> Result<Vec<(ScryptoValue, ScryptoValue)>, DecodeError> {
-    let mut mint_params_scrypto_value = Vec::<(ScryptoValue, ScryptoValue)>::new();
+) -> Result<Vec<(ManifestValue, ManifestValue)>, DecodeError> {
+    let mut mint_params_manifest_value = Vec::<(ManifestValue, ManifestValue)>::new();
     for (immutable_data, mutable_data) in mint_params.into_iter() {
-        mint_params_scrypto_value.push((
-            scrypto_decode(&immutable_data)?,
-            scrypto_decode(&mutable_data)?,
+        mint_params_manifest_value.push((
+            manifest_decode(&immutable_data)?,
+            manifest_decode(&mutable_data)?,
         ));
     }
-    Ok(mint_params_scrypto_value)
+    Ok(mint_params_manifest_value)
 }

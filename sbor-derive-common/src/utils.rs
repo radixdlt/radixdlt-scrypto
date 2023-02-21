@@ -76,6 +76,14 @@ pub fn extract_attributes(
     None
 }
 
+fn get_sbor_attribute_field_value(attributes: &[Attribute], field_name: &str) -> Option<String> {
+    if let Some(fields) = extract_attributes(attributes, "sbor") {
+        fields.get(field_name).cloned().unwrap_or_default()
+    } else {
+        None
+    }
+}
+
 pub fn is_categorize_skipped(f: &Field) -> bool {
     if let Some(fields) = extract_attributes(&f.attrs, "sbor") {
         fields.contains_key("skip") || fields.contains_key("skip_categorize")
@@ -117,42 +125,59 @@ pub fn is_transparent(attributes: &[Attribute]) -> bool {
 }
 
 pub fn get_custom_value_kind(attributes: &[Attribute]) -> Option<String> {
-    if let Some(fields) = extract_attributes(attributes, "sbor") {
-        fields.get("custom_value_kind").cloned().unwrap_or_default()
-    } else {
-        None
-    }
+    get_sbor_attribute_field_value(attributes, "custom_value_kind")
 }
 
 pub fn get_custom_type_kind(attributes: &[Attribute]) -> Option<String> {
-    if let Some(fields) = extract_attributes(attributes, "sbor") {
-        fields.get("custom_type_kind").cloned().unwrap_or_default()
-    } else {
-        None
-    }
+    get_sbor_attribute_field_value(attributes, "custom_type_kind")
 }
 
-pub fn get_generic_categorize_bounds(attributes: &[Attribute]) -> Option<String> {
-    if let Some(fields) = extract_attributes(attributes, "sbor") {
-        fields
-            .get("generic_categorize_bounds")
-            .cloned()
-            .unwrap_or_default()
-    } else {
-        None
-    }
-}
-
-pub fn get_generic_type_names_requiring_categorize_bound(
-    attributes: &[Attribute],
-) -> HashSet<String> {
-    let Some(comma_separated_types) = get_generic_categorize_bounds(attributes) else {
-        return HashSet::new();
-    };
-    comma_separated_types
-        .split(',')
-        .map(|s| s.to_owned())
+pub fn get_generic_types(generics: &Generics) -> Vec<Type> {
+    generics
+        .type_params()
+        .map(|type_param| {
+            let ident = &type_param.ident;
+            parse_quote!(#ident)
+        })
         .collect()
+}
+
+pub fn parse_comma_separated_types(source_string: &str) -> syn::Result<Vec<Type>> {
+    source_string
+        .split(',')
+        .map(|s| s.trim().to_owned())
+        .filter(|f| f.len() > 0)
+        .map(|s| parse_str(&s))
+        .collect()
+}
+
+fn get_child_types(
+    attributes: &[Attribute],
+    existing_generics: &Generics,
+) -> syn::Result<Vec<Type>> {
+    let Some(comma_separated_types) = get_sbor_attribute_field_value(attributes, "child_types") else {
+        // If no explicit child_types list is set, we use all pre-existing generic type parameters.
+        // This means (eg) that they all have to implement the relevant trait (Encode/Decode/Describe)
+        // This is essentially what derived traits such as Clone do: https://github.com/rust-lang/rust/issues/26925
+        // It's not perfect - but it's typically good enough!
+        return Ok(get_generic_types(existing_generics));
+    };
+
+    parse_comma_separated_types(&comma_separated_types)
+}
+
+fn get_types_requiring_categorize_bound(
+    attributes: &[Attribute],
+    child_types: &[Type],
+) -> syn::Result<Vec<Type>> {
+    let Some(comma_separated_types) = get_sbor_attribute_field_value(attributes, "categorize_types") else {
+        // A categorize bound is only needed for child types when you have a collection, eg Vec<T>
+        // But if no explicit "categorize_types" is set, we assume all are needed.
+        // These can be removed / overriden with the "categorize_types" field
+        return Ok(child_types.to_owned());
+    };
+
+    parse_comma_separated_types(&comma_separated_types)
 }
 
 pub fn get_code_hash_const_array_token_stream(input: &TokenStream) -> TokenStream {
@@ -293,16 +318,8 @@ pub fn build_decode_generics<'a>(
     original_generics: &'a Generics,
     attributes: &'a [Attribute],
     context_custom_value_kind: Option<&'static str>,
-) -> syn::Result<(
-    Generics,
-    TypeGenerics<'a>,
-    Option<&'a WhereClause>,
-    Path,
-    Path,
-)> {
+) -> syn::Result<(Generics, TypeGenerics<'a>, Option<WhereClause>, Path, Path)> {
     let custom_value_kind = get_custom_value_kind(&attributes);
-    let generic_type_names_needing_categorize_bound =
-        get_generic_type_names_requiring_categorize_bound(&attributes);
     let (impl_generics, ty_generics, where_clause) = original_generics.split_for_impl();
 
     // Extract owned generic to allow mutation
@@ -321,23 +338,26 @@ pub fn build_decode_generics<'a>(
     let decoder_label = find_free_generic_name(original_generics, "D")?;
     let decoder_generic: Path = parse_str(&decoder_label)?;
 
-    // Add a bound that all pre-existing type parameters have to implement Decode<X, D>
-    // This is essentially what derived traits such as Clone do: https://github.com/rust-lang/rust/issues/26925
-    // It's not perfect - but it's typically good enough!
+    let child_types = get_child_types(&attributes, &impl_generics)?;
+    let categorize_types = get_types_requiring_categorize_bound(&attributes, &child_types)?;
 
-    for param in impl_generics.params.iter_mut() {
-        let GenericParam::Type(type_param) = param else {
-            continue;
-        };
-        type_param
-            .bounds
-            .push(parse_quote!(::sbor::Decode<#custom_value_kind_generic, #decoder_generic>));
-
-        if generic_type_names_needing_categorize_bound.contains(&type_param.ident.to_string()) {
-            type_param
-                .bounds
-                .push(parse_quote!(::sbor::Categorize<#custom_value_kind_generic>));
+    let mut where_clause = where_clause.cloned();
+    if child_types.len() > 0 || categorize_types.len() > 0 {
+        let mut new_where_clause = where_clause.unwrap_or(WhereClause {
+            where_token: Default::default(),
+            predicates: Default::default(),
+        });
+        for child_type in child_types {
+            new_where_clause
+                .predicates
+                .push(parse_quote!(#child_type: ::sbor::Decode<#custom_value_kind_generic, #decoder_generic>));
         }
+        for categorize_type in categorize_types {
+            new_where_clause.predicates.push(
+                parse_quote!(#categorize_type: ::sbor::Categorize<#custom_value_kind_generic>),
+            );
+        }
+        where_clause = Some(new_where_clause);
     }
 
     impl_generics
@@ -363,16 +383,8 @@ pub fn build_encode_generics<'a>(
     original_generics: &'a Generics,
     attributes: &'a [Attribute],
     context_custom_value_kind: Option<&'static str>,
-) -> syn::Result<(
-    Generics,
-    TypeGenerics<'a>,
-    Option<&'a WhereClause>,
-    Path,
-    Path,
-)> {
+) -> syn::Result<(Generics, TypeGenerics<'a>, Option<WhereClause>, Path, Path)> {
     let custom_value_kind = get_custom_value_kind(&attributes);
-    let generic_type_names_needing_categorize_bound =
-        get_generic_type_names_requiring_categorize_bound(&attributes);
     let (impl_generics, ty_generics, where_clause) = original_generics.split_for_impl();
 
     // Extract owned generic to allow mutation
@@ -391,23 +403,26 @@ pub fn build_encode_generics<'a>(
     let encoder_label = find_free_generic_name(original_generics, "E")?;
     let encoder_generic: Path = parse_str(&encoder_label)?;
 
-    // Add a bound that all pre-existing type parameters have to implement Encode<X, E>
-    // This is essentially what derived traits such as Clone do: https://github.com/rust-lang/rust/issues/26925
-    // It's not perfect - but it's typically good enough!
+    let child_types = get_child_types(&attributes, &impl_generics)?;
+    let categorize_types = get_types_requiring_categorize_bound(&attributes, &child_types)?;
 
-    for param in impl_generics.params.iter_mut() {
-        let GenericParam::Type(type_param) = param else {
-            continue;
-        };
-        type_param
-            .bounds
-            .push(parse_quote!(::sbor::Encode<#custom_value_kind_generic, #encoder_generic>));
-
-        if generic_type_names_needing_categorize_bound.contains(&type_param.ident.to_string()) {
-            type_param
-                .bounds
-                .push(parse_quote!(::sbor::Categorize<#custom_value_kind_generic>));
+    let mut where_clause = where_clause.cloned();
+    if child_types.len() > 0 || categorize_types.len() > 0 {
+        let mut new_where_clause = where_clause.unwrap_or(WhereClause {
+            where_token: Default::default(),
+            predicates: Default::default(),
+        });
+        for child_type in child_types {
+            new_where_clause
+                .predicates
+                .push(parse_quote!(#child_type: ::sbor::Encode<#custom_value_kind_generic, #encoder_generic>));
         }
+        for categorize_type in categorize_types {
+            new_where_clause.predicates.push(
+                parse_quote!(#categorize_type: ::sbor::Categorize<#custom_value_kind_generic>),
+            );
+        }
+        where_clause = Some(new_where_clause);
     }
 
     impl_generics
@@ -433,10 +448,8 @@ pub fn build_describe_generics<'a>(
     original_generics: &'a Generics,
     attributes: &'a [Attribute],
     context_custom_type_kind: Option<&'static str>,
-) -> syn::Result<(Generics, Generics, Option<&'a WhereClause>, Path)> {
+) -> syn::Result<(Generics, Generics, Option<WhereClause>, Vec<Type>, Path)> {
     let custom_type_kind = get_custom_type_kind(attributes);
-    let generic_type_names_needing_categorize_bound =
-        get_generic_type_names_requiring_categorize_bound(&attributes);
 
     let (impl_generics, ty_generics, where_clause) = original_generics.split_for_impl();
 
@@ -453,23 +466,28 @@ pub fn build_describe_generics<'a>(
             (parse_str(&custom_type_label)?, true)
         };
 
-    // Add a bound that all pre-existing type parameters have to implement Encode<X, E>
-    // This is essentially what derived traits such as Clone do: https://github.com/rust-lang/rust/issues/26925
-    // It's not perfect - but it's typically good enough!
+    let child_types = get_child_types(&attributes, &impl_generics)?;
+    let categorize_types = get_types_requiring_categorize_bound(&attributes, &child_types)?;
 
-    for param in impl_generics.params.iter_mut() {
-        let GenericParam::Type(type_param) = param else {
-            continue;
-        };
-        type_param
-            .bounds
-            .push(parse_quote!(::sbor::Describe<#custom_type_kind_generic>));
-
-        if generic_type_names_needing_categorize_bound.contains(&type_param.ident.to_string()) {
-            type_param
-                .bounds
-                .push(parse_quote!(::sbor::Categorize<#custom_type_kind_generic::CustomValueKind>));
+    let mut where_clause = where_clause.cloned();
+    if child_types.len() > 0 || categorize_types.len() > 0 {
+        let mut new_where_clause = where_clause.unwrap_or(WhereClause {
+            where_token: Default::default(),
+            predicates: Default::default(),
+        });
+        for child_type in child_types.iter() {
+            new_where_clause
+                .predicates
+                .push(parse_quote!(#child_type: ::sbor::Describe<#custom_type_kind_generic>));
         }
+        for categorize_type in categorize_types {
+            new_where_clause
+                .predicates
+                .push(parse_quote!(#categorize_type: ::sbor::Categorize<<
+                    #custom_type_kind_generic as::sbor::CustomTypeKind<::sbor::GlobalTypeId>
+                >::CustomValueKind>));
+        }
+        where_clause = Some(new_where_clause);
     }
 
     if need_to_add_ctk_generic {
@@ -484,6 +502,7 @@ pub fn build_describe_generics<'a>(
         impl_generics,
         ty_generics,
         where_clause,
+        child_types,
         custom_type_kind_generic,
     ))
 }

@@ -55,31 +55,18 @@ pub enum TokenKind {
     Err,
     Bytes,
     NonFungibleGlobalId,
-
-    // ==============
-    // SBOR custom types
-    // ==============
-
-    /* RE global address types */
     PackageAddress,
     ComponentAddress,
     ResourceAddress,
 
-    /* RE interpreted types */
-    Own,
-    Blob,
-
-    /* TX interpreted types */
+    // ==============
+    // SBOR custom types
+    // ==============
+    Address,
     Bucket,
     Proof,
     Expression,
-
-    /* Uninterpreted */
-    Hash,
-    EcdsaSecp256k1PublicKey,
-    EcdsaSecp256k1Signature,
-    EddsaEd25519PublicKey,
-    EddsaEd25519Signature,
+    Blob,
     Decimal,
     PreciseDecimal,
     NonFungibleLocalId,
@@ -113,7 +100,6 @@ pub enum TokenKind {
     CallFunction,
     CallMethod,
     PublishPackage,
-    PublishPackageWithOwner,
     BurnResource,
     RecallResource,
     SetMetadata,
@@ -414,23 +400,15 @@ impl Lexer {
             "Err" => Ok(TokenKind::Err),
             "Bytes" => Ok(TokenKind::Bytes),
             "NonFungibleGlobalId" => Ok(TokenKind::NonFungibleGlobalId),
-
             "PackageAddress" => Ok(TokenKind::PackageAddress),
             "ComponentAddress" => Ok(TokenKind::ComponentAddress),
             "ResourceAddress" => Ok(TokenKind::ResourceAddress),
 
-            "Own" => Ok(TokenKind::Own),
-            "Blob" => Ok(TokenKind::Blob),
-
+            "Address" => Ok(TokenKind::Address),
             "Bucket" => Ok(TokenKind::Bucket),
             "Proof" => Ok(TokenKind::Proof),
             "Expression" => Ok(TokenKind::Expression),
-
-            "Hash" => Ok(TokenKind::Hash),
-            "EcdsaSecp256k1PublicKey" => Ok(TokenKind::EcdsaSecp256k1PublicKey),
-            "EcdsaSecp256k1Signature" => Ok(TokenKind::EcdsaSecp256k1Signature),
-            "EddsaEd25519PublicKey" => Ok(TokenKind::EddsaEd25519PublicKey),
-            "EddsaEd25519Signature" => Ok(TokenKind::EddsaEd25519Signature),
+            "Blob" => Ok(TokenKind::Blob),
             "Decimal" => Ok(TokenKind::Decimal),
             "PreciseDecimal" => Ok(TokenKind::PreciseDecimal),
             "NonFungibleLocalId" => Ok(TokenKind::NonFungibleLocalId),
@@ -457,7 +435,6 @@ impl Lexer {
             "CALL_FUNCTION" => Ok(TokenKind::CallFunction),
             "CALL_METHOD" => Ok(TokenKind::CallMethod),
             "PUBLISH_PACKAGE" => Ok(TokenKind::PublishPackage),
-            "PUBLISH_PACKAGE_WITH_OWNER" => Ok(TokenKind::PublishPackageWithOwner),
             "BURN_RESOURCE" => Ok(TokenKind::BurnResource),
             "RECALL_RESOURCE" => Ok(TokenKind::RecallResource),
             "SET_METADATA" => Ok(TokenKind::SetMetadata),

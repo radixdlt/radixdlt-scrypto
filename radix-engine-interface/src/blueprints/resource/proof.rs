@@ -1,7 +1,8 @@
 use crate::abi::*;
 use crate::api::types::*;
 use crate::blueprints::resource::*;
-use crate::data::types::Own;
+use crate::data::model::Own;
+use crate::data::ScryptoCustomTypeKind;
 use crate::data::ScryptoCustomValueKind;
 use crate::math::*;
 use sbor::rust::collections::BTreeSet;
@@ -9,113 +10,27 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 
-#[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
-pub struct ProofGetAmountInvocation {
-    pub receiver: ProofId,
-}
+pub const PROOF_BLUEPRINT: &str = "Proof";
 
-impl Invocation for ProofGetAmountInvocation {
-    type Output = Decimal;
+pub const PROOF_GET_AMOUNT_IDENT: &str = "Proof_get_amount";
 
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Proof(ProofFn::GetAmount))
-    }
-}
+#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
+pub struct ProofGetAmountInput {}
 
-impl SerializableInvocation for ProofGetAmountInvocation {
-    type ScryptoOutput = Decimal;
+pub const PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT: &str = "Proof_get_non_fungible_local_ids";
 
-    fn native_fn() -> NativeFn {
-        NativeFn::Proof(ProofFn::GetAmount)
-    }
-}
+#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
+pub struct ProofGetNonFungibleLocalIdsInput {}
 
-impl Into<CallTableInvocation> for ProofGetAmountInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Proof(ProofInvocation::GetAmount(self)).into()
-    }
-}
+pub const PROOF_GET_RESOURCE_ADDRESS_IDENT: &str = "Proof_get_resource_address";
 
-#[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
-pub struct ProofGetNonFungibleLocalIdsInvocation {
-    pub receiver: ProofId,
-}
+#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
+pub struct ProofGetResourceAddressInput {}
 
-impl Invocation for ProofGetNonFungibleLocalIdsInvocation {
-    type Output = BTreeSet<NonFungibleLocalId>;
+pub const PROOF_CLONE_IDENT: &str = "clone";
 
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Proof(ProofFn::GetNonFungibleLocalIds))
-    }
-}
-
-impl SerializableInvocation for ProofGetNonFungibleLocalIdsInvocation {
-    type ScryptoOutput = BTreeSet<NonFungibleLocalId>;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Proof(ProofFn::GetNonFungibleLocalIds)
-    }
-}
-
-impl Into<CallTableInvocation> for ProofGetNonFungibleLocalIdsInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Proof(ProofInvocation::GetNonFungibleLocalIds(self)).into()
-    }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
-pub struct ProofGetResourceAddressInvocation {
-    pub receiver: ProofId,
-}
-
-impl Invocation for ProofGetResourceAddressInvocation {
-    type Output = ResourceAddress;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Proof(ProofFn::GetResourceAddress))
-    }
-}
-
-impl SerializableInvocation for ProofGetResourceAddressInvocation {
-    type ScryptoOutput = ResourceAddress;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Proof(ProofFn::GetResourceAddress)
-    }
-}
-
-impl Into<CallTableInvocation> for ProofGetResourceAddressInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Proof(ProofInvocation::GetResourceAddress(self)).into()
-    }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
-pub struct ProofCloneInvocation {
-    pub receiver: ProofId,
-}
-
-impl Invocation for ProofCloneInvocation {
-    type Output = Proof;
-
-    fn fn_identifier(&self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Proof(ProofFn::Clone))
-    }
-}
-
-impl SerializableInvocation for ProofCloneInvocation {
-    type ScryptoOutput = Proof;
-
-    fn native_fn() -> NativeFn {
-        NativeFn::Proof(ProofFn::Clone)
-    }
-}
-
-impl Into<CallTableInvocation> for ProofCloneInvocation {
-    fn into(self) -> CallTableInvocation {
-        NativeInvocation::Proof(ProofInvocation::Clone(self)).into()
-    }
-}
+#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
+pub struct ProofCloneInput {}
 
 // TODO: Evaluate if we should have a ProofValidationModeBuilder to construct more complex validation modes.
 /// Specifies the validation mode that should be used for validating a `Proof`.
@@ -213,4 +128,9 @@ impl scrypto_abi::LegacyDescribe for Proof {
     fn describe() -> scrypto_abi::Type {
         Type::Proof
     }
+}
+
+impl Describe<ScryptoCustomTypeKind<GlobalTypeId>> for Proof {
+    const TYPE_ID: GlobalTypeId =
+        GlobalTypeId::well_known(crate::data::well_known_scrypto_custom_types::OWN_PROOF_ID);
 }

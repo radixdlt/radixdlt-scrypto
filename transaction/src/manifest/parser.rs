@@ -168,11 +168,6 @@ impl Parser {
                 metadata: self.parse_value()?,
                 access_rules: self.parse_value()?,
             },
-            TokenKind::PublishPackageWithOwner => Instruction::PublishPackageWithOwner {
-                code: self.parse_value()?,
-                abi: self.parse_value()?,
-                owner_badge: self.parse_value()?,
-            },
             TokenKind::BurnResource => Instruction::BurnResource {
                 bucket: self.parse_value()?,
             },
@@ -295,36 +290,27 @@ impl Parser {
             // ==============
             // Aliases
             // ==============
-            TokenKind::Some |
-            TokenKind::None |
-            TokenKind::Ok |
-            TokenKind::Err |
-            TokenKind::Bytes | TokenKind::NonFungibleGlobalId => self.parse_alias(),
+            TokenKind::Some
+            | TokenKind::None
+            | TokenKind::Ok
+            | TokenKind::Err
+            | TokenKind::Bytes
+            | TokenKind::NonFungibleGlobalId
+            | TokenKind::PackageAddress
+            | TokenKind::ComponentAddress
+            | TokenKind::ResourceAddress => self.parse_alias(),
 
             // ==============
             // Custom Types
             // ==============
-
-            /* Global address */
-            TokenKind::PackageAddress |
-            TokenKind::ComponentAddress |
-            TokenKind::ResourceAddress |
-            /* RE types */
-            TokenKind::Own |
-            TokenKind::Blob |
-            /* TX types */
-            TokenKind::Bucket |
-            TokenKind::Proof |
-            TokenKind::Expression |
-            /* Uninterpreted */
-            TokenKind::Hash |
-            TokenKind::EcdsaSecp256k1PublicKey |
-            TokenKind::EcdsaSecp256k1Signature |
-            TokenKind::EddsaEd25519PublicKey |
-            TokenKind::EddsaEd25519Signature |
-            TokenKind::Decimal |
-            TokenKind::PreciseDecimal |
-            TokenKind::NonFungibleLocalId => self.parse_scrypto_types(),
+            TokenKind::Address
+            | TokenKind::Bucket
+            | TokenKind::Proof
+            | TokenKind::Expression
+            | TokenKind::Blob
+            | TokenKind::Decimal
+            | TokenKind::PreciseDecimal
+            | TokenKind::NonFungibleLocalId => self.parse_custom_types(),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }
@@ -384,14 +370,6 @@ impl Parser {
             TokenKind::NonFungibleGlobalId => Ok(Value::NonFungibleGlobalId(Box::new(
                 self.parse_values_one()?,
             ))),
-            _ => Err(ParserError::UnexpectedToken(token)),
-        }
-    }
-
-    pub fn parse_scrypto_types(&mut self) -> Result<Value, ParserError> {
-        let token = self.advance()?;
-        match token.kind {
-            // RE interpreted types
             TokenKind::PackageAddress => Ok(Value::PackageAddress(self.parse_values_one()?.into())),
             TokenKind::ComponentAddress => {
                 Ok(Value::ComponentAddress(self.parse_values_one()?.into()))
@@ -399,28 +377,18 @@ impl Parser {
             TokenKind::ResourceAddress => {
                 Ok(Value::ResourceAddress(self.parse_values_one()?.into()))
             }
-            TokenKind::Own => Ok(Value::Own(self.parse_values_one()?.into())),
+            _ => Err(ParserError::UnexpectedToken(token)),
+        }
+    }
 
-            // TX interpreted types
+    pub fn parse_custom_types(&mut self) -> Result<Value, ParserError> {
+        let token = self.advance()?;
+        match token.kind {
+            TokenKind::Address => Ok(Value::Address(self.parse_values_one()?.into())),
             TokenKind::Bucket => Ok(Value::Bucket(self.parse_values_one()?.into())),
             TokenKind::Proof => Ok(Value::Proof(self.parse_values_one()?.into())),
             TokenKind::Expression => Ok(Value::Expression(self.parse_values_one()?.into())),
             TokenKind::Blob => Ok(Value::Blob(self.parse_values_one()?.into())),
-
-            // Uninterpreted
-            TokenKind::Hash => Ok(Value::Hash(self.parse_values_one()?.into())),
-            TokenKind::EcdsaSecp256k1PublicKey => Ok(Value::EcdsaSecp256k1PublicKey(
-                self.parse_values_one()?.into(),
-            )),
-            TokenKind::EcdsaSecp256k1Signature => Ok(Value::EcdsaSecp256k1Signature(
-                self.parse_values_one()?.into(),
-            )),
-            TokenKind::EddsaEd25519PublicKey => Ok(Value::EddsaEd25519PublicKey(
-                self.parse_values_one()?.into(),
-            )),
-            TokenKind::EddsaEd25519Signature => Ok(Value::EddsaEd25519Signature(
-                self.parse_values_one()?.into(),
-            )),
             TokenKind::Decimal => Ok(Value::Decimal(self.parse_values_one()?.into())),
             TokenKind::PreciseDecimal => Ok(Value::PreciseDecimal(self.parse_values_one()?.into())),
             TokenKind::NonFungibleLocalId => {
@@ -505,25 +473,16 @@ impl Parser {
             // Alias
             TokenKind::Bytes => Ok(Type::Bytes),
             TokenKind::NonFungibleGlobalId => Ok(Type::NonFungibleGlobalId),
-
-            // RE interpreted types
             TokenKind::PackageAddress => Ok(Type::PackageAddress),
             TokenKind::ComponentAddress => Ok(Type::ComponentAddress),
             TokenKind::ResourceAddress => Ok(Type::ResourceAddress),
-            TokenKind::Own => Ok(Type::Own),
 
-            // TX interpreted types
+            // Custom types
+            TokenKind::Address => Ok(Type::Address),
             TokenKind::Bucket => Ok(Type::Bucket),
             TokenKind::Proof => Ok(Type::Proof),
             TokenKind::Expression => Ok(Type::Expression),
             TokenKind::Blob => Ok(Type::Blob),
-
-            // Uninterpreted
-            TokenKind::Hash => Ok(Type::Hash),
-            TokenKind::EcdsaSecp256k1PublicKey => Ok(Type::EcdsaSecp256k1PublicKey),
-            TokenKind::EcdsaSecp256k1Signature => Ok(Type::EcdsaSecp256k1Signature),
-            TokenKind::EddsaEd25519PublicKey => Ok(Type::EddsaEd25519PublicKey),
-            TokenKind::EddsaEd25519Signature => Ok(Type::EddsaEd25519Signature),
             TokenKind::Decimal => Ok(Type::Decimal),
             TokenKind::PreciseDecimal => Ok(Type::PreciseDecimal),
             TokenKind::NonFungibleLocalId => Ok(Type::NonFungibleLocalId),

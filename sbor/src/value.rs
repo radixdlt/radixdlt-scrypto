@@ -374,18 +374,22 @@ pub trait ValueVisitor<X: CustomValueKind, Y> {
 
     fn visit_array(
         &mut self,
-        path: &mut SborPathBuf,
-        element_value_kind: &ValueKind<X>,
-        elements: &[Value<X, Y>],
-    ) -> Result<(), Self::Err>;
+        _path: &mut SborPathBuf,
+        _element_value_kind: &ValueKind<X>,
+        _elements: &[Value<X, Y>],
+    ) -> Result<(), Self::Err> {
+        Ok(())
+    }
 
     fn visit_map(
         &mut self,
-        path: &mut SborPathBuf,
-        key_value_kind: &ValueKind<X>,
-        value_value_kind: &ValueKind<X>,
-        entries: &[(Value<X, Y>, Value<X, Y>)],
-    ) -> Result<(), Self::Err>;
+        _path: &mut SborPathBuf,
+        _key_value_kind: &ValueKind<X>,
+        _value_value_kind: &ValueKind<X>,
+        _entries: &[(Value<X, Y>, Value<X, Y>)],
+    ) -> Result<(), Self::Err> {
+        Ok(())
+    }
 
     fn visit(&mut self, path: &mut SborPathBuf, value: &Y) -> Result<(), Self::Err>;
 }

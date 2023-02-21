@@ -243,6 +243,7 @@ dependencies = [
  "sbor",
  "scrypto-abi",
  "strum",
+ "transaction-data",
  "utils",
 ]
 
@@ -393,6 +394,26 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "transaction-data"
+version = "0.9.0"
+dependencies = [
+ "hex",
+ "sbor",
+ "transaction-derive",
+ "utils",
+]
+
+[[package]]
+name = "transaction-derive"
+version = "0.8.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "sbor-derive-common",
+ "syn",
 ]
 
 [[package]]

@@ -1,5 +1,5 @@
-use radix_engine_interface::data::types::*;
 use sbor::*;
+use transaction_data::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum HeaderValidationError {
@@ -26,7 +26,7 @@ impl From<EncodeError> for SignatureValidationError {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum ManifestIdAllocationError {
     OutOfID,
 }
@@ -43,7 +43,6 @@ pub enum ManifestIdValidationError {
 pub enum CallDataValidationError {
     DecodeError(DecodeError),
     IdValidationError(ManifestIdValidationError),
-    OwnNotAllowed,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
