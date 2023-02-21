@@ -59,15 +59,35 @@ pub struct Location {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ContainerHeader<H: CustomContainerHeader> {
-    Tuple(usize),
-    EnumVariant(u8, usize),
-    Array(ValueKind<H::CustomValueKind>, usize),
-    Map(
-        ValueKind<H::CustomValueKind>,
-        ValueKind<H::CustomValueKind>,
-        usize,
-    ),
+    Tuple(TupleHeader),
+    EnumVariant(EnumVariantHeader),
+    Array(ArrayHeader<H::CustomValueKind>),
+    Map(MapHeader<H::CustomValueKind>),
     Custom(H),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TupleHeader {
+    pub length: usize,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EnumVariantHeader {
+    pub variant: u8,
+    pub length: usize,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ArrayHeader<X: CustomValueKind> {
+    pub element_value_kind: ValueKind<X>,
+    pub length: usize,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MapHeader<X: CustomValueKind> {
+    pub key_value_kind: ValueKind<X>,
+    pub value_value_kind: ValueKind<X>,
+    pub length: usize,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -82,10 +102,10 @@ pub enum ParentRelationship {
 impl<H: CustomContainerHeader> ContainerHeader<H> {
     pub fn get_child_count(&self) -> usize {
         match self {
-            ContainerHeader::Tuple(size) => *size,
-            ContainerHeader::EnumVariant(_, size) => *size,
-            ContainerHeader::Array(_, size) => *size,
-            ContainerHeader::Map(_, _, size) => *size * 2,
+            ContainerHeader::Tuple(TupleHeader { length }) => *length,
+            ContainerHeader::EnumVariant(EnumVariantHeader { length, .. }) => *length,
+            ContainerHeader::Array(ArrayHeader { length, .. }) => *length,
+            ContainerHeader::Map(MapHeader { length, .. }) => *length * 2,
             ContainerHeader::Custom(custom_header) => custom_header.get_child_count(),
         }
     }
@@ -96,18 +116,27 @@ impl<H: CustomContainerHeader> ContainerHeader<H> {
     ) -> (ParentRelationship, Option<ValueKind<H::CustomValueKind>>) {
         match self {
             ContainerHeader::Tuple(_) => (ParentRelationship::Element { index }, None),
-            ContainerHeader::EnumVariant(_, _) => (ParentRelationship::Element { index }, None),
-            ContainerHeader::Array(element_value_kind, _) => (
+            ContainerHeader::EnumVariant(_) => (ParentRelationship::Element { index }, None),
+            ContainerHeader::Array(ArrayHeader {
+                element_value_kind, ..
+            }) => (
                 ParentRelationship::Element { index },
                 Some(*element_value_kind),
             ),
-            ContainerHeader::Map(key, value, _) => {
+            ContainerHeader::Map(MapHeader {
+                key_value_kind,
+                value_value_kind,
+                ..
+            }) => {
                 if index % 2 == 0 {
-                    (ParentRelationship::MapKey { index: index / 2 }, Some(*key))
+                    (
+                        ParentRelationship::MapKey { index: index / 2 },
+                        Some(*key_value_kind),
+                    )
                 } else {
                     (
                         ParentRelationship::MapValue { index: index / 2 },
-                        Some(*value),
+                        Some(*value_value_kind),
                     )
                 }
             }

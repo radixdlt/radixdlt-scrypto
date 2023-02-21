@@ -326,11 +326,11 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
         start_offset: usize,
     ) -> Result<TraversalEvent<'de, T>, DecodeError> {
         let variant = self.decoder.read_byte()?;
-        let size = self.decoder.read_size()?;
+        let length = self.decoder.read_size()?;
         Ok(self.enter_container(
             start_offset,
             parent_relationship,
-            ContainerHeader::EnumVariant(variant, size),
+            ContainerHeader::EnumVariant(EnumVariantHeader { variant, length }),
         ))
     }
 
@@ -339,11 +339,11 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
         parent_relationship: ParentRelationship,
         start_offset: usize,
     ) -> Result<TraversalEvent<'de, T>, DecodeError> {
-        let size = self.decoder.read_size()?;
+        let length = self.decoder.read_size()?;
         Ok(self.enter_container(
             start_offset,
             parent_relationship,
-            ContainerHeader::Tuple(size),
+            ContainerHeader::Tuple(TupleHeader { length }),
         ))
     }
 
@@ -353,14 +353,17 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
         start_offset: usize,
     ) -> Result<TraversalEvent<'de, T>, DecodeError> {
         let element_value_kind = self.decoder.read_value_kind()?;
-        let size = self.decoder.read_size()?;
-        if element_value_kind == ValueKind::U8 && size > 0 {
-            self.next_event_override = NextEventOverride::ReadBytes(size);
+        let length = self.decoder.read_size()?;
+        if element_value_kind == ValueKind::U8 && length > 0 {
+            self.next_event_override = NextEventOverride::ReadBytes(length);
         }
         Ok(self.enter_container(
             start_offset,
             parent_relationship,
-            ContainerHeader::Array(element_value_kind, size),
+            ContainerHeader::Array(ArrayHeader {
+                element_value_kind,
+                length,
+            }),
         ))
     }
 
@@ -371,11 +374,15 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
     ) -> Result<TraversalEvent<'de, T>, DecodeError> {
         let key_value_kind = self.decoder.read_value_kind()?;
         let value_value_kind = self.decoder.read_value_kind()?;
-        let size = self.decoder.read_size()?;
+        let length = self.decoder.read_size()?;
         Ok(self.enter_container(
             start_offset,
             parent_relationship,
-            ContainerHeader::Map(key_value_kind, value_value_kind, size),
+            ContainerHeader::Map(MapHeader {
+                key_value_kind,
+                value_value_kind,
+                length,
+            }),
         ))
     }
 
@@ -465,13 +472,22 @@ mod tests {
         let mut traverser = basic_traverser(&payload).unwrap();
 
         // Start:
-        next_event_is_container_start_header(&mut traverser, ContainerHeader::Tuple(7), 1, 1, 3);
+        next_event_is_container_start_header(
+            &mut traverser,
+            ContainerHeader::Tuple(TupleHeader { length: 7 }),
+            1,
+            1,
+            3,
+        );
         // First line
         next_event_is_terminal_value(&mut traverser, TerminalValueRef::U8(2), 2, 3, 5);
         // Second line
         next_event_is_container_start_header(
             &mut traverser,
-            ContainerHeader::Array(ValueKind::U8, 2),
+            ContainerHeader::Array(ArrayHeader {
+                element_value_kind: ValueKind::U8,
+                length: 2,
+            }),
             2,
             5,
             8,
@@ -485,17 +501,30 @@ mod tests {
         );
         next_event_is_container_end(
             &mut traverser,
-            ContainerHeader::Array(ValueKind::U8, 2),
+            ContainerHeader::Array(ArrayHeader {
+                element_value_kind: ValueKind::U8,
+                length: 2,
+            }),
             2,
             5,
             10,
         );
         // Third line
-        next_event_is_container_start_header(&mut traverser, ContainerHeader::Tuple(2), 2, 10, 12);
+        next_event_is_container_start_header(
+            &mut traverser,
+            ContainerHeader::Tuple(TupleHeader { length: 2 }),
+            2,
+            10,
+            12,
+        );
         next_event_is_terminal_value(&mut traverser, TerminalValueRef::U32(3), 3, 12, 17);
         next_event_is_container_start_header(
             &mut traverser,
-            ContainerHeader::Map(ValueKind::U8, ValueKind::U32, 1),
+            ContainerHeader::Map(MapHeader {
+                key_value_kind: ValueKind::U8,
+                value_value_kind: ValueKind::U32,
+                length: 1,
+            }),
             3,
             17,
             21,
@@ -504,16 +533,29 @@ mod tests {
         next_event_is_terminal_value(&mut traverser, TerminalValueRef::U32(18), 4, 22, 26);
         next_event_is_container_end(
             &mut traverser,
-            ContainerHeader::Map(ValueKind::U8, ValueKind::U32, 1),
+            ContainerHeader::Map(MapHeader {
+                key_value_kind: ValueKind::U8,
+                value_value_kind: ValueKind::U32,
+                length: 1,
+            }),
             3,
             17,
             26,
         );
-        next_event_is_container_end(&mut traverser, ContainerHeader::Tuple(2), 2, 10, 26);
+        next_event_is_container_end(
+            &mut traverser,
+            ContainerHeader::Tuple(TupleHeader { length: 2 }),
+            2,
+            10,
+            26,
+        );
         // Fourth line
         next_event_is_container_start_header(
             &mut traverser,
-            ContainerHeader::EnumVariant(1, 1),
+            ContainerHeader::EnumVariant(EnumVariantHeader {
+                variant: 1,
+                length: 1,
+            }),
             2,
             26,
             29,
@@ -521,7 +563,10 @@ mod tests {
         next_event_is_terminal_value(&mut traverser, TerminalValueRef::U32(4), 3, 29, 34);
         next_event_is_container_end(
             &mut traverser,
-            ContainerHeader::EnumVariant(1, 1),
+            ContainerHeader::EnumVariant(EnumVariantHeader {
+                variant: 1,
+                length: 1,
+            }),
             2,
             26,
             34,
@@ -529,14 +574,20 @@ mod tests {
         // Fifth line - empty Vec<u8> - no bytes event is output
         next_event_is_container_start_header(
             &mut traverser,
-            ContainerHeader::Array(ValueKind::U8, 0),
+            ContainerHeader::Array(ArrayHeader {
+                element_value_kind: ValueKind::U8,
+                length: 0,
+            }),
             2,
             34,
             37,
         );
         next_event_is_container_end(
             &mut traverser,
-            ContainerHeader::Array(ValueKind::U8, 0),
+            ContainerHeader::Array(ArrayHeader {
+                element_value_kind: ValueKind::U8,
+                length: 0,
+            }),
             2,
             34,
             37,
@@ -544,14 +595,20 @@ mod tests {
         // Sixth line - empty Vec<i32>
         next_event_is_container_start_header(
             &mut traverser,
-            ContainerHeader::Array(ValueKind::I32, 0),
+            ContainerHeader::Array(ArrayHeader {
+                element_value_kind: ValueKind::I32,
+                length: 0,
+            }),
             2,
             37,
             40,
         );
         next_event_is_container_end(
             &mut traverser,
-            ContainerHeader::Array(ValueKind::I32, 0),
+            ContainerHeader::Array(ArrayHeader {
+                element_value_kind: ValueKind::I32,
+                length: 0,
+            }),
             2,
             37,
             40,
@@ -559,38 +616,68 @@ mod tests {
         // Seventh line - Vec<Vec<(i64)>>
         next_event_is_container_start_header(
             &mut traverser,
-            ContainerHeader::Array(ValueKind::Array, 1),
+            ContainerHeader::Array(ArrayHeader {
+                element_value_kind: ValueKind::Array,
+                length: 1,
+            }),
             2,
             40,
             43,
         );
         next_event_is_container_start_header(
             &mut traverser,
-            ContainerHeader::Array(ValueKind::Tuple, 1),
+            ContainerHeader::Array(ArrayHeader {
+                element_value_kind: ValueKind::Tuple,
+                length: 1,
+            }),
             3,
             43,
             45,
         );
-        next_event_is_container_start_header(&mut traverser, ContainerHeader::Tuple(1), 4, 45, 46);
+        next_event_is_container_start_header(
+            &mut traverser,
+            ContainerHeader::Tuple(TupleHeader { length: 1 }),
+            4,
+            45,
+            46,
+        );
         next_event_is_terminal_value(&mut traverser, TerminalValueRef::I64(-2), 5, 46, 55);
-        next_event_is_container_end(&mut traverser, ContainerHeader::Tuple(1), 4, 45, 55);
         next_event_is_container_end(
             &mut traverser,
-            ContainerHeader::Array(ValueKind::Tuple, 1),
+            ContainerHeader::Tuple(TupleHeader { length: 1 }),
+            4,
+            45,
+            55,
+        );
+        next_event_is_container_end(
+            &mut traverser,
+            ContainerHeader::Array(ArrayHeader {
+                element_value_kind: ValueKind::Tuple,
+                length: 1,
+            }),
             3,
             43,
             55,
         );
         next_event_is_container_end(
             &mut traverser,
-            ContainerHeader::Array(ValueKind::Array, 1),
+            ContainerHeader::Array(ArrayHeader {
+                element_value_kind: ValueKind::Array,
+                length: 1,
+            }),
             2,
             40,
             55,
         );
 
         // End
-        next_event_is_container_end(&mut traverser, ContainerHeader::Tuple(7), 1, 1, 55);
+        next_event_is_container_end(
+            &mut traverser,
+            ContainerHeader::Tuple(TupleHeader { length: 7 }),
+            1,
+            1,
+            55,
+        );
         next_event_is_payload_end(&mut traverser, 0, 55, 55);
     }
 
