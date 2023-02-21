@@ -8,11 +8,11 @@ use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_properties::VisibilityProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
-use crate::system::type_info::TypeInfoSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::SysBucket;
-use radix_engine_interface::api::component::ComponentInfoSubstate;
+use radix_engine_interface::api::component::TypeInfoSubstate;
+use radix_engine_interface::api::package::PACKAGE_LOADER_BLUEPRINT;
 // TODO: clean this up!
 use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use radix_engine_interface::api::types::{
@@ -751,8 +751,8 @@ where
             (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
             (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {
                 module_init.insert(
-                    NodeModuleId::ComponentTypeInfo,
-                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                    NodeModuleId::TypeInfo,
+                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: AUTH_ZONE_PACKAGE,
                         blueprint_name: AUTH_ZONE_BLUEPRINT.to_string(),
                     }),
@@ -760,8 +760,8 @@ where
             }
             (RENodeId::TransactionRuntime, RENodeInit::TransactionRuntime(..)) => {
                 module_init.insert(
-                    NodeModuleId::ComponentTypeInfo,
-                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                    NodeModuleId::TypeInfo,
+                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: TRANSACTION_RUNTIME_PACKAGE,
                         blueprint_name: TRANSACTION_RUNTIME_BLUEPRINT.to_string(),
                     }),
@@ -769,8 +769,8 @@ where
             }
             (RENodeId::Logger, RENodeInit::Logger(..)) => {
                 module_init.insert(
-                    NodeModuleId::ComponentTypeInfo,
-                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                    NodeModuleId::TypeInfo,
+                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: LOGGER_PACKAGE,
                         blueprint_name: LOGGER_BLUEPRINT.to_string(),
                     }),
@@ -778,8 +778,8 @@ where
             }
             (RENodeId::Worktop, RENodeInit::Worktop(..)) => {
                 module_init.insert(
-                    NodeModuleId::ComponentTypeInfo,
-                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                    NodeModuleId::TypeInfo,
+                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: RESOURCE_MANAGER_PACKAGE,
                         blueprint_name: WORKTOP_BLUEPRINT.to_string(),
                     }),
@@ -787,8 +787,8 @@ where
             }
             (RENodeId::Bucket(..), RENodeInit::Bucket(..)) => {
                 module_init.insert(
-                    NodeModuleId::ComponentTypeInfo,
-                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                    NodeModuleId::TypeInfo,
+                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: RESOURCE_MANAGER_PACKAGE,
                         blueprint_name: BUCKET_BLUEPRINT.to_string(),
                     }),
@@ -796,8 +796,8 @@ where
             }
             (RENodeId::Proof(..), RENodeInit::Proof(..)) => {
                 module_init.insert(
-                    NodeModuleId::ComponentTypeInfo,
-                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                    NodeModuleId::TypeInfo,
+                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: RESOURCE_MANAGER_PACKAGE,
                         blueprint_name: PROOF_BLUEPRINT.to_string(),
                     }),
@@ -805,29 +805,26 @@ where
             }
             (RENodeId::Vault(..), RENodeInit::Vault(..)) => {
                 module_init.insert(
-                    NodeModuleId::ComponentTypeInfo,
-                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                    NodeModuleId::TypeInfo,
+                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: RESOURCE_MANAGER_PACKAGE,
                         blueprint_name: VAULT_BLUEPRINT.to_string(),
                     }),
                 );
             }
-            (RENodeId::Package(..), RENodeInit::NativePackage(..)) => {
+            (RENodeId::Package(..), RENodeInit::Package(..)) => {
                 module_init.insert(
-                    NodeModuleId::PackageTypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate::NativePackage),
-                );
-            }
-            (RENodeId::Package(..), RENodeInit::WasmPackage(..)) => {
-                module_init.insert(
-                    NodeModuleId::PackageTypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate::WasmPackage),
+                    NodeModuleId::TypeInfo,
+                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                        package_address: PACKAGE_LOADER,
+                        blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+                    }),
                 );
             }
             (RENodeId::ResourceManager(..), RENodeInit::ResourceManager(..)) => {
                 module_init.insert(
-                    NodeModuleId::ComponentTypeInfo,
-                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                    NodeModuleId::TypeInfo,
+                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: RESOURCE_MANAGER_PACKAGE,
                         blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
                     }),
@@ -835,8 +832,8 @@ where
             }
             (RENodeId::EpochManager(..), RENodeInit::EpochManager(..)) => {
                 module_init.insert(
-                    NodeModuleId::ComponentTypeInfo,
-                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                    NodeModuleId::TypeInfo,
+                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: EPOCH_MANAGER_PACKAGE,
                         blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
                     }),
@@ -844,8 +841,8 @@ where
             }
             (RENodeId::Validator(..), RENodeInit::Validator(..)) => {
                 module_init.insert(
-                    NodeModuleId::ComponentTypeInfo,
-                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                    NodeModuleId::TypeInfo,
+                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: EPOCH_MANAGER_PACKAGE,
                         blueprint_name: VALIDATOR_BLUEPRINT.to_string(),
                     }),
@@ -853,8 +850,8 @@ where
             }
             (RENodeId::Clock(..), RENodeInit::Clock(..)) => {
                 module_init.insert(
-                    NodeModuleId::ComponentTypeInfo,
-                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                    NodeModuleId::TypeInfo,
+                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: CLOCK_PACKAGE,
                         blueprint_name: CLOCK_BLUEPRINT.to_string(),
                     }),
@@ -862,8 +859,8 @@ where
             }
             (RENodeId::Identity(..), RENodeInit::Identity(..)) => {
                 module_init.insert(
-                    NodeModuleId::ComponentTypeInfo,
-                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                    NodeModuleId::TypeInfo,
+                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: IDENTITY_PACKAGE,
                         blueprint_name: IDENTITY_BLUEPRINT.to_string(),
                     }),
@@ -871,8 +868,8 @@ where
             }
             (RENodeId::AccessController(..), RENodeInit::AccessController(..)) => {
                 module_init.insert(
-                    NodeModuleId::ComponentTypeInfo,
-                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                    NodeModuleId::TypeInfo,
+                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: ACCESS_CONTROLLER_PACKAGE,
                         blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
                     }),
@@ -880,8 +877,8 @@ where
             }
             (RENodeId::Account(..), RENodeInit::Account(..)) => {
                 module_init.insert(
-                    NodeModuleId::ComponentTypeInfo,
-                    RENodeModuleInit::ComponentTypeInfo(ComponentInfoSubstate {
+                    NodeModuleId::TypeInfo,
+                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: ACCOUNT_PACKAGE,
                         blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
                     }),
@@ -1162,8 +1159,23 @@ impl<'g, 's, W> KernelWasmApi<W> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    fn kernel_get_scrypto_interpreter(&mut self) -> &ScryptoInterpreter<W> {
-        self.scrypto_interpreter
+    fn kernel_create_wasm_instance(
+        &mut self,
+        package_address: PackageAddress,
+        handle: LockHandle,
+    ) -> Result<W::WasmInstance, RuntimeError> {
+        KernelModuleMixer::on_read_substate(
+            self,
+            handle,
+            0, //  TODO: pass the right size
+        )?;
+        let substate_ref = self
+            .current_frame
+            .get_ref(handle, &mut self.heap, &mut self.track)?;
+        let instance = self
+            .scrypto_interpreter
+            .create_instance(package_address, &substate_ref.code().code);
+        Ok(instance)
     }
 }
 

@@ -17,8 +17,8 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::component::{
-    ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
-    ComponentStateSubstate,
+    ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate,
+    TypeInfoSubstate,
 };
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
@@ -162,11 +162,11 @@ where
         let handle = self.kernel_lock_substate(
             package_global,
             NodeModuleId::SELF,
-            SubstateOffset::Package(PackageOffset::WasmCode),
+            SubstateOffset::Package(PackageOffset::Code),
             LockFlags::read_only(),
         )?;
         let substate_ref = self.kernel_get_substate_ref(handle)?;
-        let package = substate_ref.wasm_code();
+        let package = substate_ref.code();
         let code = package.code().to_vec();
         self.kernel_drop_lock(handle)?;
         Ok(PackageCode::Wasm(code))
@@ -254,8 +254,8 @@ where
             node_id,
             RENodeInit::Component(ComponentStateSubstate::new(abi_enforced_app_substate)),
             btreemap!(
-                NodeModuleId::ComponentTypeInfo => RENodeModuleInit::ComponentTypeInfo(
-                    ComponentInfoSubstate::new(package_address, blueprint_ident.to_string())
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(
+                    TypeInfoSubstate::new(package_address, blueprint_ident.to_string())
                 ),
                 NodeModuleId::ComponentRoyalty => RENodeModuleInit::ComponentRoyalty(
                     royalty_config_substate,
@@ -317,8 +317,8 @@ where
         let component_node_id = RENodeId::Component(component_id);
         let handle = self.kernel_lock_substate(
             component_node_id,
-            NodeModuleId::ComponentTypeInfo,
-            SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo),
+            NodeModuleId::TypeInfo,
+            SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
             LockFlags::read_only(),
         )?;
         let substate_ref = self.kernel_get_substate_ref(handle)?;

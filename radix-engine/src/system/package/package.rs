@@ -8,6 +8,7 @@ use crate::system::node_modules::access_rules::{
     ObjectAccessRulesChainSubstate, PackageAccessRulesSubstate,
 };
 use crate::system::node_modules::metadata::MetadataSubstate;
+use crate::system::type_info::PackageCodeTypeSubstate;
 use crate::types::*;
 use crate::wasm::{PrepareError, WasmValidator};
 use core::fmt::Debug;
@@ -110,13 +111,18 @@ impl Package {
             dependent_components: input.dependent_components.into_iter().collect(),
             blueprint_abis: input.abi,
         };
-        let code = NativeCodeSubstate {
-            native_package_code_id: input.native_package_code_id,
+        let code_type = PackageCodeTypeSubstate::Precompiled;
+        let code = PackageCodeSubstate {
+            code: vec![input.native_package_code_id],
         };
 
         // Create package node
         let node_id = api.kernel_allocate_node_id(RENodeType::Package)?;
-        api.kernel_create_node(node_id, RENodeInit::NativePackage(info, code), node_modules)?;
+        api.kernel_create_node(
+            node_id,
+            RENodeInit::Package(info, code_type, code),
+            node_modules,
+        )?;
         let package_id: PackageId = node_id.into();
 
         // Globalize
@@ -156,7 +162,8 @@ impl Package {
                 ))
             })?;
 
-        let wasm_code_substate = WasmCodeSubstate { code: input.code };
+        let code_type_substate = PackageCodeTypeSubstate::Wasm;
+        let wasm_code_substate = PackageCodeSubstate { code: input.code };
         let package_info_substate = PackageInfoSubstate {
             blueprint_abis: input.abi,
             dependent_resources: BTreeSet::new(),
@@ -206,7 +213,11 @@ impl Package {
         let node_id = api.kernel_allocate_node_id(RENodeType::Package)?;
         api.kernel_create_node(
             node_id,
-            RENodeInit::WasmPackage(package_info_substate, wasm_code_substate),
+            RENodeInit::Package(
+                package_info_substate,
+                code_type_substate,
+                wasm_code_substate,
+            ),
             node_modules,
         )?;
         let package_id: PackageId = node_id.into();

@@ -66,8 +66,8 @@ pub fn export_abi_by_component<S: ReadableSubstateStore>(
     let component_value: RuntimeSubstate = substate_store
         .get_substate(&SubstateId(
             component_id,
-            NodeModuleId::ComponentTypeInfo,
-            SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo),
+            NodeModuleId::TypeInfo,
+            SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
         ))
         .map(|s| s.substate.to_runtime())
         .ok_or(ExportError::ComponentNotFound(component_address))?;
