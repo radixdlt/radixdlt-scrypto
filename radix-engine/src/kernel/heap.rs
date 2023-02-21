@@ -11,6 +11,9 @@ use radix_engine_interface::api::types::{
     AuthZoneStackOffset, BucketOffset, LoggerOffset, NodeModuleId, ProofOffset, RENodeId,
     SubstateId, SubstateOffset, TransactionRuntimeOffset,
 };
+use radix_engine_interface::blueprints::resource::{
+    LiquidFungibleResource, LiquidNonFungibleResource, LiquidResource, ResourceType,
+};
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
 
@@ -139,15 +142,37 @@ pub struct HeapRENode {
     pub substates: BTreeMap<(NodeModuleId, SubstateOffset), RuntimeSubstate>,
 }
 
-impl Into<BucketInfoSubstate> for HeapRENode {
-    fn into(mut self) -> BucketInfoSubstate {
-        self.substates
+impl Into<LiquidResource> for HeapRENode {
+    fn into(mut self) -> LiquidResource {
+        let info: BucketInfoSubstate = self
+            .substates
             .remove(&(
                 NodeModuleId::SELF,
                 SubstateOffset::Bucket(BucketOffset::Info),
             ))
             .unwrap()
-            .into()
+            .into();
+
+        match info.resource_type {
+            ResourceType::Fungible { divisibility } => self
+                .substates
+                .remove(&(
+                    NodeModuleId::SELF,
+                    SubstateOffset::Bucket(BucketOffset::LiquidFungible),
+                ))
+                .map(|s| Into::<LiquidFungibleResource>::into(s))
+                .unwrap()
+                .into(),
+            ResourceType::NonFungible { id_type } => self
+                .substates
+                .remove(&(
+                    NodeModuleId::SELF,
+                    SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
+                ))
+                .map(|s| Into::<LiquidNonFungibleResource>::into(s))
+                .unwrap()
+                .into(),
+        }
     }
 }
 

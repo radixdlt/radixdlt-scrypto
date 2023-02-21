@@ -20,7 +20,7 @@ pub enum ResourceError {
 pub struct LiquidFungibleResource {
     /// The resource address.
     resource_address: ResourceAddress,
-    /// The resource divisibility (copied from resource manager for performance).
+    /// The resource divisibility.
     divisibility: u8,
     /// The total amount.
     amount: Decimal,
@@ -112,9 +112,9 @@ impl LiquidFungibleResource {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct LiquidNonFungibleResource {
-    /// The resource address.
+    /// The resource address
     resource_address: ResourceAddress,
-    /// NonFungible Id type (copied from resource manager for performance)
+    /// NonFungible Id type
     id_type: NonFungibleIdType,
     /// The total non-fungible ids.
     ids: BTreeSet<NonFungibleLocalId>,
@@ -250,6 +250,53 @@ pub struct LockedNonFungibleResource {
 impl LockedNonFungibleResource {
     pub fn is_locked(&self) -> bool {
         !self.ids.is_empty()
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum LiquidResource {
+    Fungible(LiquidFungibleResource),
+    NonFungible(LiquidNonFungibleResource),
+}
+
+impl LiquidResource {
+    pub fn resource_address(&self) -> ResourceAddress {
+        match self {
+            LiquidResource::Fungible(f) => f.resource_address(),
+            LiquidResource::NonFungible(nf) => nf.resource_address(),
+        }
+    }
+    pub fn resource_type(&self) -> ResourceType {
+        match self {
+            LiquidResource::Fungible(f) => f.resource_type(),
+            LiquidResource::NonFungible(nf) => nf.resource_type(),
+        }
+    }
+
+    pub fn into_fungible(self) -> Option<LiquidFungibleResource> {
+        match self {
+            LiquidResource::Fungible(f) => Some(f),
+            LiquidResource::NonFungible(_) => None,
+        }
+    }
+
+    pub fn into_non_fungibles(self) -> Option<LiquidNonFungibleResource> {
+        match self {
+            LiquidResource::Fungible(_) => None,
+            LiquidResource::NonFungible(nf) => Some(nf),
+        }
+    }
+}
+
+impl From<LiquidFungibleResource> for LiquidResource {
+    fn from(value: LiquidFungibleResource) -> Self {
+        Self::Fungible(value)
+    }
+}
+
+impl From<LiquidNonFungibleResource> for LiquidResource {
+    fn from(value: LiquidNonFungibleResource) -> Self {
+        Self::NonFungible(value)
     }
 }
 

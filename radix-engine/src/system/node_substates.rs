@@ -928,6 +928,40 @@ impl Into<VaultInfoSubstate> for RuntimeSubstate {
     }
 }
 
+impl Into<BucketInfoSubstate> for RuntimeSubstate {
+    fn into(self) -> BucketInfoSubstate {
+        if let RuntimeSubstate::BucketInfo(substate) = self {
+            substate
+        } else {
+            panic!("Not a bucket");
+        }
+    }
+}
+
+impl Into<LiquidFungibleResource> for RuntimeSubstate {
+    fn into(self) -> LiquidFungibleResource {
+        if let RuntimeSubstate::VaultLiquidFungible(substate) = self {
+            substate
+        } else if let RuntimeSubstate::BucketLiquidFungible(substate) = self {
+            substate
+        } else {
+            panic!("Not a vault");
+        }
+    }
+}
+
+impl Into<LiquidNonFungibleResource> for RuntimeSubstate {
+    fn into(self) -> LiquidNonFungibleResource {
+        if let RuntimeSubstate::VaultLiquidNonFungible(substate) = self {
+            substate
+        } else if let RuntimeSubstate::BucketLiquidNonFungible(substate) = self {
+            substate
+        } else {
+            panic!("Not a vault");
+        }
+    }
+}
+
 impl Into<EpochManagerSubstate> for RuntimeSubstate {
     fn into(self) -> EpochManagerSubstate {
         if let RuntimeSubstate::EpochManager(system) = self {
@@ -954,16 +988,6 @@ impl Into<GlobalSubstate> for RuntimeSubstate {
             substate
         } else {
             panic!("Not a global address substate");
-        }
-    }
-}
-
-impl Into<BucketInfoSubstate> for RuntimeSubstate {
-    fn into(self) -> BucketInfoSubstate {
-        if let RuntimeSubstate::BucketInfo(substate) = self {
-            substate
-        } else {
-            panic!("Not a bucket");
         }
     }
 }
