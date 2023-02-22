@@ -23,8 +23,10 @@ use radix_engine_interface::blueprints::resource::LiquidNonFungibleResource;
 
 #[derive(Debug)]
 pub enum RENodeModuleInit {
-    /* Type info */
+    // TODO: move to somewhere else
     PackageCodeType(PackageCodeTypeSubstate),
+
+    /* Type info */
     TypeInfo(TypeInfoSubstate),
 
     /* Metadata */
@@ -32,7 +34,7 @@ pub enum RENodeModuleInit {
 
     /* Access rules */
     ComponentAccessRulesChain(ObjectAccessRulesChainSubstate),
-    PackageAccessRules(PackageAccessRulesSubstate), // TODO: clean this up!
+    PackageAccessRules(PackageAccessRulesSubstate),
 
     /* Royalty */
     ComponentRoyalty(

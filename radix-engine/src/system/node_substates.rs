@@ -42,7 +42,6 @@ pub enum PersistedSubstate {
     ResourceManager(ResourceManagerSubstate),
     ComponentState(ComponentStateSubstate),
     PackageInfo(PackageInfoSubstate),
-    PackageAccessRules(PackageAccessRulesSubstate),
     PackageCodeType(PackageCodeTypeSubstate),
     WasmCode(WasmCodeSubstate),
     NativeCode(NativeCodeSubstate),
@@ -57,6 +56,7 @@ pub enum PersistedSubstate {
 
     /* Access rules */
     AccessRulesChain(ObjectAccessRulesChainSubstate),
+    PackageAccessRules(PackageAccessRulesSubstate),
 
     /* Metadata */
     Metadata(MetadataSubstate),
@@ -173,9 +173,6 @@ impl PersistedSubstate {
             PersistedSubstate::ResourceManager(value) => RuntimeSubstate::ResourceManager(value),
             PersistedSubstate::ComponentState(value) => RuntimeSubstate::ComponentState(value),
             PersistedSubstate::PackageInfo(value) => RuntimeSubstate::PackageInfo(value),
-            PersistedSubstate::PackageAccessRules(value) => {
-                RuntimeSubstate::PackageAccessRules(value)
-            }
             PersistedSubstate::PackageCodeType(value) => RuntimeSubstate::PackageCodeType(value),
             PersistedSubstate::WasmCode(value) => RuntimeSubstate::WasmCode(value),
             PersistedSubstate::NativeCode(value) => RuntimeSubstate::NativeCode(value),
@@ -196,6 +193,9 @@ impl PersistedSubstate {
             /* Node module starts */
             PersistedSubstate::TypeInfo(value) => RuntimeSubstate::TypeInfo(value),
             PersistedSubstate::AccessRulesChain(value) => RuntimeSubstate::AccessRulesChain(value),
+            PersistedSubstate::PackageAccessRules(value) => {
+                RuntimeSubstate::PackageAccessRules(value)
+            }
             PersistedSubstate::Metadata(value) => RuntimeSubstate::Metadata(value),
             PersistedSubstate::PackageRoyaltyConfig(value) => {
                 RuntimeSubstate::PackageRoyaltyConfig(value)
@@ -228,7 +228,6 @@ pub enum RuntimeSubstate {
     ResourceManager(ResourceManagerSubstate),
     ComponentState(ComponentStateSubstate),
     PackageInfo(PackageInfoSubstate),
-    PackageAccessRules(PackageAccessRulesSubstate),
     PackageCodeType(PackageCodeTypeSubstate),
     WasmCode(WasmCodeSubstate),
     NativeCode(NativeCodeSubstate),
@@ -255,6 +254,7 @@ pub enum RuntimeSubstate {
 
     /* Access rules */
     AccessRulesChain(ObjectAccessRulesChainSubstate),
+    PackageAccessRules(PackageAccessRulesSubstate),
 
     /* Metadata */
     Metadata(MetadataSubstate),
@@ -288,9 +288,6 @@ impl RuntimeSubstate {
                 PersistedSubstate::ComponentState(value.clone())
             }
             RuntimeSubstate::PackageInfo(value) => PersistedSubstate::PackageInfo(value.clone()),
-            RuntimeSubstate::PackageAccessRules(value) => {
-                PersistedSubstate::PackageAccessRules(value.clone())
-            }
             RuntimeSubstate::PackageCodeType(value) => {
                 PersistedSubstate::PackageCodeType(value.clone())
             }
@@ -316,6 +313,9 @@ impl RuntimeSubstate {
             RuntimeSubstate::TypeInfo(value) => PersistedSubstate::TypeInfo(value.clone()),
             RuntimeSubstate::AccessRulesChain(value) => {
                 PersistedSubstate::AccessRulesChain(value.clone())
+            }
+            RuntimeSubstate::PackageAccessRules(value) => {
+                PersistedSubstate::PackageAccessRules(value.clone())
             }
             RuntimeSubstate::Metadata(value) => PersistedSubstate::Metadata(value.clone()),
             RuntimeSubstate::ComponentRoyaltyConfig(value) => {
@@ -361,9 +361,6 @@ impl RuntimeSubstate {
             RuntimeSubstate::TypeInfo(value) => PersistedSubstate::TypeInfo(value),
             RuntimeSubstate::ComponentState(value) => PersistedSubstate::ComponentState(value),
             RuntimeSubstate::PackageInfo(value) => PersistedSubstate::PackageInfo(value),
-            RuntimeSubstate::PackageAccessRules(value) => {
-                PersistedSubstate::PackageAccessRules(value)
-            }
             RuntimeSubstate::PackageCodeType(value) => PersistedSubstate::PackageCodeType(value),
             RuntimeSubstate::WasmCode(value) => PersistedSubstate::WasmCode(value),
             RuntimeSubstate::NativeCode(value) => PersistedSubstate::NativeCode(value),
@@ -384,6 +381,9 @@ impl RuntimeSubstate {
             /* Node module starts */
             RuntimeSubstate::TypeInfo(value) => PersistedSubstate::TypeInfo(value),
             RuntimeSubstate::AccessRulesChain(value) => PersistedSubstate::AccessRulesChain(value),
+            RuntimeSubstate::PackageAccessRules(value) => {
+                PersistedSubstate::PackageAccessRules(value)
+            }
             RuntimeSubstate::Metadata(value) => PersistedSubstate::Metadata(value),
             RuntimeSubstate::ComponentRoyaltyConfig(value) => {
                 PersistedSubstate::ComponentRoyaltyConfig(value)
