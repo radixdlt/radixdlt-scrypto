@@ -29,6 +29,7 @@ impl VisibilityProperties {
         match mode {
             ExecutionMode::KernelModule => match node_id {
                 RENodeId::Logger => true,
+                RENodeId::EventStore => true,
                 RENodeId::TransactionRuntime => true,
                 RENodeId::AuthZoneStack => true,
                 _ => false,
@@ -373,6 +374,7 @@ impl SubstateProperties {
             SubstateOffset::AccessController(..) => true,
             SubstateOffset::TypeInfo(..) => true,
             SubstateOffset::PackageAccessRules => true,
+            SubstateOffset::EventStore(..) => false,
         }
     }
 

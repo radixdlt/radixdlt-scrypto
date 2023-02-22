@@ -19,6 +19,8 @@ use radix_engine_interface::api::types::{
     VaultOffset, WorktopOffset,
 };
 
+use super::events::EventStoreSubstate;
+
 #[derive(Debug)]
 pub enum RENodeModuleInit {
     TypeInfo(TypeInfoSubstate),
@@ -115,6 +117,7 @@ pub enum RENodeInit {
     Logger(LoggerSubstate),
     AccessController(AccessControllerSubstate),
     Account(AccountSubstate),
+    EventStore(EventStoreSubstate),
 }
 
 impl RENodeInit {
@@ -241,6 +244,12 @@ impl RENodeInit {
                 substates.insert(
                     SubstateOffset::AccessController(AccessControllerOffset::AccessController),
                     access_controller.into(),
+                );
+            }
+            RENodeInit::EventStore(event_store_substate) => {
+                substates.insert(
+                    SubstateOffset::EventStore(EventStoreOffset::EventStore),
+                    event_store_substate.into(),
                 );
             }
         };

@@ -37,6 +37,7 @@ pub enum RENodeType {
     Logger,
     Account,
     AccessController,
+    EventStore,
 }
 
 #[derive(
@@ -72,6 +73,7 @@ pub enum RENodeId {
     Validator(ValidatorId),
     Account(AccountId),
     AccessController(AccessControllerId),
+    EventStore,
 }
 
 impl fmt::Debug for RENodeId {
@@ -82,6 +84,7 @@ impl fmt::Debug for RENodeId {
             Self::AuthZoneStack => write!(f, "AuthZoneStack"),
             Self::Worktop => write!(f, "Worktop"),
             Self::Logger => write!(f, "Logger"),
+            Self::EventStore => write!(f, "EventStore"),
             Self::TransactionRuntime => write!(f, "TransactionRuntime"),
             Self::Global(address) => f.debug_tuple("Global").field(address).finish(),
             Self::KeyValueStore(id) => f
@@ -136,6 +139,7 @@ impl Into<[u8; 36]> for RENodeId {
             RENodeId::Logger => [4u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
             RENodeId::TransactionRuntime => [5u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
             RENodeId::AuthZoneStack => [6u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
+            RENodeId::EventStore => [7u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
             _ => panic!("Not a stored id"),
         }
     }
@@ -339,6 +343,11 @@ pub enum AccessControllerOffset {
     AccessController,
 }
 
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum EventStoreOffset {
+    EventStore,
+}
+
 /// Specifies a specific Substate into a given RENode
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
 pub enum SubstateOffset {
@@ -360,6 +369,7 @@ pub enum SubstateOffset {
     TransactionRuntime(TransactionRuntimeOffset),
     Account(AccountOffset),
     AccessController(AccessControllerOffset),
+    EventStore(EventStoreOffset),
 
     // Node modules
     // TODO: align with module ID allocation?

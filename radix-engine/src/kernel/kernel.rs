@@ -280,6 +280,7 @@ where
     fn drop_node_internal(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError> {
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::DropNode, |api| match node_id {
             RENodeId::Logger => Ok(()),
+            RENodeId::EventStore => Ok(()),
             RENodeId::TransactionRuntime => Ok(()),
             RENodeId::AuthZoneStack => {
                 let handle = api.kernel_lock_substate(
@@ -884,6 +885,7 @@ where
                     }),
                 );
             }
+            (RENodeId::EventStore, RENodeInit::EventStore(..)) => {}
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id))),
         }
 

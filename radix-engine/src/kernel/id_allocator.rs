@@ -66,6 +66,7 @@ impl IdAllocator {
             RENodeType::TransactionRuntime => Ok(RENodeId::TransactionRuntime),
             RENodeType::Worktop => Ok(RENodeId::Worktop),
             RENodeType::Logger => Ok(RENodeId::Logger),
+            RENodeType::EventStore => Ok(RENodeId::EventStore),
             RENodeType::Vault => self.new_vault_id().map(|id| RENodeId::Vault(id)),
             RENodeType::KeyValueStore => {
                 self.new_kv_store_id().map(|id| RENodeId::KeyValueStore(id))
