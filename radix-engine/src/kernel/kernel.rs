@@ -290,7 +290,7 @@ where
                 )?;
                 let mut substate_ref_mut = api.kernel_get_substate_ref_mut(handle)?;
                 let auth_zone_stack = substate_ref_mut.auth_zone_stack();
-                auth_zone_stack.clear_all();
+                auth_zone_stack.clear_all(); // FIXME: drop all proofs and clear locks
                 api.kernel_drop_lock(handle)?;
                 Ok(())
             }

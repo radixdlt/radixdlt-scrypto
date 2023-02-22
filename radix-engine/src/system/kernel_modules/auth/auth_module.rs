@@ -398,7 +398,7 @@ impl KernelModule for AuthModule {
                 virtual_non_fungibles.insert(non_fungible_global_id);
             }
 
-            auth_zone_stack.new_frame(virtual_non_fungibles, is_barrier);
+            auth_zone_stack.push_auth_zone(virtual_non_fungibles, is_barrier);
             api.kernel_drop_lock(handle)?;
         }
 
@@ -429,7 +429,7 @@ impl KernelModule for AuthModule {
         {
             let mut substate_ref_mut = api.kernel_get_substate_ref_mut(handle)?;
             let auth_zone_stack = substate_ref_mut.auth_zone_stack();
-            auth_zone_stack.pop_frame();
+            auth_zone_stack.pop_auth_zone();
         }
         api.kernel_drop_lock(handle)?;
 

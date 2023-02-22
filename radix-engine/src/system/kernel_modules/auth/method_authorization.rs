@@ -60,5 +60,4 @@ pub enum MethodAuthorization {
     Protected(HardAuthRule),
     AllowAll,
     DenyAll,
-    Unsupported,
 }
