@@ -27,17 +27,17 @@ pub struct NativeCodeSubstate {
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Clone, Sbor, PartialEq, Eq)]
-pub struct WasmCodeSubstate {
+pub struct PackageCodeSubstate {
     pub code: Vec<u8>,
 }
 
-impl WasmCodeSubstate {
+impl PackageCodeSubstate {
     pub fn code(&self) -> &[u8] {
         &self.code
     }
 }
 
-impl Debug for WasmCodeSubstate {
+impl Debug for PackageCodeSubstate {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         f.debug_struct("WasmCodeSubstate").finish()
     }
