@@ -275,7 +275,6 @@ impl From<LiquidNonFungibleResource> for LiquidResource {
     }
 }
 
-/// Resource that can be partially or completely locked for proofs.
 #[derive(Debug, PartialEq, Eq)]
 pub struct LockedFungibleResource {
     /// The locked amounts and the corresponding times of being locked.

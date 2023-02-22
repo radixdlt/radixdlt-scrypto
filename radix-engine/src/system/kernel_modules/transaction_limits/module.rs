@@ -17,9 +17,12 @@ pub enum TransactionLimitsError {
     /// Retruned when one instance WASM memory consumed during transaction execution exceeds defined limit,
     /// as parameter memory consumed by that instave is returned.
     MaxWasmInstanceMemoryExceeded(usize),
-    /// Retruned when substate reads count during transaction execution
-    /// exceeds defined limit just after reads occurs.
+    /// Returned when substate reads count during transaction execution
+    /// exceeds defined limit just after read occurs.
     MaxSubstateReadsCountExceeded,
+    /// Returned when substate writes count during transaction execution
+    /// exceeds defined limit just after write occurs.
+    MaxSubstateWritesCountExceeded,
 }
 
 /// Representation of data which needs to be limited for each call frame.
@@ -34,12 +37,15 @@ pub struct TransactionLimitsConfig {
     pub max_wasm_memory: usize,
     /// Maximum WASM memory which can be consumed in one call frame.
     pub max_wasm_memory_per_call_frame: usize,
-    /// Maximum Substates reads for transaction.
+    /// Maximum Substates reads for a transaction.
     pub max_substate_reads: usize,
+    /// Maximum Substates writes for a transaction.
+    pub max_substate_writes: usize,
 }
 
 /// Tracks and verifies transaction limits during transactino execution,
 /// if exceeded breaks execution with appropriate error.
+/// Default limits values are defined in radix-engine-constants lib.
 pub struct TransactionLimitsModule {
     /// Definitions of the limits levels.
     limits_config: TransactionLimitsConfig,
@@ -47,6 +53,8 @@ pub struct TransactionLimitsModule {
     call_frames_stack: Vec<CallFrameLimitInfo>,
     /// Substate store read count.
     substate_store_read: usize,
+    /// Substate store write count.
+    substate_store_write: usize,
 }
 
 impl TransactionLimitsModule {
@@ -55,6 +63,7 @@ impl TransactionLimitsModule {
             limits_config,
             call_frames_stack: Vec::with_capacity(8),
             substate_store_read: 0,
+            substate_store_write: 0,
         }
     }
 
@@ -105,6 +114,12 @@ impl TransactionLimitsModule {
                     TransactionLimitsError::MaxSubstateReadsCountExceeded,
                 ),
             ))
+        } else if self.substate_store_write > self.limits_config.max_substate_writes {
+            Err(RuntimeError::ModuleError(
+                ModuleError::TransactionLimitsError(
+                    TransactionLimitsError::MaxSubstateWritesCountExceeded,
+                ),
+            ))
         } else {
             Ok(())
         }
@@ -143,6 +158,20 @@ impl KernelModule for TransactionLimitsModule {
 
         // Increase read coutner.
         tlimit.substate_store_read += 1;
+
+        // Validate
+        tlimit.validate_substates()
+    }
+
+    fn on_write_substate<Y: KernelModuleApi<RuntimeError>>(
+        api: &mut Y,
+        _lock_handle: LockHandle,
+        _size: usize,
+    ) -> Result<(), RuntimeError> {
+        let tlimit = &mut api.kernel_get_module_state().transaction_limits;
+
+        // Increase write coutner.
+        tlimit.substate_store_write += 1;
 
         // Validate
         tlimit.validate_substates()
