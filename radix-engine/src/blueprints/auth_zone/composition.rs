@@ -192,25 +192,36 @@ fn compose_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
     let mut evidence = BTreeMap::new();
     let mut remaining = amount.clone();
     'outer: for proof in proofs {
-        for (container_id, _) in &proof.evidence {
-            if remaining.is_zero() {
-                break 'outer;
-            }
+        let handle = api.kernel_lock_substate(
+            RENodeId::Proof(proof.0),
+            NodeModuleId::SELF,
+            SubstateOffset::Proof(ProofOffset::Proof),
+            LockFlags::read_only(),
+        )?;
+        let substate = api.kernel_get_substate_ref(handle)?;
+        let proof_substate = substate.proof();
+        if let ProofSubstate::Fungible(proof) = proof_substate {
+            for (container_id, _) in &proof.evidence {
+                if remaining.is_zero() {
+                    break 'outer;
+                }
 
-            if let Some(quota) = per_container.remove(container_id) {
-                let amount = Decimal::min(remaining, quota);
-                api.call_method(
-                    container_id.to_re_node_id(),
-                    match container_id {
-                        LocalRef::Bucket(_) => BUCKET_LOCK_AMOUNT_IDENT,
-                        LocalRef::Vault(_) => VAULT_LOCK_AMOUNT_IDENT,
-                    },
-                    scrypto_args!(amount),
-                )?;
-                remaining -= amount;
-                evidence.insert(container_id.clone(), amount);
+                if let Some(quota) = per_container.remove(container_id) {
+                    let amount = Decimal::min(remaining, quota);
+                    api.call_method(
+                        container_id.to_re_node_id(),
+                        match container_id {
+                            LocalRef::Bucket(_) => BUCKET_LOCK_AMOUNT_IDENT,
+                            LocalRef::Vault(_) => VAULT_LOCK_AMOUNT_IDENT,
+                        },
+                        scrypto_args!(amount),
+                    )?;
+                    remaining -= amount;
+                    evidence.insert(container_id.clone(), amount);
+                }
             }
         }
+        api.kernel_drop_lock(handle)?;
     }
 
     FungibleProof::new(resource_address, amount, evidence)
@@ -267,27 +278,38 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
     let mut evidence = BTreeMap::new();
     let mut remaining = ids.clone();
     'outer: for proof in proofs {
-        for (container_id, _) in &proof.evidence {
-            if remaining.is_empty() {
-                break 'outer;
-            }
-
-            if let Some(quota) = per_container.remove(container_id) {
-                let ids = remaining.intersection(&quota).cloned().collect();
-                api.call_method(
-                    container_id.to_re_node_id(),
-                    match container_id {
-                        LocalRef::Bucket(_) => BUCKET_LOCK_NON_FUNGIBLES_IDENT,
-                        LocalRef::Vault(_) => VAULT_LOCK_NON_FUNGIBLES_IDENT,
-                    },
-                    scrypto_args!(&ids),
-                )?;
-                for id in &ids {
-                    remaining.remove(id);
+        let handle = api.kernel_lock_substate(
+            RENodeId::Proof(proof.0),
+            NodeModuleId::SELF,
+            SubstateOffset::Proof(ProofOffset::Proof),
+            LockFlags::read_only(),
+        )?;
+        let substate = api.kernel_get_substate_ref(handle)?;
+        let proof_substate = substate.proof();
+        if let ProofSubstate::NonFungible(proof) = proof_substate {
+            for (container_id, _) in &proof.evidence {
+                if remaining.is_empty() {
+                    break 'outer;
                 }
-                evidence.insert(container_id.clone(), ids);
+
+                if let Some(quota) = per_container.remove(container_id) {
+                    let ids = remaining.intersection(&quota).cloned().collect();
+                    api.call_method(
+                        container_id.to_re_node_id(),
+                        match container_id {
+                            LocalRef::Bucket(_) => BUCKET_LOCK_NON_FUNGIBLES_IDENT,
+                            LocalRef::Vault(_) => VAULT_LOCK_NON_FUNGIBLES_IDENT,
+                        },
+                        scrypto_args!(&ids),
+                    )?;
+                    for id in &ids {
+                        remaining.remove(id);
+                    }
+                    evidence.insert(container_id.clone(), ids);
+                }
             }
         }
+        api.kernel_drop_lock(handle)?;
     }
 
     NonFungibleProof::new(resource_address, ids.clone(), evidence)
