@@ -96,7 +96,7 @@ impl Package {
         );
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::ComponentAccessRulesChain(access_rules),
+            RENodeModuleInit::ObjectAccessRulesChain(access_rules),
         );
         node_modules.insert(
             NodeModuleId::PackageAccessRules,
@@ -199,7 +199,7 @@ impl Package {
         );
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::ComponentAccessRulesChain(access_rules),
+            RENodeModuleInit::ObjectAccessRulesChain(access_rules),
         );
         node_modules.insert(
             NodeModuleId::PackageAccessRules,

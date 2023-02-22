@@ -262,7 +262,7 @@ where
                     royalty_accumulator_substate
                 ),
                 NodeModuleId::Metadata => RENodeModuleInit::Metadata(metadata_substate),
-                NodeModuleId::AccessRules => RENodeModuleInit::ComponentAccessRulesChain(auth_substate),
+                NodeModuleId::AccessRules => RENodeModuleInit::ObjectAccessRulesChain(auth_substate),
             ),
         )?;
 

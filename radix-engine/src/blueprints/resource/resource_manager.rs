@@ -12,7 +12,6 @@ use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use native_sdk::resource::SysBucket;
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::node_modules::auth::AuthZoneAssertAccessRuleInput;
 use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
@@ -21,9 +20,7 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientSubstateApi;
-use radix_engine_interface::blueprints::auth_zone::AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT;
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
-use radix_engine_interface::blueprints::resource::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::model::Own;
 use radix_engine_interface::data::ScryptoValue;
@@ -314,22 +311,6 @@ fn build_substates(
         AllowAll,
         DenyAll,
     );
-    access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(
-            NodeModuleId::SELF,
-            RESOURCE_MANAGER_UPDATE_VAULT_AUTH_IDENT.to_string(),
-        ),
-        AllowAll, // Access verification occurs within method
-        DenyAll,
-    );
-    access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(
-            NodeModuleId::SELF,
-            RESOURCE_MANAGER_SET_VAULT_AUTH_MUTABILITY_IDENT.to_string(),
-        ),
-        AllowAll, // Access verification occurs within method
-        DenyAll,
-    );
 
     let substate = ObjectAccessRulesChainSubstate {
         access_rules_chain: vec![access_rules],
@@ -454,7 +435,7 @@ where
         Some(nf_store_id),
         resource_address,
     );
-    let (access_rules_substate, vault_substate) = build_substates(access_rules);
+    let (access_rules_substate, vault_rules_substate) = build_substates(access_rules);
     let metadata_substate = MetadataSubstate { metadata };
 
     let mut node_modules = BTreeMap::new();
@@ -464,11 +445,11 @@ where
     );
     node_modules.insert(
         NodeModuleId::AccessRules,
-        RENodeModuleInit::ComponentAccessRulesChain(access_rules_substate),
+        RENodeModuleInit::ObjectAccessRulesChain(access_rules_substate),
     );
     node_modules.insert(
         NodeModuleId::AccessRules1,
-        RENodeModuleInit::ComponentAccessRulesChain(vault_substate),
+        RENodeModuleInit::ObjectAccessRulesChain(vault_rules_substate),
     );
 
     let underlying_node_id = api.kernel_allocate_node_id(RENodeType::ResourceManager)?;
@@ -592,11 +573,11 @@ impl ResourceManagerBlueprint {
         );
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::ComponentAccessRulesChain(access_rules_substate),
+            RENodeModuleInit::ObjectAccessRulesChain(access_rules_substate),
         );
         node_modules.insert(
             NodeModuleId::AccessRules1,
-            RENodeModuleInit::ComponentAccessRulesChain(vault_substate),
+            RENodeModuleInit::ObjectAccessRulesChain(vault_substate),
         );
 
         let underlying_node_id = api.kernel_allocate_node_id(RENodeType::ResourceManager)?;
@@ -659,11 +640,11 @@ impl ResourceManagerBlueprint {
         );
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::ComponentAccessRulesChain(access_rules_substate),
+            RENodeModuleInit::ObjectAccessRulesChain(access_rules_substate),
         );
         node_modules.insert(
             NodeModuleId::AccessRules1,
-            RENodeModuleInit::ComponentAccessRulesChain(vault_substate),
+            RENodeModuleInit::ObjectAccessRulesChain(vault_substate),
         );
 
         let underlying_node_id = api.kernel_allocate_node_id(RENodeType::ResourceManager)?;
@@ -742,11 +723,11 @@ impl ResourceManagerBlueprint {
         );
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::ComponentAccessRulesChain(access_rules_substate),
+            RENodeModuleInit::ObjectAccessRulesChain(access_rules_substate),
         );
         node_modules.insert(
             NodeModuleId::AccessRules1,
-            RENodeModuleInit::ComponentAccessRulesChain(vault_substate),
+            RENodeModuleInit::ObjectAccessRulesChain(vault_substate),
         );
 
         let underlying_node_id = api.kernel_allocate_node_id(RENodeType::ResourceManager)?;
@@ -804,11 +785,11 @@ impl ResourceManagerBlueprint {
         );
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::ComponentAccessRulesChain(access_rules_substate),
+            RENodeModuleInit::ObjectAccessRulesChain(access_rules_substate),
         );
         node_modules.insert(
             NodeModuleId::AccessRules1,
-            RENodeModuleInit::ComponentAccessRulesChain(vault_substate),
+            RENodeModuleInit::ObjectAccessRulesChain(vault_substate),
         );
 
         let underlying_node_id = api.kernel_allocate_node_id(RENodeType::ResourceManager)?;
@@ -1315,136 +1296,6 @@ impl ResourceManagerBlueprint {
         Ok(IndexedScryptoValue::from_typed(&Own::Vault(vault_id)))
     }
 
-    pub(crate) fn update_vault_auth<Y>(
-        receiver: RENodeId,
-        input: ScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>,
-    {
-        let input: ResourceManagerUpdateVaultAuthInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
-
-        let handle = api.kernel_lock_substate(
-            receiver,
-            NodeModuleId::AccessRules1,
-            SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
-            LockFlags::MUTABLE,
-        )?;
-
-        // TODO: Figure out how to move this access check into more appropriate place
-        {
-            let substate_ref = api.kernel_get_substate_ref(handle)?;
-            let substate = substate_ref.access_rules_chain();
-
-            let access_rule = match input.method {
-                Deposit => {
-                    let key = AccessRuleKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string());
-                    substate.access_rules_chain[0].get_mutability(&key)
-                }
-                Withdraw => substate.access_rules_chain[0].get_group_mutability("withdraw"),
-                Recall => substate.access_rules_chain[0].get_group_mutability("recall"),
-            }
-            .clone();
-
-            api.call_method(
-                RENodeId::AuthZoneStack,
-                AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
-                scrypto_encode(&AuthZoneAssertAccessRuleInput { access_rule }).unwrap(),
-            )?;
-        }
-
-        let mut substate_mut = api.kernel_get_substate_ref_mut(handle)?;
-        let substate = substate_mut.access_rules_chain();
-
-        match input.method {
-            Deposit => {
-                let key = AccessRuleKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string());
-                substate.access_rules_chain[0].set_method_access_rule(key, input.access_rule);
-            }
-            Withdraw => {
-                let group_key = "withdraw".to_string();
-                substate.access_rules_chain[0].set_group_access_rule(group_key, input.access_rule);
-            }
-            Recall => {
-                let group_key = "recall".to_string();
-                substate.access_rules_chain[0].set_group_access_rule(group_key, input.access_rule);
-            }
-        }
-
-        Ok(IndexedScryptoValue::from_typed(&()))
-    }
-
-    pub(crate) fn set_vault_auth_mutability<Y>(
-        receiver: RENodeId,
-        input: ScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>,
-    {
-        let input: ResourceManagerSetVaultAuthMutabilityInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
-
-        let handle = api.kernel_lock_substate(
-            receiver,
-            NodeModuleId::AccessRules1,
-            SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
-            LockFlags::MUTABLE,
-        )?;
-
-        // TODO: Figure out how to move this access check into more appropriate place
-        {
-            let substate_ref = api.kernel_get_substate_ref(handle)?;
-            let substate = substate_ref.access_rules_chain();
-
-            let access_rule = match input.method {
-                Deposit => {
-                    let key = AccessRuleKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string());
-                    substate.access_rules_chain[0].get_mutability(&key)
-                }
-                Withdraw => substate.access_rules_chain[0].get_group_mutability("withdraw"),
-                Recall => substate.access_rules_chain[0].get_group_mutability("recall"),
-            }
-            .clone();
-
-            api.call_method(
-                RENodeId::AuthZoneStack,
-                AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
-                scrypto_encode(&AuthZoneAssertAccessRuleInput { access_rule }).unwrap(),
-            )?;
-        }
-
-        let mut substate_mut = api.kernel_get_substate_ref_mut(handle)?;
-        let substate = substate_mut.access_rules_chain();
-
-        match input.method {
-            Deposit => {
-                let key = AccessRuleKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string());
-                substate.access_rules_chain[0].set_mutability(key, input.mutability);
-            }
-            Withdraw => {
-                let group_key = "withdraw".to_string();
-                substate.access_rules_chain[0].set_group_mutability(group_key, input.mutability);
-            }
-            Recall => {
-                let group_key = "recall".to_string();
-                substate.access_rules_chain[0].set_group_mutability(group_key, input.mutability);
-            }
-        }
-
-        Ok(IndexedScryptoValue::from_typed(&()))
-    }
-
     pub(crate) fn update_non_fungible_data<Y>(
         receiver: RENodeId,
         input: ScryptoValue,
@@ -1670,11 +1521,11 @@ where
     );
     node_modules.insert(
         NodeModuleId::AccessRules,
-        RENodeModuleInit::ComponentAccessRulesChain(access_rules_substate),
+        RENodeModuleInit::ObjectAccessRulesChain(access_rules_substate),
     );
     node_modules.insert(
         NodeModuleId::AccessRules1,
-        RENodeModuleInit::ComponentAccessRulesChain(vault_substate),
+        RENodeModuleInit::ObjectAccessRulesChain(vault_substate),
     );
 
     let underlying_node_id = api.kernel_allocate_node_id(RENodeType::ResourceManager)?;
