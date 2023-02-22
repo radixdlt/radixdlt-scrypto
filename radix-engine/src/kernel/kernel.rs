@@ -175,7 +175,7 @@ where
                 };
                 node_modules.insert(
                     NodeModuleId::AccessRules,
-                    RENodeModuleInit::ComponentAccessRulesChain(access_rules_substate),
+                    RENodeModuleInit::ObjectAccessRulesChain(access_rules_substate),
                 );
                 let account_substate = AccountSubstate {
                     vaults: Own::KeyValueStore(kv_store_id.into()),

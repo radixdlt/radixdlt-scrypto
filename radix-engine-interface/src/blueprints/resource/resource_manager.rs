@@ -32,27 +32,6 @@ pub const RESOURCE_MANAGER_BLUEPRINT: &str = "ResourceManager";
     ManifestDecode,
     LegacyDescribe,
 )]
-pub enum VaultMethodAuthKey {
-    Withdraw,
-    Deposit,
-    Recall,
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    ScryptoSbor,
-    ManifestCategorize,
-    ManifestEncode,
-    ManifestDecode,
-    LegacyDescribe,
-)]
 pub enum ResourceMethodAuthKey {
     Mint,
     Burn,
@@ -181,22 +160,6 @@ pub const RESOURCE_MANAGER_CREATE_BUCKET_IDENT: &str = "create_bucket";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct ResourceManagerCreateBucketInput {}
-
-pub const RESOURCE_MANAGER_UPDATE_VAULT_AUTH_IDENT: &str = "update_vault_auth";
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct ResourceManagerUpdateVaultAuthInput {
-    pub method: VaultMethodAuthKey,
-    pub access_rule: AccessRule,
-}
-
-pub const RESOURCE_MANAGER_SET_VAULT_AUTH_MUTABILITY_IDENT: &str = "set_vault_auth_mutability";
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct ResourceManagerSetVaultAuthMutabilityInput {
-    pub method: VaultMethodAuthKey,
-    pub mutability: AccessRule,
-}
 
 pub const RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT: &str = "update_non_fungible_data";
 

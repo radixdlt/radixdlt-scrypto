@@ -676,7 +676,7 @@ impl ValidatorCreator {
         );
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::ComponentAccessRulesChain(ObjectAccessRulesChainSubstate {
+            RENodeModuleInit::ObjectAccessRulesChain(ObjectAccessRulesChainSubstate {
                 access_rules_chain: vec![Self::build_access_rules(owner_access_rule)],
             }),
         );
@@ -728,7 +728,7 @@ impl ValidatorCreator {
         );
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::ComponentAccessRulesChain(ObjectAccessRulesChainSubstate {
+            RENodeModuleInit::ObjectAccessRulesChain(ObjectAccessRulesChainSubstate {
                 access_rules_chain: vec![Self::build_access_rules(owner_access_rule)],
             }),
         );
