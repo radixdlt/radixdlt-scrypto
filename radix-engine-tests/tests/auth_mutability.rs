@@ -99,7 +99,7 @@ fn locked_mint_auth_cannot_be_relocked() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(..))
+            RuntimeError::ModuleError(ModuleError::AuthError(..))
         )
     })
 }
@@ -147,7 +147,7 @@ fn locked_withdraw_auth_cannot_be_relocked() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(..))
+            RuntimeError::ModuleError(ModuleError::AuthError(..))
         )
     })
 }
@@ -195,7 +195,7 @@ fn locked_recall_auth_cannot_be_relocked() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(..))
+            RuntimeError::ModuleError(ModuleError::AuthError(..))
         )
     })
 }
@@ -207,7 +207,7 @@ fn locked_update_metadata_auth_cannot_be_updated() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ModuleError(ModuleError::AuthError(..)),
+            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(..)),
         )
     })
 }
@@ -219,7 +219,7 @@ fn locked_update_metadata_auth_cannot_be_relocked() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(..)),
+            RuntimeError::ModuleError(ModuleError::AuthError(..))
         )
     })
 }

@@ -189,6 +189,30 @@ impl KernelModule for AuthModule {
                                 authorization
                             }
                         }
+
+                        ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT => {
+                            // TODO: Remove encode/decode mess
+                            let input: AccessRulesSetGroupMutabilityInput =
+                                scrypto_decode(&scrypto_encode(&args).unwrap())
+                                    .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+                            let handle = api.kernel_lock_substate(
+                                *node_id,
+                                *module_id,
+                                SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                                LockFlags::read_only(),
+                            )?;
+
+                            let authorization = {
+                                let access_rules_substate: &ObjectAccessRulesChainSubstate =
+                                    api.kernel_get_substate_ref(handle)?;
+                                access_rules_substate.group_mutability_authorization(&input.name)
+                            };
+
+                            api.kernel_drop_lock(handle)?;
+
+                            authorization
+                        }
                         _ => vec![]
                     }
                 },
