@@ -100,12 +100,7 @@ fn access_rules_method_auth_can_not_be_mutated_when_locked() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(
-                AccessRulesChainError::Unauthorized(..)
-            ))
-        )
+        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
     });
 }
 
@@ -131,12 +126,7 @@ fn access_rules_method_auth_cant_be_mutated_when_required_proofs_are_not_present
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(
-                AccessRulesChainError::Unauthorized(..)
-            ))
-        )
+        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
     });
 }
 
@@ -162,12 +152,7 @@ fn access_rules_method_auth_cant_be_locked_when_required_proofs_are_not_present(
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(
-                AccessRulesChainError::Unauthorized(..)
-            ))
-        )
+        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
     });
 }
 
@@ -225,12 +210,7 @@ fn access_rules_method_auth_can_be_locked_when_required_proofs_are_present() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(
-                AccessRulesChainError::Unauthorized(..)
-            ))
-        )
+        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
     });
 }
 
@@ -259,12 +239,7 @@ fn method_that_falls_within_default_cant_have_its_auth_mutated() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(
-                AccessRulesChainError::Unauthorized(..)
-            ))
-        )
+        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
     });
 }
 
@@ -370,10 +345,7 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
 
         // Assert
         receipt.expect_specific_failure(|e| {
-            matches!(
-                e,
-                RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(..))
-            )
+            matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
         });
     }
 }

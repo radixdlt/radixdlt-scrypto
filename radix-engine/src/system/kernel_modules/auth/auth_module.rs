@@ -150,38 +150,79 @@ impl KernelModule for AuthModule {
                 ResolvedActor {
                     receiver:
                         Some(ResolvedReceiver {
-                            receiver:
-                                MethodReceiver(
-                                    node_id,
-                                    module_id,
-                                ),
+                            receiver: MethodReceiver(node_id, module_id),
                             ..
                         }),
                     ..
-                } if module_id.eq(&NodeModuleId::AccessRules) || module_id.eq(&NodeModuleId::AccessRules1) => {
+                } if module_id.eq(&NodeModuleId::AccessRules)
+                    || module_id.eq(&NodeModuleId::AccessRules1) =>
+                {
                     match actor.identifier.ident.as_str() {
-                        ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT => {
+                        ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT => {
                             // TODO: Remove encode/decode mess
-                            let input: AccessRulesSetMethodMutabilityInput =
-                                scrypto_decode(&scrypto_encode(&args).unwrap())
-                                    .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+                            let input: AccessRulesSetMethodAccessRuleInput =
+                                scrypto_decode(&scrypto_encode(&args).unwrap()).map_err(|_| {
+                                    RuntimeError::InterpreterError(
+                                        InterpreterError::InvalidInvocation,
+                                    )
+                                })?;
 
-                            if input.key.node_module_id.eq(&NodeModuleId::AccessRules) ||
-                                input.key.node_module_id.eq(&NodeModuleId::AccessRules1) {
+                            if input.key.node_module_id.eq(&NodeModuleId::AccessRules)
+                                || input.key.node_module_id.eq(&NodeModuleId::AccessRules1)
+                            {
                                 // Should we just store this on ledger?
                                 vec![MethodAuthorization::DenyAll]
                             } else {
                                 let handle = api.kernel_lock_substate(
                                     *node_id,
                                     *module_id,
-                                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                                    SubstateOffset::AccessRulesChain(
+                                        AccessRulesChainOffset::AccessRulesChain,
+                                    ),
                                     LockFlags::read_only(),
                                 )?;
 
                                 let authorization = {
                                     let access_rules_substate: &ObjectAccessRulesChainSubstate =
                                         api.kernel_get_substate_ref(handle)?;
-                                    access_rules_substate.method_mutability_authorization(&input.key)
+                                    access_rules_substate
+                                        .method_mutability_authorization(&input.key)
+                                };
+
+                                api.kernel_drop_lock(handle)?;
+
+                                authorization
+                            }
+                        }
+                        ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT => {
+                            // TODO: Remove encode/decode mess
+                            let input: AccessRulesSetMethodMutabilityInput =
+                                scrypto_decode(&scrypto_encode(&args).unwrap()).map_err(|_| {
+                                    RuntimeError::InterpreterError(
+                                        InterpreterError::InvalidInvocation,
+                                    )
+                                })?;
+
+                            if input.key.node_module_id.eq(&NodeModuleId::AccessRules)
+                                || input.key.node_module_id.eq(&NodeModuleId::AccessRules1)
+                            {
+                                // Should we just store this on ledger?
+                                vec![MethodAuthorization::DenyAll]
+                            } else {
+                                let handle = api.kernel_lock_substate(
+                                    *node_id,
+                                    *module_id,
+                                    SubstateOffset::AccessRulesChain(
+                                        AccessRulesChainOffset::AccessRulesChain,
+                                    ),
+                                    LockFlags::read_only(),
+                                )?;
+
+                                let authorization = {
+                                    let access_rules_substate: &ObjectAccessRulesChainSubstate =
+                                        api.kernel_get_substate_ref(handle)?;
+                                    access_rules_substate
+                                        .method_mutability_authorization(&input.key)
                                 };
 
                                 api.kernel_drop_lock(handle)?;
@@ -190,16 +231,21 @@ impl KernelModule for AuthModule {
                             }
                         }
 
-                        ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT => {
+                        ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT => {
                             // TODO: Remove encode/decode mess
-                            let input: AccessRulesSetGroupMutabilityInput =
-                                scrypto_decode(&scrypto_encode(&args).unwrap())
-                                    .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+                            let input: AccessRulesSetGroupAccessRuleInput =
+                                scrypto_decode(&scrypto_encode(&args).unwrap()).map_err(|_| {
+                                    RuntimeError::InterpreterError(
+                                        InterpreterError::InvalidInvocation,
+                                    )
+                                })?;
 
                             let handle = api.kernel_lock_substate(
                                 *node_id,
                                 *module_id,
-                                SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                                SubstateOffset::AccessRulesChain(
+                                    AccessRulesChainOffset::AccessRulesChain,
+                                ),
                                 LockFlags::read_only(),
                             )?;
 
@@ -213,9 +259,38 @@ impl KernelModule for AuthModule {
 
                             authorization
                         }
-                        _ => vec![]
+
+                        ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT => {
+                            // TODO: Remove encode/decode mess
+                            let input: AccessRulesSetGroupMutabilityInput =
+                                scrypto_decode(&scrypto_encode(&args).unwrap()).map_err(|_| {
+                                    RuntimeError::InterpreterError(
+                                        InterpreterError::InvalidInvocation,
+                                    )
+                                })?;
+
+                            let handle = api.kernel_lock_substate(
+                                *node_id,
+                                *module_id,
+                                SubstateOffset::AccessRulesChain(
+                                    AccessRulesChainOffset::AccessRulesChain,
+                                ),
+                                LockFlags::read_only(),
+                            )?;
+
+                            let authorization = {
+                                let access_rules_substate: &ObjectAccessRulesChainSubstate =
+                                    api.kernel_get_substate_ref(handle)?;
+                                access_rules_substate.group_mutability_authorization(&input.name)
+                            };
+
+                            api.kernel_drop_lock(handle)?;
+
+                            authorization
+                        }
+                        _ => vec![],
                     }
-                },
+                }
 
                 // TODO: Cleanup
                 ResolvedActor {

@@ -25,8 +25,8 @@ use radix_engine_interface::api::types::{
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::blueprints::resource::Resource;
 use radix_engine_interface::constants::*;
-use radix_engine_interface::{api::types::RENodeId, *};
 use radix_engine_interface::data::ScryptoValue;
+use radix_engine_interface::{api::types::RENodeId, *};
 use sbor::rust::collections::BTreeMap;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

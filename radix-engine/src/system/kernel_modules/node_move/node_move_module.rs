@@ -7,8 +7,8 @@ use crate::kernel::module::KernelModule;
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{BucketOffset, ProofOffset, RENodeId, SubstateOffset};
-use radix_engine_interface::*;
 use radix_engine_interface::data::ScryptoValue;
+use radix_engine_interface::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum NodeMoveError {
