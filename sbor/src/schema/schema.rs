@@ -1,4 +1,3 @@
-use crate::rust::borrow::Cow;
 use crate::rust::vec::Vec;
 use crate::*;
 
@@ -17,31 +16,46 @@ pub type SchemaCustomTypeKind<E> = <E as CustomTypeExtension>::CustomTypeKind<Lo
 pub type SchemaTypeValidation<E> = TypeValidation<<E as CustomTypeExtension>::CustomTypeValidation>;
 pub type SchemaCustomTypeValidation<E> = <E as CustomTypeExtension>::CustomTypeValidation;
 
-// TODO: Could get rid of the Cow by using some per-custom type once_cell to cache basic well-known-types,
-//       and return references to the static cached values
+pub fn resolve_type_kind<'s: 't, 't, E: CustomTypeExtension>(
+    type_kinds: &'s [SchemaTypeKind<E>],
+    type_index: LocalTypeIndex,
+) -> Option<&'t SchemaTypeKind<E>> {
+    match type_index {
+        LocalTypeIndex::WellKnown(index) => E::resolve_well_known_type(index)
+            .map(|local_type_data| &local_type_data.kind),
+        LocalTypeIndex::SchemaLocalIndex(index) => type_kinds.get(index),
+    }
+}
+
 pub struct ResolvedTypeData<'a, E: CustomTypeExtension> {
-    pub kind:
-        Cow<'a, TypeKind<E::CustomValueKind, E::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>>,
-    pub metadata: Cow<'a, TypeMetadata>,
+    pub kind: &'a TypeKind<E::CustomValueKind, E::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>,
+    pub metadata: &'a TypeMetadata,
+    pub validation: &'a TypeValidation<E::CustomTypeValidation>,
 }
 
 impl<E: CustomTypeExtension> Schema<E> {
     pub fn resolve<'a>(&'a self, type_ref: LocalTypeIndex) -> Option<ResolvedTypeData<'a, E>> {
         match type_ref {
             LocalTypeIndex::WellKnown(index) => {
-                resolve_well_known_type::<E>(index).map(|local_type_data| ResolvedTypeData {
-                    kind: Cow::Owned(local_type_data.kind),
-                    metadata: Cow::Owned(local_type_data.metadata),
-                })
-            }
+                match E::resolve_well_known_type(index) {
+                    Some(TypeData { kind, metadata, validation }) => {
+                        Some(ResolvedTypeData {
+                            kind,
+                            metadata,
+                            validation,
+                        })
+                    },
+                    None => None,
+                }
+            },
             LocalTypeIndex::SchemaLocalIndex(index) => {
-                match (self.type_kinds.get(index), self.type_metadata.get(index)) {
-                    (Some(schema), Some(novel_metadata)) => Some(ResolvedTypeData {
-                        kind: Cow::Borrowed(schema),
-                        metadata: Cow::Borrowed(&novel_metadata.type_metadata),
+                match (self.type_kinds.get(index), self.type_metadata.get(index), self.type_validations.get(index)) {
+                    (Some(type_kind), Some(novel_metadata), Some(validation)) => Some(ResolvedTypeData {
+                        kind: type_kind,
+                        metadata: &novel_metadata.type_metadata,
+                        validation,
                     }),
-                    (None, None) => None,
-                    _ => panic!("Index existed in exactly one of schema and naming"),
+                    _ => None,
                 }
             }
         }

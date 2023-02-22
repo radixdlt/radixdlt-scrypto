@@ -104,7 +104,7 @@ macro_rules! terminal_value {
 }
 
 #[macro_export]
-macro_rules! err_to_event {
+macro_rules! return_if_error {
     ($self: expr, $result: expr) => {{
         match $result {
             Ok(value) => value,
@@ -198,7 +198,7 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
 
     fn root_value(&mut self) -> TraversalEvent<'de, T> {
         let start_offset = self.decoder.get_offset();
-        let value_kind = err_to_event!(self, self.decoder.read_value_kind());
+        let value_kind = return_if_error!(self, self.decoder.read_value_kind());
         self.next_value(ParentRelationship::Root, start_offset, value_kind)
     }
 
@@ -210,7 +210,7 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
             .get_implicit_child_value_kind(current_child.current_child_index);
         let value_kind = match value_kind {
             Some(value_kind) => value_kind,
-            None => err_to_event!(self, self.decoder.read_value_kind()),
+            None => return_if_error!(self, self.decoder.read_value_kind()),
         };
         current_child.current_child_index += 1;
         self.next_value(relationship, start_offset, value_kind)
@@ -266,17 +266,17 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
                 )
             }
             ValueKind::Array => {
-                err_to_event!(self, self.decode_array_header(relationship, start_offset))
+                return_if_error!(self, self.decode_array_header(relationship, start_offset))
             }
             ValueKind::Map => {
-                err_to_event!(self, self.decode_map_header(relationship, start_offset))
+                return_if_error!(self, self.decode_map_header(relationship, start_offset))
             }
-            ValueKind::Enum => err_to_event!(
+            ValueKind::Enum => return_if_error!(
                 self,
                 self.decode_enum_variant_header(relationship, start_offset)
             ),
             ValueKind::Tuple => {
-                err_to_event!(self, self.decode_tuple_header(relationship, start_offset))
+                return_if_error!(self, self.decode_tuple_header(relationship, start_offset))
             }
             ValueKind::Custom(custom_value_kind) => {
                 self.next_event_override =
@@ -387,7 +387,7 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
     }
 
     fn end_event(&self) -> TraversalEvent<'de, T> {
-        err_to_event!(self, self.decoder.check_end());
+        return_if_error!(self, self.decoder.check_end());
         let offset = self.decoder.get_offset();
 
         TraversalEvent::PayloadEnd(Location {
@@ -418,13 +418,13 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
             panic!("self.next_event_override expected to be NextEventOverride::ReadBytes to hit this code")
         };
         let start_offset = self.get_offset();
-        let bytes = err_to_event!(self, self.decoder.read_slice_from_payload(size));
+        let bytes = return_if_error!(self, self.decoder.read_slice_from_payload(size));
         // Set it up so that we jump to the end of the child iteration
         self.container_stack.last_mut().unwrap().current_child_index = size;
         self.next_event_override = NextEventOverride::None;
         TraversalEvent::TerminalValueBatch(LocatedDecoding {
             inner: TerminalValueBatchRef::U8(bytes),
-            parent_relationship: ParentRelationship::ElementBatch {
+            parent_relationship: ParentRelationship::ArrayElementBatch {
                 from_index: 0,
                 to_index: size,
             },

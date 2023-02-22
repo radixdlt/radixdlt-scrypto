@@ -186,6 +186,8 @@ mod schema {
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub enum NoCustomTypeExtension {}
 
+    create_well_known_lookup!(WELL_KNOWN_LOOKUP, NoCustomTypeKind, []);
+
     impl CustomTypeExtension for NoCustomTypeExtension {
         const MAX_DEPTH: u8 = DEFAULT_BASIC_MAX_DEPTH;
         const PAYLOAD_PREFIX: u8 = BASIC_SBOR_V1_PAYLOAD_PREFIX;
@@ -201,10 +203,11 @@ mod schema {
             unreachable!("No custom type kinds exist")
         }
 
-        fn resolve_custom_well_known_type(
-            _: u8,
-        ) -> Option<TypeData<Self::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>> {
-            None
+        fn resolve_well_known_type(
+            well_known_index: u8,
+        ) -> Option<&'static TypeData<Self::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>> {
+            // We know that WELL_KNOWN_LOOKUP has 255 elements, so can use `get_unchecked` for fast look-ups
+            unsafe { WELL_KNOWN_LOOKUP.get_unchecked(well_known_index as usize).as_ref() }
         }
 
         fn validate_type_kind(
@@ -228,6 +231,10 @@ mod schema {
             _: &SchemaCustomTypeValidation<Self>,
         ) -> Result<(), SchemaValidationError> {
             unreachable!("No custom type kinds exist")
+        }
+
+        fn value_kind_matches_type_kind<L: SchemaTypeLink>(_: Self::CustomValueKind, _: &Self::CustomTypeKind<L>) -> bool {
+            unreachable!("No custom value kinds exist")
         }
     }
 

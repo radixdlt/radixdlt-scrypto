@@ -94,7 +94,7 @@ pub struct MapHeader<X: CustomValueKind> {
 pub enum ParentRelationship {
     Root,
     Element { index: usize },
-    ElementBatch { from_index: usize, to_index: usize },
+    ArrayElementBatch { from_index: usize, to_index: usize },
     MapKey { index: usize },
     MapValue { index: usize },
 }

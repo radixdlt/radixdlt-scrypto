@@ -19,15 +19,17 @@ pub trait CustomTypeExtension: Debug + Clone + PartialEq + Eq {
         CustomTypeExtension = Self,
     >;
     type CustomTypeValidation: CustomTypeValidation;
+    type CustomTraversal: CustomTraversal<CustomValueKind = Self::CustomValueKind>;
 
     fn linearize_type_kind(
         type_kind: Self::CustomTypeKind<GlobalTypeId>,
         type_indices: &IndexSet<TypeHash>,
     ) -> Self::CustomTypeKind<LocalTypeIndex>;
 
-    fn resolve_custom_well_known_type(
+    // Note - each custom type extension should have its own cache
+    fn resolve_well_known_type(
         well_known_index: u8,
-    ) -> Option<TypeData<Self::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>>;
+    ) -> Option<&'static TypeData<Self::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>>;
 
     fn validate_type_kind(
         context: &TypeValidationContext,

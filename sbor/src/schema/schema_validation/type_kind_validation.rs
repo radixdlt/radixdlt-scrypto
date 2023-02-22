@@ -57,7 +57,7 @@ pub fn validate_index<E: CustomTypeExtension>(
 ) -> Result<(), SchemaValidationError> {
     match type_index {
         LocalTypeIndex::WellKnown(well_known_index) => {
-            if resolve_well_known_type::<E>(*well_known_index).is_none() {
+            if E::resolve_well_known_type(*well_known_index).is_none() {
                 return Err(SchemaValidationError::TypeKindInvalidWellKnownIndex);
             }
         }
