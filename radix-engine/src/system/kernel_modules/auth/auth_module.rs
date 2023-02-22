@@ -340,8 +340,7 @@ impl KernelModule for AuthModule {
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let auth_zone_stack = substate_ref.auth_zone_stack();
+        let auth_zone_stack: &AuthZoneStackSubstate = api.kernel_get_substate_ref2(handle)?;
         let is_barrier = Self::is_barrier(actor);
 
         // Authorization check

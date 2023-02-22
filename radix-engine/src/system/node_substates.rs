@@ -954,6 +954,15 @@ pub enum SubstateRef<'a> {
     AccessController(&'a AccessControllerSubstate),
 }
 
+impl<'a> From<SubstateRef<'a>> for &'a AuthZoneStackSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::AuthZoneStack(value) => value,
+            _ => panic!("Not an auth zone stack"),
+        }
+    }
+}
+
 impl<'a> SubstateRef<'a> {
     pub fn to_scrypto_value(&self) -> IndexedScryptoValue {
         match self {
@@ -1057,13 +1066,6 @@ impl<'a> SubstateRef<'a> {
         match self {
             SubstateRef::Proof(value) => *value,
             _ => panic!("Not a proof"),
-        }
-    }
-
-    pub fn auth_zone_stack(&self) -> &AuthZoneStackSubstate {
-        match self {
-            SubstateRef::AuthZoneStack(value) => *value,
-            _ => panic!("Not an authzone"),
         }
     }
 

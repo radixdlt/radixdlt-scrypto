@@ -16,6 +16,7 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
 use sbor::rust::vec::Vec;
+use crate::blueprints::auth_zone::AuthZoneStackSubstate;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthZoneError {
@@ -316,8 +317,7 @@ impl AuthZoneBlueprint {
         };
 
         let proof = {
-            let substate_ref = api.kernel_get_substate_ref(auth_zone_handle)?;
-            let auth_zone_stack = substate_ref.auth_zone_stack();
+            let auth_zone_stack: &AuthZoneStackSubstate = api.kernel_get_substate_ref2(auth_zone_handle)?;
             let proof = auth_zone_stack.cur_auth_zone().create_proof_by_ids(
                 &input.ids,
                 input.resource_address,
@@ -413,8 +413,7 @@ impl AuthZoneBlueprint {
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let auth_zone_stack = substate_ref.auth_zone_stack();
+        let auth_zone_stack: &AuthZoneStackSubstate = api.kernel_get_substate_ref2(handle)?;
         let authorization = convert_contextless(&input.access_rule);
 
         // Authorization check

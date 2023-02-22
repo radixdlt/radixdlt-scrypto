@@ -1157,6 +1157,23 @@ where
 
         Ok(substate_ref_mut)
     }
+
+    fn kernel_get_substate_ref2<'a, 'b, S>(
+        &'b mut self,
+        lock_handle: LockHandle,
+    ) -> Result<&'a S, RuntimeError> where &'a S: From<SubstateRef<'a>>, 'b: 'a {
+        KernelModuleMixer::on_read_substate(
+            self,
+            lock_handle,
+            0, //  TODO: pass the right size
+        )?;
+
+        let substate_ref =
+            self.current_frame
+                .get_ref(lock_handle, &mut self.heap, &mut self.track)?;
+
+        Ok(substate_ref.into())
+    }
 }
 
 impl<'g, 's, W> KernelWasmApi<W> for Kernel<'g, 's, W>

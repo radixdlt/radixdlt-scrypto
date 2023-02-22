@@ -67,6 +67,11 @@ pub trait KernelSubstateApi {
         &mut self,
         lock_handle: LockHandle,
     ) -> Result<SubstateRefMut, RuntimeError>;
+
+    fn kernel_get_substate_ref2<'a, 'b, S>(
+        &'b mut self,
+        lock_handle: LockHandle,
+    ) -> Result<&'a S, RuntimeError> where &'a S: From<SubstateRef<'a>>, 'b: 'a;
 }
 
 pub trait KernelWasmApi<W: WasmEngine> {
