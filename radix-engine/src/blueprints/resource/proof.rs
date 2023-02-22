@@ -10,8 +10,24 @@ use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, ScryptoSbor)]
+pub enum LocalRef {
+    Bucket(BucketId),
+    Vault(VaultId),
+}
+
+impl LocalRef {
+    pub fn to_re_node_id(&self) -> RENodeId {
+        match self {
+            LocalRef::Bucket(id) => RENodeId::Bucket(id.clone()),
+            LocalRef::Vault(id) => RENodeId::Vault(id.clone()),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ProofError {
+    InvalidRequestData(DecodeError),
     /// Error produced by a resource container.
     ResourceError(ResourceError),
     /// Can't generate zero-amount or empty non-fungible set proofs.
@@ -20,7 +36,6 @@ pub enum ProofError {
     InsufficientBaseProofs,
     /// Can't apply a non-fungible operation on fungible proofs.
     UnsupportedNonFungibleOperation,
-    InvalidRequestData(DecodeError),
 }
 
 #[derive(Debug)]
@@ -84,17 +99,23 @@ impl ProofSubstate {
         }
     }
 
-    pub fn clone_proof(&self) -> ProofSubstate {
+    pub fn clone_proof<Y: ClientApi<RuntimeError>>(
+        &self,
+        api: &mut Y,
+    ) -> Result<Self, RuntimeError> {
         match self {
-            ProofSubstate::Fungible(f) => f.clone_proof().into(),
-            ProofSubstate::NonFungible(nf) => nf.clone_proof().into(),
+            ProofSubstate::Fungible(f) => Ok(f.clone_proof(api)?.into()),
+            ProofSubstate::NonFungible(nf) => Ok(nf.clone_proof(api)?.into()),
         }
     }
 
-    pub fn drop_proof(&mut self) {
+    pub fn drop_proof<Y: ClientApi<RuntimeError>>(
+        &mut self,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         match self {
-            ProofSubstate::Fungible(f) => f.drop_proof(),
-            ProofSubstate::NonFungible(nf) => nf.drop_proof(),
+            ProofSubstate::Fungible(f) => f.drop_proof(api),
+            ProofSubstate::NonFungible(nf) => nf.drop_proof(api),
         }
     }
 
@@ -115,14 +136,14 @@ pub struct FungibleProof {
     /// The total locked amount or non-fungible ids.
     pub total_locked: Decimal,
     /// The supporting containers.
-    pub evidence: BTreeMap<RENodeId, Decimal>,
+    pub evidence: BTreeMap<LocalRef, Decimal>,
 }
 
 impl FungibleProof {
     pub fn new(
         resource_address: ResourceAddress,
         total_locked: Decimal,
-        evidence: BTreeMap<RENodeId, Decimal>,
+        evidence: BTreeMap<LocalRef, Decimal>,
     ) -> Result<FungibleProof, ProofError> {
         if total_locked.is_zero() {
             return Err(ProofError::EmptyProofNotAllowed);
@@ -139,7 +160,7 @@ impl FungibleProof {
     fn compute_max_locked(
         proofs: &[FungibleProof],
         resource_address: ResourceAddress,
-    ) -> (Decimal, BTreeMap<RENodeId, Decimal>) {
+    ) -> (Decimal, BTreeMap<LocalRef, Decimal>) {
         // filter proofs by resource address and restricted flag
         let proofs: Vec<&FungibleProof> = proofs
             .iter()
@@ -147,7 +168,7 @@ impl FungibleProof {
             .collect();
 
         // calculate the max locked amount of each container
-        let mut max = BTreeMap::<RENodeId, Decimal>::new();
+        let mut max = BTreeMap::<LocalRef, Decimal>::new();
         for proof in &proofs {
             for (container_id, locked_amount) in &proof.evidence {
                 if let Some(existing) = max.get_mut(container_id) {
@@ -166,66 +187,88 @@ impl FungibleProof {
         (total, per_container)
     }
 
-    pub fn compose_by_amount(
+    pub fn compose_by_amount<Y: ClientApi<RuntimeError>>(
         proofs: &[FungibleProof],
         resource_address: ResourceAddress,
         amount: Option<Decimal>,
-    ) -> Result<FungibleProof, ProofError> {
+        api: &mut Y,
+    ) -> Result<FungibleProof, RuntimeError> {
         let (total_locked, mut per_container) = Self::compute_max_locked(proofs, resource_address);
         let amount = amount.unwrap_or(total_locked);
 
         // Check if base proofs are sufficient for the request amount
         if amount > total_locked {
-            return Err(ProofError::InsufficientBaseProofs);
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::ProofError(ProofError::InsufficientBaseProofs),
+            ));
         }
 
-        // TODO: review resource selection algorithm here
+        // TODO: review resource container selection algorithm here
         let mut evidence = BTreeMap::new();
         let mut remaining = amount.clone();
         'outer: for proof in proofs {
-            for (container_id, (container, _)) in &proof.evidence {
+            for (container_id, _) in &proof.evidence {
                 if remaining.is_zero() {
                     break 'outer;
                 }
 
                 if let Some(quota) = per_container.remove(container_id) {
                     let amount = Decimal::min(remaining, quota);
-                    container
-                        .borrow_mut()
-                        .lock_by_amount(amount)
-                        .map_err(ProofError::ResourceError)?;
+                    api.call_method(
+                        container_id.to_re_node_id(),
+                        match container_id {
+                            LocalRef::Bucket(_) => BUCKET_LOCK_AMOUNT_IDENT,
+                            LocalRef::Vault(_) => VAULT_LOCK_AMOUNT_IDENT,
+                        },
+                        scrypto_args!(amount),
+                    )?;
                     remaining -= amount;
-                    evidence.insert(container_id.clone(), (container.clone(), amount));
+                    evidence.insert(container_id.clone(), amount);
                 }
             }
         }
 
         FungibleProof::new(resource_address, amount, evidence)
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::ProofError(e)))
     }
 
-    /// Makes a clone of this proof.
-    ///
-    /// Note that cloning a proof will update the ref count of the locked
-    /// resources in the source containers.
-    pub fn clone_proof(&self) -> Self {
-        for (_, locked_amount) in &self.evidence {
-            container
-                .borrow_mut()
-                .lock_by_amount(*locked_amount)
-                .expect("Failed to clone a proof");
+    pub fn clone_proof<Y: ClientApi<RuntimeError>>(
+        &self,
+        api: &mut Y,
+    ) -> Result<Self, RuntimeError> {
+        for (container_id, locked_amount) in &self.evidence {
+            api.call_method(
+                container_id.to_re_node_id(),
+                match container_id {
+                    LocalRef::Bucket(_) => BUCKET_LOCK_AMOUNT_IDENT,
+                    LocalRef::Vault(_) => VAULT_LOCK_AMOUNT_IDENT,
+                },
+                scrypto_args!(locked_amount),
+            )?;
         }
-        Self {
+        Ok(Self {
             resource_address: self.resource_address.clone(),
             restricted: self.restricted,
             total_locked: self.total_locked.clone(),
             evidence: self.evidence.clone(),
-        }
+        })
     }
 
-    pub fn drop_proof(&mut self) {
-        for (_, (container, amount)) in &mut self.evidence {
-            container.borrow_mut().unlock(*amount);
+    pub fn drop_proof<Y: ClientApi<RuntimeError>>(
+        &mut self,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        for (container_id, locked_amount) in &self.evidence {
+            api.call_method(
+                container_id.to_re_node_id(),
+                match container_id {
+                    LocalRef::Bucket(_) => BUCKET_UNLOCK_AMOUNT_IDENT,
+                    LocalRef::Vault(_) => VAULT_UNLOCK_AMOUNT_IDENT,
+                },
+                scrypto_args!(locked_amount),
+            )?;
         }
+        Ok(())
     }
 
     pub fn change_to_unrestricted(&mut self) {
@@ -266,14 +309,14 @@ pub struct NonFungibleProof {
     /// The total locked amount or non-fungible ids.
     pub total_locked: BTreeSet<NonFungibleLocalId>,
     /// The supporting containers.
-    pub evidence: BTreeMap<RENodeId, BTreeSet<NonFungibleLocalId>>,
+    pub evidence: BTreeMap<LocalRef, BTreeSet<NonFungibleLocalId>>,
 }
 
 impl NonFungibleProof {
     pub fn new(
         resource_address: ResourceAddress,
         total_locked: BTreeSet<NonFungibleLocalId>,
-        evidence: BTreeMap<RENodeId, BTreeSet<NonFungibleLocalId>>,
+        evidence: BTreeMap<LocalRef, BTreeSet<NonFungibleLocalId>>,
     ) -> Result<NonFungibleProof, ProofError> {
         if total_locked.is_empty() {
             return Err(ProofError::EmptyProofNotAllowed);
@@ -293,7 +336,7 @@ impl NonFungibleProof {
         resource_address: ResourceAddress,
     ) -> (
         BTreeSet<NonFungibleLocalId>,
-        HashMap<RENodeId, BTreeSet<NonFungibleLocalId>>,
+        HashMap<LocalRef, BTreeSet<NonFungibleLocalId>>,
     ) {
         // filter proofs by resource address and restricted flag
         let proofs: Vec<&NonFungibleProof> = proofs
@@ -302,9 +345,9 @@ impl NonFungibleProof {
             .collect();
 
         // calculate the max locked amount (or ids) of each container
-        let mut max = HashMap::<RENodeId, BTreeSet<NonFungibleLocalId>>::new();
+        let mut max = HashMap::<LocalRef, BTreeSet<NonFungibleLocalId>>::new();
         for proof in &proofs {
-            for (container_id, (_, locked_ids)) in &proof.evidence {
+            for (container_id, locked_ids) in &proof.evidence {
                 let new_ids = locked_ids.clone();
                 if let Some(ids) = max.get_mut(container_id) {
                     ids.extend(new_ids);
@@ -321,89 +364,113 @@ impl NonFungibleProof {
         (total, per_container)
     }
 
-    pub fn compose_by_amount(
+    pub fn compose_by_amount<Y: ClientApi<RuntimeError>>(
         proofs: &[NonFungibleProof],
         resource_address: ResourceAddress,
         amount: Option<Decimal>,
-    ) -> Result<NonFungibleProof, ProofError> {
+        api: &mut Y,
+    ) -> Result<NonFungibleProof, RuntimeError> {
         let (total_locked, mut per_container) = Self::compute_max_locked(proofs, resource_address);
         let total_amount = total_locked.len().into();
         let amount = amount.unwrap_or(total_amount);
 
         if amount > total_amount {
-            Err(ProofError::InsufficientBaseProofs)
-        } else {
-            let n: usize = amount
-                .to_string()
-                .parse()
-                .expect("Failed to convert non-fungible amount to usize");
-            let ids: BTreeSet<NonFungibleLocalId> = total_locked.iter().take(n).cloned().collect();
-            Self::compose_by_ids(proofs, resource_address, Some(ids))
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::ProofError(ProofError::InsufficientBaseProofs),
+            ));
         }
+
+        let n: usize = amount
+            .to_string()
+            .parse()
+            .expect("Failed to convert non-fungible amount to usize");
+        let ids: BTreeSet<NonFungibleLocalId> = total_locked.iter().take(n).cloned().collect();
+        Self::compose_by_ids(proofs, resource_address, Some(ids), api)
     }
 
-    pub fn compose_by_ids(
+    pub fn compose_by_ids<Y: ClientApi<RuntimeError>>(
         proofs: &[NonFungibleProof],
         resource_address: ResourceAddress,
         ids: Option<BTreeSet<NonFungibleLocalId>>,
-    ) -> Result<NonFungibleProof, ProofError> {
+        api: &mut Y,
+    ) -> Result<NonFungibleProof, RuntimeError> {
         let (total_locked, mut per_container) = Self::compute_max_locked(proofs, resource_address);
         let ids = ids.unwrap_or(total_locked.clone());
 
         if !total_locked.is_superset(&ids) {
-            return Err(ProofError::InsufficientBaseProofs);
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::ProofError(ProofError::InsufficientBaseProofs),
+            ));
         }
 
-        // Locked the max (or needed) ids from the containers, in the order that the containers were referenced.
-        // TODO: observe the performance/feedback of this container selection algorithm and decide next steps
+        // TODO: review resource container selection algorithm here
         let mut evidence = BTreeMap::new();
         let mut remaining = ids.clone();
         'outer: for proof in proofs {
-            for (container_id, (container, _)) in &proof.evidence {
+            for (container_id, _) in &proof.evidence {
                 if remaining.is_empty() {
                     break 'outer;
                 }
 
                 if let Some(quota) = per_container.remove(container_id) {
                     let ids = remaining.intersection(&quota).cloned().collect();
-                    container
-                        .borrow_mut()
-                        .lock_by_ids(&ids)
-                        .map_err(ProofError::ResourceError)?;
+                    api.call_method(
+                        container_id.to_re_node_id(),
+                        match container_id {
+                            LocalRef::Bucket(_) => BUCKET_LOCK_NON_FUNGIBLES_IDENT,
+                            LocalRef::Vault(_) => VAULT_LOCK_NON_FUNGIBLES_IDENT,
+                        },
+                        scrypto_args!(&ids),
+                    )?;
                     for id in &ids {
                         remaining.remove(id);
                     }
-                    evidence.insert(container_id.clone(), (container.clone(), ids));
+                    evidence.insert(container_id.clone(), ids);
                 }
             }
         }
 
         NonFungibleProof::new(resource_address, ids.clone(), evidence)
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::ProofError(e)))
     }
 
-    /// Makes a clone of this proof.
-    ///
-    /// Note that cloning a proof will update the ref count of the locked
-    /// resources in the source containers.
-    pub fn clone_proof(&self) -> Self {
-        for (_, (container, locked_ids)) in &self.evidence {
-            container
-                .borrow_mut()
-                .lock_by_ids(locked_ids)
-                .expect("Failed to clone a proof");
+    pub fn clone_proof<Y: ClientApi<RuntimeError>>(
+        &self,
+        api: &mut Y,
+    ) -> Result<Self, RuntimeError> {
+        for (container_id, locked_ids) in &self.evidence {
+            api.call_method(
+                container_id.to_re_node_id(),
+                match container_id {
+                    LocalRef::Bucket(_) => BUCKET_LOCK_NON_FUNGIBLES_IDENT,
+                    LocalRef::Vault(_) => VAULT_LOCK_NON_FUNGIBLES_IDENT,
+                },
+                scrypto_args!(locked_ids),
+            )?;
         }
-        Self {
+        Ok(Self {
             resource_address: self.resource_address.clone(),
             restricted: self.restricted,
             total_locked: self.total_locked.clone(),
             evidence: self.evidence.clone(),
-        }
+        })
     }
 
-    pub fn drop_proof(&mut self) {
-        for (_, (container, locked_ids)) in &mut self.evidence {
-            container.borrow_mut().unlock(locked_ids);
+    pub fn drop_proof<Y: ClientApi<RuntimeError>>(
+        &mut self,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        for (container_id, locked_ids) in &self.evidence {
+            api.call_method(
+                container_id.to_re_node_id(),
+                match container_id {
+                    LocalRef::Bucket(_) => BUCKET_UNLOCK_NON_FUNGIBLES_IDENT,
+                    LocalRef::Vault(_) => VAULT_UNLOCK_NON_FUNGIBLES_IDENT,
+                },
+                scrypto_args!(locked_ids),
+            )?;
         }
+        Ok(())
     }
 
     pub fn change_to_unrestricted(&mut self) {
@@ -465,7 +532,7 @@ impl ProofBlueprint {
         )?;
         let substate_ref = api.kernel_get_substate_ref(handle)?;
         let proof = substate_ref.proof();
-        let cloned_proof = proof.clone_proof();
+        let cloned_proof = proof.clone_proof(api)?;
 
         let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
         api.kernel_create_node(node_id, RENodeInit::Proof(cloned_proof), BTreeMap::new())?;

@@ -303,7 +303,7 @@ where
                 )?;
                 let mut substate_ref_mut = api.kernel_get_substate_ref_mut(handle)?;
                 let proof = substate_ref_mut.proof();
-                proof.drop_proof();
+                proof.drop_proof(self)?;
                 api.kernel_drop_lock(handle)?;
                 Ok(())
             }

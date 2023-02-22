@@ -339,7 +339,7 @@ impl BucketNode {
                         resource_address,
                         amount,
                         btreemap!(
-                            node_id => amount
+                            LocalRef::Bucket(node_id.into()) => amount
                         ),
                     )
                     .map_err(|e| {
@@ -389,7 +389,7 @@ impl BucketNode {
                         resource_address,
                         ids_for_proof,
                         btreemap!(
-                            node_id => ids_for_proof
+                            LocalRef::Bucket(node_id.into()) => ids_for_proof
                         ),
                     )
                     .map_err(|e| {
@@ -445,7 +445,7 @@ impl BucketNode {
                         resource_address,
                         ids,
                         btreemap!(
-                            node_id => ids
+                            LocalRef::Bucket(node_id.into()) => ids
                         ),
                     )
                     .map_err(|e| {

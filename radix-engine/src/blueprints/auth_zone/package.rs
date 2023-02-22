@@ -174,7 +174,7 @@ impl AuthZoneBlueprint {
         let substate_ref = api.kernel_get_substate_ref(handle)?;
         let proof = substate_ref.proof();
         // Take control of the proof lock as the proof in the call frame will lose it's lock once dropped
-        let mut cloned_proof = proof.clone_proof();
+        let mut cloned_proof = proof.clone_proof(api)?;
         cloned_proof.change_to_unrestricted();
 
         let mut substate_mut = api.kernel_get_substate_ref_mut(auth_zone_handle)?;
