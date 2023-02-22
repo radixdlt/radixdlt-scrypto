@@ -7,8 +7,8 @@ use crate::*;
 
 pub trait CustomTraversal: Copy + Debug + Clone + PartialEq + Eq {
     type CustomValueKind: CustomValueKind;
-    type CustomTerminalValueRef: CustomTerminalValueRef;
-    type CustomTerminalValueBatchRef: CustomTerminalValueBatchRef;
+    type CustomTerminalValueRef: CustomTerminalValueRef<CustomValueKind = Self::CustomValueKind>;
+    type CustomTerminalValueBatchRef: CustomTerminalValueBatchRef<CustomValueKind = Self::CustomValueKind>;
     type CustomContainerHeader: CustomContainerHeader<CustomValueKind = Self::CustomValueKind>;
     type CustomValueTraverser: CustomValueTraverser<CustomTraversal = Self>;
 
@@ -19,8 +19,18 @@ pub trait CustomTraversal: Copy + Debug + Clone + PartialEq + Eq {
     ) -> Self::CustomValueTraverser;
 }
 
-pub trait CustomTerminalValueRef: Copy + Debug + Clone + PartialEq + Eq {}
-pub trait CustomTerminalValueBatchRef: Copy + Debug + Clone + PartialEq + Eq {}
+pub trait CustomTerminalValueRef: Copy + Debug + Clone + PartialEq + Eq {
+    type CustomValueKind: CustomValueKind;
+
+    fn custom_value_kind(&self) -> Self::CustomValueKind;
+}
+
+pub trait CustomTerminalValueBatchRef: Copy + Debug + Clone + PartialEq + Eq {
+    type CustomValueKind: CustomValueKind;
+
+    fn custom_value_kind(&self) -> Self::CustomValueKind;
+}
+
 pub trait CustomContainerHeader: Copy + Debug + Clone + PartialEq + Eq {
     type CustomValueKind: CustomValueKind;
     fn get_child_count(&self) -> usize;
@@ -57,7 +67,7 @@ pub struct ContainerChildIndex<H: CustomContainerHeader> {
 }
 
 /// The `VecTraverser` is for streamed decoding of a payload.
-/// It turns payload decoding into a pull-based event stream
+/// It turns payload decoding into a pull-based event stream.
 pub struct VecTraverser<'de, C: CustomTraversal> {
     decoder: VecDecoder<'de, C::CustomValueKind>,
     container_stack: Vec<ContainerChildIndex<C::CustomContainerHeader>>,

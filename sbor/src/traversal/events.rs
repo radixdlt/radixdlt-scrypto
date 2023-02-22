@@ -148,7 +148,7 @@ impl<H: CustomContainerHeader> ContainerHeader<H> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TerminalValueRef<'a, V> {
+pub enum TerminalValueRef<'a, V: CustomTerminalValueRef> {
     Bool(bool),
     I8(i8),
     I16(i16),
@@ -164,8 +164,37 @@ pub enum TerminalValueRef<'a, V> {
     Custom(V),
 }
 
+impl<'a, V: CustomTerminalValueRef> TerminalValueRef<'a, V> {
+    pub fn value_kind(&self) -> ValueKind<V::CustomValueKind> {
+        match self {
+            TerminalValueRef::Bool(_) => ValueKind::Bool,
+            TerminalValueRef::I8(_) => ValueKind::I8,
+            TerminalValueRef::I16(_) => ValueKind::I16,
+            TerminalValueRef::I32(_) => ValueKind::I32,
+            TerminalValueRef::I64(_) => ValueKind::I64,
+            TerminalValueRef::I128(_) => ValueKind::I128,
+            TerminalValueRef::U8(_) => ValueKind::U8,
+            TerminalValueRef::U16(_) => ValueKind::U16,
+            TerminalValueRef::U32(_) => ValueKind::U32,
+            TerminalValueRef::U64(_) => ValueKind::U64,
+            TerminalValueRef::U128(_) => ValueKind::U128,
+            TerminalValueRef::String(_) => ValueKind::String,
+            TerminalValueRef::Custom(c) => ValueKind::Custom(c.custom_value_kind()),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TerminalValueBatchRef<'a, B> {
     U8(&'a [u8]),
     Custom(B),
+}
+
+impl<'a, B: CustomTerminalValueBatchRef> TerminalValueBatchRef<'a, B> {
+    pub fn value_kind(&self) -> ValueKind<B::CustomValueKind> {
+        match self {
+            TerminalValueBatchRef::U8(_) => ValueKind::U8,
+            TerminalValueBatchRef::Custom(c) => ValueKind::Custom(c.custom_value_kind()),
+        }
+    }
 }

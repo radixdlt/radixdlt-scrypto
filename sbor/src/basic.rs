@@ -101,12 +101,24 @@ impl<X: CustomValueKind, D: Decoder<X>> Decode<X, D> for NoCustomValue {
 #[derive(Copy, Debug, Clone, PartialEq, Eq)]
 pub enum NoCustomTerminalValueRef {}
 
-impl CustomTerminalValueRef for NoCustomTerminalValueRef {}
+impl CustomTerminalValueRef for NoCustomTerminalValueRef {
+    type CustomValueKind = NoCustomValueKind;
+
+    fn custom_value_kind(&self) -> Self::CustomValueKind {
+        unreachable!("NoCustomTerminalValueRef can't exist")
+    }
+}
 
 #[derive(Copy, Debug, Clone, PartialEq, Eq)]
 pub enum NoCustomTerminalValueBatchRef {}
 
-impl CustomTerminalValueBatchRef for NoCustomTerminalValueBatchRef {}
+impl CustomTerminalValueBatchRef for NoCustomTerminalValueBatchRef {
+    type CustomValueKind = NoCustomValueKind;
+
+    fn custom_value_kind(&self) -> Self::CustomValueKind {
+        unreachable!("NoCustomTerminalValueBatchRef can't exist")
+    }
+}
 
 #[derive(Copy, Debug, Clone, PartialEq, Eq)]
 pub enum NoCustomContainerHeader {}
