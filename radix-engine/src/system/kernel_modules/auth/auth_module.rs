@@ -88,7 +88,7 @@ impl KernelModule for AuthModule {
         api: &mut Y,
         actor: &Option<ResolvedActor>,
         call_frame_update: &mut CallFrameUpdate,
-        _args: &ScryptoValue,
+        args: &ScryptoValue,
     ) -> Result<(), RuntimeError> {
         if matches!(
             actor,
@@ -152,13 +152,46 @@ impl KernelModule for AuthModule {
                         Some(ResolvedReceiver {
                             receiver:
                                 MethodReceiver(
-                                    _,
-                                    NodeModuleId::AccessRules | NodeModuleId::AccessRules1,
+                                    node_id,
+                                    module_id,
                                 ),
                             ..
                         }),
                     ..
-                } => vec![],
+                } if module_id.eq(&NodeModuleId::AccessRules) || module_id.eq(&NodeModuleId::AccessRules1) => {
+                    match actor.identifier.ident.as_str() {
+                        ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT => {
+                            // TODO: Remove encode/decode mess
+                            let input: AccessRulesSetMethodMutabilityInput =
+                                scrypto_decode(&scrypto_encode(&args).unwrap())
+                                    .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+                            if input.key.node_module_id.eq(&NodeModuleId::AccessRules) ||
+                                input.key.node_module_id.eq(&NodeModuleId::AccessRules1) {
+                                // Should we just store this on ledger?
+                                vec![MethodAuthorization::DenyAll]
+                            } else {
+                                let handle = api.kernel_lock_substate(
+                                    *node_id,
+                                    *module_id,
+                                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                                    LockFlags::read_only(),
+                                )?;
+
+                                let authorization = {
+                                    let access_rules_substate: &ObjectAccessRulesChainSubstate =
+                                        api.kernel_get_substate_ref(handle)?;
+                                    access_rules_substate.method_mutability_authorization(&input.key)
+                                };
+
+                                api.kernel_drop_lock(handle)?;
+
+                                authorization
+                            }
+                        }
+                        _ => vec![]
+                    }
+                },
 
                 // TODO: Cleanup
                 ResolvedActor {
