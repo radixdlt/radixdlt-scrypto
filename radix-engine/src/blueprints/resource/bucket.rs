@@ -23,7 +23,7 @@ pub enum BucketError {
 
     ResourceError(ResourceError),
     ProofError(ProofError),
-    NonFungibleOperationOnFungible,
+    NonFungibleOperationNotSupported,
     MismatchingFungibility,
 }
 
@@ -130,7 +130,7 @@ impl BucketNode {
     {
         match Self::get_info(node_id, api)?.1 {
             ResourceType::Fungible { divisibility } => Err(RuntimeError::ApplicationError(
-                ApplicationError::BucketError(BucketError::NonFungibleOperationOnFungible),
+                ApplicationError::BucketError(BucketError::NonFungibleOperationNotSupported),
             )),
             ResourceType::NonFungible { id_type } => {
                 let handle = api.kernel_lock_substate(
@@ -205,7 +205,7 @@ impl BucketNode {
     {
         match Self::get_info(node_id, api)?.1 {
             ResourceType::Fungible { divisibility } => Err(RuntimeError::ApplicationError(
-                ApplicationError::BucketError(BucketError::NonFungibleOperationOnFungible),
+                ApplicationError::BucketError(BucketError::NonFungibleOperationNotSupported),
             )),
             ResourceType::NonFungible { id_type } => {
                 let handle = api.kernel_lock_substate(
@@ -410,7 +410,7 @@ impl BucketNode {
 
         match resource_type {
             ResourceType::Fungible { divisibility } => Err(RuntimeError::ApplicationError(
-                ApplicationError::BucketError(BucketError::NonFungibleOperationOnFungible),
+                ApplicationError::BucketError(BucketError::NonFungibleOperationNotSupported),
             )),
             ResourceType::NonFungible { id_type } => {
                 let handle = api.kernel_lock_substate(

@@ -26,7 +26,7 @@ pub enum VaultError {
 
     ResourceError(ResourceError),
     ProofError(ProofError),
-    NonFungibleOperationOnFungible,
+    NonFungibleOperationNotSupported,
     MismatchingFungibility,
 
     LockFeeNotRadixToken,
@@ -137,7 +137,7 @@ impl VaultNode {
     {
         match Self::get_info(node_id, api)?.1 {
             ResourceType::Fungible { divisibility } => Err(RuntimeError::ApplicationError(
-                ApplicationError::VaultError(VaultError::NonFungibleOperationOnFungible),
+                ApplicationError::VaultError(VaultError::NonFungibleOperationNotSupported),
             )),
             ResourceType::NonFungible { id_type } => {
                 let handle = api.kernel_lock_substate(
@@ -208,7 +208,7 @@ impl VaultNode {
     {
         match Self::get_info(node_id, api)?.1 {
             ResourceType::Fungible { divisibility } => Err(RuntimeError::ApplicationError(
-                ApplicationError::VaultError(VaultError::NonFungibleOperationOnFungible),
+                ApplicationError::VaultError(VaultError::NonFungibleOperationNotSupported),
             )),
             ResourceType::NonFungible { id_type } => {
                 let handle = api.kernel_lock_substate(
@@ -411,7 +411,7 @@ impl VaultNode {
 
         match resource_type {
             ResourceType::Fungible { divisibility } => Err(RuntimeError::ApplicationError(
-                ApplicationError::VaultError(VaultError::NonFungibleOperationOnFungible),
+                ApplicationError::VaultError(VaultError::NonFungibleOperationNotSupported),
             )),
             ResourceType::NonFungible { id_type } => {
                 let handle = api.kernel_lock_substate(
