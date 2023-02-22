@@ -1,7 +1,6 @@
 use super::*;
 use crate::decoder::PayloadTraverser;
-use crate::rust::fmt::Debug;
-use crate::rust::str;
+use crate::rust::prelude::*;
 use crate::value_kind::*;
 use crate::*;
 
@@ -335,7 +334,7 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
         self.decoder.read_and_check_value_kind(ValueKind::String)?;
         let size = self.decoder.read_size()?;
         let bytes_slices = self.decoder.read_slice_from_payload(size)?;
-        str::from_utf8(bytes_slices).map_err(|_| DecodeError::InvalidUtf8)
+        sbor::rust::str::from_utf8(bytes_slices).map_err(|_| DecodeError::InvalidUtf8)
     }
 
     fn decode_enum_variant_header(

@@ -19,8 +19,8 @@ use sbor::*;
 pub const MANIFEST_SBOR_V1_PAYLOAD_PREFIX: u8 = 77; // [M] ASCII code
 pub const MANIFEST_SBOR_V1_MAX_DEPTH: u8 = 16;
 
-pub type ManifestEncoder<'a> = VecEncoder<'a, ManifestCustomValueKind, MANIFEST_SBOR_V1_MAX_DEPTH>;
-pub type ManifestDecoder<'a> = VecDecoder<'a, ManifestCustomValueKind, MANIFEST_SBOR_V1_MAX_DEPTH>;
+pub type ManifestEncoder<'a> = VecEncoder<'a, ManifestCustomValueKind>;
+pub type ManifestDecoder<'a> = VecDecoder<'a, ManifestCustomValueKind>;
 pub type ManifestValueKind = ValueKind<ManifestCustomValueKind>;
 pub type ManifestValue = Value<ManifestCustomValueKind, ManifestCustomValue>;
 
@@ -38,13 +38,14 @@ impl<T: for<'a> Encode<ManifestCustomValueKind, ManifestEncoder<'a>> + ?Sized> M
 
 pub fn manifest_encode<T: ManifestEncode + ?Sized>(value: &T) -> Result<Vec<u8>, EncodeError> {
     let mut buf = Vec::with_capacity(512);
-    let encoder = ManifestEncoder::new(&mut buf);
+    let encoder = ManifestEncoder::new(&mut buf, MANIFEST_SBOR_V1_MAX_DEPTH);
     encoder.encode_payload(value, MANIFEST_SBOR_V1_PAYLOAD_PREFIX)?;
     Ok(buf)
 }
 
 pub fn manifest_decode<T: ManifestDecode>(buf: &[u8]) -> Result<T, DecodeError> {
-    ManifestDecoder::new(buf).decode_payload(MANIFEST_SBOR_V1_PAYLOAD_PREFIX)
+    ManifestDecoder::new(buf, MANIFEST_SBOR_V1_MAX_DEPTH)
+        .decode_payload(MANIFEST_SBOR_V1_PAYLOAD_PREFIX)
 }
 
 #[macro_export]
@@ -107,7 +108,7 @@ macro_rules! manifest_args {
     ($($args: expr),*) => {{
         use ::sbor::Encoder;
         let mut buf = ::sbor::rust::vec::Vec::new();
-        let mut encoder = $crate::ManifestEncoder::new(&mut buf);
+        let mut encoder = $crate::ManifestEncoder::new(&mut buf, $crate::MANIFEST_SBOR_V1_MAX_DEPTH);
         encoder.write_payload_prefix($crate::MANIFEST_SBOR_V1_PAYLOAD_PREFIX).unwrap();
         encoder.write_value_kind($crate::ManifestValueKind::Tuple).unwrap();
         // Hack: stringify to skip ownership move semantics
