@@ -39,7 +39,7 @@ harness = false
 # You should enable either `std` or `alloc`
 default = ["std"]
 std = ["hex/std", "sbor/std", "scrypto-abi/std", "radix-engine-derive/std", "strum/std", "utils/std", "serde_json/std", "transaction-data/std", "blake2/std"]
-alloc = ["hex/alloc", "sbor/alloc", "scrypto-abi/alloc", "radix-engine-derive/alloc", "utils/alloc", "serde_json/alloc", "transaction-data/alloc"]
+alloc = ["hex/alloc", "sbor/alloc", "scrypto-abi/alloc", "radix-engine-derive/alloc", "utils/alloc", "serde_json/alloc", "transaction-data/alloc", "lazy_static/spin_no_std"]
 
 # Turn on this feature to enable tracing.
 trace = ["radix-engine-derive/trace"]
