@@ -202,7 +202,7 @@ fn transaction_limit_exceeded_invoke_input_size_should_fail() {
     // Assert
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
-            TransactionLimitsError::MaxInvokeInputSizeExceeded(x),
+            TransactionLimitsError::MaxInvokePayloadSizeExceeded(x),
         )) => *x == DEFAULT_MAX_INVOKE_INPUT_SIZE + 87,
         _ => false,
     })

@@ -26,9 +26,9 @@ pub enum TransactionLimitsError {
     /// Returned when substate writes count during transaction execution
     /// exceeds defined limit just after write occurs.
     MaxSubstateWritesCountExceeded,
-    /// Returned when function on method invocation argument size exceeds defined limit,
-    /// as parameter actual argument size is returned.
-    MaxInvokeInputSizeExceeded(usize),
+    /// Returned when function or method invocation payload size exceeds defined limit,
+    /// as parameter actual payload size is returned.
+    MaxInvokePayloadSizeExceeded(usize),
 }
 
 /// Representation of data which needs to be limited for each call frame.
@@ -151,7 +151,7 @@ impl KernelModule for TransactionLimitsModule {
         {
             Err(RuntimeError::ModuleError(
                 ModuleError::TransactionLimitsError(
-                    TransactionLimitsError::MaxInvokeInputSizeExceeded(input_size),
+                    TransactionLimitsError::MaxInvokePayloadSizeExceeded(input_size),
                 ),
             ))
         } else {
