@@ -4,8 +4,8 @@ use radix_engine::ledger::{OutputValue, ReadableSubstateStore, WriteableSubstate
 use radix_engine::system::global::GlobalSubstate;
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::*;
-use radix_engine_interface::api::package::PackageInfoSubstate;
 use radix_engine_interface::api::package::WasmCodeSubstate;
+use radix_engine_interface::api::package::PackageInfoSubstate;
 use radix_engine_interface::api::types::RENodeId;
 use std::collections::BTreeSet;
 use std::ffi::OsStr;
@@ -78,7 +78,7 @@ impl Publish {
             let substate_id = SubstateId(
                 global.node_deref(),
                 NodeModuleId::SELF,
-                SubstateOffset::Package(PackageOffset::NativeCode),
+                SubstateOffset::Package(PackageOffset::Code),
             );
 
             let previous_version = substate_store
@@ -97,7 +97,7 @@ impl Publish {
                 SubstateId(
                     global.node_deref(),
                     NodeModuleId::SELF,
-                    SubstateOffset::Package(PackageOffset::NativeCode),
+                    SubstateOffset::Package(PackageOffset::Code),
                 ),
                 output_value,
             );

@@ -10,7 +10,7 @@ use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
 };
 use radix_engine_interface::blueprints::account::{
-    AccountCreateLocalInput, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_LOCAL_IDENT,
+    AccountCreateGlobalInput, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_GLOBAL_IDENT,
 };
 use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerCreateValidatorInput, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT,
@@ -611,8 +611,8 @@ pub fn generate_instruction(
         ast::Instruction::CreateAccount { withdraw_rule } => Instruction::CallFunction {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
-            function_name: ACCOUNT_CREATE_LOCAL_IDENT.to_string(),
-            args: manifest_encode(&AccountCreateLocalInput {
+            function_name: ACCOUNT_CREATE_GLOBAL_IDENT.to_string(),
+            args: manifest_encode(&AccountCreateGlobalInput {
                 withdraw_rule: generate_typed_value(
                     withdraw_rule,
                     resolver,

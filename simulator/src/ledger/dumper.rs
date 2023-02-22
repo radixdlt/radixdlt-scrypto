@@ -48,7 +48,7 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
             .get_substate(&SubstateId(
                 global.node_deref(),
                 NodeModuleId::SELF,
-                SubstateOffset::Package(PackageOffset::WasmCode),
+                SubstateOffset::Package(PackageOffset::Code),
             ))
             .map(|s| s.substate)
             .map(|s| s.to_runtime().into())
@@ -102,14 +102,14 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
     };
 
     // Some branching logic is needed here to deal well with native components. Only `Normal`
-    // components have a `ComponentTypeInfoSubstate`. Other components require some special handling.
+    // components have a `TypeInfoSubstate`. Other components require some special handling.
     let component_state_dump = match component_address {
         ComponentAddress::Normal(..) => {
-            let component_info_substate: ComponentTypeInfoSubstate = substate_store
+            let component_info_substate: TypeInfoSubstate = substate_store
                 .get_substate(&SubstateId(
                     component_id,
-                    NodeModuleId::ComponentTypeInfo,
-                    SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo),
+                    NodeModuleId::TypeInfo,
+                    SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
                 ))
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().into())

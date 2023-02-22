@@ -17,7 +17,7 @@ use crate::system::node_modules::access_rules::{AccessRulesNativePackage, AuthZo
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::package::Package;
-use crate::system::type_info::PackageTypeInfoSubstate;
+use crate::system::type_info::PackageCodeTypeSubstate;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
 use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
@@ -50,8 +50,8 @@ impl ExecutableInvocation for MethodInvocation {
             NodeModuleId::SELF => {
                 let handle = api.kernel_lock_substate(
                     self.receiver.0,
-                    NodeModuleId::ComponentTypeInfo,
-                    SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo),
+                    NodeModuleId::TypeInfo,
+                    SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
                     LockFlags::read_only(),
                 )?;
                 let substate_ref = api.kernel_get_substate_ref(handle)?;
@@ -77,7 +77,7 @@ impl ExecutableInvocation for MethodInvocation {
                 (ROYALTY_PACKAGE, PACKAGE_ROYALTY_BLUEPRINT.to_string())
             }
             NodeModuleId::AccessRules => {
-                // TODO: Check if type has royalty
+                // TODO: Check if type has access_rules
                 (ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT.to_string())
             }
             _ => todo!(),
@@ -112,30 +112,30 @@ impl ExecutableInvocation for MethodInvocation {
         );
         let actor = ResolvedActor::method(fn_identifier.clone(), resolved_receiver);
 
-        let type_info = if package_address.eq(&PACKAGE_LOADER) {
+        let code_type = if package_address.eq(&PACKAGE_LOADER) {
             // TODO: Remove this weirdness
             node_refs_to_copy.insert(RENodeId::Global(Address::Resource(RADIX_TOKEN)));
-            PackageTypeInfoSubstate::NativePackage
+            PackageCodeTypeSubstate::Precompiled
         } else {
             let handle = api.kernel_lock_substate(
                 RENodeId::Global(Address::Package(package_address)),
-                NodeModuleId::PackageTypeInfo,
-                SubstateOffset::PackageTypeInfo,
+                NodeModuleId::SELF,
+                SubstateOffset::Package(PackageOffset::CodeType),
                 LockFlags::read_only(),
             )?;
             let substate_ref = api.kernel_get_substate_ref(handle)?;
-            let type_info = substate_ref.type_info().clone();
+            let code_type = substate_ref.code_type().clone();
             api.kernel_drop_lock(handle)?;
-            type_info
+            code_type
         };
 
-        let export_name = match type_info {
-            PackageTypeInfoSubstate::NativePackage => {
+        let export_name = match code_type {
+            PackageCodeTypeSubstate::Precompiled => {
                 // TODO: Do we need to check against the abi? Probably not since we should be able to verify this
                 // TODO: in the native package itself.
                 self.fn_name.to_string() // TODO: Clean this up
             }
-            PackageTypeInfoSubstate::WasmPackage => {
+            PackageCodeTypeSubstate::Wasm => {
                 node_refs_to_copy.insert(RENodeId::Global(Address::Component(EPOCH_MANAGER)));
                 node_refs_to_copy.insert(RENodeId::Global(Address::Component(CLOCK)));
                 node_refs_to_copy.insert(RENodeId::Global(Address::Resource(RADIX_TOKEN)));
@@ -233,30 +233,30 @@ impl ExecutableInvocation for FunctionInvocation {
 
         let actor = ResolvedActor::function(self.fn_identifier.clone());
 
-        let type_info = if self.fn_identifier.package_address.eq(&PACKAGE_LOADER) {
+        let code_type = if self.fn_identifier.package_address.eq(&PACKAGE_LOADER) {
             // TODO: Remove this weirdness
             node_refs_to_copy.insert(RENodeId::Global(Address::Resource(RADIX_TOKEN)));
-            PackageTypeInfoSubstate::NativePackage
+            PackageCodeTypeSubstate::Precompiled
         } else {
             let handle = api.kernel_lock_substate(
                 RENodeId::Global(Address::Package(self.fn_identifier.package_address)),
-                NodeModuleId::PackageTypeInfo,
-                SubstateOffset::PackageTypeInfo,
+                NodeModuleId::SELF,
+                SubstateOffset::Package(PackageOffset::CodeType),
                 LockFlags::read_only(),
             )?;
             let substate_ref = api.kernel_get_substate_ref(handle)?;
-            let type_info = substate_ref.type_info().clone();
+            let code_type = substate_ref.code_type().clone();
             api.kernel_drop_lock(handle)?;
-            type_info
+            code_type
         };
 
-        let export_name = match type_info {
-            PackageTypeInfoSubstate::NativePackage => {
+        let export_name = match code_type {
+            PackageCodeTypeSubstate::Precompiled => {
                 // TODO: Do we need to check against the abi? Probably not since we should be able to verify this
                 // TODO: in the native package itself.
                 self.fn_identifier.ident.to_string() // TODO: Clean this up
             }
-            PackageTypeInfoSubstate::WasmPackage => {
+            PackageCodeTypeSubstate::Wasm => {
                 node_refs_to_copy.insert(RENodeId::Global(Address::Component(EPOCH_MANAGER)));
                 node_refs_to_copy.insert(RENodeId::Global(Address::Component(CLOCK)));
                 node_refs_to_copy.insert(RENodeId::Global(Address::Resource(RADIX_TOKEN)));
@@ -374,29 +374,29 @@ impl Executor for ScryptoExecutor {
             )?;
             api.kernel_drop_lock(handle)?;
 
-            let type_info = {
+            let code_type = {
                 let handle = api.kernel_lock_substate(
                     RENodeId::Global(Address::Package(self.package_address)),
-                    NodeModuleId::PackageTypeInfo,
-                    SubstateOffset::PackageTypeInfo,
+                    NodeModuleId::SELF,
+                    SubstateOffset::Package(PackageOffset::CodeType),
                     LockFlags::read_only(),
                 )?;
                 let substate_ref = api.kernel_get_substate_ref(handle)?;
-                let type_info = substate_ref.type_info().clone();
+                let code_type = substate_ref.code_type().clone();
                 api.kernel_drop_lock(handle)?;
-                type_info
+                code_type
             };
 
-            let output = match type_info {
-                PackageTypeInfoSubstate::NativePackage => {
+            let output = match code_type {
+                PackageCodeTypeSubstate::Precompiled => {
                     let handle = api.kernel_lock_substate(
                         RENodeId::Global(Address::Package(self.package_address)),
                         NodeModuleId::SELF,
-                        SubstateOffset::Package(PackageOffset::NativeCode),
+                        SubstateOffset::Package(PackageOffset::Code),
                         LockFlags::read_only(),
                     )?;
                     let substate_ref = api.kernel_get_substate_ref(handle)?;
-                    let native_package_code_id = substate_ref.native_code().native_package_code_id;
+                    let native_package_code_id = substate_ref.code().code[0];
                     api.kernel_drop_lock(handle)?;
                     NativeVm::invoke_native_package(
                         native_package_code_id,
@@ -406,7 +406,7 @@ impl Executor for ScryptoExecutor {
                         api,
                     )?
                 }
-                PackageTypeInfoSubstate::WasmPackage => {
+                PackageCodeTypeSubstate::Wasm => {
                     let rtn_type = {
                         let handle = api.kernel_lock_substate(
                             RENodeId::Global(Address::Package(self.package_address)),
@@ -424,24 +424,19 @@ impl Executor for ScryptoExecutor {
                         rtn_type
                     };
 
-                    let wasm_code = {
+                    let mut instance = {
                         let handle = api.kernel_lock_substate(
                             RENodeId::Global(Address::Package(self.package_address)),
                             NodeModuleId::SELF,
-                            SubstateOffset::Package(PackageOffset::WasmCode),
+                            SubstateOffset::Package(PackageOffset::Code),
                             LockFlags::read_only(),
                         )?;
-                        let substate_ref = api.kernel_get_substate_ref(handle)?;
-                        let package = substate_ref.wasm_code().clone(); // TODO: Remove clone()
+                        let wasm_instance =
+                            api.kernel_create_wasm_instance(self.package_address, handle)?;
                         api.kernel_drop_lock(handle)?;
 
-                        package
+                        wasm_instance
                     };
-
-                    // Emit event
-                    let mut instance = api
-                        .kernel_get_scrypto_interpreter()
-                        .create_instance(self.package_address, &wasm_code.code);
 
                     let output = {
                         let mut runtime: Box<dyn WasmRuntime> = Box::new(ScryptoRuntime::new(api));

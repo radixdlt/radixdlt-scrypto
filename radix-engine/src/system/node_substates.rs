@@ -2,7 +2,7 @@ use super::global::GlobalSubstate;
 use super::node_modules::access_rules::AuthZoneStackSubstate;
 use super::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use super::node_modules::metadata::MetadataSubstate;
-use super::type_info::PackageTypeInfoSubstate;
+use super::type_info::PackageCodeTypeSubstate;
 use crate::blueprints::access_controller::AccessControllerSubstate;
 use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::clock::CurrentTimeRoundedToMinutesSubstate;
@@ -33,10 +33,6 @@ use radix_engine_interface::data::IndexedScryptoValue;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PersistedSubstate {
-    /* Type info */
-    PackageTypeInfo(PackageTypeInfoSubstate),
-    ComponentTypeInfo(ComponentTypeInfoSubstate),
-
     /* SELF */
     Global(GlobalSubstate),
     EpochManager(EpochManagerSubstate),
@@ -46,17 +42,21 @@ pub enum PersistedSubstate {
     ResourceManager(ResourceManagerSubstate),
     ComponentState(ComponentStateSubstate),
     PackageInfo(PackageInfoSubstate),
-    NativePackageInfo(NativeCodeSubstate),
+    PackageAccessRules(PackageAccessRulesSubstate),
+    PackageCodeType(PackageCodeTypeSubstate),
     WasmCode(WasmCodeSubstate),
+    NativeCode(NativeCodeSubstate),
     Account(AccountSubstate),
     AccessController(AccessControllerSubstate),
     VaultInfo(VaultInfoSubstate),
     VaultLiquidFungible(LiquidFungibleResource),
     VaultLiquidNonFungible(LiquidNonFungibleResource),
 
+    /* Type info */
+    TypeInfo(TypeInfoSubstate),
+
     /* Access rules */
     AccessRulesChain(ObjectAccessRulesChainSubstate),
-    PackageAccessRules(PackageAccessRulesSubstate),
 
     /* Metadata */
     Metadata(MetadataSubstate),
@@ -164,38 +164,21 @@ impl PersistedSubstate {
     pub fn to_runtime(self) -> RuntimeSubstate {
         match self {
             PersistedSubstate::Global(value) => RuntimeSubstate::Global(value),
-            PersistedSubstate::PackageTypeInfo(value) => RuntimeSubstate::PackageTypeInfo(value),
             PersistedSubstate::EpochManager(value) => RuntimeSubstate::EpochManager(value),
             PersistedSubstate::ValidatorSet(value) => RuntimeSubstate::ValidatorSet(value),
             PersistedSubstate::Validator(value) => RuntimeSubstate::Validator(value),
             PersistedSubstate::CurrentTimeRoundedToMinutes(value) => {
                 RuntimeSubstate::CurrentTimeRoundedToMinutes(value)
             }
-            PersistedSubstate::AccessRulesChain(value) => RuntimeSubstate::AccessRulesChain(value),
-            PersistedSubstate::Metadata(value) => RuntimeSubstate::Metadata(value),
             PersistedSubstate::ResourceManager(value) => RuntimeSubstate::ResourceManager(value),
-            PersistedSubstate::ComponentTypeInfo(value) => {
-                RuntimeSubstate::ComponentTypeInfo(value)
-            }
             PersistedSubstate::ComponentState(value) => RuntimeSubstate::ComponentState(value),
-            PersistedSubstate::ComponentRoyaltyConfig(value) => {
-                RuntimeSubstate::ComponentRoyaltyConfig(value)
-            }
-            PersistedSubstate::ComponentRoyaltyAccumulator(value) => {
-                RuntimeSubstate::ComponentRoyaltyAccumulator(value)
-            }
             PersistedSubstate::PackageInfo(value) => RuntimeSubstate::PackageInfo(value),
-            PersistedSubstate::WasmCode(value) => RuntimeSubstate::WasmCode(value),
-            PersistedSubstate::NativePackageInfo(value) => RuntimeSubstate::NativeCode(value),
-            PersistedSubstate::PackageRoyaltyConfig(value) => {
-                RuntimeSubstate::PackageRoyaltyConfig(value)
-            }
-            PersistedSubstate::PackageRoyaltyAccumulator(value) => {
-                RuntimeSubstate::PackageRoyaltyAccumulator(value)
-            }
             PersistedSubstate::PackageAccessRules(value) => {
                 RuntimeSubstate::PackageAccessRules(value)
             }
+            PersistedSubstate::PackageCodeType(value) => RuntimeSubstate::PackageCodeType(value),
+            PersistedSubstate::WasmCode(value) => RuntimeSubstate::WasmCode(value),
+            PersistedSubstate::NativeCode(value) => RuntimeSubstate::NativeCode(value),
             PersistedSubstate::VaultInfo(value) => RuntimeSubstate::VaultInfo(value),
             PersistedSubstate::VaultLiquidFungible(value) => {
                 RuntimeSubstate::VaultLiquidFungible(value)
@@ -209,6 +192,23 @@ impl PersistedSubstate {
             }
             PersistedSubstate::Account(value) => RuntimeSubstate::Account(value),
             PersistedSubstate::AccessController(value) => RuntimeSubstate::AccessController(value),
+
+            /* Node module starts */
+            PersistedSubstate::TypeInfo(value) => RuntimeSubstate::TypeInfo(value),
+            PersistedSubstate::AccessRulesChain(value) => RuntimeSubstate::AccessRulesChain(value),
+            PersistedSubstate::Metadata(value) => RuntimeSubstate::Metadata(value),
+            PersistedSubstate::PackageRoyaltyConfig(value) => {
+                RuntimeSubstate::PackageRoyaltyConfig(value)
+            }
+            PersistedSubstate::PackageRoyaltyAccumulator(value) => {
+                RuntimeSubstate::PackageRoyaltyAccumulator(value)
+            }
+            PersistedSubstate::ComponentRoyaltyConfig(value) => {
+                RuntimeSubstate::ComponentRoyaltyConfig(value)
+            }
+            PersistedSubstate::ComponentRoyaltyAccumulator(value) => {
+                RuntimeSubstate::ComponentRoyaltyAccumulator(value)
+            } /* Node module ends */
         }
     }
 }
@@ -219,10 +219,6 @@ pub enum PersistError {
 
 #[derive(Debug)]
 pub enum RuntimeSubstate {
-    /* Type info */
-    PackageTypeInfo(PackageTypeInfoSubstate),
-    ComponentTypeInfo(ComponentTypeInfoSubstate),
-
     /* SELF */
     Global(GlobalSubstate),
     EpochManager(EpochManagerSubstate),
@@ -231,9 +227,11 @@ pub enum RuntimeSubstate {
     CurrentTimeRoundedToMinutes(CurrentTimeRoundedToMinutesSubstate),
     ResourceManager(ResourceManagerSubstate),
     ComponentState(ComponentStateSubstate),
-    NativeCode(NativeCodeSubstate),
-    WasmCode(WasmCodeSubstate),
     PackageInfo(PackageInfoSubstate),
+    PackageAccessRules(PackageAccessRulesSubstate),
+    PackageCodeType(PackageCodeTypeSubstate),
+    WasmCode(WasmCodeSubstate),
+    NativeCode(NativeCodeSubstate),
     AuthZoneStack(AuthZoneStackSubstate),
     Proof(ProofSubstate),
     Worktop(WorktopSubstate),
@@ -241,22 +239,22 @@ pub enum RuntimeSubstate {
     TransactionRuntime(TransactionRuntimeSubstate),
     Account(AccountSubstate),
     AccessController(AccessControllerSubstate),
-
     VaultInfo(VaultInfoSubstate),
     VaultLiquidFungible(LiquidFungibleResource),
     VaultLiquidNonFungible(LiquidNonFungibleResource),
     VaultLockedFungible(LockedFungibleResource),
     VaultLockedNonFungible(LockedNonFungibleResource),
-
     BucketInfo(BucketInfoSubstate),
     BucketLiquidFungible(LiquidFungibleResource),
     BucketLiquidNonFungible(LiquidNonFungibleResource),
     BucketLockedFungible(LockedFungibleResource),
     BucketLockedNonFungible(LockedNonFungibleResource),
 
+    /* Type info */
+    TypeInfo(TypeInfoSubstate),
+
     /* Access rules */
     AccessRulesChain(ObjectAccessRulesChainSubstate),
-    PackageAccessRules(PackageAccessRulesSubstate),
 
     /* Metadata */
     Metadata(MetadataSubstate),
@@ -276,48 +274,28 @@ impl RuntimeSubstate {
     pub fn clone_to_persisted(&self) -> PersistedSubstate {
         match self {
             RuntimeSubstate::Global(value) => PersistedSubstate::Global(value.clone()),
-            RuntimeSubstate::PackageTypeInfo(value) => {
-                PersistedSubstate::PackageTypeInfo(value.clone())
-            }
             RuntimeSubstate::EpochManager(value) => PersistedSubstate::EpochManager(value.clone()),
             RuntimeSubstate::ValidatorSet(value) => PersistedSubstate::ValidatorSet(value.clone()),
             RuntimeSubstate::Validator(value) => PersistedSubstate::Validator(value.clone()),
-            RuntimeSubstate::AccessRulesChain(value) => {
-                PersistedSubstate::AccessRulesChain(value.clone())
-            }
             RuntimeSubstate::CurrentTimeRoundedToMinutes(value) => {
                 PersistedSubstate::CurrentTimeRoundedToMinutes(value.clone())
             }
-            RuntimeSubstate::Metadata(value) => PersistedSubstate::Metadata(value.clone()),
             RuntimeSubstate::ResourceManager(value) => {
                 PersistedSubstate::ResourceManager(value.clone())
             }
-            RuntimeSubstate::ComponentTypeInfo(value) => {
-                PersistedSubstate::ComponentTypeInfo(value.clone())
-            }
+            RuntimeSubstate::TypeInfo(value) => PersistedSubstate::TypeInfo(value.clone()),
             RuntimeSubstate::ComponentState(value) => {
                 PersistedSubstate::ComponentState(value.clone())
             }
-            RuntimeSubstate::ComponentRoyaltyConfig(value) => {
-                PersistedSubstate::ComponentRoyaltyConfig(value.clone())
-            }
-            RuntimeSubstate::ComponentRoyaltyAccumulator(value) => {
-                PersistedSubstate::ComponentRoyaltyAccumulator(value.clone())
-            }
             RuntimeSubstate::PackageInfo(value) => PersistedSubstate::PackageInfo(value.clone()),
-            RuntimeSubstate::WasmCode(value) => PersistedSubstate::WasmCode(value.clone()),
-            RuntimeSubstate::NativeCode(value) => {
-                PersistedSubstate::NativePackageInfo(value.clone())
-            }
-            RuntimeSubstate::PackageRoyaltyConfig(value) => {
-                PersistedSubstate::PackageRoyaltyConfig(value.clone())
-            }
-            RuntimeSubstate::PackageRoyaltyAccumulator(value) => {
-                PersistedSubstate::PackageRoyaltyAccumulator(value.clone())
-            }
             RuntimeSubstate::PackageAccessRules(value) => {
                 PersistedSubstate::PackageAccessRules(value.clone())
             }
+            RuntimeSubstate::PackageCodeType(value) => {
+                PersistedSubstate::PackageCodeType(value.clone())
+            }
+            RuntimeSubstate::WasmCode(value) => PersistedSubstate::WasmCode(value.clone()),
+            RuntimeSubstate::NativeCode(value) => PersistedSubstate::NativeCode(value.clone()),
             RuntimeSubstate::NonFungible(value) => PersistedSubstate::NonFungible(value.clone()),
             RuntimeSubstate::KeyValueStoreEntry(value) => {
                 PersistedSubstate::KeyValueStoreEntry(value.clone())
@@ -333,6 +311,26 @@ impl RuntimeSubstate {
             RuntimeSubstate::AccessController(value) => {
                 PersistedSubstate::AccessController(value.clone())
             }
+
+            /* Node module starts */
+            RuntimeSubstate::TypeInfo(value) => PersistedSubstate::TypeInfo(value.clone()),
+            RuntimeSubstate::AccessRulesChain(value) => {
+                PersistedSubstate::AccessRulesChain(value.clone())
+            }
+            RuntimeSubstate::Metadata(value) => PersistedSubstate::Metadata(value.clone()),
+            RuntimeSubstate::ComponentRoyaltyConfig(value) => {
+                PersistedSubstate::ComponentRoyaltyConfig(value.clone())
+            }
+            RuntimeSubstate::ComponentRoyaltyAccumulator(value) => {
+                PersistedSubstate::ComponentRoyaltyAccumulator(value.clone())
+            }
+            RuntimeSubstate::PackageRoyaltyConfig(value) => {
+                PersistedSubstate::PackageRoyaltyConfig(value.clone())
+            }
+            RuntimeSubstate::PackageRoyaltyAccumulator(value) => {
+                PersistedSubstate::PackageRoyaltyAccumulator(value.clone())
+            }
+            /* Node module ends */
             RuntimeSubstate::AuthZoneStack(..)
             | RuntimeSubstate::BucketInfo(..)
             | RuntimeSubstate::BucketLiquidFungible(..)
@@ -353,51 +351,53 @@ impl RuntimeSubstate {
     pub fn to_persisted(self) -> PersistedSubstate {
         match self {
             RuntimeSubstate::Global(value) => PersistedSubstate::Global(value),
-            RuntimeSubstate::PackageTypeInfo(value) => PersistedSubstate::PackageTypeInfo(value),
             RuntimeSubstate::EpochManager(value) => PersistedSubstate::EpochManager(value),
             RuntimeSubstate::ValidatorSet(value) => PersistedSubstate::ValidatorSet(value),
             RuntimeSubstate::Validator(value) => PersistedSubstate::Validator(value),
-            RuntimeSubstate::AccessRulesChain(value) => PersistedSubstate::AccessRulesChain(value),
             RuntimeSubstate::CurrentTimeRoundedToMinutes(value) => {
                 PersistedSubstate::CurrentTimeRoundedToMinutes(value)
             }
-            RuntimeSubstate::Metadata(value) => PersistedSubstate::Metadata(value),
             RuntimeSubstate::ResourceManager(value) => PersistedSubstate::ResourceManager(value),
-            RuntimeSubstate::ComponentTypeInfo(value) => {
-                PersistedSubstate::ComponentTypeInfo(value)
-            }
+            RuntimeSubstate::TypeInfo(value) => PersistedSubstate::TypeInfo(value),
             RuntimeSubstate::ComponentState(value) => PersistedSubstate::ComponentState(value),
+            RuntimeSubstate::PackageInfo(value) => PersistedSubstate::PackageInfo(value),
+            RuntimeSubstate::PackageAccessRules(value) => {
+                PersistedSubstate::PackageAccessRules(value)
+            }
+            RuntimeSubstate::PackageCodeType(value) => PersistedSubstate::PackageCodeType(value),
+            RuntimeSubstate::WasmCode(value) => PersistedSubstate::WasmCode(value),
+            RuntimeSubstate::NativeCode(value) => PersistedSubstate::NativeCode(value),
+            RuntimeSubstate::NonFungible(value) => PersistedSubstate::NonFungible(value),
+            RuntimeSubstate::KeyValueStoreEntry(value) => {
+                PersistedSubstate::KeyValueStoreEntry(value)
+            }
+            RuntimeSubstate::VaultInfo(value) => PersistedSubstate::VaultInfo(value),
+            RuntimeSubstate::VaultLiquidFungible(value) => {
+                PersistedSubstate::VaultLiquidFungible(value)
+            }
+            RuntimeSubstate::VaultLiquidNonFungible(value) => {
+                PersistedSubstate::VaultLiquidNonFungible(value)
+            }
+            RuntimeSubstate::Account(value) => PersistedSubstate::Account(value),
+            RuntimeSubstate::AccessController(value) => PersistedSubstate::AccessController(value),
+
+            /* Node module starts */
+            RuntimeSubstate::TypeInfo(value) => PersistedSubstate::TypeInfo(value),
+            RuntimeSubstate::AccessRulesChain(value) => PersistedSubstate::AccessRulesChain(value),
+            RuntimeSubstate::Metadata(value) => PersistedSubstate::Metadata(value),
             RuntimeSubstate::ComponentRoyaltyConfig(value) => {
                 PersistedSubstate::ComponentRoyaltyConfig(value)
             }
             RuntimeSubstate::ComponentRoyaltyAccumulator(value) => {
                 PersistedSubstate::ComponentRoyaltyAccumulator(value)
             }
-            RuntimeSubstate::PackageInfo(value) => PersistedSubstate::PackageInfo(value),
-            RuntimeSubstate::WasmCode(value) => PersistedSubstate::WasmCode(value),
-            RuntimeSubstate::NativeCode(value) => PersistedSubstate::NativePackageInfo(value),
             RuntimeSubstate::PackageRoyaltyConfig(value) => {
                 PersistedSubstate::PackageRoyaltyConfig(value)
             }
             RuntimeSubstate::PackageRoyaltyAccumulator(value) => {
                 PersistedSubstate::PackageRoyaltyAccumulator(value)
             }
-            RuntimeSubstate::PackageAccessRules(value) => {
-                PersistedSubstate::PackageAccessRules(value)
-            }
-            RuntimeSubstate::NonFungible(value) => PersistedSubstate::NonFungible(value),
-            RuntimeSubstate::KeyValueStoreEntry(value) => {
-                PersistedSubstate::KeyValueStoreEntry(value)
-            }
-            RuntimeSubstate::VaultInfo(value) => PersistedSubstate::VaultInfo(value.clone()),
-            RuntimeSubstate::VaultLiquidFungible(value) => {
-                PersistedSubstate::VaultLiquidFungible(value.clone())
-            }
-            RuntimeSubstate::VaultLiquidNonFungible(value) => {
-                PersistedSubstate::VaultLiquidNonFungible(value.clone())
-            }
-            RuntimeSubstate::Account(value) => PersistedSubstate::Account(value),
-            RuntimeSubstate::AccessController(value) => PersistedSubstate::AccessController(value),
+            /* Node module ends */
             RuntimeSubstate::AuthZoneStack(..)
             | RuntimeSubstate::BucketInfo(..)
             | RuntimeSubstate::BucketLiquidFungible(..)
@@ -448,7 +448,7 @@ impl RuntimeSubstate {
     pub fn to_ref_mut(&mut self) -> SubstateRefMut {
         match self {
             RuntimeSubstate::Global(value) => SubstateRefMut::Global(value),
-            RuntimeSubstate::PackageTypeInfo(value) => SubstateRefMut::TypeInfo(value),
+            RuntimeSubstate::PackageCodeType(value) => SubstateRefMut::PackageCodeType(value),
             RuntimeSubstate::EpochManager(value) => SubstateRefMut::EpochManager(value),
             RuntimeSubstate::ValidatorSet(value) => SubstateRefMut::ValidatorSet(value),
             RuntimeSubstate::Validator(value) => SubstateRefMut::Validator(value),
@@ -458,7 +458,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::AccessRulesChain(value) => SubstateRefMut::AccessRulesChain(value),
             RuntimeSubstate::Metadata(value) => SubstateRefMut::Metadata(value),
             RuntimeSubstate::ResourceManager(value) => SubstateRefMut::ResourceManager(value),
-            RuntimeSubstate::ComponentTypeInfo(value) => SubstateRefMut::ComponentTypeInfo(value),
+            RuntimeSubstate::TypeInfo(value) => SubstateRefMut::TypeInfo(value),
             RuntimeSubstate::ComponentState(value) => SubstateRefMut::ComponentState(value),
             RuntimeSubstate::ComponentRoyaltyConfig(value) => {
                 SubstateRefMut::ComponentRoyaltyConfig(value)
@@ -467,8 +467,9 @@ impl RuntimeSubstate {
                 SubstateRefMut::ComponentRoyaltyAccumulator(value)
             }
             RuntimeSubstate::PackageInfo(value) => SubstateRefMut::PackageInfo(value),
+            RuntimeSubstate::PackageAccessRules(value) => SubstateRefMut::PackageAccessRules(value),
             RuntimeSubstate::WasmCode(value) => SubstateRefMut::WasmCode(value),
-            RuntimeSubstate::NativeCode(value) => SubstateRefMut::NativePackageInfo(value),
+            RuntimeSubstate::NativeCode(value) => SubstateRefMut::NativeCode(value),
             RuntimeSubstate::PackageRoyaltyConfig(value) => {
                 SubstateRefMut::PackageRoyaltyConfig(value)
             }
@@ -510,14 +511,13 @@ impl RuntimeSubstate {
             RuntimeSubstate::TransactionRuntime(value) => SubstateRefMut::TransactionRuntime(value),
             RuntimeSubstate::Account(value) => SubstateRefMut::Account(value),
             RuntimeSubstate::AccessController(value) => SubstateRefMut::AccessController(value),
-            RuntimeSubstate::PackageAccessRules(value) => SubstateRefMut::PackageAccessRules(value),
         }
     }
 
     pub fn to_ref(&self) -> SubstateRef {
         match self {
             RuntimeSubstate::Global(value) => SubstateRef::Global(value),
-            RuntimeSubstate::PackageTypeInfo(value) => SubstateRef::TypeInfo(value),
+            RuntimeSubstate::TypeInfo(value) => SubstateRef::TypeInfo(value),
             RuntimeSubstate::EpochManager(value) => SubstateRef::EpochManager(value),
             RuntimeSubstate::ValidatorSet(value) => SubstateRef::ValidatorSet(value),
             RuntimeSubstate::Validator(value) => SubstateRef::Validator(value),
@@ -525,10 +525,9 @@ impl RuntimeSubstate {
                 SubstateRef::CurrentTimeRoundedToMinutes(value)
             }
             RuntimeSubstate::AccessRulesChain(value) => SubstateRef::AccessRulesChain(value),
-            RuntimeSubstate::PackageAccessRules(value) => SubstateRef::PackageAccessRules(value),
             RuntimeSubstate::Metadata(value) => SubstateRef::Metadata(value),
             RuntimeSubstate::ResourceManager(value) => SubstateRef::ResourceManager(value),
-            RuntimeSubstate::ComponentTypeInfo(value) => SubstateRef::ComponentTypeInfo(value),
+            RuntimeSubstate::TypeInfo(value) => SubstateRef::TypeInfo(value),
             RuntimeSubstate::ComponentState(value) => SubstateRef::ComponentState(value),
             RuntimeSubstate::ComponentRoyaltyConfig(value) => {
                 SubstateRef::ComponentRoyaltyConfig(value)
@@ -537,6 +536,8 @@ impl RuntimeSubstate {
                 SubstateRef::ComponentRoyaltyAccumulator(value)
             }
             RuntimeSubstate::PackageInfo(value) => SubstateRef::PackageInfo(value),
+            RuntimeSubstate::PackageAccessRules(value) => SubstateRef::PackageAccessRules(value),
+            RuntimeSubstate::PackageCodeType(value) => SubstateRef::PackageCodeType(value),
             RuntimeSubstate::WasmCode(value) => SubstateRef::WasmCode(value),
             RuntimeSubstate::NativeCode(value) => SubstateRef::NativeCode(value),
             RuntimeSubstate::PackageRoyaltyConfig(value) => {
@@ -748,21 +749,27 @@ impl Into<RuntimeSubstate> for PackageInfoSubstate {
     }
 }
 
+impl Into<RuntimeSubstate> for PackageAccessRulesSubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::PackageAccessRules(self)
+    }
+}
+
 impl Into<RuntimeSubstate> for NativeCodeSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::NativeCode(self)
     }
 }
 
-impl Into<RuntimeSubstate> for PackageTypeInfoSubstate {
+impl Into<RuntimeSubstate> for PackageCodeTypeSubstate {
     fn into(self) -> RuntimeSubstate {
-        RuntimeSubstate::PackageTypeInfo(self)
+        RuntimeSubstate::PackageCodeType(self)
     }
 }
 
-impl Into<RuntimeSubstate> for ComponentTypeInfoSubstate {
+impl Into<RuntimeSubstate> for TypeInfoSubstate {
     fn into(self) -> RuntimeSubstate {
-        RuntimeSubstate::ComponentTypeInfo(self)
+        RuntimeSubstate::TypeInfo(self)
     }
 }
 
@@ -820,12 +827,6 @@ impl Into<RuntimeSubstate> for PackageRoyaltyAccumulatorSubstate {
     }
 }
 
-impl Into<RuntimeSubstate> for PackageAccessRulesSubstate {
-    fn into(self) -> RuntimeSubstate {
-        RuntimeSubstate::PackageAccessRules(self)
-    }
-}
-
 impl Into<RuntimeSubstate> for TransactionRuntimeSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::TransactionRuntime(self)
@@ -854,9 +855,9 @@ impl Into<LoggerSubstate> for RuntimeSubstate {
     }
 }
 
-impl Into<ComponentTypeInfoSubstate> for RuntimeSubstate {
-    fn into(self) -> ComponentTypeInfoSubstate {
-        if let RuntimeSubstate::ComponentTypeInfo(component) = self {
+impl Into<TypeInfoSubstate> for RuntimeSubstate {
+    fn into(self) -> TypeInfoSubstate {
+        if let RuntimeSubstate::TypeInfo(component) = self {
             component
         } else {
             panic!("Not a component info");
@@ -1093,7 +1094,7 @@ pub enum SubstateRef<'a> {
     Worktop(&'a WorktopSubstate),
     Logger(&'a LoggerSubstate),
     Proof(&'a ProofSubstate),
-    ComponentTypeInfo(&'a ComponentTypeInfoSubstate),
+    TypeInfo(&'a TypeInfoSubstate),
     ComponentState(&'a ComponentStateSubstate),
     ComponentRoyaltyConfig(&'a ComponentRoyaltyConfigSubstate),
     ComponentRoyaltyAccumulator(&'a ComponentRoyaltyAccumulatorSubstate),
@@ -1123,7 +1124,7 @@ pub enum SubstateRef<'a> {
     PackageAccessRules(&'a PackageAccessRulesSubstate),
     Metadata(&'a MetadataSubstate),
     Global(&'a GlobalSubstate),
-    TypeInfo(&'a PackageTypeInfoSubstate),
+    PackageCodeType(&'a PackageCodeTypeSubstate),
     TransactionRuntime(&'a TransactionRuntimeSubstate),
     Account(&'a AccountSubstate),
     AccessController(&'a AccessControllerSubstate),
@@ -1133,13 +1134,13 @@ impl<'a> SubstateRef<'a> {
     pub fn to_scrypto_value(&self) -> IndexedScryptoValue {
         match self {
             SubstateRef::Global(value) => IndexedScryptoValue::from_typed(*value),
-            SubstateRef::TypeInfo(value) => IndexedScryptoValue::from_typed(*value),
+            SubstateRef::PackageCodeType(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::EpochManager(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::CurrentTimeRoundedToMinutes(value) => {
                 IndexedScryptoValue::from_typed(*value)
             }
             SubstateRef::ResourceManager(value) => IndexedScryptoValue::from_typed(*value),
-            SubstateRef::ComponentTypeInfo(value) => IndexedScryptoValue::from_typed(*value),
+            SubstateRef::TypeInfo(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::ComponentState(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::ComponentRoyaltyConfig(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::ComponentRoyaltyAccumulator(value) => {
@@ -1186,9 +1187,9 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
-    pub fn component_info(&self) -> &ComponentTypeInfoSubstate {
+    pub fn component_info(&self) -> &TypeInfoSubstate {
         match self {
-            SubstateRef::ComponentTypeInfo(info) => *info,
+            SubstateRef::TypeInfo(info) => *info,
             _ => panic!("Not a component info"),
         }
     }
@@ -1333,21 +1334,14 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
-    pub fn type_info(&self) -> &PackageTypeInfoSubstate {
+    pub fn code_type(&self) -> &PackageCodeTypeSubstate {
         match self {
-            SubstateRef::TypeInfo(value) => *value,
-            _ => panic!("Not type info"),
+            SubstateRef::PackageCodeType(value) => *value,
+            _ => panic!("Not code type"),
         }
     }
 
-    pub fn native_code(&self) -> &NativeCodeSubstate {
-        match self {
-            SubstateRef::NativeCode(value) => *value,
-            _ => panic!("Not a native package"),
-        }
-    }
-
-    pub fn wasm_code(&self) -> &WasmCodeSubstate {
+    pub fn code(&self) -> &WasmCodeSubstate {
         match self {
             SubstateRef::WasmCode(value) => *value,
             _ => panic!("Not wasm code"),
@@ -1479,7 +1473,7 @@ impl<'a> SubstateRef<'a> {
                 }
                 (references, Vec::new())
             }
-            SubstateRef::ComponentTypeInfo(substate) => {
+            SubstateRef::TypeInfo(substate) => {
                 let mut references = HashSet::new();
                 references.insert(RENodeId::Global(Address::Package(substate.package_address)));
                 (references, Vec::new())
@@ -1557,13 +1551,14 @@ impl<'a> SubstateRef<'a> {
 }
 
 pub enum SubstateRefMut<'a> {
-    ComponentTypeInfo(&'a mut ComponentTypeInfoSubstate),
+    TypeInfo(&'a mut TypeInfoSubstate),
     ComponentState(&'a mut ComponentStateSubstate),
     ComponentRoyaltyConfig(&'a mut ComponentRoyaltyConfigSubstate),
     ComponentRoyaltyAccumulator(&'a mut ComponentRoyaltyAccumulatorSubstate),
     PackageInfo(&'a mut PackageInfoSubstate),
+    PackageCodeType(&'a mut PackageCodeTypeSubstate),
     WasmCode(&'a mut WasmCodeSubstate),
-    NativePackageInfo(&'a mut NativeCodeSubstate),
+    NativeCode(&'a mut NativeCodeSubstate),
     PackageRoyaltyConfig(&'a mut PackageRoyaltyConfigSubstate),
     PackageRoyaltyAccumulator(&'a mut PackageRoyaltyAccumulatorSubstate),
     PackageAccessRules(&'a mut PackageAccessRulesSubstate),
@@ -1587,7 +1582,6 @@ pub enum SubstateRefMut<'a> {
     AccessRulesChain(&'a mut ObjectAccessRulesChainSubstate),
     Metadata(&'a mut MetadataSubstate),
     Global(&'a mut GlobalSubstate),
-    TypeInfo(&'a mut PackageTypeInfoSubstate),
     Proof(&'a mut ProofSubstate),
     Worktop(&'a mut WorktopSubstate),
     Logger(&'a mut LoggerSubstate),
@@ -1669,9 +1663,9 @@ impl<'a> SubstateRefMut<'a> {
         }
     }
 
-    pub fn component_info(&mut self) -> &mut ComponentTypeInfoSubstate {
+    pub fn component_info(&mut self) -> &mut TypeInfoSubstate {
         match self {
-            SubstateRefMut::ComponentTypeInfo(value) => *value,
+            SubstateRefMut::TypeInfo(value) => *value,
             _ => panic!("Not component info"),
         }
     }

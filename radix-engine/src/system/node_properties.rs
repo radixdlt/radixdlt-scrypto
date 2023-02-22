@@ -92,8 +92,8 @@ impl VisibilityProperties {
                 },
             ) => match node {
                 RENodeInit::Component(..) => {
-                    if let Some(RENodeModuleInit::ComponentTypeInfo(type_info)) =
-                        module_init.get(&NodeModuleId::ComponentTypeInfo)
+                    if let Some(RENodeModuleInit::TypeInfo(type_info)) =
+                        module_init.get(&NodeModuleId::TypeInfo)
                     {
                         blueprint_name.eq(&type_info.blueprint_name)
                             && package_address.eq(&type_info.package_address)
@@ -101,9 +101,9 @@ impl VisibilityProperties {
                         false
                     }
                 }
-                RENodeInit::Worktop(..)
-                | RENodeInit::NativePackage(..)
-                | RENodeInit::WasmPackage(..) => package_address.eq(&PACKAGE_LOADER),
+                RENodeInit::Worktop(..) | RENodeInit::Package(..) => {
+                    package_address.eq(&PACKAGE_LOADER)
+                }
                 RENodeInit::ResourceManager(..)
                 | RENodeInit::FungibleVault(..)
                 | RENodeInit::NonFungibleVault(..)
@@ -160,14 +160,14 @@ impl VisibilityProperties {
             },
             (ExecutionMode::Resolver, offset) => match offset {
                 SubstateOffset::Global(GlobalOffset::Global) => read_only,
-                SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo) => read_only,
+                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo) => read_only,
+                SubstateOffset::Package(PackageOffset::CodeType) => read_only,
                 SubstateOffset::Package(PackageOffset::Info) => read_only,
-                SubstateOffset::PackageTypeInfo => read_only,
                 SubstateOffset::Bucket(BucketOffset::Info) => read_only,
                 _ => false,
             },
             (ExecutionMode::DropNode, offset) => match offset {
-                SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo) => true,
+                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo) => true,
                 SubstateOffset::Bucket(BucketOffset::Info) => true,
                 SubstateOffset::Proof(ProofOffset::Proof) => true,
                 SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack) => true,
@@ -185,25 +185,18 @@ impl VisibilityProperties {
                 SubstateOffset::Proof(ProofOffset::Proof) => true,
                 SubstateOffset::Global(GlobalOffset::Global) => read_only,
                 SubstateOffset::Package(PackageOffset::Info) => read_only,
-                SubstateOffset::Package(PackageOffset::NativeCode) => read_only,
-                SubstateOffset::Package(PackageOffset::WasmCode) => read_only,
+                SubstateOffset::Package(PackageOffset::CodeType) => read_only,
+                SubstateOffset::Package(PackageOffset::Code) => read_only,
                 SubstateOffset::Component(ComponentOffset::State0) => read_only,
                 SubstateOffset::PackageAccessRules => read_only,
-                SubstateOffset::ComponentTypeInfo(_) => read_only,
+                SubstateOffset::TypeInfo(_) => read_only,
                 SubstateOffset::AccessRulesChain(_) => read_only,
                 SubstateOffset::Royalty(_) => true,
                 _ => false,
             },
             (ExecutionMode::Client, offset) => {
                 if !flags.contains(LockFlags::MUTABLE) {
-                    if matches!(offset, SubstateOffset::PackageTypeInfo) {
-                        return true;
-                    }
-
-                    if matches!(
-                        offset,
-                        SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo)
-                    ) {
+                    if matches!(offset, SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo)) {
                         return true;
                     }
 
@@ -237,15 +230,17 @@ impl VisibilityProperties {
                                 )
                                 | (
                                     RENodeId::Package(_),
-                                    SubstateOffset::Package(PackageOffset::WasmCode), // TODO: Remove
+                                    SubstateOffset::Package(PackageOffset::CodeType), // TODO: Remove
+                                )
+                                | (
+                                    RENodeId::Package(_),
+                                    SubstateOffset::Package(PackageOffset::Code), // TODO: Remove
                                 ) => read_only,
                                 // READ global substates
                                 (RENodeId::Global(_), SubstateOffset::Global(_)) => read_only,
                                 (
                                     RENodeId::Component(_),
-                                    SubstateOffset::ComponentTypeInfo(
-                                        ComponentTypeInfoOffset::TypeInfo,
-                                    ),
+                                    SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
                                 ) => read_only,
                                 // READ/WRITE KVStore entry
                                 (
@@ -266,15 +261,17 @@ impl VisibilityProperties {
                                 )
                                 | (
                                     RENodeId::Package(_),
-                                    SubstateOffset::Package(PackageOffset::WasmCode), // TODO: Remove
+                                    SubstateOffset::Package(PackageOffset::CodeType), // TODO: Remove
+                                )
+                                | (
+                                    RENodeId::Package(_),
+                                    SubstateOffset::Package(PackageOffset::Code), // TODO: Remove
                                 ) => read_only,
                                 // READ global substates
                                 (RENodeId::Global(_), SubstateOffset::Global(_)) => read_only,
                                 (
                                     RENodeId::Component(_),
-                                    SubstateOffset::ComponentTypeInfo(
-                                        ComponentTypeInfoOffset::TypeInfo,
-                                    ),
+                                    SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
                                 ) => read_only,
                                 // READ/WRITE KVStore entry
                                 (
@@ -356,7 +353,6 @@ impl SubstateProperties {
     pub fn is_persisted(offset: &SubstateOffset) -> bool {
         match offset {
             SubstateOffset::Global(..) => true,
-            SubstateOffset::PackageTypeInfo => true,
             SubstateOffset::AuthZoneStack(..) => false,
             SubstateOffset::Component(..) => true,
             SubstateOffset::Royalty(..) => true,
@@ -377,7 +373,7 @@ impl SubstateProperties {
             SubstateOffset::TransactionRuntime(..) => false,
             SubstateOffset::Account(..) => true,
             SubstateOffset::AccessController(..) => true,
-            SubstateOffset::ComponentTypeInfo(..) => true,
+            SubstateOffset::TypeInfo(..) => true,
             SubstateOffset::PackageAccessRules => true,
         }
     }

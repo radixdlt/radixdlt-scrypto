@@ -14,12 +14,12 @@ impl ComponentStateSubstate {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct ComponentTypeInfoSubstate {
+pub struct TypeInfoSubstate {
     pub package_address: PackageAddress,
     pub blueprint_name: String,
 }
 
-impl ComponentTypeInfoSubstate {
+impl TypeInfoSubstate {
     pub fn new(package_address: PackageAddress, blueprint_name: String) -> Self {
         Self {
             package_address,
