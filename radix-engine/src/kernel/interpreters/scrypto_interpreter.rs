@@ -76,8 +76,8 @@ impl ExecutableInvocation for MethodInvocation {
                 // TODO: Check if type has royalty
                 (ROYALTY_PACKAGE, PACKAGE_ROYALTY_BLUEPRINT.to_string())
             }
-            NodeModuleId::AccessRules => {
-                // TODO: Check if type has access_rules
+            NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {
+                // TODO: Check if type has access ruls
                 (ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT.to_string())
             }
             _ => todo!(),
@@ -201,7 +201,7 @@ impl ExecutableInvocation for MethodInvocation {
         let executor = ScryptoExecutor {
             package_address,
             export_name,
-            receiver: Some(resolved_receiver.receiver.0),
+            receiver: Some(resolved_receiver.receiver),
             args: value,
         };
 
@@ -352,7 +352,7 @@ impl ExecutableInvocation for FunctionInvocation {
 pub struct ScryptoExecutor {
     pub package_address: PackageAddress,
     pub export_name: String,
-    pub receiver: Option<RENodeId>,
+    pub receiver: Option<MethodReceiver>,
     pub args: ScryptoValue,
 }
 
@@ -450,7 +450,7 @@ impl Executor for ScryptoExecutor {
                         let mut runtime: Box<dyn WasmRuntime> = Box::new(ScryptoRuntime::new(api));
 
                         let mut input = Vec::new();
-                        if let Some(component_id) = self.receiver {
+                        if let Some(MethodReceiver(component_id, _)) = self.receiver {
                             let component_id: ComponentId = component_id.into();
                             input.push(
                                 runtime
@@ -505,7 +505,7 @@ struct NativeVm;
 impl NativeVm {
     pub fn invoke_native_package<Y>(
         native_package_code_id: u8,
-        receiver: Option<RENodeId>,
+        receiver: Option<MethodReceiver>,
         export_name: &str,
         input: ScryptoValue,
         api: &mut Y,
@@ -517,39 +517,62 @@ impl NativeVm {
             + ClientApi<RuntimeError>,
     {
         match native_package_code_id {
-            NATIVE_PACKAGE_CODE_ID => Package::invoke_export(&export_name, receiver, input, api),
-            RESOURCE_MANAGER_PACKAGE_CODE_ID => {
-                ResourceManagerNativePackage::invoke_export(&export_name, receiver, input, api)
+            NATIVE_PACKAGE_CODE_ID => {
+                Package::invoke_export(&export_name, receiver.map(|r| r.0), input, api)
             }
-            EPOCH_MANAGER_PACKAGE_CODE_ID => {
-                EpochManagerNativePackage::invoke_export(&export_name, receiver, input, api)
-            }
-            IDENTITY_PACKAGE_CODE_ID => {
-                IdentityNativePackage::invoke_export(&export_name, receiver, input, api)
-            }
+            RESOURCE_MANAGER_PACKAGE_CODE_ID => ResourceManagerNativePackage::invoke_export(
+                &export_name,
+                receiver.map(|r| r.0),
+                input,
+                api,
+            ),
+            EPOCH_MANAGER_PACKAGE_CODE_ID => EpochManagerNativePackage::invoke_export(
+                &export_name,
+                receiver.map(|r| r.0),
+                input,
+                api,
+            ),
+            IDENTITY_PACKAGE_CODE_ID => IdentityNativePackage::invoke_export(
+                &export_name,
+                receiver.map(|r| r.0),
+                input,
+                api,
+            ),
             CLOCK_PACKAGE_CODE_ID => {
-                ClockNativePackage::invoke_export(&export_name, receiver, input, api)
+                ClockNativePackage::invoke_export(&export_name, receiver.map(|r| r.0), input, api)
             }
             ACCOUNT_PACKAGE_CODE_ID => {
-                AccountNativePackage::invoke_export(&export_name, receiver, input, api)
+                AccountNativePackage::invoke_export(&export_name, receiver.map(|r| r.0), input, api)
             }
-            ACCESS_CONTROLLER_PACKAGE_CODE_ID => {
-                AccessControllerNativePackage::invoke_export(&export_name, receiver, input, api)
-            }
+            ACCESS_CONTROLLER_PACKAGE_CODE_ID => AccessControllerNativePackage::invoke_export(
+                &export_name,
+                receiver.map(|r| r.0),
+                input,
+                api,
+            ),
             LOGGER_CODE_ID => {
-                LoggerNativePackage::invoke_export(&export_name, receiver, input, api)
+                LoggerNativePackage::invoke_export(&export_name, receiver.map(|r| r.0), input, api)
             }
-            TRANSACTION_RUNTIME_CODE_ID => {
-                TransactionRuntimeNativePackage::invoke_export(&export_name, receiver, input, api)
-            }
-            AUTH_ZONE_CODE_ID => {
-                AuthZoneNativePackage::invoke_export(&export_name, receiver, input, api)
-            }
-            METADATA_CODE_ID => {
-                MetadataNativePackage::invoke_export(&export_name, receiver, input, api)
-            }
+            TRANSACTION_RUNTIME_CODE_ID => TransactionRuntimeNativePackage::invoke_export(
+                &export_name,
+                receiver.map(|r| r.0),
+                input,
+                api,
+            ),
+            AUTH_ZONE_CODE_ID => AuthZoneNativePackage::invoke_export(
+                &export_name,
+                receiver.map(|r| r.0),
+                input,
+                api,
+            ),
+            METADATA_CODE_ID => MetadataNativePackage::invoke_export(
+                &export_name,
+                receiver.map(|r| r.0),
+                input,
+                api,
+            ),
             ROYALTY_CODE_ID => {
-                RoyaltyNativePackage::invoke_export(&export_name, receiver, input, api)
+                RoyaltyNativePackage::invoke_export(&export_name, receiver.map(|r| r.0), input, api)
             }
             ACCESS_RULES_CODE_ID => {
                 AccessRulesNativePackage::invoke_export(&export_name, receiver, input, api)

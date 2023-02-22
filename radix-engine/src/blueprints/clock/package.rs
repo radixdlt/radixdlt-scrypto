@@ -125,7 +125,7 @@ impl ClockNativePackage {
         let mut node_modules = BTreeMap::new();
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::ComponentAccessRulesChain(ObjectAccessRulesChainSubstate {
+            RENodeModuleInit::ObjectAccessRulesChain(ObjectAccessRulesChainSubstate {
                 access_rules_chain: vec![access_rules],
             }),
         );

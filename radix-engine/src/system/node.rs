@@ -23,7 +23,7 @@ use radix_engine_interface::api::types::{
 pub enum RENodeModuleInit {
     TypeInfo(TypeInfoSubstate),
     Metadata(MetadataSubstate),
-    ComponentAccessRulesChain(ObjectAccessRulesChainSubstate),
+    ObjectAccessRulesChain(ObjectAccessRulesChainSubstate),
     ComponentRoyalty(
         ComponentRoyaltyConfigSubstate,
         ComponentRoyaltyAccumulatorSubstate,
@@ -45,7 +45,7 @@ impl RENodeModuleInit {
                     metadata.into(),
                 );
             }
-            RENodeModuleInit::ComponentAccessRulesChain(access_rules) => {
+            RENodeModuleInit::ObjectAccessRulesChain(access_rules) => {
                 substates.insert(
                     SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                     access_rules.into(),
