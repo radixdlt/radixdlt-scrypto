@@ -230,8 +230,7 @@ impl VaultBlueprint {
         )?;
 
         let container = {
-            let mut substate_mut = api.kernel_get_substate_ref_mut(vault_handle)?;
-            let vault = substate_mut.vault();
+            let vault: &mut VaultRuntimeSubstate = api.kernel_get_substate_ref_mut2(vault_handle)?;
             vault.take(amount)?
         };
 
@@ -263,8 +262,7 @@ impl VaultBlueprint {
         )?;
 
         let container = {
-            let mut substate_mut = api.kernel_get_substate_ref_mut(vault_handle)?;
-            let vault = substate_mut.vault();
+            let vault: &mut VaultRuntimeSubstate = api.kernel_get_substate_ref_mut2(vault_handle)?;
             vault.take_non_fungibles(&non_fungible_local_ids)?
         };
 
@@ -342,8 +340,7 @@ impl VaultBlueprint {
             .kernel_drop_node(RENodeId::Bucket(input.bucket.0))?
             .into();
 
-        let mut substate_mut = api.kernel_get_substate_ref_mut(vault_handle)?;
-        let vault = substate_mut.vault();
+        let vault: &mut VaultRuntimeSubstate = api.kernel_get_substate_ref_mut2(vault_handle)?;
         vault.put(bucket).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::VaultError(
                 VaultError::ResourceOperationError(e),
@@ -458,8 +455,7 @@ impl VaultBlueprint {
 
         // Take by amount
         let fee = {
-            let mut substate_mut = api.kernel_get_substate_ref_mut(vault_handle)?;
-            let vault = substate_mut.vault();
+            let vault: &mut VaultRuntimeSubstate = api.kernel_get_substate_ref_mut2(vault_handle)?;
 
             // Check resource and take amount
             if vault.resource_address() != RADIX_TOKEN {
@@ -481,8 +477,7 @@ impl VaultBlueprint {
 
         // Keep changes
         {
-            let mut substate_mut = api.kernel_get_substate_ref_mut(vault_handle)?;
-            let vault = substate_mut.vault();
+            let vault: &mut VaultRuntimeSubstate = api.kernel_get_substate_ref_mut2(vault_handle)?;
             vault.put(BucketSubstate::new(changes)).map_err(|e| {
                 RuntimeError::ApplicationError(ApplicationError::VaultError(
                     VaultError::ResourceOperationError(e),
@@ -553,8 +548,7 @@ impl VaultBlueprint {
         )?;
 
         let proof = {
-            let mut substate_mut = api.kernel_get_substate_ref_mut(vault_handle)?;
-            let vault = substate_mut.vault();
+            let vault: &mut VaultRuntimeSubstate = api.kernel_get_substate_ref_mut2(vault_handle)?;
             vault
                 .create_proof(ResourceContainerId::Vault(receiver.into()))
                 .map_err(|e| {
@@ -592,8 +586,7 @@ impl VaultBlueprint {
         )?;
 
         let proof = {
-            let mut substate_mut = api.kernel_get_substate_ref_mut(vault_handle)?;
-            let vault = substate_mut.vault();
+            let vault: &mut VaultRuntimeSubstate = api.kernel_get_substate_ref_mut2(vault_handle)?;
             vault
                 .create_proof_by_amount(input.amount, ResourceContainerId::Vault(receiver.into()))
                 .map_err(|e| {
@@ -631,8 +624,7 @@ impl VaultBlueprint {
         )?;
 
         let proof = {
-            let mut substate_mut = api.kernel_get_substate_ref_mut(vault_handle)?;
-            let vault = substate_mut.vault();
+            let vault: &mut VaultRuntimeSubstate = api.kernel_get_substate_ref_mut2(vault_handle)?;
             vault
                 .create_proof_by_ids(&input.ids, ResourceContainerId::Vault(receiver.into()))
                 .map_err(|e| {

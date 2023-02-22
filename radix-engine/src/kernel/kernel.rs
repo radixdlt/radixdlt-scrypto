@@ -15,7 +15,7 @@ use radix_engine_interface::api::component::TypeInfoSubstate;
 use radix_engine_interface::api::package::{PackageCodeSubstate, PACKAGE_LOADER_BLUEPRINT};
 use radix_engine_interface::api::substate_api::LockFlags;
 // TODO: clean this up!
-use crate::blueprints::resource::{BucketSubstate, ProofSubstate};
+use crate::blueprints::resource::{BucketSubstate, ProofSubstate, WorktopSubstate};
 use crate::kernel::kernel_api::TemporaryResolvedInvocation;
 use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use radix_engine_interface::api::types::{
@@ -319,8 +319,7 @@ where
                 )?;
 
                 let buckets = {
-                    let mut substate_ref_mut = api.kernel_get_substate_ref_mut(handle)?;
-                    let worktop = substate_ref_mut.worktop();
+                    let worktop: &mut WorktopSubstate = api.kernel_get_substate_ref_mut2(handle)?;
                     mem::replace(&mut worktop.resources, BTreeMap::new())
                 };
                 for (_, bucket) in buckets {

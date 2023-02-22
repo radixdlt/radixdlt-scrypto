@@ -1361,22 +1361,25 @@ impl<'a> From<SubstateRefMut<'a>> for &'a mut AuthZoneStackSubstate {
     }
 }
 
+impl<'a> From<SubstateRefMut<'a>> for &'a mut WorktopSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::Worktop(value) => value,
+            _ => panic!("Not an auth zone"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRefMut<'a>> for &'a mut VaultRuntimeSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::Vault(value) => value,
+            _ => panic!("Not an auth zone"),
+        }
+    }
+}
 
 impl<'a> SubstateRefMut<'a> {
-    pub fn worktop(&mut self) -> &mut WorktopSubstate {
-        match self {
-            SubstateRefMut::Worktop(value) => *value,
-            _ => panic!("Not a worktop"),
-        }
-    }
-
-    pub fn vault(&mut self) -> &mut VaultRuntimeSubstate {
-        match self {
-            SubstateRefMut::Vault(value) => *value,
-            _ => panic!("Not a vault"),
-        }
-    }
-
     pub fn proof(&mut self) -> &mut ProofSubstate {
         match self {
             SubstateRefMut::Proof(value) => *value,
