@@ -72,6 +72,7 @@ impl KernelModuleMixer {
         max_wasm_memory: usize,
         max_wasm_memory_per_call_frame: usize,
         max_substate_reads: usize,
+        max_substate_writes: usize,
     ) -> Self {
         let mut modules = EnabledModules::empty();
         if debug {
@@ -105,6 +106,7 @@ impl KernelModuleMixer {
                 max_wasm_memory,
                 max_wasm_memory_per_call_frame,
                 max_substate_reads,
+                max_substate_writes,
             }),
             execution_trace: ExecutionTraceModule::new(max_kernel_call_depth_traced.unwrap_or(0)),
         }
