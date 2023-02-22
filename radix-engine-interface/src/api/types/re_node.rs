@@ -184,9 +184,8 @@ impl Into<ResourceAddress> for RENodeId {
     LegacyDescribe,
 )]
 pub enum NodeModuleId {
-    PackageTypeInfo, // TODO: Unify with ComponentTypeInfo
     SELF,
-    ComponentTypeInfo,
+    TypeInfo,
     Metadata,
     AccessRules,
     AccessRules1,
@@ -198,30 +197,28 @@ pub enum NodeModuleId {
 impl NodeModuleId {
     pub fn from_u32(i: u32) -> Option<NodeModuleId> {
         match i {
-            0u32 => Some(NodeModuleId::PackageTypeInfo),
-            1u32 => Some(NodeModuleId::ComponentTypeInfo),
-            2u32 => Some(NodeModuleId::SELF),
-            3u32 => Some(NodeModuleId::Metadata),
-            4u32 => Some(NodeModuleId::AccessRules),
-            5u32 => Some(NodeModuleId::AccessRules1),
-            6u32 => Some(NodeModuleId::ComponentRoyalty),
-            7u32 => Some(NodeModuleId::PackageRoyalty),
-            8u32 => Some(NodeModuleId::PackageAccessRules),
+            0u32 => Some(NodeModuleId::SELF),
+            1u32 => Some(NodeModuleId::TypeInfo),
+            2u32 => Some(NodeModuleId::Metadata),
+            3u32 => Some(NodeModuleId::AccessRules),
+            4u32 => Some(NodeModuleId::AccessRules1),
+            5u32 => Some(NodeModuleId::ComponentRoyalty),
+            6u32 => Some(NodeModuleId::PackageRoyalty),
+            7u32 => Some(NodeModuleId::PackageAccessRules),
             _ => None,
         }
     }
 
     pub fn id(&self) -> u32 {
         match self {
-            NodeModuleId::PackageTypeInfo => 0u32,
-            NodeModuleId::ComponentTypeInfo => 1u32,
-            NodeModuleId::SELF => 2u32,
-            NodeModuleId::Metadata => 3u32,
-            NodeModuleId::AccessRules => 4u32,
-            NodeModuleId::AccessRules1 => 5u32,
-            NodeModuleId::ComponentRoyalty => 6u32,
-            NodeModuleId::PackageRoyalty => 7u32,
-            NodeModuleId::PackageAccessRules => 8u32,
+            NodeModuleId::SELF => 0u32,
+            NodeModuleId::TypeInfo => 1u32,
+            NodeModuleId::Metadata => 2u32,
+            NodeModuleId::AccessRules => 3u32,
+            NodeModuleId::AccessRules1 => 4u32,
+            NodeModuleId::ComponentRoyalty => 5u32,
+            NodeModuleId::PackageRoyalty => 6u32,
+            NodeModuleId::PackageAccessRules => 7u32,
         }
     }
 }
@@ -237,7 +234,7 @@ pub enum AccessRulesChainOffset {
 }
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum ComponentTypeInfoOffset {
+pub enum TypeInfoOffset {
     TypeInfo,
 }
 
@@ -260,9 +257,9 @@ pub enum ComponentOffset {
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum PackageOffset {
-    NativeCode,
-    WasmCode,
     Info,
+    CodeType,
+    Code,
 }
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -345,7 +342,6 @@ pub enum AccessControllerOffset {
 /// Specifies a specific Substate into a given RENode
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
 pub enum SubstateOffset {
-    PackageTypeInfo, // TODO: Unify with ComponentTypeInfo
     Global(GlobalOffset),
     AuthZoneStack(AuthZoneStackOffset),
     Component(ComponentOffset),
@@ -367,7 +363,7 @@ pub enum SubstateOffset {
 
     // Node modules
     // TODO: align with module ID allocation?
-    ComponentTypeInfo(ComponentTypeInfoOffset),
+    TypeInfo(TypeInfoOffset),
     AccessRulesChain(AccessRulesChainOffset),
     PackageAccessRules,
     Metadata(MetadataOffset),

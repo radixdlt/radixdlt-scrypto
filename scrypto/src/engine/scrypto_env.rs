@@ -1,5 +1,5 @@
 use crate::engine::wasm_api::*;
-use radix_engine_interface::api::package::{PackageInfoSubstate, WasmCodeSubstate};
+use radix_engine_interface::api::package::{PackageCodeSubstate, PackageInfoSubstate};
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::{
     ClientActorApi, ClientComponentApi, ClientNodeApi, ClientPackageApi, ClientSubstateApi,
@@ -168,11 +168,11 @@ impl ClientPackageApi<ClientApiError> for ScryptoEnv {
         let package_global = RENodeId::Global(Address::Package(package_address));
         let handle = self.sys_lock_substate(
             package_global,
-            SubstateOffset::Package(PackageOffset::WasmCode),
+            SubstateOffset::Package(PackageOffset::Code),
             false,
         )?;
         let substate = self.sys_read_substate(handle)?;
-        let package: WasmCodeSubstate =
+        let package: PackageCodeSubstate =
             scrypto_decode(&substate).map_err(ClientApiError::DecodeError)?;
         self.sys_drop_lock(handle)?;
         Ok(PackageCode::Wasm(package.code))
