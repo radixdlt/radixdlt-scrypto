@@ -739,16 +739,11 @@ fn transition<Y, I>(
     input: I,
 ) -> Result<<AccessControllerSubstate as Transition<I>>::Output, RuntimeError>
 where
-    Y: KernelNodeApi
-        + KernelSubstateApi
-        + ClientApi<RuntimeError>
-        + ClientNodeApi<RuntimeError>
-        + ClientSubstateApi<RuntimeError>,
+    Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     AccessControllerSubstate: Transition<I>,
 {
     let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
-    let handle =
-        api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+    let handle = api.sys_lock_substate(node_id, offset, LockFlags::read_only())?;
 
     let access_controller_clone = {
         let access_controller: &AccessControllerSubstate = api.kernel_get_substate_ref(handle)?;
@@ -757,7 +752,7 @@ where
 
     let rtn = access_controller_clone.transition(api, input)?;
 
-    api.kernel_drop_lock(handle)?;
+    api.sys_drop_lock(handle)?;
 
     Ok(rtn)
 }
@@ -768,16 +763,11 @@ fn transition_mut<Y, I>(
     input: I,
 ) -> Result<<AccessControllerSubstate as TransitionMut<I>>::Output, RuntimeError>
 where
-    Y: KernelNodeApi
-        + KernelSubstateApi
-        + ClientApi<RuntimeError>
-        + ClientNodeApi<RuntimeError>
-        + ClientSubstateApi<RuntimeError>,
+    Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     AccessControllerSubstate: TransitionMut<I>,
 {
     let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
-    let handle =
-        api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+    let handle = api.sys_lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
     let mut access_controller_clone = {
         let access_controller: &AccessControllerSubstate = api.kernel_get_substate_ref(handle)?;
@@ -792,7 +782,7 @@ where
         *access_controller = access_controller_clone
     }
 
-    api.kernel_drop_lock(handle)?;
+    api.sys_drop_lock(handle)?;
 
     Ok(rtn)
 }

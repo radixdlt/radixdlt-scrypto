@@ -42,9 +42,8 @@ impl WorktopBlueprint {
         let input: WorktopPutInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let worktop_handle = api.kernel_lock_substate(
+        let worktop_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Worktop(WorktopOffset::Worktop),
             LockFlags::MUTABLE,
         )?;
@@ -77,9 +76,8 @@ impl WorktopBlueprint {
         let input: WorktopTakeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let worktop_handle = api.kernel_lock_substate(
+        let worktop_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Worktop(WorktopOffset::Worktop),
             LockFlags::MUTABLE,
         )?;
@@ -118,9 +116,8 @@ impl WorktopBlueprint {
         let input: WorktopTakeAllInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let worktop_handle = api.kernel_lock_substate(
+        let worktop_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Worktop(WorktopOffset::Worktop),
             LockFlags::MUTABLE,
         )?;
@@ -151,9 +148,8 @@ impl WorktopBlueprint {
         let input: WorktopTakeNonFungiblesInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let worktop_handle = api.kernel_lock_substate(
+        let worktop_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Worktop(WorktopOffset::Worktop),
             LockFlags::MUTABLE,
         )?;
@@ -193,9 +189,8 @@ impl WorktopBlueprint {
         let input: WorktopAssertContainsInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let worktop_handle = api.kernel_lock_substate(
+        let worktop_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Worktop(WorktopOffset::Worktop),
             LockFlags::read_only(),
         )?;
@@ -229,9 +224,8 @@ impl WorktopBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let worktop_handle = api.kernel_lock_substate(
+        let worktop_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Worktop(WorktopOffset::Worktop),
             LockFlags::read_only(),
         )?;
@@ -264,9 +258,8 @@ impl WorktopBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let worktop_handle = api.kernel_lock_substate(
+        let worktop_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Worktop(WorktopOffset::Worktop),
             LockFlags::read_only(),
         )?;
@@ -299,9 +292,8 @@ impl WorktopBlueprint {
         let _input: WorktopDrainInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let worktop_handle = api.kernel_lock_substate(
+        let worktop_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Worktop(WorktopOffset::Worktop),
             LockFlags::MUTABLE,
         )?;

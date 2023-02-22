@@ -505,63 +505,42 @@ impl NativeVm {
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>,
     {
+        let receiver = receiver.map(|r| r.0);
+
         match native_package_code_id {
-            NATIVE_PACKAGE_CODE_ID => {
-                Package::invoke_export(&export_name, receiver.map(|r| r.0), input, api)
+            NATIVE_PACKAGE_CODE_ID => Package::invoke_export(&export_name, receiver, input, api),
+            RESOURCE_MANAGER_PACKAGE_CODE_ID => {
+                ResourceManagerNativePackage::invoke_export(&export_name, receiver, input, api)
             }
-            RESOURCE_MANAGER_PACKAGE_CODE_ID => ResourceManagerNativePackage::invoke_export(
-                &export_name,
-                receiver.map(|r| r.0),
-                input,
-                api,
-            ),
-            EPOCH_MANAGER_PACKAGE_CODE_ID => EpochManagerNativePackage::invoke_export(
-                &export_name,
-                receiver.map(|r| r.0),
-                input,
-                api,
-            ),
-            IDENTITY_PACKAGE_CODE_ID => IdentityNativePackage::invoke_export(
-                &export_name,
-                receiver.map(|r| r.0),
-                input,
-                api,
-            ),
+            EPOCH_MANAGER_PACKAGE_CODE_ID => {
+                EpochManagerNativePackage::invoke_export(&export_name, receiver, input, api)
+            }
+            IDENTITY_PACKAGE_CODE_ID => {
+                IdentityNativePackage::invoke_export(&export_name, receiver, input, api)
+            }
             CLOCK_PACKAGE_CODE_ID => {
-                ClockNativePackage::invoke_export(&export_name, receiver.map(|r| r.0), input, api)
+                ClockNativePackage::invoke_export(&export_name, receiver, input, api)
             }
             ACCOUNT_PACKAGE_CODE_ID => {
-                AccountNativePackage::invoke_export(&export_name, receiver.map(|r| r.0), input, api)
+                AccountNativePackage::invoke_export(&export_name, receiver, input, api)
             }
-            ACCESS_CONTROLLER_PACKAGE_CODE_ID => AccessControllerNativePackage::invoke_export(
-                &export_name,
-                receiver.map(|r| r.0),
-                input,
-                api,
-            ),
+            ACCESS_CONTROLLER_PACKAGE_CODE_ID => {
+                AccessControllerNativePackage::invoke_export(&export_name, receiver, input, api)
+            }
             LOGGER_CODE_ID => {
-                LoggerNativePackage::invoke_export(&export_name, receiver.map(|r| r.0), input, api)
+                LoggerNativePackage::invoke_export(&export_name, receiver, input, api)
             }
-            TRANSACTION_RUNTIME_CODE_ID => TransactionRuntimeNativePackage::invoke_export(
-                &export_name,
-                receiver.map(|r| r.0),
-                input,
-                api,
-            ),
-            AUTH_ZONE_CODE_ID => AuthZoneNativePackage::invoke_export(
-                &export_name,
-                receiver.map(|r| r.0),
-                input,
-                api,
-            ),
-            METADATA_CODE_ID => MetadataNativePackage::invoke_export(
-                &export_name,
-                receiver.map(|r| r.0),
-                input,
-                api,
-            ),
+            TRANSACTION_RUNTIME_CODE_ID => {
+                TransactionRuntimeNativePackage::invoke_export(&export_name, receiver, input, api)
+            }
+            AUTH_ZONE_CODE_ID => {
+                AuthZoneNativePackage::invoke_export(&export_name, receiver, input, api)
+            }
+            METADATA_CODE_ID => {
+                MetadataNativePackage::invoke_export(&export_name, receiver, input, api)
+            }
             ROYALTY_CODE_ID => {
-                RoyaltyNativePackage::invoke_export(&export_name, receiver.map(|r| r.0), input, api)
+                RoyaltyNativePackage::invoke_export(&export_name, receiver, input, api)
             }
             ACCESS_RULES_CODE_ID => {
                 AccessRulesNativePackage::invoke_export(&export_name, receiver, input, api)

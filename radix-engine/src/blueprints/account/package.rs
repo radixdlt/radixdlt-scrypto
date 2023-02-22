@@ -326,9 +326,8 @@ impl AccountNativePackage {
         let resource_address = RADIX_TOKEN;
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Account(AccountOffset::Account),
             LockFlags::read_only(),
         )?; // TODO: should this be an R or RW lock?
@@ -340,12 +339,7 @@ impl AccountNativePackage {
 
             let node_id = RENodeId::KeyValueStore(kv_store_id);
             let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle = api.kernel_lock_substate(
-                node_id,
-                NodeModuleId::SELF,
-                offset,
-                LockFlags::read_only(),
-            )?;
+            let handle = api.sys_lock_substate(node_id, offset, LockFlags::read_only())?;
             handle
         };
 
@@ -374,8 +368,8 @@ impl AccountNativePackage {
         }
 
         // Drop locks (LIFO)
-        api.kernel_drop_lock(kv_store_entry_lock_handle)?;
-        api.kernel_drop_lock(handle)?;
+        api.sys_drop_lock(kv_store_entry_lock_handle)?;
+        api.sys_drop_lock(handle)?;
 
         Ok(())
     }
@@ -429,9 +423,8 @@ impl AccountNativePackage {
         let resource_address = input.bucket.sys_resource_address(api)?;
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Account(AccountOffset::Account),
             LockFlags::read_only(),
         )?;
@@ -443,8 +436,7 @@ impl AccountNativePackage {
 
             let node_id = RENodeId::KeyValueStore(kv_store_id);
             let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle =
-                api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+            let handle = api.sys_lock_substate(node_id, offset, LockFlags::MUTABLE)?;
             handle
         };
 
@@ -480,8 +472,8 @@ impl AccountNativePackage {
         vault.sys_put(input.bucket, api)?;
 
         // Drop locks (LIFO)
-        api.kernel_drop_lock(kv_store_entry_lock_handle)?;
-        api.kernel_drop_lock(handle)?;
+        api.sys_drop_lock(kv_store_entry_lock_handle)?;
+        api.sys_drop_lock(handle)?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -498,9 +490,8 @@ impl AccountNativePackage {
         let input: AccountDepositBatchInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Account(AccountOffset::Account),
             LockFlags::read_only(),
         )?; // TODO: should this be an R or RW lock?
@@ -520,12 +511,7 @@ impl AccountNativePackage {
 
                 let node_id = RENodeId::KeyValueStore(kv_store_id);
                 let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-                let handle = api.kernel_lock_substate(
-                    node_id,
-                    NodeModuleId::SELF,
-                    offset,
-                    LockFlags::MUTABLE,
-                )?;
+                let handle = api.sys_lock_substate(node_id, offset, LockFlags::MUTABLE)?;
                 handle
             };
 
@@ -562,10 +548,10 @@ impl AccountNativePackage {
             // Put the bucket in the vault
             vault.sys_put(bucket, api)?;
 
-            api.kernel_drop_lock(kv_store_entry_lock_handle)?;
+            api.sys_drop_lock(kv_store_entry_lock_handle)?;
         }
 
-        api.kernel_drop_lock(handle)?;
+        api.sys_drop_lock(handle)?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -577,17 +563,13 @@ impl AccountNativePackage {
         api: &mut Y,
     ) -> Result<R, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientNodeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
         F: FnOnce(&mut Vault, &mut Y) -> Result<R, RuntimeError>,
     {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Account(AccountOffset::Account),
             LockFlags::read_only(),
         )?; // TODO: should this be an R or RW lock?
@@ -599,12 +581,7 @@ impl AccountNativePackage {
 
             let node_id = RENodeId::KeyValueStore(kv_store_id);
             let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle = api.kernel_lock_substate(
-                node_id,
-                NodeModuleId::SELF,
-                offset,
-                LockFlags::read_only(),
-            )?;
+            let handle = api.sys_lock_substate(node_id, offset, LockFlags::read_only())?;
             handle
         };
 
@@ -629,8 +606,8 @@ impl AccountNativePackage {
         let rtn = vault_fn(&mut vault, api)?;
 
         // Drop locks (LIFO)
-        api.kernel_drop_lock(kv_store_entry_lock_handle)?;
-        api.kernel_drop_lock(handle)?;
+        api.sys_drop_lock(kv_store_entry_lock_handle)?;
+        api.sys_drop_lock(handle)?;
 
         Ok(rtn)
     }

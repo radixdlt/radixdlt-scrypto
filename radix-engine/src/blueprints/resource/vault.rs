@@ -221,14 +221,10 @@ impl VaultBlueprint {
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let vault_handle = api.kernel_lock_substate(
+        let vault_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::Vault),
             LockFlags::MUTABLE,
         )?;
@@ -260,9 +256,8 @@ impl VaultBlueprint {
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>,
     {
-        let vault_handle = api.kernel_lock_substate(
+        let vault_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::Vault),
             LockFlags::MUTABLE,
         )?;
@@ -337,9 +332,8 @@ impl VaultBlueprint {
         let input: VaultPutInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let vault_handle = api.kernel_lock_substate(
+        let vault_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::Vault),
             LockFlags::MUTABLE,
         )?;
@@ -373,9 +367,8 @@ impl VaultBlueprint {
         let _input: VaultGetAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let vault_handle = api.kernel_lock_substate(
+        let vault_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::Vault),
             LockFlags::read_only(),
         )?;
@@ -400,9 +393,8 @@ impl VaultBlueprint {
         let _input: VaultGetResourceAddressInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let vault_handle = api.kernel_lock_substate(
+        let vault_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::Vault),
             LockFlags::read_only(),
         )?;
@@ -428,9 +420,8 @@ impl VaultBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let vault_handle = api.kernel_lock_substate(
+        let vault_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::Vault),
             LockFlags::read_only(),
         )?;
@@ -459,9 +450,8 @@ impl VaultBlueprint {
         let input: VaultLockFeeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let vault_handle = api.kernel_lock_substate(
+        let vault_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::Vault),
             LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE,
         )?;
@@ -556,9 +546,8 @@ impl VaultBlueprint {
         let _input: VaultCreateProofInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let vault_handle = api.kernel_lock_substate(
+        let vault_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::Vault),
             LockFlags::MUTABLE,
         )?;
@@ -596,9 +585,8 @@ impl VaultBlueprint {
         let input: VaultCreateProofByAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let vault_handle = api.kernel_lock_substate(
+        let vault_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::Vault),
             LockFlags::MUTABLE,
         )?;
@@ -636,9 +624,8 @@ impl VaultBlueprint {
         let input: VaultCreateProofByIdsInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let vault_handle = api.kernel_lock_substate(
+        let vault_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::Vault),
             LockFlags::MUTABLE,
         )?;

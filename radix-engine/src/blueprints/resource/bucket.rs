@@ -174,9 +174,8 @@ impl BucketBlueprint {
         let input: BucketTakeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let bucket_handle = api.kernel_lock_substate(
+        let bucket_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Bucket(BucketOffset::Bucket),
             LockFlags::MUTABLE,
         )?;
@@ -213,9 +212,8 @@ impl BucketBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let bucket_handle = api.kernel_lock_substate(
+        let bucket_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Bucket(BucketOffset::Bucket),
             LockFlags::MUTABLE,
         )?;
@@ -251,9 +249,8 @@ impl BucketBlueprint {
         let input: BucketPutInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let bucket_handle = api.kernel_lock_substate(
+        let bucket_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Bucket(BucketOffset::Bucket),
             LockFlags::MUTABLE,
         )?;
@@ -284,9 +281,8 @@ impl BucketBlueprint {
         let _input: BucketCreateProofInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let bucket_handle = api.kernel_lock_substate(
+        let bucket_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Bucket(BucketOffset::Bucket),
             LockFlags::MUTABLE,
         )?;
@@ -319,9 +315,8 @@ impl BucketBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let bucket_handle = api.kernel_lock_substate(
+        let bucket_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Bucket(BucketOffset::Bucket),
             LockFlags::read_only(),
         )?;
@@ -347,9 +342,8 @@ impl BucketBlueprint {
         let _input: BucketGetAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let bucket_handle = api.kernel_lock_substate(
+        let bucket_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Bucket(BucketOffset::Bucket),
             LockFlags::read_only(),
         )?;
@@ -371,9 +365,8 @@ impl BucketBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let bucket_handle = api.kernel_lock_substate(
+        let bucket_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Bucket(BucketOffset::Bucket),
             LockFlags::read_only(),
         )?;

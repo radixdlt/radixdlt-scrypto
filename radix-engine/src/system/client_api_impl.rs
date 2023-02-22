@@ -59,7 +59,14 @@ where
                 return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
             }
         }
-        self.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, flags)
+
+        let module_id = if let Some(receiver) = self.kernel_get_current_actor().unwrap().receiver {
+            receiver.receiver.1
+        } else {
+            NodeModuleId::SELF
+        };
+
+        self.kernel_lock_substate(node_id, module_id, offset, flags)
     }
 
     fn sys_read_substate(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, RuntimeError> {

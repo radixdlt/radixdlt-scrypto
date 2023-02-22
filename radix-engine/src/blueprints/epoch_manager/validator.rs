@@ -65,12 +65,7 @@ impl ValidatorBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
-        let handle = api.kernel_lock_substate(
-            receiver,
-            NodeModuleId::SELF,
-            offset.clone(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle = api.sys_lock_substate(receiver, offset.clone(), LockFlags::MUTABLE)?;
 
         // Update state
         {
@@ -125,12 +120,7 @@ impl ValidatorBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
-        let handle = api.kernel_lock_substate(
-            receiver,
-            NodeModuleId::SELF,
-            offset.clone(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle = api.sys_lock_substate(receiver, offset.clone(), LockFlags::MUTABLE)?;
 
         // Update state
         {
@@ -177,9 +167,8 @@ impl ValidatorBlueprint {
         let input: ValidatorStakeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Validator(ValidatorOffset::Validator),
             LockFlags::read_only(),
         )?;
@@ -245,9 +234,8 @@ impl ValidatorBlueprint {
         let input: ValidatorUnstakeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Validator(ValidatorOffset::Validator),
             LockFlags::read_only(),
         )?;
@@ -274,9 +262,8 @@ impl ValidatorBlueprint {
 
             lp_token_resman.burn(lp_tokens, api)?;
 
-            let manager_handle = api.kernel_lock_substate(
+            let manager_handle = api.sys_lock_substate(
                 RENodeId::Global(Address::Component(manager)),
-                NodeModuleId::SELF,
                 SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
                 LockFlags::read_only(),
             )?;
@@ -284,7 +271,7 @@ impl ValidatorBlueprint {
                 api.kernel_get_substate_ref(manager_handle)?;
             let current_epoch = epoch_manager.epoch;
             let epoch_unlocked = current_epoch + epoch_manager.num_unstake_epochs;
-            api.kernel_drop_lock(manager_handle)?;
+            api.sys_drop_lock(manager_handle)?;
 
             let data = UnstakeData {
                 epoch_unlocked,
@@ -341,9 +328,8 @@ impl ValidatorBlueprint {
         let input: ValidatorClaimXrdInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Validator(ValidatorOffset::Validator),
             LockFlags::read_only(),
         )?;
@@ -362,15 +348,14 @@ impl ValidatorBlueprint {
         }
 
         let current_epoch = {
-            let mgr_handle = api.kernel_lock_substate(
+            let mgr_handle = api.sys_lock_substate(
                 RENodeId::Global(Address::Component(manager)),
-                NodeModuleId::SELF,
                 SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
                 LockFlags::read_only(),
             )?;
             let mgr_substate: &EpochManagerSubstate = api.kernel_get_substate_ref(mgr_handle)?;
             let epoch = mgr_substate.epoch;
-            api.kernel_drop_lock(mgr_handle)?;
+            api.sys_drop_lock(mgr_handle)?;
             epoch
         };
 
@@ -407,9 +392,8 @@ impl ValidatorBlueprint {
         let input: ValidatorUpdateKeyInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Validator(ValidatorOffset::Validator),
             LockFlags::MUTABLE,
         )?;

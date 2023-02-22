@@ -54,9 +54,8 @@ impl LoggerNativePackage {
         let input: LoggerLogInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Logger(LoggerOffset::Logger),
             LockFlags::MUTABLE,
         )?;

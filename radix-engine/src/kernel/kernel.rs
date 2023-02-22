@@ -1138,6 +1138,27 @@ where
         Ok(substate_ref.to_scrypto_value())
     }
 
+    fn kernel_get_substate_ref<'a, 'b, S>(
+        &'b mut self,
+        lock_handle: LockHandle,
+    ) -> Result<&'a S, RuntimeError>
+    where
+        &'a S: From<SubstateRef<'a>>,
+        'b: 'a,
+    {
+        KernelModuleMixer::on_read_substate(
+            self,
+            lock_handle,
+            0, //  TODO: pass the right size
+        )?;
+
+        let substate_ref =
+            self.current_frame
+                .get_ref(lock_handle, &mut self.heap, &mut self.track)?;
+
+        Ok(substate_ref.into())
+    }
+
     fn kernel_get_substate_ref_mut(
         &mut self,
         lock_handle: LockHandle,
@@ -1160,27 +1181,6 @@ where
                 .get_ref_mut(lock_handle, &mut self.heap, &mut self.track)?;
 
         Ok(substate_ref_mut)
-    }
-
-    fn kernel_get_substate_ref<'a, 'b, S>(
-        &'b mut self,
-        lock_handle: LockHandle,
-    ) -> Result<&'a S, RuntimeError>
-    where
-        &'a S: From<SubstateRef<'a>>,
-        'b: 'a,
-    {
-        KernelModuleMixer::on_read_substate(
-            self,
-            lock_handle,
-            0, //  TODO: pass the right size
-        )?;
-
-        let substate_ref =
-            self.current_frame
-                .get_ref(lock_handle, &mut self.heap, &mut self.track)?;
-
-        Ok(substate_ref.into())
     }
 }
 

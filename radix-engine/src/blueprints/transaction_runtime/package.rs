@@ -69,9 +69,8 @@ impl TransactionRuntimeNativePackage {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime),
             LockFlags::read_only(),
         )?;
@@ -94,9 +93,8 @@ impl TransactionRuntimeNativePackage {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime),
             LockFlags::MUTABLE,
         )?;

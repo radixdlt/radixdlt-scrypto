@@ -443,14 +443,6 @@ impl RuntimeSubstate {
         }
     }
 
-    pub fn vault(&self) -> &VaultRuntimeSubstate {
-        if let RuntimeSubstate::Vault(vault) = self {
-            vault
-        } else {
-            panic!("Not a vault");
-        }
-    }
-
     pub fn vault_mut(&mut self) -> &mut VaultRuntimeSubstate {
         if let RuntimeSubstate::Vault(vault) = self {
             vault
@@ -467,22 +459,6 @@ impl RuntimeSubstate {
         }
     }
 
-    pub fn package_royalty_accumulator(&self) -> &PackageRoyaltyAccumulatorSubstate {
-        if let RuntimeSubstate::PackageRoyaltyAccumulator(acc) = self {
-            acc
-        } else {
-            panic!("Not a package accumulator");
-        }
-    }
-
-    pub fn non_fungible(&self) -> &NonFungibleSubstate {
-        if let RuntimeSubstate::NonFungible(non_fungible) = self {
-            non_fungible
-        } else {
-            panic!("Not a NonFungible");
-        }
-    }
-
     pub fn kv_store_entry(&self) -> &KeyValueStoreEntrySubstate {
         if let RuntimeSubstate::KeyValueStoreEntry(kv_store_entry) = self {
             kv_store_entry
@@ -491,27 +467,11 @@ impl RuntimeSubstate {
         }
     }
 
-    pub fn logger(&self) -> &LoggerSubstate {
-        if let RuntimeSubstate::Logger(logger) = self {
-            logger
-        } else {
-            panic!("Not a logger");
-        }
-    }
-
     pub fn metadata(&self) -> &MetadataSubstate {
         if let RuntimeSubstate::Metadata(metadata) = self {
             metadata
         } else {
             panic!("Not metadata");
-        }
-    }
-
-    pub fn epoch_manager(&self) -> &EpochManagerSubstate {
-        if let RuntimeSubstate::EpochManager(epoch_manager) = self {
-            epoch_manager
-        } else {
-            panic!("Not epoch manager");
         }
     }
 
