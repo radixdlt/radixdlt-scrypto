@@ -19,14 +19,10 @@ pub struct BucketInfoSubstate {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum BucketError {
-    InvalidDivisibility,
     InvalidRequestData(DecodeError),
-    CouldNotCreateBucket,
-    CouldNotTakeBucket,
+
     ResourceError(ResourceError),
     ProofError(ProofError),
-    CouldNotCreateProof,
-
     NonFungibleOperationOnFungible,
     MismatchingFungibility,
 }

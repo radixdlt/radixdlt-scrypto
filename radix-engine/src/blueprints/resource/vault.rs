@@ -29,9 +29,6 @@ pub enum VaultError {
     NonFungibleOperationOnFungible,
     MismatchingFungibility,
 
-    CouldNotCreateBucket,
-    CouldNotTakeBucket,
-    CouldNotCreateProof,
     LockFeeNotRadixToken,
     LockFeeInsufficientBalance,
     LockFeeRepayFailure(CostingError),

@@ -32,10 +32,8 @@ pub enum ProofError {
     ResourceError(ResourceError),
     /// Can't generate zero-amount or empty non-fungible set proofs.
     EmptyProofNotAllowed,
-    /// The base proofs are not enough to cover the requested amount or non-fungible ids.
-    InsufficientBaseProofs,
     /// Can't apply a non-fungible operation on fungible proofs.
-    UnsupportedNonFungibleOperation,
+    NonFungibleOperationOnFungible,
 }
 
 #[derive(Debug)]
@@ -413,7 +411,7 @@ impl ProofBlueprint {
         let substate_ref = api.kernel_get_substate_ref(handle)?;
         let proof = substate_ref.proof();
         let ids = proof.total_ids().ok_or(RuntimeError::ApplicationError(
-            ApplicationError::ProofError(ProofError::UnsupportedNonFungibleOperation),
+            ApplicationError::ProofError(ProofError::NonFungibleOperationOnFungible),
         ))?;
         Ok(IndexedScryptoValue::from_typed(&ids))
     }

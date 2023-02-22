@@ -10,7 +10,7 @@ use crate::system::node_properties::VisibilityProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use native_sdk::resource::SysBucket;
+use native_sdk::resource::{SysBucket, SysProof};
 use radix_engine_interface::api::component::TypeInfoSubstate;
 use radix_engine_interface::api::package::PACKAGE_LOADER_BLUEPRINT;
 // TODO: clean this up!
@@ -290,7 +290,15 @@ where
                 )?;
                 let mut substate_ref_mut = api.kernel_get_substate_ref_mut(handle)?;
                 let auth_zone_stack = substate_ref_mut.auth_zone_stack();
-                auth_zone_stack.clear_all(); // FIXME: drop all proofs and clear locks
+                loop {
+                    if let Some(auth_zone) = auth_zone_stack.pop_auth_zone() {
+                        for p in auth_zone.drain() {
+                            p.sys_drop(api)?;
+                        }
+                    } else {
+                        break;
+                    }
+                }
                 api.kernel_drop_lock(handle)?;
                 Ok(())
             }

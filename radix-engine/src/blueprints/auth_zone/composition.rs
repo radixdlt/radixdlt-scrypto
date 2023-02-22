@@ -1,13 +1,42 @@
 use crate::blueprints::resource::*;
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::types::*;
+use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 
-fn compute_max_amount_locked(
-    proofs: &[FungibleProof],
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum ComposeProofError {}
+
+pub fn compose_proof_by_amount<Y: ClientApi<RuntimeError>>(
+    proofs: &[Proof],
     resource_address: ResourceAddress,
+    amount: Option<Decimal>,
+    api: &mut Y,
+) -> Result<ProofSubstate, RuntimeError> {
+    let resource_type = ResourceManager(resource_address).resource_type(api)?;
+    todo!()
+}
+
+pub fn compose_proof_by_ids<Y: ClientApi<RuntimeError>>(
+    proofs: &[Proof],
+    resource_address: ResourceAddress,
+    ids: Option<BTreeSet<NonFungibleLocalId>>,
+    api: &mut Y,
+) -> Result<ProofSubstate, RuntimeError> {
+    let resource_type = ResourceManager(resource_address).resource_type(api)?;
+    todo!()
+}
+
+//====================
+// Helper functions
+//====================
+
+fn max_amount_locked<Y: ClientApi<RuntimeError>>(
+    proofs: &[Proof],
+    resource_address: ResourceAddress,
+    api: &mut Y,
 ) -> (Decimal, BTreeMap<LocalRef, Decimal>) {
     // filter proofs by resource address and restricted flag
     let proofs: Vec<&FungibleProof> = proofs
@@ -35,10 +64,44 @@ fn compute_max_amount_locked(
     (total, per_container)
 }
 
-pub fn compose_fungible_proof_by_amount<Y: ClientApi<RuntimeError>>(
-    proofs: &[FungibleProof],
+fn max_ids_locked<Y: ClientApi<RuntimeError>>(
+    proofs: &[Proof],
     resource_address: ResourceAddress,
-    amount: Option<Decimal>,
+    api: &mut Y,
+) -> (
+    BTreeSet<NonFungibleLocalId>,
+    HashMap<LocalRef, BTreeSet<NonFungibleLocalId>>,
+) {
+    // filter proofs by resource address and restricted flag
+    let proofs: Vec<&NonFungibleProof> = proofs
+        .iter()
+        .filter(|p| p.resource_address() == resource_address && !p.is_restricted())
+        .collect();
+
+    // calculate the max locked amount (or ids) of each container
+    let mut max = HashMap::<LocalRef, BTreeSet<NonFungibleLocalId>>::new();
+    for proof in &proofs {
+        for (container_id, locked_ids) in &proof.evidence {
+            let new_ids = locked_ids.clone();
+            if let Some(ids) = max.get_mut(container_id) {
+                ids.extend(new_ids);
+            } else {
+                max.insert(container_id.clone(), new_ids);
+            }
+        }
+    }
+    let mut total = BTreeSet::<NonFungibleLocalId>::new();
+    for value in max.values() {
+        total.extend(value.clone());
+    }
+    let per_container = max.into_iter().collect();
+    (total, per_container)
+}
+
+fn compose_fungible_proof<Y: ClientApi<RuntimeError>>(
+    proofs: &[Proof],
+    resource_address: ResourceAddress,
+    amount: Decimal,
     api: &mut Y,
 ) -> Result<FungibleProof, RuntimeError> {
     let (total_locked, mut per_container) = compute_max_amount_locked(proofs, resource_address);
@@ -47,7 +110,7 @@ pub fn compose_fungible_proof_by_amount<Y: ClientApi<RuntimeError>>(
     // Check if base proofs are sufficient for the request amount
     if amount > total_locked {
         return Err(RuntimeError::ApplicationError(
-            ApplicationError::ProofError(ProofError::InsufficientBaseProofs),
+            ApplicationError::AuthZoneError(AuthZoneError::InsufficientBaseProofs),
         ));
     }
 
@@ -80,67 +143,10 @@ pub fn compose_fungible_proof_by_amount<Y: ClientApi<RuntimeError>>(
         .map_err(|e| RuntimeError::ApplicationError(ApplicationError::ProofError(e)))
 }
 
-pub fn compute_max_ids_locked(
-    proofs: &[NonFungibleProof],
+fn compose_non_fungible_proof<Y: ClientApi<RuntimeError>>(
+    proofs: &[Proof],
     resource_address: ResourceAddress,
-) -> (
-    BTreeSet<NonFungibleLocalId>,
-    HashMap<LocalRef, BTreeSet<NonFungibleLocalId>>,
-) {
-    // filter proofs by resource address and restricted flag
-    let proofs: Vec<&NonFungibleProof> = proofs
-        .iter()
-        .filter(|p| p.resource_address() == resource_address && !p.is_restricted())
-        .collect();
-
-    // calculate the max locked amount (or ids) of each container
-    let mut max = HashMap::<LocalRef, BTreeSet<NonFungibleLocalId>>::new();
-    for proof in &proofs {
-        for (container_id, locked_ids) in &proof.evidence {
-            let new_ids = locked_ids.clone();
-            if let Some(ids) = max.get_mut(container_id) {
-                ids.extend(new_ids);
-            } else {
-                max.insert(container_id.clone(), new_ids);
-            }
-        }
-    }
-    let mut total = BTreeSet::<NonFungibleLocalId>::new();
-    for value in max.values() {
-        total.extend(value.clone());
-    }
-    let per_container = max.into_iter().collect();
-    (total, per_container)
-}
-
-pub fn compose_non_fungible_proof_by_amount<Y: ClientApi<RuntimeError>>(
-    proofs: &[NonFungibleProof],
-    resource_address: ResourceAddress,
-    amount: Option<Decimal>,
-    api: &mut Y,
-) -> Result<NonFungibleProof, RuntimeError> {
-    let (total_locked, mut per_container) = compute_max_ids_locked(proofs, resource_address);
-    let total_amount = total_locked.len().into();
-    let amount = amount.unwrap_or(total_amount);
-
-    if amount > total_amount {
-        return Err(RuntimeError::ApplicationError(
-            ApplicationError::ProofError(ProofError::InsufficientBaseProofs),
-        ));
-    }
-
-    let n: usize = amount
-        .to_string()
-        .parse()
-        .expect("Failed to convert non-fungible amount to usize");
-    let ids: BTreeSet<NonFungibleLocalId> = total_locked.iter().take(n).cloned().collect();
-    compose_non_fungible_proof_by_ids(proofs, resource_address, Some(ids), api)
-}
-
-pub fn compose_non_fungible_proof_by_ids<Y: ClientApi<RuntimeError>>(
-    proofs: &[NonFungibleProof],
-    resource_address: ResourceAddress,
-    ids: Option<BTreeSet<NonFungibleLocalId>>,
+    ids: BTreeSet<NonFungibleLocalId>,
     api: &mut Y,
 ) -> Result<NonFungibleProof, RuntimeError> {
     let (total_locked, mut per_container) = compute_max_ids_locked(proofs, resource_address);

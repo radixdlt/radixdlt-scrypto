@@ -1,4 +1,3 @@
-use crate::blueprints::resource::ProofError;
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, LockFlags};
 use crate::system::kernel_modules::auth::convert_contextless;
@@ -16,16 +15,14 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
 
+use super::{compose_proof_by_amount, compose_proof_by_ids, ComposeProofError};
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthZoneError {
-    EmptyAuthZone,
-    ProofError(ProofError),
-    CouldNotCreateProof,
     InvalidRequestData(DecodeError),
-    CouldNotGetProof,
-    CouldNotGetResource,
-    NoMethodSpecified,
+    EmptyAuthZone,
     AssertAccessRuleError(MethodAuthorization, MethodAuthorizationError),
+    ComposeProofError(ComposeProofError),
 }
 
 pub struct AuthZoneNativePackage;
@@ -191,17 +188,19 @@ impl AuthZoneBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let proof = {
+        let proof_substate = {
             let mut substate_mut = api.kernel_get_substate_ref_mut(auth_zone_handle)?;
             let auth_zone_stack = substate_mut.auth_zone_stack();
-            let proof = auth_zone_stack
-                .cur_auth_zone()
-                .create_proof_by_amount(input.resource_address, None)?;
-            proof
+            compose_proof_by_amount(
+                &auth_zone_stack.cur_auth_zone().proofs,
+                input.resource_address,
+                None,
+                api,
+            )?
         };
 
         let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
-        api.kernel_create_node(node_id, RENodeInit::Proof(proof), BTreeMap::new())?;
+        api.kernel_create_node(node_id, RENodeInit::Proof(proof_substate), BTreeMap::new())?;
         let proof_id = node_id.into();
 
         Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
@@ -226,18 +225,19 @@ impl AuthZoneBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let proof = {
+        let proof_substate = {
             let mut substate_mut = api.kernel_get_substate_ref_mut(auth_zone_handle)?;
             let auth_zone_stack = substate_mut.auth_zone_stack();
-            let proof = auth_zone_stack
-                .cur_auth_zone()
-                .create_proof_by_amount(input.resource_address, Some(input.amount))?;
-
-            proof
+            compose_proof_by_amount(
+                &auth_zone_stack.cur_auth_zone().proofs,
+                input.resource_address,
+                Some(input.amount),
+                api,
+            )?
         };
 
         let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
-        api.kernel_create_node(node_id, RENodeInit::Proof(proof), BTreeMap::new())?;
+        api.kernel_create_node(node_id, RENodeInit::Proof(proof_substate), BTreeMap::new())?;
         let proof_id = node_id.into();
 
         Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
@@ -274,20 +274,21 @@ impl AuthZoneBlueprint {
             substate_ref.resource_manager().resource_type
         };
 
-        let proof = {
+        let proof_substate = {
             let substate_ref = api.kernel_get_substate_ref(auth_zone_handle)?;
             let auth_zone_stack = substate_ref.auth_zone_stack();
-            let proof = auth_zone_stack.cur_auth_zone().create_proof_by_ids(
-                &input.ids,
+            let proof = compose_proof_by_ids(
+                &auth_zone_stack.cur_auth_zone().proofs,
                 input.resource_address,
-                resource_type,
+                Some(input.ids),
+                api,
             )?;
 
             proof
         };
 
         let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
-        api.kernel_create_node(node_id, RENodeInit::Proof(proof), BTreeMap::new())?;
+        api.kernel_create_node(node_id, RENodeInit::Proof(proof_substate), BTreeMap::new())?;
         let proof_id = node_id.into();
 
         Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
