@@ -7,9 +7,7 @@ use crate::kernel::call_frame::RENodeVisibilityOrigin;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
 use crate::system::node::RENodeInit;
-use crate::system::node_modules::access_rules::{
-    AuthZoneStackSubstate, ObjectAccessRulesChainSubstate, PackageAccessRulesSubstate,
-};
+use crate::system::node_modules::access_rules::{AccessRulesNativePackage, AuthZoneStackSubstate, ObjectAccessRulesChainSubstate, PackageAccessRulesSubstate};
 use crate::types::*;
 use radix_engine_interface::api::component::ComponentStateSubstate;
 use radix_engine_interface::api::node_modules::auth::*;
@@ -146,7 +144,6 @@ impl KernelModule for AuthModule {
                 }
 
                 // TODO: Cleanup
-                // SetAccessRule auth is done manually within the method
                 ResolvedActor {
                     receiver:
                         Some(ResolvedReceiver {
@@ -159,134 +156,16 @@ impl KernelModule for AuthModule {
                 {
                     match actor.identifier.ident.as_str() {
                         ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT => {
-                            // TODO: Remove encode/decode mess
-                            let input: AccessRulesSetMethodAccessRuleInput =
-                                scrypto_decode(&scrypto_encode(&args).unwrap()).map_err(|_| {
-                                    RuntimeError::InterpreterError(
-                                        InterpreterError::InvalidInvocation,
-                                    )
-                                })?;
-
-                            if input.key.node_module_id.eq(&NodeModuleId::AccessRules)
-                                || input.key.node_module_id.eq(&NodeModuleId::AccessRules1)
-                            {
-                                // Should we just store this on ledger?
-                                vec![MethodAuthorization::DenyAll]
-                            } else {
-                                let handle = api.kernel_lock_substate(
-                                    *node_id,
-                                    *module_id,
-                                    SubstateOffset::AccessRulesChain(
-                                        AccessRulesChainOffset::AccessRulesChain,
-                                    ),
-                                    LockFlags::read_only(),
-                                )?;
-
-                                let authorization = {
-                                    let access_rules_substate: &ObjectAccessRulesChainSubstate =
-                                        api.kernel_get_substate_ref(handle)?;
-                                    access_rules_substate
-                                        .method_mutability_authorization(&input.key)
-                                };
-
-                                api.kernel_drop_lock(handle)?;
-
-                                authorization
-                            }
+                            AccessRulesNativePackage::set_method_access_rule_authorization(*node_id, *module_id, args, api)?
                         }
                         ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT => {
-                            // TODO: Remove encode/decode mess
-                            let input: AccessRulesSetMethodMutabilityInput =
-                                scrypto_decode(&scrypto_encode(&args).unwrap()).map_err(|_| {
-                                    RuntimeError::InterpreterError(
-                                        InterpreterError::InvalidInvocation,
-                                    )
-                                })?;
-
-                            if input.key.node_module_id.eq(&NodeModuleId::AccessRules)
-                                || input.key.node_module_id.eq(&NodeModuleId::AccessRules1)
-                            {
-                                // Should we just store this on ledger?
-                                vec![MethodAuthorization::DenyAll]
-                            } else {
-                                let handle = api.kernel_lock_substate(
-                                    *node_id,
-                                    *module_id,
-                                    SubstateOffset::AccessRulesChain(
-                                        AccessRulesChainOffset::AccessRulesChain,
-                                    ),
-                                    LockFlags::read_only(),
-                                )?;
-
-                                let authorization = {
-                                    let access_rules_substate: &ObjectAccessRulesChainSubstate =
-                                        api.kernel_get_substate_ref(handle)?;
-                                    access_rules_substate
-                                        .method_mutability_authorization(&input.key)
-                                };
-
-                                api.kernel_drop_lock(handle)?;
-
-                                authorization
-                            }
+                            AccessRulesNativePackage::set_method_mutability_authorization(*node_id, *module_id, args, api)?
                         }
-
                         ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT => {
-                            // TODO: Remove encode/decode mess
-                            let input: AccessRulesSetGroupAccessRuleInput =
-                                scrypto_decode(&scrypto_encode(&args).unwrap()).map_err(|_| {
-                                    RuntimeError::InterpreterError(
-                                        InterpreterError::InvalidInvocation,
-                                    )
-                                })?;
-
-                            let handle = api.kernel_lock_substate(
-                                *node_id,
-                                *module_id,
-                                SubstateOffset::AccessRulesChain(
-                                    AccessRulesChainOffset::AccessRulesChain,
-                                ),
-                                LockFlags::read_only(),
-                            )?;
-
-                            let authorization = {
-                                let access_rules_substate: &ObjectAccessRulesChainSubstate =
-                                    api.kernel_get_substate_ref(handle)?;
-                                access_rules_substate.group_mutability_authorization(&input.name)
-                            };
-
-                            api.kernel_drop_lock(handle)?;
-
-                            authorization
+                            AccessRulesNativePackage::set_group_access_rule_authorization(*node_id, *module_id, args, api)?
                         }
-
                         ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT => {
-                            // TODO: Remove encode/decode mess
-                            let input: AccessRulesSetGroupMutabilityInput =
-                                scrypto_decode(&scrypto_encode(&args).unwrap()).map_err(|_| {
-                                    RuntimeError::InterpreterError(
-                                        InterpreterError::InvalidInvocation,
-                                    )
-                                })?;
-
-                            let handle = api.kernel_lock_substate(
-                                *node_id,
-                                *module_id,
-                                SubstateOffset::AccessRulesChain(
-                                    AccessRulesChainOffset::AccessRulesChain,
-                                ),
-                                LockFlags::read_only(),
-                            )?;
-
-                            let authorization = {
-                                let access_rules_substate: &ObjectAccessRulesChainSubstate =
-                                    api.kernel_get_substate_ref(handle)?;
-                                access_rules_substate.group_mutability_authorization(&input.name)
-                            };
-
-                            api.kernel_drop_lock(handle)?;
-
-                            authorization
+                            AccessRulesNativePackage::set_group_mutability_authorization(*node_id, *module_id, args, api)?
                         }
                         _ => vec![],
                     }

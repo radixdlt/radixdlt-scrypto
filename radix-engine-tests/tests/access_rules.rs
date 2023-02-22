@@ -1,6 +1,6 @@
 use radix_engine::errors::{ApplicationError, ModuleError, RuntimeError};
 use radix_engine::system::kernel_modules::auth::AuthError;
-use radix_engine::system::node_modules::access_rules::{AccessRulesChainError, AuthZoneError};
+use radix_engine::system::node_modules::access_rules::AuthZoneError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::{
