@@ -3,13 +3,14 @@ use crate::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TypedTraversalEvent<'de, C: CustomTraversal> {
+    PayloadPrefix(Location),
     ContainerStart(TypedLocatedDecoding<ContainerHeader<C::CustomContainerHeader>>),
     ContainerEnd(TypedLocatedDecoding<ContainerHeader<C::CustomContainerHeader>>),
     TerminalValue(TypedLocatedDecoding<TerminalValueRef<'de, C::CustomTerminalValueRef<'de>>>),
     TerminalValueBatch(
         TypedLocatedDecoding<TerminalValueBatchRef<'de, C::CustomTerminalValueBatchRef<'de>>>,
     ),
-    PayloadEnd(Location),
+    End(Location),
     Error(LocatedError<TypedTraversalError<C::CustomValueKind>>),
 }
 

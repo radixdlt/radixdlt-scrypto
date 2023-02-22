@@ -9,7 +9,14 @@ pub fn traverse_payload_with_types<'de, 's, E: CustomTypeExtension>(
     type_kinds: &'s [SchemaTypeKind<E>],
     index: LocalTypeIndex,
 ) -> TypedTraverser<'de, 's, E> {
-    TypedTraverser::new(payload, type_kinds, index)
+    TypedTraverser::new(
+        payload,
+        type_kinds,
+        index,
+        E::MAX_DEPTH,
+        Some(E::PAYLOAD_PREFIX),
+        true,
+    )
 }
 
 /// The `TypedTraverser` is for streamed decoding of a payload with type kinds.
@@ -113,22 +120,22 @@ impl<'de, 's, E: CustomTypeExtension> TypedTraverser<'de, 's, E> {
         input: &'de [u8],
         type_kinds: &'s [SchemaTypeKind<E>],
         type_index: LocalTypeIndex,
+        max_depth: u8,
+        payload_prefix: Option<u8>,
+        check_exact_end: bool,
     ) -> Self {
         Self {
-            inner: VecTraverser::new(input, E::MAX_DEPTH),
-            container_stack: Vec::with_capacity(E::MAX_DEPTH as usize),
+            inner: VecTraverser::new(input, max_depth, payload_prefix, check_exact_end),
+            container_stack: Vec::with_capacity(max_depth as usize),
             schema_type_kinds: type_kinds,
             root_type_index: type_index,
         }
     }
 
-    pub fn read_and_check_payload_prefix(&mut self) -> Result<(), DecodeError> {
-        self.inner.read_and_check_payload_prefix(E::PAYLOAD_PREFIX)
-    }
-
     pub fn next_event(&mut self) -> TypedTraversalEvent<'de, E::CustomTraversal> {
         let inner_event = self.inner.next_event();
         match inner_event {
+            TraversalEvent::PayloadPrefix(location) => TypedTraversalEvent::PayloadPrefix(location),
             TraversalEvent::ContainerStart(located_event) => {
                 self.map_container_start_event(located_event)
             }
@@ -141,7 +148,7 @@ impl<'de, 's, E: CustomTypeExtension> TypedTraverser<'de, 's, E> {
             TraversalEvent::ContainerEnd(located_event) => {
                 self.map_container_end_event(located_event)
             }
-            TraversalEvent::PayloadEnd(location) => TypedTraversalEvent::PayloadEnd(location),
+            TraversalEvent::End(location) => TypedTraversalEvent::End(location),
             TraversalEvent::DecodeError(located_event) => {
                 Self::map_decode_error_event(located_event)
             }

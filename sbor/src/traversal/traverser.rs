@@ -78,9 +78,11 @@ pub struct VecTraverser<'de, C: CustomTraversal> {
     container_stack: Vec<ContainerChildIndex<C::CustomContainerHeader>>,
     max_depth: u8,
     next_event_override: NextEventOverride<C::CustomValueTraverser>,
+    check_exact_end: bool,
 }
 
 pub enum NextEventOverride<C> {
+    Prefix(u8),
     Start,
     ReadBytes(usize),
     CustomValueTraversal(C),
@@ -129,24 +131,43 @@ macro_rules! return_if_error {
 }
 
 impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
-    pub fn new(input: &'de [u8], max_depth: u8) -> Self {
+    pub fn new(
+        input: &'de [u8],
+        max_depth: u8,
+        payload_prefix: Option<u8>,
+        check_exact_end: bool,
+    ) -> Self {
         Self {
             decoder: VecDecoder::new(input, max_depth),
             container_stack: Vec::with_capacity(max_depth as usize),
             max_depth,
-            next_event_override: NextEventOverride::Start,
+            next_event_override: match payload_prefix {
+                Some(prefix) => NextEventOverride::Prefix(prefix),
+                None => NextEventOverride::Start,
+            },
+            check_exact_end,
         }
     }
 
-    pub fn read_and_check_payload_prefix(
-        &mut self,
-        expected_prefix: u8,
-    ) -> Result<(), DecodeError> {
-        self.decoder.read_and_check_payload_prefix(expected_prefix)
+    pub fn read_and_check_payload_prefix(&mut self, expected_prefix: u8) -> TraversalEvent<'de, T> {
+        return_if_error!(
+            self,
+            self.decoder.read_and_check_payload_prefix(expected_prefix)
+        );
+        TraversalEvent::PayloadPrefix(Location {
+            start_offset: 0,
+            end_offset: 1,
+            sbor_depth: 0,
+        })
     }
 
     pub fn next_event(&mut self) -> TraversalEvent<'de, T> {
         let event = match &mut self.next_event_override {
+            NextEventOverride::Prefix(expected_prefix) => {
+                let expected_prefix = *expected_prefix;
+                self.next_event_override = NextEventOverride::Start;
+                self.read_and_check_payload_prefix(expected_prefix)
+            }
             NextEventOverride::Start => {
                 self.next_event_override = NextEventOverride::None;
                 self.root_value()
@@ -404,10 +425,12 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
     }
 
     fn end_event(&self) -> TraversalEvent<'de, T> {
-        return_if_error!(self, self.decoder.check_end());
+        if self.check_exact_end {
+            return_if_error!(self, self.decoder.check_end());
+        }
         let offset = self.decoder.get_offset();
 
-        TraversalEvent::PayloadEnd(Location {
+        TraversalEvent::End(Location {
             start_offset: offset,
             end_offset: offset,
             sbor_depth: 0,
@@ -486,9 +509,10 @@ mod tests {
         ))
         .unwrap();
 
-        let mut traverser = basic_traverser(&payload).unwrap();
+        let mut traverser = basic_payload_traverser(&payload);
 
         // Start:
+        next_event_is_payload_prefix(&mut traverser, 0, 0, 1);
         next_event_is_container_start_header(
             &mut traverser,
             ContainerHeader::Tuple(TupleHeader { length: 7 }),
@@ -698,6 +722,25 @@ mod tests {
         next_event_is_payload_end(&mut traverser, 0, 55, 55);
     }
 
+    pub fn next_event_is_payload_prefix(
+        traverser: &mut BasicTraverser,
+        expected_depth: u8,
+        expected_start_offset: usize,
+        expected_end_offset: usize,
+    ) {
+        let event = traverser.next_event();
+        let TraversalEvent::PayloadPrefix(Location {
+            sbor_depth,
+            start_offset,
+            end_offset,
+        }) = event else {
+            panic!("Invalid event - expected PayloadPrefix, was {:?}", event);
+        };
+        assert_eq!(sbor_depth, expected_depth);
+        assert_eq!(start_offset, expected_start_offset);
+        assert_eq!(end_offset, expected_end_offset);
+    }
+
     pub fn next_event_is_container_start_header(
         traverser: &mut BasicTraverser,
         expected_header: ContainerHeader<NoCustomContainerHeader>,
@@ -805,7 +848,7 @@ mod tests {
         expected_end_offset: usize,
     ) {
         let event = traverser.next_event();
-        let TraversalEvent::PayloadEnd(Location {
+        let TraversalEvent::End(Location {
             sbor_depth,
             start_offset,
             end_offset,

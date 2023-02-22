@@ -5,24 +5,26 @@ use super::CustomTraversal;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TraversalEvent<'de, C: CustomTraversal> {
+    PayloadPrefix(Location),
     ContainerStart(LocatedDecoding<ContainerHeader<C::CustomContainerHeader>>),
     ContainerEnd(LocatedDecoding<ContainerHeader<C::CustomContainerHeader>>),
     TerminalValue(LocatedDecoding<TerminalValueRef<'de, C::CustomTerminalValueRef<'de>>>),
     TerminalValueBatch(
         LocatedDecoding<TerminalValueBatchRef<'de, C::CustomTerminalValueBatchRef<'de>>>,
     ),
-    PayloadEnd(Location),
+    End(Location),
     DecodeError(LocatedError<DecodeError>),
 }
 
 impl<'de, C: CustomTraversal> TraversalEvent<'de, C> {
     pub fn get_next_sbor_depth(&self) -> u8 {
         match self {
+            TraversalEvent::PayloadPrefix(location) => location.sbor_depth + 1,
             TraversalEvent::ContainerStart(le) => le.location.sbor_depth + 1,
             TraversalEvent::ContainerEnd(le) => le.location.sbor_depth,
             TraversalEvent::TerminalValue(le) => le.location.sbor_depth,
             TraversalEvent::TerminalValueBatch(le) => le.location.sbor_depth,
-            TraversalEvent::PayloadEnd(location) => location.sbor_depth,
+            TraversalEvent::End(location) => location.sbor_depth,
             TraversalEvent::DecodeError(le) => le.location.sbor_depth,
         }
     }

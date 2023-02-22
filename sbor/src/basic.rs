@@ -175,11 +175,14 @@ impl CustomValueTraverser for NoCustomTraverser {
     }
 }
 
-/// Creates a traverser from the buffer
-pub fn basic_traverser<'b>(buf: &'b [u8]) -> Result<BasicTraverser<'b>, DecodeError> {
-    let mut traverser = BasicTraverser::new(buf, DEFAULT_BASIC_MAX_DEPTH);
-    traverser.read_and_check_payload_prefix(BASIC_SBOR_V1_PAYLOAD_PREFIX)?;
-    Ok(traverser)
+/// Creates a payload traverser from the buffer
+pub fn basic_payload_traverser<'b>(buf: &'b [u8]) -> BasicTraverser<'b> {
+    BasicTraverser::new(
+        buf,
+        DEFAULT_BASIC_MAX_DEPTH,
+        Some(BASIC_SBOR_V1_PAYLOAD_PREFIX),
+        true,
+    )
 }
 
 pub use schema::*;
