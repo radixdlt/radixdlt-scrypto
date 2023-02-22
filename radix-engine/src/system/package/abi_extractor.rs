@@ -2,6 +2,7 @@ use crate::ledger::*;
 use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use radix_engine_interface::abi;
+use radix_engine_interface::api::component::ComponentInfoSubstate;
 use radix_engine_interface::api::types::{
     Address, GlobalOffset, PackageOffset, RENodeId, SubstateId, SubstateOffset,
 };
@@ -73,7 +74,7 @@ pub fn export_abi_by_component<S: ReadableSubstateStore>(
         .ok_or(ExportError::ComponentNotFound(component_address))?;
 
     let component_ref = component_value.to_ref();
-    let component_info = component_ref.component_info();
+    let component_info: &ComponentInfoSubstate = component_ref.into();
     export_abi(
         substate_store,
         component_info.package_address,

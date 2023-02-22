@@ -1,4 +1,5 @@
-use crate::blueprints::resource::ProofError;
+use crate::blueprints::auth_zone::AuthZoneStackSubstate;
+use crate::blueprints::resource::{ProofError, ProofSubstate, ResourceManagerSubstate};
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::auth::convert_contextless;
@@ -6,8 +7,8 @@ use crate::system::kernel_modules::auth::*;
 use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE};
 use crate::system::node::RENodeInit;
 use crate::types::*;
-use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::*;
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
     Address, AuthZoneStackOffset, ProofOffset, RENodeId, ResourceManagerOffset, SubstateOffset,
 };
@@ -16,7 +17,6 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
 use sbor::rust::vec::Vec;
-use crate::blueprints::auth_zone::AuthZoneStackSubstate;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthZoneError {
@@ -173,8 +173,7 @@ impl AuthZoneBlueprint {
             SubstateOffset::Proof(ProofOffset::Proof),
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let proof = substate_ref.proof();
+        let proof: &ProofSubstate = api.kernel_get_substate_ref(handle)?;
         // Take control of the proof lock as the proof in the call frame will lose it's lock once dropped
         let mut cloned_proof = proof.clone();
         cloned_proof.change_to_unrestricted();
@@ -214,8 +213,9 @@ impl AuthZoneBlueprint {
                 offset,
                 LockFlags::read_only(),
             )?;
-            let substate_ref = api.kernel_get_substate_ref(resource_handle)?;
-            substate_ref.resource_manager().resource_type
+            let resource_manager: &ResourceManagerSubstate =
+                api.kernel_get_substate_ref(resource_handle)?;
+            resource_manager.resource_type
         };
 
         let proof = {
@@ -262,8 +262,9 @@ impl AuthZoneBlueprint {
                 offset,
                 LockFlags::read_only(),
             )?;
-            let substate_ref = api.kernel_get_substate_ref(resource_handle)?;
-            substate_ref.resource_manager().resource_type
+            let resource_manager: &ResourceManagerSubstate =
+                api.kernel_get_substate_ref(resource_handle)?;
+            resource_manager.resource_type
         };
 
         let proof = {
@@ -312,12 +313,14 @@ impl AuthZoneBlueprint {
                 offset,
                 LockFlags::read_only(),
             )?;
-            let substate_ref = api.kernel_get_substate_ref(resource_handle)?;
-            substate_ref.resource_manager().resource_type
+            let resource_manager: &ResourceManagerSubstate =
+                api.kernel_get_substate_ref(resource_handle)?;
+            resource_manager.resource_type
         };
 
         let proof = {
-            let auth_zone_stack: &AuthZoneStackSubstate = api.kernel_get_substate_ref2(auth_zone_handle)?;
+            let auth_zone_stack: &AuthZoneStackSubstate =
+                api.kernel_get_substate_ref(auth_zone_handle)?;
             let proof = auth_zone_stack.cur_auth_zone().create_proof_by_ids(
                 &input.ids,
                 input.resource_address,
@@ -413,7 +416,7 @@ impl AuthZoneBlueprint {
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::read_only(),
         )?;
-        let auth_zone_stack: &AuthZoneStackSubstate = api.kernel_get_substate_ref2(handle)?;
+        let auth_zone_stack: &AuthZoneStackSubstate = api.kernel_get_substate_ref(handle)?;
         let authorization = convert_contextless(&input.access_rule);
 
         // Authorization check

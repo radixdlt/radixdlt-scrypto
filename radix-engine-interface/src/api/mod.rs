@@ -10,12 +10,12 @@ pub mod types;
 pub mod unsafe_api;
 
 // Re-exports
-pub use substate_api::LockFlags;
 pub use actor_api::ClientActorApi;
 pub use component_api::ClientComponentApi;
 pub use node_api::ClientNodeApi;
 pub use package_api::ClientPackageApi;
 pub use substate_api::ClientSubstateApi;
+pub use substate_api::LockFlags;
 pub use unsafe_api::ClientUnsafeApi;
 
 /// Interface of the system, for blueprints and Node modules.

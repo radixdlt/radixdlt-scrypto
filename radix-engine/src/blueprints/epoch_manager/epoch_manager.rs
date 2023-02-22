@@ -1,7 +1,6 @@
 use super::ValidatorCreator;
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
-use radix_engine_interface::api::substate_api::LockFlags;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::global::GlobalSubstate;
 use crate::system::node::RENodeInit;
@@ -10,6 +9,7 @@ use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use crate::types::*;
 use native_sdk::resource::{ResourceManager, SysBucket};
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::account::{AccountDepositInput, ACCOUNT_DEPOSIT_IDENT};
@@ -243,8 +243,7 @@ impl EpochManagerBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let epoch_manager = substate_ref.epoch_manager();
+        let epoch_manager: &EpochManagerSubstate = api.kernel_get_substate_ref(handle)?;
 
         Ok(IndexedScryptoValue::from_typed(&epoch_manager.epoch))
     }
@@ -355,8 +354,7 @@ impl EpochManagerBlueprint {
             SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let epoch_manager = substate_ref.epoch_manager();
+        let epoch_manager: &EpochManagerSubstate = api.kernel_get_substate_ref(handle)?;
         let manager = epoch_manager.address;
         let validator_address =
             ValidatorCreator::create(manager, input.key, input.owner_access_rule, false, api)?;

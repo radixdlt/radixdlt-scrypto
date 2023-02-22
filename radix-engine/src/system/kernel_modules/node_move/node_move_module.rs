@@ -1,3 +1,4 @@
+use crate::blueprints::resource::BucketSubstate;
 use crate::errors::{ModuleError, RuntimeError};
 use crate::kernel::actor::ResolvedActor;
 use crate::kernel::call_frame::CallFrameUpdate;
@@ -30,8 +31,7 @@ impl NodeMoveModule {
                     SubstateOffset::Bucket(BucketOffset::Bucket),
                     LockFlags::read_only(),
                 )?;
-                let substate_ref = api.kernel_get_substate_ref(handle)?;
-                let bucket = substate_ref.bucket();
+                let bucket: &BucketSubstate = api.kernel_get_substate_ref(handle)?;
                 let locked = bucket.is_locked();
                 api.kernel_drop_lock(handle)?;
                 if locked {
@@ -100,8 +100,7 @@ impl NodeMoveModule {
                     SubstateOffset::Bucket(BucketOffset::Bucket),
                     LockFlags::read_only(),
                 )?;
-                let substate_ref = api.kernel_get_substate_ref(handle)?;
-                let bucket = substate_ref.bucket();
+                let bucket: &BucketSubstate = api.kernel_get_substate_ref(handle)?;
                 let locked = bucket.is_locked();
                 api.kernel_drop_lock(handle)?;
                 if locked {

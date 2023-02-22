@@ -1,11 +1,11 @@
 use crate::blueprints::resource::*;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::errors::{InvokeError, RuntimeError};
-use radix_engine_interface::api::substate_api::LockFlags;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::CostingError;
 use crate::system::node::RENodeInit;
 use crate::types::*;
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{RENodeId, SubstateOffset, VaultOffset};
 use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
@@ -380,8 +380,7 @@ impl VaultBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let substate_ref = api.kernel_get_substate_ref(vault_handle)?;
-        let vault = substate_ref.vault();
+        let vault: &VaultRuntimeSubstate = api.kernel_get_substate_ref(vault_handle)?;
         let amount = vault.total_amount();
 
         Ok(IndexedScryptoValue::from_typed(&amount))
@@ -408,8 +407,7 @@ impl VaultBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let substate_ref = api.kernel_get_substate_ref(vault_handle)?;
-        let vault = substate_ref.vault();
+        let vault: &VaultRuntimeSubstate = api.kernel_get_substate_ref(vault_handle)?;
         let resource_address = vault.resource_address();
 
         Ok(IndexedScryptoValue::from_typed(&resource_address))
@@ -437,8 +435,7 @@ impl VaultBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let substate_ref = api.kernel_get_substate_ref(vault_handle)?;
-        let vault = substate_ref.vault();
+        let vault: &VaultRuntimeSubstate = api.kernel_get_substate_ref(vault_handle)?;
         let ids = vault.total_ids().map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::VaultError(
                 VaultError::ResourceOperationError(e),

@@ -1,6 +1,5 @@
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
-use radix_engine_interface::api::substate_api::LockFlags;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::global::GlobalSubstate;
 use crate::system::node::RENodeInit;
@@ -8,6 +7,7 @@ use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use crate::types::*;
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{RENodeId, SubstateOffset};
 use radix_engine_interface::api::ClientApi;
@@ -335,8 +335,7 @@ impl AccountNativePackage {
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
-            let substate = api.kernel_get_substate_ref(handle)?;
-            let account = substate.account();
+            let account: &AccountSubstate = api.kernel_get_substate_ref(handle)?;
             let kv_store_id = account.vaults.key_value_store_id();
 
             let node_id = RENodeId::KeyValueStore(kv_store_id);
@@ -352,8 +351,8 @@ impl AccountNativePackage {
 
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then error out.
         let mut vault = {
-            let substate = api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
-            let entry = substate.kv_store_entry();
+            let entry: &KeyValueStoreEntrySubstate =
+                api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
 
             match entry {
                 KeyValueStoreEntrySubstate::Some(_, value) => {
@@ -439,8 +438,7 @@ impl AccountNativePackage {
 
         // Getting an RW lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
-            let substate = api.kernel_get_substate_ref(handle)?;
-            let account = substate.account();
+            let account: &AccountSubstate = api.kernel_get_substate_ref(handle)?;
             let kv_store_id = account.vaults.key_value_store_id();
 
             let node_id = RENodeId::KeyValueStore(kv_store_id);
@@ -453,8 +451,8 @@ impl AccountNativePackage {
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then create it and
         // insert it's entry into the KVStore
         let mut vault = {
-            let substate = api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
-            let entry = substate.kv_store_entry();
+            let entry: &KeyValueStoreEntrySubstate =
+                api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
 
             match entry {
                 KeyValueStoreEntrySubstate::Some(_, value) => {
@@ -517,8 +515,7 @@ impl AccountNativePackage {
 
             // Getting an RW lock handle on the KVStore ENTRY
             let kv_store_entry_lock_handle = {
-                let substate = api.kernel_get_substate_ref(handle)?;
-                let account = substate.account();
+                let account: &AccountSubstate = api.kernel_get_substate_ref(handle)?;
                 let kv_store_id = account.vaults.key_value_store_id();
 
                 let node_id = RENodeId::KeyValueStore(kv_store_id);
@@ -535,8 +532,8 @@ impl AccountNativePackage {
             // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then create it
             // and insert it's entry into the KVStore
             let mut vault = {
-                let substate = api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
-                let entry = substate.kv_store_entry();
+                let entry: &KeyValueStoreEntrySubstate =
+                    api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
 
                 match entry {
                     KeyValueStoreEntrySubstate::Some(_, value) => {
@@ -597,8 +594,7 @@ impl AccountNativePackage {
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
-            let substate = api.kernel_get_substate_ref(handle)?;
-            let account = substate.account();
+            let account: &AccountSubstate = api.kernel_get_substate_ref(handle)?;
             let kv_store_id = account.vaults.key_value_store_id();
 
             let node_id = RENodeId::KeyValueStore(kv_store_id);
@@ -614,8 +610,8 @@ impl AccountNativePackage {
 
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then error out.
         let mut vault = {
-            let substate = api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
-            let entry = substate.kv_store_entry();
+            let entry: &KeyValueStoreEntrySubstate =
+                api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
 
             match entry {
                 KeyValueStoreEntrySubstate::Some(_, value) => {

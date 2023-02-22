@@ -1,6 +1,6 @@
 use radix_engine_interface::api::component::*;
-use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::api::ClientSubstateApi;
 use sbor::rust::marker::PhantomData;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
@@ -41,8 +41,9 @@ mod cyclic_map {
                 .unwrap(),
             );
 
-            let handle = ScryptoEnv.sys_lock_substate(
-                node_id, offset, LockFlags::MUTABLE).unwrap();
+            let handle = ScryptoEnv
+                .sys_lock_substate(node_id, offset, LockFlags::MUTABLE)
+                .unwrap();
             ScryptoEnv
                 .sys_write_substate(handle, scrypto_encode(&substate).unwrap())
                 .unwrap();
@@ -71,7 +72,9 @@ mod cyclic_map {
                 .unwrap(),
             );
 
-            let handle = ScryptoEnv.sys_lock_substate(node_id, offset, LockFlags::MUTABLE).unwrap();
+            let handle = ScryptoEnv
+                .sys_lock_substate(node_id, offset, LockFlags::MUTABLE)
+                .unwrap();
             ScryptoEnv
                 .sys_write_substate(handle, scrypto_encode(&substate).unwrap())
                 .unwrap();

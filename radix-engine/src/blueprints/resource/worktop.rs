@@ -1,9 +1,9 @@
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
-use radix_engine_interface::api::substate_api::LockFlags;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use native_sdk::resource::{ResourceManager, SysBucket};
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{RENodeId, SubstateOffset, WorktopOffset};
 use radix_engine_interface::api::ClientApi;
@@ -200,8 +200,7 @@ impl WorktopBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let substate_ref = api.kernel_get_substate_ref(worktop_handle)?;
-        let worktop = substate_ref.worktop();
+        let worktop: &WorktopSubstate = api.kernel_get_substate_ref(worktop_handle)?;
 
         let total_amount =
             if let Some(bucket) = worktop.resources.get(&input.resource_address).cloned() {
@@ -237,8 +236,7 @@ impl WorktopBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let substate_ref = api.kernel_get_substate_ref(worktop_handle)?;
-        let worktop = substate_ref.worktop();
+        let worktop: &WorktopSubstate = api.kernel_get_substate_ref(worktop_handle)?;
         let total_amount =
             if let Some(bucket) = worktop.resources.get(&input.resource_address).cloned() {
                 Bucket(bucket.bucket_id()).sys_amount(api)?
@@ -273,8 +271,7 @@ impl WorktopBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let substate_ref = api.kernel_get_substate_ref(worktop_handle)?;
-        let worktop = substate_ref.worktop();
+        let worktop: &WorktopSubstate = api.kernel_get_substate_ref(worktop_handle)?;
 
         let ids = if let Some(bucket) = worktop.resources.get(&input.resource_address) {
             let bucket = Bucket(bucket.bucket_id());

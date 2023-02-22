@@ -1,5 +1,5 @@
-use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::component::*;
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::data::{

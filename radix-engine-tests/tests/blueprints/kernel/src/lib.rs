@@ -1,5 +1,5 @@
-use radix_engine_interface::api::*;
 use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::api::*;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 

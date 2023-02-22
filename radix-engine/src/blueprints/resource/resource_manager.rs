@@ -2,7 +2,6 @@ use crate::blueprints::resource::*;
 use crate::errors::InvokeError;
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
-use radix_engine_interface::api::substate_api::LockFlags;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::global::GlobalSubstate;
 use crate::system::node::RENodeInit;
@@ -14,6 +13,7 @@ use native_sdk::resource::SysBucket;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::AuthZoneAssertAccessRuleInput;
 use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     Address, NonFungibleStoreId, NonFungibleStoreOffset, RENodeId, ResourceManagerOffset,
@@ -928,8 +928,8 @@ impl ResourceManagerBlueprint {
         let bucket_id = node_id.into();
 
         let (nf_store_id, resource_address) = {
-            let substate_ref = api.kernel_get_substate_ref(resman_handle)?;
-            let resource_manager = substate_ref.resource_manager();
+            let resource_manager: &ResourceManagerSubstate =
+                api.kernel_get_substate_ref(resman_handle)?;
             (
                 resource_manager.nf_store_id.clone(),
                 resource_manager.resource_address,
@@ -1152,8 +1152,8 @@ impl ResourceManagerBlueprint {
         // Check if resource matches
         // TODO: Move this check into actor check
         {
-            let substate_ref = api.kernel_get_substate_ref(resman_handle)?;
-            let resource_manager = substate_ref.resource_manager();
+            let resource_manager: &ResourceManagerSubstate =
+                api.kernel_get_substate_ref(resman_handle)?;
             if bucket.resource_address() != resource_manager.resource_address {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::ResourceManagerError(
@@ -1174,8 +1174,8 @@ impl ResourceManagerBlueprint {
         }
 
         // Burn non-fungible
-        let substate_ref = api.kernel_get_substate_ref(resman_handle)?;
-        let resource_manager = substate_ref.resource_manager();
+        let resource_manager: &ResourceManagerSubstate =
+            api.kernel_get_substate_ref(resman_handle)?;
         if let Some(nf_store_id) = resource_manager.nf_store_id {
             let node_id = RENodeId::NonFungibleStore(nf_store_id);
 
@@ -1223,8 +1223,8 @@ impl ResourceManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let substate_ref = api.kernel_get_substate_ref(resman_handle)?;
-        let resource_manager = substate_ref.resource_manager();
+        let resource_manager: &ResourceManagerSubstate =
+            api.kernel_get_substate_ref(resman_handle)?;
         let container = Resource::new_empty(
             resource_manager.resource_address,
             resource_manager.resource_type,
@@ -1263,8 +1263,8 @@ impl ResourceManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let substate_ref = api.kernel_get_substate_ref(resman_handle)?;
-        let resource_manager = substate_ref.resource_manager();
+        let resource_manager: &ResourceManagerSubstate =
+            api.kernel_get_substate_ref(resman_handle)?;
         let resource = Resource::new_empty(
             resource_manager.resource_address,
             resource_manager.resource_type,
@@ -1305,8 +1305,7 @@ impl ResourceManagerBlueprint {
 
         // TODO: Figure out how to move this access check into more appropriate place
         {
-            let substate_ref = api.kernel_get_substate_ref(handle)?;
-            let substate = substate_ref.access_rules_chain();
+            let substate: &ObjectAccessRulesChainSubstate = api.kernel_get_substate_ref(handle)?;
 
             let access_rule = match input.method {
                 Deposit => {
@@ -1370,8 +1369,7 @@ impl ResourceManagerBlueprint {
 
         // TODO: Figure out how to move this access check into more appropriate place
         {
-            let substate_ref = api.kernel_get_substate_ref(handle)?;
-            let substate = substate_ref.access_rules_chain();
+            let substate: &ObjectAccessRulesChainSubstate = api.kernel_get_substate_ref(handle)?;
 
             let access_rule = match input.method {
                 Deposit => {
@@ -1433,8 +1431,8 @@ impl ResourceManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let substate_ref = api.kernel_get_substate_ref(resman_handle)?;
-        let resource_manager = substate_ref.resource_manager();
+        let resource_manager: &ResourceManagerSubstate =
+            api.kernel_get_substate_ref(resman_handle)?;
         let nf_store_id = resource_manager
             .nf_store_id
             .ok_or(InvokeError::SelfError(ResourceManagerError::NotNonFungible))?;
@@ -1486,8 +1484,8 @@ impl ResourceManagerBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let substate_ref = api.kernel_get_substate_ref(resman_handle)?;
-        let resource_manager = substate_ref.resource_manager();
+        let resource_manager: &ResourceManagerSubstate =
+            api.kernel_get_substate_ref(resman_handle)?;
         let nf_store_id = resource_manager
             .nf_store_id
             .ok_or(InvokeError::SelfError(ResourceManagerError::NotNonFungible))?;
@@ -1496,8 +1494,9 @@ impl ResourceManagerBlueprint {
         let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(input.id));
         let non_fungible_handle =
             api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
-        let substate = api.kernel_get_substate_ref(non_fungible_handle)?;
-        let exists = substate.non_fungible().0.is_some();
+        let non_fungible: &NonFungibleSubstate =
+            api.kernel_get_substate_ref(non_fungible_handle)?;
+        let exists = non_fungible.0.is_some();
 
         Ok(IndexedScryptoValue::from_typed(&exists))
     }
@@ -1524,8 +1523,9 @@ impl ResourceManagerBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let substate_ref = api.kernel_get_substate_ref(resman_handle)?;
-        let resource_type = substate_ref.resource_manager().resource_type;
+        let resource_manager: &ResourceManagerSubstate =
+            api.kernel_get_substate_ref(resman_handle)?;
+        let resource_type = resource_manager.resource_type;
 
         Ok(IndexedScryptoValue::from_typed(&resource_type))
     }
@@ -1550,8 +1550,9 @@ impl ResourceManagerBlueprint {
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.kernel_get_substate_ref(resman_handle)?;
-        let total_supply = substate_ref.resource_manager().total_supply;
+        let resource_manager: &ResourceManagerSubstate =
+            api.kernel_get_substate_ref(resman_handle)?;
+        let total_supply = resource_manager.total_supply;
         Ok(IndexedScryptoValue::from_typed(&total_supply))
     }
 
@@ -1577,8 +1578,8 @@ impl ResourceManagerBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let substate_ref = api.kernel_get_substate_ref(resman_handle)?;
-        let resource_manager = substate_ref.resource_manager();
+        let resource_manager: &ResourceManagerSubstate =
+            api.kernel_get_substate_ref(resman_handle)?;
         let nf_store_id = resource_manager
             .nf_store_id
             .ok_or(InvokeError::SelfError(ResourceManagerError::NotNonFungible))?;
@@ -1592,8 +1593,7 @@ impl ResourceManagerBlueprint {
             SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(input.id)),
             LockFlags::read_only(),
         )?;
-        let non_fungible_ref = api.kernel_get_substate_ref(non_fungible_handle)?;
-        let wrapper = non_fungible_ref.non_fungible();
+        let wrapper: &NonFungibleSubstate = api.kernel_get_substate_ref(non_fungible_handle)?;
         if let Some(non_fungible) = wrapper.0.as_ref() {
             Ok(IndexedScryptoValue::from_typed(&[
                 non_fungible.immutable_data(),

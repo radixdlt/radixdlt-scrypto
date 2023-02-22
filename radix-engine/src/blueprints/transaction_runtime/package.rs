@@ -1,9 +1,9 @@
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use radix_engine_interface::api::substate_api::LockFlags;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
@@ -75,8 +75,8 @@ impl TransactionRuntimeNativePackage {
             SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime),
             LockFlags::read_only(),
         )?;
-        let substate = api.kernel_get_substate_ref(handle)?;
-        let transaction_runtime_substate = substate.transaction_runtime();
+        let transaction_runtime_substate: &TransactionRuntimeSubstate =
+            api.kernel_get_substate_ref(handle)?;
         Ok(IndexedScryptoValue::from_typed(
             &transaction_runtime_substate.hash,
         ))

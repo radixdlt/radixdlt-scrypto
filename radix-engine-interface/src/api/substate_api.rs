@@ -1,7 +1,7 @@
 use crate::api::types::*;
+use bitflags::bitflags;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
-use bitflags::bitflags;
 use sbor::*;
 
 bitflags! {

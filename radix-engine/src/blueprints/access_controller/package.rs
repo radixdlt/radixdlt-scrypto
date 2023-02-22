@@ -1,13 +1,13 @@
 use super::state_machine::*;
 use crate::errors::{ApplicationError, InterpreterError, RuntimeError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use radix_engine_interface::api::substate_api::LockFlags;
 use crate::system::global::GlobalSubstate;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use native_sdk::resource::{SysBucket, Vault};
 use radix_engine_interface::api::node_modules::auth::*;
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::blueprints::access_controller::*;
@@ -751,8 +751,7 @@ where
         api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
 
     let access_controller_clone = {
-        let substate = api.kernel_get_substate_ref(handle)?;
-        let access_controller = substate.access_controller();
+        let access_controller: &AccessControllerSubstate = api.kernel_get_substate_ref(handle)?;
         access_controller.clone()
     };
 
@@ -781,8 +780,7 @@ where
         api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
 
     let mut access_controller_clone = {
-        let substate = api.kernel_get_substate_ref(handle)?;
-        let access_controller = substate.access_controller();
+        let access_controller: &AccessControllerSubstate = api.kernel_get_substate_ref(handle)?;
         access_controller.clone()
     };
 

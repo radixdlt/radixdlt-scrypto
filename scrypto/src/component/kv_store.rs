@@ -42,7 +42,11 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValu
         let key_payload = scrypto_encode(key).unwrap();
         let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key_payload));
         let handle = env
-            .sys_lock_substate(RENodeId::KeyValueStore(self.id), offset, LockFlags::read_only())
+            .sys_lock_substate(
+                RENodeId::KeyValueStore(self.id),
+                offset,
+                LockFlags::read_only(),
+            )
             .unwrap();
         let raw_bytes = env.sys_read_substate(handle).unwrap();
 
@@ -65,7 +69,11 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValu
         let key_payload = scrypto_encode(key).unwrap();
         let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key_payload));
         let handle = env
-            .sys_lock_substate(RENodeId::KeyValueStore(self.id), offset.clone(), LockFlags::MUTABLE)
+            .sys_lock_substate(
+                RENodeId::KeyValueStore(self.id),
+                offset.clone(),
+                LockFlags::MUTABLE,
+            )
             .unwrap();
         let raw_bytes = env.sys_read_substate(handle).unwrap();
 
@@ -94,7 +102,11 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValu
         let value_payload = scrypto_encode(&value).unwrap();
         let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key_payload.clone()));
         let handle = env
-            .sys_lock_substate(RENodeId::KeyValueStore(self.id), offset.clone(), LockFlags::MUTABLE)
+            .sys_lock_substate(
+                RENodeId::KeyValueStore(self.id),
+                offset.clone(),
+                LockFlags::MUTABLE,
+            )
             .unwrap();
         env.sys_write_substate(
             handle,

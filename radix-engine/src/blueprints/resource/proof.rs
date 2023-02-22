@@ -1,9 +1,9 @@
 use crate::errors::{InterpreterError, InvokeError, RuntimeError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use radix_engine_interface::api::substate_api::LockFlags;
 use crate::system::kernel_modules::execution_trace::ProofSnapshot;
 use crate::system::node::RENodeInit;
 use crate::types::*;
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{ProofOffset, RENodeId, SubstateOffset};
 use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
@@ -361,8 +361,7 @@ impl ProofBlueprint {
             SubstateOffset::Proof(ProofOffset::Proof),
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let proof = substate_ref.proof();
+        let proof: &ProofSubstate = api.kernel_get_substate_ref(handle)?;
         let cloned_proof = proof.clone();
 
         let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
@@ -393,8 +392,7 @@ impl ProofBlueprint {
             SubstateOffset::Proof(ProofOffset::Proof),
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let proof = substate_ref.proof();
+        let proof: &ProofSubstate = api.kernel_get_substate_ref(handle)?;
         Ok(IndexedScryptoValue::from_typed(&proof.total_amount()))
     }
 
@@ -420,8 +418,7 @@ impl ProofBlueprint {
             SubstateOffset::Proof(ProofOffset::Proof),
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let proof = substate_ref.proof();
+        let proof: &ProofSubstate = api.kernel_get_substate_ref(handle)?;
         let ids = proof.total_ids()?;
         Ok(IndexedScryptoValue::from_typed(&ids))
     }
@@ -447,8 +444,7 @@ impl ProofBlueprint {
             SubstateOffset::Proof(ProofOffset::Proof),
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let proof = substate_ref.proof();
+        let proof: &ProofSubstate = api.kernel_get_substate_ref(handle)?;
         Ok(IndexedScryptoValue::from_typed(&proof.resource_address))
     }
 }

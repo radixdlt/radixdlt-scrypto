@@ -4,11 +4,18 @@ use crate::kernel::actor::{ResolvedActor, ResolvedReceiver};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
+use crate::system::global::GlobalSubstate;
 use crate::system::node::RENodeModuleInit;
 use crate::{
     errors::{CanBeAbortion, ModuleError, RuntimeError},
     system::node::RENodeInit,
     transaction::AbortReason,
+};
+use radix_engine_interface::api::component::{
+    ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
+};
+use radix_engine_interface::api::package::{
+    PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate,
 };
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
@@ -169,8 +176,8 @@ impl KernelModule for CostingModule {
                 SubstateOffset::Global(GlobalOffset::Global),
                 LockFlags::read_only(),
             )?;
-            let substate = api.kernel_get_substate_ref(handle)?;
-            let package_id = substate.global_address().node_deref().into();
+            let global: &GlobalSubstate = api.kernel_get_substate_ref(handle)?;
+            let package_id = global.node_deref().into();
             (package_id, handle)
         };
         let package_node_id = RENodeId::Package(package_id);
@@ -180,9 +187,9 @@ impl KernelModule for CostingModule {
             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
             LockFlags::read_only(),
         )?;
-        let substate = api.kernel_get_substate_ref(handle)?;
-        let royalty_amount = substate
-            .package_royalty_config()
+        let package_royalty_config: &PackageRoyaltyConfigSubstate =
+            api.kernel_get_substate_ref(handle)?;
+        let royalty_amount = package_royalty_config
             .royalty_config
             .get(&fn_identifier.blueprint_name)
             .map(|x| x.get_rule(&fn_identifier.ident).clone())
@@ -196,9 +203,10 @@ impl KernelModule for CostingModule {
             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
             LockFlags::MUTABLE,
         )?;
-        let substate = api.kernel_get_substate_ref(handle)?;
+        let package_royalty_accumulator: &PackageRoyaltyAccumulatorSubstate =
+            api.kernel_get_substate_ref(handle)?;
         {
-            let royalty_vault = substate.package_royalty_accumulator().royalty.clone();
+            let royalty_vault = package_royalty_accumulator.royalty.clone();
             let vault_node_id = RENodeId::Vault(royalty_vault.vault_id());
             let vault_handle = api.kernel_lock_substate(
                 vault_node_id,
@@ -228,9 +236,9 @@ impl KernelModule for CostingModule {
                 SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
                 LockFlags::read_only(),
             )?;
-            let substate = api.kernel_get_substate_ref(handle)?;
-            let royalty_amount = substate
-                .component_royalty_config()
+            let component_royalty_config: &ComponentRoyaltyConfigSubstate =
+                api.kernel_get_substate_ref(handle)?;
+            let royalty_amount = component_royalty_config
                 .royalty_config
                 .get_rule(&fn_identifier.ident)
                 .clone();
@@ -243,9 +251,10 @@ impl KernelModule for CostingModule {
                 SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                 LockFlags::MUTABLE,
             )?;
-            let substate = api.kernel_get_substate_ref(handle)?;
             {
-                let royalty_vault = substate.component_royalty_accumulator().royalty.clone();
+                let royalty_accumulator: &ComponentRoyaltyAccumulatorSubstate =
+                    api.kernel_get_substate_ref(handle)?;
+                let royalty_vault = royalty_accumulator.royalty.clone();
                 let vault_node_id = RENodeId::Vault(royalty_vault.vault_id());
                 let vault_handle = api.kernel_lock_substate(
                     vault_node_id,

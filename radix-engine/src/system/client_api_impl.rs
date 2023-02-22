@@ -1,5 +1,5 @@
-use crate::errors::{KernelError, SystemError};
 use crate::errors::RuntimeError;
+use crate::errors::{KernelError, SystemError};
 use crate::kernel::kernel::Kernel;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
@@ -15,12 +15,12 @@ use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::ResourceManager;
-use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::component::{
     ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
     ComponentStateSubstate,
 };
 use radix_engine_interface::api::package::*;
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::{
@@ -63,8 +63,7 @@ where
     }
 
     fn sys_read_substate(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, RuntimeError> {
-        self.kernel_get_substate_ref(lock_handle)
-            .map(|substate_ref| substate_ref.to_scrypto_value().into())
+        self.kernel_read_substate(lock_handle).map(|v| v.into())
     }
 
     fn sys_write_substate(
@@ -163,8 +162,7 @@ where
             SubstateOffset::Package(PackageOffset::WasmCode),
             LockFlags::read_only(),
         )?;
-        let substate_ref = self.kernel_get_substate_ref(handle)?;
-        let package = substate_ref.wasm_code();
+        let package: &WasmCodeSubstate = self.kernel_get_substate_ref(handle)?;
         let code = package.code().to_vec();
         self.kernel_drop_lock(handle)?;
         Ok(PackageCode::Wasm(code))
@@ -181,8 +179,7 @@ where
             SubstateOffset::Package(PackageOffset::Info),
             LockFlags::read_only(),
         )?;
-        let substate_ref = self.kernel_get_substate_ref(handle)?;
-        let package = substate_ref.package_info();
+        let package: &PackageInfoSubstate = self.kernel_get_substate_ref(handle)?;
         let abi = package.blueprint_abis.clone();
         self.kernel_drop_lock(handle)?;
         Ok(abi)
@@ -204,8 +201,8 @@ where
             offset,
             LockFlags::empty(),
         )?;
-        let substate_ref = self.kernel_get_substate_ref(handle)?;
-        Ok(substate_ref.global_address().node_deref().into())
+        let global: &GlobalSubstate = self.kernel_get_substate_ref(handle)?;
+        Ok(global.node_deref().into())
     }
 
     fn new_component(
@@ -319,9 +316,8 @@ where
             SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo),
             LockFlags::read_only(),
         )?;
-        let substate_ref = self.kernel_get_substate_ref(handle)?;
-        let info = substate_ref.component_info();
-        let package_address = info.package_address.clone();
+        let info: &ComponentInfoSubstate = self.kernel_get_substate_ref(handle)?;
+        let package_address = info.package_address;
         let blueprint_ident = info.blueprint_name.clone();
         self.kernel_drop_lock(handle)?;
         Ok((package_address, blueprint_ident))

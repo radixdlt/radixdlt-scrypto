@@ -12,9 +12,10 @@ use crate::system::type_info::TypeInfoSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::SysBucket;
-use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::component::ComponentInfoSubstate;
+use radix_engine_interface::api::substate_api::LockFlags;
 // TODO: clean this up!
+use crate::blueprints::resource::{BucketSubstate, ProofSubstate};
 use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use radix_engine_interface::api::types::{
     Address, AuthZoneStackOffset, GlobalOffset, LockHandle, ProofOffset, RENodeId, SubstateId,
@@ -948,7 +949,10 @@ where
                 NodeModuleId::SELF,
                 &SubstateOffset::Bucket(BucketOffset::Bucket),
             )
-            .and_then(|substate| Ok(substate.bucket().peek_resource()))
+            .and_then(|substate| {
+                let bucket: &BucketSubstate = substate.into();
+                Ok(bucket.peek_resource())
+            })
             .ok()
     }
 
@@ -959,7 +963,10 @@ where
                 NodeModuleId::SELF,
                 &SubstateOffset::Proof(ProofOffset::Proof),
             )
-            .and_then(|substate| Ok(substate.proof().snapshot()))
+            .and_then(|substate| {
+                let proof: &ProofSubstate = substate.into();
+                Ok(proof.snapshot())
+            })
             .ok()
     }
 }
@@ -992,8 +999,8 @@ where
                     SubstateOffset::Global(GlobalOffset::Global),
                     LockFlags::empty(),
                 )?;
-                let substate_ref = self.kernel_get_substate_ref(handle)?;
-                (substate_ref.global_address().node_deref(), Some(handle))
+                let global: &GlobalSubstate = self.kernel_get_substate_ref(handle)?;
+                (global.node_deref(), Some(handle))
             }
             _ => (node_id, None),
         };
@@ -1110,10 +1117,10 @@ where
         Ok(())
     }
 
-    fn kernel_get_substate_ref(
+    fn kernel_read_substate(
         &mut self,
         lock_handle: LockHandle,
-    ) -> Result<SubstateRef, RuntimeError> {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         // A little hacky: this post sys call is called before the sys call happens due to
         // a mutable borrow conflict for substate ref.
         // Some modules (specifically: ExecutionTraceModule) require that all
@@ -1131,7 +1138,7 @@ where
             self.current_frame
                 .get_ref(lock_handle, &mut self.heap, &mut self.track)?;
 
-        Ok(substate_ref)
+        Ok(substate_ref.to_scrypto_value())
     }
 
     fn kernel_get_substate_ref_mut(
@@ -1158,10 +1165,14 @@ where
         Ok(substate_ref_mut)
     }
 
-    fn kernel_get_substate_ref2<'a, 'b, S>(
+    fn kernel_get_substate_ref<'a, 'b, S>(
         &'b mut self,
         lock_handle: LockHandle,
-    ) -> Result<&'a S, RuntimeError> where &'a S: From<SubstateRef<'a>>, 'b: 'a {
+    ) -> Result<&'a S, RuntimeError>
+    where
+        &'a S: From<SubstateRef<'a>>,
+        'b: 'a,
+    {
         KernelModuleMixer::on_read_substate(
             self,
             lock_handle,

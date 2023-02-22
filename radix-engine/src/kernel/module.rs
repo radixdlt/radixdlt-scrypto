@@ -10,7 +10,6 @@ use super::call_frame::CallFrameUpdate;
 use super::kernel_api::KernelModuleApi;
 use radix_engine_interface::api::substate_api::LockFlags;
 
-
 pub trait KernelModule {
     //======================
     // Kernel module setup

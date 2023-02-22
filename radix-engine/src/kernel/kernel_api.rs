@@ -5,10 +5,10 @@ use crate::system::node::RENodeModuleInit;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::WasmEngine;
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::api::substate_api::LockFlags;
 
 use super::actor::ResolvedActor;
 use super::call_frame::CallFrameUpdate;
@@ -57,21 +57,24 @@ pub trait KernelSubstateApi {
     fn kernel_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError>;
 
     /// Get a non-mutable reference to a locked substate
-    fn kernel_get_substate_ref(
+    fn kernel_read_substate(
         &mut self,
         lock_handle: LockHandle,
-    ) -> Result<SubstateRef, RuntimeError>;
+    ) -> Result<IndexedScryptoValue, RuntimeError>;
+
+    fn kernel_get_substate_ref<'a, 'b, S>(
+        &'b mut self,
+        lock_handle: LockHandle,
+    ) -> Result<&'a S, RuntimeError>
+    where
+        &'a S: From<SubstateRef<'a>>,
+        'b: 'a;
 
     /// Get a mutable reference to a locked substate
     fn kernel_get_substate_ref_mut(
         &mut self,
         lock_handle: LockHandle,
     ) -> Result<SubstateRefMut, RuntimeError>;
-
-    fn kernel_get_substate_ref2<'a, 'b, S>(
-        &'b mut self,
-        lock_handle: LockHandle,
-    ) -> Result<&'a S, RuntimeError> where &'a S: From<SubstateRef<'a>>, 'b: 'a;
 }
 
 pub trait KernelWasmApi<W: WasmEngine> {

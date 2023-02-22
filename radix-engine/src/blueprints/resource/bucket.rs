@@ -1,10 +1,10 @@
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
-use radix_engine_interface::api::substate_api::LockFlags;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node::RENodeInit;
 use crate::types::*;
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
@@ -325,8 +325,7 @@ impl BucketBlueprint {
             SubstateOffset::Bucket(BucketOffset::Bucket),
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.kernel_get_substate_ref(bucket_handle)?;
-        let bucket = substate_ref.bucket();
+        let bucket: &BucketSubstate = api.kernel_get_substate_ref(bucket_handle)?;
         let ids = bucket.total_ids().map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
                 BucketError::ResourceOperationError(e),
@@ -355,8 +354,7 @@ impl BucketBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let substate = api.kernel_get_substate_ref(bucket_handle)?;
-        let bucket = substate.bucket();
+        let bucket: &BucketSubstate = api.kernel_get_substate_ref(bucket_handle)?;
         Ok(IndexedScryptoValue::from_typed(&bucket.total_amount()))
     }
 
@@ -380,8 +378,7 @@ impl BucketBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let substate = api.kernel_get_substate_ref(bucket_handle)?;
-        let bucket = substate.bucket();
+        let bucket: &BucketSubstate = api.kernel_get_substate_ref(bucket_handle)?;
 
         Ok(IndexedScryptoValue::from_typed(&bucket.resource_address()))
     }
