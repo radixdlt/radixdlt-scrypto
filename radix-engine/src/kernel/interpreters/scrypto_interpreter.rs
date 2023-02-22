@@ -10,9 +10,7 @@ use crate::errors::ScryptoFnResolvingError;
 use crate::errors::{InterpreterError, KernelError, RuntimeError};
 use crate::kernel::actor::{ResolvedActor, ResolvedReceiver};
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::{
-    ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, KernelWasmApi,
-};
+use crate::kernel::kernel_api::{ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, KernelWasmApi, TemporaryResolvedInvocation};
 use crate::system::global::GlobalSubstate;
 use crate::system::node_modules::access_rules::{AccessRulesNativePackage, AuthZoneNativePackage};
 use crate::system::node_modules::metadata::MetadataNativePackage;
@@ -43,7 +41,7 @@ impl ExecutableInvocation for MethodInvocation {
     fn resolve<D: KernelSubstateApi>(
         self,
         api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<TemporaryResolvedInvocation<Self::Exec>, RuntimeError> {
         let (_, value, nodes_to_move, mut node_refs_to_copy) =
             IndexedScryptoValue::from_slice(&self.args)
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?
@@ -206,14 +204,16 @@ impl ExecutableInvocation for MethodInvocation {
         // TODO: remove? currently needed for `Runtime::package_address()` API.
         node_refs_to_copy.insert(RENodeId::Global(Address::Package(package_address)));
 
-        Ok((
-            actor,
-            CallFrameUpdate {
+        let resolved = TemporaryResolvedInvocation {
+            resolved_actor: actor,
+            update: CallFrameUpdate {
                 nodes_to_move,
                 node_refs_to_copy,
             },
             executor,
-        ))
+        };
+
+        Ok(resolved)
     }
 }
 
@@ -223,7 +223,7 @@ impl ExecutableInvocation for FunctionInvocation {
     fn resolve<D: KernelSubstateApi>(
         self,
         api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<TemporaryResolvedInvocation<Self::Exec>, RuntimeError> {
         let (_, value, nodes_to_move, mut node_refs_to_copy) =
             IndexedScryptoValue::from_slice(&self.args)
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?
@@ -327,14 +327,16 @@ impl ExecutableInvocation for FunctionInvocation {
             self.fn_identifier.package_address,
         )));
 
-        Ok((
-            actor,
-            CallFrameUpdate {
+        let resolved = TemporaryResolvedInvocation {
+            resolved_actor: actor,
+            update: CallFrameUpdate {
                 nodes_to_move,
                 node_refs_to_copy,
             },
             executor,
-        ))
+        };
+
+        Ok(resolved)
     }
 }
 

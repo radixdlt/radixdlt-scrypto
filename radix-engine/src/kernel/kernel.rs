@@ -39,9 +39,10 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::blueprints::transaction_runtime::TRANSACTION_RUNTIME_BLUEPRINT;
 use radix_engine_interface::rule;
 use sbor::rust::mem;
+use crate::kernel::kernel_api::TemporaryResolvedInvocation;
 
 use super::actor::{ExecutionMode, ResolvedActor, ResolvedReceiver};
-use super::call_frame::{CallFrame, CallFrameUpdate, RENodeVisibilityOrigin};
+use super::call_frame::{CallFrame, RENodeVisibilityOrigin};
 use super::heap::{Heap, HeapRENode};
 use super::id_allocator::IdAllocator;
 use super::interpreters::ScryptoInterpreter;
@@ -377,10 +378,12 @@ where
 
     fn run<X: Executor>(
         &mut self,
-        executor: X,
-        actor: ResolvedActor,
-        mut call_frame_update: CallFrameUpdate,
+        resolved: TemporaryResolvedInvocation<X>,
     ) -> Result<X::Output, RuntimeError> {
+        let executor = resolved.executor;
+        let actor = resolved.resolved_actor;
+        let mut call_frame_update = resolved.update;
+
         let derefed_lock = if let Some(ResolvedReceiver {
             derefed_from: Some((_, derefed_lock)),
             ..
@@ -488,14 +491,12 @@ where
 
     fn invoke_internal<X: Executor>(
         &mut self,
-        executor: X,
-        actor: ResolvedActor,
-        call_frame_update: CallFrameUpdate,
+        resolved: TemporaryResolvedInvocation<X>
     ) -> Result<X::Output, RuntimeError> {
         let depth = self.current_frame.depth;
         // TODO: Move to higher layer
         if depth == 0 {
-            for node_id in &call_frame_update.node_refs_to_copy {
+            for node_id in &resolved.update.node_refs_to_copy {
                 match node_id {
                     RENodeId::Global(global_address) => {
                         if self.current_frame.get_node_location(*node_id).is_err() {
@@ -620,7 +621,7 @@ where
             }
         }
 
-        let output = self.run(executor, actor, call_frame_update)?;
+        let output = self.run(resolved)?;
 
         Ok(output)
     }
@@ -1223,10 +1224,10 @@ where
         let saved_mode = self.execution_mode;
 
         self.execution_mode = ExecutionMode::Resolver;
-        let (actor, call_frame_update, executor) = invocation.resolve(self)?;
+        let resolved = invocation.resolve(self)?;
 
         self.execution_mode = ExecutionMode::Kernel;
-        let rtn = self.invoke_internal(executor, actor, call_frame_update)?;
+        let rtn = self.invoke_internal(resolved)?;
 
         // Restore previous mode
         self.execution_mode = saved_mode;

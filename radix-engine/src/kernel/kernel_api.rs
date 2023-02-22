@@ -97,13 +97,19 @@ pub trait Executor {
         W: WasmEngine;
 }
 
+pub struct TemporaryResolvedInvocation<E: Executor> {
+    pub resolved_actor: ResolvedActor,
+    pub update: CallFrameUpdate,
+    pub executor: E,
+}
+
 pub trait ExecutableInvocation: Invocation {
     type Exec: Executor<Output = Self::Output>;
 
     fn resolve<Y: KernelSubstateApi>(
         self,
         api: &mut Y,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>;
+    ) -> Result<TemporaryResolvedInvocation<Self::Exec>, RuntimeError>;
 }
 
 /// Interface of the Kernel, for Kernel modules.
