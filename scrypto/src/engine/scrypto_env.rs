@@ -4,6 +4,7 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::{
     ClientActorApi, ClientComponentApi, ClientNodeApi, ClientPackageApi, ClientSubstateApi,
 };
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::blueprints::resource::AccessRules;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
 use sbor::rust::collections::*;
@@ -169,7 +170,7 @@ impl ClientPackageApi<ClientApiError> for ScryptoEnv {
         let handle = self.sys_lock_substate(
             package_global,
             SubstateOffset::Package(PackageOffset::WasmCode),
-            false,
+            LockFlags::read_only(),
         )?;
         let substate = self.sys_read_substate(handle)?;
         let package: WasmCodeSubstate =
@@ -186,7 +187,7 @@ impl ClientPackageApi<ClientApiError> for ScryptoEnv {
         let handle = self.sys_lock_substate(
             package_global,
             SubstateOffset::Package(PackageOffset::Info),
-            false,
+            LockFlags::read_only(),
         )?;
         let substate = self.sys_read_substate(handle)?;
         let package: PackageInfoSubstate =
@@ -236,7 +237,7 @@ impl ClientSubstateApi<ClientApiError> for ScryptoEnv {
         &mut self,
         node_id: RENodeId,
         offset: SubstateOffset,
-        mutable: bool,
+        flags: LockFlags,
     ) -> Result<LockHandle, ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
         let offset = scrypto_encode(&offset).unwrap();
@@ -247,7 +248,7 @@ impl ClientSubstateApi<ClientApiError> for ScryptoEnv {
                 node_id.len(),
                 offset.as_ptr(),
                 offset.len(),
-                mutable,
+                flags.bits(),
             )
         };
 

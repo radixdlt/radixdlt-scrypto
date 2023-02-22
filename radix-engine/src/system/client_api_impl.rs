@@ -1,4 +1,4 @@
-use crate::errors::KernelError;
+use crate::errors::{KernelError, SystemError};
 use crate::errors::RuntimeError;
 use crate::kernel::kernel::Kernel;
 use crate::kernel::kernel_api::KernelNodeApi;
@@ -52,15 +52,13 @@ where
         &mut self,
         node_id: RENodeId,
         offset: SubstateOffset,
-        mutable: bool,
+        flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
-        let flags = if mutable {
-            LockFlags::MUTABLE
-        } else {
-            // TODO: Do we want to expose full flag functionality to Scrypto?
-            LockFlags::read_only()
-        };
-
+        if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
+            if !matches!(node_id, RENodeId::Vault(_)) {
+                return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
+            }
+        }
         self.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, flags)
     }
 

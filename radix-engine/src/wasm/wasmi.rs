@@ -339,14 +339,14 @@ fn lock_substate(
     node_id_len: u32,
     offset_ptr: u32,
     offset_len: u32,
-    mutable: u32,
+    flags: u32,
 ) -> Result<u32, InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
     let node_id = read_memory(caller.as_context_mut(), memory, node_id_ptr, node_id_len)?;
     let offset = read_memory(caller.as_context_mut(), memory, offset_ptr, offset_len)?;
 
-    runtime.lock_substate(node_id, offset, mutable != 0)
+    runtime.lock_substate(node_id, offset, flags)
 }
 
 fn read_substate(

@@ -1,4 +1,5 @@
 use radix_engine_interface::api::*;
+use radix_engine_interface::api::substate_api::LockFlags;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 
@@ -22,7 +23,7 @@ mod read {
                 .sys_lock_substate(
                     RENodeId::Global(Address::Component(component_address)),
                     SubstateOffset::Global(GlobalOffset::Global),
-                    false,
+                    LockFlags::read_only(),
                 )
                 .unwrap();
         }

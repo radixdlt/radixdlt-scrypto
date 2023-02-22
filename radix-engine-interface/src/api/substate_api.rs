@@ -31,7 +31,7 @@ pub trait ClientSubstateApi<E: Debug> {
         &mut self,
         node_id: RENodeId,
         offset: SubstateOffset,
-        mutable: bool,
+        flags: LockFlags,
     ) -> Result<LockHandle, E>;
     fn sys_read_substate(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, E>;
     fn sys_write_substate(&mut self, lock_handle: LockHandle, buffer: Vec<u8>) -> Result<(), E>;

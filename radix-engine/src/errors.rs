@@ -63,6 +63,8 @@ pub enum RuntimeError {
     /// An error occurred within call frame.
     CallFrameError(CallFrameError),
 
+    SystemError(SystemError),
+
     /// An error occurred within an interpreter
     InterpreterError(InterpreterError),
 
@@ -109,6 +111,7 @@ impl CanBeAbortion for RuntimeError {
             RuntimeError::KernelError(err) => err.abortion(),
             RuntimeError::CallFrameError(_) => None,
             RuntimeError::InterpreterError(_) => None,
+            RuntimeError::SystemError(_) => None,
             RuntimeError::ModuleError(err) => err.abortion(),
             RuntimeError::ApplicationError(_) => None,
         }
@@ -192,6 +195,11 @@ pub enum ScryptoFnResolvingError {
     BlueprintNotFound,
     MethodNotFound,
     InvalidInput,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum SystemError {
+    InvalidLockFlags,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
