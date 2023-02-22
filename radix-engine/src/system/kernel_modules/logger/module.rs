@@ -4,6 +4,7 @@ use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
 use crate::{blueprints::logger::LoggerSubstate, errors::RuntimeError, system::node::RENodeInit};
 use radix_engine_interface::api::types::{RENodeId, RENodeType};
+use radix_engine_interface::data::ScryptoValue;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
 
@@ -28,6 +29,7 @@ impl KernelModule for LoggerModule {
         _api: &mut Y,
         _actor: &Option<ResolvedActor>,
         call_frame_update: &mut CallFrameUpdate,
+        _args: &ScryptoValue,
     ) -> Result<(), RuntimeError> {
         call_frame_update.node_refs_to_copy.insert(RENodeId::Logger);
 

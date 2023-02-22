@@ -103,10 +103,12 @@ pub trait Executor {
 }
 
 pub struct TemporaryResolvedInvocation<E: Executor> {
-    pub resolved_actor: ResolvedActor,
-    pub update: CallFrameUpdate,
-    pub args: ScryptoValue,
     pub executor: E,
+    pub update: CallFrameUpdate,
+
+    // TODO: Make these two RENodes / Substates
+    pub resolved_actor: ResolvedActor,
+    pub args: ScryptoValue,
 }
 
 pub trait ExecutableInvocation: Invocation {

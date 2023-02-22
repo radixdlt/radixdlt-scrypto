@@ -29,6 +29,7 @@ use radix_engine_interface::api::types::SubstateOffset;
 use radix_engine_interface::api::types::VaultId;
 use radix_engine_interface::blueprints::resource::Resource;
 use radix_engine_interface::crypto::Hash;
+use radix_engine_interface::data::ScryptoValue;
 use sbor::rust::collections::BTreeMap;
 use transaction::model::AuthZoneParams;
 
@@ -230,31 +231,32 @@ impl KernelModule for KernelModuleMixer {
         api: &mut Y,
         actor: &Option<ResolvedActor>,
         update: &mut CallFrameUpdate,
+        args: &ScryptoValue,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
-            KernelDebugModule::before_push_frame(api, actor, update)?;
+            KernelDebugModule::before_push_frame(api, actor, update, args)?;
         }
         if modules.contains(EnabledModules::COSTING) {
-            CostingModule::before_push_frame(api, actor, update)?;
+            CostingModule::before_push_frame(api, actor, update, args)?;
         }
         if modules.contains(EnabledModules::NODE_MOVE) {
-            NodeMoveModule::before_push_frame(api, actor, update)?;
+            NodeMoveModule::before_push_frame(api, actor, update, args)?;
         }
         if modules.contains(EnabledModules::AUTH) {
-            AuthModule::before_push_frame(api, actor, update)?;
+            AuthModule::before_push_frame(api, actor, update, args)?;
         }
         if modules.contains(EnabledModules::LOGGER) {
-            LoggerModule::before_push_frame(api, actor, update)?;
+            LoggerModule::before_push_frame(api, actor, update, args)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
-            TransactionRuntimeModule::before_push_frame(api, actor, update)?;
+            TransactionRuntimeModule::before_push_frame(api, actor, update, args)?;
         }
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
-            ExecutionTraceModule::before_push_frame(api, actor, update)?;
+            ExecutionTraceModule::before_push_frame(api, actor, update, args)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
-            TransactionLimitsModule::before_push_frame(api, actor, update)?;
+            TransactionLimitsModule::before_push_frame(api, actor, update, args)?;
         }
         Ok(())
     }

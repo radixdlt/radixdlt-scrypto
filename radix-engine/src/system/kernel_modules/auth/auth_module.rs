@@ -22,6 +22,7 @@ use radix_engine_interface::api::types::{
     VaultOffset,
 };
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::data::ScryptoValue;
 use transaction::model::AuthZoneParams;
 
 use super::auth_converter::convert_contextless;
@@ -87,6 +88,7 @@ impl KernelModule for AuthModule {
         api: &mut Y,
         actor: &Option<ResolvedActor>,
         call_frame_update: &mut CallFrameUpdate,
+        _args: &ScryptoValue,
     ) -> Result<(), RuntimeError> {
         if matches!(
             actor,

@@ -403,6 +403,7 @@ where
                     api,
                     &Some(actor.clone()),
                     &mut call_frame_update,
+                    &args,
                 )
             })?;
         }

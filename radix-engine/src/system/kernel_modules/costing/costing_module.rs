@@ -26,6 +26,7 @@ use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::blueprints::resource::Resource;
 use radix_engine_interface::constants::*;
 use radix_engine_interface::{api::types::RENodeId, *};
+use radix_engine_interface::data::ScryptoValue;
 use sbor::rust::collections::BTreeMap;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -123,6 +124,7 @@ impl KernelModule for CostingModule {
         api: &mut Y,
         callee: &Option<ResolvedActor>,
         _nodes_and_refs: &mut CallFrameUpdate,
+        _args: &ScryptoValue,
     ) -> Result<(), RuntimeError> {
         // Identify the function, and optional component address
         let (fn_identifier, optional_component) = match &callee {
