@@ -217,6 +217,10 @@ impl ExecutableInvocation for MethodInvocation {
             executor,
         ))
     }
+
+    fn payload_size(&self) -> usize {
+        self.args.len()
+    }
 }
 
 impl ExecutableInvocation for FunctionInvocation {
@@ -338,6 +342,10 @@ impl ExecutableInvocation for FunctionInvocation {
             },
             executor,
         ))
+    }
+
+    fn payload_size(&self) -> usize {
+        self.args.len()
     }
 }
 

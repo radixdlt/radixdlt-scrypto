@@ -1,5 +1,6 @@
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
+use radix_engine_constants::DEFAULT_MAX_INVOKE_INPUT_SIZE;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
@@ -70,7 +71,7 @@ fn test_basic_transfer() {
         + 65500 /* DropLock */
         + 12500 /* DropNode */
         + 0 /* InstantiateWasm */
-        + 6500 /* Invoke */
+        + 10000 /* Invoke */
         + 101000 /* LockSubstate */
         + 76500 /* ReadSubstate */
         + 62500 /* RunPrecompiled */
@@ -202,7 +203,7 @@ fn test_radiswap() {
         25000 /* CreateNode */
         + 189000 /* DropLock */
         + 17500 /* DropNode */
-        + 19000 /* Invoke */
+        + 26410 /* Invoke */
         + 296000 /* LockSubstate */
         + 230000 /* ReadSubstate */
         + 162500 /* RunPrecompiled */
@@ -230,9 +231,9 @@ fn test_publish_large_package() {
                 (export "memory" (memory $0))
             )
         "#,
-        "i".repeat(4 * 1024 * 1024)
+        "i".repeat(DEFAULT_MAX_INVOKE_INPUT_SIZE - 87) // ensure we fit in limit
     ));
-    assert_eq!(4194343, code.len());
+    assert_eq!(DEFAULT_MAX_INVOKE_INPUT_SIZE - 48, code.len());
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 100.into())
         .publish_package(
@@ -250,8 +251,8 @@ fn test_publish_large_package() {
 
     // Assert
     assert!(
-        receipt.execution.fee_summary.total_cost_units_consumed > 20000000
-            && receipt.execution.fee_summary.total_cost_units_consumed < 30000000
+        receipt.execution.fee_summary.total_cost_units_consumed > 60000000
+            && receipt.execution.fee_summary.total_cost_units_consumed < 70000000
     );
 }
 

@@ -267,6 +267,10 @@ impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
 
         Ok((actor, call_frame_update, self))
     }
+
+    fn payload_size(&self) -> usize {
+        self.instructions.len() + self.blobs.len()
+    }
 }
 
 impl<'a> Executor for TransactionProcessorRunInvocation<'a> {

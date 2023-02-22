@@ -168,3 +168,42 @@ fn transaction_limit_exceeded_substate_writes_should_fail() {
         )
     });
 }
+
+#[test]
+fn transaction_limit_exceeded_invoke_input_size_should_fail() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+
+    // Act
+    let code = wat2wasm(&format!(
+        r#"
+            (module
+                (data (i32.const 0) "{}")
+                (memory $0 64)
+                (export "memory" (memory $0))
+            )
+        "#,
+        "i".repeat(DEFAULT_MAX_INVOKE_INPUT_SIZE)
+    ));
+    assert!(code.len() > DEFAULT_MAX_INVOKE_INPUT_SIZE);
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 100.into())
+        .publish_package(
+            code,
+            BTreeMap::new(),
+            BTreeMap::new(),
+            BTreeMap::new(),
+            AccessRules::new(),
+        )
+        .build();
+
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
+            TransactionLimitsError::MaxInvokeInputSizeExceeded(x),
+        )) => *x == DEFAULT_MAX_INVOKE_INPUT_SIZE + 87,
+        _ => false,
+    })
+}
