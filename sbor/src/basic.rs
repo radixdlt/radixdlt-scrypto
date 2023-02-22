@@ -143,12 +143,18 @@ pub enum NoCustomTraversal {}
 
 impl CustomTraversal for NoCustomTraversal {
     type CustomValueKind = NoCustomValueKind;
-    type CustomTerminalValueRef = NoCustomTerminalValueRef;
-    type CustomTerminalValueBatchRef = NoCustomTerminalValueBatchRef;
+    type CustomTerminalValueRef<'de> = NoCustomTerminalValueRef;
+    type CustomTerminalValueBatchRef<'de> = NoCustomTerminalValueBatchRef;
     type CustomContainerHeader = NoCustomContainerHeader;
     type CustomValueTraverser = NoCustomTraverser;
 
-    fn new_value_traversal(_: Self::CustomValueKind, _: u8, _: u8) -> Self::CustomValueTraverser {
+    fn new_value_traversal(
+        _: Self::CustomValueKind,
+        _: ParentRelationship,
+        _: usize,
+        _: u8,
+        _: u8,
+    ) -> Self::CustomValueTraverser {
         unreachable!("The NoCustomValueKind parameter can't exist")
     }
 }
@@ -217,9 +223,14 @@ mod schema {
 
         fn resolve_well_known_type(
             well_known_index: u8,
-        ) -> Option<&'static TypeData<Self::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>> {
+        ) -> Option<&'static TypeData<Self::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>>
+        {
             // We know that WELL_KNOWN_LOOKUP has 255 elements, so can use `get_unchecked` for fast look-ups
-            unsafe { WELL_KNOWN_LOOKUP.get_unchecked(well_known_index as usize).as_ref() }
+            unsafe {
+                WELL_KNOWN_LOOKUP
+                    .get_unchecked(well_known_index as usize)
+                    .as_ref()
+            }
         }
 
         fn validate_type_kind(
@@ -245,7 +256,10 @@ mod schema {
             unreachable!("No custom type kinds exist")
         }
 
-        fn value_kind_matches_type_kind<L: SchemaTypeLink>(_: Self::CustomValueKind, _: &Self::CustomTypeKind<L>) -> bool {
+        fn custom_type_kind_matches_value_kind<L: SchemaTypeLink>(
+            _: &Self::CustomTypeKind<L>,
+            _: ValueKind<Self::CustomValueKind>,
+        ) -> bool {
             unreachable!("No custom value kinds exist")
         }
     }

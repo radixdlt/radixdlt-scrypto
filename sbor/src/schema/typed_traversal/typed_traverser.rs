@@ -68,16 +68,18 @@ type ContainerHeaderFor<E> = ContainerHeader<
 >;
 type TerminalValueFor<'de, E> = TerminalValueRef<
     'de,
-    <<E as CustomTypeExtension>::CustomTraversal as CustomTraversal>::CustomTerminalValueRef,
+    <<E as CustomTypeExtension>::CustomTraversal as CustomTraversal>::CustomTerminalValueRef<'de>,
 >;
 type TerminalValueBatchRefFor<'de, E> = TerminalValueBatchRef<
     'de,
-    <<E as CustomTypeExtension>::CustomTraversal as CustomTraversal>::CustomTerminalValueBatchRef,
+    <<E as CustomTypeExtension>::CustomTraversal as CustomTraversal>::CustomTerminalValueBatchRef<
+        'de,
+    >,
 >;
 type TypeKindFor<E> = TypeKind<
     <E as CustomTypeExtension>::CustomValueKind,
     <E as CustomTypeExtension>::CustomTypeKind<LocalTypeIndex>,
-    LocalTypeIndex
+    LocalTypeIndex,
 >;
 
 #[macro_export]
@@ -86,7 +88,7 @@ macro_rules! return_type_mismatch_error {
         return TypedTraversalEvent::Error(LocatedError {
             error: TypedTraversalError::TypeMismatch($error),
             location: $location,
-        })
+        });
     }};
 }
 
@@ -131,13 +133,13 @@ impl<'de, 's, E: CustomTypeExtension> TypedTraverser<'de, 's, E> {
             }
             TraversalEvent::TerminalValue(located_event) => {
                 self.map_terminal_value_event(located_event)
-            },
+            }
             TraversalEvent::TerminalValueBatch(located_event) => {
                 self.map_terminal_value_batch_event(located_event)
-            },
+            }
             TraversalEvent::ContainerEnd(located_event) => {
                 self.map_container_end_event(located_event)
-            },
+            }
             TraversalEvent::PayloadEnd(location) => TypedTraversalEvent::PayloadEnd(location),
             TraversalEvent::DecodeError(located_event) => {
                 Self::map_decode_error_event(located_event)
@@ -159,74 +161,159 @@ impl<'de, 's, E: CustomTypeExtension> TypedTraverser<'de, 's, E> {
         let container_type = look_up_type!(self, E, location, type_index);
 
         match header {
-            ContainerHeader::Tuple(TupleHeader { length }) => {
-                match container_type {
-                    TypeKind::Any => {
-                        self.container_stack.push(ContainerType { own_type: type_index, child_types: ContainerChildTypeRefs::Any })
-                    },
-                    TypeKind::Tuple { field_types } if field_types.len() == length => {
-                        self.container_stack.push(ContainerType { own_type: type_index, child_types: ContainerChildTypeRefs::Tuple(field_types) })
-                    },
-                    TypeKind::Tuple { field_types }  =>
-                        return_type_mismatch_error!(location, TypeMismatchError::MismatchingTupleLength { expected: field_types.len(),  actual: length, type_index }),
-                    _ => return_type_mismatch_error!(location, TypeMismatchError::MismatchingType { expected: type_index, actual: ValueKind::Tuple }),
+            ContainerHeader::Tuple(TupleHeader { length }) => match container_type {
+                TypeKind::Any => self.container_stack.push(ContainerType {
+                    own_type: type_index,
+                    child_types: ContainerChildTypeRefs::Any,
+                }),
+                TypeKind::Tuple { field_types } if field_types.len() == length => {
+                    self.container_stack.push(ContainerType {
+                        own_type: type_index,
+                        child_types: ContainerChildTypeRefs::Tuple(field_types),
+                    })
                 }
+                TypeKind::Tuple { field_types } => return_type_mismatch_error!(
+                    location,
+                    TypeMismatchError::MismatchingTupleLength {
+                        expected: field_types.len(),
+                        actual: length,
+                        type_index
+                    }
+                ),
+                _ => return_type_mismatch_error!(
+                    location,
+                    TypeMismatchError::MismatchingType {
+                        expected: type_index,
+                        actual: ValueKind::Tuple
+                    }
+                ),
             },
             ContainerHeader::EnumVariant(EnumVariantHeader { variant, length }) => {
                 match container_type {
-                    TypeKind::Any => {
-                        self.container_stack.push(ContainerType { own_type: type_index, child_types: ContainerChildTypeRefs::Any })
-                    },
-                    TypeKind::Enum { variants } => {
-                        match variants.get(&variant) {
-                            Some(variant_child_types) if variant_child_types.len() == length => {
-                                self.container_stack.push(ContainerType { own_type: type_index, child_types: ContainerChildTypeRefs::EnumVariant(variant_child_types) })
-                            },
-                            Some(variant_child_types) => return_type_mismatch_error!(
-                                location,
-                                TypeMismatchError::MismatchingEnumVariantLength { expected: variant_child_types.len(), actual: length, type_index, variant }
-                            ),
-                            None => return_type_mismatch_error!(location, TypeMismatchError::UnknownEnumVariant { type_index, variant }),
+                    TypeKind::Any => self.container_stack.push(ContainerType {
+                        own_type: type_index,
+                        child_types: ContainerChildTypeRefs::Any,
+                    }),
+                    TypeKind::Enum { variants } => match variants.get(&variant) {
+                        Some(variant_child_types) if variant_child_types.len() == length => {
+                            self.container_stack.push(ContainerType {
+                                own_type: type_index,
+                                child_types: ContainerChildTypeRefs::EnumVariant(
+                                    variant_child_types,
+                                ),
+                            })
                         }
+                        Some(variant_child_types) => return_type_mismatch_error!(
+                            location,
+                            TypeMismatchError::MismatchingEnumVariantLength {
+                                expected: variant_child_types.len(),
+                                actual: length,
+                                type_index,
+                                variant
+                            }
+                        ),
+                        None => return_type_mismatch_error!(
+                            location,
+                            TypeMismatchError::UnknownEnumVariant {
+                                type_index,
+                                variant
+                            }
+                        ),
                     },
-                    _ => return_type_mismatch_error!(location, TypeMismatchError::MismatchingType { expected: type_index, actual: ValueKind::Enum }),
+                    _ => return_type_mismatch_error!(
+                        location,
+                        TypeMismatchError::MismatchingType {
+                            expected: type_index,
+                            actual: ValueKind::Enum
+                        }
+                    ),
                 }
-            },
-            ContainerHeader::Array(ArrayHeader { element_value_kind, .. }) => {
-                match container_type {
-                    TypeKind::Any => {
-                        self.container_stack.push(ContainerType { own_type: type_index, child_types: ContainerChildTypeRefs::Any })
-                    },
-                    TypeKind::Array { element_type: element_type_index } => {
-                        let element_type = look_up_type!(self, E, location, *element_type_index);
-                        if !value_kind_matches_type_kind::<E>(element_value_kind, element_type) {
-                            return_type_mismatch_error!(location, TypeMismatchError::MismatchingChildElementType { expected: *element_type_index, actual: element_value_kind })
-                        }
-                        self.container_stack.push(ContainerType { own_type: type_index, child_types: ContainerChildTypeRefs::Array(*element_type_index) })
-                    },
-                    _ => return_type_mismatch_error!(location, TypeMismatchError::MismatchingType { expected: type_index, actual: ValueKind::Array }),
+            }
+            ContainerHeader::Array(ArrayHeader {
+                element_value_kind, ..
+            }) => match container_type {
+                TypeKind::Any => self.container_stack.push(ContainerType {
+                    own_type: type_index,
+                    child_types: ContainerChildTypeRefs::Any,
+                }),
+                TypeKind::Array {
+                    element_type: element_type_index,
+                } => {
+                    let element_type = look_up_type!(self, E, location, *element_type_index);
+                    if !value_kind_matches_type_kind::<E>(element_value_kind, element_type) {
+                        return_type_mismatch_error!(
+                            location,
+                            TypeMismatchError::MismatchingChildElementType {
+                                expected: *element_type_index,
+                                actual: element_value_kind
+                            }
+                        )
+                    }
+                    self.container_stack.push(ContainerType {
+                        own_type: type_index,
+                        child_types: ContainerChildTypeRefs::Array(*element_type_index),
+                    })
                 }
+                _ => return_type_mismatch_error!(
+                    location,
+                    TypeMismatchError::MismatchingType {
+                        expected: type_index,
+                        actual: ValueKind::Array
+                    }
+                ),
             },
-            ContainerHeader::Map(MapHeader { key_value_kind, value_value_kind, .. }) => {
-                match container_type {
-                    TypeKind::Any => {
-                        self.container_stack.push(ContainerType { own_type: type_index, child_types: ContainerChildTypeRefs::Any })
-                    },
-                    TypeKind::Map { key_type: key_type_index, value_type: value_type_index } => {
-                        let key_type = look_up_type!(self, E, location, *key_type_index);
-                        if !value_kind_matches_type_kind::<E>(key_value_kind, key_type) {
-                            return_type_mismatch_error!(location, TypeMismatchError::MismatchingChildKeyType { expected: *key_type_index, actual: key_value_kind })
-                        }
-                        let value_type = look_up_type!(self, E, location, *value_type_index);
-                        if !value_kind_matches_type_kind::<E>(value_value_kind, value_type) {
-                            return_type_mismatch_error!(location, TypeMismatchError::MismatchingChildValueType { expected: *value_type_index, actual: key_value_kind })
-                        }
-                        self.container_stack.push(ContainerType { own_type: type_index, child_types: ContainerChildTypeRefs::Map(*key_type_index, *value_type_index) })
-                    },
-                    _ => return_type_mismatch_error!(location, TypeMismatchError::MismatchingType { expected: type_index, actual: ValueKind::Map }),
+            ContainerHeader::Map(MapHeader {
+                key_value_kind,
+                value_value_kind,
+                ..
+            }) => match container_type {
+                TypeKind::Any => self.container_stack.push(ContainerType {
+                    own_type: type_index,
+                    child_types: ContainerChildTypeRefs::Any,
+                }),
+                TypeKind::Map {
+                    key_type: key_type_index,
+                    value_type: value_type_index,
+                } => {
+                    let key_type = look_up_type!(self, E, location, *key_type_index);
+                    if !value_kind_matches_type_kind::<E>(key_value_kind, key_type) {
+                        return_type_mismatch_error!(
+                            location,
+                            TypeMismatchError::MismatchingChildKeyType {
+                                expected: *key_type_index,
+                                actual: key_value_kind
+                            }
+                        )
+                    }
+                    let value_type = look_up_type!(self, E, location, *value_type_index);
+                    if !value_kind_matches_type_kind::<E>(value_value_kind, value_type) {
+                        return_type_mismatch_error!(
+                            location,
+                            TypeMismatchError::MismatchingChildValueType {
+                                expected: *value_type_index,
+                                actual: key_value_kind
+                            }
+                        )
+                    }
+                    self.container_stack.push(ContainerType {
+                        own_type: type_index,
+                        child_types: ContainerChildTypeRefs::Map(
+                            *key_type_index,
+                            *value_type_index,
+                        ),
+                    })
                 }
+                _ => return_type_mismatch_error!(
+                    location,
+                    TypeMismatchError::MismatchingType {
+                        expected: type_index,
+                        actual: ValueKind::Map
+                    }
+                ),
             },
-            ContainerHeader::Custom(_) => unimplemented!("Custom containers are not yet fully supported"),
+            ContainerHeader::Custom(_) => {
+                unimplemented!("Custom containers are not yet fully supported")
+            }
         }
 
         TypedTraversalEvent::ContainerStart(TypedLocatedDecoding {
@@ -250,9 +337,15 @@ impl<'de, 's, E: CustomTypeExtension> TypedTraverser<'de, 's, E> {
 
         let value_kind = value_ref.value_kind();
         let type_kind = look_up_type!(self, E, location, type_index);
-        
+
         if !value_kind_matches_type_kind::<E>(value_kind, type_kind) {
-            return_type_mismatch_error!(location, TypeMismatchError::MismatchingType { expected: type_index, actual: value_kind })
+            return_type_mismatch_error!(
+                location,
+                TypeMismatchError::MismatchingType {
+                    expected: type_index,
+                    actual: value_kind
+                }
+            )
         }
 
         TypedTraversalEvent::TerminalValue(TypedLocatedDecoding {
@@ -276,9 +369,15 @@ impl<'de, 's, E: CustomTypeExtension> TypedTraverser<'de, 's, E> {
 
         let value_kind = value_batch_ref.value_kind();
         let type_kind = look_up_type!(self, E, location, type_index);
-        
+
         if !value_kind_matches_type_kind::<E>(value_kind, type_kind) {
-            return_type_mismatch_error!(location, TypeMismatchError::MismatchingType { expected: type_index, actual: value_kind })
+            return_type_mismatch_error!(
+                location,
+                TypeMismatchError::MismatchingType {
+                    expected: type_index,
+                    actual: value_kind
+                }
+            )
         }
 
         TypedTraversalEvent::TerminalValueBatch(TypedLocatedDecoding {
@@ -337,7 +436,10 @@ impl<'de, 's, E: CustomTypeExtension> TypedTraverser<'de, 's, E> {
     }
 }
 
-fn value_kind_matches_type_kind<E: CustomTypeExtension>(value_kind: ValueKind<E::CustomValueKind>, type_kind: &TypeKindFor<E>) -> bool {
+fn value_kind_matches_type_kind<E: CustomTypeExtension>(
+    value_kind: ValueKind<E::CustomValueKind>,
+    type_kind: &TypeKindFor<E>,
+) -> bool {
     match type_kind {
         TypeKind::Any => true,
         TypeKind::Bool => matches!(value_kind, ValueKind::Bool),
@@ -356,6 +458,8 @@ fn value_kind_matches_type_kind<E: CustomTypeExtension>(value_kind: ValueKind<E:
         TypeKind::Tuple { .. } => matches!(value_kind, ValueKind::Tuple),
         TypeKind::Enum { .. } => matches!(value_kind, ValueKind::Enum),
         TypeKind::Map { .. } => matches!(value_kind, ValueKind::Map),
-        TypeKind::Custom(custom_type_kind) => matches!(value_kind, ValueKind::Custom(custom_value_kind) if E::value_kind_matches_type_kind(custom_value_kind, custom_type_kind)),
+        TypeKind::Custom(custom_type_kind) => {
+            E::custom_type_kind_matches_value_kind(custom_type_kind, value_kind)
+        }
     }
 }

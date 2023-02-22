@@ -20,6 +20,7 @@ serde_with = { version = "2.0.1", optional = true }
 strum = { version = "0.24", default-features = false, features = ["derive"] }
 bnum = { version = "0.4.0", default-features = false, features = ["numtraits"] }
 blake2 = { version = "0.10.6", default-features = false }
+once_cell = { version = "1.17.1", default-features = false }
 
 [dev-dependencies]
 serde_json = { version = "1.0.81", default-features = false }
@@ -37,8 +38,8 @@ harness = false
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["hex/std", "sbor/std", "scrypto-abi/std", "radix-engine-derive/std", "strum/std", "utils/std", "serde_json/std", "transaction-data/std", "blake2/std"]
-alloc = ["hex/alloc", "sbor/alloc", "scrypto-abi/alloc", "radix-engine-derive/alloc", "utils/alloc", "serde_json/alloc", "transaction-data/alloc"]
+std = ["hex/std", "sbor/std", "scrypto-abi/std", "radix-engine-derive/std", "strum/std", "utils/std", "serde_json/std", "transaction-data/std", "blake2/std", "once_cell/std"]
+alloc = ["hex/alloc", "sbor/alloc", "scrypto-abi/alloc", "radix-engine-derive/alloc", "utils/alloc", "serde_json/alloc", "transaction-data/alloc", "once_cell/alloc"]
 
 # Turn on this feature to enable tracing.
 trace = ["radix-engine-derive/trace"]

@@ -15,25 +15,21 @@ pub enum ScryptoCustomValue {
     NonFungibleLocalId(NonFungibleLocalId),
 }
 
+impl ScryptoCustomValue {
+    pub fn get_custom_value_kind(&self) -> ScryptoCustomValueKind {
+        match self {
+            ScryptoCustomValue::Address(_) => ScryptoCustomValueKind::Address,
+            ScryptoCustomValue::Own(_) => ScryptoCustomValueKind::Own,
+            ScryptoCustomValue::Decimal(_) => ScryptoCustomValueKind::Decimal,
+            ScryptoCustomValue::PreciseDecimal(_) => ScryptoCustomValueKind::PreciseDecimal,
+            ScryptoCustomValue::NonFungibleLocalId(_) => ScryptoCustomValueKind::NonFungibleLocalId,
+        }
+    }
+}
+
 impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for ScryptoCustomValue {
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        match self {
-            ScryptoCustomValue::Address(_) => {
-                encoder.write_value_kind(ValueKind::Custom(ScryptoCustomValueKind::Address))
-            }
-            ScryptoCustomValue::Own(_) => {
-                encoder.write_value_kind(ValueKind::Custom(ScryptoCustomValueKind::Own))
-            }
-            ScryptoCustomValue::Decimal(_) => {
-                encoder.write_value_kind(ValueKind::Custom(ScryptoCustomValueKind::Decimal))
-            }
-            ScryptoCustomValue::PreciseDecimal(_) => {
-                encoder.write_value_kind(ValueKind::Custom(ScryptoCustomValueKind::PreciseDecimal))
-            }
-            ScryptoCustomValue::NonFungibleLocalId(_) => encoder.write_value_kind(
-                ValueKind::Custom(ScryptoCustomValueKind::NonFungibleLocalId),
-            ),
-        }
+        encoder.write_value_kind(ValueKind::Custom(self.get_custom_value_kind()))
     }
 
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {

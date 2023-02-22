@@ -27,34 +27,8 @@ pub mod basic_well_known_types {
 }
 
 #[macro_export]
-macro_rules! well_known_type_mapping {
-    ($well_known_index: expr, [$($id: path, $type_name: path),*]) => {{
-        let type_data = match $well_known_index {
-            sbor::basic_well_known_types::ANY_ID => ANY_TYPE,
-            sbor::basic_well_known_types::UNIT_ID => UNIT_TYPE,
-            sbor::basic_well_known_types::BOOL_ID => BOOL_TYPE,
-            sbor::basic_well_known_types::I8_ID => I8_TYPE,
-            sbor::basic_well_known_types::I16_ID => I16_TYPE,
-            sbor::basic_well_known_types::I32_ID => I32_TYPE,
-            sbor::basic_well_known_types::I64_ID => I64_TYPE,
-            sbor::basic_well_known_types::I128_ID => I128_TYPE,
-            sbor::basic_well_known_types::U8_ID => U8_TYPE,
-            sbor::basic_well_known_types::U16_ID => U16_TYPE,
-            sbor::basic_well_known_types::U32_ID => U32_TYPE,
-            sbor::basic_well_known_types::U64_ID => U64_TYPE,
-            sbor::basic_well_known_types::U128_ID => U128_TYPE,
-            sbor::basic_well_known_types::STRING_ID => STRING_TYPE,
-            sbor::basic_well_known_types::BYTES_ID => BYTES_TYPE,
-            $($id => $type_name,)*
-            _ => return None,
-        };
-        Some(&type_data)
-    }};
-}
-
-#[macro_export]
 macro_rules! create_well_known_lookup {
-    ($lookup_name: ident, $custom_type_kind: ty, [$($id: path, $type_data: path),*]) => {
+    ($lookup_name: ident, $custom_type_kind: ty, [$(($id: path, $type_data: expr),)*]) => {
         static $lookup_name: once_cell::sync::Lazy<[Option<TypeData<$custom_type_kind, LocalTypeIndex>>; 255]> = once_cell::sync::Lazy::new(|| {
             let mut lookup = {
                 // Initialize the array with None, following the example here:
@@ -62,11 +36,11 @@ macro_rules! create_well_known_lookup {
                 let mut lookup: [sbor::rust::mem::MaybeUninit<Option<TypeData<$custom_type_kind, LocalTypeIndex>>>; 255] = unsafe {
                     sbor::rust::mem::MaybeUninit::uninit().assume_init()
                 };
-            
+
                 for elem in &mut lookup[..] {
                     unsafe { sbor::rust::ptr::write(elem.as_mut_ptr(), None); }
                 }
-            
+
                 unsafe { sbor::rust::mem::transmute::<_, [Option<TypeData<$custom_type_kind, LocalTypeIndex>>; 255]>(lookup) }
             };
             // Now add in the basic types
@@ -96,7 +70,7 @@ macro_rules! create_well_known_lookup {
                 },
             ));
             // And now add in the custom types
-            $(lookup[$id as usize] => Some($type_data);)*
+            $(lookup[$id as usize] = Some($type_data);)*
 
             // And return the lookup
             lookup

@@ -3,12 +3,14 @@ use crate::*;
 
 use super::CustomTraversal;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TraversalEvent<'de, C: CustomTraversal> {
     ContainerStart(LocatedDecoding<ContainerHeader<C::CustomContainerHeader>>),
     ContainerEnd(LocatedDecoding<ContainerHeader<C::CustomContainerHeader>>),
-    TerminalValue(LocatedDecoding<TerminalValueRef<'de, C::CustomTerminalValueRef>>),
-    TerminalValueBatch(LocatedDecoding<TerminalValueBatchRef<'de, C::CustomTerminalValueBatchRef>>),
+    TerminalValue(LocatedDecoding<TerminalValueRef<'de, C::CustomTerminalValueRef<'de>>>),
+    TerminalValueBatch(
+        LocatedDecoding<TerminalValueBatchRef<'de, C::CustomTerminalValueBatchRef<'de>>>,
+    ),
     PayloadEnd(Location),
     DecodeError(LocatedError<DecodeError>),
 }
@@ -147,7 +149,7 @@ impl<H: CustomContainerHeader> ContainerHeader<H> {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TerminalValueRef<'a, V: CustomTerminalValueRef> {
     Bool(bool),
     I8(i8),
@@ -184,7 +186,7 @@ impl<'a, V: CustomTerminalValueRef> TerminalValueRef<'a, V> {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TerminalValueBatchRef<'a, B> {
     U8(&'a [u8]),
     Custom(B),

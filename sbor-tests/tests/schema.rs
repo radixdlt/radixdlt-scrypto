@@ -99,7 +99,7 @@ fn create_basic_sample_schema_works_correctly() {
         ]))
     );
     assert!(
-        matches!(type_data.kind.into_owned(), TypeKind::Tuple { field_types } if matches!(field_types[..], [
+        matches!(type_data.kind, TypeKind::Tuple { field_types } if matches!(field_types[..], [
             LocalTypeIndex::WellKnown(basic_well_known_types::UNIT_ID),
             LocalTypeIndex::SchemaLocalIndex(1),
         ]))
@@ -111,7 +111,7 @@ fn create_basic_sample_schema_works_correctly() {
     assert_eq!(type_data.metadata.type_name, "UnitStruct");
     assert!(matches!(type_data.metadata.children, Children::None));
     assert!(
-        matches!(type_data.kind.into_owned(), TypeKind::Tuple { field_types } if matches!(field_types[..], []))
+        matches!(type_data.kind, TypeKind::Tuple { field_types } if matches!(field_types[..], []))
     );
     assert!(schema.validate().is_ok());
 }
@@ -145,7 +145,7 @@ fn create_advanced_sample_schema_works_correctly() {
             FieldMetadata { field_name: Cow::Borrowed("k") },
         ]))
     );
-    let TypeKind::Tuple { field_types } = type_data.kind.into_owned() else {
+    let TypeKind::Tuple { field_types } = type_data.kind else {
         panic!("Type was not a Tuple");
     };
     assert!(matches!(
@@ -198,7 +198,7 @@ fn creating_schema_from_multiple_types_works_correctly() {
 
     // Check that the AdvancedSample references UnitStruct at the correct index
     let type_data = schema.resolve(advanced_sample_type_ref).unwrap();
-    let TypeKind::Tuple { field_types } = type_data.kind.into_owned() else {
+    let TypeKind::Tuple { field_types } = type_data.kind else {
         panic!("Type was not a Tuple");
     };
     assert_eq!(field_types[6], unit_struct_type_ref); // T = UnitStruct is the 7th field in AdvancedSample<UnitStruct, u128>

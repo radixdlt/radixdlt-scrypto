@@ -1,5 +1,7 @@
 /// Defines the custom Scrypto schema types.
 mod custom_schema;
+/// Defines how to traverse scrypto custom types.
+mod custom_traversal;
 /// Defines the model of Scrypto custom values.
 mod custom_value;
 /// Defines the custom value kind model that scrypto uses.
@@ -21,6 +23,7 @@ mod value_serializer;
 pub mod model;
 
 pub use custom_schema::*;
+pub use custom_traversal::*;
 pub use custom_value::*;
 pub use custom_value_kind::*;
 pub use custom_well_known_types::*;

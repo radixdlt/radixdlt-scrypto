@@ -7,25 +7,31 @@ use crate::*;
 
 pub trait CustomTraversal: Copy + Debug + Clone + PartialEq + Eq {
     type CustomValueKind: CustomValueKind;
-    type CustomTerminalValueRef: CustomTerminalValueRef<CustomValueKind = Self::CustomValueKind>;
-    type CustomTerminalValueBatchRef: CustomTerminalValueBatchRef<CustomValueKind = Self::CustomValueKind>;
+    type CustomTerminalValueRef<'de>: CustomTerminalValueRef<
+        CustomValueKind = Self::CustomValueKind,
+    >;
+    type CustomTerminalValueBatchRef<'de>: CustomTerminalValueBatchRef<
+        CustomValueKind = Self::CustomValueKind,
+    >;
     type CustomContainerHeader: CustomContainerHeader<CustomValueKind = Self::CustomValueKind>;
     type CustomValueTraverser: CustomValueTraverser<CustomTraversal = Self>;
 
     fn new_value_traversal(
         custom_value_kind: Self::CustomValueKind,
+        parent_relationship: ParentRelationship,
+        start_offset: usize,
         current_depth: u8,
         max_depth: u8,
     ) -> Self::CustomValueTraverser;
 }
 
-pub trait CustomTerminalValueRef: Copy + Debug + Clone + PartialEq + Eq {
+pub trait CustomTerminalValueRef: Debug + Clone + PartialEq + Eq {
     type CustomValueKind: CustomValueKind;
 
     fn custom_value_kind(&self) -> Self::CustomValueKind;
 }
 
-pub trait CustomTerminalValueBatchRef: Copy + Debug + Clone + PartialEq + Eq {
+pub trait CustomTerminalValueBatchRef: Debug + Clone + PartialEq + Eq {
     type CustomValueKind: CustomValueKind;
 
     fn custom_value_kind(&self) -> Self::CustomValueKind;
@@ -292,6 +298,8 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
                 self.next_event_override =
                     NextEventOverride::CustomValueTraversal(T::new_value_traversal(
                         custom_value_kind,
+                        relationship,
+                        start_offset,
                         self.get_sbor_depth_for_new_value(),
                         self.max_depth,
                     ));

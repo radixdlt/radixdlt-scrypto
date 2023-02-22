@@ -12,12 +12,6 @@ pub trait CustomTypeKind<L: SchemaTypeLink>: Debug + Clone + PartialEq + Eq {
 
 pub trait CustomTypeValidation: Debug + Clone + PartialEq + Eq {}
 
-// pub trait CustomTypedTraversal: Copy + Debug + Clone + PartialEq + Eq {
-//     type CustomTraversal: CustomTraversal;
-
-//     fn new_typed_traversal(custom_value_kind: Self::CustomValueKind, current_depth: u8, max_depth: u8) -> Self::CustomValueTraverser;
-// }
-
 pub trait CustomTypeExtension: Debug + Clone + PartialEq + Eq + 'static {
     const MAX_DEPTH: u8;
     const PAYLOAD_PREFIX: u8;
@@ -57,5 +51,8 @@ pub trait CustomTypeExtension: Debug + Clone + PartialEq + Eq + 'static {
         type_validation: &SchemaCustomTypeValidation<Self>,
     ) -> Result<(), SchemaValidationError>;
 
-    fn value_kind_matches_type_kind<L: SchemaTypeLink>(custom_value_kind: Self::CustomValueKind, custom_type_kind: &Self::CustomTypeKind<L>) -> bool;
+    fn custom_type_kind_matches_value_kind<L: SchemaTypeLink>(
+        custom_type_kind: &Self::CustomTypeKind<L>,
+        value_kind: ValueKind<Self::CustomValueKind>,
+    ) -> bool;
 }
