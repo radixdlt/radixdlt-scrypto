@@ -70,6 +70,15 @@ pub trait KernelSubstateApi {
         &'a S: From<SubstateRef<'a>>,
         'b: 'a;
 
+    fn kernel_get_substate_ref_mut2<'a, 'b, S>(
+        &'b mut self,
+        lock_handle: LockHandle,
+    ) -> Result<&'a mut S, RuntimeError>
+        where
+            &'a mut S: From<SubstateRefMut<'a>>,
+            'b: 'a;
+
+
     /// Get a mutable reference to a locked substate
     fn kernel_get_substate_ref_mut(
         &mut self,

@@ -40,6 +40,7 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::blueprints::transaction_runtime::TRANSACTION_RUNTIME_BLUEPRINT;
 use radix_engine_interface::rule;
 use sbor::rust::mem;
+use crate::blueprints::auth_zone::AuthZoneStackSubstate;
 
 use super::actor::{ExecutionMode, ResolvedActor, ResolvedReceiver};
 use super::call_frame::{CallFrame, RENodeVisibilityOrigin};
@@ -291,8 +292,7 @@ where
                     SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
                     LockFlags::MUTABLE,
                 )?;
-                let mut substate_ref_mut = api.kernel_get_substate_ref_mut(handle)?;
-                let auth_zone_stack = substate_ref_mut.auth_zone_stack();
+                let auth_zone_stack: &mut AuthZoneStackSubstate = api.kernel_get_substate_ref_mut2(handle)?;
                 auth_zone_stack.clear_all();
                 api.kernel_drop_lock(handle)?;
                 Ok(())
@@ -1160,6 +1160,27 @@ where
                 .get_ref(lock_handle, &mut self.heap, &mut self.track)?;
 
         Ok(substate_ref.into())
+    }
+
+    fn kernel_get_substate_ref_mut2<'a, 'b, S>(
+        &'b mut self,
+        lock_handle: LockHandle,
+    ) -> Result<&'a mut S, RuntimeError>
+        where
+            &'a mut S: From<SubstateRefMut<'a>>,
+            'b: 'a {
+
+        KernelModuleMixer::on_write_substate(
+            self,
+            lock_handle,
+            0, //  TODO: pass the right size
+        )?;
+
+        let substate_ref_mut =
+            self.current_frame
+                .get_ref_mut(lock_handle, &mut self.heap, &mut self.track)?;
+
+        Ok(substate_ref_mut.into())
     }
 
     fn kernel_get_substate_ref_mut(

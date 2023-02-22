@@ -1352,14 +1352,17 @@ pub enum SubstateRefMut<'a> {
     AccessController(&'a mut AccessControllerSubstate),
 }
 
-impl<'a> SubstateRefMut<'a> {
-    pub fn auth_zone_stack(&mut self) -> &mut AuthZoneStackSubstate {
-        match self {
-            SubstateRefMut::AuthZoneStack(value) => *value,
-            _ => panic!("Not an authzone"),
+impl<'a> From<SubstateRefMut<'a>> for &'a mut AuthZoneStackSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::AuthZoneStack(value) => value,
+            _ => panic!("Not an auth zone"),
         }
     }
+}
 
+
+impl<'a> SubstateRefMut<'a> {
     pub fn worktop(&mut self) -> &mut WorktopSubstate {
         match self {
             SubstateRefMut::Worktop(value) => *value,

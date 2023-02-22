@@ -398,8 +398,7 @@ impl KernelModule for AuthModule {
                 SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
                 LockFlags::MUTABLE,
             )?;
-            let mut substate_ref_mut = api.kernel_get_substate_ref_mut(handle)?;
-            let auth_zone_stack = substate_ref_mut.auth_zone_stack();
+            let auth_zone_stack: &mut AuthZoneStackSubstate = api.kernel_get_substate_ref_mut2(handle)?;
 
             // New auth zone frame managed by the AuthModule
             let is_barrier = Self::is_barrier(actor);
@@ -443,8 +442,7 @@ impl KernelModule for AuthModule {
             LockFlags::MUTABLE,
         )?;
         {
-            let mut substate_ref_mut = api.kernel_get_substate_ref_mut(handle)?;
-            let auth_zone_stack = substate_ref_mut.auth_zone_stack();
+            let auth_zone_stack: &mut AuthZoneStackSubstate = api.kernel_get_substate_ref_mut2(handle)?;
             auth_zone_stack.pop_frame();
         }
         api.kernel_drop_lock(handle)?;
