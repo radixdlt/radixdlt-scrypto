@@ -1061,8 +1061,9 @@ mod tests {
         let dec = dec!("0");
         let bytes = scrypto_encode(&dec).unwrap();
         assert_eq!(bytes, {
-            let mut a = [0; 33];
-            a[0] = ScryptoValueKind::Custom(ScryptoCustomValueKind::Decimal).as_u8();
+            let mut a = [0; 34];
+            a[0] = SCRYPTO_SBOR_V1_PAYLOAD_PREFIX;
+            a[1] = ScryptoValueKind::Custom(ScryptoCustomValueKind::Decimal).as_u8();
             a
         });
     }

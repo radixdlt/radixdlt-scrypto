@@ -1137,8 +1137,9 @@ mod tests {
         let pdec = pdec!("0");
         let bytes = scrypto_encode(&pdec).unwrap();
         assert_eq!(bytes, {
-            let mut a = [0; 65];
-            a[0] = ScryptoValueKind::Custom(ScryptoCustomValueKind::PreciseDecimal).as_u8();
+            let mut a = [0; 66];
+            a[0] = SCRYPTO_SBOR_V1_PAYLOAD_PREFIX;
+            a[1] = ScryptoValueKind::Custom(ScryptoCustomValueKind::PreciseDecimal).as_u8();
             a
         });
     }
