@@ -36,91 +36,27 @@ pub enum ProofError {
     NonFungibleOperationNotSupported,
 }
 
-#[derive(Debug, Clone)]
-pub enum ProofSubstate {
-    Fungible(FungibleProof),
-    NonFungible(NonFungibleProof),
+// TODO: remove redundant info in `FungibleProof` and `NonFungibleProof`.
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct ProofInfoSubstate {
+    /// The resource address.
+    pub resource_address: ResourceAddress,
+    /// Whether movement of this proof is restricted.
+    pub restricted: bool,
 }
 
-impl From<FungibleProof> for ProofSubstate {
-    fn from(value: FungibleProof) -> Self {
-        Self::Fungible(value)
-    }
-}
-
-impl From<NonFungibleProof> for ProofSubstate {
-    fn from(value: NonFungibleProof) -> Self {
-        Self::NonFungible(value)
-    }
-}
-
-impl ProofSubstate {
+impl ProofInfoSubstate {
     pub fn change_to_unrestricted(&mut self) {
-        match self {
-            ProofSubstate::Fungible(f) => f.change_to_unrestricted(),
-            ProofSubstate::NonFungible(nf) => nf.change_to_unrestricted(),
-        }
+        self.restricted = false;
     }
 
     pub fn change_to_restricted(&mut self) {
-        match self {
-            ProofSubstate::Fungible(f) => f.change_to_restricted(),
-            ProofSubstate::NonFungible(nf) => nf.change_to_restricted(),
-        }
-    }
-
-    pub fn resource_address(&self) -> ResourceAddress {
-        match self {
-            ProofSubstate::Fungible(f) => f.resource_address(),
-            ProofSubstate::NonFungible(nf) => nf.resource_address(),
-        }
-    }
-
-    pub fn total_amount(&self) -> Decimal {
-        match self {
-            ProofSubstate::Fungible(f) => f.total_amount(),
-            ProofSubstate::NonFungible(nf) => nf.total_amount(),
-        }
-    }
-
-    pub fn total_ids(&self) -> Option<&BTreeSet<NonFungibleLocalId>> {
-        match self {
-            ProofSubstate::Fungible(_) => None,
-            ProofSubstate::NonFungible(nf) => Some(nf.total_ids()),
-        }
-    }
-
-    pub fn is_restricted(&self) -> bool {
-        match self {
-            ProofSubstate::Fungible(f) => f.is_restricted(),
-            ProofSubstate::NonFungible(nf) => nf.is_restricted(),
-        }
-    }
-
-    pub fn clone_proof<Y: ClientApi<RuntimeError>>(
-        &self,
-        api: &mut Y,
-    ) -> Result<Self, RuntimeError> {
-        match self {
-            ProofSubstate::Fungible(f) => Ok(f.clone_proof(api)?.into()),
-            ProofSubstate::NonFungible(nf) => Ok(nf.clone_proof(api)?.into()),
-        }
-    }
-
-    pub fn drop_proof<Y: ClientApi<RuntimeError>>(&self, api: &mut Y) -> Result<(), RuntimeError> {
-        match self {
-            ProofSubstate::Fungible(f) => f.drop_proof(api),
-            ProofSubstate::NonFungible(nf) => nf.drop_proof(api),
-        }
-    }
-
-    pub fn snapshot(&self) -> ProofSnapshot {
-        match self {
-            ProofSubstate::Fungible(f) => f.snapshot(),
-            ProofSubstate::NonFungible(nf) => nf.snapshot(),
-        }
+        self.restricted = true;
     }
 }
+
+// TODO: remove redundant info in `FungibleProof` and `NonFungibleProof`.
 
 #[derive(Debug, Clone)]
 pub struct FungibleProof {
@@ -186,14 +122,6 @@ impl FungibleProof {
             )?;
         }
         Ok(())
-    }
-
-    pub fn change_to_unrestricted(&mut self) {
-        self.restricted = false;
-    }
-
-    pub fn change_to_restricted(&mut self) {
-        self.restricted = true;
     }
 
     pub fn resource_address(&self) -> ResourceAddress {
@@ -282,15 +210,6 @@ impl NonFungibleProof {
         }
         Ok(())
     }
-
-    pub fn change_to_unrestricted(&mut self) {
-        self.restricted = false;
-    }
-
-    pub fn change_to_restricted(&mut self) {
-        self.restricted = true;
-    }
-
     pub fn resource_address(&self) -> ResourceAddress {
         self.resource_address
     }

@@ -110,7 +110,8 @@ impl VisibilityProperties {
                 | RENodeInit::FungibleBucket(..)
                 | RENodeInit::NonFungibleBucket(..)
                 | RENodeInit::NonFungibleStore(..)
-                | RENodeInit::Proof(..) => {
+                | RENodeInit::FungibleProof(..)
+                | RENodeInit::NonFungibleProof(..) => {
                     package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                         || package_address.eq(&AUTH_ZONE_PACKAGE)
                 } // TODO: Remove AuthZonePackage
@@ -169,7 +170,7 @@ impl VisibilityProperties {
             (ExecutionMode::DropNode, offset) => match offset {
                 SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo) => true,
                 SubstateOffset::Bucket(BucketOffset::Info) => true,
-                SubstateOffset::Proof(ProofOffset::Proof) => true,
+                SubstateOffset::Proof(ProofOffset::Info) => true,
                 SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack) => true,
                 SubstateOffset::Worktop(WorktopOffset::Worktop) => true,
                 _ => false,
@@ -182,7 +183,7 @@ impl VisibilityProperties {
                 }
                 SubstateOffset::Vault(VaultOffset::Info) => true,
                 SubstateOffset::Bucket(BucketOffset::Info) => read_only,
-                SubstateOffset::Proof(ProofOffset::Proof) => true,
+                SubstateOffset::Proof(ProofOffset::Info) => true,
                 SubstateOffset::Global(GlobalOffset::Global) => read_only,
                 SubstateOffset::Package(PackageOffset::Info) => read_only,
                 SubstateOffset::Package(PackageOffset::CodeType) => read_only,

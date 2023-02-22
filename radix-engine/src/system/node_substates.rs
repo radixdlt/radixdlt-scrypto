@@ -11,8 +11,10 @@ use crate::blueprints::epoch_manager::ValidatorSetSubstate;
 use crate::blueprints::epoch_manager::ValidatorSubstate;
 use crate::blueprints::logger::LoggerSubstate;
 use crate::blueprints::resource::BucketInfoSubstate;
+use crate::blueprints::resource::FungibleProof;
+use crate::blueprints::resource::NonFungibleProof;
 use crate::blueprints::resource::NonFungibleSubstate;
-use crate::blueprints::resource::ProofSubstate;
+use crate::blueprints::resource::ProofInfoSubstate;
 use crate::blueprints::resource::ResourceManagerSubstate;
 use crate::blueprints::resource::VaultInfoSubstate;
 use crate::blueprints::resource::WorktopSubstate;
@@ -232,22 +234,27 @@ pub enum RuntimeSubstate {
     WasmCode(WasmCodeSubstate),
     NativeCode(NativeCodeSubstate),
     AuthZoneStack(AuthZoneStackSubstate),
-    Proof(ProofSubstate),
     Worktop(WorktopSubstate),
     Logger(LoggerSubstate),
     TransactionRuntime(TransactionRuntimeSubstate),
     Account(AccountSubstate),
     AccessController(AccessControllerSubstate),
+
     VaultInfo(VaultInfoSubstate),
     VaultLiquidFungible(LiquidFungibleResource),
     VaultLiquidNonFungible(LiquidNonFungibleResource),
     VaultLockedFungible(LockedFungibleResource),
     VaultLockedNonFungible(LockedNonFungibleResource),
+
     BucketInfo(BucketInfoSubstate),
     BucketLiquidFungible(LiquidFungibleResource),
     BucketLiquidNonFungible(LiquidNonFungibleResource),
     BucketLockedFungible(LockedFungibleResource),
     BucketLockedNonFungible(LockedNonFungibleResource),
+
+    ProofInfo(ProofInfoSubstate),
+    FungibleProof(FungibleProof),
+    NonFungibleProof(NonFungibleProof),
 
     /* Type info */
     TypeInfo(TypeInfoSubstate),
@@ -338,7 +345,9 @@ impl RuntimeSubstate {
             | RuntimeSubstate::BucketLockedNonFungible(..)
             | RuntimeSubstate::VaultLockedFungible(..)
             | RuntimeSubstate::VaultLockedNonFungible(..)
-            | RuntimeSubstate::Proof(..)
+            | RuntimeSubstate::ProofInfo(..)
+            | RuntimeSubstate::FungibleProof(..)
+            | RuntimeSubstate::NonFungibleProof(..)
             | RuntimeSubstate::Worktop(..)
             | RuntimeSubstate::Logger(..)
             | RuntimeSubstate::TransactionRuntime(..) => {
@@ -404,7 +413,9 @@ impl RuntimeSubstate {
             | RuntimeSubstate::BucketLockedNonFungible(..)
             | RuntimeSubstate::VaultLockedFungible(..)
             | RuntimeSubstate::VaultLockedNonFungible(..)
-            | RuntimeSubstate::Proof(..)
+            | RuntimeSubstate::ProofInfo(..)
+            | RuntimeSubstate::FungibleProof(..)
+            | RuntimeSubstate::NonFungibleProof(..)
             | RuntimeSubstate::Worktop(..)
             | RuntimeSubstate::Logger(..)
             | RuntimeSubstate::TransactionRuntime(..) => {
@@ -500,10 +511,12 @@ impl RuntimeSubstate {
             RuntimeSubstate::BucketLockedNonFungible(value) => {
                 SubstateRefMut::BucketLockedNonFungible(value)
             }
+            RuntimeSubstate::ProofInfo(value) => SubstateRefMut::ProofInfo(value),
+            RuntimeSubstate::FungibleProof(value) => SubstateRefMut::FungibleProof(value),
+            RuntimeSubstate::NonFungibleProof(value) => SubstateRefMut::NonFungibleProof(value),
             RuntimeSubstate::NonFungible(value) => SubstateRefMut::NonFungible(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => SubstateRefMut::KeyValueStoreEntry(value),
             RuntimeSubstate::AuthZoneStack(value) => SubstateRefMut::AuthZoneStack(value),
-            RuntimeSubstate::Proof(value) => SubstateRefMut::Proof(value),
             RuntimeSubstate::Worktop(value) => SubstateRefMut::Worktop(value),
             RuntimeSubstate::Logger(value) => SubstateRefMut::Logger(value),
             RuntimeSubstate::TransactionRuntime(value) => SubstateRefMut::TransactionRuntime(value),
@@ -565,10 +578,12 @@ impl RuntimeSubstate {
             RuntimeSubstate::BucketLockedNonFungible(value) => {
                 SubstateRef::BucketLockedNonFungible(value)
             }
+            RuntimeSubstate::ProofInfo(value) => SubstateRef::ProofInfo(value),
+            RuntimeSubstate::FungibleProof(value) => SubstateRef::FungibleProof(value),
+            RuntimeSubstate::NonFungibleProof(value) => SubstateRef::NonFungibleProof(value),
             RuntimeSubstate::NonFungible(value) => SubstateRef::NonFungible(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => SubstateRef::KeyValueStoreEntry(value),
             RuntimeSubstate::AuthZoneStack(value) => SubstateRef::AuthZoneStack(value),
-            RuntimeSubstate::Proof(value) => SubstateRef::Proof(value),
             RuntimeSubstate::Worktop(value) => SubstateRef::Worktop(value),
             RuntimeSubstate::Logger(value) => SubstateRef::Logger(value),
             RuntimeSubstate::TransactionRuntime(value) => SubstateRef::TransactionRuntime(value),
@@ -1026,9 +1041,9 @@ impl Into<GlobalSubstate> for RuntimeSubstate {
     }
 }
 
-impl Into<ProofSubstate> for RuntimeSubstate {
-    fn into(self) -> ProofSubstate {
-        if let RuntimeSubstate::Proof(substate) = self {
+impl Into<ProofInfoSubstate> for RuntimeSubstate {
+    fn into(self) -> ProofInfoSubstate {
+        if let RuntimeSubstate::ProofInfo(substate) = self {
             substate
         } else {
             panic!("Not a proof");
@@ -1090,7 +1105,9 @@ pub enum SubstateRef<'a> {
     AuthZoneStack(&'a AuthZoneStackSubstate),
     Worktop(&'a WorktopSubstate),
     Logger(&'a LoggerSubstate),
-    Proof(&'a ProofSubstate),
+    ProofInfo(&'a ProofInfoSubstate),
+    FungibleProof(&'a FungibleProof),
+    NonFungibleProof(&'a NonFungibleProof),
     TypeInfo(&'a TypeInfoSubstate),
     ComponentState(&'a ComponentStateSubstate),
     ComponentRoyaltyConfig(&'a ComponentRoyaltyConfigSubstate),
@@ -1226,9 +1243,9 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
-    pub fn proof(&self) -> &ProofSubstate {
+    pub fn proof_info(&self) -> &ProofInfoSubstate {
         match self {
-            SubstateRef::Proof(value) => *value,
+            SubstateRef::ProofInfo(value) => *value,
             _ => panic!("Not a proof"),
         }
     }
@@ -1448,11 +1465,9 @@ impl<'a> SubstateRef<'a> {
                 references.insert(RENodeId::Global(Address::Resource(vault.resource_address)));
                 (references, Vec::new())
             }
-            SubstateRef::Proof(proof) => {
+            SubstateRef::ProofInfo(proof) => {
                 let mut references = HashSet::new();
-                references.insert(RENodeId::Global(Address::Resource(
-                    proof.resource_address(),
-                )));
+                references.insert(RENodeId::Global(Address::Resource(proof.resource_address)));
                 (references, Vec::new())
             }
             SubstateRef::BucketInfo(bucket) => {
@@ -1579,7 +1594,9 @@ pub enum SubstateRefMut<'a> {
     AccessRulesChain(&'a mut ObjectAccessRulesChainSubstate),
     Metadata(&'a mut MetadataSubstate),
     Global(&'a mut GlobalSubstate),
-    Proof(&'a mut ProofSubstate),
+    ProofInfo(&'a mut ProofInfoSubstate),
+    FungibleProof(&'a mut FungibleProof),
+    NonFungibleProof(&'a mut NonFungibleProof),
     Worktop(&'a mut WorktopSubstate),
     Logger(&'a mut LoggerSubstate),
     TransactionRuntime(&'a mut TransactionRuntimeSubstate),
@@ -1639,9 +1656,9 @@ impl<'a> SubstateRefMut<'a> {
         }
     }
 
-    pub fn proof(&mut self) -> &mut ProofSubstate {
+    pub fn proof_info(&mut self) -> &mut ProofInfoSubstate {
         match self {
-            SubstateRefMut::Proof(value) => *value,
+            SubstateRefMut::ProofInfo(value) => *value,
             _ => panic!("Not a proof"),
         }
     }

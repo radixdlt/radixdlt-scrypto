@@ -111,7 +111,8 @@ pub enum RENodeInit {
     NonFungibleVault(LiquidNonFungibleResource),
     FungibleBucket(LiquidFungibleResource),
     NonFungibleBucket(LiquidNonFungibleResource),
-    Proof(ProofSubstate),
+    FungibleProof(FungibleProof),
+    NonFungibleProof(NonFungibleProof),
     AuthZoneStack(AuthZoneStackSubstate),
     Worktop(WorktopSubstate),
     KeyValueStore,
@@ -193,10 +194,30 @@ impl RENodeInit {
                     RuntimeSubstate::BucketLiquidNonFungible(liquid),
                 );
             }
-            RENodeInit::Proof(proof) => {
+            RENodeInit::FungibleProof(proof) => {
                 substates.insert(
-                    SubstateOffset::Proof(ProofOffset::Proof),
-                    RuntimeSubstate::Proof(proof),
+                    SubstateOffset::Proof(ProofOffset::Info),
+                    RuntimeSubstate::ProofInfo(ProofInfoSubstate {
+                        resource_address: proof.resource_address(),
+                        restricted: proof.is_restricted(),
+                    }),
+                );
+                substates.insert(
+                    SubstateOffset::Proof(ProofOffset::Fungible),
+                    RuntimeSubstate::FungibleProof(proof),
+                );
+            }
+            RENodeInit::NonFungibleProof(proof) => {
+                substates.insert(
+                    SubstateOffset::Proof(ProofOffset::Info),
+                    RuntimeSubstate::ProofInfo(ProofInfoSubstate {
+                        resource_address: proof.resource_address(),
+                        restricted: proof.is_restricted(),
+                    }),
+                );
+                substates.insert(
+                    SubstateOffset::Proof(ProofOffset::NonFungible),
+                    RuntimeSubstate::NonFungibleProof(proof),
                 );
             }
             RENodeInit::AuthZoneStack(auth_zone) => {

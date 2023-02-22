@@ -314,7 +314,9 @@ pub enum BucketOffset {
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ProofOffset {
-    Proof,
+    Info,
+    Fungible,
+    NonFungible,
 }
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]

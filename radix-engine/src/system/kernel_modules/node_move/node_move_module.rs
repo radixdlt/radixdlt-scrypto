@@ -26,13 +26,13 @@ impl NodeMoveModule {
                 let handle = api.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,
-                    SubstateOffset::Proof(ProofOffset::Proof),
+                    SubstateOffset::Proof(ProofOffset::Info),
                     LockFlags::MUTABLE,
                 )?;
                 let mut substate_ref_mut = api.kernel_get_substate_ref_mut(handle)?;
-                let proof = substate_ref_mut.proof();
+                let proof = substate_ref_mut.proof_info();
 
-                let rtn = if proof.is_restricted() {
+                let rtn = if proof.restricted {
                     Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
                         NodeMoveError::CantMoveDownstream(node_id),
                     )))

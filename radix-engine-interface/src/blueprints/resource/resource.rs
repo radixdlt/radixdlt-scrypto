@@ -16,6 +16,8 @@ pub enum ResourceError {
     ResourceLocked,
 }
 
+// TODO: remove redundant info, such as `resource_address`.
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct LiquidFungibleResource {
     /// The resource address.

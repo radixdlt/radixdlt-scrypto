@@ -803,7 +803,8 @@ where
                     }),
                 );
             }
-            (RENodeId::Proof(..), RENodeInit::Proof(..)) => {
+            (RENodeId::Proof(..), RENodeInit::FungibleProof(..))
+            | (RENodeId::Proof(..), RENodeInit::NonFungibleProof(..)) => {
                 module_init.insert(
                     NodeModuleId::TypeInfo,
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
