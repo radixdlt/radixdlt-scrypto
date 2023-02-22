@@ -29,51 +29,54 @@ pub mod basic_well_known_types {
 #[macro_export]
 macro_rules! create_well_known_lookup {
     ($lookup_name: ident, $custom_type_kind: ty, [$(($id: path, $type_data: expr),)*]) => {
-        static $lookup_name: once_cell::sync::Lazy<[Option<TypeData<$custom_type_kind, LocalTypeIndex>>; 255]> = once_cell::sync::Lazy::new(|| {
-            let mut lookup = {
-                // Initialize the array with None, following the example here:
-                // https://github.com/rust-lang/rust/issues/54542#issuecomment-505789992
-                let mut lookup: [sbor::rust::mem::MaybeUninit<Option<TypeData<$custom_type_kind, LocalTypeIndex>>>; 255] = unsafe {
-                    sbor::rust::mem::MaybeUninit::uninit().assume_init()
+        lazy_static::lazy_static! {
+            static ref $lookup_name: [Option<TypeData<$custom_type_kind, LocalTypeIndex>>; 255] = {
+                let mut lookup = {
+                    // Initialize the array with None, following the example here:
+                    // https://github.com/rust-lang/rust/issues/54542#issuecomment-505789992
+                    let mut lookup: [sbor::rust::mem::MaybeUninit<Option<TypeData<$custom_type_kind, LocalTypeIndex>>>; 255] = unsafe {
+                        sbor::rust::mem::MaybeUninit::uninit().assume_init()
+                    };
+
+                    for elem in &mut lookup[..] {
+                        unsafe { sbor::rust::ptr::write(elem.as_mut_ptr(), None); }
+                    }
+
+                    unsafe { sbor::rust::mem::transmute::<_, [Option<TypeData<$custom_type_kind, LocalTypeIndex>>; 255]>(lookup) }
                 };
+                // Now add in the basic types
+                lookup[sbor::basic_well_known_types::ANY_ID as usize] = Some(TypeData::named_no_child_names("Any", TypeKind::Any));
+                lookup[sbor::basic_well_known_types::UNIT_ID as usize] = Some(TypeData::named_no_child_names(
+                    "-",
+                    TypeKind::Tuple {
+                        field_types: sbor::rust::vec::Vec::new(),
+                    },
+                ));
+                lookup[sbor::basic_well_known_types::BOOL_ID as usize] = Some(TypeData::named_no_child_names("Bool", TypeKind::Bool));
+                lookup[sbor::basic_well_known_types::I8_ID as usize] = Some(TypeData::named_no_child_names("I8", TypeKind::I8));
+                lookup[sbor::basic_well_known_types::I16_ID as usize] = Some(TypeData::named_no_child_names("I16", TypeKind::I16));
+                lookup[sbor::basic_well_known_types::I32_ID as usize] = Some(TypeData::named_no_child_names("I32", TypeKind::I32));
+                lookup[sbor::basic_well_known_types::I64_ID as usize] = Some(TypeData::named_no_child_names("I64", TypeKind::I64));
+                lookup[sbor::basic_well_known_types::I128_ID as usize] = Some(TypeData::named_no_child_names("I128", TypeKind::I128));
+                lookup[sbor::basic_well_known_types::U8_ID as usize] = Some(TypeData::named_no_child_names("U8", TypeKind::U8));
+                lookup[sbor::basic_well_known_types::U16_ID as usize] = Some(TypeData::named_no_child_names("U16", TypeKind::U16));
+                lookup[sbor::basic_well_known_types::U32_ID as usize] = Some(TypeData::named_no_child_names("U32", TypeKind::U32));
+                lookup[sbor::basic_well_known_types::U64_ID as usize] = Some(TypeData::named_no_child_names("U64", TypeKind::U64));
+                lookup[sbor::basic_well_known_types::U128_ID as usize] = Some(TypeData::named_no_child_names("U128", TypeKind::U128));
+                lookup[sbor::basic_well_known_types::STRING_ID as usize] = Some(TypeData::named_no_child_names("String", TypeKind::String));
+                lookup[sbor::basic_well_known_types::BYTES_ID as usize] = Some(TypeData::named_no_child_names(
+                    "Bytes",
+                    TypeKind::Array {
+                        element_type: LocalTypeIndex::WellKnown(sbor::basic_well_known_types::U8_ID),
+                    },
+                ));
+                // And now add in the custom types
+                $(lookup[$id as usize] = Some($type_data);)*
 
-                for elem in &mut lookup[..] {
-                    unsafe { sbor::rust::ptr::write(elem.as_mut_ptr(), None); }
-                }
-
-                unsafe { sbor::rust::mem::transmute::<_, [Option<TypeData<$custom_type_kind, LocalTypeIndex>>; 255]>(lookup) }
+                // And return the lookup
+                lookup
             };
-            // Now add in the basic types
-            lookup[sbor::basic_well_known_types::ANY_ID as usize] = Some(TypeData::named_no_child_names("Any", TypeKind::Any));
-            lookup[sbor::basic_well_known_types::UNIT_ID as usize] = Some(TypeData::named_no_child_names(
-                "-",
-                TypeKind::Tuple {
-                    field_types: sbor::rust::vec::Vec::new(),
-                },
-            ));
-            lookup[sbor::basic_well_known_types::BOOL_ID as usize] = Some(TypeData::named_no_child_names("Bool", TypeKind::Bool));
-            lookup[sbor::basic_well_known_types::I8_ID as usize] = Some(TypeData::named_no_child_names("I8", TypeKind::I8));
-            lookup[sbor::basic_well_known_types::I16_ID as usize] = Some(TypeData::named_no_child_names("I16", TypeKind::I16));
-            lookup[sbor::basic_well_known_types::I32_ID as usize] = Some(TypeData::named_no_child_names("I32", TypeKind::I32));
-            lookup[sbor::basic_well_known_types::I64_ID as usize] = Some(TypeData::named_no_child_names("I64", TypeKind::I64));
-            lookup[sbor::basic_well_known_types::I128_ID as usize] = Some(TypeData::named_no_child_names("I128", TypeKind::I128));
-            lookup[sbor::basic_well_known_types::U8_ID as usize] = Some(TypeData::named_no_child_names("U8", TypeKind::U8));
-            lookup[sbor::basic_well_known_types::U16_ID as usize] = Some(TypeData::named_no_child_names("U16", TypeKind::U16));
-            lookup[sbor::basic_well_known_types::U32_ID as usize] = Some(TypeData::named_no_child_names("U32", TypeKind::U32));
-            lookup[sbor::basic_well_known_types::U64_ID as usize] = Some(TypeData::named_no_child_names("U64", TypeKind::U64));
-            lookup[sbor::basic_well_known_types::U128_ID as usize] = Some(TypeData::named_no_child_names("U128", TypeKind::U128));
-            lookup[sbor::basic_well_known_types::STRING_ID as usize] = Some(TypeData::named_no_child_names("String", TypeKind::String));
-            lookup[sbor::basic_well_known_types::BYTES_ID as usize] = Some(TypeData::named_no_child_names(
-                "Bytes",
-                TypeKind::Array {
-                    element_type: LocalTypeIndex::WellKnown(sbor::basic_well_known_types::U8_ID),
-                },
-            ));
-            // And now add in the custom types
-            $(lookup[$id as usize] = Some($type_data);)*
 
-            // And return the lookup
-            lookup
-        });
+        }
     };
 }
