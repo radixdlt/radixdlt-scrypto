@@ -10,6 +10,7 @@ pub mod types;
 pub mod unsafe_api;
 
 // Re-exports
+pub use substate_api::LockFlags;
 pub use actor_api::ClientActorApi;
 pub use component_api::ClientComponentApi;
 pub use node_api::ClientNodeApi;

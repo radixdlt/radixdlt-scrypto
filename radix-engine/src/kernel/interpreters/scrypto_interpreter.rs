@@ -11,7 +11,7 @@ use crate::errors::{InterpreterError, KernelError, RuntimeError};
 use crate::kernel::actor::{ResolvedActor, ResolvedReceiver};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{
-    ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockFlags,
+    ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, KernelWasmApi,
 };
 use crate::system::node_modules::access_rules::{AccessRulesNativePackage, AuthZoneNativePackage};
 use crate::system::node_modules::metadata::MetadataNativePackage;
@@ -31,6 +31,7 @@ use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
 use radix_engine_interface::data::*;
 use radix_engine_interface::data::{match_schema_with_value, ScryptoValue};
+use radix_engine_interface::api::substate_api::LockFlags;
 
 use super::ScryptoRuntime;
 

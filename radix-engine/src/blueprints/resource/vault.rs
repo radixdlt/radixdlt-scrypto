@@ -1,7 +1,7 @@
 use crate::blueprints::resource::*;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::errors::{InvokeError, RuntimeError};
-use crate::kernel::kernel_api::LockFlags;
+use radix_engine_interface::api::substate_api::LockFlags;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::CostingError;
 use crate::system::node::RENodeInit;

@@ -1,7 +1,6 @@
 use super::node::{RENodeInit, RENodeModuleInit};
 use crate::errors::{KernelError, RuntimeError};
 use crate::kernel::actor::{ExecutionMode, ResolvedActor, ResolvedReceiver};
-use crate::kernel::kernel_api::LockFlags;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
@@ -10,6 +9,7 @@ use radix_engine_interface::api::types::{
     ResourceManagerOffset, RoyaltyOffset, SubstateOffset, ValidatorOffset, VaultOffset,
     WorktopOffset,
 };
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLUEPRINT;
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::clock::CLOCK_BLUEPRINT;

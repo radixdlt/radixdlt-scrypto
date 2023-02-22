@@ -7,7 +7,9 @@ use sbor::rust::collections::BTreeMap;
 
 use super::actor::ResolvedActor;
 use super::call_frame::CallFrameUpdate;
-use super::kernel_api::{KernelModuleApi, LockFlags};
+use super::kernel_api::KernelModuleApi;
+use radix_engine_interface::api::substate_api::LockFlags;
+
 
 pub trait KernelModule {
     //======================

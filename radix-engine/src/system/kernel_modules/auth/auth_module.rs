@@ -4,11 +4,11 @@ use crate::kernel::actor::ResolvedReceiver;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::call_frame::RENodeVisibilityOrigin;
 use crate::kernel::kernel_api::KernelModuleApi;
-use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::module::KernelModule;
 use crate::system::node::RENodeInit;
 use crate::system::node_modules::access_rules::AuthZoneStackSubstate;
 use crate::types::*;
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::package::{
     PACKAGE_LOADER_BLUEPRINT, PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT,

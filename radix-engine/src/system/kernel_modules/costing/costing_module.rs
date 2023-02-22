@@ -2,7 +2,7 @@ use super::*;
 use super::{CostingReason, FeeReserveError, FeeTable, SystemLoanFeeReserve};
 use crate::kernel::actor::{ResolvedActor, ResolvedReceiver};
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::{KernelModuleApi, LockFlags};
+use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
 use crate::system::node::RENodeModuleInit;
 use crate::{
@@ -10,6 +10,7 @@ use crate::{
     system::node::RENodeInit,
     transaction::AbortReason,
 };
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
     Address, GlobalOffset, InvocationIdentifier, LockHandle, MethodReceiver, NodeModuleId,
     RoyaltyOffset, SubstateOffset, VaultId, VaultOffset,

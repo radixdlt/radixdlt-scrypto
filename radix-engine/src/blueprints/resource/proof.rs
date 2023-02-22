@@ -1,6 +1,6 @@
 use crate::errors::{InterpreterError, InvokeError, RuntimeError};
-use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use radix_engine_interface::api::substate_api::LockFlags;
 use crate::system::kernel_modules::execution_trace::ProofSnapshot;
 use crate::system::node::RENodeInit;
 use crate::types::*;

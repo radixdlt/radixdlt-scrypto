@@ -5,10 +5,10 @@ use crate::system::node::RENodeModuleInit;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use bitflags::bitflags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::api::substate_api::LockFlags;
 
 use super::actor::ResolvedActor;
 use super::call_frame::CallFrameUpdate;
@@ -16,27 +16,6 @@ use super::call_frame::RENodeVisibilityOrigin;
 use super::heap::HeapRENode;
 use super::interpreters::ScryptoInterpreter;
 use super::module_mixer::KernelModuleMixer;
-
-bitflags! {
-    #[derive(Sbor)]
-    pub struct LockFlags: u32 {
-        /// Allows the locked substate to be mutated
-        const MUTABLE = 0b00000001;
-        /// Checks that the substate locked is unmodified from the beginning of
-        /// the transaction. This is used mainly for locking fees in vaults which
-        /// requires this in order to be able to support rollbacks
-        const UNMODIFIED_BASE = 0b00000010;
-        /// Forces a write of a substate even on a transaction failure
-        /// Currently used for vault fees.
-        const FORCE_WRITE = 0b00000100;
-    }
-}
-
-impl LockFlags {
-    pub fn read_only() -> Self {
-        LockFlags::empty()
-    }
-}
 
 pub struct LockInfo {
     pub offset: SubstateOffset,

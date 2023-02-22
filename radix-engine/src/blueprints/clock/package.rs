@@ -1,5 +1,6 @@
 use crate::errors::{InterpreterError, RuntimeError};
-use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, LockFlags};
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use radix_engine_interface::api::substate_api::LockFlags;
 use crate::system::global::GlobalSubstate;
 use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE};
 use crate::system::node::RENodeInit;
