@@ -289,9 +289,9 @@ where
                     LockFlags::MUTABLE,
                 )?;
                 let mut substate_ref_mut = api.kernel_get_substate_ref_mut(handle)?;
-                let auth_zone_stack = substate_ref_mut.auth_zone_stack();
+                let mut auth_zone_stack = substate_ref_mut.auth_zone_stack().clone();
                 loop {
-                    if let Some(auth_zone) = auth_zone_stack.pop_auth_zone() {
+                    if let Some(mut auth_zone) = auth_zone_stack.pop_auth_zone() {
                         for p in auth_zone.drain() {
                             p.sys_drop(api)?;
                         }
@@ -310,8 +310,8 @@ where
                     LockFlags::MUTABLE,
                 )?;
                 let mut substate_ref_mut = api.kernel_get_substate_ref_mut(handle)?;
-                let proof = substate_ref_mut.proof();
-                proof.drop_proof(self)?;
+                let proof = substate_ref_mut.proof().clone();
+                proof.drop_proof(api)?;
                 api.kernel_drop_lock(handle)?;
                 Ok(())
             }
@@ -956,7 +956,7 @@ where
             let resource_type = substate.bucket_info().resource_type;
 
             match resource_type {
-                ResourceType::Fungible { divisibility } => {
+                ResourceType::Fungible { .. } => {
                     let substate = self
                         .heap
                         .get_substate(
@@ -970,7 +970,7 @@ where
                         substate.bucket_liquid_fungible().clone(),
                     ))
                 }
-                ResourceType::NonFungible { id_type } => {
+                ResourceType::NonFungible { .. } => {
                     let substate = self
                         .heap
                         .get_substate(

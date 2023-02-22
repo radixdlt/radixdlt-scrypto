@@ -345,7 +345,7 @@ impl KernelModule for AuthModule {
             LockFlags::read_only(),
         )?;
         let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let auth_zone_stack = substate_ref.auth_zone_stack();
+        let auth_zone_stack = substate_ref.auth_zone_stack().clone();
         let is_barrier = Self::is_barrier(actor);
 
         // Authorization check

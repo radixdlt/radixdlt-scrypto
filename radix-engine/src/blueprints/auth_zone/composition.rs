@@ -25,14 +25,10 @@ pub fn compose_proof_by_amount<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
     let resource_type = ResourceManager(resource_address).resource_type(api)?;
 
     match resource_type {
-        ResourceType::Fungible { divisibility } => {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::AuthZoneError(super::AuthZoneError::ComposeProofError(
-                    ComposeProofError::NonFungibleOperationNotSupported,
-                )),
-            ));
+        ResourceType::Fungible { .. } => {
+            compose_fungible_proof(proofs, resource_address, amount, api).map(ProofSubstate::from)
         }
-        ResourceType::NonFungible { id_type } => compose_non_fungible_proof(
+        ResourceType::NonFungible { .. } => compose_non_fungible_proof(
             proofs,
             resource_address,
             match amount {
@@ -64,14 +60,14 @@ pub fn compose_proof_by_ids<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
     let resource_type = ResourceManager(resource_address).resource_type(api)?;
 
     match resource_type {
-        ResourceType::Fungible { divisibility } => {
+        ResourceType::Fungible { .. } => {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::AuthZoneError(super::AuthZoneError::ComposeProofError(
                     ComposeProofError::NonFungibleOperationNotSupported,
                 )),
             ));
         }
-        ResourceType::NonFungible { id_type } => compose_non_fungible_proof(
+        ResourceType::NonFungible { .. } => compose_non_fungible_proof(
             proofs,
             resource_address,
             match ids {
@@ -199,7 +195,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
             LockFlags::read_only(),
         )?;
         let substate = api.kernel_get_substate_ref(handle)?;
-        let proof_substate = substate.proof();
+        let proof_substate = substate.proof().clone();
         if let ProofSubstate::Fungible(proof) = proof_substate {
             for (container_id, _) in &proof.evidence {
                 if remaining.is_zero() {
@@ -285,7 +281,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
             LockFlags::read_only(),
         )?;
         let substate = api.kernel_get_substate_ref(handle)?;
-        let proof_substate = substate.proof();
+        let proof_substate = substate.proof().clone();
         if let ProofSubstate::NonFungible(proof) = proof_substate {
             for (container_id, _) in &proof.evidence {
                 if remaining.is_empty() {

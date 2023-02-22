@@ -7,9 +7,7 @@ use crate::system::node::RENodeInit;
 use crate::types::*;
 use native_sdk::resource::SysProof;
 use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::types::{
-    Address, AuthZoneStackOffset, RENodeId, ResourceManagerOffset, SubstateOffset,
-};
+use radix_engine_interface::api::types::{AuthZoneStackOffset, RENodeId, SubstateOffset};
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
@@ -190,13 +188,8 @@ impl AuthZoneBlueprint {
 
         let proof_substate = {
             let mut substate_mut = api.kernel_get_substate_ref_mut(auth_zone_handle)?;
-            let auth_zone_stack = substate_mut.auth_zone_stack();
-            compose_proof_by_amount(
-                &auth_zone_stack.cur_auth_zone().proofs,
-                input.resource_address,
-                None,
-                api,
-            )?
+            let auth_zone = substate_mut.auth_zone_stack().cur_auth_zone().clone();
+            compose_proof_by_amount(&auth_zone.proofs, input.resource_address, None, api)?
         };
 
         let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
@@ -227,9 +220,9 @@ impl AuthZoneBlueprint {
 
         let proof_substate = {
             let mut substate_mut = api.kernel_get_substate_ref_mut(auth_zone_handle)?;
-            let auth_zone_stack = substate_mut.auth_zone_stack();
+            let auth_zone = substate_mut.auth_zone_stack().cur_auth_zone().clone();
             compose_proof_by_amount(
-                &auth_zone_stack.cur_auth_zone().proofs,
+                &auth_zone.proofs,
                 input.resource_address,
                 Some(input.amount),
                 api,
@@ -261,24 +254,11 @@ impl AuthZoneBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let resource_type = {
-            let resource_id = RENodeId::Global(Address::Resource(input.resource_address));
-            let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-            let resource_handle = api.kernel_lock_substate(
-                resource_id,
-                NodeModuleId::SELF,
-                offset,
-                LockFlags::read_only(),
-            )?;
-            let substate_ref = api.kernel_get_substate_ref(resource_handle)?;
-            substate_ref.resource_manager().resource_type
-        };
-
         let proof_substate = {
             let substate_ref = api.kernel_get_substate_ref(auth_zone_handle)?;
-            let auth_zone_stack = substate_ref.auth_zone_stack();
+            let auth_zone = substate_ref.auth_zone_stack().cur_auth_zone().clone();
             let proof = compose_proof_by_ids(
-                &auth_zone_stack.cur_auth_zone().proofs,
+                &auth_zone.proofs,
                 input.resource_address,
                 Some(input.ids),
                 api,
@@ -366,7 +346,7 @@ impl AuthZoneBlueprint {
             LockFlags::read_only(),
         )?;
         let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let auth_zone_stack = substate_ref.auth_zone_stack();
+        let auth_zone_stack = substate_ref.auth_zone_stack().clone();
         let authorization = convert_contextless(&input.access_rule);
 
         // Authorization check

@@ -283,7 +283,6 @@ impl RuntimeSubstate {
             RuntimeSubstate::ResourceManager(value) => {
                 PersistedSubstate::ResourceManager(value.clone())
             }
-            RuntimeSubstate::TypeInfo(value) => PersistedSubstate::TypeInfo(value.clone()),
             RuntimeSubstate::ComponentState(value) => {
                 PersistedSubstate::ComponentState(value.clone())
             }
@@ -358,7 +357,6 @@ impl RuntimeSubstate {
                 PersistedSubstate::CurrentTimeRoundedToMinutes(value)
             }
             RuntimeSubstate::ResourceManager(value) => PersistedSubstate::ResourceManager(value),
-            RuntimeSubstate::TypeInfo(value) => PersistedSubstate::TypeInfo(value),
             RuntimeSubstate::ComponentState(value) => PersistedSubstate::ComponentState(value),
             RuntimeSubstate::PackageInfo(value) => PersistedSubstate::PackageInfo(value),
             RuntimeSubstate::PackageCodeType(value) => PersistedSubstate::PackageCodeType(value),
@@ -527,7 +525,6 @@ impl RuntimeSubstate {
             RuntimeSubstate::AccessRulesChain(value) => SubstateRef::AccessRulesChain(value),
             RuntimeSubstate::Metadata(value) => SubstateRef::Metadata(value),
             RuntimeSubstate::ResourceManager(value) => SubstateRef::ResourceManager(value),
-            RuntimeSubstate::TypeInfo(value) => SubstateRef::TypeInfo(value),
             RuntimeSubstate::ComponentState(value) => SubstateRef::ComponentState(value),
             RuntimeSubstate::ComponentRoyaltyConfig(value) => {
                 SubstateRef::ComponentRoyaltyConfig(value)
@@ -1621,6 +1618,27 @@ impl<'a> SubstateRefMut<'a> {
         }
     }
 
+    pub fn vault_liquid_non_fungible(&mut self) -> &mut LiquidNonFungibleResource {
+        match self {
+            SubstateRefMut::VaultLiquidNonFungible(value) => *value,
+            _ => panic!("Not a vault"),
+        }
+    }
+
+    pub fn vault_locked_fungible(&mut self) -> &mut LockedFungibleResource {
+        match self {
+            SubstateRefMut::VaultLockedFungible(value) => *value,
+            _ => panic!("Not a vault"),
+        }
+    }
+
+    pub fn vault_locked_non_fungible(&mut self) -> &mut LockedNonFungibleResource {
+        match self {
+            SubstateRefMut::VaultLockedNonFungible(value) => *value,
+            _ => panic!("Not a vault"),
+        }
+    }
+
     pub fn proof(&mut self) -> &mut ProofSubstate {
         match self {
             SubstateRefMut::Proof(value) => *value,
@@ -1631,6 +1649,34 @@ impl<'a> SubstateRefMut<'a> {
     pub fn bucket_info(&mut self) -> &mut BucketInfoSubstate {
         match self {
             SubstateRefMut::BucketInfo(value) => *value,
+            _ => panic!("Not a bucket"),
+        }
+    }
+
+    pub fn bucket_liquid_fungible(&mut self) -> &mut LiquidFungibleResource {
+        match self {
+            SubstateRefMut::BucketLiquidFungible(value) => *value,
+            _ => panic!("Not a bucket"),
+        }
+    }
+
+    pub fn bucket_liquid_non_fungible(&mut self) -> &mut LiquidNonFungibleResource {
+        match self {
+            SubstateRefMut::BucketLiquidNonFungible(value) => *value,
+            _ => panic!("Not a bucket"),
+        }
+    }
+
+    pub fn bucket_locked_fungible(&mut self) -> &mut LockedFungibleResource {
+        match self {
+            SubstateRefMut::BucketLockedFungible(value) => *value,
+            _ => panic!("Not a bucket"),
+        }
+    }
+
+    pub fn bucket_locked_non_fungible(&mut self) -> &mut LockedNonFungibleResource {
+        match self {
+            SubstateRefMut::BucketLockedNonFungible(value) => *value,
             _ => panic!("Not a bucket"),
         }
     }

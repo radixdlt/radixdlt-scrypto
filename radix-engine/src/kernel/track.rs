@@ -670,7 +670,7 @@ impl<'s> FinalizingTrack<'s> {
             );
 
             // Update substate
-            let (substate, old_version) = to_persist.get_mut(&substate_id).unwrap();
+            let (substate, _) = to_persist.get_mut(&substate_id).unwrap();
             substate.vault_liquid_fungible_mut().put(locked).unwrap();
 
             // Record final payments

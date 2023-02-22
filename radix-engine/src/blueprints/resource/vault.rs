@@ -37,7 +37,7 @@ pub enum VaultError {
 pub struct VaultNode;
 
 impl VaultNode {
-    pub(crate) fn get_info<Y>(
+    pub fn get_info<Y>(
         node_id: RENodeId,
         api: &mut Y,
     ) -> Result<(ResourceAddress, ResourceType), RuntimeError>
@@ -57,12 +57,12 @@ impl VaultNode {
         Ok((resource_address, resource_type))
     }
 
-    pub(crate) fn liquid_amount<Y>(node_id: RENodeId, api: &mut Y) -> Result<Decimal, RuntimeError>
+    pub fn liquid_amount<Y>(node_id: RENodeId, api: &mut Y) -> Result<Decimal, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi,
     {
         match Self::get_info(node_id, api)?.1 {
-            ResourceType::Fungible { divisibility } => {
+            ResourceType::Fungible { .. } => {
                 let handle = api.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,
@@ -74,7 +74,7 @@ impl VaultNode {
                 api.kernel_drop_lock(handle)?;
                 Ok(amount)
             }
-            ResourceType::NonFungible { id_type } => {
+            ResourceType::NonFungible { .. } => {
                 let handle = api.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,
@@ -89,12 +89,12 @@ impl VaultNode {
         }
     }
 
-    pub(crate) fn locked_amount<Y>(node_id: RENodeId, api: &mut Y) -> Result<Decimal, RuntimeError>
+    pub fn locked_amount<Y>(node_id: RENodeId, api: &mut Y) -> Result<Decimal, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi,
     {
         match Self::get_info(node_id, api)?.1 {
-            ResourceType::Fungible { divisibility } => {
+            ResourceType::Fungible { .. } => {
                 let handle = api.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,
@@ -106,7 +106,7 @@ impl VaultNode {
                 api.kernel_drop_lock(handle)?;
                 Ok(amount)
             }
-            ResourceType::NonFungible { id_type } => {
+            ResourceType::NonFungible { .. } => {
                 let handle = api.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,
@@ -121,14 +121,14 @@ impl VaultNode {
         }
     }
 
-    pub(crate) fn is_locked<Y>(node_id: RENodeId, api: &mut Y) -> Result<bool, RuntimeError>
+    pub fn is_locked<Y>(node_id: RENodeId, api: &mut Y) -> Result<bool, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi,
     {
         Ok(!Self::locked_amount(node_id, api)?.is_zero())
     }
 
-    pub(crate) fn liquid_non_fungible_ids<Y>(
+    pub fn liquid_non_fungible_ids<Y>(
         node_id: RENodeId,
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
@@ -136,10 +136,10 @@ impl VaultNode {
         Y: KernelNodeApi + KernelSubstateApi,
     {
         match Self::get_info(node_id, api)?.1 {
-            ResourceType::Fungible { divisibility } => Err(RuntimeError::ApplicationError(
+            ResourceType::Fungible { .. } => Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::NonFungibleOperationNotSupported),
             )),
-            ResourceType::NonFungible { id_type } => {
+            ResourceType::NonFungible { .. } => {
                 let handle = api.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,
@@ -154,7 +154,7 @@ impl VaultNode {
         }
     }
 
-    pub(crate) fn take<Y>(
+    pub fn take<Y>(
         node_id: RENodeId,
         amount: Decimal,
         api: &mut Y,
@@ -163,14 +163,14 @@ impl VaultNode {
         Y: KernelNodeApi + KernelSubstateApi,
     {
         match Self::get_info(node_id, api)?.1 {
-            ResourceType::Fungible { divisibility } => {
+            ResourceType::Fungible { .. } => {
                 let handle = api.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,
                     SubstateOffset::Vault(VaultOffset::LiquidFungible),
-                    LockFlags::read_only(),
+                    LockFlags::MUTABLE,
                 )?;
-                let substate_ref = api.kernel_get_substate_ref(handle)?;
+                let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
                 let taken = substate_ref
                     .vault_liquid_fungible()
                     .take_by_amount(amount)
@@ -179,14 +179,14 @@ impl VaultNode {
                 api.kernel_drop_lock(handle)?;
                 Ok(LiquidResource::Fungible(taken))
             }
-            ResourceType::NonFungible { id_type } => {
+            ResourceType::NonFungible { .. } => {
                 let handle = api.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,
                     SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
-                    LockFlags::read_only(),
+                    LockFlags::MUTABLE,
                 )?;
-                let substate_ref = api.kernel_get_substate_ref(handle)?;
+                let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
                 let taken = substate_ref
                     .vault_liquid_non_fungible()
                     .take_by_amount(amount)
@@ -198,7 +198,7 @@ impl VaultNode {
         }
     }
 
-    pub(crate) fn take_non_fungibles<Y>(
+    pub fn take_non_fungibles<Y>(
         node_id: RENodeId,
         ids: &BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
@@ -207,17 +207,17 @@ impl VaultNode {
         Y: KernelNodeApi + KernelSubstateApi,
     {
         match Self::get_info(node_id, api)?.1 {
-            ResourceType::Fungible { divisibility } => Err(RuntimeError::ApplicationError(
+            ResourceType::Fungible { .. } => Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::NonFungibleOperationNotSupported),
             )),
-            ResourceType::NonFungible { id_type } => {
+            ResourceType::NonFungible { .. } => {
                 let handle = api.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,
                     SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
-                    LockFlags::read_only(),
+                    LockFlags::MUTABLE,
                 )?;
-                let substate_ref = api.kernel_get_substate_ref(handle)?;
+                let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
                 let taken = substate_ref
                     .vault_liquid_non_fungible()
                     .take_by_ids(ids)
@@ -229,7 +229,7 @@ impl VaultNode {
         }
     }
 
-    pub(crate) fn put<Y>(
+    pub fn put<Y>(
         node_id: RENodeId,
         resource: LiquidResource,
         api: &mut Y,
@@ -242,15 +242,15 @@ impl VaultNode {
         }
 
         match Self::get_info(node_id, api)?.1 {
-            ResourceType::Fungible { divisibility } => {
+            ResourceType::Fungible { .. } => {
                 let handle = api.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,
                     SubstateOffset::Vault(VaultOffset::LiquidFungible),
-                    LockFlags::read_only(),
+                    LockFlags::MUTABLE,
                 )?;
-                let substate_ref = api.kernel_get_substate_ref(handle)?;
-                let taken = substate_ref
+                let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
+                substate_ref
                     .vault_liquid_fungible()
                     .put(
                         resource
@@ -267,34 +267,35 @@ impl VaultNode {
                 api.kernel_drop_lock(handle)?;
                 Ok(())
             }
-            ResourceType::NonFungible { id_type } => {
+            ResourceType::NonFungible { .. } => {
                 let handle = api.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,
                     SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
-                    LockFlags::read_only(),
+                    LockFlags::MUTABLE,
                 )?;
-                let substate_ref = api.kernel_get_substate_ref(handle)?;
-                let taken =
-                    substate_ref
-                        .vault_liquid_non_fungible()
-                        .put(resource.into_non_fungibles().ok_or(
-                            RuntimeError::ApplicationError(ApplicationError::VaultError(
-                                VaultError::MismatchingFungibility,
-                            )),
-                        )?)
-                        .map_err(|e| {
-                            RuntimeError::ApplicationError(ApplicationError::VaultError(
-                                VaultError::ResourceError(e),
-                            ))
-                        })?;
+                let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
+                substate_ref
+                    .vault_liquid_non_fungible()
+                    .put(
+                        resource
+                            .into_non_fungibles()
+                            .ok_or(RuntimeError::ApplicationError(
+                                ApplicationError::VaultError(VaultError::MismatchingFungibility),
+                            ))?,
+                    )
+                    .map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::VaultError(
+                            VaultError::ResourceError(e),
+                        ))
+                    })?;
                 api.kernel_drop_lock(handle)?;
                 Ok(())
             }
         }
     }
 
-    pub(crate) fn lock_amount<Y>(
+    pub fn lock_amount<Y>(
         node_id: RENodeId,
         amount: Decimal,
         api: &mut Y,
@@ -310,15 +311,15 @@ impl VaultNode {
         })?;
 
         match resource_type {
-            ResourceType::Fungible { divisibility } => {
+            ResourceType::Fungible { .. } => {
                 let handle = api.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,
                     SubstateOffset::Vault(VaultOffset::LockedFungible),
-                    LockFlags::read_only(),
+                    LockFlags::MUTABLE,
                 )?;
-                let substate_ref = api.kernel_get_substate_ref(handle)?;
-                let locked = substate_ref.vault_locked_fungible();
+                let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
+                let mut locked = substate_ref.vault_locked_fungible();
                 let max_locked = locked.amount();
 
                 // Take from liquid if needed
@@ -328,6 +329,8 @@ impl VaultNode {
                 }
 
                 // Increase lock count
+                substate_ref = api.kernel_get_substate_ref_mut(handle)?; // grab ref again
+                locked = substate_ref.vault_locked_fungible();
                 locked.amounts.entry(amount).or_default().add_assign(1);
 
                 // Issue proof
@@ -346,15 +349,15 @@ impl VaultNode {
                     })?,
                 ))
             }
-            ResourceType::NonFungible { id_type } => {
+            ResourceType::NonFungible { .. } => {
                 let handle = api.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,
                     SubstateOffset::Vault(VaultOffset::LockedNonFungible),
-                    LockFlags::read_only(),
+                    LockFlags::MUTABLE,
                 )?;
-                let substate_ref = api.kernel_get_substate_ref(handle)?;
-                let locked = substate_ref.vault_locked_non_fungible();
+                let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
+                let mut locked = substate_ref.vault_locked_non_fungible();
                 let max_locked: Decimal = locked.ids.len().into();
 
                 // Take from liquid if needed
@@ -364,6 +367,9 @@ impl VaultNode {
                     let non_fungibles = resource
                         .into_non_fungibles()
                         .expect("Should be non-fungibles");
+
+                    substate_ref = api.kernel_get_substate_ref_mut(handle)?; // grab ref again
+                    locked = substate_ref.vault_locked_non_fungible();
                     for nf in non_fungibles.into_ids() {
                         locked.ids.insert(nf, 0);
                     }
@@ -384,7 +390,7 @@ impl VaultNode {
                 Ok(ProofSubstate::NonFungible(
                     NonFungibleProof::new(
                         resource_address,
-                        ids_for_proof,
+                        ids_for_proof.clone(),
                         btreemap!(
                             LocalRef::Vault(node_id.into()) => ids_for_proof
                         ),
@@ -399,7 +405,7 @@ impl VaultNode {
         }
     }
 
-    pub(crate) fn lock_non_fungibles<Y>(
+    pub fn lock_non_fungibles<Y>(
         node_id: RENodeId,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
@@ -410,18 +416,18 @@ impl VaultNode {
         let (resource_address, resource_type) = Self::get_info(node_id, api)?;
 
         match resource_type {
-            ResourceType::Fungible { divisibility } => Err(RuntimeError::ApplicationError(
+            ResourceType::Fungible { .. } => Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::NonFungibleOperationNotSupported),
             )),
-            ResourceType::NonFungible { id_type } => {
+            ResourceType::NonFungible { .. } => {
                 let handle = api.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,
                     SubstateOffset::Vault(VaultOffset::LockedNonFungible),
-                    LockFlags::read_only(),
+                    LockFlags::MUTABLE,
                 )?;
-                let substate_ref = api.kernel_get_substate_ref(handle)?;
-                let locked = substate_ref.vault_locked_non_fungible();
+                let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
+                let mut locked = substate_ref.vault_locked_non_fungible();
 
                 // Take from liquid if needed
                 let delta: BTreeSet<NonFungibleLocalId> = ids
@@ -432,6 +438,8 @@ impl VaultNode {
                 VaultNode::take_non_fungibles(node_id, &delta, api)?;
 
                 // Increase lock count
+                substate_ref = api.kernel_get_substate_ref_mut(handle)?; // grab ref again
+                locked = substate_ref.vault_locked_non_fungible();
                 for id in &ids {
                     locked.ids.get_mut(id).unwrap().add_assign(1);
                 }
@@ -440,7 +448,7 @@ impl VaultNode {
                 Ok(ProofSubstate::NonFungible(
                     NonFungibleProof::new(
                         resource_address,
-                        ids,
+                        ids.clone(),
                         btreemap!(
                             LocalRef::Vault(node_id.into()) => ids
                         ),
@@ -455,7 +463,7 @@ impl VaultNode {
         }
     }
 
-    pub(crate) fn unlock_amount<Y>(
+    pub fn unlock_amount<Y>(
         node_id: RENodeId,
         amount: Decimal,
         api: &mut Y,
@@ -471,9 +479,9 @@ impl VaultNode {
                     node_id,
                     NodeModuleId::SELF,
                     SubstateOffset::Vault(VaultOffset::LockedFungible),
-                    LockFlags::read_only(),
+                    LockFlags::MUTABLE,
                 )?;
-                let substate_ref = api.kernel_get_substate_ref(handle)?;
+                let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
                 let locked = substate_ref.vault_locked_fungible();
 
                 let max_locked = locked.amount();
@@ -496,13 +504,13 @@ impl VaultNode {
 
                 Ok(())
             }
-            ResourceType::NonFungible { id_type } => {
+            ResourceType::NonFungible { .. } => {
                 panic!("Attempted to unlock amount on non-fungibles")
             }
         }
     }
 
-    pub(crate) fn unlock_non_fungibles<Y>(
+    pub fn unlock_non_fungibles<Y>(
         node_id: RENodeId,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
@@ -513,7 +521,7 @@ impl VaultNode {
         let (resource_address, resource_type) = Self::get_info(node_id, api)?;
 
         match resource_type {
-            ResourceType::Fungible { divisibility } => {
+            ResourceType::Fungible { .. } => {
                 panic!("Attempted to unlock non-fungibles on fungible")
             }
             ResourceType::NonFungible { id_type } => {
@@ -521,9 +529,9 @@ impl VaultNode {
                     node_id,
                     NodeModuleId::SELF,
                     SubstateOffset::Vault(VaultOffset::LockedNonFungible),
-                    LockFlags::read_only(),
+                    LockFlags::MUTABLE,
                 )?;
-                let substate_ref = api.kernel_get_substate_ref(handle)?;
+                let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
                 let locked = substate_ref.vault_locked_non_fungible();
 
                 let mut liquid_non_fungibles = BTreeSet::<NonFungibleLocalId>::new();
@@ -558,7 +566,7 @@ impl VaultNode {
 pub struct VaultBlueprint;
 
 impl VaultBlueprint {
-    pub(crate) fn take<Y>(
+    pub fn take<Y>(
         receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
@@ -590,7 +598,7 @@ impl VaultBlueprint {
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
 
-    pub(crate) fn take_non_fungibles<Y>(
+    pub fn take_non_fungibles<Y>(
         receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
@@ -619,7 +627,7 @@ impl VaultBlueprint {
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
 
-    pub(crate) fn put<Y>(
+    pub fn put<Y>(
         receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
@@ -644,7 +652,7 @@ impl VaultBlueprint {
         Ok(IndexedScryptoValue::from_typed(&()))
     }
 
-    pub(crate) fn get_amount<Y>(
+    pub fn get_amount<Y>(
         receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
@@ -663,7 +671,7 @@ impl VaultBlueprint {
         Ok(IndexedScryptoValue::from_typed(&amount))
     }
 
-    pub(crate) fn get_resource_address<Y>(
+    pub fn get_resource_address<Y>(
         receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
@@ -682,7 +690,7 @@ impl VaultBlueprint {
         Ok(IndexedScryptoValue::from_typed(&resource_address))
     }
 
-    pub(crate) fn get_non_fungible_local_ids<Y>(
+    pub fn get_non_fungible_local_ids<Y>(
         receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
@@ -702,7 +710,7 @@ impl VaultBlueprint {
         Ok(IndexedScryptoValue::from_typed(&ids))
     }
 
-    pub(crate) fn lock_fee<Y>(
+    pub fn lock_fee<Y>(
         receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
@@ -759,7 +767,7 @@ impl VaultBlueprint {
         Ok(IndexedScryptoValue::from_typed(&()))
     }
 
-    pub(crate) fn recall<Y>(
+    pub fn recall<Y>(
         receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
@@ -790,7 +798,7 @@ impl VaultBlueprint {
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
 
-    pub(crate) fn recall_non_fungibles<Y>(
+    pub fn recall_non_fungibles<Y>(
         receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
@@ -818,7 +826,7 @@ impl VaultBlueprint {
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
 
-    pub(crate) fn create_proof<Y>(
+    pub fn create_proof<Y>(
         receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
@@ -843,7 +851,7 @@ impl VaultBlueprint {
         Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
     }
 
-    pub(crate) fn create_proof_by_amount<Y>(
+    pub fn create_proof_by_amount<Y>(
         receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
@@ -866,7 +874,7 @@ impl VaultBlueprint {
         Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
     }
 
-    pub(crate) fn create_proof_by_ids<Y>(
+    pub fn create_proof_by_ids<Y>(
         receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,

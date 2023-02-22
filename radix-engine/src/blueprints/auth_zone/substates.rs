@@ -5,7 +5,7 @@ use crate::types::*;
 use radix_engine_interface::api::ClientComponentApi;
 use radix_engine_interface::blueprints::resource::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AuthZoneStackSubstate {
     pub(super) auth_zones: Vec<AuthZone>,
 }
@@ -87,6 +87,18 @@ pub struct AuthZone {
     pub(super) virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
     pub(super) virtual_non_fungibles_non_extending: BTreeSet<NonFungibleGlobalId>,
     pub(super) barrier: bool,
+}
+
+impl Clone for AuthZone {
+    fn clone(&self) -> Self {
+        Self {
+            proofs: self.proofs.iter().map(|p| Proof(p.0)).collect(),
+            virtual_resources: self.virtual_resources.clone(),
+            virtual_non_fungibles: self.virtual_non_fungibles.clone(),
+            virtual_non_fungibles_non_extending: self.virtual_non_fungibles_non_extending.clone(),
+            barrier: self.barrier.clone(),
+        }
+    }
 }
 
 impl AuthZone {

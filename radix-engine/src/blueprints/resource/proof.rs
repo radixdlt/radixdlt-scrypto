@@ -36,7 +36,7 @@ pub enum ProofError {
     NonFungibleOperationNotSupported,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ProofSubstate {
     Fungible(FungibleProof),
     NonFungible(NonFungibleProof),
@@ -107,10 +107,7 @@ impl ProofSubstate {
         }
     }
 
-    pub fn drop_proof<Y: ClientApi<RuntimeError>>(
-        &mut self,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError> {
+    pub fn drop_proof<Y: ClientApi<RuntimeError>>(&self, api: &mut Y) -> Result<(), RuntimeError> {
         match self {
             ProofSubstate::Fungible(f) => f.drop_proof(api),
             ProofSubstate::NonFungible(nf) => nf.drop_proof(api),
@@ -125,7 +122,7 @@ impl ProofSubstate {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FungibleProof {
     /// The resource address.
     pub resource_address: ResourceAddress,
@@ -177,10 +174,7 @@ impl FungibleProof {
         })
     }
 
-    pub fn drop_proof<Y: ClientApi<RuntimeError>>(
-        &mut self,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError> {
+    pub fn drop_proof<Y: ClientApi<RuntimeError>>(&self, api: &mut Y) -> Result<(), RuntimeError> {
         for (container_id, locked_amount) in &self.evidence {
             api.call_method(
                 container_id.to_re_node_id(),
@@ -223,7 +217,7 @@ impl FungibleProof {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct NonFungibleProof {
     /// The resource address.
     pub resource_address: ResourceAddress,
@@ -275,10 +269,7 @@ impl NonFungibleProof {
         })
     }
 
-    pub fn drop_proof<Y: ClientApi<RuntimeError>>(
-        &mut self,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError> {
+    pub fn drop_proof<Y: ClientApi<RuntimeError>>(&self, api: &mut Y) -> Result<(), RuntimeError> {
         for (container_id, locked_ids) in &self.evidence {
             api.call_method(
                 container_id.to_re_node_id(),
@@ -350,7 +341,7 @@ impl ProofBlueprint {
             LockFlags::read_only(),
         )?;
         let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let proof = substate_ref.proof();
+        let proof = substate_ref.proof().clone();
         let cloned_proof = proof.clone_proof(api)?;
 
         let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;

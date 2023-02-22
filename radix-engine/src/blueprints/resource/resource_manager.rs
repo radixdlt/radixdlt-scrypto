@@ -1209,7 +1209,6 @@ impl ResourceManagerBlueprint {
         let substate_ref = api.kernel_get_substate_ref(resman_handle)?;
         let resource_manager = substate_ref.resource_manager();
         let resource_address: ResourceAddress = resource_manager.resource_address;
-        let resource_type: ResourceType = resource_manager.resource_type;
         let bucket_id = match resource_manager.resource_type {
             ResourceType::Fungible { divisibility } => {
                 let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
@@ -1265,7 +1264,6 @@ impl ResourceManagerBlueprint {
         let substate_ref = api.kernel_get_substate_ref(resman_handle)?;
         let resource_manager = substate_ref.resource_manager();
         let resource_address: ResourceAddress = resource_manager.resource_address;
-        let resource_type: ResourceType = resource_manager.resource_type;
         let vault_id = match resource_manager.resource_type {
             ResourceType::Fungible { divisibility } => {
                 let node_id = api.kernel_allocate_node_id(RENodeType::Vault)?;

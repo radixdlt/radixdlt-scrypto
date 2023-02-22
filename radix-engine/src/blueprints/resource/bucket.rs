@@ -30,7 +30,7 @@ pub enum BucketError {
 pub struct BucketNode;
 
 impl BucketNode {
-    pub(crate) fn get_info<Y>(
+    pub fn get_info<Y>(
         node_id: RENodeId,
         api: &mut Y,
     ) -> Result<(ResourceAddress, ResourceType), RuntimeError>
@@ -50,12 +50,12 @@ impl BucketNode {
         Ok((resource_address, resource_type))
     }
 
-    pub(crate) fn liquid_amount<Y>(node_id: RENodeId, api: &mut Y) -> Result<Decimal, RuntimeError>
+    pub fn liquid_amount<Y>(node_id: RENodeId, api: &mut Y) -> Result<Decimal, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi,
     {
         match Self::get_info(node_id, api)?.1 {
-            ResourceType::Fungible { divisibility } => {
+            ResourceType::Fungible { .. } => {
                 let handle = api.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,
@@ -67,7 +67,7 @@ impl BucketNode {
                 api.kernel_drop_lock(handle)?;
                 Ok(amount)
             }
-            ResourceType::NonFungible { id_type } => {
+            ResourceType::NonFungible { .. } => {
                 let handle = api.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,
@@ -82,12 +82,12 @@ impl BucketNode {
         }
     }
 
-    pub(crate) fn locked_amount<Y>(node_id: RENodeId, api: &mut Y) -> Result<Decimal, RuntimeError>
+    pub fn locked_amount<Y>(node_id: RENodeId, api: &mut Y) -> Result<Decimal, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi,
     {
         match Self::get_info(node_id, api)?.1 {
-            ResourceType::Fungible { divisibility } => {
+            ResourceType::Fungible { .. } => {
                 let handle = api.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,
@@ -99,7 +99,7 @@ impl BucketNode {
                 api.kernel_drop_lock(handle)?;
                 Ok(amount)
             }
-            ResourceType::NonFungible { id_type } => {
+            ResourceType::NonFungible { .. } => {
                 let handle = api.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,
@@ -114,14 +114,14 @@ impl BucketNode {
         }
     }
 
-    pub(crate) fn is_locked<Y>(node_id: RENodeId, api: &mut Y) -> Result<bool, RuntimeError>
+    pub fn is_locked<Y>(node_id: RENodeId, api: &mut Y) -> Result<bool, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi,
     {
         Ok(!Self::locked_amount(node_id, api)?.is_zero())
     }
 
-    pub(crate) fn liquid_non_fungible_ids<Y>(
+    pub fn liquid_non_fungible_ids<Y>(
         node_id: RENodeId,
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
@@ -129,10 +129,10 @@ impl BucketNode {
         Y: KernelNodeApi + KernelSubstateApi,
     {
         match Self::get_info(node_id, api)?.1 {
-            ResourceType::Fungible { divisibility } => Err(RuntimeError::ApplicationError(
+            ResourceType::Fungible { .. } => Err(RuntimeError::ApplicationError(
                 ApplicationError::BucketError(BucketError::NonFungibleOperationNotSupported),
             )),
-            ResourceType::NonFungible { id_type } => {
+            ResourceType::NonFungible { .. } => {
                 let handle = api.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,
@@ -147,7 +147,7 @@ impl BucketNode {
         }
     }
 
-    pub(crate) fn take<Y>(
+    pub fn take<Y>(
         node_id: RENodeId,
         amount: Decimal,
         api: &mut Y,
@@ -156,14 +156,14 @@ impl BucketNode {
         Y: KernelNodeApi + KernelSubstateApi,
     {
         match Self::get_info(node_id, api)?.1 {
-            ResourceType::Fungible { divisibility } => {
+            ResourceType::Fungible { .. } => {
                 let handle = api.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,
                     SubstateOffset::Bucket(BucketOffset::LiquidFungible),
-                    LockFlags::read_only(),
+                    LockFlags::MUTABLE,
                 )?;
-                let substate_ref = api.kernel_get_substate_ref(handle)?;
+                let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
                 let taken = substate_ref
                     .bucket_liquid_fungible()
                     .take_by_amount(amount)
@@ -174,14 +174,14 @@ impl BucketNode {
                 api.kernel_drop_lock(handle)?;
                 Ok(LiquidResource::Fungible(taken))
             }
-            ResourceType::NonFungible { id_type } => {
+            ResourceType::NonFungible { .. } => {
                 let handle = api.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,
                     SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
-                    LockFlags::read_only(),
+                    LockFlags::MUTABLE,
                 )?;
-                let substate_ref = api.kernel_get_substate_ref(handle)?;
+                let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
                 let taken = substate_ref
                     .bucket_liquid_non_fungible()
                     .take_by_amount(amount)
@@ -195,7 +195,7 @@ impl BucketNode {
         }
     }
 
-    pub(crate) fn take_non_fungibles<Y>(
+    pub fn take_non_fungibles<Y>(
         node_id: RENodeId,
         ids: &BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
@@ -204,17 +204,17 @@ impl BucketNode {
         Y: KernelNodeApi + KernelSubstateApi,
     {
         match Self::get_info(node_id, api)?.1 {
-            ResourceType::Fungible { divisibility } => Err(RuntimeError::ApplicationError(
+            ResourceType::Fungible { .. } => Err(RuntimeError::ApplicationError(
                 ApplicationError::BucketError(BucketError::NonFungibleOperationNotSupported),
             )),
-            ResourceType::NonFungible { id_type } => {
+            ResourceType::NonFungible { .. } => {
                 let handle = api.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,
                     SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
-                    LockFlags::read_only(),
+                    LockFlags::MUTABLE,
                 )?;
-                let substate_ref = api.kernel_get_substate_ref(handle)?;
+                let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
                 let taken = substate_ref
                     .bucket_liquid_non_fungible()
                     .take_by_ids(ids)
@@ -228,7 +228,7 @@ impl BucketNode {
         }
     }
 
-    pub(crate) fn put<Y>(
+    pub fn put<Y>(
         node_id: RENodeId,
         resource: LiquidResource,
         api: &mut Y,
@@ -241,15 +241,15 @@ impl BucketNode {
         }
 
         match Self::get_info(node_id, api)?.1 {
-            ResourceType::Fungible { divisibility } => {
+            ResourceType::Fungible { .. } => {
                 let handle = api.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,
                     SubstateOffset::Bucket(BucketOffset::LiquidFungible),
-                    LockFlags::read_only(),
+                    LockFlags::MUTABLE,
                 )?;
-                let substate_ref = api.kernel_get_substate_ref(handle)?;
-                let taken = substate_ref
+                let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
+                substate_ref
                     .bucket_liquid_fungible()
                     .put(
                         resource
@@ -266,34 +266,35 @@ impl BucketNode {
                 api.kernel_drop_lock(handle)?;
                 Ok(())
             }
-            ResourceType::NonFungible { id_type } => {
+            ResourceType::NonFungible { .. } => {
                 let handle = api.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,
                     SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
-                    LockFlags::read_only(),
+                    LockFlags::MUTABLE,
                 )?;
-                let substate_ref = api.kernel_get_substate_ref(handle)?;
-                let taken =
-                    substate_ref
-                        .bucket_liquid_non_fungible()
-                        .put(resource.into_non_fungibles().ok_or(
-                            RuntimeError::ApplicationError(ApplicationError::BucketError(
-                                BucketError::MismatchingFungibility,
-                            )),
-                        )?)
-                        .map_err(|e| {
-                            RuntimeError::ApplicationError(ApplicationError::BucketError(
-                                BucketError::ResourceError(e),
-                            ))
-                        })?;
+                let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
+                substate_ref
+                    .bucket_liquid_non_fungible()
+                    .put(
+                        resource
+                            .into_non_fungibles()
+                            .ok_or(RuntimeError::ApplicationError(
+                                ApplicationError::BucketError(BucketError::MismatchingFungibility),
+                            ))?,
+                    )
+                    .map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::BucketError(
+                            BucketError::ResourceError(e),
+                        ))
+                    })?;
                 api.kernel_drop_lock(handle)?;
                 Ok(())
             }
         }
     }
 
-    pub(crate) fn lock_amount<Y>(
+    pub fn lock_amount<Y>(
         node_id: RENodeId,
         amount: Decimal,
         api: &mut Y,
@@ -309,15 +310,15 @@ impl BucketNode {
         })?;
 
         match resource_type {
-            ResourceType::Fungible { divisibility } => {
+            ResourceType::Fungible { .. } => {
                 let handle = api.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,
                     SubstateOffset::Bucket(BucketOffset::LockedFungible),
-                    LockFlags::read_only(),
+                    LockFlags::MUTABLE,
                 )?;
-                let substate_ref = api.kernel_get_substate_ref(handle)?;
-                let locked = substate_ref.bucket_locked_fungible();
+                let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
+                let mut locked = substate_ref.bucket_locked_fungible();
                 let max_locked = locked.amount();
 
                 // Take from liquid if needed
@@ -327,6 +328,8 @@ impl BucketNode {
                 }
 
                 // Increase lock count
+                substate_ref = api.kernel_get_substate_ref_mut(handle)?; // grab ref again
+                locked = substate_ref.bucket_locked_fungible();
                 locked.amounts.entry(amount).or_default().add_assign(1);
 
                 // Issue proof
@@ -345,15 +348,15 @@ impl BucketNode {
                     })?,
                 ))
             }
-            ResourceType::NonFungible { id_type } => {
+            ResourceType::NonFungible { .. } => {
                 let handle = api.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,
                     SubstateOffset::Bucket(BucketOffset::LockedNonFungible),
-                    LockFlags::read_only(),
+                    LockFlags::MUTABLE,
                 )?;
-                let substate_ref = api.kernel_get_substate_ref(handle)?;
-                let locked = substate_ref.bucket_locked_non_fungible();
+                let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
+                let mut locked = substate_ref.bucket_locked_non_fungible();
                 let max_locked: Decimal = locked.ids.len().into();
 
                 // Take from liquid if needed
@@ -363,6 +366,9 @@ impl BucketNode {
                     let non_fungibles = resource
                         .into_non_fungibles()
                         .expect("Should be non-fungibles");
+
+                    substate_ref = api.kernel_get_substate_ref_mut(handle)?; // grab ref again
+                    locked = substate_ref.bucket_locked_non_fungible();
                     for nf in non_fungibles.into_ids() {
                         locked.ids.insert(nf, 0);
                     }
@@ -383,7 +389,7 @@ impl BucketNode {
                 Ok(ProofSubstate::NonFungible(
                     NonFungibleProof::new(
                         resource_address,
-                        ids_for_proof,
+                        ids_for_proof.clone(),
                         btreemap!(
                             LocalRef::Bucket(node_id.into()) => ids_for_proof
                         ),
@@ -398,7 +404,7 @@ impl BucketNode {
         }
     }
 
-    pub(crate) fn lock_non_fungibles<Y>(
+    pub fn lock_non_fungibles<Y>(
         node_id: RENodeId,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
@@ -409,18 +415,18 @@ impl BucketNode {
         let (resource_address, resource_type) = Self::get_info(node_id, api)?;
 
         match resource_type {
-            ResourceType::Fungible { divisibility } => Err(RuntimeError::ApplicationError(
+            ResourceType::Fungible { .. } => Err(RuntimeError::ApplicationError(
                 ApplicationError::BucketError(BucketError::NonFungibleOperationNotSupported),
             )),
-            ResourceType::NonFungible { id_type } => {
+            ResourceType::NonFungible { .. } => {
                 let handle = api.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,
                     SubstateOffset::Bucket(BucketOffset::LockedNonFungible),
-                    LockFlags::read_only(),
+                    LockFlags::MUTABLE,
                 )?;
-                let substate_ref = api.kernel_get_substate_ref(handle)?;
-                let locked = substate_ref.bucket_locked_non_fungible();
+                let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
+                let mut locked = substate_ref.bucket_locked_non_fungible();
 
                 // Take from liquid if needed
                 let delta: BTreeSet<NonFungibleLocalId> = ids
@@ -431,6 +437,8 @@ impl BucketNode {
                 BucketNode::take_non_fungibles(node_id, &delta, api)?;
 
                 // Increase lock count
+                substate_ref = api.kernel_get_substate_ref_mut(handle)?; // grab ref again
+                locked = substate_ref.bucket_locked_non_fungible();
                 for id in &ids {
                     locked.ids.get_mut(id).unwrap().add_assign(1);
                 }
@@ -439,7 +447,7 @@ impl BucketNode {
                 Ok(ProofSubstate::NonFungible(
                     NonFungibleProof::new(
                         resource_address,
-                        ids,
+                        ids.clone(),
                         btreemap!(
                             LocalRef::Bucket(node_id.into()) => ids
                         ),
@@ -454,7 +462,7 @@ impl BucketNode {
         }
     }
 
-    pub(crate) fn unlock_amount<Y>(
+    pub fn unlock_amount<Y>(
         node_id: RENodeId,
         amount: Decimal,
         api: &mut Y,
@@ -470,9 +478,9 @@ impl BucketNode {
                     node_id,
                     NodeModuleId::SELF,
                     SubstateOffset::Bucket(BucketOffset::LockedFungible),
-                    LockFlags::read_only(),
+                    LockFlags::MUTABLE,
                 )?;
-                let substate_ref = api.kernel_get_substate_ref(handle)?;
+                let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
                 let locked = substate_ref.bucket_locked_fungible();
 
                 let max_locked = locked.amount();
@@ -495,13 +503,13 @@ impl BucketNode {
 
                 Ok(())
             }
-            ResourceType::NonFungible { id_type } => {
+            ResourceType::NonFungible { .. } => {
                 panic!("Attempted to unlock amount on non-fungibles")
             }
         }
     }
 
-    pub(crate) fn unlock_non_fungibles<Y>(
+    pub fn unlock_non_fungibles<Y>(
         node_id: RENodeId,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
@@ -512,7 +520,7 @@ impl BucketNode {
         let (resource_address, resource_type) = Self::get_info(node_id, api)?;
 
         match resource_type {
-            ResourceType::Fungible { divisibility } => {
+            ResourceType::Fungible { .. } => {
                 panic!("Attempted to unlock non-fungibles on fungible")
             }
             ResourceType::NonFungible { id_type } => {
@@ -520,9 +528,9 @@ impl BucketNode {
                     node_id,
                     NodeModuleId::SELF,
                     SubstateOffset::Bucket(BucketOffset::LockedNonFungible),
-                    LockFlags::read_only(),
+                    LockFlags::MUTABLE,
                 )?;
-                let substate_ref = api.kernel_get_substate_ref(handle)?;
+                let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
                 let locked = substate_ref.bucket_locked_non_fungible();
 
                 let mut liquid_non_fungibles = BTreeSet::<NonFungibleLocalId>::new();
@@ -557,7 +565,7 @@ impl BucketNode {
 pub struct BucketBlueprint;
 
 impl BucketBlueprint {
-    pub(crate) fn take<Y>(
+    pub fn take<Y>(
         receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
@@ -587,7 +595,7 @@ impl BucketBlueprint {
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
 
-    pub(crate) fn take_non_fungibles<Y>(
+    pub fn take_non_fungibles<Y>(
         receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
@@ -615,7 +623,7 @@ impl BucketBlueprint {
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
 
-    pub(crate) fn put<Y>(
+    pub fn put<Y>(
         receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
@@ -638,7 +646,7 @@ impl BucketBlueprint {
         Ok(IndexedScryptoValue::from_typed(&()))
     }
 
-    pub(crate) fn create_proof<Y>(
+    pub fn create_proof<Y>(
         receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
@@ -661,7 +669,7 @@ impl BucketBlueprint {
         Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
     }
 
-    pub(crate) fn get_non_fungible_local_ids<Y>(
+    pub fn get_non_fungible_local_ids<Y>(
         receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
@@ -679,7 +687,7 @@ impl BucketBlueprint {
         Ok(IndexedScryptoValue::from_typed(&ids))
     }
 
-    pub(crate) fn get_amount<Y>(
+    pub fn get_amount<Y>(
         receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
@@ -696,7 +704,7 @@ impl BucketBlueprint {
         Ok(IndexedScryptoValue::from_typed(&amount))
     }
 
-    pub(crate) fn get_resource_address<Y>(
+    pub fn get_resource_address<Y>(
         receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,

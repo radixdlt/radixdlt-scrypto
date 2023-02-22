@@ -70,7 +70,7 @@ impl NodeMoveModule {
 
     fn prepare_move_upstream<Y: KernelModuleApi<RuntimeError>>(
         node_id: RENodeId,
-        api: &mut Y,
+        _api: &mut Y,
     ) -> Result<(), RuntimeError> {
         match node_id {
             RENodeId::Bucket(..)

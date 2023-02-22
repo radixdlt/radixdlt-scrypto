@@ -86,7 +86,7 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                 )) {
                     let info: VaultInfoSubstate = output_value.substate.into();
                     match info.resource_type {
-                        ResourceType::Fungible { divisibility } => {
+                        ResourceType::Fungible { .. } => {
                             let liquid: LiquidFungibleResource = self
                                 .substate_store
                                 .get_substate(&SubstateId(
@@ -101,7 +101,7 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                             self.visitor
                                 .visit_vault(vault_id, &LiquidResource::Fungible(liquid));
                         }
-                        ResourceType::NonFungible { id_type } => {
+                        ResourceType::NonFungible { .. } => {
                             let liquid: LiquidNonFungibleResource = self
                                 .substate_store
                                 .get_substate(&SubstateId(

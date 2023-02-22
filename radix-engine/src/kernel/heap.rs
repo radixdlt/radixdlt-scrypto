@@ -154,7 +154,7 @@ impl Into<LiquidResource> for HeapRENode {
             .into();
 
         match info.resource_type {
-            ResourceType::Fungible { divisibility } => self
+            ResourceType::Fungible { .. } => self
                 .substates
                 .remove(&(
                     NodeModuleId::SELF,
@@ -163,7 +163,7 @@ impl Into<LiquidResource> for HeapRENode {
                 .map(|s| Into::<LiquidFungibleResource>::into(s))
                 .unwrap()
                 .into(),
-            ResourceType::NonFungible { id_type } => self
+            ResourceType::NonFungible { .. } => self
                 .substates
                 .remove(&(
                     NodeModuleId::SELF,
