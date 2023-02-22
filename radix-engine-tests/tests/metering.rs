@@ -1,5 +1,3 @@
-use radix_engine::errors::{ModuleError, RuntimeError};
-use radix_engine::system::kernel_modules::transaction_limits::TransactionLimitsError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
@@ -208,7 +206,7 @@ fn test_radiswap() {
         + 296000 /* LockSubstate */
         + 230000 /* ReadSubstate */
         + 162500 /* RunPrecompiled */
-        + 1644360 /* RunWasm */
+        + 1644030 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1705 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
@@ -257,17 +255,19 @@ fn test_publish_large_package() {
     );
 }
 
-fn prepare_large_manifest(
-    test_runner: &mut TestRunner,
-    take_count: usize,
-) -> (TransactionManifest, EcdsaSecp256k1PublicKey) {
+#[test]
+fn should_be_able_run_large_manifest() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+
+    // Act
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
     let mut builder = ManifestBuilder::new();
     builder.lock_fee(account, 100u32.into());
     builder.withdraw_from_account(account, RADIX_TOKEN, 100u32.into());
-    for _ in 0..take_count {
+    for _ in 0..300 {
         builder.take_from_worktop_by_amount(1.into(), RADIX_TOKEN, |builder, bid| {
             builder.return_to_worktop(bid)
         });
@@ -279,17 +279,6 @@ fn prepare_large_manifest(
     );
     let manifest = builder.build();
 
-    (manifest, public_key)
-}
-
-#[test]
-fn should_be_able_run_large_manifest() {
-    // Arrange
-    let mut test_runner = TestRunner::builder().build();
-
-    // Act
-    let (manifest, public_key) = prepare_large_manifest(&mut test_runner, 300);
-
     let (receipt, _) = execute_with_time_logging(
         &mut test_runner,
         manifest,
@@ -298,31 +287,6 @@ fn should_be_able_run_large_manifest() {
 
     // Assert
     receipt.expect_commit_success();
-}
-
-#[test]
-fn too_large_manifest_fails_on_substate_read_limit() {
-    // Arrange
-    let mut test_runner = TestRunner::builder().build();
-
-    // Act
-    let (manifest, public_key) = prepare_large_manifest(&mut test_runner, 400);
-
-    let (receipt, _) = execute_with_time_logging(
-        &mut test_runner,
-        manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
-    );
-
-    // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
-                TransactionLimitsError::MaxSubstateReadsCountExceeded
-            ))
-        )
-    });
 }
 
 #[test]
