@@ -349,14 +349,7 @@ impl KernelModule for AuthModule {
         let is_barrier = Self::is_barrier(actor);
 
         // Authorization check
-        auth_zone_stack
-            .check_auth(is_barrier, method_auths)
-            .map_err(|(authorization, error)| {
-                RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized {
-                    authorization,
-                    error,
-                }))
-            })?;
+        auth_zone_stack.check_auth(is_barrier, method_auths, api)?;
 
         api.kernel_drop_lock(handle)?;
 

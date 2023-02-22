@@ -6,7 +6,6 @@ use sbor::rust::vec::Vec;
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Sbor)]
 pub enum MethodAuthorizationError {
     NotAuthorized,
-    UnsupportedMethod,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
@@ -57,7 +56,7 @@ pub enum HardAuthRule {
 /// Authorization of a method call
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
 pub enum MethodAuthorization {
-    Protected(HardAuthRule),
     AllowAll,
     DenyAll,
+    Protected(HardAuthRule),
 }

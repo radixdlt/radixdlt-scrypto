@@ -14,28 +14,28 @@ pub trait SysProof {
         api: &mut Y,
     ) -> Result<Decimal, E>
     where
-        Y: ClientNodeApi<E> + ClientComponentApi<E>;
+        Y: ClientComponentApi<E>;
 
     fn sys_non_fungible_local_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, E>
     where
-        Y: ClientNodeApi<E> + ClientComponentApi<E>;
+        Y: ClientComponentApi<E>;
 
     fn sys_resource_address<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
     ) -> Result<ResourceAddress, E>
     where
-        Y: ClientNodeApi<E> + ClientComponentApi<E>;
+        Y: ClientComponentApi<E>;
 
     fn sys_clone<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ClientNodeApi<E> + ClientComponentApi<E>;
+        Y: ClientComponentApi<E>;
 
     fn sys_drop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         self,
@@ -46,34 +46,12 @@ pub trait SysProof {
 }
 
 impl SysProof for Proof {
-    fn sys_clone<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        &self,
-        api: &mut Y,
-    ) -> Result<Proof, E>
-    where
-        Y: ClientNodeApi<E> + ClientComponentApi<E>,
-    {
-        let rtn = api.call_method(
-            RENodeId::Proof(self.0),
-            PROOF_CLONE_IDENT,
-            scrypto_encode(&ProofCloneInput {}).unwrap(),
-        )?;
-        Ok(scrypto_decode(&rtn).unwrap())
-    }
-
-    fn sys_drop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(self, api: &mut Y) -> Result<(), E>
-    where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E>,
-    {
-        api.sys_drop_node(RENodeId::Proof(self.0))
-    }
-
     fn sys_amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
     ) -> Result<Decimal, E>
     where
-        Y: ClientNodeApi<E> + ClientComponentApi<E>,
+        Y: ClientComponentApi<E>,
     {
         let rtn = api.call_method(
             RENodeId::Proof(self.0),
@@ -88,7 +66,7 @@ impl SysProof for Proof {
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, E>
     where
-        Y: ClientNodeApi<E> + ClientComponentApi<E>,
+        Y: ClientComponentApi<E>,
     {
         let rtn = api.call_method(
             RENodeId::Proof(self.0),
@@ -103,7 +81,7 @@ impl SysProof for Proof {
         api: &mut Y,
     ) -> Result<ResourceAddress, E>
     where
-        Y: ClientNodeApi<E> + ClientComponentApi<E>,
+        Y: ClientComponentApi<E>,
     {
         let rtn = api.call_method(
             RENodeId::Proof(self.0),
@@ -111,5 +89,27 @@ impl SysProof for Proof {
             scrypto_encode(&ProofGetResourceAddressInput {}).unwrap(),
         )?;
         Ok(scrypto_decode(&rtn).unwrap())
+    }
+
+    fn sys_clone<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        &self,
+        api: &mut Y,
+    ) -> Result<Proof, E>
+    where
+        Y: ClientComponentApi<E>,
+    {
+        let rtn = api.call_method(
+            RENodeId::Proof(self.0),
+            PROOF_CLONE_IDENT,
+            scrypto_encode(&ProofCloneInput {}).unwrap(),
+        )?;
+        Ok(scrypto_decode(&rtn).unwrap())
+    }
+
+    fn sys_drop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(self, api: &mut Y) -> Result<(), E>
+    where
+        Y: ClientNodeApi<E> + ClientSubstateApi<E>,
+    {
+        api.sys_drop_node(RENodeId::Proof(self.0))
     }
 }

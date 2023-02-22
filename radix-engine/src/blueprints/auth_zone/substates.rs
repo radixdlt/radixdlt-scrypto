@@ -1,7 +1,8 @@
 use super::{AuthVerification, AuthZoneError};
-use crate::errors::InvokeError;
+use crate::errors::{InvokeError, ModuleError, RuntimeError};
 use crate::system::kernel_modules::auth::*;
 use crate::types::*;
+use radix_engine_interface::api::ClientComponentApi;
 use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug)]
@@ -25,19 +26,31 @@ impl AuthZoneStackSubstate {
         }
     }
 
-    pub fn check_auth(
+    pub fn check_auth<Y: ClientComponentApi<RuntimeError>>(
         &self,
         is_barrier: bool,
         method_auths: Vec<MethodAuthorization>,
-    ) -> Result<(), (MethodAuthorization, MethodAuthorizationError)> {
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         let mut barrier_crossings_allowed = 1u32;
         if is_barrier {
             barrier_crossings_allowed -= 1;
         }
 
         for method_auth in method_auths {
-            AuthVerification::verify_method_auth(barrier_crossings_allowed, &method_auth, &self)
-                .map_err(|e| (method_auth, e))?;
+            if !AuthVerification::verify_method_auth(
+                barrier_crossings_allowed,
+                &method_auth,
+                &self,
+                api,
+            )? {
+                return Err(RuntimeError::ModuleError(ModuleError::AuthError(
+                    AuthError::Unauthorized {
+                        authorization: method_auth,
+                        error: MethodAuthorizationError::NotAuthorized,
+                    },
+                )));
+            }
         }
 
         Ok(())

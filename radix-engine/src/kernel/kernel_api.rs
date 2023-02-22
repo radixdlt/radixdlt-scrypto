@@ -15,6 +15,7 @@ use crate::wasm::WasmEngine;
 use bitflags::bitflags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::ClientComponentApi;
 
 bitflags! {
     #[derive(Sbor)]
@@ -143,4 +144,7 @@ pub trait KernelInternalApi {
     fn kernel_read_proof(&mut self, proof_id: BucketId) -> Option<ProofSnapshot>;
 }
 
-pub trait KernelModuleApi<E>: KernelNodeApi + KernelSubstateApi + KernelInternalApi {}
+pub trait KernelModuleApi<E>:
+    KernelNodeApi + KernelSubstateApi + KernelInternalApi + ClientComponentApi<E>
+{
+}
