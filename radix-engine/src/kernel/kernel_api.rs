@@ -9,6 +9,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::data::ScryptoValue;
 
 use super::actor::ResolvedActor;
 use super::call_frame::CallFrameUpdate;
@@ -91,7 +92,11 @@ pub trait Invokable<I: Invocation, E> {
 pub trait Executor {
     type Output: Debug;
 
-    fn execute<Y, W>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W>(
+        self,
+        arg: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + ClientApi<RuntimeError>,
         W: WasmEngine;
@@ -100,6 +105,7 @@ pub trait Executor {
 pub struct TemporaryResolvedInvocation<E: Executor> {
     pub resolved_actor: ResolvedActor,
     pub update: CallFrameUpdate,
+    pub args: ScryptoValue,
     pub executor: E,
 }
 

@@ -3,7 +3,9 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::actor::ResolvedActor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::{ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, TemporaryResolvedInvocation};
+use crate::kernel::kernel_api::{
+    ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, TemporaryResolvedInvocation,
+};
 use crate::system::node::RENodeInit;
 use crate::system::package::PackageError;
 use crate::types::*;
@@ -25,7 +27,7 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientComponentApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::IndexedScryptoValue;
+use radix_engine_interface::data::{IndexedScryptoValue, ScryptoValue};
 use sbor::rust::borrow::Cow;
 use transaction::data::model::*;
 use transaction::data::to_address;
@@ -269,6 +271,7 @@ impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
             resolved_actor: actor,
             update: call_frame_update,
             executor: self,
+            args: ScryptoValue::Tuple { fields: vec![] },
         };
 
         Ok(resolved)
@@ -280,6 +283,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
     fn execute<Y, W: WasmEngine>(
         self,
+        _args: ScryptoValue,
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where

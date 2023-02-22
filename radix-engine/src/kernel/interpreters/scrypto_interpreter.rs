@@ -10,7 +10,10 @@ use crate::errors::ScryptoFnResolvingError;
 use crate::errors::{InterpreterError, KernelError, RuntimeError};
 use crate::kernel::actor::{ResolvedActor, ResolvedReceiver};
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::{ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, KernelWasmApi, TemporaryResolvedInvocation};
+use crate::kernel::kernel_api::{
+    ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, KernelWasmApi,
+    TemporaryResolvedInvocation,
+};
 use crate::system::global::GlobalSubstate;
 use crate::system::node_modules::access_rules::{AccessRulesNativePackage, AuthZoneNativePackage};
 use crate::system::node_modules::metadata::MetadataNativePackage;
@@ -198,7 +201,6 @@ impl ExecutableInvocation for MethodInvocation {
             package_address,
             export_name,
             receiver: Some(resolved_receiver.receiver),
-            args: value,
         };
 
         // TODO: remove? currently needed for `Runtime::package_address()` API.
@@ -211,6 +213,7 @@ impl ExecutableInvocation for MethodInvocation {
                 node_refs_to_copy,
             },
             executor,
+            args: value,
         };
 
         Ok(resolved)
@@ -319,7 +322,6 @@ impl ExecutableInvocation for FunctionInvocation {
             package_address: self.fn_identifier.package_address,
             export_name,
             receiver: None,
-            args: value,
         };
 
         // TODO: remove? currently needed for `Runtime::package_address()` API.
@@ -333,6 +335,7 @@ impl ExecutableInvocation for FunctionInvocation {
                 nodes_to_move,
                 node_refs_to_copy,
             },
+            args: value,
             executor,
         };
 
@@ -344,13 +347,16 @@ pub struct ScryptoExecutor {
     pub package_address: PackageAddress,
     pub export_name: String,
     pub receiver: Option<MethodReceiver>,
-    pub args: ScryptoValue,
 }
 
 impl Executor for ScryptoExecutor {
     type Output = ScryptoValue;
 
-    fn execute<Y, W>(self, api: &mut Y) -> Result<(ScryptoValue, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W>(
+        self,
+        args: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<(ScryptoValue, CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + ClientApi<RuntimeError>,
         W: WasmEngine,
@@ -360,7 +366,7 @@ impl Executor for ScryptoExecutor {
                 NATIVE_PACKAGE_CODE_ID,
                 self.receiver,
                 &self.export_name,
-                self.args,
+                args,
                 api,
             )?
         } else {
@@ -401,7 +407,7 @@ impl Executor for ScryptoExecutor {
                         native_package_code_id,
                         self.receiver,
                         &self.export_name,
-                        self.args,
+                        args,
                         api,
                     )?
                 }
@@ -455,7 +461,7 @@ impl Executor for ScryptoExecutor {
                         input.push(
                             runtime
                                 .allocate_buffer(
-                                    scrypto_encode(&self.args).expect("Failed to encode args"),
+                                    scrypto_encode(&args).expect("Failed to encode args"),
                                 )
                                 .expect("Failed to allocate buffer"),
                         );

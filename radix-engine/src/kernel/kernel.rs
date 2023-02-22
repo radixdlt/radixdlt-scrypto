@@ -16,6 +16,7 @@ use radix_engine_interface::api::package::{PackageCodeSubstate, PACKAGE_LOADER_B
 use radix_engine_interface::api::substate_api::LockFlags;
 // TODO: clean this up!
 use crate::blueprints::resource::{BucketSubstate, ProofSubstate};
+use crate::kernel::kernel_api::TemporaryResolvedInvocation;
 use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use radix_engine_interface::api::types::{
     Address, AuthZoneStackOffset, GlobalOffset, LockHandle, ProofOffset, RENodeId, SubstateId,
@@ -39,7 +40,6 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::blueprints::transaction_runtime::TRANSACTION_RUNTIME_BLUEPRINT;
 use radix_engine_interface::rule;
 use sbor::rust::mem;
-use crate::kernel::kernel_api::TemporaryResolvedInvocation;
 
 use super::actor::{ExecutionMode, ResolvedActor, ResolvedReceiver};
 use super::call_frame::{CallFrame, RENodeVisibilityOrigin};
@@ -382,6 +382,7 @@ where
     ) -> Result<X::Output, RuntimeError> {
         let executor = resolved.executor;
         let actor = resolved.resolved_actor;
+        let args = resolved.args;
         let mut call_frame_update = resolved.update;
 
         let derefed_lock = if let Some(ResolvedReceiver {
@@ -432,7 +433,7 @@ where
 
             // Run
             let (output, mut update) =
-                self.execute_in_mode(ExecutionMode::Client, |api| executor.execute(api))?;
+                self.execute_in_mode(ExecutionMode::Client, |api| executor.execute(args, api))?;
 
             // Handle execution finish
             self.execute_in_mode(ExecutionMode::KernelModule, |api| {
@@ -491,7 +492,7 @@ where
 
     fn invoke_internal<X: Executor>(
         &mut self,
-        resolved: TemporaryResolvedInvocation<X>
+        resolved: TemporaryResolvedInvocation<X>,
     ) -> Result<X::Output, RuntimeError> {
         let depth = self.current_frame.depth;
         // TODO: Move to higher layer
