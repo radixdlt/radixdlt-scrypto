@@ -1,5 +1,5 @@
-use super::{AuthVerification, AuthZoneError};
-use crate::errors::{InvokeError, ModuleError, RuntimeError};
+use super::AuthVerification;
+use crate::errors::{ModuleError, RuntimeError};
 use crate::system::kernel_modules::auth::*;
 use crate::types::*;
 use radix_engine_interface::api::ClientComponentApi;
@@ -118,16 +118,12 @@ impl AuthZone {
         }
     }
 
-    pub fn pop(&mut self) -> Result<Proof, InvokeError<AuthZoneError>> {
-        if self.proofs.is_empty() {
-            return Err(InvokeError::SelfError(AuthZoneError::EmptyAuthZone));
-        }
-
-        Ok(self.proofs.remove(self.proofs.len() - 1))
-    }
-
     pub fn push(&mut self, proof: Proof) {
         self.proofs.push(proof);
+    }
+
+    pub fn pop(&mut self) -> Option<Proof> {
+        self.proofs.pop()
     }
 
     pub fn drain(&mut self) -> Vec<Proof> {
