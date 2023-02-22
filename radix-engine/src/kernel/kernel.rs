@@ -1165,9 +1165,7 @@ where
         handle: LockHandle,
     ) -> Result<W::WasmInstance, RuntimeError> {
         KernelModuleMixer::on_read_substate(
-            self,
-            handle,
-            0, //  TODO: pass the right size
+            self, handle, 0, //  TODO: pass the right size
         )?;
         let substate_ref = self
             .current_frame
