@@ -33,7 +33,8 @@ members = [
     "stored_values",
     "vault",
     "royalty",
-    "royalty-auth"
+    "royalty-auth",
+    "transaction_limits"
 ]
 
 [profile.release]

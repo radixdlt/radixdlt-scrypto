@@ -19,7 +19,7 @@ use crate::blueprints::resource::WorktopSubstate;
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::errors::*;
 use crate::system::node_modules::access_rules::PackageAccessRulesSubstate;
-use crate::system::type_info::TypeInfoSubstate;
+use crate::system::type_info::PackageCodeTypeSubstate;
 use crate::types::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::package::*;
@@ -31,7 +31,6 @@ use radix_engine_interface::data::IndexedScryptoValue;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PersistedSubstate {
     Global(GlobalSubstate),
-    TypeInfo(TypeInfoSubstate),
     EpochManager(EpochManagerSubstate),
     ValidatorSet(ValidatorSetSubstate),
     Validator(ValidatorSubstate),
@@ -39,13 +38,13 @@ pub enum PersistedSubstate {
     ResourceManager(ResourceManagerSubstate),
     AccessRulesChain(ObjectAccessRulesChainSubstate),
     Metadata(MetadataSubstate),
-    ComponentInfo(ComponentInfoSubstate),
+    ComponentInfo(TypeInfoSubstate),
     ComponentState(ComponentStateSubstate),
     ComponentRoyaltyConfig(ComponentRoyaltyConfigSubstate),
     ComponentRoyaltyAccumulator(ComponentRoyaltyAccumulatorSubstate),
+    PackageTypeInfo(PackageCodeTypeSubstate),
     PackageInfo(PackageInfoSubstate),
-    WasmCode(WasmCodeSubstate),
-    NativePackageInfo(NativeCodeSubstate),
+    WasmCode(PackageCodeSubstate),
     PackageRoyaltyConfig(PackageRoyaltyConfigSubstate),
     PackageRoyaltyAccumulator(PackageRoyaltyAccumulatorSubstate),
     PackageAccessRules(PackageAccessRulesSubstate),
@@ -120,7 +119,7 @@ impl PersistedSubstate {
     pub fn to_runtime(self) -> RuntimeSubstate {
         match self {
             PersistedSubstate::Global(value) => RuntimeSubstate::Global(value),
-            PersistedSubstate::TypeInfo(value) => RuntimeSubstate::TypeInfo(value),
+            PersistedSubstate::PackageTypeInfo(value) => RuntimeSubstate::TypeInfo(value),
             PersistedSubstate::EpochManager(value) => RuntimeSubstate::EpochManager(value),
             PersistedSubstate::ValidatorSet(value) => RuntimeSubstate::ValidatorSet(value),
             PersistedSubstate::Validator(value) => RuntimeSubstate::Validator(value),
@@ -139,8 +138,7 @@ impl PersistedSubstate {
                 RuntimeSubstate::ComponentRoyaltyAccumulator(value)
             }
             PersistedSubstate::PackageInfo(value) => RuntimeSubstate::PackageInfo(value),
-            PersistedSubstate::WasmCode(value) => RuntimeSubstate::WasmCode(value),
-            PersistedSubstate::NativePackageInfo(value) => RuntimeSubstate::NativeCode(value),
+            PersistedSubstate::WasmCode(value) => RuntimeSubstate::PackageCode(value),
             PersistedSubstate::PackageRoyaltyConfig(value) => {
                 RuntimeSubstate::PackageRoyaltyConfig(value)
             }
@@ -170,7 +168,7 @@ pub enum PersistError {
 #[derive(Debug)]
 pub enum RuntimeSubstate {
     Global(GlobalSubstate),
-    TypeInfo(TypeInfoSubstate),
+    TypeInfo(PackageCodeTypeSubstate),
     EpochManager(EpochManagerSubstate),
     ValidatorSet(ValidatorSetSubstate),
     Validator(ValidatorSubstate),
@@ -178,12 +176,11 @@ pub enum RuntimeSubstate {
     ResourceManager(ResourceManagerSubstate),
     AccessRulesChain(ObjectAccessRulesChainSubstate),
     Metadata(MetadataSubstate),
-    ComponentInfo(ComponentInfoSubstate),
+    ComponentInfo(TypeInfoSubstate),
     ComponentState(ComponentStateSubstate),
     ComponentRoyaltyConfig(ComponentRoyaltyConfigSubstate),
     ComponentRoyaltyAccumulator(ComponentRoyaltyAccumulatorSubstate),
-    NativeCode(NativeCodeSubstate),
-    WasmCode(WasmCodeSubstate),
+    PackageCode(PackageCodeSubstate),
     PackageInfo(PackageInfoSubstate),
     PackageRoyaltyConfig(PackageRoyaltyConfigSubstate),
     PackageRoyaltyAccumulator(PackageRoyaltyAccumulatorSubstate),
@@ -205,7 +202,7 @@ impl RuntimeSubstate {
     pub fn clone_to_persisted(&self) -> PersistedSubstate {
         match self {
             RuntimeSubstate::Global(value) => PersistedSubstate::Global(value.clone()),
-            RuntimeSubstate::TypeInfo(value) => PersistedSubstate::TypeInfo(value.clone()),
+            RuntimeSubstate::TypeInfo(value) => PersistedSubstate::PackageTypeInfo(value.clone()),
             RuntimeSubstate::EpochManager(value) => PersistedSubstate::EpochManager(value.clone()),
             RuntimeSubstate::ValidatorSet(value) => PersistedSubstate::ValidatorSet(value.clone()),
             RuntimeSubstate::Validator(value) => PersistedSubstate::Validator(value.clone()),
@@ -232,10 +229,7 @@ impl RuntimeSubstate {
                 PersistedSubstate::ComponentRoyaltyAccumulator(value.clone())
             }
             RuntimeSubstate::PackageInfo(value) => PersistedSubstate::PackageInfo(value.clone()),
-            RuntimeSubstate::WasmCode(value) => PersistedSubstate::WasmCode(value.clone()),
-            RuntimeSubstate::NativeCode(value) => {
-                PersistedSubstate::NativePackageInfo(value.clone())
-            }
+            RuntimeSubstate::PackageCode(value) => PersistedSubstate::WasmCode(value.clone()),
             RuntimeSubstate::PackageRoyaltyConfig(value) => {
                 PersistedSubstate::PackageRoyaltyConfig(value.clone())
             }
@@ -271,7 +265,7 @@ impl RuntimeSubstate {
     pub fn to_persisted(self) -> PersistedSubstate {
         match self {
             RuntimeSubstate::Global(value) => PersistedSubstate::Global(value),
-            RuntimeSubstate::TypeInfo(value) => PersistedSubstate::TypeInfo(value),
+            RuntimeSubstate::TypeInfo(value) => PersistedSubstate::PackageTypeInfo(value),
             RuntimeSubstate::EpochManager(value) => PersistedSubstate::EpochManager(value),
             RuntimeSubstate::ValidatorSet(value) => PersistedSubstate::ValidatorSet(value),
             RuntimeSubstate::Validator(value) => PersistedSubstate::Validator(value),
@@ -290,8 +284,7 @@ impl RuntimeSubstate {
                 PersistedSubstate::ComponentRoyaltyAccumulator(value)
             }
             RuntimeSubstate::PackageInfo(value) => PersistedSubstate::PackageInfo(value),
-            RuntimeSubstate::WasmCode(value) => PersistedSubstate::WasmCode(value),
-            RuntimeSubstate::NativeCode(value) => PersistedSubstate::NativePackageInfo(value),
+            RuntimeSubstate::PackageCode(value) => PersistedSubstate::WasmCode(value),
             RuntimeSubstate::PackageRoyaltyConfig(value) => {
                 PersistedSubstate::PackageRoyaltyConfig(value)
             }
@@ -376,8 +369,7 @@ impl RuntimeSubstate {
                 SubstateRefMut::ComponentRoyaltyAccumulator(value)
             }
             RuntimeSubstate::PackageInfo(value) => SubstateRefMut::PackageInfo(value),
-            RuntimeSubstate::WasmCode(value) => SubstateRefMut::WasmCode(value),
-            RuntimeSubstate::NativeCode(value) => SubstateRefMut::NativePackageInfo(value),
+            RuntimeSubstate::PackageCode(value) => SubstateRefMut::WasmCode(value),
             RuntimeSubstate::PackageRoyaltyConfig(value) => {
                 SubstateRefMut::PackageRoyaltyConfig(value)
             }
@@ -402,7 +394,7 @@ impl RuntimeSubstate {
     pub fn to_ref(&self) -> SubstateRef {
         match self {
             RuntimeSubstate::Global(value) => SubstateRef::Global(value),
-            RuntimeSubstate::TypeInfo(value) => SubstateRef::TypeInfo(value),
+            RuntimeSubstate::TypeInfo(value) => SubstateRef::PackageCodeType(value),
             RuntimeSubstate::EpochManager(value) => SubstateRef::EpochManager(value),
             RuntimeSubstate::ValidatorSet(value) => SubstateRef::ValidatorSet(value),
             RuntimeSubstate::Validator(value) => SubstateRef::Validator(value),
@@ -412,7 +404,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::AccessRulesChain(value) => SubstateRef::AccessRulesChain(value),
             RuntimeSubstate::Metadata(value) => SubstateRef::Metadata(value),
             RuntimeSubstate::ResourceManager(value) => SubstateRef::ResourceManager(value),
-            RuntimeSubstate::ComponentInfo(value) => SubstateRef::ComponentInfo(value),
+            RuntimeSubstate::ComponentInfo(value) => SubstateRef::TypeInfo(value),
             RuntimeSubstate::ComponentState(value) => SubstateRef::ComponentState(value),
             RuntimeSubstate::ComponentRoyaltyConfig(value) => {
                 SubstateRef::ComponentRoyaltyConfig(value)
@@ -421,8 +413,7 @@ impl RuntimeSubstate {
                 SubstateRef::ComponentRoyaltyAccumulator(value)
             }
             RuntimeSubstate::PackageInfo(value) => SubstateRef::PackageInfo(value),
-            RuntimeSubstate::WasmCode(value) => SubstateRef::WasmCode(value),
-            RuntimeSubstate::NativeCode(value) => SubstateRef::NativeCode(value),
+            RuntimeSubstate::PackageCode(value) => SubstateRef::PackageCode(value),
             RuntimeSubstate::PackageRoyaltyConfig(value) => {
                 SubstateRef::PackageRoyaltyConfig(value)
             }
@@ -593,9 +584,9 @@ impl Into<RuntimeSubstate> for CurrentTimeRoundedToMinutesSubstate {
     }
 }
 
-impl Into<RuntimeSubstate> for WasmCodeSubstate {
+impl Into<RuntimeSubstate> for PackageCodeSubstate {
     fn into(self) -> RuntimeSubstate {
-        RuntimeSubstate::WasmCode(self)
+        RuntimeSubstate::PackageCode(self)
     }
 }
 
@@ -605,19 +596,13 @@ impl Into<RuntimeSubstate> for PackageInfoSubstate {
     }
 }
 
-impl Into<RuntimeSubstate> for NativeCodeSubstate {
-    fn into(self) -> RuntimeSubstate {
-        RuntimeSubstate::NativeCode(self)
-    }
-}
-
-impl Into<RuntimeSubstate> for TypeInfoSubstate {
+impl Into<RuntimeSubstate> for PackageCodeTypeSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::TypeInfo(self)
     }
 }
 
-impl Into<RuntimeSubstate> for ComponentInfoSubstate {
+impl Into<RuntimeSubstate> for TypeInfoSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::ComponentInfo(self)
     }
@@ -711,8 +696,8 @@ impl Into<LoggerSubstate> for RuntimeSubstate {
     }
 }
 
-impl Into<ComponentInfoSubstate> for RuntimeSubstate {
-    fn into(self) -> ComponentInfoSubstate {
+impl Into<TypeInfoSubstate> for RuntimeSubstate {
+    fn into(self) -> TypeInfoSubstate {
         if let RuntimeSubstate::ComponentInfo(component) = self {
             component
         } else {
@@ -781,9 +766,9 @@ impl Into<ResourceManagerSubstate> for RuntimeSubstate {
     }
 }
 
-impl Into<WasmCodeSubstate> for RuntimeSubstate {
-    fn into(self) -> WasmCodeSubstate {
-        if let RuntimeSubstate::WasmCode(package) = self {
+impl Into<PackageCodeSubstate> for RuntimeSubstate {
+    fn into(self) -> PackageCodeSubstate {
+        if let RuntimeSubstate::PackageCode(package) = self {
             package
         } else {
             panic!("Not a resource manager");
@@ -927,15 +912,15 @@ pub enum SubstateRef<'a> {
     Logger(&'a LoggerSubstate),
     Proof(&'a ProofSubstate),
     Bucket(&'a BucketSubstate),
-    ComponentInfo(&'a ComponentInfoSubstate),
+    TypeInfo(&'a TypeInfoSubstate),
     ComponentState(&'a ComponentStateSubstate),
     ComponentRoyaltyConfig(&'a ComponentRoyaltyConfigSubstate),
     ComponentRoyaltyAccumulator(&'a ComponentRoyaltyAccumulatorSubstate),
     NonFungible(&'a NonFungibleSubstate),
     KeyValueStoreEntry(&'a KeyValueStoreEntrySubstate),
-    WasmCode(&'a WasmCodeSubstate),
     PackageInfo(&'a PackageInfoSubstate),
-    NativeCode(&'a NativeCodeSubstate),
+    PackageCode(&'a PackageCodeSubstate),
+    PackageCodeType(&'a PackageCodeTypeSubstate),
     PackageRoyaltyConfig(&'a PackageRoyaltyConfigSubstate),
     PackageRoyaltyAccumulator(&'a PackageRoyaltyAccumulatorSubstate),
     PackageAccessRules(&'a PackageAccessRulesSubstate),
@@ -948,7 +933,6 @@ pub enum SubstateRef<'a> {
     AccessRulesChain(&'a ObjectAccessRulesChainSubstate),
     Metadata(&'a MetadataSubstate),
     Global(&'a GlobalSubstate),
-    TypeInfo(&'a TypeInfoSubstate),
     TransactionRuntime(&'a TransactionRuntimeSubstate),
     Account(&'a AccountSubstate),
     AccessController(&'a AccessControllerSubstate),
@@ -999,10 +983,10 @@ impl<'a> From<SubstateRef<'a>> for &'a ComponentStateSubstate {
     }
 }
 
-impl<'a> From<SubstateRef<'a>> for &'a ComponentInfoSubstate {
+impl<'a> From<SubstateRef<'a>> for &'a TypeInfoSubstate {
     fn from(value: SubstateRef<'a>) -> Self {
         match value {
-            SubstateRef::ComponentInfo(value) => value,
+            SubstateRef::TypeInfo(value) => value,
             _ => panic!("Not a component info"),
         }
     }
@@ -1107,38 +1091,29 @@ impl<'a> From<SubstateRef<'a>> for &'a ResourceManagerSubstate {
     }
 }
 
-impl<'a> From<SubstateRef<'a>> for &'a TypeInfoSubstate {
-    fn from(value: SubstateRef<'a>) -> Self {
-        match value {
-            SubstateRef::TypeInfo(value) => value,
-            _ => panic!("Not a type info"),
-        }
-    }
-}
-
-impl<'a> From<SubstateRef<'a>> for &'a NativeCodeSubstate {
-    fn from(value: SubstateRef<'a>) -> Self {
-        match value {
-            SubstateRef::NativeCode(value) => value,
-            _ => panic!("Not a native code"),
-        }
-    }
-}
-
-impl<'a> From<SubstateRef<'a>> for &'a WasmCodeSubstate {
-    fn from(value: SubstateRef<'a>) -> Self {
-        match value {
-            SubstateRef::WasmCode(value) => value,
-            _ => panic!("Not wasm code"),
-        }
-    }
-}
-
 impl<'a> From<SubstateRef<'a>> for &'a PackageInfoSubstate {
     fn from(value: SubstateRef<'a>) -> Self {
         match value {
             SubstateRef::PackageInfo(value) => value,
             _ => panic!("Not package info"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a PackageCodeSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::PackageCode(value) => value,
+            _ => panic!("Not package code"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a PackageCodeTypeSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::PackageCodeType(value) => value,
+            _ => panic!("Not package code type"),
         }
     }
 }
@@ -1210,20 +1185,19 @@ impl<'a> SubstateRef<'a> {
     pub fn to_scrypto_value(&self) -> IndexedScryptoValue {
         match self {
             SubstateRef::Global(value) => IndexedScryptoValue::from_typed(*value),
-            SubstateRef::TypeInfo(value) => IndexedScryptoValue::from_typed(*value),
+            SubstateRef::PackageCodeType(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::EpochManager(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::CurrentTimeRoundedToMinutes(value) => {
                 IndexedScryptoValue::from_typed(*value)
             }
             SubstateRef::ResourceManager(value) => IndexedScryptoValue::from_typed(*value),
-            SubstateRef::ComponentInfo(value) => IndexedScryptoValue::from_typed(*value),
+            SubstateRef::TypeInfo(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::ComponentState(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::ComponentRoyaltyConfig(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::ComponentRoyaltyAccumulator(value) => {
                 IndexedScryptoValue::from_typed(*value)
             }
             SubstateRef::PackageInfo(value) => IndexedScryptoValue::from_typed(*value),
-            SubstateRef::NativeCode(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::PackageRoyaltyConfig(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::PackageRoyaltyAccumulator(value) => {
                 IndexedScryptoValue::from_typed(*value)
@@ -1308,7 +1282,7 @@ impl<'a> SubstateRef<'a> {
                 }
                 (references, Vec::new())
             }
-            SubstateRef::ComponentInfo(substate) => {
+            SubstateRef::TypeInfo(substate) => {
                 let mut references = HashSet::new();
                 references.insert(RENodeId::Global(Address::Package(substate.package_address)));
                 (references, Vec::new())
@@ -1386,13 +1360,12 @@ impl<'a> SubstateRef<'a> {
 }
 
 pub enum SubstateRefMut<'a> {
-    ComponentInfo(&'a mut ComponentInfoSubstate),
+    ComponentInfo(&'a mut TypeInfoSubstate),
     ComponentState(&'a mut ComponentStateSubstate),
     ComponentRoyaltyConfig(&'a mut ComponentRoyaltyConfigSubstate),
     ComponentRoyaltyAccumulator(&'a mut ComponentRoyaltyAccumulatorSubstate),
     PackageInfo(&'a mut PackageInfoSubstate),
-    WasmCode(&'a mut WasmCodeSubstate),
-    NativePackageInfo(&'a mut NativeCodeSubstate),
+    WasmCode(&'a mut PackageCodeSubstate),
     PackageRoyaltyConfig(&'a mut PackageRoyaltyConfigSubstate),
     PackageRoyaltyAccumulator(&'a mut PackageRoyaltyAccumulatorSubstate),
     PackageAccessRules(&'a mut PackageAccessRulesSubstate),
@@ -1407,7 +1380,7 @@ pub enum SubstateRefMut<'a> {
     AccessRulesChain(&'a mut ObjectAccessRulesChainSubstate),
     Metadata(&'a mut MetadataSubstate),
     Global(&'a mut GlobalSubstate),
-    TypeInfo(&'a mut TypeInfoSubstate),
+    TypeInfo(&'a mut PackageCodeTypeSubstate),
     Bucket(&'a mut BucketSubstate),
     Proof(&'a mut ProofSubstate),
     Worktop(&'a mut WorktopSubstate),
@@ -1483,7 +1456,7 @@ impl<'a> SubstateRefMut<'a> {
         }
     }
 
-    pub fn component_info(&mut self) -> &mut ComponentInfoSubstate {
+    pub fn component_info(&mut self) -> &mut TypeInfoSubstate {
         match self {
             SubstateRefMut::ComponentInfo(value) => *value,
             _ => panic!("Not component info"),

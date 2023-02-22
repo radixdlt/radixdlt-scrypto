@@ -2,7 +2,7 @@ use crate::ledger::*;
 use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use radix_engine_interface::abi;
-use radix_engine_interface::api::component::ComponentInfoSubstate;
+use radix_engine_interface::api::component::TypeInfoSubstate;
 use radix_engine_interface::api::types::{
     Address, GlobalOffset, PackageOffset, RENodeId, SubstateId, SubstateOffset,
 };
@@ -67,17 +67,17 @@ pub fn export_abi_by_component<S: ReadableSubstateStore>(
     let component_value: RuntimeSubstate = substate_store
         .get_substate(&SubstateId(
             component_id,
-            NodeModuleId::ComponentTypeInfo,
-            SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo),
+            NodeModuleId::TypeInfo,
+            SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
         ))
         .map(|s| s.substate.to_runtime())
         .ok_or(ExportError::ComponentNotFound(component_address))?;
 
     let component_ref = component_value.to_ref();
-    let component_info: &ComponentInfoSubstate = component_ref.into();
+    let type_info: &TypeInfoSubstate = component_ref.into();
     export_abi(
         substate_store,
-        component_info.package_address,
-        &component_info.blueprint_name,
+        type_info.package_address,
+        &type_info.blueprint_name,
     )
 }

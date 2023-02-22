@@ -9,7 +9,7 @@ use crate::system::global::GlobalSubstate;
 use crate::system::node_modules::access_rules::*;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_substates::*;
-use crate::system::type_info::TypeInfoSubstate;
+use crate::system::type_info::PackageCodeTypeSubstate;
 use crate::types::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::package::*;
@@ -23,8 +23,7 @@ use radix_engine_interface::api::types::{
 pub enum RENodeModuleInit {
     TypeInfo(TypeInfoSubstate),
     Metadata(MetadataSubstate),
-    ComponentAccessRulesChain(ObjectAccessRulesChainSubstate),
-    ComponentTypeInfo(ComponentInfoSubstate),
+    ObjectAccessRulesChain(ObjectAccessRulesChainSubstate),
     ComponentRoyalty(
         ComponentRoyaltyConfigSubstate,
         ComponentRoyaltyAccumulatorSubstate,
@@ -40,24 +39,21 @@ impl RENodeModuleInit {
     pub fn to_substates(self) -> HashMap<SubstateOffset, RuntimeSubstate> {
         let mut substates = HashMap::<SubstateOffset, RuntimeSubstate>::new();
         match self {
-            RENodeModuleInit::TypeInfo(type_info) => {
-                substates.insert(SubstateOffset::PackageTypeInfo, type_info.into());
-            }
             RENodeModuleInit::Metadata(metadata) => {
                 substates.insert(
                     SubstateOffset::Metadata(MetadataOffset::Metadata),
                     metadata.into(),
                 );
             }
-            RENodeModuleInit::ComponentAccessRulesChain(access_rules) => {
+            RENodeModuleInit::ObjectAccessRulesChain(access_rules) => {
                 substates.insert(
                     SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                     access_rules.into(),
                 );
             }
-            RENodeModuleInit::ComponentTypeInfo(type_info) => {
+            RENodeModuleInit::TypeInfo(type_info) => {
                 substates.insert(
-                    SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo),
+                    SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
                     type_info.into(),
                 );
             }
@@ -102,8 +98,11 @@ pub enum RENodeInit {
     NonFungibleStore(NonFungibleStore),
     Identity(),
     Component(ComponentStateSubstate),
-    WasmPackage(PackageInfoSubstate, WasmCodeSubstate),
-    NativePackage(PackageInfoSubstate, NativeCodeSubstate),
+    Package(
+        PackageInfoSubstate,
+        PackageCodeTypeSubstate,
+        PackageCodeSubstate,
+    ),
     ResourceManager(ResourceManagerSubstate),
     EpochManager(
         EpochManagerSubstate,
@@ -169,25 +168,16 @@ impl RENodeInit {
                     RuntimeSubstate::Logger(logger),
                 );
             }
-            RENodeInit::WasmPackage(package_info, code) => {
+            RENodeInit::Package(package_info, code_type, code) => {
                 substates.insert(
                     SubstateOffset::Package(PackageOffset::Info),
                     package_info.into(),
                 );
                 substates.insert(
-                    SubstateOffset::Package(PackageOffset::WasmCode),
-                    code.into(),
+                    SubstateOffset::Package(PackageOffset::CodeType),
+                    code_type.into(),
                 );
-            }
-            RENodeInit::NativePackage(package_info, native_code) => {
-                substates.insert(
-                    SubstateOffset::Package(PackageOffset::Info),
-                    package_info.into(),
-                );
-                substates.insert(
-                    SubstateOffset::Package(PackageOffset::NativeCode),
-                    native_code.into(),
-                );
+                substates.insert(SubstateOffset::Package(PackageOffset::Code), code.into());
             }
             RENodeInit::ResourceManager(resource_manager) => {
                 substates.insert(

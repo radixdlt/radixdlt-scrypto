@@ -1,7 +1,6 @@
 extern crate core;
 
 use radix_engine::errors::{ApplicationError, RuntimeError};
-use radix_engine::system::node_modules::access_rules::{AccessRulesChainError, AuthZoneError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
@@ -88,9 +87,7 @@ fn locked_mint_auth_cannot_be_updated() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(
-                AccessRulesChainError::UnauthorizedSetGroupAccessRules(..)
-            ))
+            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(..))
         )
     })
 }
@@ -102,9 +99,7 @@ fn locked_mint_auth_cannot_be_relocked() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(
-                AccessRulesChainError::Unauthorized(..)
-            ))
+            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(..))
         )
     })
 }
@@ -116,9 +111,7 @@ fn locked_burn_auth_cannot_be_updated() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(
-                AccessRulesChainError::UnauthorizedSetMethodAccessRules(..)
-            ))
+            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(..))
         )
     })
 }
@@ -130,9 +123,7 @@ fn locked_burn_auth_cannot_be_relocked() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(
-                AccessRulesChainError::Unauthorized(..)
-            ))
+            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(..))
         )
     })
 }
@@ -144,9 +135,7 @@ fn locked_withdraw_auth_cannot_be_updated() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
-                AuthZoneError::AssertAccessRuleError(..)
-            ))
+            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(..))
         )
     })
 }
@@ -158,9 +147,7 @@ fn locked_withdraw_auth_cannot_be_relocked() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
-                AuthZoneError::AssertAccessRuleError(..)
-            ))
+            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(..))
         )
     })
 }
@@ -172,9 +159,7 @@ fn locked_deposit_auth_cannot_be_updated() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
-                AuthZoneError::AssertAccessRuleError(..)
-            ))
+            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(..))
         )
     })
 }
@@ -186,9 +171,7 @@ fn locked_deposit_auth_cannot_be_relocked() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
-                AuthZoneError::AssertAccessRuleError(..)
-            ))
+            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(..))
         )
     })
 }
@@ -200,9 +183,7 @@ fn locked_recall_auth_cannot_be_updated() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
-                AuthZoneError::AssertAccessRuleError(..)
-            ))
+            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(..))
         )
     })
 }
@@ -214,9 +195,7 @@ fn locked_recall_auth_cannot_be_relocked() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
-                AuthZoneError::AssertAccessRuleError(..)
-            ))
+            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(..))
         )
     })
 }

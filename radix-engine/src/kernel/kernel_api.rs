@@ -14,7 +14,6 @@ use super::actor::ResolvedActor;
 use super::call_frame::CallFrameUpdate;
 use super::call_frame::RENodeVisibilityOrigin;
 use super::heap::HeapRENode;
-use super::interpreters::ScryptoInterpreter;
 use super::module_mixer::KernelModuleMixer;
 
 pub struct LockInfo {
@@ -78,7 +77,11 @@ pub trait KernelSubstateApi {
 }
 
 pub trait KernelWasmApi<W: WasmEngine> {
-    fn kernel_get_scrypto_interpreter(&mut self) -> &ScryptoInterpreter<W>;
+    fn kernel_create_wasm_instance(
+        &mut self,
+        package_address: PackageAddress,
+        handle: LockHandle,
+    ) -> Result<W::WasmInstance, RuntimeError>;
 }
 
 pub trait Invokable<I: Invocation, E> {

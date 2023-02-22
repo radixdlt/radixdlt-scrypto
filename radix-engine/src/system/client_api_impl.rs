@@ -16,8 +16,8 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::component::{
-    ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
-    ComponentStateSubstate,
+    ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate,
+    TypeInfoSubstate,
 };
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::substate_api::LockFlags;
@@ -159,10 +159,10 @@ where
         let handle = self.kernel_lock_substate(
             package_global,
             NodeModuleId::SELF,
-            SubstateOffset::Package(PackageOffset::WasmCode),
+            SubstateOffset::Package(PackageOffset::Code),
             LockFlags::read_only(),
         )?;
-        let package: &WasmCodeSubstate = self.kernel_get_substate_ref(handle)?;
+        let package: &PackageCodeSubstate = self.kernel_get_substate_ref(handle)?;
         let code = package.code().to_vec();
         self.kernel_drop_lock(handle)?;
         Ok(PackageCode::Wasm(code))
@@ -249,15 +249,15 @@ where
             node_id,
             RENodeInit::Component(ComponentStateSubstate::new(abi_enforced_app_substate)),
             btreemap!(
-                NodeModuleId::ComponentTypeInfo => RENodeModuleInit::ComponentTypeInfo(
-                    ComponentInfoSubstate::new(package_address, blueprint_ident.to_string())
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(
+                    TypeInfoSubstate::new(package_address, blueprint_ident.to_string())
                 ),
                 NodeModuleId::ComponentRoyalty => RENodeModuleInit::ComponentRoyalty(
                     royalty_config_substate,
                     royalty_accumulator_substate
                 ),
                 NodeModuleId::Metadata => RENodeModuleInit::Metadata(metadata_substate),
-                NodeModuleId::AccessRules => RENodeModuleInit::ComponentAccessRulesChain(auth_substate),
+                NodeModuleId::AccessRules => RENodeModuleInit::ObjectAccessRulesChain(auth_substate),
             ),
         )?;
 
@@ -312,11 +312,11 @@ where
         let component_node_id = RENodeId::Component(component_id);
         let handle = self.kernel_lock_substate(
             component_node_id,
-            NodeModuleId::ComponentTypeInfo,
-            SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo),
+            NodeModuleId::TypeInfo,
+            SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
             LockFlags::read_only(),
         )?;
-        let info: &ComponentInfoSubstate = self.kernel_get_substate_ref(handle)?;
+        let info: &TypeInfoSubstate = self.kernel_get_substate_ref(handle)?;
         let package_address = info.package_address;
         let blueprint_ident = info.blueprint_name.clone();
         self.kernel_drop_lock(handle)?;
