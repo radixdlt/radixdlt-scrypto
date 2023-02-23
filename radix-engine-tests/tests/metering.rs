@@ -71,7 +71,7 @@ fn test_basic_transfer() {
         + 65500 /* DropLock */
         + 12500 /* DropNode */
         + 0 /* InstantiateWasm */
-        + 10000 /* Invoke */
+        + 11670 /* Invoke */
         + 101000 /* LockSubstate */
         + 76500 /* ReadSubstate */
         + 62500 /* RunPrecompiled */
@@ -203,7 +203,7 @@ fn test_radiswap() {
         25000 /* CreateNode */
         + 189000 /* DropLock */
         + 17500 /* DropNode */
-        + 26410 /* Invoke */
+        + 31450 /* Invoke */
         + 296000 /* LockSubstate */
         + 230000 /* ReadSubstate */
         + 162500 /* RunPrecompiled */
@@ -231,9 +231,9 @@ fn test_publish_large_package() {
                 (export "memory" (memory $0))
             )
         "#,
-        "i".repeat(DEFAULT_MAX_INVOKE_INPUT_SIZE - 87) // ensure we fit in limit
+        "i".repeat(DEFAULT_MAX_INVOKE_INPUT_SIZE - 138) // ensure we fit within limit
     ));
-    assert_eq!(DEFAULT_MAX_INVOKE_INPUT_SIZE - 48, code.len());
+    assert_eq!(DEFAULT_MAX_INVOKE_INPUT_SIZE - 99, code.len());
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 100.into())
         .publish_package(
