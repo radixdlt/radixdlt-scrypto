@@ -142,8 +142,18 @@ pub struct HeapRENode {
     pub substates: BTreeMap<(NodeModuleId, SubstateOffset), RuntimeSubstate>,
 }
 
-impl Into<LiquidResource> for HeapRENode {
-    fn into(mut self) -> LiquidResource {
+pub struct DroppedBucket {
+    pub info: BucketInfoSubstate,
+    pub resource: DroppedBucketResource,
+}
+
+pub enum DroppedBucketResource {
+    Fungible(LiquidFungibleResource),
+    NonFungible(LiquidNonFungibleResource),
+}
+
+impl Into<DroppedBucket> for HeapRENode {
+    fn into(mut self) -> DroppedBucket {
         let info: BucketInfoSubstate = self
             .substates
             .remove(&(
@@ -153,26 +163,28 @@ impl Into<LiquidResource> for HeapRENode {
             .unwrap()
             .into();
 
-        match info.resource_type {
-            ResourceType::Fungible { .. } => self
-                .substates
-                .remove(&(
-                    NodeModuleId::SELF,
-                    SubstateOffset::Bucket(BucketOffset::LiquidFungible),
-                ))
-                .map(|s| Into::<LiquidFungibleResource>::into(s))
-                .unwrap()
-                .into(),
-            ResourceType::NonFungible { .. } => self
-                .substates
-                .remove(&(
-                    NodeModuleId::SELF,
-                    SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
-                ))
-                .map(|s| Into::<LiquidNonFungibleResource>::into(s))
-                .unwrap()
-                .into(),
-        }
+        let resource = match info.resource_type {
+            ResourceType::Fungible { .. } => DroppedBucketResource::Fungible(
+                self.substates
+                    .remove(&(
+                        NodeModuleId::SELF,
+                        SubstateOffset::Bucket(BucketOffset::LiquidFungible),
+                    ))
+                    .map(|s| Into::<LiquidFungibleResource>::into(s))
+                    .unwrap(),
+            ),
+            ResourceType::NonFungible { .. } => DroppedBucketResource::NonFungible(
+                self.substates
+                    .remove(&(
+                        NodeModuleId::SELF,
+                        SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
+                    ))
+                    .map(|s| Into::<LiquidNonFungibleResource>::into(s))
+                    .unwrap(),
+            ),
+        };
+
+        DroppedBucket { info, resource }
     }
 }
 

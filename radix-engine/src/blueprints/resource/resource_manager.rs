@@ -48,25 +48,6 @@ impl ResourceManagerSubstate {
             resource_address,
         }
     }
-
-    pub fn check_fungible_amount(
-        &self,
-        amount: Decimal,
-    ) -> Result<(), InvokeError<ResourceManagerError>> {
-        let divisibility = self.resource_type.divisibility();
-
-        if amount.is_negative()
-            || amount.0 % BnumI256::from(10i128.pow((18 - divisibility).into()))
-                != BnumI256::from(0)
-        {
-            Err(InvokeError::SelfError(ResourceManagerError::InvalidAmount(
-                amount,
-                divisibility,
-            )))
-        } else {
-            Ok(())
-        }
-    }
 }
 
 /// Represents an error when accessing a bucket.
@@ -167,7 +148,16 @@ where
     );
 
     let bucket = {
-        resource_manager.check_fungible_amount(initial_supply)?;
+        // check amount
+        if !resource_manager.resource_type.check_amount(initial_supply) {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::ResourceManagerError(ResourceManagerError::InvalidAmount(
+                    initial_supply,
+                    divisibility,
+                )),
+            ));
+        }
+
         // TODO: refactor this into mint function
         if initial_supply > dec!("1000000000000000000") {
             return Err(RuntimeError::ApplicationError(
@@ -1064,10 +1054,17 @@ impl ResourceManagerBlueprint {
         let resource = {
             let mut substate_mut = api.kernel_get_substate_ref_mut(resman_handle)?;
             let resource_manager = substate_mut.resource_manager();
+            let resource_type = resource_manager.resource_type;
 
-            if let ResourceType::Fungible { divisibility } = resource_manager.resource_type {
+            if let ResourceType::Fungible { divisibility } = resource_type {
                 // check amount
-                resource_manager.check_fungible_amount(input.amount)?;
+                if !resource_type.check_amount(input.amount) {
+                    return Err(RuntimeError::ApplicationError(
+                        ApplicationError::ResourceManagerError(
+                            ResourceManagerError::InvalidAmount(input.amount, divisibility),
+                        ),
+                    ));
+                }
 
                 // Practically impossible to overflow the Decimal type with this limit in place.
                 if input.amount > dec!("1000000000000000000") {

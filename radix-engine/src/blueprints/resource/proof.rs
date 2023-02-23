@@ -1,7 +1,6 @@
 use crate::errors::{ApplicationError, InterpreterError, RuntimeError};
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::kernel_modules::execution_trace::ProofSnapshot;
 use crate::system::node::RENodeInit;
 use crate::types::*;
 use radix_engine_interface::api::types::*;
@@ -75,11 +74,6 @@ impl ProofInfoSubstate {
 
 #[derive(Debug, Clone)]
 pub struct FungibleProof {
-    /// The resource address.
-    pub resource_address: ResourceAddress,
-    /// Whether movement of this proof is restricted.
-    pub restricted: bool,
-    /// The total locked amount or non-fungible ids.
     pub total_locked: Decimal,
     /// The supporting containers.
     pub evidence: BTreeMap<LocalRef, Decimal>,
@@ -87,7 +81,6 @@ pub struct FungibleProof {
 
 impl FungibleProof {
     pub fn new(
-        resource_address: ResourceAddress,
         total_locked: Decimal,
         evidence: BTreeMap<LocalRef, Decimal>,
     ) -> Result<FungibleProof, ProofError> {
@@ -96,8 +89,6 @@ impl FungibleProof {
         }
 
         Ok(Self {
-            resource_address,
-            restricted: false,
             total_locked,
             evidence,
         })
@@ -118,8 +109,6 @@ impl FungibleProof {
             )?;
         }
         Ok(Self {
-            resource_address: self.resource_address.clone(),
-            restricted: self.restricted,
             total_locked: self.total_locked.clone(),
             evidence: self.evidence.clone(),
         })
@@ -139,33 +128,13 @@ impl FungibleProof {
         Ok(())
     }
 
-    pub fn resource_address(&self) -> ResourceAddress {
-        self.resource_address
-    }
-
     pub fn total_amount(&self) -> Decimal {
         self.total_locked
-    }
-
-    pub fn is_restricted(&self) -> bool {
-        self.restricted
-    }
-
-    pub fn snapshot(&self) -> ProofSnapshot {
-        ProofSnapshot::Fungible {
-            resource_address: self.resource_address,
-            restricted: self.restricted,
-            total_locked: self.total_locked.clone(),
-        }
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct NonFungibleProof {
-    /// The resource address.
-    pub resource_address: ResourceAddress,
-    /// Whether movement of this proof is restricted.
-    pub restricted: bool,
     /// The total locked amount or non-fungible ids.
     pub total_locked: BTreeSet<NonFungibleLocalId>,
     /// The supporting containers.
@@ -174,7 +143,6 @@ pub struct NonFungibleProof {
 
 impl NonFungibleProof {
     pub fn new(
-        resource_address: ResourceAddress,
         total_locked: BTreeSet<NonFungibleLocalId>,
         evidence: BTreeMap<LocalRef, BTreeSet<NonFungibleLocalId>>,
     ) -> Result<NonFungibleProof, ProofError> {
@@ -183,8 +151,6 @@ impl NonFungibleProof {
         }
 
         Ok(Self {
-            resource_address,
-            restricted: false,
             total_locked,
             evidence,
         })
@@ -205,8 +171,6 @@ impl NonFungibleProof {
             )?;
         }
         Ok(Self {
-            resource_address: self.resource_address.clone(),
-            restricted: self.restricted,
             total_locked: self.total_locked.clone(),
             evidence: self.evidence.clone(),
         })
@@ -225,9 +189,6 @@ impl NonFungibleProof {
         }
         Ok(())
     }
-    pub fn resource_address(&self) -> ResourceAddress {
-        self.resource_address
-    }
 
     pub fn total_amount(&self) -> Decimal {
         self.total_ids().len().into()
@@ -235,18 +196,6 @@ impl NonFungibleProof {
 
     pub fn total_ids(&self) -> &BTreeSet<NonFungibleLocalId> {
         &self.total_locked
-    }
-
-    pub fn is_restricted(&self) -> bool {
-        self.restricted
-    }
-
-    pub fn snapshot(&self) -> ProofSnapshot {
-        ProofSnapshot::NonFungible {
-            resource_address: self.resource_address,
-            restricted: self.restricted,
-            total_locked: self.total_locked.clone(),
-        }
     }
 }
 
