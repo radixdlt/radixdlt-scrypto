@@ -1,5 +1,6 @@
 use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::identity::Identity;
+use crate::blueprints::resource::ProofInfoSubstate;
 use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::system::global::GlobalSubstate;
@@ -303,16 +304,31 @@ where
                 Ok(())
             }
             RENodeId::Proof(..) => {
-                let handle = api.kernel_lock_substate(
-                    node_id,
-                    NodeModuleId::SELF,
-                    SubstateOffset::Proof(ProofOffset::Proof),
-                    LockFlags::MUTABLE,
-                )?;
-                let mut substate_ref_mut = api.kernel_get_substate_ref_mut(handle)?;
-                let proof = substate_ref_mut.proof().clone();
-                proof.drop_proof(api)?;
-                api.kernel_drop_lock(handle)?;
+                let proof_info = ProofInfoSubstate::of(node_id, api)?;
+                if proof_info.resource_type.is_fungible() {
+                    let handle = api.kernel_lock_substate(
+                        node_id,
+                        NodeModuleId::SELF,
+                        SubstateOffset::Proof(ProofOffset::Fungible),
+                        LockFlags::MUTABLE,
+                    )?;
+                    let mut substate_ref_mut = api.kernel_get_substate_ref_mut(handle)?;
+                    let proof = substate_ref_mut.fungible_proof().clone();
+                    proof.drop_proof(api)?;
+                    api.kernel_drop_lock(handle)?;
+                } else {
+                    let handle = api.kernel_lock_substate(
+                        node_id,
+                        NodeModuleId::SELF,
+                        SubstateOffset::Proof(ProofOffset::NonFungible),
+                        LockFlags::MUTABLE,
+                    )?;
+                    let mut substate_ref_mut = api.kernel_get_substate_ref_mut(handle)?;
+                    let proof = substate_ref_mut.non_fungible_proof().clone();
+                    proof.drop_proof(api)?;
+                    api.kernel_drop_lock(handle)?;
+                }
+
                 Ok(())
             }
             RENodeId::Worktop => {

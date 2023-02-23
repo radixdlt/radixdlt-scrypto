@@ -232,7 +232,11 @@ impl ProofBlueprint {
             let clone = proof.clone_proof(api)?;
 
             let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
-            api.kernel_create_node(node_id, RENodeInit::FungibleProof(clone), BTreeMap::new())?;
+            api.kernel_create_node(
+                node_id,
+                RENodeInit::FungibleProof(proof_info, clone),
+                BTreeMap::new(),
+            )?;
             node_id
         } else {
             let handle = api.kernel_lock_substate(
@@ -250,7 +254,7 @@ impl ProofBlueprint {
             let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
             api.kernel_create_node(
                 node_id,
-                RENodeInit::NonFungibleProof(clone),
+                RENodeInit::NonFungibleProof(proof_info, clone),
                 BTreeMap::new(),
             )?;
             node_id

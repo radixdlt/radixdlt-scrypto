@@ -12,8 +12,9 @@ use radix_engine_interface::api::types::{
     SubstateId, SubstateOffset, TransactionRuntimeOffset,
 };
 use radix_engine_interface::blueprints::resource::{
-    LiquidFungibleResource, LiquidNonFungibleResource, LiquidResource, ResourceType,
+    LiquidFungibleResource, LiquidNonFungibleResource, ResourceType,
 };
+use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
 
@@ -150,6 +151,15 @@ pub struct DroppedBucket {
 pub enum DroppedBucketResource {
     Fungible(LiquidFungibleResource),
     NonFungible(LiquidNonFungibleResource),
+}
+
+impl DroppedBucket {
+    pub fn amount(&self) -> Decimal {
+        match &self.resource {
+            DroppedBucketResource::Fungible(f) => f.amount(),
+            DroppedBucketResource::NonFungible(f) => f.amount(),
+        }
+    }
 }
 
 impl Into<DroppedBucket> for HeapRENode {

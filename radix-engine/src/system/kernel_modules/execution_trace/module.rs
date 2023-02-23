@@ -64,15 +64,23 @@ pub enum VaultOp {
 
 #[derive(Clone, Debug, PartialEq, Eq, ScryptoSbor)]
 pub enum BucketSnapshot {
-    Fungible(LiquidFungibleResource),
-    NonFungible(LiquidNonFungibleResource),
+    Fungible {
+        resource_address: ResourceAddress,
+        resource_type: ResourceType,
+        liquid: Decimal,
+    },
+    NonFungible {
+        resource_address: ResourceAddress,
+        resource_type: ResourceType,
+        liquid: BTreeSet<NonFungibleLocalId>,
+    },
 }
 
 impl BucketSnapshot {
     pub fn amount(&self) -> Decimal {
         match self {
-            BucketSnapshot::Fungible(f) => f.amount(),
-            BucketSnapshot::NonFungible(nf) => nf.amount(),
+            BucketSnapshot::Fungible { liquid, .. } => liquid.clone(),
+            BucketSnapshot::NonFungible { liquid, .. } => liquid.len().into(),
         }
     }
 }
@@ -81,11 +89,13 @@ impl BucketSnapshot {
 pub enum ProofSnapshot {
     Fungible {
         resource_address: ResourceAddress,
+        resource_type: ResourceType,
         restricted: bool,
         total_locked: Decimal,
     },
     NonFungible {
         resource_address: ResourceAddress,
+        resource_type: ResourceType,
         restricted: bool,
         total_locked: BTreeSet<NonFungibleLocalId>,
     },

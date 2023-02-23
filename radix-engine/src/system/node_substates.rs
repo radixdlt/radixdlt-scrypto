@@ -1670,13 +1670,6 @@ impl<'a> SubstateRefMut<'a> {
         }
     }
 
-    pub fn proof_info(&mut self) -> &mut ProofInfoSubstate {
-        match self {
-            SubstateRefMut::ProofInfo(value) => *value,
-            _ => panic!("Not a proof"),
-        }
-    }
-
     pub fn bucket_info(&mut self) -> &mut BucketInfoSubstate {
         match self {
             SubstateRefMut::BucketInfo(value) => *value,
@@ -1709,6 +1702,27 @@ impl<'a> SubstateRefMut<'a> {
         match self {
             SubstateRefMut::BucketLockedNonFungible(value) => *value,
             _ => panic!("Not a bucket"),
+        }
+    }
+
+    pub fn proof_info(&mut self) -> &mut ProofInfoSubstate {
+        match self {
+            SubstateRefMut::ProofInfo(value) => *value,
+            _ => panic!("Not a proof"),
+        }
+    }
+
+    pub fn fungible_proof(&mut self) -> &mut FungibleProof {
+        match self {
+            SubstateRefMut::FungibleProof(value) => *value,
+            _ => panic!("Not a proof"),
+        }
+    }
+
+    pub fn non_fungible_proof(&mut self) -> &mut NonFungibleProof {
+        match self {
+            SubstateRefMut::NonFungibleProof(value) => *value,
+            _ => panic!("Not a proof"),
         }
     }
 

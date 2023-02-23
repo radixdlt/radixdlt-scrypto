@@ -538,7 +538,17 @@ impl VaultBlueprint {
 
             // Create node
             let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
-            api.kernel_create_node(node_id, RENodeInit::FungibleBucket(taken), BTreeMap::new())?;
+            api.kernel_create_node(
+                node_id,
+                RENodeInit::FungibleBucket(
+                    BucketInfoSubstate {
+                        resource_address: info.resource_address,
+                        resource_type: info.resource_type,
+                    },
+                    taken,
+                ),
+                BTreeMap::new(),
+            )?;
 
             node_id
         } else {
@@ -549,7 +559,13 @@ impl VaultBlueprint {
             let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
             api.kernel_create_node(
                 node_id,
-                RENodeInit::NonFungibleBucket(taken),
+                RENodeInit::NonFungibleBucket(
+                    BucketInfoSubstate {
+                        resource_address: info.resource_address,
+                        resource_type: info.resource_type,
+                    },
+                    taken,
+                ),
                 BTreeMap::new(),
             )?;
 
@@ -589,7 +605,13 @@ impl VaultBlueprint {
             let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
             api.kernel_create_node(
                 node_id,
-                RENodeInit::NonFungibleBucket(taken),
+                RENodeInit::NonFungibleBucket(
+                    BucketInfoSubstate {
+                        resource_address: info.resource_address,
+                        resource_type: info.resource_type,
+                    },
+                    taken,
+                ),
                 BTreeMap::new(),
             )?;
             let bucket_id = node_id.into();
@@ -781,14 +803,30 @@ impl VaultBlueprint {
         let node_id = if info.resource_type.is_fungible() {
             let taken = FungibleVault::take(receiver, input.amount, api)?;
             let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
-            api.kernel_create_node(node_id, RENodeInit::FungibleBucket(taken), BTreeMap::new())?;
+            api.kernel_create_node(
+                node_id,
+                RENodeInit::FungibleBucket(
+                    BucketInfoSubstate {
+                        resource_address: info.resource_address,
+                        resource_type: info.resource_type,
+                    },
+                    taken,
+                ),
+                BTreeMap::new(),
+            )?;
             node_id
         } else {
             let taken = NonFungibleVault::take(receiver, input.amount, api)?;
             let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
             api.kernel_create_node(
                 node_id,
-                RENodeInit::NonFungibleBucket(taken),
+                RENodeInit::NonFungibleBucket(
+                    BucketInfoSubstate {
+                        resource_address: info.resource_address,
+                        resource_type: info.resource_type,
+                    },
+                    taken,
+                ),
                 BTreeMap::new(),
             )?;
             node_id
@@ -824,7 +862,13 @@ impl VaultBlueprint {
             let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
             api.kernel_create_node(
                 node_id,
-                RENodeInit::NonFungibleBucket(taken),
+                RENodeInit::NonFungibleBucket(
+                    BucketInfoSubstate {
+                        resource_address: info.resource_address,
+                        resource_type: info.resource_type,
+                    },
+                    taken,
+                ),
                 BTreeMap::new(),
             )?;
             let bucket_id = node_id.into();
@@ -854,7 +898,18 @@ impl VaultBlueprint {
             let proof = FungibleVault::lock_amount(receiver, amount, api)?;
 
             let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
-            api.kernel_create_node(node_id, RENodeInit::FungibleProof(proof), BTreeMap::new())?;
+            api.kernel_create_node(
+                node_id,
+                RENodeInit::FungibleProof(
+                    ProofInfoSubstate {
+                        resource_address: info.resource_address,
+                        resource_type: info.resource_type,
+                        restricted: false,
+                    },
+                    proof,
+                ),
+                BTreeMap::new(),
+            )?;
             node_id
         } else {
             let amount = NonFungibleVault::locked_amount(receiver, api)?
@@ -864,7 +919,14 @@ impl VaultBlueprint {
             let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
             api.kernel_create_node(
                 node_id,
-                RENodeInit::NonFungibleProof(proof),
+                RENodeInit::NonFungibleProof(
+                    ProofInfoSubstate {
+                        resource_address: info.resource_address,
+                        resource_type: info.resource_type,
+                        restricted: false,
+                    },
+                    proof,
+                ),
                 BTreeMap::new(),
             )?;
             node_id
@@ -893,7 +955,18 @@ impl VaultBlueprint {
             let proof = FungibleVault::lock_amount(receiver, input.amount, api)?;
 
             let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
-            api.kernel_create_node(node_id, RENodeInit::FungibleProof(proof), BTreeMap::new())?;
+            api.kernel_create_node(
+                node_id,
+                RENodeInit::FungibleProof(
+                    ProofInfoSubstate {
+                        resource_address: info.resource_address,
+                        resource_type: info.resource_type,
+                        restricted: false,
+                    },
+                    proof,
+                ),
+                BTreeMap::new(),
+            )?;
             node_id
         } else {
             let proof = NonFungibleVault::lock_amount(receiver, input.amount, api)?;
@@ -901,7 +974,14 @@ impl VaultBlueprint {
             let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
             api.kernel_create_node(
                 node_id,
-                RENodeInit::NonFungibleProof(proof),
+                RENodeInit::NonFungibleProof(
+                    ProofInfoSubstate {
+                        resource_address: info.resource_address,
+                        resource_type: info.resource_type,
+                        restricted: false,
+                    },
+                    proof,
+                ),
                 BTreeMap::new(),
             )?;
             node_id
@@ -937,7 +1017,14 @@ impl VaultBlueprint {
             let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
             api.kernel_create_node(
                 node_id,
-                RENodeInit::NonFungibleProof(proof),
+                RENodeInit::NonFungibleProof(
+                    ProofInfoSubstate {
+                        resource_address: info.resource_address,
+                        resource_type: info.resource_type,
+                        restricted: false,
+                    },
+                    proof,
+                ),
                 BTreeMap::new(),
             )?;
 

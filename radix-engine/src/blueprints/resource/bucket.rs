@@ -535,7 +535,17 @@ impl BucketBlueprint {
 
             // Create node
             let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
-            api.kernel_create_node(node_id, RENodeInit::FungibleBucket(taken), BTreeMap::new())?;
+            api.kernel_create_node(
+                node_id,
+                RENodeInit::FungibleBucket(
+                    BucketInfoSubstate {
+                        resource_address: info.resource_address,
+                        resource_type: info.resource_type,
+                    },
+                    taken,
+                ),
+                BTreeMap::new(),
+            )?;
 
             node_id
         } else {
@@ -546,7 +556,13 @@ impl BucketBlueprint {
             let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
             api.kernel_create_node(
                 node_id,
-                RENodeInit::NonFungibleBucket(taken),
+                RENodeInit::NonFungibleBucket(
+                    BucketInfoSubstate {
+                        resource_address: info.resource_address,
+                        resource_type: info.resource_type,
+                    },
+                    taken,
+                ),
                 BTreeMap::new(),
             )?;
 
@@ -584,7 +600,13 @@ impl BucketBlueprint {
             let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
             api.kernel_create_node(
                 node_id,
-                RENodeInit::NonFungibleBucket(taken),
+                RENodeInit::NonFungibleBucket(
+                    BucketInfoSubstate {
+                        resource_address: info.resource_address,
+                        resource_type: info.resource_type,
+                    },
+                    taken,
+                ),
                 BTreeMap::new(),
             )?;
             let bucket_id = node_id.into();
@@ -714,7 +736,18 @@ impl BucketBlueprint {
             let proof = FungibleBucket::lock_amount(receiver, amount, api)?;
 
             let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
-            api.kernel_create_node(node_id, RENodeInit::FungibleProof(proof), BTreeMap::new())?;
+            api.kernel_create_node(
+                node_id,
+                RENodeInit::FungibleProof(
+                    ProofInfoSubstate {
+                        resource_address: info.resource_address,
+                        resource_type: info.resource_type,
+                        restricted: false,
+                    },
+                    proof,
+                ),
+                BTreeMap::new(),
+            )?;
             node_id
         } else {
             let amount = NonFungibleBucket::locked_amount(receiver, api)?
@@ -724,7 +757,14 @@ impl BucketBlueprint {
             let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
             api.kernel_create_node(
                 node_id,
-                RENodeInit::NonFungibleProof(proof),
+                RENodeInit::NonFungibleProof(
+                    ProofInfoSubstate {
+                        resource_address: info.resource_address,
+                        resource_type: info.resource_type,
+                        restricted: false,
+                    },
+                    proof,
+                ),
                 BTreeMap::new(),
             )?;
             node_id
