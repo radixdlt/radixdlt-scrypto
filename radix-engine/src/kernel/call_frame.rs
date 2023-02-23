@@ -66,7 +66,7 @@ pub struct SubstateLock {
     pub node_id: RENodeId,
     pub module_id: NodeModuleId,
     pub offset: SubstateOffset,
-    pub references: HashSet<RENodeId>,
+    pub temp_references: HashSet<RENodeId>,
     pub substate_owned_nodes: Vec<RENodeId>,
     pub flags: LockFlags,
 }
@@ -94,8 +94,13 @@ pub struct CallFrame {
     /// TODO: Move to an RENode
     pub actor: Option<ResolvedActor>,
 
-    /// All ref nodes accessible by this call frame (does not include owned nodes).
-    node_refs: HashMap<RENodeId, RENodeRefData>,
+    /// Node refs which are immortal during the life time of this frame:
+    /// - Any node refs received from other frames;
+    /// - Global node refs obtained through substate locking.
+    immortal_node_refs: HashMap<RENodeId, RENodeRefData>,
+
+    /// Node refs obtained through substate locking, which will be dropped upon unlocking.
+    temp_node_refs: HashMap<RENodeId, u32>,
 
     /// Owned nodes which by definition must live on heap
     /// Also keeps track of number of locks on this node
@@ -140,19 +145,32 @@ impl CallFrame {
         let (references, substate_owned_nodes) = substate_ref.references_and_owned_nodes();
 
         // Expand references
-        {
-            for node_id in &references {
-                self.node_refs.insert(
-                    node_id.clone(),
-                    RENodeRefData::new(RENodeVisibilityOrigin::Normal),
+        let mut temp_references = HashSet::new();
+        for node_id in references {
+            // TODO: fix this ugly condition
+            if (matches!(node_id, RENodeId::Global(_)) || matches!(node_id, RENodeId::Package(_)))
+                || matches!(node_id, RENodeId::ResourceManager(_))
+            {
+                // May overwrite existing node refs (better visibility origin)
+                self.immortal_node_refs.insert(
+                    node_id,
+                    RENodeRefData {
+                        visibility: RENodeVisibilityOrigin::Normal,
+                    },
                 );
+            } else {
+                temp_references.insert(node_id);
             }
-            for child_id in &substate_owned_nodes {
-                self.node_refs.insert(
-                    *child_id,
-                    RENodeRefData::new(RENodeVisibilityOrigin::Normal),
-                );
-            }
+        }
+        for node_id in &substate_owned_nodes {
+            temp_references.insert(node_id.clone());
+        }
+
+        for node_id in &temp_references {
+            self.temp_node_refs
+                .entry(node_id.clone())
+                .or_default()
+                .add_assign(1);
         }
 
         let lock_handle = self.next_lock_handle;
@@ -162,7 +180,7 @@ impl CallFrame {
                 node_id,
                 module_id,
                 offset,
-                references,
+                temp_references,
                 substate_owned_nodes,
                 flags,
             },
@@ -193,10 +211,11 @@ impl CallFrame {
 
         if substate_lock.flags.contains(LockFlags::MUTABLE) {
             let substate_ref = self.get_substate(heap, track, node_id, module_id, &offset)?;
+            let (_references, owned_nodes) = substate_ref.references_and_owned_nodes();
 
             // Reserving original Vec element order with `IndexSet`
             let mut new_children: IndexSet<RENodeId> = index_set_new();
-            for own in substate_ref.references_and_owned_nodes().1 {
+            for own in owned_nodes {
                 if !new_children.insert(own) {
                     return Err(RuntimeError::KernelError(
                         KernelError::ContainsDuplicatedOwns,
@@ -224,11 +243,12 @@ impl CallFrame {
             }
         }
 
-        // TODO: revisit this
-        // References need not be dropped
-        // Substate Locks downstream may also continue to live
-        for refed_node in substate_lock.substate_owned_nodes {
-            self.node_refs.remove(&refed_node);
+        // TODO: revisit this reference shrinking
+        for refed_node in substate_lock.temp_references {
+            let cnt = self.temp_node_refs.remove(&refed_node).unwrap_or(0);
+            if cnt > 1 {
+                self.temp_node_refs.insert(refed_node, cnt - 1);
+            }
         }
 
         if let Some(counter) = self.owned_root_nodes.get_mut(&substate_lock.node_id) {
@@ -277,7 +297,8 @@ impl CallFrame {
         let mut frame = Self {
             depth: 0,
             actor: None,
-            node_refs: HashMap::new(),
+            immortal_node_refs: HashMap::new(),
+            temp_node_refs: HashMap::new(),
             owned_root_nodes: HashMap::new(),
             next_lock_handle: 0u32,
             locks: HashMap::new(),
@@ -341,7 +362,8 @@ impl CallFrame {
         let frame = Self {
             depth: parent.depth + 1,
             actor: Some(actor),
-            node_refs: next_node_refs,
+            immortal_node_refs: next_node_refs,
+            temp_node_refs: HashMap::new(),
             owned_root_nodes: owned_heap_nodes,
             next_lock_handle: 0u32,
             locks: HashMap::new(),
@@ -364,11 +386,11 @@ impl CallFrame {
         for node_id in update.node_refs_to_copy {
             // Make sure not to allow owned nodes to be passed as references upstream
             let ref_data = from
-                .node_refs
+                .immortal_node_refs
                 .get(&node_id)
                 .ok_or(CallFrameError::RENodeNotVisible(node_id))?;
 
-            to.node_refs
+            to.immortal_node_refs
                 .entry(node_id)
                 .and_modify(|e| {
                     if e.visibility == RENodeVisibilityOrigin::DirectAccess {
@@ -460,7 +482,7 @@ impl CallFrame {
     }
 
     pub fn add_ref(&mut self, node_id: RENodeId, visibility: RENodeVisibilityOrigin) {
-        self.node_refs
+        self.immortal_node_refs
             .insert(node_id, RENodeRefData::new(visibility));
     }
 
@@ -557,7 +579,9 @@ impl CallFrame {
     pub fn get_node_visibility(&self, node_id: &RENodeId) -> Option<RENodeVisibilityOrigin> {
         if self.owned_root_nodes.contains_key(node_id) {
             Some(RENodeVisibilityOrigin::Normal)
-        } else if let Some(ref_data) = self.node_refs.get(node_id) {
+        } else if let Some(_) = self.temp_node_refs.get(node_id) {
+            Some(RENodeVisibilityOrigin::Normal)
+        } else if let Some(ref_data) = self.immortal_node_refs.get(node_id) {
             Some(ref_data.visibility)
         } else {
             None
