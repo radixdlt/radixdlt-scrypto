@@ -734,7 +734,7 @@ impl VaultBlueprint {
         let vault_handle = api.kernel_lock_substate(
             receiver,
             NodeModuleId::SELF,
-            SubstateOffset::Vault(VaultOffset::Info),
+            SubstateOffset::Vault(VaultOffset::LiquidFungible),
             LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE,
         )?;
 

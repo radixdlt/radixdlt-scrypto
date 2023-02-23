@@ -138,13 +138,19 @@ impl LiquidNonFungibleResource {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct LockedFungibleResource {
     /// The locked amounts and the corresponding times of being locked.
     pub amounts: BTreeMap<Decimal, usize>,
 }
 
 impl LockedFungibleResource {
+    pub fn new_empty() -> Self {
+        Self {
+            amounts: BTreeMap::new(),
+        }
+    }
+
     pub fn is_locked(&self) -> bool {
         !self.amounts.is_empty()
     }
@@ -158,13 +164,19 @@ impl LockedFungibleResource {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct LockedNonFungibleResource {
     /// The locked non-fungible ids and the corresponding times of being locked.
     pub ids: BTreeMap<NonFungibleLocalId, usize>,
 }
 
 impl LockedNonFungibleResource {
+    pub fn new_empty() -> Self {
+        Self {
+            ids: BTreeMap::new(),
+        }
+    }
+
     pub fn is_locked(&self) -> bool {
         !self.ids.is_empty()
     }

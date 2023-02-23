@@ -52,6 +52,8 @@ pub enum PersistedSubstate {
     VaultInfo(VaultInfoSubstate),
     VaultLiquidFungible(LiquidFungibleResource),
     VaultLiquidNonFungible(LiquidNonFungibleResource),
+    VaultLockedFungible(LockedFungibleResource),
+    VaultLockedNonFungible(LockedNonFungibleResource),
 
     /* Type info */
     TypeInfo(TypeInfoSubstate),
@@ -192,6 +194,12 @@ impl PersistedSubstate {
             }
             PersistedSubstate::VaultLiquidNonFungible(value) => {
                 RuntimeSubstate::VaultLiquidNonFungible(value)
+            }
+            PersistedSubstate::VaultLockedFungible(value) => {
+                RuntimeSubstate::VaultLockedFungible(value)
+            }
+            PersistedSubstate::VaultLockedNonFungible(value) => {
+                RuntimeSubstate::VaultLockedNonFungible(value)
             }
             PersistedSubstate::NonFungible(value) => RuntimeSubstate::NonFungible(value),
             PersistedSubstate::KeyValueStoreEntry(value) => {
@@ -390,6 +398,12 @@ impl RuntimeSubstate {
             RuntimeSubstate::VaultLiquidNonFungible(value) => {
                 PersistedSubstate::VaultLiquidNonFungible(value)
             }
+            RuntimeSubstate::VaultLockedFungible(value) => {
+                PersistedSubstate::VaultLockedFungible(value)
+            }
+            RuntimeSubstate::VaultLockedNonFungible(value) => {
+                PersistedSubstate::VaultLockedNonFungible(value)
+            }
             RuntimeSubstate::Account(value) => PersistedSubstate::Account(value),
             RuntimeSubstate::AccessController(value) => PersistedSubstate::AccessController(value),
 
@@ -419,8 +433,6 @@ impl RuntimeSubstate {
             | RuntimeSubstate::BucketLiquidNonFungible(..)
             | RuntimeSubstate::BucketLockedFungible(..)
             | RuntimeSubstate::BucketLockedNonFungible(..)
-            | RuntimeSubstate::VaultLockedFungible(..)
-            | RuntimeSubstate::VaultLockedNonFungible(..)
             | RuntimeSubstate::ProofInfo(..)
             | RuntimeSubstate::FungibleProof(..)
             | RuntimeSubstate::NonFungibleProof(..)

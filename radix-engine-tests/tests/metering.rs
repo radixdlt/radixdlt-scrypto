@@ -67,12 +67,12 @@ fn test_basic_transfer() {
     // (cd radix-engine && cargo test --test metering -- test_basic_transfer)
     assert_eq!(
         15000 /* CreateNode */
-        + 65500 /* DropLock */
+        + 68500 /* DropLock */
         + 12500 /* DropNode */
         + 0 /* InstantiateWasm */
         + 6500 /* Invoke */
-        + 101000 /* LockSubstate */
-        + 76500 /* ReadSubstate */
+        + 100500 /* LockSubstate */
+        + 76000 /* ReadSubstate */
         + 62500 /* RunPrecompiled */
         + 0 /* RunWasm */
         + 50000 /* TxBaseCost */
