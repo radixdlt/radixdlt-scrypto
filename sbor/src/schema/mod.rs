@@ -1,6 +1,7 @@
 mod custom_traits;
 mod describe;
 mod macros;
+mod payload_validation;
 mod schema;
 mod schema_validation;
 mod type_aggregator;
@@ -12,6 +13,7 @@ mod well_known_types;
 pub use custom_traits::*;
 pub use describe::*;
 pub(crate) use macros::*;
+pub use payload_validation::*;
 pub use schema::*;
 pub use schema_validation::*;
 pub use type_aggregator::*;

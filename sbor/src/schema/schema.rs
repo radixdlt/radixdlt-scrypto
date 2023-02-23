@@ -28,6 +28,18 @@ pub fn resolve_type_kind<'s: 't, 't, E: CustomTypeExtension>(
     }
 }
 
+pub fn resolve_type_validation<'s: 't, 't, E: CustomTypeExtension>(
+    type_validations: &'s [SchemaTypeValidation<E>],
+    type_index: LocalTypeIndex,
+) -> Option<&'t SchemaTypeValidation<E>> {
+    match type_index {
+        LocalTypeIndex::WellKnown(index) => {
+            E::resolve_well_known_type(index).map(|local_type_data| &local_type_data.validation)
+        }
+        LocalTypeIndex::SchemaLocalIndex(index) => type_validations.get(index),
+    }
+}
+
 pub struct ResolvedTypeData<'a, E: CustomTypeExtension> {
     pub kind: &'a TypeKind<E::CustomValueKind, E::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>,
     pub metadata: &'a TypeMetadata,

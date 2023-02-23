@@ -25,7 +25,7 @@ pub enum TypeValidation<V: CustomTypeValidation> {
 }
 
 /// Represents additional validation that should be performed on the size.
-#[derive(Debug, Clone, PartialEq, Eq, Default, Sbor)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Sbor)]
 pub struct LengthValidation {
     pub min: Option<u32>,
     pub max: Option<u32>,
@@ -45,7 +45,7 @@ impl LengthValidation {
 }
 
 /// Represents additional validation that should be performed on the numeric value.
-#[derive(Debug, Clone, PartialEq, Eq, Default, Sbor)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Sbor)]
 pub struct NumericValidation<T> {
     pub min: Option<T>,
     pub max: Option<T>,
