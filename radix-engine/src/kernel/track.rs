@@ -746,7 +746,6 @@ impl<'s> FinalizingTrack<'s> {
         let execution_trace_receipt = ExecutionTraceReceipt::new(
             vault_ops,
             fee_summary.vault_payments_xrd.as_ref().unwrap(),
-            &mut to_persist,
             invoke_result.is_ok(),
         );
         TransactionResult::Commit(CommitResult {

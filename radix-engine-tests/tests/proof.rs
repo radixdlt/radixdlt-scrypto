@@ -153,13 +153,13 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
         NonFungibleLocalId::integer(2),
         NonFungibleLocalId::integer(3),
     ]);
-    let proof_ids = BTreeSet::from([NonFungibleLocalId::integer(2)]);
+    let proof_non_fungible_local_ids = BTreeSet::from([NonFungibleLocalId::integer(2)]);
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_method(
             component_address,
             "create_clone_drop_vault_proof_by_ids",
-            manifest_args!(non_fungible_local_ids, proof_ids),
+            manifest_args!(non_fungible_local_ids, proof_non_fungible_local_ids),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

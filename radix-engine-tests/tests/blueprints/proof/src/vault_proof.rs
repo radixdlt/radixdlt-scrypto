@@ -48,15 +48,17 @@ mod vault_proof {
         pub fn create_clone_drop_vault_proof_by_ids(
             &self,
             non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
-            proof_ids: BTreeSet<NonFungibleLocalId>,
+            proof_non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
         ) {
-            let proof = self.vault.create_proof_by_ids(&proof_ids);
+            let proof = self
+                .vault
+                .create_proof_by_ids(&proof_non_fungible_local_ids);
             let proof = proof.validate_proof(self.vault.resource_address()).unwrap();
             let clone = proof.clone();
 
             assert_eq!(self.vault.non_fungible_local_ids(), non_fungible_local_ids);
-            assert_eq!(proof.non_fungible_local_ids(), proof_ids);
-            assert_eq!(clone.non_fungible_local_ids(), proof_ids);
+            assert_eq!(proof.non_fungible_local_ids(), proof_non_fungible_local_ids);
+            assert_eq!(clone.non_fungible_local_ids(), proof_non_fungible_local_ids);
 
             clone.drop();
             proof.drop();
