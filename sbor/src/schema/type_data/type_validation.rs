@@ -38,6 +38,10 @@ impl LengthValidation {
             max: None,
         }
     }
+
+    pub fn is_valid(&self, length: u32) -> bool {
+        self.min.unwrap_or(0) <= length && length <= self.max.unwrap_or(u32::MAX)
+    }
 }
 
 /// Represents additional validation that should be performed on the numeric value.
@@ -53,5 +57,65 @@ impl<T> NumericValidation<T> {
             min: None,
             max: None,
         }
+    }
+}
+
+impl NumericValidation<i8> {
+    pub fn is_valid(&self, value: i8) -> bool {
+        self.min.unwrap_or(i8::MIN) <= value && value <= self.max.unwrap_or(i8::MAX)
+    }
+}
+
+impl NumericValidation<i16> {
+    pub fn is_valid(&self, value: i16) -> bool {
+        self.min.unwrap_or(i16::MIN) <= value && value <= self.max.unwrap_or(i16::MAX)
+    }
+}
+
+impl NumericValidation<i32> {
+    pub fn is_valid(&self, value: i32) -> bool {
+        self.min.unwrap_or(i32::MIN) <= value && value <= self.max.unwrap_or(i32::MAX)
+    }
+}
+
+impl NumericValidation<i64> {
+    pub fn is_valid(&self, value: i64) -> bool {
+        self.min.unwrap_or(i64::MIN) <= value && value <= self.max.unwrap_or(i64::MAX)
+    }
+}
+
+impl NumericValidation<i128> {
+    pub fn is_valid(&self, value: i128) -> bool {
+        self.min.unwrap_or(i128::MIN) <= value && value <= self.max.unwrap_or(i128::MAX)
+    }
+}
+
+impl NumericValidation<u8> {
+    pub fn is_valid(&self, value: u8) -> bool {
+        self.min.unwrap_or(u8::MIN) <= value && value <= self.max.unwrap_or(u8::MAX)
+    }
+}
+
+impl NumericValidation<u16> {
+    pub fn is_valid(&self, value: u16) -> bool {
+        self.min.unwrap_or(u16::MIN) <= value && value <= self.max.unwrap_or(u16::MAX)
+    }
+}
+
+impl NumericValidation<u32> {
+    pub fn is_valid(&self, value: u32) -> bool {
+        self.min.unwrap_or(u32::MIN) <= value && value <= self.max.unwrap_or(u32::MAX)
+    }
+}
+
+impl NumericValidation<u64> {
+    pub fn is_valid(&self, value: u64) -> bool {
+        self.min.unwrap_or(u64::MIN) <= value && value <= self.max.unwrap_or(u64::MAX)
+    }
+}
+
+impl NumericValidation<u128> {
+    pub fn is_valid(&self, value: u128) -> bool {
+        self.min.unwrap_or(u128::MIN) <= value && value <= self.max.unwrap_or(u128::MAX)
     }
 }

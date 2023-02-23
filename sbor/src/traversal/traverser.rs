@@ -38,10 +38,10 @@ pub trait CustomTerminalValueBatchRef: Debug + Clone + PartialEq + Eq {
 
 pub trait CustomContainerHeader: Copy + Debug + Clone + PartialEq + Eq {
     type CustomValueKind: CustomValueKind;
-    fn get_child_count(&self) -> usize;
+    fn get_child_count(&self) -> u32;
     fn get_implicit_child_value_kind(
         &self,
-        index: usize,
+        index: u32,
     ) -> (ParentRelationship, Option<ValueKind<Self::CustomValueKind>>);
 }
 
@@ -69,9 +69,9 @@ pub trait CustomValueTraverser {
 pub struct ContainerChild<C: CustomTraversal> {
     pub container_header: ContainerHeader<C>,
     pub container_parent_relationship: ParentRelationship,
-    pub container_child_count: usize,
     pub container_start_offset: usize,
-    pub current_child_index: usize,
+    pub container_child_count: u32,
+    pub current_child_index: u32,
 }
 
 /// The `VecTraverser` is for streamed decoding of a payload.
@@ -89,7 +89,7 @@ pub struct VecTraverser<'de, C: CustomTraversal> {
 pub enum NextEventOverride<C> {
     Prefix(u8),
     Start,
-    ReadBytes(usize),
+    ReadBytes(u32),
     CustomValueTraversal(C, u8),
     None,
 }
@@ -371,7 +371,7 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
         start_offset: usize,
     ) -> TraversalEvent<'t, 'de, T> {
         let variant = return_if_error!(self, self.decoder.read_byte());
-        let length = return_if_error!(self, self.decoder.read_size());
+        let length = return_if_error!(self, self.decoder.read_size_u32());
         self.enter_container(
             start_offset,
             parent_relationship,
@@ -384,7 +384,7 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
         parent_relationship: ParentRelationship,
         start_offset: usize,
     ) -> TraversalEvent<'t, 'de, T> {
-        let length = return_if_error!(self, self.decoder.read_size());
+        let length = return_if_error!(self, self.decoder.read_size_u32());
         self.enter_container(
             start_offset,
             parent_relationship,
@@ -398,7 +398,7 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
         start_offset: usize,
     ) -> TraversalEvent<'t, 'de, T> {
         let element_value_kind = return_if_error!(self, self.decoder.read_value_kind());
-        let length = return_if_error!(self, self.decoder.read_size());
+        let length = return_if_error!(self, self.decoder.read_size_u32());
         if element_value_kind == ValueKind::U8 && length > 0 {
             self.next_event_override = NextEventOverride::ReadBytes(length);
         }
@@ -419,7 +419,7 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
     ) -> TraversalEvent<'t, 'de, T> {
         let key_value_kind = return_if_error!(self, self.decoder.read_value_kind());
         let value_value_kind = return_if_error!(self, self.decoder.read_value_kind());
-        let length = return_if_error!(self, self.decoder.read_size());
+        let length = return_if_error!(self, self.decoder.read_size_u32());
         self.enter_container(
             start_offset,
             parent_relationship,
@@ -466,7 +466,7 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
             panic!("self.next_event_override expected to be NextEventOverride::ReadBytes to hit this code")
         };
         let start_offset = self.get_offset();
-        let bytes = return_if_error!(self, self.decoder.read_slice_from_payload(size));
+        let bytes = return_if_error!(self, self.decoder.read_slice_from_payload(size as usize));
         // Set it up so that we jump to the end of the child iteration
         self.container_stack.last_mut().unwrap().current_child_index = size;
         self.next_event_override = NextEventOverride::None;

@@ -126,13 +126,13 @@ pub enum NoCustomContainerHeader {}
 impl CustomContainerHeader for NoCustomContainerHeader {
     type CustomValueKind = NoCustomValueKind;
 
-    fn get_child_count(&self) -> usize {
+    fn get_child_count(&self) -> u32 {
         unreachable!("NoCustomContainerHeader can't exist")
     }
 
     fn get_implicit_child_value_kind(
         &self,
-        _: usize,
+        _: u32,
     ) -> (ParentRelationship, Option<ValueKind<Self::CustomValueKind>>) {
         unreachable!("NoCustomContainerHeader can't exist")
     }

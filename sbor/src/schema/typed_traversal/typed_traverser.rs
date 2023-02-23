@@ -44,10 +44,10 @@ pub enum ContainerChildTypeRefs<'s> {
 }
 
 impl<'s> ContainerChildTypeRefs<'s> {
-    pub fn get_child_type_for_element(&self, index: usize) -> Option<LocalTypeIndex> {
+    pub fn get_child_type_for_element(&self, index: u32) -> Option<LocalTypeIndex> {
         match self {
-            ContainerChildTypeRefs::Tuple(types) => (*types).get(index).copied(),
-            ContainerChildTypeRefs::EnumVariant(types) => (*types).get(index).copied(),
+            ContainerChildTypeRefs::Tuple(types) => (*types).get(usize::try_from(index).unwrap()).copied(),
+            ContainerChildTypeRefs::EnumVariant(types) => (*types).get(usize::try_from(index).unwrap()).copied(),
             ContainerChildTypeRefs::Array(child_type) => Some(*child_type),
             ContainerChildTypeRefs::Any => Some(LocalTypeIndex::WellKnown(ANY_ID)),
             _ => None,
@@ -183,7 +183,7 @@ impl<'s, E: CustomTypeExtension> InternalTypeState<'s, E> {
                     own_type: type_index,
                     child_types: ContainerChildTypeRefs::Any,
                 }),
-                TypeKind::Tuple { field_types } if field_types.len() == length => {
+                TypeKind::Tuple { field_types } if field_types.len() == length.try_into().unwrap() => {
                     self.container_stack.push(ContainerType {
                         own_type: type_index,
                         child_types: ContainerChildTypeRefs::Tuple(field_types),
@@ -212,7 +212,7 @@ impl<'s, E: CustomTypeExtension> InternalTypeState<'s, E> {
                         child_types: ContainerChildTypeRefs::Any,
                     }),
                     TypeKind::Enum { variants } => match variants.get(&variant) {
-                        Some(variant_child_types) if variant_child_types.len() == length => {
+                        Some(variant_child_types) if variant_child_types.len() == length.try_into().unwrap() => {
                             self.container_stack.push(ContainerType {
                                 own_type: type_index,
                                 child_types: ContainerChildTypeRefs::EnumVariant(

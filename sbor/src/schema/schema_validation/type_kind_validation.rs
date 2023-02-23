@@ -25,12 +25,20 @@ pub fn validate_type_kind<'a, E: CustomTypeExtension>(
             validate_index::<E>(context, element_type)?;
         }
         TypeKind::Tuple { field_types } => {
+            if field_types.len() > 1024 {
+                return Err(SchemaValidationError::TypeKindTupleTooLong { max_size: 1024 });
+            }
             for field_type in field_types.iter() {
                 validate_index::<E>(context, field_type)?;
             }
         }
         TypeKind::Enum { variants } => {
             for (_, field_types) in variants.iter() {
+                if field_types.len() > 1024 {
+                    return Err(SchemaValidationError::TypeKindEnumVariantTooLong {
+                        max_size: 1024,
+                    });
+                }
                 for field_type in field_types.iter() {
                     validate_index::<E>(context, field_type)?;
                 }

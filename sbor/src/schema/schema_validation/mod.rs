@@ -14,6 +14,8 @@ pub enum SchemaValidationError {
     MetadataLengthMismatch,
     ValidationsLengthMismatch,
     DuplicateTypeHash,
+    TypeKindTupleTooLong { max_size: usize },
+    TypeKindEnumVariantTooLong { max_size: usize },
     TypeKindInvalidSchemaLocalIndex,
     TypeKindInvalidWellKnownIndex,
     TypeMetadataContainedUnexpectedChildNames,

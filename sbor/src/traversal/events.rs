@@ -76,39 +76,39 @@ pub enum ContainerHeader<C: CustomTraversal> {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TupleHeader {
-    pub length: usize,
+    pub length: u32,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EnumVariantHeader {
     pub variant: u8,
-    pub length: usize,
+    pub length: u32,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ArrayHeader<X: CustomValueKind> {
     pub element_value_kind: ValueKind<X>,
-    pub length: usize,
+    pub length: u32,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MapHeader<X: CustomValueKind> {
     pub key_value_kind: ValueKind<X>,
     pub value_value_kind: ValueKind<X>,
-    pub length: usize,
+    pub length: u32,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ParentRelationship {
     Root,
-    Element { index: usize },
-    ArrayElementBatch { from_index: usize, to_index: usize },
-    MapKey { index: usize },
-    MapValue { index: usize },
+    Element { index: u32 },
+    ArrayElementBatch { from_index: u32, to_index: u32 },
+    MapKey { index: u32 },
+    MapValue { index: u32 },
 }
 
 impl<C: CustomTraversal> ContainerHeader<C> {
-    pub fn get_child_count(&self) -> usize {
+    pub fn get_child_count(&self) -> u32 {
         match self {
             ContainerHeader::Tuple(TupleHeader { length }) => *length,
             ContainerHeader::EnumVariant(EnumVariantHeader { length, .. }) => *length,
@@ -120,7 +120,7 @@ impl<C: CustomTraversal> ContainerHeader<C> {
 
     pub fn get_implicit_child_value_kind(
         &self,
-        index: usize,
+        index: u32,
     ) -> (ParentRelationship, Option<ValueKind<C::CustomValueKind>>) {
         match self {
             ContainerHeader::Tuple(_) => (ParentRelationship::Element { index }, None),
