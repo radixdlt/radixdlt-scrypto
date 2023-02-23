@@ -7,7 +7,7 @@ use radix_engine_interface::api::types::{
     RENodeId, SubstateId, SubstateOffset, VaultId, VaultOffset,
 };
 use radix_engine_interface::blueprints::resource::{
-    LiquidFungibleResource, LiquidNonFungibleResource, LiquidResource, ResourceType,
+    LiquidFungibleResource, LiquidNonFungibleResource, ResourceType,
 };
 
 #[derive(Debug)]
@@ -28,7 +28,22 @@ pub struct StateTreeTraverser<
 }
 
 pub trait StateTreeVisitor {
-    fn visit_vault(&mut self, _vault_id: VaultId, _vault_resource: &LiquidResource) {}
+    fn visit_fungible_vault(
+        &mut self,
+        _vault_id: VaultId,
+        _info: &VaultInfoSubstate,
+        _resource: &LiquidFungibleResource,
+    ) {
+    }
+
+    fn visit_non_fungible_vault(
+        &mut self,
+        _vault_id: VaultId,
+        _info: &VaultInfoSubstate,
+        _resource: &LiquidNonFungibleResource,
+    ) {
+    }
+
     fn visit_node_id(&mut self, _parent_id: Option<&SubstateId>, _node_id: &RENodeId, _depth: u32) {
     }
 }
@@ -85,7 +100,7 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                     SubstateOffset::Vault(VaultOffset::Info),
                 )) {
                     let info: VaultInfoSubstate = output_value.substate.into();
-                    match info.resource_type {
+                    match &info.resource_type {
                         ResourceType::Fungible { .. } => {
                             let liquid: LiquidFungibleResource = self
                                 .substate_store
@@ -98,8 +113,7 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                                 .substate
                                 .into();
 
-                            self.visitor
-                                .visit_vault(vault_id, &LiquidResource::Fungible(liquid));
+                            self.visitor.visit_fungible_vault(vault_id, &info, &liquid);
                         }
                         ResourceType::NonFungible { .. } => {
                             let liquid: LiquidNonFungibleResource = self
@@ -114,7 +128,7 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                                 .into();
 
                             self.visitor
-                                .visit_vault(vault_id, &LiquidResource::NonFungible(liquid));
+                                .visit_non_fungible_vault(vault_id, &info, &liquid);
                         }
                     }
                 } else {

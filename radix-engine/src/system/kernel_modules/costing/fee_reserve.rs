@@ -15,7 +15,6 @@ pub enum FeeReserveError {
     Overflow,
     LimitExceeded,
     LoanRepaymentFailed,
-    NotXrd,
     Abort(AbortReason),
 }
 
@@ -381,10 +380,6 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
         mut fee: LiquidFungibleResource,
         contingent: bool,
     ) -> Result<LiquidFungibleResource, FeeReserveError> {
-        if fee.resource_address() != RADIX_TOKEN {
-            return Err(FeeReserveError::NotXrd);
-        }
-
         // Update balance
         if !contingent {
             // Assumption: no overflow due to limited XRD supply
@@ -442,12 +437,11 @@ impl Default for SystemLoanFeeReserve {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use radix_engine_interface::constants::RADIX_TOKEN;
 
     const TEST_VAULT_ID: VaultId = [0u8; 36];
 
     fn xrd<T: Into<Decimal>>(amount: T) -> LiquidFungibleResource {
-        LiquidFungibleResource::new(RADIX_TOKEN, 18, amount.into())
+        LiquidFungibleResource::new(amount.into())
     }
 
     #[test]

@@ -107,12 +107,12 @@ impl RENodeModuleInit {
 #[derive(Debug)]
 pub enum RENodeInit {
     Global(GlobalSubstate),
-    FungibleVault(LiquidFungibleResource),
-    NonFungibleVault(LiquidNonFungibleResource),
-    FungibleBucket(LiquidFungibleResource),
-    NonFungibleBucket(LiquidNonFungibleResource),
-    FungibleProof(FungibleProof),
-    NonFungibleProof(NonFungibleProof),
+    FungibleVault(VaultInfoSubstate, LiquidFungibleResource),
+    NonFungibleVault(VaultInfoSubstate, LiquidNonFungibleResource),
+    FungibleBucket(BucketInfoSubstate, LiquidFungibleResource),
+    NonFungibleBucket(BucketInfoSubstate, LiquidNonFungibleResource),
+    FungibleProof(ProofInfoSubstate, FungibleProof),
+    NonFungibleProof(ProofInfoSubstate, NonFungibleProof),
     AuthZoneStack(AuthZoneStackSubstate),
     Worktop(WorktopSubstate),
     KeyValueStore,
@@ -142,78 +142,60 @@ impl RENodeInit {
     pub fn to_substates(self) -> HashMap<SubstateOffset, RuntimeSubstate> {
         let mut substates = HashMap::<SubstateOffset, RuntimeSubstate>::new();
         match self {
-            RENodeInit::FungibleVault(liquid) => {
+            RENodeInit::FungibleVault(info, liquid) => {
                 substates.insert(
                     SubstateOffset::Vault(VaultOffset::Info),
-                    RuntimeSubstate::VaultInfo(VaultInfoSubstate {
-                        resource_address: liquid.resource_address(),
-                        resource_type: liquid.resource_type(),
-                    }),
+                    RuntimeSubstate::VaultInfo(info),
                 );
                 substates.insert(
                     SubstateOffset::Vault(VaultOffset::LiquidFungible),
                     RuntimeSubstate::VaultLiquidFungible(liquid),
                 );
             }
-            RENodeInit::NonFungibleVault(liquid) => {
+            RENodeInit::NonFungibleVault(info, liquid) => {
                 substates.insert(
                     SubstateOffset::Vault(VaultOffset::Info),
-                    RuntimeSubstate::VaultInfo(VaultInfoSubstate {
-                        resource_address: liquid.resource_address(),
-                        resource_type: liquid.resource_type(),
-                    }),
+                    RuntimeSubstate::VaultInfo(info),
                 );
                 substates.insert(
                     SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
                     RuntimeSubstate::VaultLiquidNonFungible(liquid),
                 );
             }
-            RENodeInit::FungibleBucket(liquid) => {
+            RENodeInit::FungibleBucket(info, liquid) => {
                 substates.insert(
                     SubstateOffset::Bucket(BucketOffset::Info),
-                    RuntimeSubstate::VaultInfo(VaultInfoSubstate {
-                        resource_address: liquid.resource_address(),
-                        resource_type: liquid.resource_type(),
-                    }),
+                    RuntimeSubstate::BucketInfo(info),
                 );
                 substates.insert(
                     SubstateOffset::Bucket(BucketOffset::LiquidFungible),
                     RuntimeSubstate::BucketLiquidFungible(liquid),
                 );
             }
-            RENodeInit::NonFungibleBucket(liquid) => {
+            RENodeInit::NonFungibleBucket(info, liquid) => {
                 substates.insert(
                     SubstateOffset::Bucket(BucketOffset::Info),
-                    RuntimeSubstate::VaultInfo(VaultInfoSubstate {
-                        resource_address: liquid.resource_address(),
-                        resource_type: liquid.resource_type(),
-                    }),
+                    RuntimeSubstate::BucketInfo(info),
                 );
                 substates.insert(
                     SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
                     RuntimeSubstate::BucketLiquidNonFungible(liquid),
                 );
             }
-            RENodeInit::FungibleProof(proof) => {
+            RENodeInit::FungibleProof(info, proof) => {
                 substates.insert(
                     SubstateOffset::Proof(ProofOffset::Info),
-                    RuntimeSubstate::ProofInfo(ProofInfoSubstate {
-                        resource_address: proof.resource_address(),
-                        restricted: proof.is_restricted(),
-                    }),
+                    RuntimeSubstate::ProofInfo(info),
                 );
                 substates.insert(
                     SubstateOffset::Proof(ProofOffset::Fungible),
                     RuntimeSubstate::FungibleProof(proof),
                 );
             }
-            RENodeInit::NonFungibleProof(proof) => {
+            RENodeInit::NonFungibleProof(info, proof) => {
                 substates.insert(
                     SubstateOffset::Proof(ProofOffset::Info),
-                    RuntimeSubstate::ProofInfo(ProofInfoSubstate {
-                        resource_address: proof.resource_address(),
-                        restricted: proof.is_restricted(),
-                    }),
+                    RuntimeSubstate::ProofInfo(info),
                 );
                 substates.insert(
                     SubstateOffset::Proof(ProofOffset::NonFungible),
