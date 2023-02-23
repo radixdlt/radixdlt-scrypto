@@ -302,7 +302,7 @@ pub fn validate_terminal_value_batch<'de, E: CustomTypeExtension>(
 
 #[cfg(test)]
 mod tests {
-    use crate::{traversal::LocatedError, *};
+    use crate::{rust::prelude::*, traversal::LocatedError, *};
 
     #[derive(Sbor)]
     struct TestStructArray {
