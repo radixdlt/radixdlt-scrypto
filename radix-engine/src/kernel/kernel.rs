@@ -520,7 +520,7 @@ where
             for node_id in &call_frame_update.node_refs_to_copy {
                 match node_id {
                     RENodeId::Global(global_address) => {
-                        if self.current_frame.check_node_location(node_id).is_err() {
+                        if self.current_frame.get_node_visibility(node_id).is_none() {
                             if matches!(
                                 global_address,
                                 Address::Component(ComponentAddress::EcdsaSecp256k1VirtualAccount(
@@ -541,84 +541,44 @@ where
                                 Address::Component(ComponentAddress::EddsaEd25519VirtualIdentity(
                                     ..
                                 ))
-                            ) {
-                                self.current_frame
-                                    .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                                continue;
-                            }
-
-                            // TODO: Cleanup
-                            {
-                                if matches!(global_address, Address::Package(PACKAGE_LOADER)) {
-                                    self.current_frame
-                                        .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                                    continue;
-                                }
-
-                                if matches!(
+                            ) || matches!(global_address, Address::Package(PACKAGE_LOADER))
+                                || matches!(
                                     global_address,
                                     Address::Package(RESOURCE_MANAGER_PACKAGE)
-                                ) {
-                                    self.current_frame
-                                        .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                                    continue;
-                                }
-
-                                if matches!(global_address, Address::Package(IDENTITY_PACKAGE)) {
-                                    self.current_frame
-                                        .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                                    continue;
-                                }
-
-                                if matches!(global_address, Address::Package(EPOCH_MANAGER_PACKAGE))
-                                {
-                                    self.current_frame
-                                        .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                                    continue;
-                                }
-
-                                if matches!(global_address, Address::Package(CLOCK_PACKAGE)) {
-                                    self.current_frame
-                                        .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                                    continue;
-                                }
-
-                                if matches!(global_address, Address::Package(ACCOUNT_PACKAGE)) {
-                                    self.current_frame
-                                        .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                                    continue;
-                                }
-
-                                if matches!(
+                                )
+                                || matches!(global_address, Address::Package(IDENTITY_PACKAGE))
+                                || matches!(global_address, Address::Package(EPOCH_MANAGER_PACKAGE))
+                                || matches!(global_address, Address::Package(CLOCK_PACKAGE))
+                                || matches!(global_address, Address::Package(ACCOUNT_PACKAGE))
+                                || matches!(
                                     global_address,
                                     Address::Package(ACCESS_CONTROLLER_PACKAGE)
-                                ) {
-                                    self.current_frame
-                                        .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                                    continue;
-                                }
+                                )
+                            {
+                                // For virtual accounts and native packages, create a reference directly
+                                self.current_frame
+                                    .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                            } else {
+                                let offset = SubstateOffset::Global(GlobalOffset::Global);
+                                self.track
+                                    .acquire_lock(
+                                        SubstateId(*node_id, NodeModuleId::SELF, offset.clone()),
+                                        LockFlags::read_only(),
+                                    )
+                                    .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
+                                self.track
+                                    .release_lock(
+                                        SubstateId(*node_id, NodeModuleId::SELF, offset),
+                                        false,
+                                    )
+                                    .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
+                                self.current_frame
+                                    .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
                             }
-
-                            let offset = SubstateOffset::Global(GlobalOffset::Global);
-
-                            self.track
-                                .acquire_lock(
-                                    SubstateId(*node_id, NodeModuleId::SELF, offset.clone()),
-                                    LockFlags::read_only(),
-                                )
-                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
-                            self.track
-                                .release_lock(
-                                    SubstateId(*node_id, NodeModuleId::SELF, offset),
-                                    false,
-                                )
-                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
-                            self.current_frame
-                                .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
                         }
                     }
                     RENodeId::Vault(..) => {
-                        if self.current_frame.check_node_location(node_id).is_err() {
+                        if self.current_frame.get_node_visibility(node_id).is_none() {
                             let offset = SubstateOffset::Vault(VaultOffset::Info);
                             self.track
                                 .acquire_lock(
@@ -634,7 +594,7 @@ where
                                 .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
 
                             self.current_frame
-                                .add_stored_ref(*node_id, RENodeVisibilityOrigin::DirectAccess);
+                                .add_ref(*node_id, RENodeVisibilityOrigin::DirectAccess);
                         }
                     }
                     _ => {}
@@ -1168,7 +1128,7 @@ where
                             .release_lock(SubstateId(node_id, module_id, offset.clone()), false)
                             .map_err(|_| err)?;
                         self.current_frame
-                            .add_stored_ref(node_id, RENodeVisibilityOrigin::Normal);
+                            .add_ref(node_id, RENodeVisibilityOrigin::Normal);
                         self.current_frame.acquire_lock(
                             &mut self.heap,
                             &mut self.track,

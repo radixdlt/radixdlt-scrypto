@@ -29,6 +29,10 @@ impl Heap {
         }
     }
 
+    pub fn contains_node(&self, node_id: &RENodeId) -> bool {
+        self.nodes.contains_key(node_id)
+    }
+
     pub fn get_substate(
         &mut self,
         node_id: RENodeId,
