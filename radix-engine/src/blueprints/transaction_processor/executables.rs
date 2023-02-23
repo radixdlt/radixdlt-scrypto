@@ -269,7 +269,7 @@ impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
     }
 
     fn payload_size(&self) -> usize {
-        self.instructions.len() + self.blobs.len()
+        0
     }
 }
 
