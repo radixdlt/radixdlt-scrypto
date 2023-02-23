@@ -1,14 +1,22 @@
+use super::*;
 use crate::traversal::*;
 use crate::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TypedTraversalEvent<'de, C: CustomTraversal> {
+pub enum TypedTraversalEvent<'t, 's, 'de, C: CustomTraversal> {
     PayloadPrefix(Location),
-    ContainerStart(TypedLocatedDecoding<ContainerHeader<C::CustomContainerHeader>>),
-    ContainerEnd(TypedLocatedDecoding<ContainerHeader<C::CustomContainerHeader>>),
-    TerminalValue(TypedLocatedDecoding<TerminalValueRef<'de, C::CustomTerminalValueRef<'de>>>),
+    ContainerStart(TypedLocatedDecoding<'t, 's, ContainerHeader<C>, C>),
+    ContainerEnd(TypedLocatedDecoding<'t, 's, ContainerHeader<C>, C>),
+    TerminalValue(
+        TypedLocatedDecoding<'t, 's, TerminalValueRef<'de, C::CustomTerminalValueRef<'de>>, C>,
+    ),
     TerminalValueBatch(
-        TypedLocatedDecoding<TerminalValueBatchRef<'de, C::CustomTerminalValueBatchRef<'de>>>,
+        TypedLocatedDecoding<
+            't,
+            's,
+            TerminalValueBatchRef<'de, C::CustomTerminalValueBatchRef<'de>>,
+            C,
+        >,
     ),
     End(Location),
     Error(LocatedError<TypedTraversalError<C::CustomValueKind>>),
@@ -57,11 +65,13 @@ pub enum TypeMismatchError<X: CustomValueKind> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct TypedLocatedDecoding<T> {
+pub struct TypedLocatedDecoding<'t, 's, T, C: CustomTraversal> {
     pub inner: T,
     pub parent_relationship: ParentRelationship,
     pub type_index: LocalTypeIndex,
     pub location: Location,
+    pub resultant_path: &'t [ContainerChild<C>],
+    pub typed_resultant_path: &'t [ContainerType<'s>],
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

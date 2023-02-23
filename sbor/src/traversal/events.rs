@@ -4,19 +4,19 @@ use crate::*;
 use super::CustomTraversal;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TraversalEvent<'de, C: CustomTraversal> {
+pub enum TraversalEvent<'t, 'de, C: CustomTraversal> {
     PayloadPrefix(Location),
-    ContainerStart(LocatedDecoding<ContainerHeader<C::CustomContainerHeader>>),
-    ContainerEnd(LocatedDecoding<ContainerHeader<C::CustomContainerHeader>>),
-    TerminalValue(LocatedDecoding<TerminalValueRef<'de, C::CustomTerminalValueRef<'de>>>),
+    ContainerStart(LocatedDecoding<'t, ContainerHeader<C>, C>),
+    ContainerEnd(LocatedDecoding<'t, ContainerHeader<C>, C>),
+    TerminalValue(LocatedDecoding<'t, TerminalValueRef<'de, C::CustomTerminalValueRef<'de>>, C>),
     TerminalValueBatch(
-        LocatedDecoding<TerminalValueBatchRef<'de, C::CustomTerminalValueBatchRef<'de>>>,
+        LocatedDecoding<'t, TerminalValueBatchRef<'de, C::CustomTerminalValueBatchRef<'de>>, C>,
     ),
     End(Location),
     DecodeError(LocatedError<DecodeError>),
 }
 
-impl<'de, C: CustomTraversal> TraversalEvent<'de, C> {
+impl<'t, 'de, C: CustomTraversal> TraversalEvent<'t, 'de, C> {
     pub fn get_next_sbor_depth(&self) -> u8 {
         match self {
             TraversalEvent::PayloadPrefix(location) => location.sbor_depth + 1,
@@ -44,14 +44,18 @@ pub struct LocatedError<E> {
 }
 
 /// A wrapper for traversal event bodies, given the context inside the payload.
-/// The `start_offset` and `end_offset` have meanings in the context of the event.
+///
+/// The `start_offset` and `end_offset` in `Location` have different meanings in the context of the event.
 /// * For ContainerValueStart, they're the start/end of the header
 /// * For ContainerValueEnd, they're the start/end of the whole value (including the header)
+///
+/// The `resultant_path` captures the path up to this point.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct LocatedDecoding<T> {
+pub struct LocatedDecoding<'t, T, C: CustomTraversal> {
     pub inner: T,
     pub parent_relationship: ParentRelationship,
     pub location: Location,
+    pub resultant_path: &'t [ContainerChild<C>],
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -62,12 +66,12 @@ pub struct Location {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ContainerHeader<H: CustomContainerHeader> {
+pub enum ContainerHeader<C: CustomTraversal> {
     Tuple(TupleHeader),
     EnumVariant(EnumVariantHeader),
-    Array(ArrayHeader<H::CustomValueKind>),
-    Map(MapHeader<H::CustomValueKind>),
-    Custom(H),
+    Array(ArrayHeader<C::CustomValueKind>),
+    Map(MapHeader<C::CustomValueKind>),
+    Custom(C::CustomContainerHeader),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -103,7 +107,7 @@ pub enum ParentRelationship {
     MapValue { index: usize },
 }
 
-impl<H: CustomContainerHeader> ContainerHeader<H> {
+impl<C: CustomTraversal> ContainerHeader<C> {
     pub fn get_child_count(&self) -> usize {
         match self {
             ContainerHeader::Tuple(TupleHeader { length }) => *length,
@@ -117,7 +121,7 @@ impl<H: CustomContainerHeader> ContainerHeader<H> {
     pub fn get_implicit_child_value_kind(
         &self,
         index: usize,
-    ) -> (ParentRelationship, Option<ValueKind<H::CustomValueKind>>) {
+    ) -> (ParentRelationship, Option<ValueKind<C::CustomValueKind>>) {
         match self {
             ContainerHeader::Tuple(_) => (ParentRelationship::Element { index }, None),
             ContainerHeader::EnumVariant(_) => (ParentRelationship::Element { index }, None),
@@ -152,7 +156,7 @@ impl<H: CustomContainerHeader> ContainerHeader<H> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TerminalValueRef<'a, V: CustomTerminalValueRef> {
+pub enum TerminalValueRef<'de, V: CustomTerminalValueRef> {
     Bool(bool),
     I8(i8),
     I16(i16),
@@ -164,11 +168,11 @@ pub enum TerminalValueRef<'a, V: CustomTerminalValueRef> {
     U32(u32),
     U64(u64),
     U128(u128),
-    String(&'a str),
+    String(&'de str),
     Custom(V),
 }
 
-impl<'a, V: CustomTerminalValueRef> TerminalValueRef<'a, V> {
+impl<'de, V: CustomTerminalValueRef> TerminalValueRef<'de, V> {
     pub fn value_kind(&self) -> ValueKind<V::CustomValueKind> {
         match self {
             TerminalValueRef::Bool(_) => ValueKind::Bool,
@@ -189,12 +193,12 @@ impl<'a, V: CustomTerminalValueRef> TerminalValueRef<'a, V> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TerminalValueBatchRef<'a, B> {
-    U8(&'a [u8]),
+pub enum TerminalValueBatchRef<'de, B> {
+    U8(&'de [u8]),
     Custom(B),
 }
 
-impl<'a, B: CustomTerminalValueBatchRef> TerminalValueBatchRef<'a, B> {
+impl<'de, B: CustomTerminalValueBatchRef> TerminalValueBatchRef<'de, B> {
     pub fn value_kind(&self) -> ValueKind<B::CustomValueKind> {
         match self {
             TerminalValueBatchRef::U8(_) => ValueKind::U8,

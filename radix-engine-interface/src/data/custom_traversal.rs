@@ -81,12 +81,14 @@ impl CustomValueTraverser for ScryptoCustomTraverser {
     type CustomTraversal = ScryptoCustomTraversal;
 
     fn next_event<
+        't,
         'de,
         R: PayloadTraverser<'de, <Self::CustomTraversal as CustomTraversal>::CustomValueKind>,
     >(
         &mut self,
+        container_stack: &'t mut Vec<ContainerChild<Self::CustomTraversal>>,
         decoder: &mut R,
-    ) -> TraversalEvent<'de, Self::CustomTraversal> {
+    ) -> TraversalEvent<'t, 'de, Self::CustomTraversal> {
         let result = ScryptoCustomValue::decode_body_with_value_kind(
             decoder,
             ValueKind::Custom(self.custom_value_kind),
@@ -100,6 +102,7 @@ impl CustomValueTraverser for ScryptoCustomTraverser {
             Ok(custom_value) => TraversalEvent::TerminalValue(LocatedDecoding {
                 location,
                 parent_relationship: self.parent_relationship,
+                resultant_path: container_stack,
                 inner: TerminalValueRef::Custom(ScryptoCustomTerminalValueRef(custom_value)),
             }),
             Err(decode_error) => TraversalEvent::DecodeError(LocatedError {

@@ -24,17 +24,17 @@ pub fn traverse_payload_with_types<'de, 's, E: CustomTypeExtension>(
 /// It validates that the payload matches the given type kinds,
 /// and adds the relevant type index to the events which are output.
 pub struct TypedTraverser<'de, 's, E: CustomTypeExtension> {
-    inner: VecTraverser<'de, E::CustomTraversal>,
-    container_stack: Vec<ContainerType<'s>>,
-    schema_type_kinds: &'s [SchemaTypeKind<E>],
-    root_type_index: LocalTypeIndex,
+    traverser: VecTraverser<'de, E::CustomTraversal>,
+    type_state: InternalTypeState<'s, E>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ContainerType<'s> {
     pub own_type: LocalTypeIndex,
     pub child_types: ContainerChildTypeRefs<'s>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ContainerChildTypeRefs<'s> {
     Tuple(&'s [LocalTypeIndex]),
     EnumVariant(&'s [LocalTypeIndex]),
@@ -71,9 +71,7 @@ impl<'s> ContainerChildTypeRefs<'s> {
     }
 }
 
-type ContainerHeaderFor<E> = ContainerHeader<
-    <<E as CustomTypeExtension>::CustomTraversal as CustomTraversal>::CustomContainerHeader,
->;
+type ContainerHeaderFor<E> = ContainerHeader<<E as CustomTypeExtension>::CustomTraversal>;
 type TerminalValueFor<'de, E> = TerminalValueRef<
     'de,
     <<E as CustomTypeExtension>::CustomTraversal as CustomTraversal>::CustomTerminalValueRef<'de>,
@@ -125,43 +123,54 @@ impl<'de, 's, E: CustomTypeExtension> TypedTraverser<'de, 's, E> {
         check_exact_end: bool,
     ) -> Self {
         Self {
-            inner: VecTraverser::new(input, max_depth, payload_prefix, check_exact_end),
-            container_stack: Vec::with_capacity(max_depth as usize),
-            schema_type_kinds: type_kinds,
-            root_type_index: type_index,
+            traverser: VecTraverser::new(input, max_depth, payload_prefix, check_exact_end),
+            type_state: InternalTypeState {
+                container_stack: Vec::with_capacity(max_depth as usize),
+                schema_type_kinds: type_kinds,
+                root_type_index: type_index,
+            },
         }
     }
 
-    pub fn next_event(&mut self) -> TypedTraversalEvent<'de, E::CustomTraversal> {
-        let inner_event = self.inner.next_event();
+    pub fn next_event<'t>(&'t mut self) -> TypedTraversalEvent<'t, 's, 'de, E::CustomTraversal> {
+        let inner_event = self.traverser.next_event();
         match inner_event {
             TraversalEvent::PayloadPrefix(location) => TypedTraversalEvent::PayloadPrefix(location),
             TraversalEvent::ContainerStart(located_event) => {
-                self.map_container_start_event(located_event)
+                self.type_state.map_container_start_event(located_event)
             }
             TraversalEvent::TerminalValue(located_event) => {
-                self.map_terminal_value_event(located_event)
+                self.type_state.map_terminal_value_event(located_event)
             }
-            TraversalEvent::TerminalValueBatch(located_event) => {
-                self.map_terminal_value_batch_event(located_event)
-            }
+            TraversalEvent::TerminalValueBatch(located_event) => self
+                .type_state
+                .map_terminal_value_batch_event(located_event),
             TraversalEvent::ContainerEnd(located_event) => {
-                self.map_container_end_event(located_event)
+                self.type_state.map_container_end_event(located_event)
             }
             TraversalEvent::End(location) => TypedTraversalEvent::End(location),
             TraversalEvent::DecodeError(located_event) => {
-                Self::map_decode_error_event(located_event)
+                map_decode_error_event::<'de>(located_event)
             }
         }
     }
+}
 
-    fn map_container_start_event(
-        &mut self,
-        located_event: LocatedDecoding<ContainerHeaderFor<E>>,
-    ) -> TypedTraversalEvent<'de, E::CustomTraversal> {
+struct InternalTypeState<'s, E: CustomTypeExtension> {
+    container_stack: Vec<ContainerType<'s>>,
+    schema_type_kinds: &'s [SchemaTypeKind<E>],
+    root_type_index: LocalTypeIndex,
+}
+
+impl<'s, E: CustomTypeExtension> InternalTypeState<'s, E> {
+    fn map_container_start_event<'t, 'de>(
+        &'t mut self,
+        located_event: LocatedDecoding<'t, ContainerHeaderFor<E>, E::CustomTraversal>,
+    ) -> TypedTraversalEvent<'t, 's, 'de, E::CustomTraversal> {
         let LocatedDecoding {
             inner: header,
             parent_relationship,
+            resultant_path,
             location,
         } = located_event;
         let type_index = self.get_type_index(&parent_relationship);
@@ -328,17 +337,20 @@ impl<'de, 's, E: CustomTypeExtension> TypedTraverser<'de, 's, E> {
             inner: header,
             parent_relationship,
             type_index,
+            resultant_path,
+            typed_resultant_path: &self.container_stack,
             location,
         })
     }
 
-    fn map_terminal_value_event(
-        &mut self,
-        located_event: LocatedDecoding<TerminalValueFor<'de, E>>,
-    ) -> TypedTraversalEvent<'de, E::CustomTraversal> {
+    fn map_terminal_value_event<'t, 'de>(
+        &'t mut self,
+        located_event: LocatedDecoding<'t, TerminalValueFor<'de, E>, E::CustomTraversal>,
+    ) -> TypedTraversalEvent<'t, 's, 'de, E::CustomTraversal> {
         let LocatedDecoding {
             inner: value_ref,
             parent_relationship,
+            resultant_path,
             location,
         } = located_event;
         let type_index = self.get_type_index(&parent_relationship);
@@ -360,17 +372,20 @@ impl<'de, 's, E: CustomTypeExtension> TypedTraverser<'de, 's, E> {
             inner: value_ref,
             parent_relationship,
             type_index,
+            resultant_path,
+            typed_resultant_path: &self.container_stack,
             location,
         })
     }
 
-    fn map_terminal_value_batch_event(
-        &mut self,
-        located_event: LocatedDecoding<TerminalValueBatchRefFor<'de, E>>,
-    ) -> TypedTraversalEvent<'de, E::CustomTraversal> {
+    fn map_terminal_value_batch_event<'t, 'de>(
+        &'t mut self,
+        located_event: LocatedDecoding<'t, TerminalValueBatchRefFor<'de, E>, E::CustomTraversal>,
+    ) -> TypedTraversalEvent<'t, 's, 'de, E::CustomTraversal> {
         let LocatedDecoding {
             inner: value_batch_ref,
             parent_relationship,
+            resultant_path,
             location,
         } = located_event;
         let type_index = self.get_type_index(&parent_relationship);
@@ -392,17 +407,20 @@ impl<'de, 's, E: CustomTypeExtension> TypedTraverser<'de, 's, E> {
             inner: value_batch_ref,
             parent_relationship,
             type_index,
+            resultant_path,
+            typed_resultant_path: &self.container_stack,
             location,
         })
     }
 
-    fn map_container_end_event(
-        &mut self,
-        located_event: LocatedDecoding<ContainerHeaderFor<E>>,
-    ) -> TypedTraversalEvent<'de, E::CustomTraversal> {
+    fn map_container_end_event<'t, 'de>(
+        &'t mut self,
+        located_event: LocatedDecoding<'t, ContainerHeaderFor<E>, E::CustomTraversal>,
+    ) -> TypedTraversalEvent<'t, 's, 'de, E::CustomTraversal> {
         let LocatedDecoding {
             inner: header,
             parent_relationship,
+            resultant_path,
             location,
         } = located_event;
 
@@ -412,16 +430,9 @@ impl<'de, 's, E: CustomTypeExtension> TypedTraverser<'de, 's, E> {
             inner: header,
             parent_relationship,
             type_index: container.own_type,
+            resultant_path,
+            typed_resultant_path: &self.container_stack,
             location,
-        })
-    }
-
-    fn map_decode_error_event(
-        located_error: LocatedError<DecodeError>,
-    ) -> TypedTraversalEvent<'de, E::CustomTraversal> {
-        TypedTraversalEvent::Error(LocatedError {
-            location: located_error.location,
-            error: TypedTraversalError::DecodeError(located_error.error),
         })
     }
 
@@ -442,6 +453,15 @@ impl<'de, 's, E: CustomTypeExtension> TypedTraverser<'de, 's, E> {
             },
         }.expect("Type index should be resolvable given checks on the parent and invariants from the untyped traverser")
     }
+}
+
+fn map_decode_error_event<'de, T: CustomTraversal>(
+    located_error: LocatedError<DecodeError>,
+) -> TypedTraversalEvent<'static, 'static, 'de, T> {
+    TypedTraversalEvent::Error(LocatedError {
+        location: located_error.location,
+        error: TypedTraversalError::DecodeError(located_error.error),
+    })
 }
 
 fn value_kind_matches_type_kind<E: CustomTypeExtension>(
