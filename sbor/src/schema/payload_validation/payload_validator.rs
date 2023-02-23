@@ -186,8 +186,8 @@ macro_rules! numeric_validation_match {
     ($numeric_validation: ident, $value: expr, $location: expr, $type: ident, $error_type: ident) => {{
         {
             let TerminalValueRef::$type(value) = $value else {
-                    return_type_validation_mismatch!($location)
-                };
+                        return_type_validation_mismatch!($location)
+                    };
             if !$numeric_validation.is_valid(value) {
                 return_type_validation_error!(
                     $location,
@@ -299,4 +299,59 @@ pub fn validate_terminal_value_batch<'de, E: CustomTypeExtension>(
         _ => return_type_validation_mismatch!(location),
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{traversal::LocatedError, *};
+
+    #[derive(Sbor)]
+    struct TestStructArray {
+        x: [u8; 16],
+    }
+
+    #[derive(Sbor)]
+    struct TestStructVec {
+        x: Vec<u8>,
+    }
+
+    #[test]
+    pub fn identical_length_vec_and_array_are_interchangeable() {
+        let (type_index, schema) =
+            generate_full_schema_from_single_type::<TestStructArray, NoCustomTypeExtension>();
+        let payload = basic_encode(&TestStructVec {
+            x: Vec::from([0; 16]),
+        })
+        .unwrap();
+
+        let result = validate(&payload, &schema, type_index);
+        assert!(result.is_ok())
+    }
+
+    #[test]
+    pub fn longer_length_vec_is_not_interchangeable_with_array() {
+        let (type_index, schema) =
+            generate_full_schema_from_single_type::<TestStructArray, NoCustomTypeExtension>();
+        let payload = basic_encode(&TestStructVec {
+            x: Vec::from([0; 17]),
+        })
+        .unwrap();
+
+        let result = validate(&payload, &schema, type_index);
+        assert!(matches!(
+            result,
+            Err(LocatedError {
+                error: ValidationError::TypeValidationError(
+                    TypeValidationError::LengthValidationError {
+                        required: LengthValidation {
+                            min: Some(16),
+                            max: Some(16)
+                        },
+                        actual: 17,
+                    }
+                ),
+                ..
+            })
+        ))
+    }
 }
