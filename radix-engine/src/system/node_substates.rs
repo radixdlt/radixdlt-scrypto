@@ -1190,9 +1190,6 @@ impl<'a> SubstateRef<'a> {
                         owned_nodes.push(RENodeId::EpochManager(*epoch_manager_id))
                     }
                     GlobalSubstate::Clock(clock_id) => owned_nodes.push(RENodeId::Clock(*clock_id)),
-                    GlobalSubstate::Package(package_id) => {
-                        owned_nodes.push(RENodeId::Package(*package_id))
-                    }
                     GlobalSubstate::Validator(validator_id) => {
                         owned_nodes.push(RENodeId::Validator(*validator_id))
                     }
@@ -1247,7 +1244,7 @@ impl<'a> SubstateRef<'a> {
             }
             SubstateRef::ComponentInfo(substate) => {
                 let mut references = HashSet::new();
-                references.insert(RENodeId::Global(Address::Package(substate.package_address)));
+                references.insert(RENodeId::GlobalPackage(substate.package_address));
                 (references, Vec::new())
             }
             SubstateRef::ResourceManager(substate) => {

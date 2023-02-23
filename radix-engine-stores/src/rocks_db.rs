@@ -29,13 +29,13 @@ impl RadixEngineDB {
 
     pub fn list_packages(&self) -> Vec<PackageAddress> {
         let start = &scrypto_encode(&SubstateId(
-            RENodeId::Global(Address::Package(PackageAddress::Normal([0; 26]))),
+            RENodeId::GlobalPackage(PackageAddress::Normal([0; 26])),
             NodeModuleId::SELF,
             SubstateOffset::Global(GlobalOffset::Global),
         ))
         .unwrap();
         let end = &scrypto_encode(&SubstateId(
-            RENodeId::Global(Address::Package(PackageAddress::Normal([255; 26]))),
+            RENodeId::GlobalPackage(PackageAddress::Normal([255; 26])),
             NodeModuleId::SELF,
             SubstateOffset::Global(GlobalOffset::Global),
         ))
@@ -45,7 +45,7 @@ impl RadixEngineDB {
             .into_iter()
             .map(|id| {
                 if let SubstateId(
-                    RENodeId::Global(Address::Package(package_address)),
+                    RENodeId::GlobalPackage(package_address),
                     NodeModuleId::SELF,
                     SubstateOffset::Global(GlobalOffset::Global),
                 ) = id

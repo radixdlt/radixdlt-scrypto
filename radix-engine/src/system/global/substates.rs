@@ -5,7 +5,6 @@ use crate::types::*;
 pub enum GlobalSubstate {
     Component(ComponentId),
     Resource(ResourceManagerId),
-    Package(PackageId),
     EpochManager(EpochManagerId),
     Validator(ValidatorId),
     Clock(ClockId),
@@ -19,7 +18,6 @@ impl GlobalSubstate {
         match self {
             GlobalSubstate::Component(id) => RENodeId::Component(*id),
             GlobalSubstate::Resource(id) => RENodeId::ResourceManager(*id),
-            GlobalSubstate::Package(id) => RENodeId::Package(*id),
             GlobalSubstate::EpochManager(id) => RENodeId::EpochManager(*id),
             GlobalSubstate::Identity(id) => RENodeId::Identity(*id),
             GlobalSubstate::Validator(id) => RENodeId::Validator(*id),

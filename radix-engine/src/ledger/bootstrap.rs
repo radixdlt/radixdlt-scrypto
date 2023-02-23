@@ -60,7 +60,7 @@ pub fn create_genesis(
 
     // Metadata Package
     {
-        pre_allocated_ids.insert(RENodeId::Global(Address::Package(METADATA_PACKAGE)));
+        pre_allocated_ids.insert(RENodeId::GlobalPackage(METADATA_PACKAGE));
         let package_address = METADATA_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_LOADER,
@@ -83,7 +83,7 @@ pub fn create_genesis(
 
     // Royalty Package
     {
-        pre_allocated_ids.insert(RENodeId::Global(Address::Package(ROYALTY_PACKAGE)));
+        pre_allocated_ids.insert(RENodeId::GlobalPackage(ROYALTY_PACKAGE));
         let package_address = ROYALTY_PACKAGE.to_array_without_entity_id();
 
         instructions.push(Instruction::CallFunction {
@@ -107,7 +107,7 @@ pub fn create_genesis(
 
     // Access Rules Package
     {
-        pre_allocated_ids.insert(RENodeId::Global(Address::Package(ACCESS_RULES_PACKAGE)));
+        pre_allocated_ids.insert(RENodeId::GlobalPackage(ACCESS_RULES_PACKAGE));
         let package_address = ACCESS_RULES_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_LOADER,
@@ -130,7 +130,7 @@ pub fn create_genesis(
 
     // Resource Package
     {
-        pre_allocated_ids.insert(RENodeId::Global(Address::Package(RESOURCE_MANAGER_PACKAGE)));
+        pre_allocated_ids.insert(RENodeId::GlobalPackage(RESOURCE_MANAGER_PACKAGE));
         let package_address = RESOURCE_MANAGER_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_LOADER,
@@ -205,7 +205,7 @@ pub fn create_genesis(
 
     // Identity Package
     {
-        pre_allocated_ids.insert(RENodeId::Global(Address::Package(IDENTITY_PACKAGE)));
+        pre_allocated_ids.insert(RENodeId::GlobalPackage(IDENTITY_PACKAGE));
         let package_address = IDENTITY_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_LOADER,
@@ -228,7 +228,7 @@ pub fn create_genesis(
 
     // EpochManager Package
     {
-        pre_allocated_ids.insert(RENodeId::Global(Address::Package(EPOCH_MANAGER_PACKAGE)));
+        pre_allocated_ids.insert(RENodeId::GlobalPackage(EPOCH_MANAGER_PACKAGE));
         let package_address = EPOCH_MANAGER_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_LOADER,
@@ -251,7 +251,7 @@ pub fn create_genesis(
 
     // Clock Package
     {
-        pre_allocated_ids.insert(RENodeId::Global(Address::Package(CLOCK_PACKAGE)));
+        pre_allocated_ids.insert(RENodeId::GlobalPackage(CLOCK_PACKAGE));
         let package_address = CLOCK_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_LOADER,
@@ -274,7 +274,7 @@ pub fn create_genesis(
 
     // Account Package
     {
-        pre_allocated_ids.insert(RENodeId::Global(Address::Package(ACCOUNT_PACKAGE)));
+        pre_allocated_ids.insert(RENodeId::GlobalPackage(ACCOUNT_PACKAGE));
         let package_address = ACCOUNT_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_LOADER,
@@ -297,9 +297,7 @@ pub fn create_genesis(
 
     // AccessRules Package
     {
-        pre_allocated_ids.insert(RENodeId::Global(Address::Package(
-            ACCESS_CONTROLLER_PACKAGE,
-        )));
+        pre_allocated_ids.insert(RENodeId::GlobalPackage(ACCESS_CONTROLLER_PACKAGE));
         let package_address = ACCESS_CONTROLLER_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_LOADER,
@@ -322,7 +320,7 @@ pub fn create_genesis(
 
     // Logger Package
     {
-        pre_allocated_ids.insert(RENodeId::Global(Address::Package(LOGGER_PACKAGE)));
+        pre_allocated_ids.insert(RENodeId::GlobalPackage(LOGGER_PACKAGE));
         let package_address = LOGGER_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_LOADER,
@@ -345,9 +343,7 @@ pub fn create_genesis(
 
     // TransactionRuntime Package
     {
-        pre_allocated_ids.insert(RENodeId::Global(Address::Package(
-            TRANSACTION_RUNTIME_PACKAGE,
-        )));
+        pre_allocated_ids.insert(RENodeId::GlobalPackage(TRANSACTION_RUNTIME_PACKAGE));
         let package_address = TRANSACTION_RUNTIME_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_LOADER,
@@ -370,7 +366,7 @@ pub fn create_genesis(
 
     // AuthZone Package
     {
-        pre_allocated_ids.insert(RENodeId::Global(Address::Package(AUTH_ZONE_PACKAGE)));
+        pre_allocated_ids.insert(RENodeId::GlobalPackage(AUTH_ZONE_PACKAGE));
         let package_address = AUTH_ZONE_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_LOADER,
@@ -460,7 +456,7 @@ pub fn create_genesis(
         let faucet_code = include_bytes!("../../../assets/faucet.wasm").to_vec();
         let faucet_abi = include_bytes!("../../../assets/faucet.abi").to_vec();
         let package_address = FAUCET_PACKAGE.to_array_without_entity_id();
-        pre_allocated_ids.insert(RENodeId::Global(Address::Package(FAUCET_PACKAGE)));
+        pre_allocated_ids.insert(RENodeId::GlobalPackage(FAUCET_PACKAGE));
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),

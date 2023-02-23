@@ -87,7 +87,7 @@ fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFra
             args,
             ..
         } => {
-            update.add_ref(RENodeId::Global(Address::Package(*package_address)));
+            update.add_ref(RENodeId::GlobalPackage(*package_address));
             let value: ManifestValue =
                 manifest_decode(args).expect("Invalid CALL_FUNCTION arguments");
             extract_refs_from_value(&value, update);
@@ -97,7 +97,7 @@ fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFra
             }
         }
         Instruction::PublishPackage { access_rules, .. } => {
-            update.add_ref(RENodeId::Global(Address::Package(PACKAGE_LOADER)));
+            update.add_ref(RENodeId::GlobalPackage(PACKAGE_LOADER));
 
             // TODO: Remove and cleanup
             let value: ManifestValue = manifest_decode(&manifest_encode(access_rules).unwrap())
@@ -117,7 +117,12 @@ fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFra
 
         Instruction::SetMetadata { entity_address, .. }
         | Instruction::SetMethodAccessRule { entity_address, .. } => {
-            update.add_ref(RENodeId::Global(to_address(entity_address.clone())));
+            let address = to_address(entity_address.clone());
+            let node_id = match address {
+                Address::Package(package_address) => RENodeId::GlobalPackage(package_address),
+                _ => RENodeId::Global(address),
+            };
+            update.add_ref(node_id);
         }
         Instruction::RecallResource { vault_id, .. } => {
             // TODO: This needs to be cleaned up
@@ -132,7 +137,7 @@ fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFra
         | Instruction::ClaimPackageRoyalty {
             package_address, ..
         } => {
-            update.add_ref(RENodeId::Global(Address::Package(*package_address)));
+            update.add_ref(RENodeId::GlobalPackage(*package_address));
         }
         Instruction::SetComponentRoyaltyConfig {
             component_address, ..
@@ -232,7 +237,12 @@ fn extract_refs_from_value(value: &ManifestValue, collector: &mut CallFrameUpdat
         }
         Value::Custom { value } => match value {
             ManifestCustomValue::Address(a) => {
-                collector.add_ref(RENodeId::Global(to_address(a.clone())))
+                let address = to_address(a.clone());
+                let node_id = match address {
+                    Address::Package(package_address) => RENodeId::GlobalPackage(package_address),
+                    _ => RENodeId::Global(address),
+                };
+                collector.add_ref(node_id)
             }
             _ => {}
         },
@@ -609,7 +619,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     royalty_config,
                 } => {
                     let result = api.call_module_method(
-                        RENodeId::Global(package_address.into()),
+                        RENodeId::GlobalPackage(package_address),
                         NodeModuleId::PackageRoyalty,
                         PACKAGE_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
                         scrypto_encode(&PackageSetRoyaltyConfigInput {
@@ -650,7 +660,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 }
                 Instruction::ClaimPackageRoyalty { package_address } => {
                     let result = api.call_module_method(
-                        RENodeId::Global(package_address.into()),
+                        RENodeId::GlobalPackage(package_address),
                         NodeModuleId::PackageRoyalty,
                         PACKAGE_ROYALTY_CLAIM_ROYALTY_IDENT,
                         scrypto_encode(&PackageClaimRoyaltyInput {}).unwrap(),
@@ -686,8 +696,13 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     key,
                     rule,
                 } => {
+                    let address = to_address(entity_address);
+                    let receiver= match address {
+                        Address::Package(package_address) => RENodeId::GlobalPackage(package_address),
+                        _ => RENodeId::Global(address),
+                    };
                     let result = api.call_module_method(
-                        RENodeId::Global(to_address(entity_address)),
+                        receiver,
                         NodeModuleId::AccessRules,
                         ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                         scrypto_encode(&AccessRulesSetMethodAccessRuleInput {

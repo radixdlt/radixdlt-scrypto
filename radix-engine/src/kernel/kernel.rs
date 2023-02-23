@@ -495,9 +495,45 @@ where
         if depth == 0 {
             for node_id in &call_frame_update.node_refs_to_copy {
                 match node_id {
+                    RENodeId::GlobalPackage(package_address) => {
+                        // TODO: Cleanup
+                        {
+                            match *package_address {
+                                PACKAGE_LOADER
+                                | RESOURCE_MANAGER_PACKAGE
+                                | IDENTITY_PACKAGE
+                                | EPOCH_MANAGER_PACKAGE
+                                | CLOCK_PACKAGE
+                                | ACCOUNT_PACKAGE
+                                | ACCESS_CONTROLLER_PACKAGE => {
+                                    self.current_frame
+                                        .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                                    continue;
+                                }
+                                _ => {
+                                    if self.current_frame.get_node_location(*node_id).is_err() {
+                                        let offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
+                                        self.track
+                                            .acquire_lock(
+                                                SubstateId(*node_id, NodeModuleId::TypeInfo, offset.clone()),
+                                                LockFlags::read_only(),
+                                            )
+                                            .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
+                                        self.track
+                                            .release_lock(
+                                                SubstateId(*node_id, NodeModuleId::TypeInfo, offset),
+                                                false,
+                                            )
+                                            .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
+                                        self.current_frame
+                                            .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                                    }
+                                }
+                            }
+                        }
+                    }
                     RENodeId::Global(global_address) => {
-                        if self.current_frame.get_node_location(*node_id).is_err() {
-                            if matches!(
+                        if matches!(
                                 global_address,
                                 Address::Component(ComponentAddress::EcdsaSecp256k1VirtualAccount(
                                     ..
@@ -518,65 +554,13 @@ where
                                     ..
                                 ))
                             ) {
-                                self.current_frame
-                                    .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                                continue;
-                            }
+                            self.current_frame
+                                .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                            continue;
+                        }
 
-                            // TODO: Cleanup
-                            {
-                                if matches!(global_address, Address::Package(PACKAGE_LOADER)) {
-                                    self.current_frame
-                                        .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                                    continue;
-                                }
-
-                                if matches!(
-                                    global_address,
-                                    Address::Package(RESOURCE_MANAGER_PACKAGE)
-                                ) {
-                                    self.current_frame
-                                        .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                                    continue;
-                                }
-
-                                if matches!(global_address, Address::Package(IDENTITY_PACKAGE)) {
-                                    self.current_frame
-                                        .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                                    continue;
-                                }
-
-                                if matches!(global_address, Address::Package(EPOCH_MANAGER_PACKAGE))
-                                {
-                                    self.current_frame
-                                        .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                                    continue;
-                                }
-
-                                if matches!(global_address, Address::Package(CLOCK_PACKAGE)) {
-                                    self.current_frame
-                                        .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                                    continue;
-                                }
-
-                                if matches!(global_address, Address::Package(ACCOUNT_PACKAGE)) {
-                                    self.current_frame
-                                        .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                                    continue;
-                                }
-
-                                if matches!(
-                                    global_address,
-                                    Address::Package(ACCESS_CONTROLLER_PACKAGE)
-                                ) {
-                                    self.current_frame
-                                        .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                                    continue;
-                                }
-                            }
-
+                        if self.current_frame.get_node_location(*node_id).is_err() {
                             let offset = SubstateOffset::Global(GlobalOffset::Global);
-
                             self.track
                                 .acquire_lock(
                                     SubstateId(*node_id, NodeModuleId::SELF, offset.clone()),
@@ -717,10 +701,6 @@ where
 
         match (node_id, &re_node) {
             (
-                RENodeId::Global(Address::Package(..)),
-                RENodeInit::Global(GlobalSubstate::Package(..)),
-            ) => {}
-            (
                 RENodeId::Global(Address::Resource(..)),
                 RENodeInit::Global(GlobalSubstate::Resource(..)),
             ) => {}
@@ -812,7 +792,7 @@ where
                     }),
                 );
             }
-            (RENodeId::Package(..), RENodeInit::Package(..)) => {
+            (RENodeId::GlobalPackage(..), RENodeInit::Package(..)) => {
                 module_init.insert(
                     NodeModuleId::TypeInfo,
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
@@ -891,6 +871,7 @@ where
 
         let push_to_store = match re_node {
             RENodeInit::Global(..) => true,
+            RENodeInit::Package(..) => true,
             _ => false,
         };
 
@@ -1049,11 +1030,10 @@ where
                     // TODO: This is a hack to allow for package imports to be visible
                     // TODO: Remove this once we are able to get this information through the Blueprint ABI
                     RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(
-                        RENodeId::Global(Address::Package(package_address)),
+                        RENodeId::GlobalPackage(package_address),
                     )) => {
-                        let node_id = RENodeId::Global(Address::Package(*package_address));
+                        let node_id = RENodeId::GlobalPackage(*package_address);
                         let module_id = NodeModuleId::SELF;
-                        let offset = SubstateOffset::Global(GlobalOffset::Global);
                         self.track
                             .acquire_lock(
                                 SubstateId(node_id, module_id, offset.clone()),

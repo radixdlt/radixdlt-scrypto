@@ -35,18 +35,10 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
 ) -> Result<(), DisplayError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 
-    let global: Option<GlobalSubstate> = substate_store
-        .get_substate(&SubstateId(
-            RENodeId::Global(Address::Package(package_address)),
-            NodeModuleId::SELF,
-            SubstateOffset::Global(GlobalOffset::Global),
-        ))
-        .map(|s| s.substate)
-        .map(|s| s.to_runtime().into());
     let package: Option<PackageCodeSubstate> = global.and_then(|global| {
         substate_store
             .get_substate(&SubstateId(
-                global.node_deref(),
+                RENodeId::GlobalPackage(package_address),
                 NodeModuleId::SELF,
                 SubstateOffset::Package(PackageOffset::Code),
             ))

@@ -223,15 +223,15 @@ impl VisibilityProperties {
                             None => match (node_id, offset) {
                                 // READ package code & abi
                                 (
-                                    RENodeId::Package(_),
+                                    RENodeId::GlobalPackage(_),
                                     SubstateOffset::Package(PackageOffset::Info), // TODO: Remove
                                 )
                                 | (
-                                    RENodeId::Package(_),
+                                    RENodeId::GlobalPackage(_),
                                     SubstateOffset::Package(PackageOffset::CodeType), // TODO: Remove
                                 )
                                 | (
-                                    RENodeId::Package(_),
+                                    RENodeId::GlobalPackage(_),
                                     SubstateOffset::Package(PackageOffset::Code), // TODO: Remove
                                 ) => read_only,
                                 // READ global substates
@@ -254,15 +254,15 @@ impl VisibilityProperties {
                             }) => match (node_id, offset) {
                                 // READ package code & abi
                                 (
-                                    RENodeId::Package(_),
+                                    RENodeId::GlobalPackage(_),
                                     SubstateOffset::Package(PackageOffset::Info), // TODO: Remove
                                 )
                                 | (
-                                    RENodeId::Package(_),
+                                    RENodeId::GlobalPackage(_),
                                     SubstateOffset::Package(PackageOffset::CodeType), // TODO: Remove
                                 )
                                 | (
-                                    RENodeId::Package(_),
+                                    RENodeId::GlobalPackage(_),
                                     SubstateOffset::Package(PackageOffset::Code), // TODO: Remove
                                 ) => read_only,
                                 // READ global substates
@@ -436,7 +436,7 @@ impl SubstateProperties {
             },
             SubstateOffset::Global(GlobalOffset::Global) => match node_id {
                 RENodeId::Component(..)
-                | RENodeId::Package(..)
+                | RENodeId::GlobalPackage(..)
                 | RENodeId::ResourceManager(..)
                 | RENodeId::EpochManager(..)
                 | RENodeId::Validator(..)

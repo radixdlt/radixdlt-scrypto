@@ -28,7 +28,6 @@ pub enum RENodeType {
     Component,
     Vault,
     ResourceManager,
-    Package,
     EpochManager,
     Validator,
     Clock,
@@ -65,7 +64,7 @@ pub enum RENodeId {
     Component(ComponentId),
     Vault(VaultId),
     ResourceManager(ResourceManagerId),
-    Package(PackageId),
+    GlobalPackage(PackageAddress),
     EpochManager(EpochManagerId),
     Identity(IdentityId),
     Clock(ClockId),
@@ -98,7 +97,7 @@ impl fmt::Debug for RENodeId {
                 .debug_tuple("ResourceManager")
                 .field(&hex::encode(id))
                 .finish(),
-            Self::Package(id) => f.debug_tuple("Package").field(&hex::encode(id)).finish(),
+            Self::GlobalPackage(address) => f.debug_tuple("Package").field(&address).finish(),
             Self::EpochManager(id) => f
                 .debug_tuple("EpochManager")
                 .field(&hex::encode(id))
@@ -123,7 +122,6 @@ impl Into<[u8; 36]> for RENodeId {
             RENodeId::Vault(id) => id,
             RENodeId::Component(id) => id,
             RENodeId::ResourceManager(id) => id,
-            RENodeId::Package(id) => id,
             RENodeId::EpochManager(id) => id,
             RENodeId::Identity(id) => id,
             RENodeId::Validator(id) => id,
@@ -153,7 +151,7 @@ impl Into<ComponentAddress> for RENodeId {
 impl Into<PackageAddress> for RENodeId {
     fn into(self) -> PackageAddress {
         match self {
-            RENodeId::Global(Address::Package(package_address)) => package_address,
+            RENodeId::GlobalPackage(package_address) => package_address,
             _ => panic!("Not a package address"),
         }
     }

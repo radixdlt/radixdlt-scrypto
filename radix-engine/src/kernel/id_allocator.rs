@@ -3,7 +3,7 @@ use radix_engine_interface::address::EntityType;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     AccessControllerId, Address, BucketId, ComponentId, KeyValueStoreId, NonFungibleStoreId,
-    PackageId, ProofId, RENodeId, RENodeType, ResourceManagerId, ValidatorId, VaultId,
+    ProofId, RENodeId, RENodeType, ResourceManagerId, ValidatorId, VaultId,
 };
 use radix_engine_interface::crypto::{hash, Hash};
 use sbor::rust::collections::{BTreeMap, BTreeSet};
@@ -73,10 +73,6 @@ impl IdAllocator {
             RENodeType::NonFungibleStore => self
                 .new_nf_store_id()
                 .map(|id| RENodeId::NonFungibleStore(id)),
-            RENodeType::Package => {
-                // Security Alert: ensure ID allocating will practically never fail
-                self.new_package_id().map(|id| RENodeId::Package(id))
-            }
             RENodeType::ResourceManager => self
                 .new_resource_manager_id()
                 .map(|id| RENodeId::ResourceManager(id)),
@@ -93,7 +89,7 @@ impl IdAllocator {
             RENodeType::Account => self.new_component_id().map(|id| RENodeId::Account(id)),
             RENodeType::GlobalPackage => self
                 .new_package_address()
-                .map(|address| RENodeId::Global(Address::Package(address))),
+                .map(|address| RENodeId::GlobalPackage(address)),
             RENodeType::GlobalEpochManager => self
                 .new_epoch_manager_address()
                 .map(|address| RENodeId::Global(Address::Component(address))),
@@ -264,10 +260,6 @@ impl IdAllocator {
     }
 
     pub fn new_resource_manager_id(&mut self) -> Result<ResourceManagerId, IdAllocationError> {
-        self.next_id()
-    }
-
-    pub fn new_package_id(&mut self) -> Result<PackageId, IdAllocationError> {
         self.next_id()
     }
 

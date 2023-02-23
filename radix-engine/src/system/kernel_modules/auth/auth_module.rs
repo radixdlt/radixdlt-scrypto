@@ -119,7 +119,7 @@ impl KernelModule for AuthModule {
                         }
                     } else {
                         let handle = api.kernel_lock_substate(
-                            RENodeId::Global(Address::Package(identifier.package_address)),
+                            RENodeId::GlobalPackage(identifier.package_address),
                             NodeModuleId::PackageAccessRules,
                             SubstateOffset::PackageAccessRules,
                             LockFlags::read_only(),
@@ -248,7 +248,7 @@ impl KernelModule for AuthModule {
                 } => {
                     let offset = SubstateOffset::Package(PackageOffset::Info);
                     let handle = api.kernel_lock_substate(
-                        RENodeId::Global(Address::Package(identifier.package_address)),
+                        RENodeId::GlobalPackage(identifier.package_address),
                         NodeModuleId::SELF,
                         offset,
                         LockFlags::read_only(),

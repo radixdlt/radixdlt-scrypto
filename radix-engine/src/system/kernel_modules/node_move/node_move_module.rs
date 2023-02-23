@@ -73,7 +73,7 @@ impl NodeMoveModule {
             | RENodeId::KeyValueStore(..)
             | RENodeId::NonFungibleStore(..)
             | RENodeId::Vault(..)
-            | RENodeId::Package(..)
+            | RENodeId::GlobalPackage(..)
             | RENodeId::Worktop
             | RENodeId::EpochManager(..)
             | RENodeId::Identity(..)
@@ -122,7 +122,7 @@ impl NodeMoveModule {
             | RENodeId::ResourceManager(..)
             | RENodeId::KeyValueStore(..)
             | RENodeId::NonFungibleStore(..)
-            | RENodeId::Package(..)
+            | RENodeId::GlobalPackage(..)
             | RENodeId::Worktop
             | RENodeId::EpochManager(..)
             | RENodeId::Identity(..)

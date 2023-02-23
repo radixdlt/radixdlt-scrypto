@@ -158,9 +158,8 @@ where
     }
 
     fn get_code(&mut self, package_address: PackageAddress) -> Result<PackageCode, RuntimeError> {
-        let package_global = RENodeId::Global(Address::Package(package_address));
         let handle = self.kernel_lock_substate(
-            package_global,
+            RENodeId::GlobalPackage(package_address),
             NodeModuleId::SELF,
             SubstateOffset::Package(PackageOffset::Code),
             LockFlags::read_only(),
@@ -176,9 +175,8 @@ where
         &mut self,
         package_address: PackageAddress,
     ) -> Result<BTreeMap<String, BlueprintAbi>, RuntimeError> {
-        let package_global = RENodeId::Global(Address::Package(package_address));
         let handle = self.kernel_lock_substate(
-            package_global,
+            RENodeId::GlobalPackage(package_address),
             NodeModuleId::SELF,
             SubstateOffset::Package(PackageOffset::Info),
             LockFlags::read_only(),

@@ -11,7 +11,7 @@ use crate::{
     transaction::AbortReason,
 };
 use radix_engine_interface::api::types::{
-    Address, GlobalOffset, InvocationIdentifier, LockHandle, MethodReceiver, NodeModuleId,
+    Address, InvocationIdentifier, LockHandle, MethodReceiver, NodeModuleId,
     RoyaltyOffset, SubstateOffset, VaultId, VaultOffset,
 };
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
@@ -160,21 +160,8 @@ impl KernelModule for CostingModule {
         /*
          * Apply package royalty
          */
-        let package_global_node_id = RENodeId::Global(Address::Package(package_address));
-        let (package_id, package_lock) = {
-            let handle = api.kernel_lock_substate(
-                package_global_node_id,
-                NodeModuleId::SELF,
-                SubstateOffset::Global(GlobalOffset::Global),
-                LockFlags::read_only(),
-            )?;
-            let substate = api.kernel_get_substate_ref(handle)?;
-            let package_id = substate.global_address().node_deref().into();
-            (package_id, handle)
-        };
-        let package_node_id = RENodeId::Package(package_id);
         let handle = api.kernel_lock_substate(
-            package_node_id,
+            RENodeId::GlobalPackage(package_address),
             NodeModuleId::PackageRoyalty,
             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
             LockFlags::read_only(),
@@ -190,7 +177,7 @@ impl KernelModule for CostingModule {
 
         // TODO: refactor to defer substate loading to finalization.
         let handle = api.kernel_lock_substate(
-            package_node_id,
+            RENodeId::GlobalPackage(package_address),
             NodeModuleId::PackageRoyalty,
             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
             LockFlags::MUTABLE,
@@ -211,10 +198,9 @@ impl KernelModule for CostingModule {
 
         apply_royalty_cost(
             api,
-            RoyaltyReceiver::Package(fn_identifier.package_address, package_id),
+            RoyaltyReceiver::Package(fn_identifier.package_address),
             royalty_amount,
         )?;
-        api.kernel_drop_lock(package_lock)?;
 
         /*
          * Apply component royalty

@@ -18,18 +18,9 @@ pub fn export_abi<S: ReadableSubstateStore>(
     package_address: PackageAddress,
     blueprint_name: &str,
 ) -> Result<abi::BlueprintAbi, ExportError> {
-    let global_substate: RuntimeSubstate = substate_store
-        .get_substate(&SubstateId(
-            RENodeId::Global(Address::Package(package_address)),
-            NodeModuleId::SELF,
-            SubstateOffset::Global(GlobalOffset::Global),
-        ))
-        .map(|s| s.substate.to_runtime())
-        .ok_or(ExportError::PackageNotFound(package_address))?;
-
     let package_value: RuntimeSubstate = substate_store
         .get_substate(&SubstateId(
-            global_substate.global().node_deref(),
+            RENodeId::GlobalPackage(package_address),
             NodeModuleId::SELF,
             SubstateOffset::Package(PackageOffset::Info),
         ))
