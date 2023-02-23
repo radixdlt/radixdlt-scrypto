@@ -8,7 +8,7 @@ use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use crate::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::types::{Address, ClockOffset, RENodeId, SubstateOffset};
+use radix_engine_interface::api::types::{ClockOffset, RENodeId, SubstateOffset};
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientSubstateApi;
@@ -138,12 +138,11 @@ impl ClockNativePackage {
             node_modules,
         )?;
 
-        let global_node_id = RENodeId::Global(Address::Component(ComponentAddress::Clock(
-            input.component_address,
-        )));
+        let global_node_id =
+            RENodeId::GlobalComponent(ComponentAddress::Clock(input.component_address));
         api.kernel_create_node(
             global_node_id,
-            RENodeInit::Global(GlobalSubstate::Clock(underlying_node_id.into())),
+            RENodeInit::GlobalComponent(GlobalSubstate::Clock(underlying_node_id.into())),
             BTreeMap::new(),
         )?;
 

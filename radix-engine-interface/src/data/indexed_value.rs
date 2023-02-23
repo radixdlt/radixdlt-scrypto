@@ -146,9 +146,15 @@ impl ValueVisitor<ScryptoCustomValueKind, ScryptoCustomValue> for ScryptoValueVi
         match value {
             ScryptoCustomValue::Address(value) => {
                 match value {
-                    Address::Package(package_address) => self.global_references.insert(RENodeId::GlobalPackage(*package_address)),
-                    _ => self.global_references
-                        .insert(RENodeId::Global(value.clone())),
+                    Address::Package(package_address) => self
+                        .global_references
+                        .insert(RENodeId::GlobalPackage(*package_address)),
+                    Address::Resource(resource_address) => self
+                        .global_references
+                        .insert(RENodeId::GlobalResourceManager(*resource_address)),
+                    Address::Component(component_address) => self
+                        .global_references
+                        .insert(RENodeId::GlobalComponent(*component_address)),
                 };
             }
             ScryptoCustomValue::Own(value) => {

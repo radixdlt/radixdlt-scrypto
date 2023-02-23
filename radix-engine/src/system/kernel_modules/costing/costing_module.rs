@@ -11,8 +11,8 @@ use crate::{
     transaction::AbortReason,
 };
 use radix_engine_interface::api::types::{
-    Address, InvocationIdentifier, LockHandle, MethodReceiver, NodeModuleId,
-    RoyaltyOffset, SubstateOffset, VaultId, VaultOffset,
+    InvocationIdentifier, LockHandle, MethodReceiver, NodeModuleId, RoyaltyOffset, SubstateOffset,
+    VaultId, VaultOffset,
 };
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::blueprints::resource::Resource;
@@ -124,8 +124,7 @@ impl KernelModule for CostingModule {
             }) => {
                 let maybe_component = match &receiver {
                     Some(ResolvedReceiver {
-                        derefed_from:
-                            Some((RENodeId::Global(Address::Component(component_address)), ..)),
+                        derefed_from: Some((RENodeId::GlobalComponent(component_address), ..)),
                         receiver: MethodReceiver(RENodeId::Component(component_id), ..),
                     }) => Some((*component_address, *component_id)),
                     _ => None,

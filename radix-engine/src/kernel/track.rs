@@ -296,18 +296,24 @@ impl<'s> Track<'s> {
 
         match &substate_id {
             SubstateId(
-                RENodeId::Global(global_address),
+                RENodeId::GlobalComponent(component_address),
                 NodeModuleId::SELF,
                 SubstateOffset::Global(GlobalOffset::Global),
             ) => {
-                self.new_global_addresses.push(*global_address);
+                self.new_global_addresses
+                    .push(Address::Component(*component_address));
             }
             SubstateId(
-                RENodeId::GlobalPackage(package_address),
+                RENodeId::GlobalResourceManager(resource_address),
                 NodeModuleId::TypeInfo,
-                ..
+                ..,
             ) => {
-                self.new_global_addresses.push(Address::Package(*package_address));
+                self.new_global_addresses
+                    .push(Address::Resource(*resource_address));
+            }
+            SubstateId(RENodeId::GlobalPackage(package_address), NodeModuleId::TypeInfo, ..) => {
+                self.new_global_addresses
+                    .push(Address::Package(*package_address));
             }
             _ => {}
         }

@@ -4,7 +4,6 @@ use radix_engine::blueprints::resource::{
     NonFungibleSubstate, ResourceManagerSubstate, VaultSubstate,
 };
 use radix_engine::ledger::*;
-use radix_engine::system::global::GlobalSubstate;
 use radix_engine::system::node_modules::metadata::MetadataSubstate;
 use radix_engine::types::*;
 use radix_engine_interface::api::component::*;
@@ -34,17 +33,14 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
     output: &mut O,
 ) -> Result<(), DisplayError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
-
-    let package: Option<PackageCodeSubstate> = global.and_then(|global| {
-        substate_store
-            .get_substate(&SubstateId(
-                RENodeId::GlobalPackage(package_address),
-                NodeModuleId::SELF,
-                SubstateOffset::Package(PackageOffset::Code),
-            ))
-            .map(|s| s.substate)
-            .map(|s| s.to_runtime().into())
-    });
+    let package: Option<PackageCodeSubstate> = substate_store
+        .get_substate(&SubstateId(
+            RENodeId::GlobalPackage(package_address),
+            NodeModuleId::SELF,
+            SubstateOffset::Package(PackageOffset::Code),
+        ))
+        .map(|s| s.substate)
+        .map(|s| s.to_runtime().into());
     let package = package.ok_or(DisplayError::PackageNotFound)?;
 
     writeln!(
@@ -81,7 +77,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
 
     // Dereference the global component address to get the component id
     let component_id = {
-        let node_id = RENodeId::Global(Address::Component(component_address));
+        let node_id = RENodeId::GlobalComponent(component_address);
         substate_store
             .get_substate(&SubstateId(
                 node_id,
@@ -434,36 +430,23 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             .unwrap();
         let amount = vault.0.amount();
         let resource_address = vault.0.resource_address();
-        let global: Option<GlobalSubstate> = substate_store
+        let resource_manager: Option<ResourceManagerSubstate> = substate_store
             .get_substate(&SubstateId(
-                RENodeId::Global(Address::Resource(resource_address)),
+                RENodeId::GlobalResourceManager(resource_address),
                 NodeModuleId::SELF,
-                SubstateOffset::Global(GlobalOffset::Global),
+                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             ))
             .map(|s| s.substate)
             .map(|s| s.to_runtime().into());
-        let resource_manager: Option<ResourceManagerSubstate> =
-            global.as_ref().and_then(|global| {
-                substate_store
-                    .get_substate(&SubstateId(
-                        global.node_deref(),
-                        NodeModuleId::SELF,
-                        SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
-                    ))
-                    .map(|s| s.substate)
-                    .map(|s| s.to_runtime().into())
-            });
         let resource_manager = resource_manager.ok_or(DisplayError::ResourceManagerNotFound)?;
-        let metadata: Option<MetadataSubstate> = global.and_then(|global| {
-            substate_store
-                .get_substate(&SubstateId(
-                    global.node_deref(),
-                    NodeModuleId::Metadata,
-                    SubstateOffset::Metadata(MetadataOffset::Metadata),
-                ))
-                .map(|s| s.substate)
-                .map(|s| s.to_runtime().into())
-        });
+        let metadata: Option<MetadataSubstate> = substate_store
+            .get_substate(&SubstateId(
+                RENodeId::GlobalResourceManager(resource_address),
+                NodeModuleId::Metadata,
+                SubstateOffset::Metadata(MetadataOffset::Metadata),
+            ))
+            .map(|s| s.substate)
+            .map(|s| s.to_runtime().into());
         let metadata = metadata.ok_or(DisplayError::ResourceManagerNotFound)?;
         writeln!(
             output,
@@ -527,35 +510,23 @@ pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
     substate_store: &T,
     output: &mut O,
 ) -> Result<(), DisplayError> {
-    let global: Option<GlobalSubstate> = substate_store
+    let resource_manager: Option<ResourceManagerSubstate> = substate_store
         .get_substate(&SubstateId(
-            RENodeId::Global(Address::Resource(resource_address)),
+            RENodeId::GlobalResourceManager(resource_address),
             NodeModuleId::SELF,
-            SubstateOffset::Global(GlobalOffset::Global),
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
         ))
         .map(|s| s.substate)
         .map(|s| s.to_runtime().into());
-    let resource_manager: Option<ResourceManagerSubstate> = global.as_ref().and_then(|global| {
-        substate_store
-            .get_substate(&SubstateId(
-                global.node_deref(),
-                NodeModuleId::SELF,
-                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
-            ))
-            .map(|s| s.substate)
-            .map(|s| s.to_runtime().into())
-    });
     let resource_manager = resource_manager.ok_or(DisplayError::ResourceManagerNotFound)?;
-    let metadata: Option<MetadataSubstate> = global.and_then(|global| {
-        substate_store
-            .get_substate(&SubstateId(
-                global.node_deref(),
-                NodeModuleId::Metadata,
-                SubstateOffset::Metadata(MetadataOffset::Metadata),
-            ))
-            .map(|s| s.substate)
-            .map(|s| s.to_runtime().into())
-    });
+    let metadata: Option<MetadataSubstate> = substate_store
+        .get_substate(&SubstateId(
+            RENodeId::GlobalResourceManager(resource_address),
+            NodeModuleId::Metadata,
+            SubstateOffset::Metadata(MetadataOffset::Metadata),
+        ))
+        .map(|s| s.substate)
+        .map(|s| s.to_runtime().into());
     let metadata = metadata.ok_or(DisplayError::ResourceManagerNotFound)?;
 
     writeln!(

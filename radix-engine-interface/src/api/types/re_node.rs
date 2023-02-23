@@ -27,7 +27,6 @@ pub enum RENodeType {
     NonFungibleStore,
     Component,
     Vault,
-    ResourceManager,
     EpochManager,
     Validator,
     Clock,
@@ -58,12 +57,12 @@ pub enum RENodeId {
     Worktop,
     Logger,
     TransactionRuntime,
-    Global(Address),
+    GlobalComponent(ComponentAddress),
     KeyValueStore(KeyValueStoreId),
     NonFungibleStore(NonFungibleStoreId),
     Component(ComponentId),
     Vault(VaultId),
-    ResourceManager(ResourceManagerId),
+    GlobalResourceManager(ResourceAddress),
     GlobalPackage(PackageAddress),
     EpochManager(EpochManagerId),
     Identity(IdentityId),
@@ -82,7 +81,7 @@ impl fmt::Debug for RENodeId {
             Self::Worktop => write!(f, "Worktop"),
             Self::Logger => write!(f, "Logger"),
             Self::TransactionRuntime => write!(f, "TransactionRuntime"),
-            Self::Global(address) => f.debug_tuple("Global").field(address).finish(),
+            Self::GlobalComponent(address) => f.debug_tuple("Global").field(address).finish(),
             Self::KeyValueStore(id) => f
                 .debug_tuple("KeyValueStore")
                 .field(&hex::encode(id))
@@ -93,10 +92,9 @@ impl fmt::Debug for RENodeId {
                 .finish(),
             Self::Component(id) => f.debug_tuple("Component").field(&hex::encode(id)).finish(),
             Self::Vault(id) => f.debug_tuple("Vault").field(&hex::encode(id)).finish(),
-            Self::ResourceManager(id) => f
-                .debug_tuple("ResourceManager")
-                .field(&hex::encode(id))
-                .finish(),
+            Self::GlobalResourceManager(address) => {
+                f.debug_tuple("ResourceManager").field(&address).finish()
+            }
             Self::GlobalPackage(address) => f.debug_tuple("Package").field(&address).finish(),
             Self::EpochManager(id) => f
                 .debug_tuple("EpochManager")
@@ -121,7 +119,6 @@ impl Into<[u8; 36]> for RENodeId {
             RENodeId::NonFungibleStore(id) => id,
             RENodeId::Vault(id) => id,
             RENodeId::Component(id) => id,
-            RENodeId::ResourceManager(id) => id,
             RENodeId::EpochManager(id) => id,
             RENodeId::Identity(id) => id,
             RENodeId::Validator(id) => id,
@@ -139,10 +136,22 @@ impl Into<[u8; 36]> for RENodeId {
     }
 }
 
+impl From<Address> for RENodeId {
+    fn from(address: Address) -> Self {
+        match address {
+            Address::Component(component_address) => RENodeId::GlobalComponent(component_address),
+            Address::Resource(resource_address) => {
+                RENodeId::GlobalResourceManager(resource_address)
+            }
+            Address::Package(package_address) => RENodeId::GlobalPackage(package_address),
+        }
+    }
+}
+
 impl Into<ComponentAddress> for RENodeId {
     fn into(self) -> ComponentAddress {
         match self {
-            RENodeId::Global(Address::Component(address)) => address,
+            RENodeId::GlobalComponent(address) => address,
             _ => panic!("Not a component address"),
         }
     }
@@ -160,7 +169,7 @@ impl Into<PackageAddress> for RENodeId {
 impl Into<ResourceAddress> for RENodeId {
     fn into(self) -> ResourceAddress {
         match self {
-            RENodeId::Global(Address::Resource(resource_address)) => resource_address,
+            RENodeId::GlobalResourceManager(resource_address) => resource_address,
             _ => panic!("Not a resource address"),
         }
     }

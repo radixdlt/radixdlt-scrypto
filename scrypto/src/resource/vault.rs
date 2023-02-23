@@ -111,7 +111,7 @@ impl ScryptoVault for Vault {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                RENodeId::Global(resource_address.into()),
+                RENodeId::GlobalResourceManager(resource_address),
                 RESOURCE_MANAGER_CREATE_VAULT_IDENT,
                 scrypto_encode(&ResourceManagerCreateVaultInput {}).unwrap(),
             )

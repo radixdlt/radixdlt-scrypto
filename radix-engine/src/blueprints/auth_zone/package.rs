@@ -8,7 +8,7 @@ use crate::system::node::RENodeInit;
 use crate::types::*;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::types::{
-    Address, AuthZoneStackOffset, ProofOffset, RENodeId, ResourceManagerOffset, SubstateOffset,
+    AuthZoneStackOffset, ProofOffset, RENodeId, ResourceManagerOffset, SubstateOffset,
 };
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
@@ -204,12 +204,10 @@ impl AuthZoneBlueprint {
         )?;
 
         let resource_type = {
-            let resource_id = RENodeId::Global(Address::Resource(input.resource_address));
-            let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
             let resource_handle = api.kernel_lock_substate(
-                resource_id,
+                RENodeId::GlobalResourceManager(input.resource_address),
                 NodeModuleId::SELF,
-                offset,
+                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
                 LockFlags::read_only(),
             )?;
             let substate_ref = api.kernel_get_substate_ref(resource_handle)?;
@@ -252,12 +250,10 @@ impl AuthZoneBlueprint {
         )?;
 
         let resource_type = {
-            let resource_id = RENodeId::Global(Address::Resource(input.resource_address));
-            let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
             let resource_handle = api.kernel_lock_substate(
-                resource_id,
+                RENodeId::GlobalResourceManager(input.resource_address),
                 NodeModuleId::SELF,
-                offset,
+                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
                 LockFlags::read_only(),
             )?;
             let substate_ref = api.kernel_get_substate_ref(resource_handle)?;
@@ -302,12 +298,10 @@ impl AuthZoneBlueprint {
         )?;
 
         let resource_type = {
-            let resource_id = RENodeId::Global(Address::Resource(input.resource_address));
-            let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
             let resource_handle = api.kernel_lock_substate(
-                resource_id,
+                RENodeId::GlobalResourceManager(input.resource_address),
                 NodeModuleId::SELF,
-                offset,
+                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
                 LockFlags::read_only(),
             )?;
             let substate_ref = api.kernel_get_substate_ref(resource_handle)?;

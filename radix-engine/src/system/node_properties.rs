@@ -134,7 +134,7 @@ impl VisibilityProperties {
                         && blueprint_name.eq(ACCESS_CONTROLLER_BLUEPRINT)
                 }
                 RENodeInit::KeyValueStore => true,
-                RENodeInit::Global(..) => true,
+                RENodeInit::GlobalComponent(..) => true,
                 _ => false,
             },
             _ => true,
@@ -235,7 +235,9 @@ impl VisibilityProperties {
                                     SubstateOffset::Package(PackageOffset::Code), // TODO: Remove
                                 ) => read_only,
                                 // READ global substates
-                                (RENodeId::Global(_), SubstateOffset::Global(_)) => read_only,
+                                (RENodeId::GlobalComponent(_), SubstateOffset::Global(_)) => {
+                                    read_only
+                                }
                                 (
                                     RENodeId::Component(_),
                                     SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
@@ -266,7 +268,9 @@ impl VisibilityProperties {
                                     SubstateOffset::Package(PackageOffset::Code), // TODO: Remove
                                 ) => read_only,
                                 // READ global substates
-                                (RENodeId::Global(_), SubstateOffset::Global(_)) => read_only,
+                                (RENodeId::GlobalComponent(_), SubstateOffset::Global(_)) => {
+                                    read_only
+                                }
                                 (
                                     RENodeId::Component(_),
                                     SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
@@ -437,7 +441,7 @@ impl SubstateProperties {
             SubstateOffset::Global(GlobalOffset::Global) => match node_id {
                 RENodeId::Component(..)
                 | RENodeId::GlobalPackage(..)
-                | RENodeId::ResourceManager(..)
+                | RENodeId::GlobalResourceManager(..)
                 | RENodeId::EpochManager(..)
                 | RENodeId::Validator(..)
                 | RENodeId::Clock(..)

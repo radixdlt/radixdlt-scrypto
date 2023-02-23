@@ -4,7 +4,6 @@ use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::global::GlobalSubstate;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
@@ -15,8 +14,7 @@ use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
-    Address, NonFungibleStoreId, NonFungibleStoreOffset, RENodeId, ResourceManagerOffset,
-    SubstateOffset,
+    NonFungibleStoreId, NonFungibleStoreOffset, RENodeId, ResourceManagerOffset, SubstateOffset,
 };
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientSubstateApi;
@@ -452,16 +450,10 @@ where
         RENodeModuleInit::ObjectAccessRulesChain(vault_rules_substate),
     );
 
-    let underlying_node_id = api.kernel_allocate_node_id(RENodeType::ResourceManager)?;
-    api.kernel_create_node(
-        underlying_node_id,
-        RENodeInit::ResourceManager(resource_manager_substate),
-        node_modules,
-    )?;
     api.kernel_create_node(
         global_node_id,
-        RENodeInit::Global(GlobalSubstate::Resource(underlying_node_id.into())),
-        BTreeMap::new(),
+        RENodeInit::ResourceManager(resource_manager_substate),
+        node_modules,
     )?;
 
     Ok(resource_address)
@@ -513,9 +505,8 @@ impl ResourceManagerBlueprint {
 
         // If address isn't user frame allocated or pre_allocated then
         // using this node_id will fail on create_node below
-        let global_node_id = RENodeId::Global(Address::Resource(ResourceAddress::Normal(
-            input.resource_address,
-        )));
+        let global_node_id =
+            RENodeId::GlobalResourceManager(ResourceAddress::Normal(input.resource_address));
         let address = create_non_fungible_resource_manager(
             global_node_id,
             input.id_type,
@@ -580,17 +571,10 @@ impl ResourceManagerBlueprint {
             RENodeModuleInit::ObjectAccessRulesChain(vault_substate),
         );
 
-        let underlying_node_id = api.kernel_allocate_node_id(RENodeType::ResourceManager)?;
-        api.kernel_create_node(
-            underlying_node_id,
-            RENodeInit::ResourceManager(resource_manager_substate),
-            node_modules,
-        )?;
-
         api.kernel_create_node(
             global_node_id,
-            RENodeInit::Global(GlobalSubstate::Resource(underlying_node_id.into())),
-            BTreeMap::new(),
+            RENodeInit::ResourceManager(resource_manager_substate),
+            node_modules,
         )?;
 
         Ok(IndexedScryptoValue::from_typed(&(resource_address, bucket)))
@@ -647,17 +631,10 @@ impl ResourceManagerBlueprint {
             RENodeModuleInit::ObjectAccessRulesChain(vault_substate),
         );
 
-        let underlying_node_id = api.kernel_allocate_node_id(RENodeType::ResourceManager)?;
-        api.kernel_create_node(
-            underlying_node_id,
-            RENodeInit::ResourceManager(resource_manager_substate),
-            node_modules,
-        )?;
-
         api.kernel_create_node(
             global_node_id,
-            RENodeInit::Global(GlobalSubstate::Resource(underlying_node_id.into())),
-            BTreeMap::new(),
+            RENodeInit::ResourceManager(resource_manager_substate),
+            node_modules,
         )?;
 
         Ok(IndexedScryptoValue::from_typed(&(resource_address, bucket)))
@@ -730,17 +707,10 @@ impl ResourceManagerBlueprint {
             RENodeModuleInit::ObjectAccessRulesChain(vault_substate),
         );
 
-        let underlying_node_id = api.kernel_allocate_node_id(RENodeType::ResourceManager)?;
-        api.kernel_create_node(
-            underlying_node_id,
-            RENodeInit::ResourceManager(resource_manager_substate),
-            node_modules,
-        )?;
-
         api.kernel_create_node(
             global_node_id,
-            RENodeInit::Global(GlobalSubstate::Resource(underlying_node_id.into())),
-            BTreeMap::new(),
+            RENodeInit::ResourceManager(resource_manager_substate),
+            node_modules,
         )?;
 
         Ok(IndexedScryptoValue::from_typed(&(resource_address, bucket)))
@@ -761,9 +731,8 @@ impl ResourceManagerBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let global_node_id = RENodeId::Global(Address::Resource(ResourceAddress::Normal(
-            input.resource_address,
-        )));
+        let global_node_id =
+            RENodeId::GlobalResourceManager(ResourceAddress::Normal(input.resource_address));
         let resource_address: ResourceAddress = global_node_id.into();
 
         let (resource_manager_substate, bucket) =
@@ -792,17 +761,10 @@ impl ResourceManagerBlueprint {
             RENodeModuleInit::ObjectAccessRulesChain(vault_substate),
         );
 
-        let underlying_node_id = api.kernel_allocate_node_id(RENodeType::ResourceManager)?;
-        api.kernel_create_node(
-            underlying_node_id,
-            RENodeInit::ResourceManager(resource_manager_substate),
-            node_modules,
-        )?;
-
         api.kernel_create_node(
             global_node_id,
-            RENodeInit::Global(GlobalSubstate::Resource(underlying_node_id.into())),
-            BTreeMap::new(),
+            RENodeInit::ResourceManager(resource_manager_substate),
+            node_modules,
         )?;
 
         Ok(IndexedScryptoValue::from_typed(&(resource_address, bucket)))
@@ -1494,16 +1456,10 @@ where
         RENodeModuleInit::ObjectAccessRulesChain(vault_substate),
     );
 
-    let underlying_node_id = api.kernel_allocate_node_id(RENodeType::ResourceManager)?;
-    api.kernel_create_node(
-        underlying_node_id,
-        RENodeInit::ResourceManager(resource_manager_substate),
-        node_modules,
-    )?;
     api.kernel_create_node(
         global_node_id,
-        RENodeInit::Global(GlobalSubstate::Resource(underlying_node_id.into())),
-        BTreeMap::new(),
+        RENodeInit::ResourceManager(resource_manager_substate),
+        node_modules,
     )?;
 
     Ok(resource_address)

@@ -88,7 +88,13 @@ impl RENodeModuleInit {
 
 #[derive(Debug)]
 pub enum RENodeInit {
-    Global(GlobalSubstate),
+    GlobalComponent(GlobalSubstate),
+    Package(
+        PackageInfoSubstate,
+        PackageCodeTypeSubstate,
+        PackageCodeSubstate,
+    ),
+    ResourceManager(ResourceManagerSubstate),
     Bucket(BucketSubstate),
     Proof(ProofSubstate),
     AuthZoneStack(AuthZoneStackSubstate),
@@ -98,12 +104,6 @@ pub enum RENodeInit {
     NonFungibleStore(NonFungibleStore),
     Identity(),
     Component(ComponentStateSubstate),
-    Package(
-        PackageInfoSubstate,
-        PackageCodeTypeSubstate,
-        PackageCodeSubstate,
-    ),
-    ResourceManager(ResourceManagerSubstate),
     EpochManager(
         EpochManagerSubstate,
         ValidatorSetSubstate,
@@ -139,7 +139,7 @@ impl RENodeInit {
                     RuntimeSubstate::AuthZoneStack(auth_zone),
                 );
             }
-            RENodeInit::Global(global_node) => {
+            RENodeInit::GlobalComponent(global_node) => {
                 substates.insert(
                     SubstateOffset::Global(GlobalOffset::Global),
                     RuntimeSubstate::Global(global_node),

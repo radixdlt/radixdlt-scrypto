@@ -110,7 +110,7 @@ impl ResourceManager {
         );
 
         let rtn = api.call_method(
-            RENodeId::Global(self.0.into()),
+            RENodeId::GlobalResourceManager(self.0),
             RESOURCE_MANAGER_MINT_NON_FUNGIBLE,
             scrypto_encode(&ResourceManagerMintNonFungibleInput { entries }).unwrap(),
         )?;
@@ -132,7 +132,7 @@ impl ResourceManager {
         entries.push((scrypto_encode(&data).unwrap(), scrypto_encode(&()).unwrap()));
 
         let rtn = api.call_method(
-            RENodeId::Global(self.0.into()),
+            RENodeId::GlobalResourceManager(self.0),
             RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE,
             scrypto_encode(&ResourceManagerMintUuidNonFungibleInput { entries }).unwrap(),
         )?;
@@ -150,7 +150,7 @@ impl ResourceManager {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::Global(self.0.into()),
+            RENodeId::GlobalResourceManager(self.0),
             RESOURCE_MANAGER_MINT_FUNGIBLE,
             scrypto_encode(&ResourceManagerMintFungibleInput { amount }).unwrap(),
         )?;
@@ -167,7 +167,7 @@ impl ResourceManager {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::Global(self.0.into()),
+            RENodeId::GlobalResourceManager(self.0),
             RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT,
             scrypto_encode(&ResourceManagerGetNonFungibleInput { id }).unwrap(),
         )?;
@@ -186,7 +186,7 @@ impl ResourceManager {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::Global(self.0.into()),
+            RENodeId::GlobalResourceManager(self.0),
             RESOURCE_MANAGER_BURN_IDENT,
             scrypto_encode(&ResourceManagerBurnInput { bucket }).unwrap(),
         )?;
@@ -198,7 +198,7 @@ impl ResourceManager {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::Global(self.0.into()),
+            RENodeId::GlobalResourceManager(self.0),
             RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT,
             scrypto_encode(&ResourceManagerGetTotalSupplyInput {}).unwrap(),
         )?;
@@ -210,7 +210,7 @@ impl ResourceManager {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::Global(self.0.into()),
+            RENodeId::GlobalResourceManager(self.0),
             RESOURCE_MANAGER_CREATE_BUCKET_IDENT,
             scrypto_encode(&ResourceManagerCreateBucketInput {}).unwrap(),
         )?;
@@ -222,7 +222,7 @@ impl ResourceManager {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::Global(self.0.into()),
+            RENodeId::GlobalResourceManager(self.0),
             RESOURCE_MANAGER_CREATE_VAULT_IDENT,
             scrypto_encode(&ResourceManagerCreateVaultInput {}).unwrap(),
         )?;

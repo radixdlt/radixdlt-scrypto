@@ -3,8 +3,8 @@ use crate::ledger::{QueryableSubstateStore, ReadableSubstateStore};
 use crate::system::global::GlobalSubstate;
 use crate::system::node_substates::PersistedSubstate;
 use radix_engine_interface::api::types::{
-    AccountOffset, Address, ComponentOffset, GlobalOffset, KeyValueStoreOffset, NodeModuleId,
-    RENodeId, SubstateId, SubstateOffset, VaultId, VaultOffset,
+    AccountOffset, ComponentOffset, GlobalOffset, KeyValueStoreOffset, NodeModuleId, RENodeId,
+    SubstateId, SubstateOffset, VaultId, VaultOffset,
 };
 
 #[derive(Debug)]
@@ -60,7 +60,7 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
         }
         self.visitor.visit_node_id(parent, &node_id, depth);
         match node_id {
-            RENodeId::Global(Address::Component(..)) => {
+            RENodeId::GlobalComponent(..) => {
                 let substate_id = SubstateId(
                     node_id,
                     NodeModuleId::SELF,

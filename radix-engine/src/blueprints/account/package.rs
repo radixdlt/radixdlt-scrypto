@@ -247,7 +247,7 @@ impl AccountNativePackage {
 
         // Creating the account's global address
         let global_node_id = {
-            let node = RENodeInit::Global(GlobalSubstate::Account(node_id.into()));
+            let node = RENodeInit::GlobalComponent(GlobalSubstate::Account(node_id.into()));
             let node_id = api.kernel_allocate_node_id(RENodeType::GlobalAccount)?;
             api.kernel_create_node(node_id, node, BTreeMap::new())?;
             node_id

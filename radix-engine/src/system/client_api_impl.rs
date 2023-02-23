@@ -199,7 +199,7 @@ where
     ) -> Result<ComponentId, RuntimeError> {
         let offset = SubstateOffset::Global(GlobalOffset::Global);
         let handle = self.kernel_lock_substate(
-            RENodeId::Global(Address::Component(component_address)),
+            RENodeId::GlobalComponent(component_address),
             NodeModuleId::SELF,
             offset,
             LockFlags::empty(),
@@ -275,7 +275,7 @@ where
 
         self.kernel_create_node(
             node_id,
-            RENodeInit::Global(GlobalSubstate::Component(component_id)),
+            RENodeInit::GlobalComponent(GlobalSubstate::Component(component_id)),
             btreemap!(),
         )?;
 

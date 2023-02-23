@@ -2,8 +2,8 @@ use crate::errors::{IdAllocationError, KernelError, RuntimeError};
 use radix_engine_interface::address::EntityType;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
-    AccessControllerId, Address, BucketId, ComponentId, KeyValueStoreId, NonFungibleStoreId,
-    ProofId, RENodeId, RENodeType, ResourceManagerId, ValidatorId, VaultId,
+    AccessControllerId, BucketId, ComponentId, KeyValueStoreId, NonFungibleStoreId, ProofId,
+    RENodeId, RENodeType, ValidatorId, VaultId,
 };
 use radix_engine_interface::crypto::{hash, Hash};
 use sbor::rust::collections::{BTreeMap, BTreeSet};
@@ -73,9 +73,6 @@ impl IdAllocator {
             RENodeType::NonFungibleStore => self
                 .new_nf_store_id()
                 .map(|id| RENodeId::NonFungibleStore(id)),
-            RENodeType::ResourceManager => self
-                .new_resource_manager_id()
-                .map(|id| RENodeId::ResourceManager(id)),
             RENodeType::Component => self.new_component_id().map(|id| RENodeId::Component(id)),
             RENodeType::EpochManager => {
                 self.new_component_id().map(|id| RENodeId::EpochManager(id))
@@ -92,28 +89,28 @@ impl IdAllocator {
                 .map(|address| RENodeId::GlobalPackage(address)),
             RENodeType::GlobalEpochManager => self
                 .new_epoch_manager_address()
-                .map(|address| RENodeId::Global(Address::Component(address))),
+                .map(|address| RENodeId::GlobalComponent(address)),
             RENodeType::GlobalValidator => self
                 .new_validator_address()
-                .map(|address| RENodeId::Global(Address::Component(address))),
+                .map(|address| RENodeId::GlobalComponent(address)),
             RENodeType::GlobalClock => self
                 .new_clock_address()
-                .map(|address| RENodeId::Global(Address::Component(address))),
+                .map(|address| RENodeId::GlobalComponent(address)),
             RENodeType::GlobalResourceManager => self
                 .new_resource_address()
-                .map(|address| RENodeId::Global(Address::Resource(address))),
+                .map(|address| RENodeId::GlobalResourceManager(address)),
             RENodeType::GlobalAccount => self
                 .new_account_address()
-                .map(|address| RENodeId::Global(Address::Component(address))),
+                .map(|address| RENodeId::GlobalComponent(address)),
             RENodeType::GlobalIdentity => self
                 .new_identity_address()
-                .map(|address| RENodeId::Global(Address::Component(address))),
+                .map(|address| RENodeId::GlobalComponent(address)),
             RENodeType::GlobalComponent => self
                 .new_component_address()
-                .map(|address| RENodeId::Global(Address::Component(address))),
+                .map(|address| RENodeId::GlobalComponent(address)),
             RENodeType::GlobalAccessController => self
                 .new_access_controller_address()
-                .map(|address| RENodeId::Global(Address::Component(address))),
+                .map(|address| RENodeId::GlobalComponent(address)),
         }
         .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
 
@@ -256,10 +253,6 @@ impl IdAllocator {
 
     /// Creates a new non-fungible store ID.
     pub fn new_nf_store_id(&mut self) -> Result<NonFungibleStoreId, IdAllocationError> {
-        self.next_id()
-    }
-
-    pub fn new_resource_manager_id(&mut self) -> Result<ResourceManagerId, IdAllocationError> {
         self.next_id()
     }
 

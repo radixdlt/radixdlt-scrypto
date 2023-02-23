@@ -109,6 +109,7 @@ impl KernelModule for KernelDebugModule {
         offset: &SubstateOffset,
         flags: &LockFlags,
     ) -> Result<(), RuntimeError> {
+        /*
         log!(
             api,
             "Locking substate: node id = {:?}, module_id = {:?}, offset = {:?}, flags = {:?}",
@@ -117,6 +118,7 @@ impl KernelModule for KernelDebugModule {
             offset,
             flags
         );
+         */
         Ok(())
     }
 
@@ -125,12 +127,14 @@ impl KernelModule for KernelDebugModule {
         lock_handle: LockHandle,
         size: usize,
     ) -> Result<(), RuntimeError> {
+        /*
         log!(
             api,
             "Reading substate: handle = {}, size = {:?}",
             lock_handle,
             size
         );
+         */
         Ok(())
     }
 
@@ -139,12 +143,14 @@ impl KernelModule for KernelDebugModule {
         lock_handle: LockHandle,
         size: usize,
     ) -> Result<(), RuntimeError> {
+        /*
         log!(
             api,
             "Writing substate: handle = {}, size = {:?}",
             lock_handle,
             size
         );
+         */
         Ok(())
     }
 
@@ -152,7 +158,9 @@ impl KernelModule for KernelDebugModule {
         api: &mut Y,
         lock_handle: LockHandle,
     ) -> Result<(), RuntimeError> {
+        /*
         log!(api, "Dropping lock: handle = {} ", lock_handle);
+         */
         Ok(())
     }
 }
