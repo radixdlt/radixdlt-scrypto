@@ -118,15 +118,7 @@ fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFra
         Instruction::SetMetadata { entity_address, .. }
         | Instruction::SetMethodAccessRule { entity_address, .. } => {
             let address = to_address(entity_address.clone());
-            let node_id = match address {
-                Address::Package(package_address) => RENodeId::GlobalPackage(package_address),
-                Address::Component(component_address) => {
-                    RENodeId::GlobalComponent(component_address)
-                }
-                Address::Resource(resource_address) => {
-                    RENodeId::GlobalResourceManager(resource_address)
-                }
-            };
+            let node_id = address.into();
             update.add_ref(node_id);
         }
         Instruction::RecallResource { vault_id, .. } => {
@@ -604,18 +596,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     value,
                 } => {
                     let address = to_address(entity_address);
-                    let receiver = match address {
-                        Address::Package(package_address) => {
-                            RENodeId::GlobalPackage(package_address)
-                        }
-                        Address::Component(component_address) => {
-                            RENodeId::GlobalComponent(component_address)
-                        }
-                        Address::Resource(resource_address) => {
-                            RENodeId::GlobalResourceManager(resource_address)
-                        }
-                    };
-
+                    let receiver = address.into();
                     let result = api.call_module_method(
                         receiver,
                         NodeModuleId::Metadata,
@@ -718,17 +699,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     rule,
                 } => {
                     let address = to_address(entity_address);
-                    let receiver = match address {
-                        Address::Package(package_address) => {
-                            RENodeId::GlobalPackage(package_address)
-                        }
-                        Address::Component(component_address) => {
-                            RENodeId::GlobalComponent(component_address)
-                        }
-                        Address::Resource(resource_address) => {
-                            RENodeId::GlobalResourceManager(resource_address)
-                        }
-                    };
+                    let receiver = address.into();
                     let result = api.call_module_method(
                         receiver,
                         NodeModuleId::AccessRules,
