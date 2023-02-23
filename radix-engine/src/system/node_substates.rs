@@ -1250,6 +1250,20 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
+    pub fn fungible_proof(&self) -> &FungibleProof {
+        match self {
+            SubstateRef::FungibleProof(value) => *value,
+            _ => panic!("Not a proof"),
+        }
+    }
+
+    pub fn non_fungible_proof(&self) -> &NonFungibleProof {
+        match self {
+            SubstateRef::NonFungibleProof(value) => *value,
+            _ => panic!("Not a proof"),
+        }
+    }
+
     pub fn auth_zone_stack(&self) -> &AuthZoneStackSubstate {
         match self {
             SubstateRef::AuthZoneStack(value) => *value,

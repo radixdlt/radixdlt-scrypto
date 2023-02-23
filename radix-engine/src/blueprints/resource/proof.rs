@@ -42,11 +42,26 @@ pub enum ProofError {
 pub struct ProofInfoSubstate {
     /// The resource address.
     pub resource_address: ResourceAddress,
+    /// The resource type.
+    pub resource_type: ResourceType,
     /// Whether movement of this proof is restricted.
     pub restricted: bool,
 }
 
 impl ProofInfoSubstate {
+    pub fn of<Y: KernelSubstateApi>(node_id: RENodeId, api: &mut Y) -> Result<Self, RuntimeError> {
+        let handle = api.kernel_lock_substate(
+            node_id,
+            NodeModuleId::SELF,
+            SubstateOffset::Proof(ProofOffset::Info),
+            LockFlags::read_only(),
+        )?;
+        let substate_ref = api.kernel_get_substate_ref(handle)?;
+        let info = substate_ref.proof_info().clone();
+        api.kernel_drop_lock(handle)?;
+        Ok(info)
+    }
+
     pub fn change_to_unrestricted(&mut self) {
         self.restricted = false;
     }
@@ -110,7 +125,7 @@ impl FungibleProof {
         })
     }
 
-    pub fn drop_proof<Y: ClientApi<RuntimeError>>(&self, api: &mut Y) -> Result<(), RuntimeError> {
+    pub fn drop_proof<Y: ClientApi<RuntimeError>>(self, api: &mut Y) -> Result<(), RuntimeError> {
         for (container_id, locked_amount) in &self.evidence {
             api.call_method(
                 container_id.to_re_node_id(),
@@ -197,7 +212,7 @@ impl NonFungibleProof {
         })
     }
 
-    pub fn drop_proof<Y: ClientApi<RuntimeError>>(&self, api: &mut Y) -> Result<(), RuntimeError> {
+    pub fn drop_proof<Y: ClientApi<RuntimeError>>(self, api: &mut Y) -> Result<(), RuntimeError> {
         for (container_id, locked_ids) in &self.evidence {
             api.call_method(
                 container_id.to_re_node_id(),
@@ -253,20 +268,46 @@ impl ProofBlueprint {
         let _input: ProofCloneInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle = api.kernel_lock_substate(
-            receiver,
-            NodeModuleId::SELF,
-            SubstateOffset::Proof(ProofOffset::Proof),
-            LockFlags::read_only(),
-        )?;
-        let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let proof = substate_ref.proof().clone();
-        let cloned_proof = proof.clone_proof(api)?;
+        let proof_info = ProofInfoSubstate::of(receiver, api)?;
+        let node_id = if proof_info.resource_type.is_fungible() {
+            let handle = api.kernel_lock_substate(
+                receiver,
+                NodeModuleId::SELF,
+                SubstateOffset::Proof(ProofOffset::Fungible),
+                LockFlags::read_only(),
+            )?;
+            let substate_ref = api.kernel_get_substate_ref(handle)?;
+            let proof = substate_ref.fungible_proof().clone();
+            api.kernel_drop_lock(handle)?;
 
-        let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
-        api.kernel_create_node(node_id, RENodeInit::Proof(cloned_proof), BTreeMap::new())?;
+            let clone = proof.clone_proof(api)?;
+
+            let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
+            api.kernel_create_node(node_id, RENodeInit::FungibleProof(clone), BTreeMap::new())?;
+            node_id
+        } else {
+            let handle = api.kernel_lock_substate(
+                receiver,
+                NodeModuleId::SELF,
+                SubstateOffset::Proof(ProofOffset::NonFungible),
+                LockFlags::read_only(),
+            )?;
+            let substate_ref = api.kernel_get_substate_ref(handle)?;
+            let proof = substate_ref.non_fungible_proof().clone();
+            api.kernel_drop_lock(handle)?;
+
+            let clone = proof.clone_proof(api)?;
+
+            let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
+            api.kernel_create_node(
+                node_id,
+                RENodeInit::NonFungibleProof(clone),
+                BTreeMap::new(),
+            )?;
+            node_id
+        };
+
         let proof_id = node_id.into();
-
         Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
     }
 
@@ -285,15 +326,31 @@ impl ProofBlueprint {
         let _input: ProofGetAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle = api.kernel_lock_substate(
-            receiver,
-            NodeModuleId::SELF,
-            SubstateOffset::Proof(ProofOffset::Proof),
-            LockFlags::read_only(),
-        )?;
-        let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let proof = substate_ref.proof();
-        Ok(IndexedScryptoValue::from_typed(&proof.total_amount()))
+        let proof_info = ProofInfoSubstate::of(receiver, api)?;
+        let amount = if proof_info.resource_type.is_fungible() {
+            let handle = api.kernel_lock_substate(
+                receiver,
+                NodeModuleId::SELF,
+                SubstateOffset::Proof(ProofOffset::Fungible),
+                LockFlags::read_only(),
+            )?;
+            let substate_ref = api.kernel_get_substate_ref(handle)?;
+            let amount = substate_ref.fungible_proof().total_amount();
+            api.kernel_drop_lock(handle)?;
+            amount
+        } else {
+            let handle = api.kernel_lock_substate(
+                receiver,
+                NodeModuleId::SELF,
+                SubstateOffset::Proof(ProofOffset::NonFungible),
+                LockFlags::read_only(),
+            )?;
+            let substate_ref = api.kernel_get_substate_ref(handle)?;
+            let amount = substate_ref.non_fungible_proof().total_amount();
+            api.kernel_drop_lock(handle)?;
+            amount
+        };
+        Ok(IndexedScryptoValue::from_typed(&amount))
     }
 
     pub(crate) fn get_non_fungible_local_ids<Y>(
@@ -312,18 +369,23 @@ impl ProofBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle = api.kernel_lock_substate(
-            receiver,
-            NodeModuleId::SELF,
-            SubstateOffset::Proof(ProofOffset::Proof),
-            LockFlags::read_only(),
-        )?;
-        let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let proof = substate_ref.proof();
-        let ids = proof.total_ids().ok_or(RuntimeError::ApplicationError(
-            ApplicationError::ProofError(ProofError::NonFungibleOperationNotSupported),
-        ))?;
-        Ok(IndexedScryptoValue::from_typed(&ids))
+        let proof_info = ProofInfoSubstate::of(receiver, api)?;
+        if proof_info.resource_type.is_fungible() {
+            Err(RuntimeError::ApplicationError(
+                ApplicationError::ProofError(ProofError::NonFungibleOperationNotSupported),
+            ))
+        } else {
+            let handle = api.kernel_lock_substate(
+                receiver,
+                NodeModuleId::SELF,
+                SubstateOffset::Proof(ProofOffset::NonFungible),
+                LockFlags::read_only(),
+            )?;
+            let substate_ref = api.kernel_get_substate_ref(handle)?;
+            let ids = substate_ref.non_fungible_proof().total_ids();
+            api.kernel_drop_lock(handle)?;
+            Ok(IndexedScryptoValue::from_typed(&ids))
+        }
     }
 
     pub(crate) fn get_resource_address<Y>(
@@ -341,14 +403,9 @@ impl ProofBlueprint {
         let _input: ProofGetResourceAddressInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle = api.kernel_lock_substate(
-            receiver,
-            NodeModuleId::SELF,
-            SubstateOffset::Proof(ProofOffset::Proof),
-            LockFlags::read_only(),
-        )?;
-        let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let proof = substate_ref.proof();
-        Ok(IndexedScryptoValue::from_typed(&proof.resource_address()))
+        let proof_info = ProofInfoSubstate::of(receiver, api)?;
+        Ok(IndexedScryptoValue::from_typed(
+            &proof_info.resource_address,
+        ))
     }
 }

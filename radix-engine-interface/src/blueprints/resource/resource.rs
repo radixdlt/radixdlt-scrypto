@@ -80,7 +80,7 @@ impl LiquidFungibleResource {
         amount_to_take: Decimal,
     ) -> Result<LiquidFungibleResource, ResourceError> {
         // check amount granularity
-        let divisibility = self.resource_type().divisibility();
+        let divisibility = self.divisibility();
         check_amount(amount_to_take, divisibility)?;
 
         // deduct from liquidity pool
@@ -174,8 +174,7 @@ impl LiquidNonFungibleResource {
         amount_to_take: Decimal,
     ) -> Result<LiquidNonFungibleResource, ResourceError> {
         // check amount granularity
-        let divisibility = self.resource_type().divisibility();
-        check_amount(amount_to_take, divisibility)?;
+        check_amount(amount_to_take, 0)?;
 
         // deduct from liquidity pool
         if Decimal::from(self.ids.len()) < amount_to_take {
