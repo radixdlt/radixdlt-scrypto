@@ -7,17 +7,8 @@ pub enum TypedTraversalEvent<'t, 's, 'de, C: CustomTraversal> {
     PayloadPrefix(Location),
     ContainerStart(TypedLocatedDecoding<'t, 's, ContainerHeader<C>, C>),
     ContainerEnd(TypedLocatedDecoding<'t, 's, ContainerHeader<C>, C>),
-    TerminalValue(
-        TypedLocatedDecoding<'t, 's, TerminalValueRef<'de, C::CustomTerminalValueRef<'de>>, C>,
-    ),
-    TerminalValueBatch(
-        TypedLocatedDecoding<
-            't,
-            's,
-            TerminalValueBatchRef<'de, C::CustomTerminalValueBatchRef<'de>>,
-            C,
-        >,
-    ),
+    TerminalValue(TypedLocatedDecoding<'t, 's, TerminalValueRef<'de, C>, C>),
+    TerminalValueBatch(TypedLocatedDecoding<'t, 's, TerminalValueBatchRef<'de, C>, C>),
     End(Location),
     Error(LocatedError<TypedTraversalError<C::CustomValueKind>>),
 }
@@ -75,13 +66,13 @@ pub struct TypedLocatedDecoding<'t, 's, T, C: CustomTraversal> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TypedTerminalValueRef<'de, V: CustomTerminalValueRef> {
+pub struct TypedTerminalValueRef<'de, C: CustomTraversal> {
     type_index: LocalTypeIndex,
-    value: TerminalValueRef<'de, V>,
+    value: TerminalValueRef<'de, C>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TypedTerminalValueBatchRef<'de, B: CustomTerminalValueBatchRef> {
+pub struct TypedTerminalValueBatchRef<'de, C: CustomTraversal> {
     type_index: LocalTypeIndex,
-    value: TerminalValueBatchRef<'de, B>,
+    value: TerminalValueBatchRef<'de, C>,
 }

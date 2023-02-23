@@ -800,9 +800,9 @@ mod tests {
         assert_eq!(end_offset, expected_end_offset);
     }
 
-    pub fn next_event_is_terminal_value(
-        traverser: &mut BasicTraverser,
-        expected_value: TerminalValueRef<NoCustomTerminalValueRef>,
+    pub fn next_event_is_terminal_value<'de>(
+        traverser: &mut BasicTraverser<'de>,
+        expected_value: TerminalValueRef<'de, NoCustomTraversal>,
         expected_stack_depth: u8,
         expected_start_offset: usize,
         expected_end_offset: usize,
@@ -825,9 +825,9 @@ mod tests {
         assert_eq!(end_offset, expected_end_offset);
     }
 
-    pub fn next_event_is_terminal_value_slice(
-        traverser: &mut BasicTraverser,
-        expected_value_batch: TerminalValueBatchRef<NoCustomTerminalValueBatchRef>,
+    pub fn next_event_is_terminal_value_slice<'de>(
+        traverser: &mut BasicTraverser<'de>,
+        expected_value_batch: TerminalValueBatchRef<'de, NoCustomTraversal>,
         expected_stack_depth: u8,
         expected_start_offset: usize,
         expected_end_offset: usize,

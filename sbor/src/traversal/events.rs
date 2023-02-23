@@ -8,10 +8,8 @@ pub enum TraversalEvent<'t, 'de, C: CustomTraversal> {
     PayloadPrefix(Location),
     ContainerStart(LocatedDecoding<'t, ContainerHeader<C>, C>),
     ContainerEnd(LocatedDecoding<'t, ContainerHeader<C>, C>),
-    TerminalValue(LocatedDecoding<'t, TerminalValueRef<'de, C::CustomTerminalValueRef<'de>>, C>),
-    TerminalValueBatch(
-        LocatedDecoding<'t, TerminalValueBatchRef<'de, C::CustomTerminalValueBatchRef<'de>>, C>,
-    ),
+    TerminalValue(LocatedDecoding<'t, TerminalValueRef<'de, C>, C>),
+    TerminalValueBatch(LocatedDecoding<'t, TerminalValueBatchRef<'de, C>, C>),
     End(Location),
     DecodeError(LocatedError<DecodeError>),
 }
@@ -156,7 +154,7 @@ impl<C: CustomTraversal> ContainerHeader<C> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TerminalValueRef<'de, V: CustomTerminalValueRef> {
+pub enum TerminalValueRef<'de, T: CustomTraversal> {
     Bool(bool),
     I8(i8),
     I16(i16),
@@ -169,11 +167,11 @@ pub enum TerminalValueRef<'de, V: CustomTerminalValueRef> {
     U64(u64),
     U128(u128),
     String(&'de str),
-    Custom(V),
+    Custom(T::CustomTerminalValueRef<'de>),
 }
 
-impl<'de, V: CustomTerminalValueRef> TerminalValueRef<'de, V> {
-    pub fn value_kind(&self) -> ValueKind<V::CustomValueKind> {
+impl<'de, T: CustomTraversal> TerminalValueRef<'de, T> {
+    pub fn value_kind(&self) -> ValueKind<T::CustomValueKind> {
         match self {
             TerminalValueRef::Bool(_) => ValueKind::Bool,
             TerminalValueRef::I8(_) => ValueKind::I8,
@@ -193,13 +191,13 @@ impl<'de, V: CustomTerminalValueRef> TerminalValueRef<'de, V> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TerminalValueBatchRef<'de, B> {
+pub enum TerminalValueBatchRef<'de, T: CustomTraversal> {
     U8(&'de [u8]),
-    Custom(B),
+    Custom(T::CustomTerminalValueBatchRef<'de>),
 }
 
-impl<'de, B: CustomTerminalValueBatchRef> TerminalValueBatchRef<'de, B> {
-    pub fn value_kind(&self) -> ValueKind<B::CustomValueKind> {
+impl<'de, T: CustomTraversal> TerminalValueBatchRef<'de, T> {
+    pub fn value_kind(&self) -> ValueKind<T::CustomValueKind> {
         match self {
             TerminalValueBatchRef::U8(_) => ValueKind::U8,
             TerminalValueBatchRef::Custom(c) => ValueKind::Custom(c.custom_value_kind()),

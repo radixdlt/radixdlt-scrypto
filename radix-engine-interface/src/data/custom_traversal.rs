@@ -32,13 +32,13 @@ pub enum ScryptoCustomContainerHeader {}
 impl CustomContainerHeader for ScryptoCustomContainerHeader {
     type CustomValueKind = ScryptoCustomValueKind;
 
-    fn get_child_count(&self) -> usize {
+    fn get_child_count(&self) -> u32 {
         unreachable!("ScryptoCustomContainerHeader can't exist")
     }
 
     fn get_implicit_child_value_kind(
         &self,
-        _: usize,
+        _: u32,
     ) -> (ParentRelationship, Option<ValueKind<Self::CustomValueKind>>) {
         unreachable!("ScryptoCustomContainerHeader can't exist")
     }
