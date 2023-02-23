@@ -271,13 +271,33 @@ where
         &mut self,
         node_id: RENodeId,
     ) -> Result<ComponentAddress, RuntimeError> {
-        let component_id: ComponentId = node_id.into();
         let global_node_id = self.kernel_allocate_node_id(RENodeType::GlobalComponent)?;
+
+        let node = self.kernel_drop_node(node_id)?;
+
+        let mut substates = node.substates;
+        let state = substates.remove(&(NodeModuleId::SELF, SubstateOffset::Component(ComponentOffset::State0))).unwrap();
+        let state_substate: ComponentStateSubstate = state.into();
+        let type_info = substates.remove(&(NodeModuleId::TypeInfo, SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo))).unwrap();
+        let type_info_substate: TypeInfoSubstate = type_info.into();
+        let access_rules = substates.remove(&(NodeModuleId::AccessRules, SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain))).unwrap();
+        let access_rules_substate: ObjectAccessRulesChainSubstate = access_rules.into();
+        let royalty_config = substates.remove(&(NodeModuleId::ComponentRoyalty, SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig))).unwrap();
+        let royalty_config_substate: ComponentRoyaltyConfigSubstate = royalty_config.into();
+        let royalty_accumulator = substates.remove(&(NodeModuleId::ComponentRoyalty, SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator))).unwrap();
+        let royalty_accumulator_substate: ComponentRoyaltyAccumulatorSubstate = royalty_accumulator.into();
+        let metadata = substates.remove(&(NodeModuleId::Metadata, SubstateOffset::Metadata(MetadataOffset::Metadata))).unwrap();
+        let metadata_substate: MetadataSubstate = metadata.into();
 
         self.kernel_create_node(
             global_node_id,
-            RENodeInit::GlobalComponent(GlobalSubstate::Component(component_id)),
-            btreemap!(),
+            RENodeInit::GlobalComponent(state_substate),
+            btreemap!(
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(type_info_substate),
+                NodeModuleId::AccessRules => RENodeModuleInit::ObjectAccessRulesChain(access_rules_substate),
+                NodeModuleId::ComponentRoyalty => RENodeModuleInit::ComponentRoyalty(royalty_config_substate, royalty_accumulator_substate),
+                NodeModuleId::Metadata => RENodeModuleInit::Metadata(metadata_substate),
+            ),
         )?;
 
         Ok(global_node_id.into())

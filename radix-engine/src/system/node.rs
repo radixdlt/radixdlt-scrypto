@@ -88,7 +88,7 @@ impl RENodeModuleInit {
 
 #[derive(Debug)]
 pub enum RENodeInit {
-    GlobalComponent(GlobalSubstate),
+    GlobalComponent(ComponentStateSubstate),
     Package(
         PackageInfoSubstate,
         PackageCodeTypeSubstate,
