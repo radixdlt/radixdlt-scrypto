@@ -970,7 +970,7 @@ where
             NodeModuleId::SELF,
             &SubstateOffset::Bucket(BucketOffset::Info),
         ) {
-            let info = substate.bucket_info();
+            let info = substate.bucket_info().clone();
 
             match info.resource_type {
                 ResourceType::Fungible { .. } => {
@@ -1017,7 +1017,7 @@ where
             NodeModuleId::SELF,
             &SubstateOffset::Proof(ProofOffset::Info),
         ) {
-            let info = substate.proof_info();
+            let info = substate.proof_info().clone();
 
             match info.resource_type {
                 ResourceType::Fungible { .. } => {

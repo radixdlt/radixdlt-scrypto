@@ -335,7 +335,10 @@ impl ProofBlueprint {
                 LockFlags::read_only(),
             )?;
             let substate_ref = api.kernel_get_substate_ref(handle)?;
-            let ids = substate_ref.non_fungible_proof().non_fungible_local_ids();
+            let ids = substate_ref
+                .non_fungible_proof()
+                .non_fungible_local_ids()
+                .clone();
             api.kernel_drop_lock(handle)?;
             Ok(IndexedScryptoValue::from_typed(&ids))
         }
