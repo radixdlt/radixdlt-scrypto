@@ -185,10 +185,10 @@ where
         &mut self,
         component_id: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let component_id = scrypto_decode::<ComponentId>(&component_id)
+        let component_id = scrypto_decode::<RENodeId>(&component_id)
             .map_err(WasmRuntimeError::InvalidComponentId)?;
 
-        let component_address = self.api.globalize_component(component_id)?;
+        let component_address = self.api.globalize(component_id)?;
         let component_address_encoded =
             scrypto_encode(&component_address).expect("Failed to encode component id");
 

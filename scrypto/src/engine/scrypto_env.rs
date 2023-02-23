@@ -70,14 +70,14 @@ impl ClientComponentApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
-    fn globalize_component(
+    fn globalize(
         &mut self,
-        component_id: ComponentId,
+        node_id: RENodeId,
     ) -> Result<ComponentAddress, ClientApiError> {
-        let component_id = scrypto_encode(&component_id).unwrap();
+        let node_id = scrypto_encode(&node_id).unwrap();
 
         let bytes =
-            copy_buffer(unsafe { globalize_component(component_id.as_ptr(), component_id.len()) });
+            copy_buffer(unsafe { globalize_component(node_id.as_ptr(), node_id.len()) });
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 

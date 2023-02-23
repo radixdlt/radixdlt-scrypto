@@ -267,19 +267,20 @@ where
         Ok(node_id.into())
     }
 
-    fn globalize_component(
+    fn globalize(
         &mut self,
-        component_id: ComponentId,
+        node_id: RENodeId,
     ) -> Result<ComponentAddress, RuntimeError> {
-        let node_id = self.kernel_allocate_node_id(RENodeType::GlobalComponent)?;
+        let component_id: ComponentId = node_id.into();
+        let global_node_id = self.kernel_allocate_node_id(RENodeType::GlobalComponent)?;
 
         self.kernel_create_node(
-            node_id,
+            global_node_id,
             RENodeInit::GlobalComponent(GlobalSubstate::Component(component_id)),
             btreemap!(),
         )?;
 
-        Ok(node_id.into())
+        Ok(global_node_id.into())
     }
 
     fn call_method(

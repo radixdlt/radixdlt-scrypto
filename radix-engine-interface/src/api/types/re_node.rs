@@ -152,7 +152,7 @@ impl Into<ComponentAddress> for RENodeId {
     fn into(self) -> ComponentAddress {
         match self {
             RENodeId::GlobalComponent(address) => address,
-            _ => panic!("Not a component address"),
+            _ => panic!("Not a component address: {:?}", self),
         }
     }
 }

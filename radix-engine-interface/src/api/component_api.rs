@@ -25,7 +25,7 @@ pub trait ClientComponentApi<E> {
 
     fn new_key_value_store(&mut self) -> Result<KeyValueStoreId, E>;
 
-    fn globalize_component(&mut self, component_id: ComponentId) -> Result<ComponentAddress, E>;
+    fn globalize(&mut self, node_id: RENodeId) -> Result<ComponentAddress, E>;
 
     fn get_component_type_info(
         &mut self,
