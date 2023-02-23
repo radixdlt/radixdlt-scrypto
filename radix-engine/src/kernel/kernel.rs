@@ -970,9 +970,9 @@ where
             NodeModuleId::SELF,
             &SubstateOffset::Bucket(BucketOffset::Info),
         ) {
-            let resource_type = substate.bucket_info().resource_type;
+            let info = substate.bucket_info();
 
-            match resource_type {
+            match info.resource_type {
                 ResourceType::Fungible { .. } => {
                     let substate = self
                         .heap
@@ -983,9 +983,11 @@ where
                         )
                         .unwrap();
 
-                    Some(BucketSnapshot::Fungible(
-                        substate.bucket_liquid_fungible().clone(),
-                    ))
+                    Some(BucketSnapshot::Fungible {
+                        resource_address: info.resource_address,
+                        resource_type: info.resource_type,
+                        liquid: substate.bucket_liquid_fungible().amount(),
+                    })
                 }
                 ResourceType::NonFungible { .. } => {
                     let substate = self
@@ -997,9 +999,11 @@ where
                         )
                         .unwrap();
 
-                    Some(BucketSnapshot::NonFungible(
-                        substate.bucket_liquid_non_fungible().clone(),
-                    ))
+                    Some(BucketSnapshot::NonFungible {
+                        resource_address: info.resource_address,
+                        resource_type: info.resource_type,
+                        liquid: substate.bucket_liquid_non_fungible().ids().clone(),
+                    })
                 }
             }
         } else {
@@ -1008,14 +1012,52 @@ where
     }
 
     fn kernel_read_proof(&mut self, proof_id: BucketId) -> Option<ProofSnapshot> {
-        self.heap
-            .get_substate(
-                RENodeId::Proof(proof_id),
-                NodeModuleId::SELF,
-                &SubstateOffset::Proof(ProofOffset::Proof),
-            )
-            .and_then(|substate| Ok(substate.proof().snapshot()))
-            .ok()
+        if let Ok(substate) = self.heap.get_substate(
+            RENodeId::Proof(proof_id),
+            NodeModuleId::SELF,
+            &SubstateOffset::Proof(ProofOffset::Info),
+        ) {
+            let info = substate.proof_info();
+
+            match info.resource_type {
+                ResourceType::Fungible { .. } => {
+                    let substate = self
+                        .heap
+                        .get_substate(
+                            RENodeId::Proof(proof_id),
+                            NodeModuleId::SELF,
+                            &SubstateOffset::Proof(ProofOffset::Fungible),
+                        )
+                        .unwrap();
+
+                    Some(ProofSnapshot::Fungible {
+                        resource_address: info.resource_address,
+                        resource_type: info.resource_type,
+                        restricted: info.restricted,
+                        total_locked: substate.fungible_proof().amount(),
+                    })
+                }
+                ResourceType::NonFungible { .. } => {
+                    let substate = self
+                        .heap
+                        .get_substate(
+                            RENodeId::Proof(proof_id),
+                            NodeModuleId::SELF,
+                            &SubstateOffset::Proof(ProofOffset::NonFungible),
+                        )
+                        .unwrap();
+
+                    Some(ProofSnapshot::NonFungible {
+                        resource_address: info.resource_address,
+                        resource_type: info.resource_type,
+                        restricted: info.restricted,
+                        total_locked: substate.non_fungible_proof().non_fungible_ids().clone(),
+                    })
+                }
+            }
+        } else {
+            None
+        }
     }
 }
 

@@ -203,13 +203,12 @@ impl WorktopBlueprint {
         let substate_ref = api.kernel_get_substate_ref(worktop_handle)?;
         let worktop = substate_ref.worktop();
 
-        let total_amount =
-            if let Some(bucket) = worktop.resources.get(&input.resource_address).cloned() {
-                Bucket(bucket.bucket_id()).sys_amount(api)?
-            } else {
-                Decimal::zero()
-            };
-        if total_amount.is_zero() {
+        let amount = if let Some(bucket) = worktop.resources.get(&input.resource_address).cloned() {
+            Bucket(bucket.bucket_id()).sys_amount(api)?
+        } else {
+            Decimal::zero()
+        };
+        if amount.is_zero() {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::WorktopError(WorktopError::AssertionFailed),
             ));
@@ -239,13 +238,12 @@ impl WorktopBlueprint {
 
         let substate_ref = api.kernel_get_substate_ref(worktop_handle)?;
         let worktop = substate_ref.worktop();
-        let total_amount =
-            if let Some(bucket) = worktop.resources.get(&input.resource_address).cloned() {
-                Bucket(bucket.bucket_id()).sys_amount(api)?
-            } else {
-                Decimal::zero()
-            };
-        if total_amount < input.amount {
+        let amount = if let Some(bucket) = worktop.resources.get(&input.resource_address).cloned() {
+            Bucket(bucket.bucket_id()).sys_amount(api)?
+        } else {
+            Decimal::zero()
+        };
+        if amount < input.amount {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::WorktopError(WorktopError::AssertionFailed),
             ));
@@ -278,7 +276,7 @@ impl WorktopBlueprint {
 
         let ids = if let Some(bucket) = worktop.resources.get(&input.resource_address) {
             let bucket = Bucket(bucket.bucket_id());
-            bucket.sys_total_ids(api)?
+            bucket.sys_non_fungible_ids(api)?
         } else {
             BTreeSet::new()
         };

@@ -30,14 +30,14 @@ mod vault_proof {
 
         pub fn create_clone_drop_vault_proof_by_amount(
             &self,
-            total_amount: Decimal,
+            amount: Decimal,
             proof_amount: Decimal,
         ) {
             let proof = self.vault.create_proof_by_amount(proof_amount);
             let proof = proof.validate_proof(self.vault.resource_address()).unwrap();
             let clone = proof.clone();
 
-            assert_eq!(self.vault.amount(), total_amount);
+            assert_eq!(self.vault.amount(), amount);
             assert_eq!(proof.amount(), proof_amount);
             assert_eq!(clone.amount(), proof_amount);
 
@@ -47,14 +47,14 @@ mod vault_proof {
 
         pub fn create_clone_drop_vault_proof_by_ids(
             &self,
-            total_ids: BTreeSet<NonFungibleLocalId>,
+            non_fungible_ids: BTreeSet<NonFungibleLocalId>,
             proof_ids: BTreeSet<NonFungibleLocalId>,
         ) {
             let proof = self.vault.create_proof_by_ids(&proof_ids);
             let proof = proof.validate_proof(self.vault.resource_address()).unwrap();
             let clone = proof.clone();
 
-            assert_eq!(self.vault.non_fungible_local_ids(), total_ids);
+            assert_eq!(self.vault.non_fungible_local_ids(), non_fungible_ids);
             assert_eq!(proof.non_fungible_local_ids(), proof_ids);
             assert_eq!(clone.non_fungible_local_ids(), proof_ids);
 

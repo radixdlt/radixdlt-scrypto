@@ -148,7 +148,7 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
     );
 
     // Act
-    let total_ids = BTreeSet::from([
+    let non_fungible_ids = BTreeSet::from([
         NonFungibleLocalId::integer(1),
         NonFungibleLocalId::integer(2),
         NonFungibleLocalId::integer(3),
@@ -159,7 +159,7 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
         .call_method(
             component_address,
             "create_clone_drop_vault_proof_by_ids",
-            manifest_args!(total_ids, proof_ids),
+            manifest_args!(non_fungible_ids, proof_ids),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
