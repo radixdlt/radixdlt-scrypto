@@ -374,7 +374,7 @@ impl WasmerModule {
             node_id_len: u32,
             offset_ptr: u32,
             offset_len: u32,
-            mutable: u32,
+            flags: u32,
         ) -> Result<u32, RuntimeError> {
             let (instance, runtime) = grab_runtime!(env);
 
@@ -382,7 +382,7 @@ impl WasmerModule {
             let offset = read_memory(&instance, offset_ptr, offset_len)?;
 
             let handle = runtime
-                .lock_substate(node_id, offset, mutable != 0)
+                .lock_substate(node_id, offset, flags)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(handle)
