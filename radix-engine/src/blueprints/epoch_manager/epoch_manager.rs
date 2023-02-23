@@ -263,8 +263,8 @@ impl EpochManagerBlueprint {
 
         let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
         let mgr_handle = api.sys_lock_substate(receiver, offset, LockFlags::MUTABLE)?;
-        let mut substate_mut = api.kernel_get_substate_ref_mut(mgr_handle)?;
-        let epoch_manager = substate_mut.epoch_manager();
+        let epoch_manager: &mut EpochManagerSubstate =
+            api.kernel_get_substate_ref_mut(mgr_handle)?;
 
         if input.round <= epoch_manager.round {
             return Err(RuntimeError::ApplicationError(
@@ -278,21 +278,24 @@ impl EpochManagerBlueprint {
         if input.round >= epoch_manager.rounds_per_epoch {
             let offset = SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet);
             let handle = api.sys_lock_substate(receiver, offset, LockFlags::MUTABLE)?;
-            let mut substate_mut = api.kernel_get_substate_ref_mut(handle)?;
-            let preparing_validator_set = substate_mut.validator_set();
+            let preparing_validator_set: &mut ValidatorSetSubstate =
+                api.kernel_get_substate_ref_mut(handle)?;
             let prepared_epoch = preparing_validator_set.epoch;
             let next_validator_set = preparing_validator_set.validator_set.clone();
             preparing_validator_set.epoch = prepared_epoch + 1;
 
-            let mut substate_mut = api.kernel_get_substate_ref_mut(mgr_handle)?;
-            let epoch_manager = substate_mut.epoch_manager();
+            let epoch_manager: &mut EpochManagerSubstate =
+                api.kernel_get_substate_ref_mut(mgr_handle)?;
             epoch_manager.epoch = prepared_epoch;
             epoch_manager.round = 0;
 
-            let offset = SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet);
-            let handle = api.sys_lock_substate(receiver, offset, LockFlags::MUTABLE)?;
-            let mut substate_mut = api.kernel_get_substate_ref_mut(handle)?;
-            let validator_set = substate_mut.validator_set();
+            let handle = api.sys_lock_substate(
+                receiver,
+                SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet),
+                LockFlags::MUTABLE,
+            )?;
+            let validator_set: &mut ValidatorSetSubstate =
+                api.kernel_get_substate_ref_mut(handle)?;
             validator_set.epoch = prepared_epoch;
             validator_set.validator_set = next_validator_set;
         } else {
@@ -322,8 +325,8 @@ impl EpochManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let mut substate_mut = api.kernel_get_substate_ref_mut(handle)?;
-        substate_mut.epoch_manager().epoch = input.epoch;
+        let epoch_manager: &mut EpochManagerSubstate = api.kernel_get_substate_ref_mut(handle)?;
+        epoch_manager.epoch = input.epoch;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -376,8 +379,7 @@ impl EpochManagerBlueprint {
             SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
-        let validator_set = substate_ref.validator_set();
+        let validator_set: &mut ValidatorSetSubstate = api.kernel_get_substate_ref_mut(handle)?;
         match input.update {
             UpdateValidator::Register(key, stake) => {
                 validator_set

@@ -98,8 +98,8 @@ impl TransactionRuntimeNativePackage {
             SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_mut = api.kernel_get_substate_ref_mut(handle)?;
-        let tx_hash_substate = substate_mut.transaction_runtime();
+        let tx_hash_substate: &mut TransactionRuntimeSubstate =
+            api.kernel_get_substate_ref_mut(handle)?;
 
         if tx_hash_substate.next_id == u32::MAX {
             return Err(RuntimeError::ApplicationError(

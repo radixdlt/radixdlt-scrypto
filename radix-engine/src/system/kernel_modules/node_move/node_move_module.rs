@@ -1,4 +1,4 @@
-use crate::blueprints::resource::BucketSubstate;
+use crate::blueprints::resource::{BucketSubstate, ProofSubstate};
 use crate::errors::{ModuleError, RuntimeError};
 use crate::kernel::actor::ResolvedActor;
 use crate::kernel::call_frame::CallFrameUpdate;
@@ -50,8 +50,7 @@ impl NodeMoveModule {
                     SubstateOffset::Proof(ProofOffset::Proof),
                     LockFlags::MUTABLE,
                 )?;
-                let mut substate_ref_mut = api.kernel_get_substate_ref_mut(handle)?;
-                let proof = substate_ref_mut.proof();
+                let proof: &mut ProofSubstate = api.kernel_get_substate_ref_mut(handle)?;
 
                 let rtn = if proof.is_restricted() {
                     Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(

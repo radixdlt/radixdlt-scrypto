@@ -170,10 +170,10 @@ impl ClockNativePackage {
             SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
-        substate_ref
-            .current_time_rounded_to_minutes()
-            .current_time_rounded_to_minutes_ms = current_time_rounded_to_minutes;
+        let current_time_rounded_to_minutes_substate: &mut CurrentTimeRoundedToMinutesSubstate =
+            api.kernel_get_substate_ref_mut(handle)?;
+        current_time_rounded_to_minutes_substate.current_time_rounded_to_minutes_ms =
+            current_time_rounded_to_minutes;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }

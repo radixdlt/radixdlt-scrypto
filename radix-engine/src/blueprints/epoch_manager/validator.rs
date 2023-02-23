@@ -69,8 +69,7 @@ impl ValidatorBlueprint {
 
         // Update state
         {
-            let mut substate = api.kernel_get_substate_ref_mut(handle)?;
-            let validator = substate.validator();
+            let validator: &mut ValidatorSubstate = api.kernel_get_substate_ref_mut(handle)?;
 
             if validator.is_registered {
                 return Ok(IndexedScryptoValue::from_typed(&()));
@@ -124,8 +123,7 @@ impl ValidatorBlueprint {
 
         // Update state
         {
-            let mut substate = api.kernel_get_substate_ref_mut(handle)?;
-            let validator = substate.validator();
+            let validator: &mut ValidatorSubstate = api.kernel_get_substate_ref_mut(handle)?;
             if !validator.is_registered {
                 return Ok(IndexedScryptoValue::from_typed(&()));
             }
@@ -134,8 +132,7 @@ impl ValidatorBlueprint {
 
         // Update EpochManager
         {
-            let mut substate = api.kernel_get_substate_ref_mut(handle)?;
-            let validator = substate.validator();
+            let validator: &mut ValidatorSubstate = api.kernel_get_substate_ref_mut(handle)?;
             let manager = validator.manager;
             let validator_address = validator.address;
             api.call_method(
@@ -397,8 +394,7 @@ impl ValidatorBlueprint {
             SubstateOffset::Validator(ValidatorOffset::Validator),
             LockFlags::MUTABLE,
         )?;
-        let mut substate = api.kernel_get_substate_ref_mut(handle)?;
-        let mut validator = substate.validator();
+        let validator: &mut ValidatorSubstate = api.kernel_get_substate_ref_mut(handle)?;
         validator.key = input.key;
         let key = validator.key;
         let manager = validator.manager;

@@ -1374,148 +1374,177 @@ impl<'a> From<SubstateRefMut<'a>> for &'a mut VaultRuntimeSubstate {
     fn from(value: SubstateRefMut<'a>) -> Self {
         match value {
             SubstateRefMut::Vault(value) => value,
-            _ => panic!("Not an auth zone"),
+            _ => panic!("Not a vault"),
         }
     }
 }
 
-impl<'a> SubstateRefMut<'a> {
-    pub fn proof(&mut self) -> &mut ProofSubstate {
-        match self {
-            SubstateRefMut::Proof(value) => *value,
+impl<'a> From<SubstateRefMut<'a>> for &'a mut ProofSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::Proof(value) => value,
             _ => panic!("Not a proof"),
         }
     }
+}
 
-    pub fn bucket(&mut self) -> &mut BucketSubstate {
-        match self {
-            SubstateRefMut::Bucket(value) => *value,
+impl<'a> From<SubstateRefMut<'a>> for &'a mut BucketSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::Bucket(value) => value,
             _ => panic!("Not a bucket"),
         }
     }
+}
 
-    pub fn non_fungible(&mut self) -> &mut NonFungibleSubstate {
-        match self {
-            SubstateRefMut::NonFungible(value) => *value,
-            _ => panic!("Not a non fungible"),
+impl<'a> From<SubstateRefMut<'a>> for &'a mut NonFungibleSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::NonFungible(value) => value,
+            _ => panic!("Not a bucket"),
         }
     }
+}
 
-    pub fn resource_manager(&mut self) -> &mut ResourceManagerSubstate {
-        match self {
-            SubstateRefMut::ResourceManager(value) => *value,
-            _ => panic!("Not resource manager"),
+impl<'a> From<SubstateRefMut<'a>> for &'a mut ResourceManagerSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::ResourceManager(value) => value,
+            _ => panic!("Not a resource manager"),
         }
     }
+}
 
-    pub fn kv_store_entry(&mut self) -> &mut KeyValueStoreEntrySubstate {
-        match self {
-            SubstateRefMut::KeyValueStoreEntry(value) => *value,
-            _ => panic!("Not a key value store entry"),
+impl<'a> From<SubstateRefMut<'a>> for &'a mut KeyValueStoreEntrySubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::KeyValueStoreEntry(value) => value,
+            _ => panic!("Not a kv store entry"),
         }
     }
+}
 
-    pub fn component_state(&mut self) -> &mut ComponentStateSubstate {
-        match self {
-            SubstateRefMut::ComponentState(value) => *value,
-            _ => panic!("Not component state"),
+impl<'a> From<SubstateRefMut<'a>> for &'a mut ComponentStateSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::ComponentState(value) => value,
+            _ => panic!("Not a component state"),
         }
     }
+}
 
-    pub fn component_info(&mut self) -> &mut TypeInfoSubstate {
-        match self {
-            SubstateRefMut::ComponentInfo(value) => *value,
-            _ => panic!("Not component info"),
+impl<'a> From<SubstateRefMut<'a>> for &'a mut ComponentRoyaltyConfigSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::ComponentRoyaltyConfig(value) => value,
+            _ => panic!("Not a component royalty config"),
         }
     }
+}
 
-    pub fn component_royalty_config(&mut self) -> &mut ComponentRoyaltyConfigSubstate {
-        match self {
-            SubstateRefMut::ComponentRoyaltyConfig(value) => *value,
-            _ => panic!("Not component royalty config"),
+impl<'a> From<SubstateRefMut<'a>> for &'a mut ComponentRoyaltyAccumulatorSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::ComponentRoyaltyAccumulator(value) => value,
+            _ => panic!("Not a component royalty accumulator"),
         }
     }
+}
 
-    pub fn component_royalty_accumulator(&mut self) -> &mut ComponentRoyaltyAccumulatorSubstate {
-        match self {
-            SubstateRefMut::ComponentRoyaltyAccumulator(value) => *value,
-            _ => panic!("Not component royalty accumulator"),
+impl<'a> From<SubstateRefMut<'a>> for &'a mut PackageRoyaltyConfigSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::PackageRoyaltyConfig(value) => value,
+            _ => panic!("Not a package royalty config"),
         }
     }
+}
 
-    pub fn package_royalty_config(&mut self) -> &mut PackageRoyaltyConfigSubstate {
-        match self {
-            SubstateRefMut::PackageRoyaltyConfig(value) => *value,
-            _ => panic!("Not package royalty config"),
+impl<'a> From<SubstateRefMut<'a>> for &'a mut PackageRoyaltyAccumulatorSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::PackageRoyaltyAccumulator(value) => value,
+            _ => panic!("Not a package royalty accumulator"),
         }
     }
+}
 
-    pub fn package_royalty_accumulator(&mut self) -> &mut PackageRoyaltyAccumulatorSubstate {
-        match self {
-            SubstateRefMut::PackageRoyaltyAccumulator(value) => *value,
-            _ => panic!("Not package royalty accumulator"),
+impl<'a> From<SubstateRefMut<'a>> for &'a mut EpochManagerSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::EpochManager(value) => value,
+            _ => panic!("Not a epoch manager"),
         }
     }
+}
 
-    pub fn epoch_manager(&mut self) -> &mut EpochManagerSubstate {
-        match self {
-            SubstateRefMut::EpochManager(value) => *value,
-            _ => panic!("Not epoch manager"),
+impl<'a> From<SubstateRefMut<'a>> for &'a mut ValidatorSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::Validator(value) => value,
+            _ => panic!("Not a validator"),
         }
     }
+}
 
-    pub fn validator(&mut self) -> &mut ValidatorSubstate {
-        match self {
-            SubstateRefMut::Validator(value) => *value,
-            _ => panic!("Not validator"),
-        }
-    }
-
-    pub fn validator_set(&mut self) -> &mut ValidatorSetSubstate {
-        match self {
-            SubstateRefMut::ValidatorSet(value) => *value,
+impl<'a> From<SubstateRefMut<'a>> for &'a mut ValidatorSetSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::ValidatorSet(value) => value,
             _ => panic!("Not a validator set"),
         }
     }
+}
 
-    pub fn current_time_rounded_to_minutes(&mut self) -> &mut CurrentTimeRoundedToMinutesSubstate {
-        match self {
-            SubstateRefMut::CurrentTimeRoundedToMinutes(value) => *value,
-            _ => panic!("Not a current time rounded to minutes"),
+impl<'a> From<SubstateRefMut<'a>> for &'a mut CurrentTimeRoundedToMinutesSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::CurrentTimeRoundedToMinutes(value) => value,
+            _ => panic!("Not current time"),
         }
     }
+}
 
-    pub fn transaction_runtime(&mut self) -> &mut TransactionRuntimeSubstate {
-        match self {
-            SubstateRefMut::TransactionRuntime(value) => *value,
+impl<'a> From<SubstateRefMut<'a>> for &'a mut TransactionRuntimeSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::TransactionRuntime(value) => value,
             _ => panic!("Not a transaction runtime"),
         }
     }
+}
 
-    pub fn logger(&mut self) -> &mut LoggerSubstate {
-        match self {
-            SubstateRefMut::Logger(value) => *value,
+impl<'a> From<SubstateRefMut<'a>> for &'a mut LoggerSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::Logger(value) => value,
             _ => panic!("Not a logger"),
         }
     }
+}
 
-    pub fn access_rules_chain(&mut self) -> &mut ObjectAccessRulesChainSubstate {
-        match self {
-            SubstateRefMut::AccessRulesChain(value) => *value,
-            _ => panic!("Not access rules"),
+impl<'a> From<SubstateRefMut<'a>> for &'a mut ObjectAccessRulesChainSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::AccessRulesChain(value) => value,
+            _ => panic!("Not a logger"),
         }
     }
+}
 
-    pub fn metadata(&mut self) -> &mut MetadataSubstate {
-        match self {
-            SubstateRefMut::Metadata(value) => *value,
+impl<'a> From<SubstateRefMut<'a>> for &'a mut MetadataSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::Metadata(value) => value,
             _ => panic!("Not metadata"),
         }
     }
+}
 
-    pub fn access_controller(&mut self) -> &mut AccessControllerSubstate {
-        match self {
-            SubstateRefMut::AccessController(value) => *value,
+impl<'a> From<SubstateRefMut<'a>> for &'a mut AccessControllerSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::AccessController(value) => value,
             _ => panic!("Not access controller"),
         }
     }

@@ -457,9 +457,8 @@ impl AccountNativePackage {
                     let encoded_key = IndexedScryptoValue::from_typed(&resource_address);
                     let encoded_value = IndexedScryptoValue::from_typed(&Own::Vault(vault.0));
 
-                    let mut substate =
+                    let entry: &mut KeyValueStoreEntrySubstate =
                         api.kernel_get_substate_ref_mut(kv_store_entry_lock_handle)?;
-                    let entry = substate.kv_store_entry();
                     *entry =
                         KeyValueStoreEntrySubstate::Some(encoded_key.into(), encoded_value.into());
 
@@ -532,9 +531,8 @@ impl AccountNativePackage {
                         let encoded_key = IndexedScryptoValue::from_typed(&resource_address);
                         let encoded_value = IndexedScryptoValue::from_typed(&Own::Vault(vault.0));
 
-                        let mut substate =
+                        let entry: &mut KeyValueStoreEntrySubstate =
                             api.kernel_get_substate_ref_mut(kv_store_entry_lock_handle)?;
-                        let entry = substate.kv_store_entry();
                         *entry = KeyValueStoreEntrySubstate::Some(
                             encoded_key.into(),
                             encoded_value.into(),

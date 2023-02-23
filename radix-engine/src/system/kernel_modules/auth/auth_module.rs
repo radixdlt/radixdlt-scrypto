@@ -7,7 +7,10 @@ use crate::kernel::call_frame::RENodeVisibilityOrigin;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
 use crate::system::node::RENodeInit;
-use crate::system::node_modules::access_rules::{AccessRulesNativePackage, AuthZoneStackSubstate, ObjectAccessRulesChainSubstate, PackageAccessRulesSubstate};
+use crate::system::node_modules::access_rules::{
+    AccessRulesNativePackage, AuthZoneStackSubstate, ObjectAccessRulesChainSubstate,
+    PackageAccessRulesSubstate,
+};
 use crate::types::*;
 use radix_engine_interface::api::component::ComponentStateSubstate;
 use radix_engine_interface::api::node_modules::auth::*;
@@ -156,16 +159,24 @@ impl KernelModule for AuthModule {
                 {
                     match actor.identifier.ident.as_str() {
                         ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT => {
-                            AccessRulesNativePackage::set_method_access_rule_authorization(*node_id, *module_id, args, api)?
+                            AccessRulesNativePackage::set_method_access_rule_authorization(
+                                *node_id, *module_id, args, api,
+                            )?
                         }
                         ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT => {
-                            AccessRulesNativePackage::set_method_mutability_authorization(*node_id, *module_id, args, api)?
+                            AccessRulesNativePackage::set_method_mutability_authorization(
+                                *node_id, *module_id, args, api,
+                            )?
                         }
                         ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT => {
-                            AccessRulesNativePackage::set_group_access_rule_authorization(*node_id, *module_id, args, api)?
+                            AccessRulesNativePackage::set_group_access_rule_authorization(
+                                *node_id, *module_id, args, api,
+                            )?
                         }
                         ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT => {
-                            AccessRulesNativePackage::set_group_mutability_authorization(*node_id, *module_id, args, api)?
+                            AccessRulesNativePackage::set_group_mutability_authorization(
+                                *node_id, *module_id, args, api,
+                            )?
                         }
                         _ => vec![],
                     }
@@ -398,7 +409,8 @@ impl KernelModule for AuthModule {
                 SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
                 LockFlags::MUTABLE,
             )?;
-            let auth_zone_stack: &mut AuthZoneStackSubstate = api.kernel_get_substate_ref_mut2(handle)?;
+            let auth_zone_stack: &mut AuthZoneStackSubstate =
+                api.kernel_get_substate_ref_mut(handle)?;
 
             // New auth zone frame managed by the AuthModule
             let is_barrier = Self::is_barrier(actor);
@@ -442,7 +454,8 @@ impl KernelModule for AuthModule {
             LockFlags::MUTABLE,
         )?;
         {
-            let auth_zone_stack: &mut AuthZoneStackSubstate = api.kernel_get_substate_ref_mut2(handle)?;
+            let auth_zone_stack: &mut AuthZoneStackSubstate =
+                api.kernel_get_substate_ref_mut(handle)?;
             auth_zone_stack.pop_frame();
         }
         api.kernel_drop_lock(handle)?;

@@ -777,8 +777,8 @@ where
     let rtn = access_controller_clone.transition_mut(api, input)?;
 
     {
-        let mut substate = api.kernel_get_substate_ref_mut(handle)?;
-        let access_controller = substate.access_controller();
+        let access_controller: &mut AccessControllerSubstate =
+            api.kernel_get_substate_ref_mut(handle)?;
         *access_controller = access_controller_clone
     }
 

@@ -124,8 +124,8 @@ where
             ));
             let non_fungible_handle =
                 api.sys_lock_substate(nf_store_node_id, offset, LockFlags::MUTABLE)?;
-            let mut substate_mut = api.kernel_get_substate_ref_mut(non_fungible_handle)?;
-            let non_fungible_mut = substate_mut.non_fungible();
+            let non_fungible_mut: &mut NonFungibleSubstate =
+                api.kernel_get_substate_ref_mut(non_fungible_handle)?;
             *non_fungible_mut = NonFungibleSubstate(Some(
                 NonFungible::new(data.0.clone(), data.1.clone()), // FIXME: verify data
             ));
@@ -842,8 +842,8 @@ impl ResourceManagerBlueprint {
         )?;
 
         let (resource, non_fungibles) = {
-            let mut substate_mut = api.kernel_get_substate_ref_mut(resman_handle)?;
-            let resource_manager = substate_mut.resource_manager();
+            let resource_manager: &mut ResourceManagerSubstate =
+                api.kernel_get_substate_ref_mut(resman_handle)?;
 
             let id_type = match resource_manager.resource_type {
                 ResourceType::NonFungible { id_type } => id_type,
@@ -917,8 +917,8 @@ impl ResourceManagerBlueprint {
             )?;
 
             {
-                let mut substate_mut = api.kernel_get_substate_ref_mut(non_fungible_handle)?;
-                let non_fungible_mut = substate_mut.non_fungible();
+                let non_fungible_mut: &mut NonFungibleSubstate =
+                    api.kernel_get_substate_ref_mut(non_fungible_handle)?;
 
                 if non_fungible_mut.0.is_some() {
                     return Err(RuntimeError::ApplicationError(
@@ -961,8 +961,8 @@ impl ResourceManagerBlueprint {
         )?;
 
         let bucket_id = {
-            let mut substate_mut = api.kernel_get_substate_ref_mut(resman_handle)?;
-            let resource_manager = substate_mut.resource_manager();
+            let resource_manager: &mut ResourceManagerSubstate =
+                api.kernel_get_substate_ref_mut(resman_handle)?;
             let resource_address = resource_manager.resource_address;
             let id_type = match resource_manager.resource_type {
                 ResourceType::NonFungible { id_type } => id_type,
@@ -1002,8 +1002,8 @@ impl ResourceManagerBlueprint {
                         LockFlags::MUTABLE,
                     )?;
                     let non_fungible = NonFungible::new(data.0, data.1);
-                    let mut substate_mut = api.kernel_get_substate_ref_mut(non_fungible_handle)?;
-                    let non_fungible_mut = substate_mut.non_fungible();
+                    let non_fungible_mut: &mut NonFungibleSubstate =
+                        api.kernel_get_substate_ref_mut(non_fungible_handle)?;
                     *non_fungible_mut = NonFungibleSubstate(Some(non_fungible));
                     api.sys_drop_lock(non_fungible_handle)?;
                 }
@@ -1048,8 +1048,8 @@ impl ResourceManagerBlueprint {
         )?;
 
         let resource = {
-            let mut substate_mut = api.kernel_get_substate_ref_mut(resman_handle)?;
-            let resource_manager = substate_mut.resource_manager();
+            let resource_manager: &mut ResourceManagerSubstate =
+                api.kernel_get_substate_ref_mut(resman_handle)?;
 
             if let ResourceType::Fungible { divisibility } = resource_manager.resource_type {
                 // check amount
@@ -1134,8 +1134,8 @@ impl ResourceManagerBlueprint {
 
         // Update total supply
         {
-            let mut substate_mut = api.kernel_get_substate_ref_mut(resman_handle)?;
-            let resource_manager = substate_mut.resource_manager();
+            let resource_manager: &mut ResourceManagerSubstate =
+                api.kernel_get_substate_ref_mut(resman_handle)?;
             resource_manager.total_supply -= bucket.total_amount();
         }
 
@@ -1154,8 +1154,8 @@ impl ResourceManagerBlueprint {
                     SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id)),
                     LockFlags::MUTABLE,
                 )?;
-                let mut substate_mut = api.kernel_get_substate_ref_mut(non_fungible_handle)?;
-                let non_fungible_mut = substate_mut.non_fungible();
+                let non_fungible_mut: &mut NonFungibleSubstate =
+                    api.kernel_get_substate_ref_mut(non_fungible_handle)?;
 
                 *non_fungible_mut = NonFungibleSubstate(None);
                 api.sys_drop_lock(non_fungible_handle)?;
@@ -1276,8 +1276,8 @@ impl ResourceManagerBlueprint {
             SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(input.id.clone())),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_mut = api.kernel_get_substate_ref_mut(non_fungible_handle)?;
-        let non_fungible_mut = substate_mut.non_fungible();
+        let non_fungible_mut: &mut NonFungibleSubstate =
+            api.kernel_get_substate_ref_mut(non_fungible_handle)?;
         if let Some(ref mut non_fungible) = non_fungible_mut.0 {
             non_fungible.set_mutable_data(input.data);
         } else {

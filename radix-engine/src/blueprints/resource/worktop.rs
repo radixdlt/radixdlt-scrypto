@@ -50,7 +50,7 @@ impl WorktopBlueprint {
 
         let resource_address = input.bucket.sys_resource_address(api)?;
 
-        let worktop: &mut WorktopSubstate = api.kernel_get_substate_ref_mut2(worktop_handle)?;
+        let worktop: &mut WorktopSubstate = api.kernel_get_substate_ref_mut(worktop_handle)?;
 
         if let Some(own) = worktop.resources.get(&resource_address).cloned() {
             let existing_bucket = Bucket(own.bucket_id());
@@ -81,14 +81,14 @@ impl WorktopBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let worktop: &mut WorktopSubstate = api.kernel_get_substate_ref_mut2(worktop_handle)?;
+        let worktop: &mut WorktopSubstate = api.kernel_get_substate_ref_mut(worktop_handle)?;
         let bucket = if let Some(bucket) = worktop.resources.get(&input.resource_address).cloned() {
             bucket
         } else {
             let resman = ResourceManager(input.resource_address);
             let bucket = Own::Bucket(resman.new_empty_bucket(api)?.0);
 
-            let worktop: &mut WorktopSubstate = api.kernel_get_substate_ref_mut2(worktop_handle)?;
+            let worktop: &mut WorktopSubstate = api.kernel_get_substate_ref_mut(worktop_handle)?;
             worktop.resources.insert(input.resource_address, bucket);
             worktop
                 .resources
@@ -118,7 +118,7 @@ impl WorktopBlueprint {
             SubstateOffset::Worktop(WorktopOffset::Worktop),
             LockFlags::MUTABLE,
         )?;
-        let worktop: &mut WorktopSubstate = api.kernel_get_substate_ref_mut2(worktop_handle)?;
+        let worktop: &mut WorktopSubstate = api.kernel_get_substate_ref_mut(worktop_handle)?;
 
         let rtn_bucket = if let Some(bucket) = worktop.resources.get(&input.resource_address) {
             let bucket = Bucket(bucket.bucket_id());
@@ -149,7 +149,7 @@ impl WorktopBlueprint {
             SubstateOffset::Worktop(WorktopOffset::Worktop),
             LockFlags::MUTABLE,
         )?;
-        let worktop: &mut WorktopSubstate = api.kernel_get_substate_ref_mut2(worktop_handle)?;
+        let worktop: &mut WorktopSubstate = api.kernel_get_substate_ref_mut(worktop_handle)?;
 
         let bucket = if let Some(bucket) = worktop.resources.get(&input.resource_address).cloned() {
             bucket
@@ -157,7 +157,7 @@ impl WorktopBlueprint {
             let resman = ResourceManager(input.resource_address);
             let bucket = Own::Bucket(resman.new_empty_bucket(api)?.0);
 
-            let worktop: &mut WorktopSubstate = api.kernel_get_substate_ref_mut2(worktop_handle)?;
+            let worktop: &mut WorktopSubstate = api.kernel_get_substate_ref_mut(worktop_handle)?;
             worktop.resources.insert(input.resource_address, bucket);
             worktop
                 .resources
@@ -292,7 +292,7 @@ impl WorktopBlueprint {
             LockFlags::MUTABLE,
         )?;
         let mut buckets = Vec::new();
-        let worktop: &mut WorktopSubstate = api.kernel_get_substate_ref_mut2(worktop_handle)?;
+        let worktop: &mut WorktopSubstate = api.kernel_get_substate_ref_mut(worktop_handle)?;
         let bucket_ids: Vec<BucketId> = worktop
             .resources
             .iter()

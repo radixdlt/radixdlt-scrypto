@@ -180,8 +180,7 @@ impl BucketBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let mut substate_mut = api.kernel_get_substate_ref_mut(bucket_handle)?;
-        let bucket = substate_mut.bucket();
+        let bucket: &mut BucketSubstate = api.kernel_get_substate_ref_mut(bucket_handle)?;
         let container = bucket.take(input.amount).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
                 BucketError::ResourceOperationError(e),
@@ -218,8 +217,7 @@ impl BucketBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let mut substate_mut = api.kernel_get_substate_ref_mut(bucket_handle)?;
-        let bucket = substate_mut.bucket();
+        let bucket: &mut BucketSubstate = api.kernel_get_substate_ref_mut(bucket_handle)?;
         let container = bucket.take_non_fungibles(&input.ids).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
                 BucketError::ResourceOperationError(e),
@@ -258,8 +256,7 @@ impl BucketBlueprint {
         let other_bucket = api
             .kernel_drop_node(RENodeId::Bucket(input.bucket.0))?
             .into();
-        let mut substate_mut = api.kernel_get_substate_ref_mut(bucket_handle)?;
-        let bucket = substate_mut.bucket();
+        let bucket: &mut BucketSubstate = api.kernel_get_substate_ref_mut(bucket_handle)?;
         bucket.put(other_bucket).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
                 BucketError::ResourceOperationError(e),
@@ -287,8 +284,7 @@ impl BucketBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let mut substate_mut = api.kernel_get_substate_ref_mut(bucket_handle)?;
-        let bucket = substate_mut.bucket();
+        let bucket: &mut BucketSubstate = api.kernel_get_substate_ref_mut(bucket_handle)?;
         let proof = bucket.create_proof(receiver.into()).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(BucketError::ProofError(
                 e,

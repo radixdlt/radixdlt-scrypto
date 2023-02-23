@@ -135,7 +135,8 @@ impl AuthZoneBlueprint {
         )?;
 
         let proof = {
-            let auth_zone_stack: &mut AuthZoneStackSubstate = api.kernel_get_substate_ref_mut2(auth_zone_handle)?;
+            let auth_zone_stack: &mut AuthZoneStackSubstate =
+                api.kernel_get_substate_ref_mut(auth_zone_handle)?;
             let proof = auth_zone_stack.cur_auth_zone_mut().pop()?;
             proof
         };
@@ -174,7 +175,8 @@ impl AuthZoneBlueprint {
         let mut cloned_proof = proof.clone();
         cloned_proof.change_to_unrestricted();
 
-        let auth_zone_stack: &mut AuthZoneStackSubstate = api.kernel_get_substate_ref_mut2(auth_zone_handle)?;
+        let auth_zone_stack: &mut AuthZoneStackSubstate =
+            api.kernel_get_substate_ref_mut(auth_zone_handle)?;
         auth_zone_stack.cur_auth_zone_mut().push(cloned_proof);
         api.sys_drop_lock(auth_zone_handle)?;
 
@@ -209,7 +211,8 @@ impl AuthZoneBlueprint {
         };
 
         let proof = {
-            let auth_zone_stack: &mut AuthZoneStackSubstate = api.kernel_get_substate_ref_mut2(auth_zone_handle)?;
+            let auth_zone_stack: &mut AuthZoneStackSubstate =
+                api.kernel_get_substate_ref_mut(auth_zone_handle)?;
             let proof = auth_zone_stack
                 .cur_auth_zone()
                 .create_proof(input.resource_address, resource_type)?;
@@ -252,7 +255,8 @@ impl AuthZoneBlueprint {
         };
 
         let proof = {
-            let auth_zone_stack: &mut AuthZoneStackSubstate = api.kernel_get_substate_ref_mut2(auth_zone_handle)?;
+            let auth_zone_stack: &mut AuthZoneStackSubstate =
+                api.kernel_get_substate_ref_mut(auth_zone_handle)?;
             let proof = auth_zone_stack.cur_auth_zone().create_proof_by_amount(
                 input.amount,
                 input.resource_address,
@@ -331,7 +335,8 @@ impl AuthZoneBlueprint {
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,
         )?;
-        let auth_zone_stack: &mut AuthZoneStackSubstate = api.kernel_get_substate_ref_mut2(auth_zone_handle)?;
+        let auth_zone_stack: &mut AuthZoneStackSubstate =
+            api.kernel_get_substate_ref_mut(auth_zone_handle)?;
         auth_zone_stack.cur_auth_zone_mut().clear();
 
         Ok(IndexedScryptoValue::from_typed(&()))
@@ -355,7 +360,8 @@ impl AuthZoneBlueprint {
         )?;
 
         let proofs = {
-            let auth_zone_stack: &mut AuthZoneStackSubstate = api.kernel_get_substate_ref_mut2(auth_zone_handle)?;
+            let auth_zone_stack: &mut AuthZoneStackSubstate =
+                api.kernel_get_substate_ref_mut(auth_zone_handle)?;
             let proofs = auth_zone_stack.cur_auth_zone_mut().drain();
             proofs
         };

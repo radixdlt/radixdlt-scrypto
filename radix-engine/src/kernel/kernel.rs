@@ -15,6 +15,7 @@ use radix_engine_interface::api::component::TypeInfoSubstate;
 use radix_engine_interface::api::package::{PackageCodeSubstate, PACKAGE_LOADER_BLUEPRINT};
 use radix_engine_interface::api::substate_api::LockFlags;
 // TODO: clean this up!
+use crate::blueprints::auth_zone::AuthZoneStackSubstate;
 use crate::blueprints::resource::{BucketSubstate, ProofSubstate, WorktopSubstate};
 use crate::kernel::kernel_api::TemporaryResolvedInvocation;
 use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
@@ -40,7 +41,6 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::blueprints::transaction_runtime::TRANSACTION_RUNTIME_BLUEPRINT;
 use radix_engine_interface::rule;
 use sbor::rust::mem;
-use crate::blueprints::auth_zone::AuthZoneStackSubstate;
 
 use super::actor::{ExecutionMode, ResolvedActor, ResolvedReceiver};
 use super::call_frame::{CallFrame, RENodeVisibilityOrigin};
@@ -292,7 +292,8 @@ where
                     SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
                     LockFlags::MUTABLE,
                 )?;
-                let auth_zone_stack: &mut AuthZoneStackSubstate = api.kernel_get_substate_ref_mut2(handle)?;
+                let auth_zone_stack: &mut AuthZoneStackSubstate =
+                    api.kernel_get_substate_ref_mut(handle)?;
                 auth_zone_stack.clear_all();
                 api.kernel_drop_lock(handle)?;
                 Ok(())
@@ -304,8 +305,7 @@ where
                     SubstateOffset::Proof(ProofOffset::Proof),
                     LockFlags::MUTABLE,
                 )?;
-                let mut substate_ref_mut = api.kernel_get_substate_ref_mut(handle)?;
-                let proof = substate_ref_mut.proof();
+                let proof: &mut ProofSubstate = api.kernel_get_substate_ref_mut(handle)?;
                 proof.drop();
                 api.kernel_drop_lock(handle)?;
                 Ok(())
@@ -319,7 +319,7 @@ where
                 )?;
 
                 let buckets = {
-                    let worktop: &mut WorktopSubstate = api.kernel_get_substate_ref_mut2(handle)?;
+                    let worktop: &mut WorktopSubstate = api.kernel_get_substate_ref_mut(handle)?;
                     mem::replace(&mut worktop.resources, BTreeMap::new())
                 };
                 for (_, bucket) in buckets {
@@ -1161,14 +1161,20 @@ where
         Ok(substate_ref.into())
     }
 
-    fn kernel_get_substate_ref_mut2<'a, 'b, S>(
+    fn kernel_get_substate_ref_mut<'a, 'b, S>(
         &'b mut self,
         lock_handle: LockHandle,
     ) -> Result<&'a mut S, RuntimeError>
-        where
-            &'a mut S: From<SubstateRefMut<'a>>,
-            'b: 'a {
-
+    where
+        &'a mut S: From<SubstateRefMut<'a>>,
+        'b: 'a,
+    {
+        // A little hacky: this post sys call is called before the sys call happens due to
+        // a mutable borrow conflict for substate ref.
+        // Some modules (specifically: ExecutionTraceModule) require that all
+        // pre/post callbacks are balanced.
+        // TODO: Move post sys call to substate_ref drop() so that it's actually
+        // after the sys call processing, not before.
         KernelModuleMixer::on_write_substate(
             self,
             lock_handle,
@@ -1180,30 +1186,6 @@ where
                 .get_ref_mut(lock_handle, &mut self.heap, &mut self.track)?;
 
         Ok(substate_ref_mut.into())
-    }
-
-    fn kernel_get_substate_ref_mut(
-        &mut self,
-        lock_handle: LockHandle,
-    ) -> Result<SubstateRefMut, RuntimeError> {
-        // A little hacky: this post sys call is called before the sys call happens due to
-        // a mutable borrow conflict for substate ref.
-        // Some modules (specifically: ExecutionTraceModule) require that all
-        // pre/post callbacks are balanced.
-        // TODO: Move post sys call to substate_ref drop() so that it's actually
-        // after the sys call processing, not before.
-
-        KernelModuleMixer::on_write_substate(
-            self,
-            lock_handle,
-            0, //  TODO: pass the right size
-        )?;
-
-        let substate_ref_mut =
-            self.current_frame
-                .get_ref_mut(lock_handle, &mut self.heap, &mut self.track)?;
-
-        Ok(substate_ref_mut)
     }
 }
 

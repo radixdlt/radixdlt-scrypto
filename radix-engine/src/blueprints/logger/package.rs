@@ -59,8 +59,7 @@ impl LoggerNativePackage {
             SubstateOffset::Logger(LoggerOffset::Logger),
             LockFlags::MUTABLE,
         )?;
-        let mut substate = api.kernel_get_substate_ref_mut(handle)?;
-        let logger = substate.logger();
+        let logger: &mut LoggerSubstate = api.kernel_get_substate_ref_mut(handle)?;
         logger.logs.push((input.level, input.message));
 
         Ok(IndexedScryptoValue::from_typed(&()))

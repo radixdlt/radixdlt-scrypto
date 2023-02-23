@@ -1,3 +1,4 @@
+use crate::blueprints::resource::NonFungibleSubstate;
 use crate::errors::RuntimeError;
 use crate::errors::{KernelError, SystemError};
 use crate::kernel::kernel::Kernel;
@@ -17,7 +18,7 @@ use crate::wasm::WasmEngine;
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate,
-    TypeInfoSubstate,
+    KeyValueStoreEntrySubstate, TypeInfoSubstate,
 };
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::substate_api::LockFlags;
@@ -80,15 +81,22 @@ where
     ) -> Result<(), RuntimeError> {
         let offset = self.kernel_get_lock_info(lock_handle)?.offset;
         let substate = RuntimeSubstate::decode_from_buffer(&offset, &buffer)?;
-        let mut substate_mut = self.kernel_get_substate_ref_mut(lock_handle)?;
 
         match substate {
-            RuntimeSubstate::ComponentState(next) => *substate_mut.component_state() = next,
+            RuntimeSubstate::ComponentState(next) => {
+                let state: &mut ComponentStateSubstate =
+                    self.kernel_get_substate_ref_mut(lock_handle)?;
+                *state = next
+            }
             RuntimeSubstate::KeyValueStoreEntry(next) => {
-                *substate_mut.kv_store_entry() = next;
+                let entry: &mut KeyValueStoreEntrySubstate =
+                    self.kernel_get_substate_ref_mut(lock_handle)?;
+                *entry = next;
             }
             RuntimeSubstate::NonFungible(next) => {
-                *substate_mut.non_fungible() = next;
+                let non_fungible: &mut NonFungibleSubstate =
+                    self.kernel_get_substate_ref_mut(lock_handle)?;
+                *non_fungible = next;
             }
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidOverwrite)),
         }
