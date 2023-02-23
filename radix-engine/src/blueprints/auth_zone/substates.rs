@@ -77,6 +77,16 @@ impl AuthZoneStackSubstate {
     pub fn cur_auth_zone(&self) -> &AuthZone {
         self.auth_zones.last().unwrap()
     }
+
+    pub fn all_proofs(&self) -> Vec<Proof> {
+        let mut proofs = Vec::new();
+        for auth_zone in &self.auth_zones {
+            for p in &auth_zone.proofs {
+                proofs.push(Proof(p.0));
+            }
+        }
+        proofs
+    }
 }
 
 #[derive(Debug)]

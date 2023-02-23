@@ -438,6 +438,13 @@ impl SubstateProperties {
                     node_id,
                 ))),
             },
+            SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack) => match node_id {
+                RENodeId::Proof(..) => Ok(()),
+                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
+                    offset.clone(),
+                    node_id,
+                ))),
+            },
             SubstateOffset::Global(GlobalOffset::Global) => match node_id {
                 RENodeId::Component(..)
                 | RENodeId::Package(..)
