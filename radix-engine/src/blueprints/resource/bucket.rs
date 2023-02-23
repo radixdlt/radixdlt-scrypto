@@ -773,4 +773,75 @@ impl BucketBlueprint {
         let proof_id = node_id.into();
         Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
     }
+
+    //===================
+    // Protected method
+    //===================
+
+    // FIXME: set up auth
+
+    pub fn lock_amount<Y>(
+        receiver: RENodeId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let input: BucketLockAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        FungibleBucket::lock_amount(receiver, input.amount, api)?;
+
+        Ok(IndexedScryptoValue::from_typed(&()))
+    }
+
+    pub fn lock_non_fungibles<Y>(
+        receiver: RENodeId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let input: BucketLockNonFungiblesInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        NonFungibleBucket::lock_non_fungibles(receiver, input.local_ids, api)?;
+
+        Ok(IndexedScryptoValue::from_typed(&()))
+    }
+
+    pub fn unlock_amount<Y>(
+        receiver: RENodeId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let input: BucketUnlockAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        FungibleBucket::unlock_amount(receiver, input.amount, api)?;
+
+        Ok(IndexedScryptoValue::from_typed(&()))
+    }
+
+    pub fn unlock_non_fungibles<Y>(
+        receiver: RENodeId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let input: BucketUnlockNonFungiblesInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        NonFungibleBucket::unlock_non_fungibles(receiver, input.local_ids, api)?;
+
+        Ok(IndexedScryptoValue::from_typed(&()))
+    }
 }

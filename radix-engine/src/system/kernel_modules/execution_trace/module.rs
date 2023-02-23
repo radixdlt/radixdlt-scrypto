@@ -77,6 +77,16 @@ pub enum BucketSnapshot {
 }
 
 impl BucketSnapshot {
+    pub fn resource_address(&self) -> ResourceAddress {
+        match self {
+            BucketSnapshot::Fungible {
+                resource_address, ..
+            } => resource_address.clone(),
+            BucketSnapshot::NonFungible {
+                resource_address, ..
+            } => resource_address.clone(),
+        }
+    }
     pub fn amount(&self) -> Decimal {
         match self {
             BucketSnapshot::Fungible { liquid, .. } => liquid.clone(),
@@ -99,6 +109,25 @@ pub enum ProofSnapshot {
         restricted: bool,
         total_locked: BTreeSet<NonFungibleLocalId>,
     },
+}
+
+impl ProofSnapshot {
+    pub fn resource_address(&self) -> ResourceAddress {
+        match self {
+            ProofSnapshot::Fungible {
+                resource_address, ..
+            } => resource_address.clone(),
+            ProofSnapshot::NonFungible {
+                resource_address, ..
+            } => resource_address.clone(),
+        }
+    }
+    pub fn amount(&self) -> Decimal {
+        match self {
+            ProofSnapshot::Fungible { total_locked, .. } => total_locked.clone(),
+            ProofSnapshot::NonFungible { total_locked, .. } => total_locked.len().into(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, ScryptoSbor)]

@@ -282,11 +282,8 @@ fn test_instruction_traces() {
         assert_eq!(1, trace.output.proofs.len());
 
         let output_proof = trace.output.proofs.values().nth(0).unwrap();
-        assert_eq!(RADIX_TOKEN, output_proof.resource_address);
-        assert_eq!(
-            LockedAmountOrIds::Amount(dec!("10000")),
-            output_proof.total_locked
-        );
+        assert_eq!(RADIX_TOKEN, output_proof.resource_address());
+        assert_eq!(dec!("10000"), output_proof.amount());
     }
 
     {
@@ -301,11 +298,8 @@ fn test_instruction_traces() {
         assert_eq!(1, trace.input.proofs.len());
 
         let input_proof = trace.input.proofs.values().nth(0).unwrap();
-        assert_eq!(RADIX_TOKEN, input_proof.resource_address);
-        assert_eq!(
-            LockedAmountOrIds::Amount(dec!("10000")),
-            input_proof.total_locked
-        );
+        assert_eq!(RADIX_TOKEN, input_proof.resource_address());
+        assert_eq!(dec!("10000"), input_proof.amount());
     }
 
     {

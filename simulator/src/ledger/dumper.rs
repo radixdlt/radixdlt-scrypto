@@ -1,8 +1,7 @@
 #![allow(unused_must_use)]
 use colored::*;
-use radix_engine::blueprints::resource::{
-    NonFungibleSubstate, ResourceManagerSubstate, VaultSubstate,
-};
+use radix_engine::blueprints::resource::VaultInfoSubstate;
+use radix_engine::blueprints::resource::{NonFungibleSubstate, ResourceManagerSubstate};
 use radix_engine::ledger::*;
 use radix_engine::system::global::GlobalSubstate;
 use radix_engine::system::node_modules::metadata::MetadataSubstate;
@@ -10,7 +9,9 @@ use radix_engine::types::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::package::WasmCodeSubstate;
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::blueprints::resource::{AccessRules, ResourceType};
+use radix_engine_interface::blueprints::resource::{
+    AccessRules, LiquidFungibleResource, LiquidNonFungibleResource,
+};
 use radix_engine_interface::data::{IndexedScryptoValue, ScryptoValueDisplayContext};
 use radix_engine_interface::network::NetworkDefinition;
 use std::collections::VecDeque;
@@ -431,7 +432,8 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
 
     writeln!(output, "{}:", "Resources".green().bold());
     for (last, vault_id) in vaults.iter().identify_last() {
-        let vault: VaultSubstate = substate_store
+        // READ vault info
+        let vault_info: VaultInfoSubstate = substate_store
             .get_substate(&SubstateId(
                 RENodeId::Vault(*vault_id),
                 NodeModuleId::SELF,
@@ -440,8 +442,9 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             .map(|s| s.substate)
             .map(|s| s.into())
             .unwrap();
-        let amount = vault.0.amount();
-        let resource_address = vault.0.resource_address();
+
+        // READ resource manager
+        let resource_address = vault_info.resource_address;
         let global: Option<GlobalSubstate> = substate_store
             .get_substate(&SubstateId(
                 RENodeId::Global(Address::Resource(resource_address)),
@@ -473,28 +476,49 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                 .map(|s| s.to_runtime().into())
         });
         let metadata = metadata.ok_or(DisplayError::ResourceManagerNotFound)?;
-        writeln!(
-            output,
-            "{} {{ amount: {}, resource address: {}{}{} }}",
-            list_item_prefix(last),
-            amount,
-            resource_address.display(&bech32_encoder),
-            metadata
-                .metadata
-                .get("name")
-                .map(|name| format!(", name: \"{}\"", name))
-                .unwrap_or(String::new()),
-            metadata
-                .metadata
-                .get("symbol")
-                .map(|symbol| format!(", symbol: \"{}\"", symbol))
-                .unwrap_or(String::new()),
-        );
-        if matches!(
-            resource_manager.resource_type,
-            ResourceType::NonFungible { .. }
-        ) {
-            let ids = vault.0.ids();
+
+        //  Dump liquid resource
+        if vault_info.resource_type.is_fungible() {
+            let vault: LiquidFungibleResource = substate_store
+                .get_substate(&SubstateId(
+                    RENodeId::Vault(*vault_id),
+                    NodeModuleId::SELF,
+                    SubstateOffset::Vault(VaultOffset::LiquidFungible),
+                ))
+                .map(|s| s.substate)
+                .map(|s| s.into())
+                .unwrap();
+
+            let amount = vault.amount();
+            writeln!(
+                output,
+                "{} {{ amount: {}, resource address: {}{}{} }}",
+                list_item_prefix(last),
+                amount,
+                resource_address.display(&bech32_encoder),
+                metadata
+                    .metadata
+                    .get("name")
+                    .map(|name| format!(", name: \"{}\"", name))
+                    .unwrap_or(String::new()),
+                metadata
+                    .metadata
+                    .get("symbol")
+                    .map(|symbol| format!(", symbol: \"{}\"", symbol))
+                    .unwrap_or(String::new()),
+            );
+        } else {
+            let vault: LiquidNonFungibleResource = substate_store
+                .get_substate(&SubstateId(
+                    RENodeId::Vault(*vault_id),
+                    NodeModuleId::SELF,
+                    SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
+                ))
+                .map(|s| s.substate)
+                .map(|s| s.into())
+                .unwrap();
+
+            let ids = vault.ids();
             for (inner_last, id) in ids.iter().identify_last() {
                 let non_fungible: NonFungibleSubstate = substate_store
                     .get_substate(&SubstateId(

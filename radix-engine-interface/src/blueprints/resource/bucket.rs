@@ -62,28 +62,28 @@ pub struct BucketCreateProofInput {}
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct BucketLockAmountInput {
-    amount: Decimal,
+    pub amount: Decimal,
 }
 
 pub const BUCKET_LOCK_AMOUNT_IDENT: &str = "Bucket_lock_amount";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct BucketUnlockAmountInput {
-    amount: Decimal,
+    pub amount: Decimal,
 }
 
 pub const BUCKET_UNLOCK_AMOUNT_IDENT: &str = "Bucket_unlock_amount";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct BucketLockNonFungiblesInput {
-    local_ids: BTreeSet<NonFungibleLocalId>,
+    pub local_ids: BTreeSet<NonFungibleLocalId>,
 }
 
 pub const BUCKET_LOCK_NON_FUNGIBLES_IDENT: &str = "Bucket_lock_non_fungibles";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct BucketUnlockNonFungiblesInput {
-    local_ids: BTreeSet<NonFungibleLocalId>,
+    pub local_ids: BTreeSet<NonFungibleLocalId>,
 }
 
 pub const BUCKET_UNLOCK_NON_FUNGIBLES_IDENT: &str = "Bucket_unlock_non_fungibles";

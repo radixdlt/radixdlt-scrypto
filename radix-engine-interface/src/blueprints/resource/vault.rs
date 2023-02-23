@@ -93,28 +93,28 @@ pub struct VaultCreateProofByIdsInput {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct VaultLockAmountInput {
-    amount: Decimal,
+    pub amount: Decimal,
 }
 
 pub const VAULT_LOCK_AMOUNT_IDENT: &str = "Vault_lock_amount";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct VaultUnlockAmountInput {
-    amount: Decimal,
+    pub amount: Decimal,
 }
 
 pub const VAULT_UNLOCK_AMOUNT_IDENT: &str = "Vault_unlock_amount";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct VaultLockNonFungiblesInput {
-    local_ids: BTreeSet<NonFungibleLocalId>,
+    pub local_ids: BTreeSet<NonFungibleLocalId>,
 }
 
 pub const VAULT_LOCK_NON_FUNGIBLES_IDENT: &str = "Vault_lock_non_fungibles";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct VaultUnlockNonFungiblesInput {
-    local_ids: BTreeSet<NonFungibleLocalId>,
+    pub local_ids: BTreeSet<NonFungibleLocalId>,
 }
 
 pub const VAULT_UNLOCK_NON_FUNGIBLES_IDENT: &str = "Vault_unlock_non_fungibles";

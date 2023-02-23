@@ -91,6 +91,14 @@ impl PersistedSubstate {
         }
     }
 
+    pub fn vault_liquid_non_fungible_mut(&mut self) -> &mut LiquidNonFungibleResource {
+        if let PersistedSubstate::VaultLiquidNonFungible(vault) = self {
+            vault
+        } else {
+            panic!("Not a vault");
+        }
+    }
+
     pub fn vault_info_mut(&mut self) -> &mut VaultInfoSubstate {
         if let PersistedSubstate::VaultInfo(vault) = self {
             vault
