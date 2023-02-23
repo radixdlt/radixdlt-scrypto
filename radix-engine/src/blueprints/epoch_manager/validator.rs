@@ -382,7 +382,7 @@ impl ValidatorBlueprint {
 
         let mut unstake_amount = Decimal::zero();
 
-        for id in bucket.sys_non_fungible_ids(api)? {
+        for id in bucket.sys_non_fungible_local_ids(api)? {
             let data: UnstakeData = nft_resman.get_non_fungible_mutable_data(id, api)?;
             if current_epoch < data.epoch_unlocked {
                 return Err(RuntimeError::ApplicationError(

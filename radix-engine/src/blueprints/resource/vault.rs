@@ -268,7 +268,7 @@ impl NonFungibleVault {
         Ok(!Self::locked_amount(node_id, api)?.is_zero())
     }
 
-    pub fn liquid_non_fungible_ids<Y>(
+    pub fn liquid_non_fungible_local_ids<Y>(
         node_id: RENodeId,
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
@@ -724,7 +724,7 @@ impl VaultBlueprint {
             ));
         } else {
             let ids: BTreeSet<NonFungibleLocalId> =
-                NonFungibleVault::liquid_non_fungible_ids(receiver, api)?;
+                NonFungibleVault::liquid_non_fungible_local_ids(receiver, api)?;
             Ok(IndexedScryptoValue::from_typed(&ids))
         }
     }

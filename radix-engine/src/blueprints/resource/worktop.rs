@@ -276,7 +276,7 @@ impl WorktopBlueprint {
 
         let ids = if let Some(bucket) = worktop.resources.get(&input.resource_address) {
             let bucket = Bucket(bucket.bucket_id());
-            bucket.sys_non_fungible_ids(api)?
+            bucket.sys_non_fungible_local_ids(api)?
         } else {
             BTreeSet::new()
         };

@@ -23,7 +23,7 @@ pub trait SysBucket {
     where
         Y: ClientApi<E>;
 
-    fn sys_non_fungible_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn sys_non_fungible_local_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, E>
@@ -113,7 +113,7 @@ impl SysBucket for Bucket {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    fn sys_non_fungible_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn sys_non_fungible_local_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, E>

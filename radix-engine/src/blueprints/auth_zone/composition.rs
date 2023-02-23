@@ -16,12 +16,17 @@ pub enum ComposeProofError {
     InvalidAmount,
 }
 
+pub enum ComposedProof {
+    Fungible(ProofInfoSubstate, FungibleProof),
+    NonFungible(ProofInfoSubstate, NonFungibleProof),
+}
+
 pub fn compose_proof_by_amount<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
     proofs: &[Proof],
     resource_address: ResourceAddress,
     amount: Option<Decimal>,
     api: &mut Y,
-) -> Result<ProofSubstate, RuntimeError> {
+) -> Result<ComposedProof, RuntimeError> {
     let resource_type = ResourceManager(resource_address).resource_type(api)?;
 
     match resource_type {
@@ -56,7 +61,7 @@ pub fn compose_proof_by_ids<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
     resource_address: ResourceAddress,
     ids: Option<BTreeSet<NonFungibleLocalId>>,
     api: &mut Y,
-) -> Result<ProofSubstate, RuntimeError> {
+) -> Result<ComposedProof, RuntimeError> {
     let resource_type = ResourceManager(resource_address).resource_type(api)?;
 
     match resource_type {

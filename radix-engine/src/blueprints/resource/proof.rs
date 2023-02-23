@@ -191,10 +191,10 @@ impl NonFungibleProof {
     }
 
     pub fn amount(&self) -> Decimal {
-        self.non_fungible_ids().len().into()
+        self.non_fungible_local_ids().len().into()
     }
 
-    pub fn non_fungible_ids(&self) -> &BTreeSet<NonFungibleLocalId> {
+    pub fn non_fungible_local_ids(&self) -> &BTreeSet<NonFungibleLocalId> {
         &self.total_locked
     }
 }
@@ -335,7 +335,7 @@ impl ProofBlueprint {
                 LockFlags::read_only(),
             )?;
             let substate_ref = api.kernel_get_substate_ref(handle)?;
-            let ids = substate_ref.non_fungible_proof().non_fungible_ids();
+            let ids = substate_ref.non_fungible_proof().non_fungible_local_ids();
             api.kernel_drop_lock(handle)?;
             Ok(IndexedScryptoValue::from_typed(&ids))
         }

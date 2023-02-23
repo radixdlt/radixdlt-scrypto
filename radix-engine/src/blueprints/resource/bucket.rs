@@ -263,7 +263,7 @@ impl NonFungibleBucket {
         Ok(!Self::locked_amount(node_id, api)?.is_zero())
     }
 
-    pub fn liquid_non_fungible_ids<Y>(
+    pub fn liquid_non_fungible_local_ids<Y>(
         node_id: RENodeId,
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
@@ -672,7 +672,7 @@ impl BucketBlueprint {
             ));
         } else {
             let ids: BTreeSet<NonFungibleLocalId> =
-                NonFungibleBucket::liquid_non_fungible_ids(receiver, api)?;
+                NonFungibleBucket::liquid_non_fungible_local_ids(receiver, api)?;
             Ok(IndexedScryptoValue::from_typed(&ids))
         }
     }

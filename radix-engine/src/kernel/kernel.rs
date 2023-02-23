@@ -1051,7 +1051,10 @@ where
                         resource_address: info.resource_address,
                         resource_type: info.resource_type,
                         restricted: info.restricted,
-                        total_locked: substate.non_fungible_proof().non_fungible_ids().clone(),
+                        total_locked: substate
+                            .non_fungible_proof()
+                            .non_fungible_local_ids()
+                            .clone(),
                     })
                 }
             }
