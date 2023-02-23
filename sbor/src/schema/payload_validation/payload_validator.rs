@@ -185,9 +185,7 @@ pub fn validate_container<E: CustomTypeExtension>(
 macro_rules! numeric_validation_match {
     ($numeric_validation: ident, $value: expr, $location: expr, $type: ident, $error_type: ident) => {{
         {
-            let TerminalValueRef::$type(value) = $value else {
-                        return_type_validation_mismatch!($location)
-                    };
+            let TerminalValueRef::$type(value) = $value else { return_type_validation_mismatch!($location) };
             if !$numeric_validation.is_valid(value) {
                 return_type_validation_error!(
                     $location,
