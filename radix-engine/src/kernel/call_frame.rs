@@ -64,7 +64,7 @@ pub enum RENodeVisibilityOrigin {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SubstateLock {
     pub substate_pointer: (RENodeLocation, RENodeId, NodeModuleId, SubstateOffset),
-    pub global_references: HashSet<RENodeId>,
+    pub references: HashSet<RENodeId>,
     pub substate_owned_nodes: Vec<RENodeId>,
     pub flags: LockFlags,
 }
@@ -117,7 +117,7 @@ impl CallFrame {
         offset: SubstateOffset,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
-        let location = self.get_node_location(node_id)?;
+        let location = self.check_node_location(&node_id)?;
         if !(matches!(offset, SubstateOffset::KeyValueStore(..))
             || matches!(
                 offset,
@@ -142,14 +142,22 @@ impl CallFrame {
         }
 
         let substate_ref = self.get_substate(heap, track, location, node_id, module_id, &offset)?;
-        let (global_references, substate_owned_nodes) = substate_ref.references_and_owned_nodes();
+        let (references, substate_owned_nodes) = substate_ref.references_and_owned_nodes();
 
         // Expand references
         {
-            for node_id in &global_references {
+            for node_id in &references {
+                // Determine the location data based on current frame, otherwise defaults to Store.
+                // This is fine, as clients are allowed to created GLOBAL references only, except for
+                // Proof native blueprint.
+                //
+                // TODO: revisit when ref is added to Scrypto value model.
+                let location = self
+                    .get_node_location(node_id)
+                    .unwrap_or(RENodeLocation::Store);
                 self.node_refs.insert(
                     node_id.clone(),
-                    RENodeRefData::new(RENodeLocation::Store, RENodeVisibilityOrigin::Normal),
+                    RENodeRefData::new(location, RENodeVisibilityOrigin::Normal),
                 );
             }
             for child_id in &substate_owned_nodes {
@@ -164,7 +172,7 @@ impl CallFrame {
         self.locks.insert(
             lock_handle,
             SubstateLock {
-                global_references,
+                references,
                 substate_pointer: (location, node_id, module_id, offset),
                 substate_owned_nodes,
                 flags,
@@ -219,18 +227,6 @@ impl CallFrame {
                 }
             }
 
-            // TODO: Josh thinks this should be okay to remove but should double check
-            /*
-            for global_address in new_global_references {
-                let node_id = RENodeId::Global(global_address);
-                if !self.node_refs.contains_key(&node_id) {
-                    return Err(RuntimeError::KernelError(
-                        KernelError::InvalidReferenceWrite(global_address),
-                    ));
-                }
-            }
-             */
-
             for child_id in &new_children {
                 SubstateProperties::verify_can_own(&offset, *child_id)?;
                 self.take_node_internal(*child_id)?;
@@ -244,7 +240,8 @@ impl CallFrame {
             }
         }
 
-        // Global references need not be dropped
+        // TODO: revisit this
+        // References need not be dropped
         // Substate Locks downstream may also continue to live
         for refed_node in substate_lock.substate_owned_nodes {
             self.node_refs.remove(&refed_node);
@@ -357,8 +354,8 @@ impl CallFrame {
         }
 
         for node_id in call_frame_update.node_refs_to_copy {
-            let location = parent.get_node_location(node_id)?;
-            let visibility = parent.check_node_visibility(node_id)?;
+            let location = parent.check_node_location(&node_id)?;
+            let visibility = parent.check_node_visibility(&node_id)?;
             next_node_refs.insert(node_id, RENodeRefData::new(location, visibility));
         }
 
@@ -575,10 +572,10 @@ impl CallFrame {
         Ok(ref_mut)
     }
 
-    pub fn get_node_visibility(&self, node_id: RENodeId) -> Option<RENodeVisibilityOrigin> {
-        if self.owned_root_nodes.contains_key(&node_id) {
+    pub fn get_node_visibility(&self, node_id: &RENodeId) -> Option<RENodeVisibilityOrigin> {
+        if self.owned_root_nodes.contains_key(node_id) {
             Some(RENodeVisibilityOrigin::Normal)
-        } else if let Some(ref_data) = self.node_refs.get(&node_id) {
+        } else if let Some(ref_data) = self.node_refs.get(node_id) {
             Some(ref_data.visibility)
         } else {
             None
@@ -587,24 +584,28 @@ impl CallFrame {
 
     pub fn check_node_visibility(
         &self,
-        node_id: RENodeId,
+        node_id: &RENodeId,
     ) -> Result<RENodeVisibilityOrigin, CallFrameError> {
         self.get_node_visibility(node_id)
-            .ok_or(CallFrameError::RENodeNotVisible(node_id))
+            .ok_or_else(|| CallFrameError::RENodeNotVisible(node_id.clone()))
     }
 
-    pub fn get_node_location(&self, node_id: RENodeId) -> Result<RENodeLocation, CallFrameError> {
+    pub fn get_node_location(&self, node_id: &RENodeId) -> Option<RENodeLocation> {
         // Find node
-        let node_pointer = {
-            if self.owned_root_nodes.contains_key(&node_id) {
-                RENodeLocation::Heap
-            } else if let Some(ref_data) = self.node_refs.get(&node_id) {
-                ref_data.location.clone()
-            } else {
-                return Err(CallFrameError::RENodeNotVisible(node_id));
-            }
-        };
+        if self.owned_root_nodes.contains_key(node_id) {
+            Some(RENodeLocation::Heap)
+        } else if let Some(ref_data) = self.node_refs.get(node_id) {
+            Some(ref_data.location.clone())
+        } else {
+            None
+        }
+    }
 
-        Ok(node_pointer)
+    pub fn check_node_location(
+        &self,
+        node_id: &RENodeId,
+    ) -> Result<RENodeLocation, CallFrameError> {
+        self.get_node_location(node_id)
+            .ok_or_else(|| CallFrameError::RENodeNotVisible(node_id.clone()))
     }
 }

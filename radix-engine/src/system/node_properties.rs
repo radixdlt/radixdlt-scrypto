@@ -172,6 +172,7 @@ impl VisibilityProperties {
                 SubstateOffset::Bucket(BucketOffset::Info) => true,
                 SubstateOffset::Proof(ProofOffset::Info) => true,
                 SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack) => true,
+                SubstateOffset::Proof(..) => true,
                 SubstateOffset::Worktop(WorktopOffset::Worktop) => true,
                 _ => false,
             },
@@ -183,7 +184,7 @@ impl VisibilityProperties {
                 }
                 SubstateOffset::Vault(VaultOffset::Info) => true,
                 SubstateOffset::Bucket(BucketOffset::Info) => read_only,
-                SubstateOffset::Proof(ProofOffset::Info) => true,
+                SubstateOffset::Proof(..) => true,
                 SubstateOffset::Global(GlobalOffset::Global) => read_only,
                 SubstateOffset::Package(PackageOffset::Info) => read_only,
                 SubstateOffset::Package(PackageOffset::CodeType) => read_only,

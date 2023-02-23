@@ -520,7 +520,7 @@ where
             for node_id in &call_frame_update.node_refs_to_copy {
                 match node_id {
                     RENodeId::Global(global_address) => {
-                        if self.current_frame.get_node_location(*node_id).is_err() {
+                        if self.current_frame.check_node_location(node_id).is_err() {
                             if matches!(
                                 global_address,
                                 Address::Component(ComponentAddress::EcdsaSecp256k1VirtualAccount(
@@ -618,7 +618,7 @@ where
                         }
                     }
                     RENodeId::Vault(..) => {
-                        if self.current_frame.get_node_location(*node_id).is_err() {
+                        if self.current_frame.check_node_location(node_id).is_err() {
                             let offset = SubstateOffset::Vault(VaultOffset::Info);
                             self.track
                                 .acquire_lock(
@@ -948,7 +948,7 @@ where
         &self,
         node_id: RENodeId,
     ) -> Option<RENodeVisibilityOrigin> {
-        let visibility = self.current_frame.get_node_visibility(node_id)?;
+        let visibility = self.current_frame.get_node_visibility(&node_id)?;
         Some(visibility)
     }
 
