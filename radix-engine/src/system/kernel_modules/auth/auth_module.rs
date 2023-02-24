@@ -22,7 +22,6 @@ use transaction::model::AuthZoneParams;
 
 use super::auth_converter::convert_contextless;
 use super::method_authorization::MethodAuthorization;
-use super::method_authorization::MethodAuthorizationError;
 use super::HardAuthRule;
 use super::HardProofRule;
 use super::HardResourceOrNonFungible;
@@ -30,10 +29,7 @@ use super::HardResourceOrNonFungible;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
     VisibilityError(RENodeId),
-    Unauthorized {
-        authorization: MethodAuthorization,
-        error: MethodAuthorizationError,
-    },
+    Unauthorized(Vec<MethodAuthorization>),
 }
 
 #[derive(Debug, Clone)]
@@ -361,7 +357,11 @@ impl KernelModule for AuthModule {
         let is_barrier = Self::is_barrier(actor);
 
         // Authorization check
-        auth_zone_stack.check_auth(is_barrier, method_auths, api)?;
+        if !auth_zone_stack.check_auth(is_barrier, &method_auths, api)? {
+            return Err(RuntimeError::ModuleError(ModuleError::AuthError(
+                AuthError::Unauthorized(method_auths),
+            )));
+        }
 
         api.kernel_drop_lock(handle)?;
 

@@ -305,12 +305,7 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
     receipt.expect_commit_success();
     let receipt = test_runner.borrow_funds();
     receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
-                AuthZoneError::AssertAccessRuleFailed
-            ))
-        )
+        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
     });
 }
 

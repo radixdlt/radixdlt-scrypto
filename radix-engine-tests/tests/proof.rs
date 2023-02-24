@@ -344,6 +344,11 @@ fn can_move_locked_bucket() {
                 manifest_args!(bucket_id),
             )
         })
+        .call_method(
+            account,
+            "deposit_batch",
+            manifest_args!(ManifestExpression::EntireWorktop),
+        )
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
