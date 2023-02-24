@@ -1,5 +1,5 @@
 use crate::errors::{ModuleError, RuntimeError};
-use crate::kernel::actor::ResolvedActor;
+use crate::kernel::actor::{ResolvedActor, ResolvedReceiver};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{KernelModuleApi, LockFlags};
 use crate::kernel::module::KernelModule;
@@ -19,6 +19,7 @@ pub struct NodeMoveModule {}
 impl NodeMoveModule {
     fn prepare_move_downstream<Y: KernelModuleApi<RuntimeError>>(
         node_id: RENodeId,
+        actor: &Option<ResolvedActor>,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
         match node_id {
@@ -32,19 +33,30 @@ impl NodeMoveModule {
                 let mut substate_ref_mut = api.kernel_get_substate_ref_mut(handle)?;
                 let proof = substate_ref_mut.proof_info();
 
-                let rtn = if proof.restricted {
-                    Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
+                if proof.restricted {
+                    return Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
                         NodeMoveError::CantMoveDownstream(node_id),
-                    )))
-                } else {
+                    )));
+                }
+
+                // Change to restricted unless it's for auth zone.
+                if !matches!(
+                    actor,
+                    Some(ResolvedActor {
+                        receiver: Some(ResolvedReceiver {
+                            receiver: MethodReceiver(RENodeId::AuthZoneStack, ..),
+                            ..
+                        }),
+                        ..
+                    })
+                ) {
                     proof.change_to_restricted();
-                    Ok(())
-                };
+                }
 
                 api.kernel_drop_lock(handle)?;
-
-                rtn
+                Ok(())
             }
+
             RENodeId::Bucket(..) | RENodeId::Component(..) => Ok(()),
 
             RENodeId::TransactionRuntime
@@ -102,11 +114,11 @@ impl NodeMoveModule {
 impl KernelModule for NodeMoveModule {
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        _actor: &Option<ResolvedActor>,
+        actor: &Option<ResolvedActor>,
         call_frame_update: &mut CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         for node_id in &call_frame_update.nodes_to_move {
-            Self::prepare_move_downstream(*node_id, api)?;
+            Self::prepare_move_downstream(*node_id, actor, api)?;
         }
 
         Ok(())

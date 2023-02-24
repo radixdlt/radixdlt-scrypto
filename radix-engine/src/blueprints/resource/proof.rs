@@ -227,7 +227,6 @@ impl ProofBlueprint {
             let clone = proof.clone_proof(api)?;
             api.kernel_drop_lock(handle)?;
 
-
             let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
             api.kernel_create_node(
                 node_id,

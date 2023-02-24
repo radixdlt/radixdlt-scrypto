@@ -290,7 +290,9 @@ fn cant_move_restricted_proof() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address =
         test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
-    let package_address = test_runner.compile_and_publish("/home/yulong/workspace/radix/radixdlt-scrypto/radix-engine-tests/tests/blueprints/proof");
+    let package_address = test_runner.compile_and_publish(
+        "/home/yulong/workspace/radix/radixdlt-scrypto/radix-engine-tests/tests/blueprints/proof",
+    );
 
     // Act
     let manifest = ManifestBuilder::new()
