@@ -727,7 +727,7 @@ impl<'s> FinalizingTrack<'s> {
                         .get_mut(&SubstateId(
                             RENodeId::Vault(royalty_vault_id),
                             NodeModuleId::SELF,
-                            SubstateOffset::Vault(VaultOffset::Info),
+                            SubstateOffset::Vault(VaultOffset::LiquidFungible),
                         ))
                         .unwrap();
                     royalty_vault_substate

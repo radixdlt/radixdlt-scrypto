@@ -1,7 +1,6 @@
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, LockFlags};
 use crate::system::kernel_modules::auth::convert_contextless;
-use crate::system::kernel_modules::auth::*;
 use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE};
 use crate::types::*;
 use native_sdk::resource::SysProof;
@@ -18,7 +17,7 @@ use super::{compose_proof_by_amount, compose_proof_by_ids, ComposeProofError};
 pub enum AuthZoneError {
     InvalidRequestData(DecodeError),
     EmptyAuthZone,
-    AssertAccessRuleError(MethodAuthorization, MethodAuthorizationError),
+    AssertAccessRuleFailed,
     ComposeProofError(ComposeProofError),
 }
 

@@ -1,5 +1,4 @@
 use radix_engine::errors::{ApplicationError, ModuleError, RuntimeError};
-use radix_engine::system::kernel_modules::auth::AuthError;
 use radix_engine::system::node_modules::access_rules::{AccessRulesChainError, AuthZoneError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
@@ -308,7 +307,9 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized { .. }))
+            RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
+                AuthZoneError::AssertAccessRuleFailed
+            ))
         )
     });
 }
@@ -381,7 +382,7 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
 #[test]
 fn assert_access_rule_through_manifest_when_not_fulfilled_fails() {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, _account_component) = test_runner.new_account(false);
 
     let manifest = ManifestBuilder::new()
@@ -399,7 +400,7 @@ fn assert_access_rule_through_manifest_when_not_fulfilled_fails() {
         matches!(
             error,
             RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
-                AuthZoneError::AssertAccessRuleError(..)
+                AuthZoneError::AssertAccessRuleFailed
             ))
         )
     })
@@ -472,7 +473,7 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
         matches!(
             error,
             RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
-                AuthZoneError::AssertAccessRuleError(..)
+                AuthZoneError::AssertAccessRuleFailed
             ))
         )
     })

@@ -1,5 +1,5 @@
-use super::AuthVerification;
-use crate::errors::{ModuleError, RuntimeError};
+use super::{AuthVerification, AuthZoneError};
+use crate::errors::{ApplicationError, RuntimeError};
 use crate::system::kernel_modules::auth::*;
 use crate::types::*;
 use radix_engine_interface::api::ClientComponentApi;
@@ -38,18 +38,16 @@ impl AuthZoneStackSubstate {
         }
 
         for method_auth in method_auths {
-            if !AuthVerification::verify_method_auth(
+            if AuthVerification::verify_method_auth(
                 barrier_crossings_allowed,
                 &method_auth,
                 &self,
                 api,
-            )? {
-                return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                    AuthError::Unauthorized {
-                        authorization: method_auth,
-                        error: MethodAuthorizationError::NotAuthorized,
-                    },
-                )));
+            ) != Ok(true)
+            {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::AuthZoneError(AuthZoneError::AssertAccessRuleFailed),
+                ));
             }
         }
 
