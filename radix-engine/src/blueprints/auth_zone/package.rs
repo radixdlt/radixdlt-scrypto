@@ -180,7 +180,7 @@ impl AuthZoneBlueprint {
         let auth_zone_handle = api.sys_lock_substate(
             receiver,
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
-            LockFlags::read_only(),
+            LockFlags::MUTABLE,
         )?;
 
         let composed_proof = {

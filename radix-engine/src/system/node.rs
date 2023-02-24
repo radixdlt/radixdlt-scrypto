@@ -25,9 +25,6 @@ use radix_engine_interface::blueprints::resource::LockedNonFungibleResource;
 
 #[derive(Debug)]
 pub enum RENodeModuleInit {
-    // TODO: move to somewhere else
-    PackageCodeType(PackageCodeTypeSubstate),
-
     /* Type info */
     TypeInfo(TypeInfoSubstate),
 
@@ -92,12 +89,6 @@ impl RENodeModuleInit {
                 substates.insert(
                     SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                     accumulator.into(),
-                );
-            }
-            RENodeModuleInit::PackageCodeType(code_type) => {
-                substates.insert(
-                    SubstateOffset::Package(PackageOffset::CodeType),
-                    code_type.into(),
                 );
             }
         }
