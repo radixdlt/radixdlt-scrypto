@@ -422,7 +422,7 @@ impl NonFungibleBucket {
         let ids_for_proof: BTreeSet<NonFungibleLocalId> =
             locked.ids.keys().cloned().into_iter().take(n).collect();
         for id in &ids_for_proof {
-            locked.ids.get_mut(id).unwrap().add_assign(1);
+            locked.ids.entry(id.clone()).or_default().add_assign(1);
         }
 
         // Issue proof
@@ -469,7 +469,7 @@ impl NonFungibleBucket {
         substate_ref = api.kernel_get_substate_ref_mut(handle)?; // grab ref again
         locked = substate_ref.bucket_locked_non_fungible();
         for id in &ids {
-            locked.ids.get_mut(id).unwrap().add_assign(1);
+            locked.ids.entry(id.clone()).or_default().add_assign(1);
         }
 
         // Issue proof

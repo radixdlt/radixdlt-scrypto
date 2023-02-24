@@ -116,7 +116,7 @@ pub fn compose_proof_by_ids<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
                 ProofInfoSubstate {
                     resource_address,
                     resource_type,
-                    restricted: false,
+                    restricted: false, // TODO: follow existing impl, but need to revisit this
                 },
                 proof,
             )
