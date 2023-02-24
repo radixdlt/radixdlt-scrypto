@@ -12,8 +12,12 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::SysBucket;
 use radix_engine_interface::api::component::TypeInfoSubstate;
-use radix_engine_interface::api::package::PACKAGE_LOADER_BLUEPRINT;
+use radix_engine_interface::api::package::{PackageCodeSubstate, PACKAGE_LOADER_BLUEPRINT};
+use radix_engine_interface::api::substate_api::LockFlags;
 // TODO: clean this up!
+use crate::blueprints::auth_zone::AuthZoneStackSubstate;
+use crate::blueprints::resource::{BucketSubstate, ProofSubstate, WorktopSubstate};
+use crate::kernel::kernel_api::TemporaryResolvedInvocation;
 use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use radix_engine_interface::api::types::{
     Address, AuthZoneStackOffset, GlobalOffset, LockHandle, ProofOffset, RENodeId, SubstateId,
@@ -39,13 +43,13 @@ use radix_engine_interface::rule;
 use sbor::rust::mem;
 
 use super::actor::{ExecutionMode, ResolvedActor, ResolvedReceiver};
-use super::call_frame::{CallFrame, CallFrameUpdate, RENodeVisibilityOrigin};
+use super::call_frame::{CallFrame, RENodeVisibilityOrigin};
 use super::heap::{Heap, HeapRENode};
 use super::id_allocator::IdAllocator;
 use super::interpreters::ScryptoInterpreter;
 use super::kernel_api::{
     ExecutableInvocation, Executor, Invokable, KernelApi, KernelInternalApi, KernelModuleApi,
-    KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockFlags, LockInfo,
+    KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockInfo,
 };
 use super::module::KernelModule;
 use super::module_mixer::KernelModuleMixer;
@@ -288,8 +292,8 @@ where
                     SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
                     LockFlags::MUTABLE,
                 )?;
-                let mut substate_ref_mut = api.kernel_get_substate_ref_mut(handle)?;
-                let auth_zone_stack = substate_ref_mut.auth_zone_stack();
+                let auth_zone_stack: &mut AuthZoneStackSubstate =
+                    api.kernel_get_substate_ref_mut(handle)?;
                 auth_zone_stack.clear_all();
                 api.kernel_drop_lock(handle)?;
                 Ok(())
@@ -301,8 +305,7 @@ where
                     SubstateOffset::Proof(ProofOffset::Proof),
                     LockFlags::MUTABLE,
                 )?;
-                let mut substate_ref_mut = api.kernel_get_substate_ref_mut(handle)?;
-                let proof = substate_ref_mut.proof();
+                let proof: &mut ProofSubstate = api.kernel_get_substate_ref_mut(handle)?;
                 proof.drop();
                 api.kernel_drop_lock(handle)?;
                 Ok(())
@@ -316,8 +319,7 @@ where
                 )?;
 
                 let buckets = {
-                    let mut substate_ref_mut = api.kernel_get_substate_ref_mut(handle)?;
-                    let worktop = substate_ref_mut.worktop();
+                    let worktop: &mut WorktopSubstate = api.kernel_get_substate_ref_mut(handle)?;
                     mem::replace(&mut worktop.resources, BTreeMap::new())
                 };
                 for (_, bucket) in buckets {
@@ -375,10 +377,13 @@ where
 
     fn run<X: Executor>(
         &mut self,
-        executor: X,
-        actor: ResolvedActor,
-        mut call_frame_update: CallFrameUpdate,
+        resolved: TemporaryResolvedInvocation<X>,
     ) -> Result<X::Output, RuntimeError> {
+        let executor = resolved.executor;
+        let actor = resolved.resolved_actor;
+        let args = resolved.args;
+        let mut call_frame_update = resolved.update;
+
         let derefed_lock = if let Some(ResolvedReceiver {
             derefed_from: Some((_, derefed_lock)),
             ..
@@ -397,6 +402,7 @@ where
                     api,
                     &Some(actor.clone()),
                     &mut call_frame_update,
+                    &args,
                 )
             })?;
         }
@@ -427,7 +433,7 @@ where
 
             // Run
             let (output, mut update) =
-                self.execute_in_mode(ExecutionMode::Client, |api| executor.execute(api))?;
+                self.execute_in_mode(ExecutionMode::Client, |api| executor.execute(args, api))?;
 
             // Handle execution finish
             self.execute_in_mode(ExecutionMode::KernelModule, |api| {
@@ -486,14 +492,12 @@ where
 
     fn invoke_internal<X: Executor>(
         &mut self,
-        executor: X,
-        actor: ResolvedActor,
-        call_frame_update: CallFrameUpdate,
+        resolved: TemporaryResolvedInvocation<X>,
     ) -> Result<X::Output, RuntimeError> {
         let depth = self.current_frame.depth;
         // TODO: Move to higher layer
         if depth == 0 {
-            for node_id in &call_frame_update.node_refs_to_copy {
+            for node_id in &resolved.update.node_refs_to_copy {
                 match node_id {
                     RENodeId::Global(global_address) => {
                         if self.current_frame.get_node_location(*node_id).is_err() {
@@ -618,7 +622,7 @@ where
             }
         }
 
-        let output = self.run(executor, actor, call_frame_update)?;
+        let output = self.run(resolved)?;
 
         Ok(output)
     }
@@ -944,7 +948,10 @@ where
                 NodeModuleId::SELF,
                 &SubstateOffset::Bucket(BucketOffset::Bucket),
             )
-            .and_then(|substate| Ok(substate.bucket().peek_resource()))
+            .and_then(|substate| {
+                let bucket: &BucketSubstate = substate.into();
+                Ok(bucket.peek_resource())
+            })
             .ok()
     }
 
@@ -955,7 +962,10 @@ where
                 NodeModuleId::SELF,
                 &SubstateOffset::Proof(ProofOffset::Proof),
             )
-            .and_then(|substate| Ok(substate.proof().snapshot()))
+            .and_then(|substate| {
+                let proof: &ProofSubstate = substate.into();
+                Ok(proof.snapshot())
+            })
             .ok()
     }
 }
@@ -988,8 +998,8 @@ where
                     SubstateOffset::Global(GlobalOffset::Global),
                     LockFlags::empty(),
                 )?;
-                let substate_ref = self.kernel_get_substate_ref(handle)?;
-                (substate_ref.global_address().node_deref(), Some(handle))
+                let global: &GlobalSubstate = self.kernel_get_substate_ref(handle)?;
+                (global.node_deref(), Some(handle))
             }
             _ => (node_id, None),
         };
@@ -1106,10 +1116,10 @@ where
         Ok(())
     }
 
-    fn kernel_get_substate_ref(
+    fn kernel_read_substate(
         &mut self,
         lock_handle: LockHandle,
-    ) -> Result<SubstateRef, RuntimeError> {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         // A little hacky: this post sys call is called before the sys call happens due to
         // a mutable borrow conflict for substate ref.
         // Some modules (specifically: ExecutionTraceModule) require that all
@@ -1127,20 +1137,44 @@ where
             self.current_frame
                 .get_ref(lock_handle, &mut self.heap, &mut self.track)?;
 
-        Ok(substate_ref)
+        Ok(substate_ref.to_scrypto_value())
     }
 
-    fn kernel_get_substate_ref_mut(
-        &mut self,
+    fn kernel_get_substate_ref<'a, 'b, S>(
+        &'b mut self,
         lock_handle: LockHandle,
-    ) -> Result<SubstateRefMut, RuntimeError> {
+    ) -> Result<&'a S, RuntimeError>
+    where
+        &'a S: From<SubstateRef<'a>>,
+        'b: 'a,
+    {
+        KernelModuleMixer::on_read_substate(
+            self,
+            lock_handle,
+            0, //  TODO: pass the right size
+        )?;
+
+        let substate_ref =
+            self.current_frame
+                .get_ref(lock_handle, &mut self.heap, &mut self.track)?;
+
+        Ok(substate_ref.into())
+    }
+
+    fn kernel_get_substate_ref_mut<'a, 'b, S>(
+        &'b mut self,
+        lock_handle: LockHandle,
+    ) -> Result<&'a mut S, RuntimeError>
+    where
+        &'a mut S: From<SubstateRefMut<'a>>,
+        'b: 'a,
+    {
         // A little hacky: this post sys call is called before the sys call happens due to
         // a mutable borrow conflict for substate ref.
         // Some modules (specifically: ExecutionTraceModule) require that all
         // pre/post callbacks are balanced.
         // TODO: Move post sys call to substate_ref drop() so that it's actually
         // after the sys call processing, not before.
-
         KernelModuleMixer::on_write_substate(
             self,
             lock_handle,
@@ -1151,7 +1185,7 @@ where
             self.current_frame
                 .get_ref_mut(lock_handle, &mut self.heap, &mut self.track)?;
 
-        Ok(substate_ref_mut)
+        Ok(substate_ref_mut.into())
     }
 }
 
@@ -1170,9 +1204,10 @@ where
         let substate_ref = self
             .current_frame
             .get_ref(handle, &mut self.heap, &mut self.track)?;
+        let code: &PackageCodeSubstate = substate_ref.into();
         let instance = self
             .scrypto_interpreter
-            .create_instance(package_address, &substate_ref.code().code);
+            .create_instance(package_address, &code.code);
         Ok(instance)
     }
 }
@@ -1193,10 +1228,10 @@ where
         let saved_mode = self.execution_mode;
 
         self.execution_mode = ExecutionMode::Resolver;
-        let (actor, call_frame_update, executor) = invocation.resolve(self)?;
+        let resolved = invocation.resolve(self)?;
 
         self.execution_mode = ExecutionMode::Kernel;
-        let rtn = self.invoke_internal(executor, actor, call_frame_update)?;
+        let rtn = self.invoke_internal(resolved)?;
 
         // Restore previous mode
         self.execution_mode = saved_mode;

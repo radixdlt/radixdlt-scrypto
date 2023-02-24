@@ -1,10 +1,10 @@
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
-use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node::RENodeInit;
 use crate::types::*;
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
@@ -174,15 +174,13 @@ impl BucketBlueprint {
         let input: BucketTakeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let bucket_handle = api.kernel_lock_substate(
+        let bucket_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Bucket(BucketOffset::Bucket),
             LockFlags::MUTABLE,
         )?;
 
-        let mut substate_mut = api.kernel_get_substate_ref_mut(bucket_handle)?;
-        let bucket = substate_mut.bucket();
+        let bucket: &mut BucketSubstate = api.kernel_get_substate_ref_mut(bucket_handle)?;
         let container = bucket.take(input.amount).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
                 BucketError::ResourceOperationError(e),
@@ -213,15 +211,13 @@ impl BucketBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let bucket_handle = api.kernel_lock_substate(
+        let bucket_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Bucket(BucketOffset::Bucket),
             LockFlags::MUTABLE,
         )?;
 
-        let mut substate_mut = api.kernel_get_substate_ref_mut(bucket_handle)?;
-        let bucket = substate_mut.bucket();
+        let bucket: &mut BucketSubstate = api.kernel_get_substate_ref_mut(bucket_handle)?;
         let container = bucket.take_non_fungibles(&input.ids).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
                 BucketError::ResourceOperationError(e),
@@ -251,9 +247,8 @@ impl BucketBlueprint {
         let input: BucketPutInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let bucket_handle = api.kernel_lock_substate(
+        let bucket_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Bucket(BucketOffset::Bucket),
             LockFlags::MUTABLE,
         )?;
@@ -261,8 +256,7 @@ impl BucketBlueprint {
         let other_bucket = api
             .kernel_drop_node(RENodeId::Bucket(input.bucket.0))?
             .into();
-        let mut substate_mut = api.kernel_get_substate_ref_mut(bucket_handle)?;
-        let bucket = substate_mut.bucket();
+        let bucket: &mut BucketSubstate = api.kernel_get_substate_ref_mut(bucket_handle)?;
         bucket.put(other_bucket).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
                 BucketError::ResourceOperationError(e),
@@ -284,15 +278,13 @@ impl BucketBlueprint {
         let _input: BucketCreateProofInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let bucket_handle = api.kernel_lock_substate(
+        let bucket_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Bucket(BucketOffset::Bucket),
             LockFlags::MUTABLE,
         )?;
 
-        let mut substate_mut = api.kernel_get_substate_ref_mut(bucket_handle)?;
-        let bucket = substate_mut.bucket();
+        let bucket: &mut BucketSubstate = api.kernel_get_substate_ref_mut(bucket_handle)?;
         let proof = bucket.create_proof(receiver.into()).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(BucketError::ProofError(
                 e,
@@ -319,14 +311,12 @@ impl BucketBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let bucket_handle = api.kernel_lock_substate(
+        let bucket_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Bucket(BucketOffset::Bucket),
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.kernel_get_substate_ref(bucket_handle)?;
-        let bucket = substate_ref.bucket();
+        let bucket: &BucketSubstate = api.kernel_get_substate_ref(bucket_handle)?;
         let ids = bucket.total_ids().map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
                 BucketError::ResourceOperationError(e),
@@ -348,15 +338,13 @@ impl BucketBlueprint {
         let _input: BucketGetAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let bucket_handle = api.kernel_lock_substate(
+        let bucket_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Bucket(BucketOffset::Bucket),
             LockFlags::read_only(),
         )?;
 
-        let substate = api.kernel_get_substate_ref(bucket_handle)?;
-        let bucket = substate.bucket();
+        let bucket: &BucketSubstate = api.kernel_get_substate_ref(bucket_handle)?;
         Ok(IndexedScryptoValue::from_typed(&bucket.total_amount()))
     }
 
@@ -373,15 +361,13 @@ impl BucketBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let bucket_handle = api.kernel_lock_substate(
+        let bucket_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Bucket(BucketOffset::Bucket),
             LockFlags::read_only(),
         )?;
 
-        let substate = api.kernel_get_substate_ref(bucket_handle)?;
-        let bucket = substate.bucket();
+        let bucket: &BucketSubstate = api.kernel_get_substate_ref(bucket_handle)?;
 
         Ok(IndexedScryptoValue::from_typed(&bucket.resource_address()))
     }

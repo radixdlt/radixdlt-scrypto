@@ -9,6 +9,7 @@ use crate::{
 };
 use radix_engine_interface::{
     api::types::{InvocationIdentifier, LockHandle},
+    data::ScryptoValue,
     ScryptoSbor,
 };
 
@@ -161,6 +162,7 @@ impl KernelModule for TransactionLimitsModule {
         api: &mut Y,
         _actor: &Option<ResolvedActor>,
         _down_movement: &mut CallFrameUpdate,
+        _args: &ScryptoValue,
     ) -> Result<(), RuntimeError> {
         // push new empty wasm memory value refencing current call frame to internal stack
         api.kernel_get_module_state()

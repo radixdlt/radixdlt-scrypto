@@ -3,6 +3,7 @@ use crate::errors::RuntimeError;
 use crate::system::kernel_modules::costing::*;
 use crate::types::*;
 use crate::wasm::*;
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::{
@@ -216,14 +217,16 @@ where
         &mut self,
         node_id: Vec<u8>,
         offset: Vec<u8>,
-        mutable: bool,
+        flags: u32,
     ) -> Result<LockHandle, InvokeError<WasmRuntimeError>> {
         let node_id =
             scrypto_decode::<RENodeId>(&node_id).map_err(WasmRuntimeError::InvalidNodeId)?;
         let offset =
             scrypto_decode::<SubstateOffset>(&offset).map_err(WasmRuntimeError::InvalidOffset)?;
 
-        let handle = self.api.sys_lock_substate(node_id, offset, mutable)?;
+        let flags = LockFlags::from_bits(flags).ok_or(WasmRuntimeError::InvalidLockFlags)?;
+        let handle = self.api.sys_lock_substate(node_id, offset, flags)?;
+
         Ok(handle)
     }
 
@@ -387,7 +390,7 @@ impl WasmRuntime for NopWasmRuntime {
         &mut self,
         node_id: Vec<u8>,
         offset: Vec<u8>,
-        mutable: bool,
+        flags: u32,
     ) -> Result<u32, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }

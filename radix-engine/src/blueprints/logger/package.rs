@@ -1,8 +1,8 @@
 use crate::errors::{InterpreterError, RuntimeError};
-use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
@@ -54,14 +54,12 @@ impl LoggerNativePackage {
         let input: LoggerLogInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Logger(LoggerOffset::Logger),
             LockFlags::MUTABLE,
         )?;
-        let mut substate = api.kernel_get_substate_ref_mut(handle)?;
-        let logger = substate.logger();
+        let logger: &mut LoggerSubstate = api.kernel_get_substate_ref_mut(handle)?;
         logger.logs.push((input.level, input.message));
 
         Ok(IndexedScryptoValue::from_typed(&()))

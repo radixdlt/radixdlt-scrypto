@@ -20,12 +20,6 @@ pub const ROYALTY_CODE_ID: u8 = 11u8;
 pub const ACCESS_RULES_CODE_ID: u8 = 12u8;
 
 /// A collection of blueprints, compiled and published as a single unit.
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct NativeCodeSubstate {
-    pub native_package_code_id: u8,
-}
-
-/// A collection of blueprints, compiled and published as a single unit.
 #[derive(Clone, Sbor, PartialEq, Eq)]
 pub struct PackageCodeSubstate {
     pub code: Vec<u8>,
