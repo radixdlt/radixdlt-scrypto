@@ -45,6 +45,8 @@ pub struct ExecutionConfig {
     pub max_wasm_mem_per_call_frame: usize,
     pub max_substate_reads_per_transaction: usize,
     pub max_substate_writes_per_transaction: usize,
+    pub max_substate_read_size: usize,
+    pub max_substate_write_size: usize,
 }
 
 impl Default for ExecutionConfig {
@@ -64,6 +66,8 @@ impl ExecutionConfig {
             max_wasm_mem_per_call_frame: DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME,
             max_substate_reads_per_transaction: DEFAULT_MAX_SUBSTATE_READS_PER_TRANSACTION,
             max_substate_writes_per_transaction: DEFAULT_MAX_SUBSTATE_WRITES_PER_TRANSACTION,
+            max_substate_read_size: DEFAULT_MAX_SUBSTATE_READ_SIZE,
+            max_substate_write_size: DEFAULT_MAX_SUBSTATE_WRITE_SIZE,
         }
     }
 
@@ -247,6 +251,8 @@ where
                 execution_config.max_wasm_mem_per_call_frame,
                 execution_config.max_substate_reads_per_transaction,
                 execution_config.max_substate_writes_per_transaction,
+                execution_config.max_substate_read_size,
+                execution_config.max_substate_write_size,
             );
             let mut kernel = Kernel::new(
                 &mut id_allocator,
