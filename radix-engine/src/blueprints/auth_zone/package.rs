@@ -281,15 +281,17 @@ impl AuthZoneBlueprint {
         let _input: AuthZoneClearInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let auth_zone_handle = api.kernel_lock_substate(
+        let handle = api.kernel_lock_substate(
             receiver,
             NodeModuleId::SELF,
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_mut = api.kernel_get_substate_ref_mut(auth_zone_handle)?;
+        let mut substate_mut = api.kernel_get_substate_ref_mut(handle)?;
         let auth_zone_stack = substate_mut.auth_zone_stack();
         let proofs = auth_zone_stack.cur_auth_zone_mut().drain();
+        api.kernel_drop_lock(handle)?;
+
         for proof in proofs {
             proof.sys_drop(api)?;
         }
