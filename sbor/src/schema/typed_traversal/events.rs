@@ -5,16 +5,17 @@ use crate::*;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TypedLocatedTraversalEvent<'t, 's, 'de, C: CustomTraversal> {
     pub location: TypedLocation<'t, 's, C>,
+    pub type_index: Option<LocalTypeIndex>,
     pub event: TypedTraversalEvent<'de, C>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TypedTraversalEvent<'de, C: CustomTraversal> {
     PayloadPrefix,
-    ContainerStart(TypedContainerHeader<C>),
-    ContainerEnd(TypedContainerHeader<C>),
-    TerminalValue(TypedTerminalValueRef<'de, C>),
-    TerminalValueBatch(TypedTerminalValueBatchRef<'de, C>),
+    ContainerStart(ContainerHeader<C>),
+    ContainerEnd(ContainerHeader<C>),
+    TerminalValue(TerminalValueRef<'de, C>),
+    TerminalValueBatch(TerminalValueBatchRef<'de, C>),
     End,
     Error(TypedTraversalError<C::CustomValueKind>),
 }
@@ -65,22 +66,4 @@ pub enum TypeMismatchError<X: CustomValueKind> {
         type_index: LocalTypeIndex,
         variant: u8,
     },
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TypedContainerHeader<C: CustomTraversal> {
-    pub type_index: LocalTypeIndex,
-    pub header: ContainerHeader<C>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TypedTerminalValueRef<'de, C: CustomTraversal> {
-    pub type_index: LocalTypeIndex,
-    pub value: TerminalValueRef<'de, C>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TypedTerminalValueBatchRef<'de, C: CustomTraversal> {
-    pub type_index: LocalTypeIndex,
-    pub value_batch: TerminalValueBatchRef<'de, C>,
 }

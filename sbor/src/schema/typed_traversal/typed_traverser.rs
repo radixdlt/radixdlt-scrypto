@@ -84,7 +84,7 @@ macro_rules! return_type_mismatch_error {
 
 #[macro_export]
 macro_rules! look_up_type {
-    ($self: ident, $e: ident, $location: expr, $type_index: expr) => {
+    ($self: ident, $e: ident, $type_index: expr) => {
         match resolve_type_kind::<$e>($self.schema_type_kinds, $type_index) {
             Some(resolved_type) => resolved_type,
             None => {
@@ -119,21 +119,46 @@ impl<'de, 's, E: CustomTypeExtension> TypedTraverser<'de, 's, E> {
         &'t mut self,
     ) -> TypedLocatedTraversalEvent<'t, 's, 'de, E::CustomTraversal> {
         let LocatedTraversalEvent { location, event } = self.traverser.next_event();
-        let typed_event = match event {
-            TraversalEvent::PayloadPrefix => TypedTraversalEvent::PayloadPrefix,
+        let (type_index, typed_event) = match event {
+            TraversalEvent::PayloadPrefix => (None, TypedTraversalEvent::PayloadPrefix),
             TraversalEvent::ContainerStart(header) => {
-                self.type_state.map_container_start_event(&location, header)
+                let type_index = self
+                    .type_state
+                    .get_type_index(&location.parent_relationship);
+                let event = self
+                    .type_state
+                    .map_container_start_event(type_index, header);
+                (Some(type_index), event)
             }
             TraversalEvent::TerminalValue(value) => {
-                self.type_state.map_terminal_value_event(&location, value)
+                let type_index = self
+                    .type_state
+                    .get_type_index(&location.parent_relationship);
+                let event = self.type_state.map_terminal_value_event(type_index, value);
+                (Some(type_index), event)
             }
-            TraversalEvent::TerminalValueBatch(value_batch) => self
-                .type_state
-                .map_terminal_value_batch_event(&location, value_batch),
-            TraversalEvent::ContainerEnd(header) => self.type_state.map_container_end_event(header),
-            TraversalEvent::End => TypedTraversalEvent::End,
+            TraversalEvent::TerminalValueBatch(value_batch) => {
+                let type_index = self
+                    .type_state
+                    .get_type_index(&location.parent_relationship);
+                let event = self
+                    .type_state
+                    .map_terminal_value_batch_event(type_index, value_batch);
+                (Some(type_index), event)
+            }
+            TraversalEvent::ContainerEnd(header) => {
+                let (type_index, event) = self.type_state.map_container_end_event(header);
+                (Some(type_index), event)
+            }
+            TraversalEvent::End => (None, TypedTraversalEvent::End),
             TraversalEvent::DecodeError(decode_error) => {
-                TypedTraversalEvent::Error(TypedTraversalError::DecodeError(decode_error))
+                let type_index = self
+                    .type_state
+                    .get_type_index(&location.parent_relationship);
+                (
+                    Some(type_index),
+                    TypedTraversalEvent::Error(TypedTraversalError::DecodeError(decode_error)),
+                )
             }
         };
         TypedLocatedTraversalEvent {
@@ -141,6 +166,7 @@ impl<'de, 's, E: CustomTypeExtension> TypedTraverser<'de, 's, E> {
                 location,
                 typed_resultant_path: &self.type_state.container_stack,
             },
+            type_index,
             event: typed_event,
         }
     }
@@ -155,12 +181,10 @@ struct InternalTypeState<'s, E: CustomTypeExtension> {
 impl<'s, E: CustomTypeExtension> InternalTypeState<'s, E> {
     fn map_container_start_event<'t, 'de>(
         &'t mut self,
-        location: &Location<'t, E::CustomTraversal>,
+        type_index: LocalTypeIndex,
         header: ContainerHeader<E::CustomTraversal>,
     ) -> TypedTraversalEvent<'de, E::CustomTraversal> {
-        let type_index = self.get_type_index(&location.parent_relationship);
-
-        let container_type = look_up_type!(self, E, location, type_index);
+        let container_type = look_up_type!(self, E, type_index);
 
         match header {
             ContainerHeader::Tuple(TupleHeader { length }) => match container_type {
@@ -245,7 +269,7 @@ impl<'s, E: CustomTypeExtension> InternalTypeState<'s, E> {
                 TypeKind::Array {
                     element_type: element_type_index,
                 } => {
-                    let element_type = look_up_type!(self, E, location, *element_type_index);
+                    let element_type = look_up_type!(self, E, *element_type_index);
                     if !value_kind_matches_type_kind::<E>(element_value_kind, element_type) {
                         return_type_mismatch_error!(
                             location,
@@ -281,7 +305,7 @@ impl<'s, E: CustomTypeExtension> InternalTypeState<'s, E> {
                     key_type: key_type_index,
                     value_type: value_type_index,
                 } => {
-                    let key_type = look_up_type!(self, E, location, *key_type_index);
+                    let key_type = look_up_type!(self, E, *key_type_index);
                     if !value_kind_matches_type_kind::<E>(key_value_kind, key_type) {
                         return_type_mismatch_error!(
                             location,
@@ -291,7 +315,7 @@ impl<'s, E: CustomTypeExtension> InternalTypeState<'s, E> {
                             }
                         )
                     }
-                    let value_type = look_up_type!(self, E, location, *value_type_index);
+                    let value_type = look_up_type!(self, E, *value_type_index);
                     if !value_kind_matches_type_kind::<E>(value_value_kind, value_type) {
                         return_type_mismatch_error!(
                             location,
@@ -322,18 +346,16 @@ impl<'s, E: CustomTypeExtension> InternalTypeState<'s, E> {
             }
         }
 
-        TypedTraversalEvent::ContainerStart(TypedContainerHeader { type_index, header })
+        TypedTraversalEvent::ContainerStart(header)
     }
 
     fn map_terminal_value_event<'t, 'de>(
         &'t mut self,
-        location: &Location<'t, E::CustomTraversal>,
+        type_index: LocalTypeIndex,
         value_ref: TerminalValueRef<'de, E::CustomTraversal>,
     ) -> TypedTraversalEvent<'de, E::CustomTraversal> {
-        let type_index = self.get_type_index(&location.parent_relationship);
-
         let value_kind = value_ref.value_kind();
-        let type_kind = look_up_type!(self, E, location, type_index);
+        let type_kind = look_up_type!(self, E, type_index);
 
         if !value_kind_matches_type_kind::<E>(value_kind, type_kind) {
             return_type_mismatch_error!(
@@ -345,21 +367,16 @@ impl<'s, E: CustomTypeExtension> InternalTypeState<'s, E> {
             )
         }
 
-        TypedTraversalEvent::TerminalValue(TypedTerminalValueRef {
-            type_index,
-            value: value_ref,
-        })
+        TypedTraversalEvent::TerminalValue(value_ref)
     }
 
     fn map_terminal_value_batch_event<'t, 'de>(
         &'t mut self,
-        location: &Location<'t, E::CustomTraversal>,
+        type_index: LocalTypeIndex,
         value_batch_ref: TerminalValueBatchRef<'de, E::CustomTraversal>,
     ) -> TypedTraversalEvent<'de, E::CustomTraversal> {
-        let type_index = self.get_type_index(&location.parent_relationship);
-
         let value_kind = value_batch_ref.value_kind();
-        let type_kind = look_up_type!(self, E, location, type_index);
+        let type_kind = look_up_type!(self, E, type_index);
 
         if !value_kind_matches_type_kind::<E>(value_kind, type_kind) {
             return_type_mismatch_error!(
@@ -371,22 +388,19 @@ impl<'s, E: CustomTypeExtension> InternalTypeState<'s, E> {
             )
         }
 
-        TypedTraversalEvent::TerminalValueBatch(TypedTerminalValueBatchRef {
-            type_index,
-            value_batch: value_batch_ref,
-        })
+        TypedTraversalEvent::TerminalValueBatch(value_batch_ref)
     }
 
     fn map_container_end_event<'t, 'de>(
         &'t mut self,
         header: ContainerHeader<E::CustomTraversal>,
-    ) -> TypedTraversalEvent<'de, E::CustomTraversal> {
+    ) -> (LocalTypeIndex, TypedTraversalEvent<'de, E::CustomTraversal>) {
         let container = self.container_stack.pop().unwrap();
 
-        TypedTraversalEvent::ContainerEnd(TypedContainerHeader {
-            type_index: container.own_type,
-            header,
-        })
+        (
+            container.own_type,
+            TypedTraversalEvent::ContainerEnd(header),
+        )
     }
 
     fn get_type_index(&self, parent_relationship: &ParentRelationship) -> LocalTypeIndex {
