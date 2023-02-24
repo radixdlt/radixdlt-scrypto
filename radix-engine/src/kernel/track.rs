@@ -732,9 +732,9 @@ impl<'s> FinalizingTrack<'s> {
                         )
                         .unwrap();
                 }
-                RoyaltyReceiver::Component(_, component_id) => {
+                RoyaltyReceiver::Component(node_id) => {
                     let substate_id = SubstateId(
-                        RENodeId::Component(*component_id),
+                        *node_id,
                         NodeModuleId::ComponentRoyalty,
                         SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                     );

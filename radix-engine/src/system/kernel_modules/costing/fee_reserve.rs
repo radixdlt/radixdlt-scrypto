@@ -76,7 +76,7 @@ pub trait FeeReserve: PreExecutionFeeReserve + ExecutionFeeReserve + FinalizingF
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, ScryptoSbor)]
 pub enum RoyaltyReceiver {
     Package(PackageAddress),
-    Component(ComponentAddress, ComponentId),
+    Component(RENodeId),
 }
 
 #[repr(usize)]

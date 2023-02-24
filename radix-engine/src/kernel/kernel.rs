@@ -385,15 +385,6 @@ where
         actor: ResolvedActor,
         mut call_frame_update: CallFrameUpdate,
     ) -> Result<X::Output, RuntimeError> {
-        let derefed_lock = if let Some(ResolvedReceiver {
-            derefed_from: Some((_, derefed_lock)),
-            ..
-        }) = &actor.receiver
-        {
-            Some(*derefed_lock)
-        } else {
-            None
-        };
         let caller = self.current_frame.actor.clone();
 
         // Before push call frame
@@ -468,11 +459,6 @@ where
             self.execute_in_mode(ExecutionMode::KernelModule, |api| {
                 KernelModuleMixer::after_pop_frame(api)
             })?;
-        }
-
-        if let Some(derefed_lock) = derefed_lock {
-            self.current_frame
-                .drop_lock(&mut self.heap, &mut self.track, derefed_lock)?;
         }
 
         Ok(output)
@@ -977,25 +963,6 @@ where
         let current_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        // Deref
-        /*
-        let (node_id, derefed_lock) = match node_id {
-            RENodeId::GlobalComponent(..)
-                if !matches!(offset, SubstateOffset::Global(GlobalOffset::Global)) =>
-            {
-                let handle = self.kernel_lock_substate(
-                    node_id,
-                    NodeModuleId::SELF,
-                    SubstateOffset::Global(GlobalOffset::Global),
-                    LockFlags::empty(),
-                )?;
-                let substate_ref = self.kernel_get_substate_ref(handle)?;
-                (substate_ref.global_address().node_deref(), Some(handle))
-            }
-            _ => (node_id, None),
-        };
-         */
-
         // TODO: Check if valid offset for node_id
 
         // Authorization
@@ -1079,13 +1046,6 @@ where
                 }
             }
         };
-
-        /*
-        if let Some(lock_handle) = derefed_lock {
-            self.current_frame
-                .drop_lock(&mut self.heap, &mut self.track, lock_handle)?;
-        }
-         */
 
         // Restore current mode
         self.execution_mode = current_mode;

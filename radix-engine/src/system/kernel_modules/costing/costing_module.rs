@@ -10,10 +10,7 @@ use crate::{
     system::node::RENodeInit,
     transaction::AbortReason,
 };
-use radix_engine_interface::api::types::{
-    InvocationIdentifier, LockHandle, MethodReceiver, NodeModuleId, RoyaltyOffset, SubstateOffset,
-    VaultId, VaultOffset,
-};
+use radix_engine_interface::api::types::{ComponentAddress, InvocationIdentifier, LockHandle, MethodReceiver, NodeModuleId, RoyaltyOffset, SubstateOffset, VaultId, VaultOffset};
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::blueprints::resource::Resource;
 use radix_engine_interface::constants::*;
@@ -124,9 +121,8 @@ impl KernelModule for CostingModule {
             }) => {
                 let maybe_component = match &receiver {
                     Some(ResolvedReceiver {
-                        derefed_from: Some((RENodeId::GlobalComponent(component_address), ..)),
-                        receiver: MethodReceiver(RENodeId::Component(component_id), ..),
-                    }) => Some((*component_address, *component_id)),
+                        receiver: MethodReceiver(node_id, ..),
+                    }) if matches!(node_id, RENodeId::Component(..) | RENodeId::GlobalComponent(ComponentAddress::Normal(..))) => Some(node_id),
                     _ => None,
                 };
 
@@ -204,10 +200,9 @@ impl KernelModule for CostingModule {
         /*
          * Apply component royalty
          */
-        if let Some((component_address, component_id)) = optional_component {
-            let component_node_id = RENodeId::Component(component_id);
+        if let Some(component_node_id) = optional_component {
             let handle = api.kernel_lock_substate(
-                component_node_id,
+                *component_node_id,
                 NodeModuleId::ComponentRoyalty,
                 SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
                 LockFlags::read_only(),
@@ -222,7 +217,7 @@ impl KernelModule for CostingModule {
 
             // TODO: refactor to defer substate loading to finalization.
             let handle = api.kernel_lock_substate(
-                component_node_id,
+                *component_node_id,
                 NodeModuleId::ComponentRoyalty,
                 SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                 LockFlags::MUTABLE,
@@ -243,7 +238,7 @@ impl KernelModule for CostingModule {
 
             apply_royalty_cost(
                 api,
-                RoyaltyReceiver::Component(component_address, component_id),
+                RoyaltyReceiver::Component(*component_node_id),
                 royalty_amount,
             )?;
         }
