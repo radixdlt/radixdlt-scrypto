@@ -1134,16 +1134,12 @@ impl ResourceManagerBlueprint {
                 for id in nf.into_ids() {
                     let offset =
                         SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id.clone()));
-                    let non_fungible_handle = api.kernel_lock_substate(
-                        node_id,
-                        NodeModuleId::SELF,
-                        offset,
-                        LockFlags::MUTABLE,
-                    )?;
+                    let non_fungible_handle =
+                        api.sys_lock_substate(node_id, offset, LockFlags::MUTABLE)?;
                     let non_fungible_mut: &mut NonFungibleSubstate =
                         api.kernel_get_substate_ref_mut(non_fungible_handle)?;
                     *non_fungible_mut = NonFungibleSubstate(None);
-                    api.kernel_drop_lock(non_fungible_handle)?;
+                    api.sys_drop_lock(non_fungible_handle)?;
                 }
             }
         }

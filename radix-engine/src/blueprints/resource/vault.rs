@@ -7,9 +7,9 @@ use crate::system::kernel_modules::costing::CostingError;
 use crate::system::node::RENodeInit;
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{RENodeId, SubstateOffset, VaultOffset};
 use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{types::*, ClientSubstateApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
 
@@ -37,17 +37,16 @@ pub struct VaultInfoSubstate {
 impl VaultInfoSubstate {
     pub fn of<Y>(node_id: RENodeId, api: &mut Y) -> Result<Self, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             node_id,
-            NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::Info),
             LockFlags::read_only(),
         )?;
         let substate_ref: &VaultInfoSubstate = api.kernel_get_substate_ref(handle)?;
         let info = substate_ref.clone();
-        api.kernel_drop_lock(handle)?;
+        api.sys_drop_lock(handle)?;
         Ok(info)
     }
 }
@@ -57,39 +56,37 @@ pub struct FungibleVault;
 impl FungibleVault {
     pub fn liquid_amount<Y>(node_id: RENodeId, api: &mut Y) -> Result<Decimal, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             node_id,
-            NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::LiquidFungible),
             LockFlags::read_only(),
         )?;
         let substate_ref: &LiquidFungibleResource = api.kernel_get_substate_ref(handle)?;
         let amount = substate_ref.amount();
-        api.kernel_drop_lock(handle)?;
+        api.sys_drop_lock(handle)?;
         Ok(amount)
     }
 
     pub fn locked_amount<Y>(node_id: RENodeId, api: &mut Y) -> Result<Decimal, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             node_id,
-            NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::LockedFungible),
             LockFlags::read_only(),
         )?;
         let substate_ref: &LockedFungibleResource = api.kernel_get_substate_ref(handle)?;
         let amount = substate_ref.amount();
-        api.kernel_drop_lock(handle)?;
+        api.sys_drop_lock(handle)?;
         Ok(amount)
     }
 
     pub fn is_locked<Y>(node_id: RENodeId, api: &mut Y) -> Result<bool, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
         Ok(!Self::locked_amount(node_id, api)?.is_zero())
     }
@@ -100,11 +97,10 @@ impl FungibleVault {
         api: &mut Y,
     ) -> Result<LiquidFungibleResource, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             node_id,
-            NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::LiquidFungible),
             LockFlags::MUTABLE,
         )?;
@@ -114,7 +110,7 @@ impl FungibleVault {
                 e,
             )))
         })?;
-        api.kernel_drop_lock(handle)?;
+        api.sys_drop_lock(handle)?;
         Ok(taken)
     }
 
@@ -124,15 +120,14 @@ impl FungibleVault {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
         if resource.is_empty() {
             return Ok(());
         }
 
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             node_id,
-            NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::LiquidFungible),
             LockFlags::MUTABLE,
         )?;
@@ -142,7 +137,7 @@ impl FungibleVault {
                 e,
             )))
         })?;
-        api.kernel_drop_lock(handle)?;
+        api.sys_drop_lock(handle)?;
         Ok(())
     }
 
@@ -153,11 +148,10 @@ impl FungibleVault {
         api: &mut Y,
     ) -> Result<FungibleProof, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             node_id,
-            NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::LockedFungible),
             LockFlags::MUTABLE,
         )?;
@@ -193,11 +187,10 @@ impl FungibleVault {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             node_id,
-            NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::LockedFungible),
             LockFlags::MUTABLE,
         )?;
@@ -222,39 +215,37 @@ pub struct NonFungibleVault;
 impl NonFungibleVault {
     pub fn liquid_amount<Y>(node_id: RENodeId, api: &mut Y) -> Result<Decimal, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             node_id,
-            NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
             LockFlags::read_only(),
         )?;
         let substate_ref: &LiquidNonFungibleResource = api.kernel_get_substate_ref(handle)?;
         let amount = substate_ref.amount();
-        api.kernel_drop_lock(handle)?;
+        api.sys_drop_lock(handle)?;
         Ok(amount)
     }
 
     pub fn locked_amount<Y>(node_id: RENodeId, api: &mut Y) -> Result<Decimal, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             node_id,
-            NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::LockedNonFungible),
             LockFlags::read_only(),
         )?;
         let substate_ref: &LockedNonFungibleResource = api.kernel_get_substate_ref(handle)?;
         let amount = substate_ref.amount();
-        api.kernel_drop_lock(handle)?;
+        api.sys_drop_lock(handle)?;
         Ok(amount)
     }
 
     pub fn is_locked<Y>(node_id: RENodeId, api: &mut Y) -> Result<bool, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
         Ok(!Self::locked_amount(node_id, api)?.is_zero())
     }
@@ -264,17 +255,16 @@ impl NonFungibleVault {
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             node_id,
-            NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
             LockFlags::read_only(),
         )?;
         let substate_ref: &LiquidNonFungibleResource = api.kernel_get_substate_ref(handle)?;
         let ids = substate_ref.ids().clone();
-        api.kernel_drop_lock(handle)?;
+        api.sys_drop_lock(handle)?;
         Ok(ids)
     }
 
@@ -283,17 +273,16 @@ impl NonFungibleVault {
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             node_id,
-            NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::LockedNonFungible),
             LockFlags::read_only(),
         )?;
         let substate_ref: &LockedNonFungibleResource = api.kernel_get_substate_ref(handle)?;
         let ids = substate_ref.ids();
-        api.kernel_drop_lock(handle)?;
+        api.sys_drop_lock(handle)?;
         Ok(ids)
     }
 
@@ -303,11 +292,10 @@ impl NonFungibleVault {
         api: &mut Y,
     ) -> Result<LiquidNonFungibleResource, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             node_id,
-            NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
             LockFlags::MUTABLE,
         )?;
@@ -318,7 +306,7 @@ impl NonFungibleVault {
                 e,
             )))
         })?;
-        api.kernel_drop_lock(handle)?;
+        api.sys_drop_lock(handle)?;
         Ok(taken)
     }
 
@@ -328,11 +316,10 @@ impl NonFungibleVault {
         api: &mut Y,
     ) -> Result<LiquidNonFungibleResource, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             node_id,
-            NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
             LockFlags::MUTABLE,
         )?;
@@ -342,7 +329,7 @@ impl NonFungibleVault {
             .take_by_ids(ids)
             .map_err(VaultError::ResourceError)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::VaultError(e)))?;
-        api.kernel_drop_lock(handle)?;
+        api.sys_drop_lock(handle)?;
         Ok(taken)
     }
 
@@ -352,15 +339,14 @@ impl NonFungibleVault {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
         if resource.is_empty() {
             return Ok(());
         }
 
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             node_id,
-            NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
             LockFlags::MUTABLE,
         )?;
@@ -371,7 +357,7 @@ impl NonFungibleVault {
                 e,
             )))
         })?;
-        api.kernel_drop_lock(handle)?;
+        api.sys_drop_lock(handle)?;
         Ok(())
     }
 
@@ -382,11 +368,10 @@ impl NonFungibleVault {
         api: &mut Y,
     ) -> Result<NonFungibleProof, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             node_id,
-            NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::LockedNonFungible),
             LockFlags::MUTABLE,
         )?;
@@ -434,11 +419,10 @@ impl NonFungibleVault {
         api: &mut Y,
     ) -> Result<NonFungibleProof, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             node_id,
-            NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::LockedNonFungible),
             LockFlags::MUTABLE,
         )?;
@@ -477,11 +461,10 @@ impl NonFungibleVault {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi,
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             node_id,
-            NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::LockedNonFungible),
             LockFlags::MUTABLE,
         )?;
@@ -517,7 +500,10 @@ impl VaultBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>,
     {
         let input: VaultTakeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
@@ -580,7 +566,10 @@ impl VaultBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>,
     {
         let input: VaultTakeNonFungiblesInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
@@ -621,7 +610,10 @@ impl VaultBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>,
     {
         let input: VaultPutInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
@@ -657,7 +649,10 @@ impl VaultBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>,
     {
         let _input: VaultGetAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
@@ -680,7 +675,10 @@ impl VaultBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>,
     {
         let _input: VaultGetResourceAddressInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
@@ -696,7 +694,10 @@ impl VaultBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>,
     {
         let _input: VaultGetNonFungibleLocalIdsInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -722,7 +723,10 @@ impl VaultBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>,
     {
         let input: VaultLockFeeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
@@ -741,9 +745,8 @@ impl VaultBlueprint {
         }
 
         // Lock the substate (with special flags)
-        let vault_handle = api.kernel_lock_substate(
+        let vault_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::LiquidFungible),
             LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE,
         )?;
@@ -780,7 +783,10 @@ impl VaultBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>,
     {
         let input: VaultRecallInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
@@ -834,7 +840,10 @@ impl VaultBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>,
     {
         let input: VaultRecallNonFungiblesInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
@@ -872,7 +881,10 @@ impl VaultBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>,
     {
         let _input: VaultCreateProofInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
@@ -930,7 +942,10 @@ impl VaultBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>,
     {
         let input: VaultCreateProofByAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
@@ -988,7 +1003,10 @@ impl VaultBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>,
     {
         let input: VaultCreateProofByIdsInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
@@ -1033,7 +1051,10 @@ impl VaultBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>,
     {
         let input: VaultLockAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
@@ -1049,7 +1070,10 @@ impl VaultBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>,
     {
         let input: VaultLockNonFungiblesInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
@@ -1065,7 +1089,10 @@ impl VaultBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>,
     {
         let input: VaultUnlockAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
@@ -1081,7 +1108,10 @@ impl VaultBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>,
     {
         let input: VaultUnlockNonFungiblesInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
