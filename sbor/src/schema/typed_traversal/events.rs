@@ -23,7 +23,9 @@ pub enum TypedTraversalEvent<'de, C: CustomTraversal> {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TypedLocation<'t, 's, C: CustomTraversal> {
     pub location: Location<'t, C>,
-    pub typed_resultant_path: &'t [ContainerType<'s>],
+    /// The path of container types from the root to the current value.
+    /// If the event is ContainerStart/End, this does not include the newly started/ended container.
+    pub typed_ancestor_path: &'t [ContainerType<'s>],
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

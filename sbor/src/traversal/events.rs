@@ -9,6 +9,19 @@ pub struct LocatedTraversalEvent<'t, 'de, C: CustomTraversal> {
     pub event: TraversalEvent<'de, C>,
 }
 
+impl<'t, 'de, C: CustomTraversal> LocatedTraversalEvent<'t, 'de, C> {
+    pub fn get_next_sbor_depth(&self) -> u8 {
+        match self.event {
+            TraversalEvent::PayloadPrefix | TraversalEvent::End => 0,
+            // OVERFLOW SAFETY:
+            // The invariant self.container_stack.len() + 1 <= max_depth is maintained in `traverser.enter_container(..)` before
+            // we push to the stack. As `max_depth` is a u8, this can't overflow.
+            TraversalEvent::ContainerStart(_) => self.location.get_sbor_depth() + 1,
+            _ => self.location.get_sbor_depth(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TraversalEvent<'de, C: CustomTraversal> {
     PayloadPrefix,
@@ -29,19 +42,6 @@ impl<'de, C: CustomTraversal> TraversalEvent<'de, C> {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct LocatedError<'t, E, C: CustomTraversal> {
-    pub error: E,
-    pub location: Location<'t, C>,
-}
-
-/// A wrapper for traversal event bodies, given the location context inside the payload.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct LocatedDecoding<'t, T, C: CustomTraversal> {
-    pub inner: T,
-    pub location: Location<'t, C>,
-}
-
 /// The Location of the encoding - capturing both the byte offset in the payload, and also
 /// the container-path-based location in the SBOR value model.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -58,22 +58,24 @@ pub struct Location<'t, C: CustomTraversal> {
     /// * For ContainerEnd, this is the end of the whole container value
     /// * For DecodeError, this is the location where the error occurred
     pub end_offset: usize,
-    /// The current SBOR depth of the stack
-    pub sbor_depth: u8,
     /// The relationship of the value currently under consideration with its container parent
     pub parent_relationship: ParentRelationship,
     /// The path of containers from the root to the current value.
-    /// If the event is ContainerStart, this includes the started container.
-    pub resultant_path: &'t [ContainerChild<C>],
+    /// If the event is ContainerStart/End, this does not include the newly started/ended container.
+    pub ancestor_path: &'t [ContainerChild<C>],
 }
 
 impl<'t, C: CustomTraversal> Location<'t, C> {
-    pub fn get_next_sbor_depth(&self) -> u8 {
-        // OVERFLOW SAFETY:
-        // The invariant self.container_stack.len() + 1 <= max_depth is maintained in `traverser.enter_container(..)` before
-        // we push to the stack.
-        // As `max_depth` is a u8, this can't overflow.
-        (self.resultant_path.len() as u8) + 1
+    /// The current SBOR depth
+    pub fn get_sbor_depth(&self) -> u8 {
+        match self.parent_relationship {
+            ParentRelationship::NotInValueModel => 0,
+            // OVERFLOW SAFETY:
+            // The invariant self.container_stack.len() + 1 <= max_depth is maintained in `traverser.enter_container(..)` before
+            // we push to the stack.
+            // As `max_depth` is a u8, this can't overflow.
+            _ => (self.ancestor_path.len() as u8) + 1,
+        }
     }
 }
 

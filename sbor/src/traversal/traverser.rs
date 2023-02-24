@@ -116,9 +116,8 @@ macro_rules! terminal_value {
                 location: Location {
                     start_offset: $start_offset,
                     end_offset: $self.get_offset(),
-                    sbor_depth: $self.get_sbor_depth_for_next_value(),
                     parent_relationship: $parent_relationship,
-                    resultant_path: &$self.container_stack,
+                    ancestor_path: &$self.container_stack,
                 },
             },
             Err(error) => $self.map_error($start_offset, $parent_relationship, error),
@@ -171,9 +170,8 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
             location: Location {
                 start_offset,
                 end_offset: self.get_offset(),
-                sbor_depth: 0,
                 parent_relationship,
-                resultant_path: &self.container_stack,
+                ancestor_path: &self.container_stack,
             },
         }
     }
@@ -235,9 +233,8 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
             location: Location {
                 start_offset,
                 end_offset: self.get_offset(),
-                sbor_depth: stack_depth_of_container,
                 parent_relationship: container_parent_relationship,
-                resultant_path: &self.container_stack,
+                ancestor_path: &self.container_stack[0..self.container_stack.len() - 1],
             },
         }
     }
@@ -249,9 +246,8 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
             location: Location {
                 start_offset: container.container_start_offset,
                 end_offset: self.get_offset(),
-                sbor_depth: self.get_sbor_depth_for_next_value(),
                 parent_relationship: container.container_parent_relationship,
-                resultant_path: &self.container_stack,
+                ancestor_path: &self.container_stack,
             },
         }
     }
@@ -359,9 +355,8 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
             location: Location {
                 start_offset,
                 end_offset: self.get_offset(),
-                sbor_depth: self.get_sbor_depth_for_next_value(),
                 parent_relationship,
-                resultant_path: &self.container_stack,
+                ancestor_path: &self.container_stack,
             },
         }
     }
@@ -466,9 +461,8 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
             location: Location {
                 start_offset: offset,
                 end_offset: offset,
-                sbor_depth: 0,
                 parent_relationship,
-                resultant_path: &self.container_stack,
+                ancestor_path: &self.container_stack,
             },
         }
     }
@@ -484,7 +478,7 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
         // - Emitting multiple events representing a single container value, which will return to the current depth
         // Either way, when the traversal_event's next sbor depth matches the sbor depth when the custom traverser was entered,
         // this means that the custom traverser has returned
-        if traversal_event.location.get_next_sbor_depth() == *entry_depth {
+        if traversal_event.get_next_sbor_depth() == *entry_depth {
             self.next_event_override = NextEventOverride::None;
         }
         traversal_event
@@ -512,9 +506,8 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
             location: Location {
                 start_offset,
                 end_offset: self.get_offset(),
-                sbor_depth: self.get_sbor_depth_for_next_value(),
                 parent_relationship,
-                resultant_path: &self.container_stack,
+                ancestor_path: &self.container_stack,
             },
         }
     }
@@ -772,10 +765,10 @@ mod tests {
         expected_end_offset: usize,
     ) {
         let event = traverser.next_event();
+        let sbor_depth = event.location.get_sbor_depth();
         let LocatedTraversalEvent {
             event: TraversalEvent::PayloadPrefix,
             location: Location {
-                sbor_depth,
                 start_offset,
                 end_offset,
                 ..
@@ -796,10 +789,10 @@ mod tests {
         expected_end_offset: usize,
     ) {
         let event = traverser.next_event();
+        let sbor_depth = event.location.get_sbor_depth();
         let LocatedTraversalEvent {
             event: TraversalEvent::ContainerStart(header),
             location: Location {
-                sbor_depth,
                 start_offset,
                 end_offset,
                 ..
@@ -821,10 +814,10 @@ mod tests {
         expected_end_offset: usize,
     ) {
         let event = traverser.next_event();
+        let sbor_depth = event.location.get_sbor_depth();
         let LocatedTraversalEvent {
             event: TraversalEvent::ContainerEnd(header),
             location: Location {
-                sbor_depth,
                 start_offset,
                 end_offset,
                 ..
@@ -846,10 +839,10 @@ mod tests {
         expected_end_offset: usize,
     ) {
         let event = traverser.next_event();
+        let sbor_depth = event.location.get_sbor_depth();
         let LocatedTraversalEvent {
             event: TraversalEvent::TerminalValue(value),
             location: Location {
-                sbor_depth,
                 start_offset,
                 end_offset,
                 ..
@@ -871,10 +864,10 @@ mod tests {
         expected_end_offset: usize,
     ) {
         let event = traverser.next_event();
+        let sbor_depth = event.location.get_sbor_depth();
         let LocatedTraversalEvent {
             event: TraversalEvent::TerminalValueBatch(value_batch),
             location: Location {
-                sbor_depth,
                 start_offset,
                 end_offset,
                 ..
@@ -895,10 +888,10 @@ mod tests {
         expected_end_offset: usize,
     ) {
         let event = traverser.next_event();
+        let sbor_depth = event.location.get_sbor_depth();
         let LocatedTraversalEvent {
             event: TraversalEvent::End,
             location: Location {
-                sbor_depth,
                 start_offset,
                 end_offset,
                 ..

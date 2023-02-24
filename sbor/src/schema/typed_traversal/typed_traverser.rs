@@ -164,7 +164,7 @@ impl<'de, 's, E: CustomTypeExtension> TypedTraverser<'de, 's, E> {
         TypedLocatedTraversalEvent {
             location: TypedLocation {
                 location,
-                typed_resultant_path: &self.type_state.container_stack,
+                typed_ancestor_path: &self.type_state.container_stack,
             },
             type_index,
             event: typed_event,

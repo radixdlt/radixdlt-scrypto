@@ -100,7 +100,7 @@ pub fn validate<E: CustomTypeExtension>(
                     location: ErrorLocation {
                         start_offset: typed_location.location.start_offset,
                         end_offset: typed_location.location.end_offset,
-                        sbor_depth: typed_location.location.sbor_depth,
+                        sbor_depth: typed_location.location.get_sbor_depth(),
                         // TODO - add context from (location + type_index) + type metadata
                         // This enables a full path to be provided in the error message, which can have a debug such as:
                         // TypeOne["hello"]->Enum::Variant[4]->TypeTwo[0]->Array[4]->Map[Key]->StructWhichErrored
