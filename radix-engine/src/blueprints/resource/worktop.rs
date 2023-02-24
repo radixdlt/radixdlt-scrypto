@@ -306,21 +306,10 @@ impl WorktopBlueprint {
             SubstateOffset::Worktop(WorktopOffset::Worktop),
             LockFlags::MUTABLE,
         )?;
-        let mut buckets = Vec::new();
         let mut substate_mut = api.kernel_get_substate_ref_mut(worktop_handle)?;
         let worktop = substate_mut.worktop();
-        let bucket_ids: Vec<BucketId> = worktop
-            .resources
-            .iter()
-            .map(|(_, own)| own.bucket_id())
-            .collect();
-        for bucket_id in bucket_ids {
-            let bucket = Bucket(bucket_id);
-            let amount = bucket.sys_amount(api)?;
-            let bucket = bucket.sys_take(amount, api)?;
-            buckets.push(bucket);
-        }
-
+        let buckets: Vec<Own> = worktop.resources.values().cloned().collect();
+        worktop.resources.clear();
         Ok(IndexedScryptoValue::from_typed(&buckets))
     }
 }

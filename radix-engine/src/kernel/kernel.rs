@@ -18,7 +18,7 @@ use radix_engine_interface::api::package::PACKAGE_LOADER_BLUEPRINT;
 use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use radix_engine_interface::api::types::{
     Address, AuthZoneStackOffset, GlobalOffset, LockHandle, ProofOffset, RENodeId, SubstateId,
-    SubstateOffset, WorktopOffset,
+    SubstateOffset,
 };
 use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLUEPRINT;
 use radix_engine_interface::blueprints::account::{
@@ -332,19 +332,21 @@ where
                 Ok(())
             }
             RENodeId::Worktop => {
+                // TODO: change to the following, once ResourceManager::burn_empty() is ready
+                // for bucket in worktop.drain() { bucket.burn_empty(); }
+
                 let handle = api.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,
                     SubstateOffset::Worktop(WorktopOffset::Worktop),
                     LockFlags::MUTABLE,
                 )?;
-
-                let buckets = {
+                let buckets: Vec<Own> = {
                     let mut substate_ref_mut = api.kernel_get_substate_ref_mut(handle)?;
                     let worktop = substate_ref_mut.worktop();
-                    mem::replace(&mut worktop.resources, BTreeMap::new())
+                    worktop.resources.values().cloned().collect()
                 };
-                for (_, bucket) in buckets {
+                for bucket in buckets {
                     let bucket = Bucket(bucket.bucket_id());
                     if !bucket.sys_is_empty(api)? {
                         return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
@@ -352,7 +354,6 @@ where
                         )));
                     }
                 }
-
                 api.kernel_drop_lock(handle)?;
                 Ok(())
             }
@@ -363,11 +364,14 @@ where
         })?;
 
         let node = self.current_frame.remove_node(&mut self.heap, node_id)?;
-        for (_, substate) in &node.substates {
-            let (_, child_nodes) = substate.to_ref().references_and_owned_nodes();
-            for child_node in child_nodes {
-                // Need to go through api so that visibility issues can be caught
-                self.kernel_drop_node(child_node)?;
+        // TODO: remove condition; see notes above!
+        if !matches!(node_id, RENodeId::Worktop) {
+            for (_, substate) in &node.substates {
+                let (_, child_nodes) = substate.to_ref().references_and_owned_nodes();
+                for child_node in child_nodes {
+                    // Need to go through api so that visibility issues can be caught
+                    self.kernel_drop_node(child_node)?;
+                }
             }
         }
         // TODO: REmove

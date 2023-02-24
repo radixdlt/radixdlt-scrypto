@@ -225,11 +225,16 @@ impl CallFrame {
 
             for old_child in &substate_lock.substate_owned_nodes {
                 if !new_children.remove(old_child) {
+                    // TODO: revisit logic here!
                     if SubstateProperties::is_persisted(&offset) {
                         return Err(RuntimeError::KernelError(KernelError::StoredNodeRemoved(
                             old_child.clone(),
                         )));
                     }
+
+                    // Owned nodes discarded by the substate go back to the call frame,
+                    // and must be explicitly dropped.
+                    self.owned_root_nodes.insert(old_child.clone(), 0);
                 }
             }
 
@@ -419,7 +424,9 @@ impl CallFrame {
 
     fn take_node_internal(&mut self, node_id: RENodeId) -> Result<(), CallFrameError> {
         match self.owned_root_nodes.remove(&node_id) {
-            None => Err(CallFrameError::RENodeNotOwned(node_id)),
+            None => {
+                return Err(CallFrameError::RENodeNotOwned(node_id));
+            }
             Some(lock_count) => {
                 if lock_count == 0 {
                     Ok(())
@@ -490,7 +497,7 @@ impl CallFrame {
         self.owned_root_nodes.keys().cloned().collect()
     }
 
-    /// Removes node from call frame and re-owns any children
+    /// Removes node from call frame
     pub fn remove_node(
         &mut self,
         heap: &mut Heap,
@@ -498,13 +505,6 @@ impl CallFrame {
     ) -> Result<HeapRENode, RuntimeError> {
         self.take_node_internal(node_id)?;
         let node = heap.remove_node(node_id)?;
-        for (_, substate) in &node.substates {
-            let (_, child_nodes) = substate.to_ref().references_and_owned_nodes();
-            for child_node in child_nodes {
-                self.owned_root_nodes.insert(child_node, 0u32);
-            }
-        }
-
         Ok(node)
     }
 
