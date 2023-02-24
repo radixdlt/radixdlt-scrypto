@@ -193,13 +193,6 @@ impl<'g, 's, W> ClientComponentApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    fn lookup_global_component(
-        &mut self,
-        component_address: ComponentAddress,
-    ) -> Result<ComponentId, RuntimeError> {
-        panic!();
-    }
-
     fn new_component(
         &mut self,
         blueprint_ident: &str,
@@ -349,11 +342,11 @@ where
 
     fn get_component_type_info(
         &mut self,
-        component_id: ComponentId,
+        node_id: RENodeId,
     ) -> Result<(PackageAddress, String), RuntimeError> {
-        let component_node_id = RENodeId::Component(component_id);
+        // TODO: Use Node Module method instead of direct access
         let handle = self.kernel_lock_substate(
-            component_node_id,
+            node_id,
             NodeModuleId::TypeInfo,
             SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
             LockFlags::read_only(),

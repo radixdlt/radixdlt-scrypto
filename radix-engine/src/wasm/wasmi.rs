@@ -287,23 +287,6 @@ fn globalize_component(
         .map(|buffer| buffer.0)
 }
 
-fn lookup_global_component(
-    mut caller: Caller<'_, HostState>,
-    component_address_ptr: u32,
-    component_address_len: u32,
-) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
-
-    runtime
-        .lookup_global_component(read_memory(
-            caller.as_context_mut(),
-            memory,
-            component_address_ptr,
-            component_address_len,
-        )?)
-        .map(|buffer| buffer.0)
-}
-
 fn get_component_type_info(
     mut caller: Caller<'_, HostState>,
     component_id_ptr: u32,
@@ -567,17 +550,6 @@ impl WasmiModule {
             },
         );
 
-        let host_lookup_global_component = Func::wrap(
-            store.as_context_mut(),
-            |caller: Caller<'_, HostState>,
-             component_address_ptr: u32,
-             component_address_len: u32|
-             -> Result<u64, Trap> {
-                lookup_global_component(caller, component_address_ptr, component_address_len)
-                    .map_err(|e| e.into())
-            },
-        );
-
         let host_get_component_type_info = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
@@ -674,11 +646,6 @@ impl WasmiModule {
             linker,
             GLOBALIZE_COMPONENT_FUNCTION_NAME,
             host_globalize_component
-        );
-        linker_define!(
-            linker,
-            LOOKUP_GLOBAL_COMPONENT_FUNCTION_NAME,
-            host_lookup_global_component
         );
         linker_define!(
             linker,
