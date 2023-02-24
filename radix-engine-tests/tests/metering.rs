@@ -1,5 +1,6 @@
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
+use radix_engine_constants::DEFAULT_MAX_INVOKE_INPUT_SIZE;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
@@ -69,15 +70,15 @@ fn test_basic_transfer() {
         12500 /* CreateNode */
         + 53500 /* DropLock */
         + 12500 /* DropNode */
-        + 5000 /* Invoke */
+        + 9300 /* Invoke */
         + 79500 /* LockSubstate */
-        + 60000 /* ReadSubstate */
+        + 61000 /* ReadSubstate */
         + 55000 /* RunPrecompiled */
         + 0 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1320 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 15000, /* WriteSubstate */
+        + 14000, /* WriteSubstate */
         receipt.execution.fee_summary.total_cost_units_consumed
     );
 }
@@ -201,15 +202,15 @@ fn test_radiswap() {
         20000 /* CreateNode */
         + 179500 /* DropLock */
         + 17500 /* DropNode */
-        + 16000 /* Invoke */
+        + 26710 /* Invoke */
         + 261000 /* LockSubstate */
-        + 204500 /* ReadSubstate */
+        + 205500 /* ReadSubstate */
         + 147500 /* RunPrecompiled */
         + 1638460 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1705 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 40500 /* WriteSubstate */
+        + 39500 /* WriteSubstate */
         + 2, /* royalty in cost units */
         receipt.execution.fee_summary.total_cost_units_consumed
     );
@@ -229,9 +230,9 @@ fn test_publish_large_package() {
                 (export "memory" (memory $0))
             )
         "#,
-        "i".repeat(4 * 1024 * 1024)
+        "i".repeat(DEFAULT_MAX_INVOKE_INPUT_SIZE - 138) // ensure we fit within limit
     ));
-    assert_eq!(4194343, code.len());
+    assert_eq!(DEFAULT_MAX_INVOKE_INPUT_SIZE - 99, code.len());
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 100.into())
         .publish_package(
@@ -249,8 +250,8 @@ fn test_publish_large_package() {
 
     // Assert
     assert!(
-        receipt.execution.fee_summary.total_cost_units_consumed > 20000000
-            && receipt.execution.fee_summary.total_cost_units_consumed < 30000000
+        receipt.execution.fee_summary.total_cost_units_consumed > 60000000
+            && receipt.execution.fee_summary.total_cost_units_consumed < 70000000
     );
 }
 

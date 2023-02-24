@@ -121,6 +121,8 @@ pub trait ExecutableInvocation: Invocation {
         self,
         api: &mut Y,
     ) -> Result<TemporaryResolvedInvocation<Self::Exec>, RuntimeError>;
+
+    fn payload_size(&self) -> usize;
 }
 
 /// Interface of the Kernel, for Kernel modules.

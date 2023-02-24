@@ -17,6 +17,7 @@ use crate::system::kernel_modules::transaction_limits::{
 use crate::system::kernel_modules::transaction_runtime::TransactionRuntimeModule;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
+use crate::transaction::ExecutionConfig;
 use crate::types::api::unsafe_api::ClientCostingReason;
 use bitflags::bitflags;
 use radix_engine_interface::api::substate_api::LockFlags;
@@ -68,12 +69,7 @@ impl KernelModuleMixer {
         auth_zone_params: AuthZoneParams,
         fee_reserve: SystemLoanFeeReserve,
         fee_table: FeeTable,
-        max_call_depth: usize,
-        max_kernel_call_depth_traced: Option<usize>,
-        max_wasm_memory: usize,
-        max_wasm_memory_per_call_frame: usize,
-        max_substate_reads: usize,
-        max_substate_writes: usize,
+        execution_config: &ExecutionConfig,
     ) -> Self {
         let mut modules = EnabledModules::empty();
         if debug {
@@ -84,7 +80,7 @@ impl KernelModuleMixer {
         modules |= EnabledModules::AUTH;
         modules |= EnabledModules::LOGGER;
         modules |= EnabledModules::TRANSACTION_RUNTIME;
-        if max_kernel_call_depth_traced.is_some() {
+        if execution_config.max_kernel_call_depth_traced.is_some() {
             modules |= EnabledModules::EXECUTION_TRACE;
         }
         modules |= EnabledModules::TRANSACTION_LIMITS;
@@ -95,7 +91,7 @@ impl KernelModuleMixer {
             costing: CostingModule {
                 fee_reserve,
                 fee_table,
-                max_call_depth,
+                max_call_depth: execution_config.max_call_depth,
             },
             node_move: NodeMoveModule {},
             auth: AuthModule {
@@ -104,12 +100,15 @@ impl KernelModuleMixer {
             logger: LoggerModule {},
             transaction_runtime: TransactionRuntimeModule { tx_hash },
             transaction_limits: TransactionLimitsModule::new(TransactionLimitsConfig {
-                max_wasm_memory,
-                max_wasm_memory_per_call_frame,
-                max_substate_reads,
-                max_substate_writes,
+                max_wasm_memory: execution_config.max_wasm_mem_per_transaction,
+                max_wasm_memory_per_call_frame: execution_config.max_wasm_mem_per_call_frame,
+                max_substate_reads: execution_config.max_substate_reads_per_transaction,
+                max_substate_writes: execution_config.max_substate_writes_per_transaction,
+                max_invoke_payload_size: execution_config.max_invoke_input_size,
             }),
-            execution_trace: ExecutionTraceModule::new(max_kernel_call_depth_traced.unwrap_or(0)),
+            execution_trace: ExecutionTraceModule::new(
+                execution_config.max_kernel_call_depth_traced.unwrap_or(0),
+            ),
         }
     }
 }

@@ -276,6 +276,10 @@ impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
 
         Ok(resolved)
     }
+
+    fn payload_size(&self) -> usize {
+        0
+    }
 }
 
 impl<'a> Executor for TransactionProcessorRunInvocation<'a> {

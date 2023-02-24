@@ -1289,7 +1289,7 @@ where
         KernelModuleMixer::before_invoke(
             self,
             &invocation.identifier(),
-            0, // TODO: Pass the right size
+            invocation.payload_size(),
         )?;
 
         // Change to kernel mode
