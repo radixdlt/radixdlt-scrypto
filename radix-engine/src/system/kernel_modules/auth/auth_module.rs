@@ -167,32 +167,32 @@ impl AuthModule {
                 api.kernel_drop_lock(handle)?;
                 auth
             }
-            MethodIdentifier(node_id, module_id, ..)
-                if matches!(node_id, RENodeId::Component(..) | RENodeId::GlobalComponent(ComponentAddress::Normal(..))) =>
-            {
-                let handle = api.kernel_lock_substate(
-                    *node_id,
-                    NodeModuleId::TypeInfo,
-                    SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-                    LockFlags::read_only(),
-                )?;
-                let substate_ref = api.kernel_get_substate_ref(handle)?;
-                let info = substate_ref.component_info();
-                let package_address = info.package_address.clone();
-                let blueprint_ident = info.blueprint_name.clone();
-                api.kernel_drop_lock(handle)?;
-
-                let offset = SubstateOffset::Package(PackageOffset::Info);
-                let handle = api.kernel_lock_substate(
-                    RENodeId::GlobalPackage(package_address),
-                    NodeModuleId::SELF,
-                    offset,
-                    LockFlags::read_only(),
-                )?;
-
+            MethodIdentifier(node_id, module_id, ..) => {
                 let method_key = identifier.method_key();
 
-                if let NodeModuleId::SELF = module_id {
+                if matches!(node_id, RENodeId::Component(..) | RENodeId::GlobalComponent(ComponentAddress::Normal(..)))
+                    && module_id.eq(&NodeModuleId::SELF) {
+
+                    let handle = api.kernel_lock_substate(
+                        *node_id,
+                        NodeModuleId::TypeInfo,
+                        SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+                        LockFlags::read_only(),
+                    )?;
+                    let substate_ref = api.kernel_get_substate_ref(handle)?;
+                    let info = substate_ref.component_info();
+                    let package_address = info.package_address.clone();
+                    let blueprint_ident = info.blueprint_name.clone();
+                    api.kernel_drop_lock(handle)?;
+
+                    let offset = SubstateOffset::Package(PackageOffset::Info);
+                    let handle = api.kernel_lock_substate(
+                        RENodeId::GlobalPackage(package_address),
+                        NodeModuleId::SELF,
+                        offset,
+                        LockFlags::read_only(),
+                    )?;
+
                     let substate_ref = api.kernel_get_substate_ref(handle)?;
                     let package = substate_ref.package_info();
                     let schema = package
@@ -248,20 +248,6 @@ impl AuthModule {
                     api.kernel_drop_lock(handle)?;
                     auth
                 }
-            }
-            MethodIdentifier(node_id, ..) => {
-                let method_key = identifier.method_key();
-                let handle = api.kernel_lock_substate(
-                    *node_id,
-                    NodeModuleId::AccessRules,
-                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
-                    LockFlags::read_only(),
-                )?;
-                let substate_ref = api.kernel_get_substate_ref(handle)?;
-                let substate = substate_ref.access_rules_chain();
-                let auth = substate.native_fn_authorization(method_key);
-                api.kernel_drop_lock(handle)?;
-                auth
             }
         };
 
