@@ -322,7 +322,7 @@ fn cant_move_restricted_proof() {
 }
 
 #[test]
-fn cant_move_locked_bucket() {
+fn can_move_locked_bucket() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
@@ -349,14 +349,7 @@ fn cant_move_locked_bucket() {
     );
 
     // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::ModuleError(ModuleError::NodeMoveError(NodeMoveError::CantMoveUpstream(
-                RENodeId::Bucket(..)
-            )))
-        )
-    });
+    receipt.expect_commit_success();
 }
 
 #[test]

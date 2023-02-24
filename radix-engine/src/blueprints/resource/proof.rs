@@ -224,9 +224,9 @@ impl ProofBlueprint {
             )?;
             let substate_ref = api.kernel_get_substate_ref(handle)?;
             let proof = substate_ref.fungible_proof().clone();
+            let clone = proof.clone_proof(api)?;
             api.kernel_drop_lock(handle)?;
 
-            let clone = proof.clone_proof(api)?;
 
             let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
             api.kernel_create_node(
@@ -244,9 +244,8 @@ impl ProofBlueprint {
             )?;
             let substate_ref = api.kernel_get_substate_ref(handle)?;
             let proof = substate_ref.non_fungible_proof().clone();
-            api.kernel_drop_lock(handle)?;
-
             let clone = proof.clone_proof(api)?;
+            api.kernel_drop_lock(handle)?;
 
             let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
             api.kernel_create_node(

@@ -120,6 +120,15 @@ impl KernelModule for KernelDebugModule {
         Ok(())
     }
 
+    fn after_lock_substate<Y: KernelModuleApi<RuntimeError>>(
+        api: &mut Y,
+        handle: LockHandle,
+        size: usize,
+    ) -> Result<(), RuntimeError> {
+        log!(api, "Substate locked: handle = {:?}", handle);
+        Ok(())
+    }
+
     fn on_read_substate<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         lock_handle: LockHandle,

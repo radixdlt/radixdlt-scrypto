@@ -184,6 +184,10 @@ impl LockedNonFungibleResource {
     pub fn amount(&self) -> Decimal {
         self.ids.len().into()
     }
+
+    pub fn ids(&self) -> BTreeSet<NonFungibleLocalId> {
+        self.ids.keys().cloned().collect()
+    }
 }
 
 pub fn check_amount(amount: Decimal, divisibility: u8) -> Result<(), ResourceError> {

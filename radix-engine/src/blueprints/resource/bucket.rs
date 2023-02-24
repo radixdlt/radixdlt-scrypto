@@ -282,6 +282,25 @@ impl NonFungibleBucket {
         Ok(ids)
     }
 
+    pub fn locked_non_fungible_local_ids<Y>(
+        node_id: RENodeId,
+        api: &mut Y,
+    ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi,
+    {
+        let handle = api.kernel_lock_substate(
+            node_id,
+            NodeModuleId::SELF,
+            SubstateOffset::Bucket(BucketOffset::LockedNonFungible),
+            LockFlags::read_only(),
+        )?;
+        let substate_ref = api.kernel_get_substate_ref(handle)?;
+        let ids = substate_ref.bucket_locked_non_fungible().ids();
+        api.kernel_drop_lock(handle)?;
+        Ok(ids)
+    }
+
     pub fn take<Y>(
         node_id: RENodeId,
         amount: Decimal,
@@ -671,8 +690,10 @@ impl BucketBlueprint {
                 ApplicationError::BucketError(BucketError::NonFungibleOperationNotSupported),
             ));
         } else {
-            let ids: BTreeSet<NonFungibleLocalId> =
-                NonFungibleBucket::liquid_non_fungible_local_ids(receiver, api)?;
+            let mut ids = NonFungibleBucket::liquid_non_fungible_local_ids(receiver, api)?;
+            ids.extend(NonFungibleBucket::locked_non_fungible_local_ids(
+                receiver, api,
+            )?);
             Ok(IndexedScryptoValue::from_typed(&ids))
         }
     }
@@ -692,8 +713,10 @@ impl BucketBlueprint {
         let info = BucketInfoSubstate::of(receiver, api)?;
         let amount = if info.resource_type.is_fungible() {
             FungibleBucket::liquid_amount(receiver, api)?
+                + FungibleBucket::locked_amount(receiver, api)?
         } else {
             NonFungibleBucket::liquid_amount(receiver, api)?
+                + NonFungibleBucket::locked_amount(receiver, api)?
         };
 
         Ok(IndexedScryptoValue::from_typed(&amount))

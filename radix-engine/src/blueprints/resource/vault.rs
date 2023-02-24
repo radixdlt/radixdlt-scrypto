@@ -287,6 +287,25 @@ impl NonFungibleVault {
         Ok(ids)
     }
 
+    pub fn locked_non_fungible_local_ids<Y>(
+        node_id: RENodeId,
+        api: &mut Y,
+    ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi,
+    {
+        let handle = api.kernel_lock_substate(
+            node_id,
+            NodeModuleId::SELF,
+            SubstateOffset::Vault(VaultOffset::LockedNonFungible),
+            LockFlags::read_only(),
+        )?;
+        let substate_ref = api.kernel_get_substate_ref(handle)?;
+        let ids = substate_ref.vault_locked_non_fungible().ids();
+        api.kernel_drop_lock(handle)?;
+        Ok(ids)
+    }
+
     pub fn take<Y>(
         node_id: RENodeId,
         amount: Decimal,
@@ -664,8 +683,10 @@ impl VaultBlueprint {
         let info = VaultInfoSubstate::of(receiver, api)?;
         let amount = if info.resource_type.is_fungible() {
             FungibleVault::liquid_amount(receiver, api)?
+                + FungibleVault::locked_amount(receiver, api)?
         } else {
             NonFungibleVault::liquid_amount(receiver, api)?
+                + NonFungibleVault::locked_amount(receiver, api)?
         };
 
         Ok(IndexedScryptoValue::from_typed(&amount))
@@ -705,8 +726,10 @@ impl VaultBlueprint {
                 ApplicationError::VaultError(VaultError::NonFungibleOperationNotSupported),
             ));
         } else {
-            let ids: BTreeSet<NonFungibleLocalId> =
-                NonFungibleVault::liquid_non_fungible_local_ids(receiver, api)?;
+            let mut ids = NonFungibleVault::liquid_non_fungible_local_ids(receiver, api)?;
+            ids.extend(NonFungibleVault::locked_non_fungible_local_ids(
+                receiver, api,
+            )?);
             Ok(IndexedScryptoValue::from_typed(&ids))
         }
     }
