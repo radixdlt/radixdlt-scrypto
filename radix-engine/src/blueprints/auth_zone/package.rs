@@ -1,12 +1,14 @@
-use crate::blueprints::resource::ProofError;
+use crate::blueprints::auth_zone::AuthZoneStackSubstate;
+use crate::blueprints::resource::{ProofError, ProofSubstate, ResourceManagerSubstate};
 use crate::errors::*;
-use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, LockFlags};
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::auth::convert_contextless;
 use crate::system::kernel_modules::auth::*;
 use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE};
 use crate::system::node::RENodeInit;
 use crate::types::*;
 use radix_engine_interface::api::node_modules::auth::*;
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
     Address, AuthZoneStackOffset, ProofOffset, RENodeId, ResourceManagerOffset, SubstateOffset,
 };
@@ -126,16 +128,15 @@ impl AuthZoneBlueprint {
         let _input: AuthZonePopInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let auth_zone_handle = api.kernel_lock_substate(
+        let auth_zone_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,
         )?;
 
         let proof = {
-            let mut substate_mut = api.kernel_get_substate_ref_mut(auth_zone_handle)?;
-            let auth_zone_stack = substate_mut.auth_zone_stack();
+            let auth_zone_stack: &mut AuthZoneStackSubstate =
+                api.kernel_get_substate_ref_mut(auth_zone_handle)?;
             let proof = auth_zone_stack.cur_auth_zone_mut().pop()?;
             proof
         };
@@ -158,29 +159,26 @@ impl AuthZoneBlueprint {
         let input: AuthZonePushInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let auth_zone_handle = api.kernel_lock_substate(
+        let auth_zone_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,
         )?;
 
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             RENodeId::Proof(input.proof.0),
-            NodeModuleId::SELF,
             SubstateOffset::Proof(ProofOffset::Proof),
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let proof = substate_ref.proof();
+        let proof: &ProofSubstate = api.kernel_get_substate_ref(handle)?;
         // Take control of the proof lock as the proof in the call frame will lose it's lock once dropped
         let mut cloned_proof = proof.clone();
         cloned_proof.change_to_unrestricted();
 
-        let mut substate_mut = api.kernel_get_substate_ref_mut(auth_zone_handle)?;
-        let auth_zone_stack = substate_mut.auth_zone_stack();
+        let auth_zone_stack: &mut AuthZoneStackSubstate =
+            api.kernel_get_substate_ref_mut(auth_zone_handle)?;
         auth_zone_stack.cur_auth_zone_mut().push(cloned_proof);
-        api.kernel_drop_lock(auth_zone_handle)?;
+        api.sys_drop_lock(auth_zone_handle)?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -196,9 +194,8 @@ impl AuthZoneBlueprint {
         let input: AuthZoneCreateProofInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let auth_zone_handle = api.kernel_lock_substate(
+        let auth_zone_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,
         )?;
@@ -206,19 +203,16 @@ impl AuthZoneBlueprint {
         let resource_type = {
             let resource_id = RENodeId::Global(Address::Resource(input.resource_address));
             let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-            let resource_handle = api.kernel_lock_substate(
-                resource_id,
-                NodeModuleId::SELF,
-                offset,
-                LockFlags::read_only(),
-            )?;
-            let substate_ref = api.kernel_get_substate_ref(resource_handle)?;
-            substate_ref.resource_manager().resource_type
+            let resource_handle =
+                api.sys_lock_substate(resource_id, offset, LockFlags::read_only())?;
+            let resource_manager: &ResourceManagerSubstate =
+                api.kernel_get_substate_ref(resource_handle)?;
+            resource_manager.resource_type
         };
 
         let proof = {
-            let mut substate_mut = api.kernel_get_substate_ref_mut(auth_zone_handle)?;
-            let auth_zone_stack = substate_mut.auth_zone_stack();
+            let auth_zone_stack: &mut AuthZoneStackSubstate =
+                api.kernel_get_substate_ref_mut(auth_zone_handle)?;
             let proof = auth_zone_stack
                 .cur_auth_zone()
                 .create_proof(input.resource_address, resource_type)?;
@@ -244,9 +238,8 @@ impl AuthZoneBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let auth_zone_handle = api.kernel_lock_substate(
+        let auth_zone_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,
         )?;
@@ -254,19 +247,16 @@ impl AuthZoneBlueprint {
         let resource_type = {
             let resource_id = RENodeId::Global(Address::Resource(input.resource_address));
             let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-            let resource_handle = api.kernel_lock_substate(
-                resource_id,
-                NodeModuleId::SELF,
-                offset,
-                LockFlags::read_only(),
-            )?;
-            let substate_ref = api.kernel_get_substate_ref(resource_handle)?;
-            substate_ref.resource_manager().resource_type
+            let resource_handle =
+                api.sys_lock_substate(resource_id, offset, LockFlags::read_only())?;
+            let resource_manager: &ResourceManagerSubstate =
+                api.kernel_get_substate_ref(resource_handle)?;
+            resource_manager.resource_type
         };
 
         let proof = {
-            let mut substate_mut = api.kernel_get_substate_ref_mut(auth_zone_handle)?;
-            let auth_zone_stack = substate_mut.auth_zone_stack();
+            let auth_zone_stack: &mut AuthZoneStackSubstate =
+                api.kernel_get_substate_ref_mut(auth_zone_handle)?;
             let proof = auth_zone_stack.cur_auth_zone().create_proof_by_amount(
                 input.amount,
                 input.resource_address,
@@ -294,9 +284,8 @@ impl AuthZoneBlueprint {
         let input: AuthZoneCreateProofByIdsInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let auth_zone_handle = api.kernel_lock_substate(
+        let auth_zone_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,
         )?;
@@ -304,19 +293,16 @@ impl AuthZoneBlueprint {
         let resource_type = {
             let resource_id = RENodeId::Global(Address::Resource(input.resource_address));
             let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-            let resource_handle = api.kernel_lock_substate(
-                resource_id,
-                NodeModuleId::SELF,
-                offset,
-                LockFlags::read_only(),
-            )?;
-            let substate_ref = api.kernel_get_substate_ref(resource_handle)?;
-            substate_ref.resource_manager().resource_type
+            let resource_handle =
+                api.sys_lock_substate(resource_id, offset, LockFlags::read_only())?;
+            let resource_manager: &ResourceManagerSubstate =
+                api.kernel_get_substate_ref(resource_handle)?;
+            resource_manager.resource_type
         };
 
         let proof = {
-            let substate_ref = api.kernel_get_substate_ref(auth_zone_handle)?;
-            let auth_zone_stack = substate_ref.auth_zone_stack();
+            let auth_zone_stack: &AuthZoneStackSubstate =
+                api.kernel_get_substate_ref(auth_zone_handle)?;
             let proof = auth_zone_stack.cur_auth_zone().create_proof_by_ids(
                 &input.ids,
                 input.resource_address,
@@ -344,14 +330,13 @@ impl AuthZoneBlueprint {
         let _input: AuthZoneClearInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let auth_zone_handle = api.kernel_lock_substate(
+        let auth_zone_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_mut = api.kernel_get_substate_ref_mut(auth_zone_handle)?;
-        let auth_zone_stack = substate_mut.auth_zone_stack();
+        let auth_zone_stack: &mut AuthZoneStackSubstate =
+            api.kernel_get_substate_ref_mut(auth_zone_handle)?;
         auth_zone_stack.cur_auth_zone_mut().clear();
 
         Ok(IndexedScryptoValue::from_typed(&()))
@@ -368,16 +353,15 @@ impl AuthZoneBlueprint {
         let _input: AuthZoneDrainInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let auth_zone_handle = api.kernel_lock_substate(
+        let auth_zone_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,
         )?;
 
         let proofs = {
-            let mut substate_mut = api.kernel_get_substate_ref_mut(auth_zone_handle)?;
-            let auth_zone_stack = substate_mut.auth_zone_stack();
+            let auth_zone_stack: &mut AuthZoneStackSubstate =
+                api.kernel_get_substate_ref_mut(auth_zone_handle)?;
             let proofs = auth_zone_stack.cur_auth_zone_mut().drain();
             proofs
         };
@@ -406,14 +390,12 @@ impl AuthZoneBlueprint {
         let input: AuthZoneAssertAccessRuleInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let auth_zone_stack = substate_ref.auth_zone_stack();
+        let auth_zone_stack: &AuthZoneStackSubstate = api.kernel_get_substate_ref(handle)?;
         let authorization = convert_contextless(&input.access_rule);
 
         // Authorization check
@@ -425,7 +407,7 @@ impl AuthZoneBlueprint {
                 ))
             })?;
 
-        api.kernel_drop_lock(handle)?;
+        api.sys_drop_lock(handle)?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }

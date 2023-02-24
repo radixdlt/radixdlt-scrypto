@@ -1,10 +1,13 @@
+use crate::blueprints::resource::{BucketSubstate, ProofSubstate};
 use crate::errors::{ModuleError, RuntimeError};
 use crate::kernel::actor::ResolvedActor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::{KernelModuleApi, LockFlags};
+use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
 use crate::types::*;
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{BucketOffset, ProofOffset, RENodeId, SubstateOffset};
+use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -29,8 +32,7 @@ impl NodeMoveModule {
                     SubstateOffset::Bucket(BucketOffset::Bucket),
                     LockFlags::read_only(),
                 )?;
-                let substate_ref = api.kernel_get_substate_ref(handle)?;
-                let bucket = substate_ref.bucket();
+                let bucket: &BucketSubstate = api.kernel_get_substate_ref(handle)?;
                 let locked = bucket.is_locked();
                 api.kernel_drop_lock(handle)?;
                 if locked {
@@ -48,8 +50,7 @@ impl NodeMoveModule {
                     SubstateOffset::Proof(ProofOffset::Proof),
                     LockFlags::MUTABLE,
                 )?;
-                let mut substate_ref_mut = api.kernel_get_substate_ref_mut(handle)?;
-                let proof = substate_ref_mut.proof();
+                let proof: &mut ProofSubstate = api.kernel_get_substate_ref_mut(handle)?;
 
                 let rtn = if proof.is_restricted() {
                     Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
@@ -99,8 +100,7 @@ impl NodeMoveModule {
                     SubstateOffset::Bucket(BucketOffset::Bucket),
                     LockFlags::read_only(),
                 )?;
-                let substate_ref = api.kernel_get_substate_ref(handle)?;
-                let bucket = substate_ref.bucket();
+                let bucket: &BucketSubstate = api.kernel_get_substate_ref(handle)?;
                 let locked = bucket.is_locked();
                 api.kernel_drop_lock(handle)?;
                 if locked {
@@ -141,6 +141,7 @@ impl KernelModule for NodeMoveModule {
         api: &mut Y,
         _actor: &Option<ResolvedActor>,
         call_frame_update: &mut CallFrameUpdate,
+        _args: &ScryptoValue,
     ) -> Result<(), RuntimeError> {
         for node_id in &call_frame_update.nodes_to_move {
             Self::prepare_move_downstream(*node_id, api)?;

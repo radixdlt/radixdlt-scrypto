@@ -1,9 +1,9 @@
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
-use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use native_sdk::resource::{ResourceManager, SysBucket};
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{RENodeId, SubstateOffset, WorktopOffset};
 use radix_engine_interface::api::ClientApi;
@@ -42,17 +42,15 @@ impl WorktopBlueprint {
         let input: WorktopPutInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let worktop_handle = api.kernel_lock_substate(
+        let worktop_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Worktop(WorktopOffset::Worktop),
             LockFlags::MUTABLE,
         )?;
 
         let resource_address = input.bucket.sys_resource_address(api)?;
 
-        let mut substate_mut = api.kernel_get_substate_ref_mut(worktop_handle)?;
-        let worktop = substate_mut.worktop();
+        let worktop: &mut WorktopSubstate = api.kernel_get_substate_ref_mut(worktop_handle)?;
 
         if let Some(own) = worktop.resources.get(&resource_address).cloned() {
             let existing_bucket = Bucket(own.bucket_id());
@@ -77,23 +75,20 @@ impl WorktopBlueprint {
         let input: WorktopTakeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let worktop_handle = api.kernel_lock_substate(
+        let worktop_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Worktop(WorktopOffset::Worktop),
             LockFlags::MUTABLE,
         )?;
 
-        let mut substate_mut = api.kernel_get_substate_ref_mut(worktop_handle)?;
-        let worktop = substate_mut.worktop();
+        let worktop: &mut WorktopSubstate = api.kernel_get_substate_ref_mut(worktop_handle)?;
         let bucket = if let Some(bucket) = worktop.resources.get(&input.resource_address).cloned() {
             bucket
         } else {
             let resman = ResourceManager(input.resource_address);
             let bucket = Own::Bucket(resman.new_empty_bucket(api)?.0);
 
-            let mut substate_mut = api.kernel_get_substate_ref_mut(worktop_handle)?;
-            let worktop = substate_mut.worktop();
+            let worktop: &mut WorktopSubstate = api.kernel_get_substate_ref_mut(worktop_handle)?;
             worktop.resources.insert(input.resource_address, bucket);
             worktop
                 .resources
@@ -118,14 +113,12 @@ impl WorktopBlueprint {
         let input: WorktopTakeAllInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let worktop_handle = api.kernel_lock_substate(
+        let worktop_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Worktop(WorktopOffset::Worktop),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_mut = api.kernel_get_substate_ref_mut(worktop_handle)?;
-        let worktop = substate_mut.worktop();
+        let worktop: &mut WorktopSubstate = api.kernel_get_substate_ref_mut(worktop_handle)?;
 
         let rtn_bucket = if let Some(bucket) = worktop.resources.get(&input.resource_address) {
             let bucket = Bucket(bucket.bucket_id());
@@ -151,14 +144,12 @@ impl WorktopBlueprint {
         let input: WorktopTakeNonFungiblesInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let worktop_handle = api.kernel_lock_substate(
+        let worktop_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Worktop(WorktopOffset::Worktop),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_mut = api.kernel_get_substate_ref_mut(worktop_handle)?;
-        let worktop = substate_mut.worktop();
+        let worktop: &mut WorktopSubstate = api.kernel_get_substate_ref_mut(worktop_handle)?;
 
         let bucket = if let Some(bucket) = worktop.resources.get(&input.resource_address).cloned() {
             bucket
@@ -166,8 +157,7 @@ impl WorktopBlueprint {
             let resman = ResourceManager(input.resource_address);
             let bucket = Own::Bucket(resman.new_empty_bucket(api)?.0);
 
-            let mut substate_mut = api.kernel_get_substate_ref_mut(worktop_handle)?;
-            let worktop = substate_mut.worktop();
+            let worktop: &mut WorktopSubstate = api.kernel_get_substate_ref_mut(worktop_handle)?;
             worktop.resources.insert(input.resource_address, bucket);
             worktop
                 .resources
@@ -193,15 +183,13 @@ impl WorktopBlueprint {
         let input: WorktopAssertContainsInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let worktop_handle = api.kernel_lock_substate(
+        let worktop_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Worktop(WorktopOffset::Worktop),
             LockFlags::read_only(),
         )?;
 
-        let substate_ref = api.kernel_get_substate_ref(worktop_handle)?;
-        let worktop = substate_ref.worktop();
+        let worktop: &WorktopSubstate = api.kernel_get_substate_ref(worktop_handle)?;
 
         let total_amount =
             if let Some(bucket) = worktop.resources.get(&input.resource_address).cloned() {
@@ -230,15 +218,13 @@ impl WorktopBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let worktop_handle = api.kernel_lock_substate(
+        let worktop_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Worktop(WorktopOffset::Worktop),
             LockFlags::read_only(),
         )?;
 
-        let substate_ref = api.kernel_get_substate_ref(worktop_handle)?;
-        let worktop = substate_ref.worktop();
+        let worktop: &WorktopSubstate = api.kernel_get_substate_ref(worktop_handle)?;
         let total_amount =
             if let Some(bucket) = worktop.resources.get(&input.resource_address).cloned() {
                 Bucket(bucket.bucket_id()).sys_amount(api)?
@@ -266,15 +252,13 @@ impl WorktopBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let worktop_handle = api.kernel_lock_substate(
+        let worktop_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Worktop(WorktopOffset::Worktop),
             LockFlags::read_only(),
         )?;
 
-        let substate_ref = api.kernel_get_substate_ref(worktop_handle)?;
-        let worktop = substate_ref.worktop();
+        let worktop: &WorktopSubstate = api.kernel_get_substate_ref(worktop_handle)?;
 
         let ids = if let Some(bucket) = worktop.resources.get(&input.resource_address) {
             let bucket = Bucket(bucket.bucket_id());
@@ -302,15 +286,13 @@ impl WorktopBlueprint {
         let _input: WorktopDrainInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let worktop_handle = api.kernel_lock_substate(
+        let worktop_handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Worktop(WorktopOffset::Worktop),
             LockFlags::MUTABLE,
         )?;
         let mut buckets = Vec::new();
-        let mut substate_mut = api.kernel_get_substate_ref_mut(worktop_handle)?;
-        let worktop = substate_mut.worktop();
+        let worktop: &mut WorktopSubstate = api.kernel_get_substate_ref_mut(worktop_handle)?;
         let bucket_ids: Vec<BucketId> = worktop
             .resources
             .iter()
