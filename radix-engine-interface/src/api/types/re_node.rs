@@ -284,7 +284,11 @@ pub enum NonFungibleStoreOffset {
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum VaultOffset {
-    Vault,
+    Info,
+    LiquidFungible,
+    LiquidNonFungible,
+    LockedFungible,
+    LockedNonFungible,
 }
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -301,12 +305,18 @@ pub enum ValidatorOffset {
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum BucketOffset {
-    Bucket,
+    Info,
+    LiquidFungible,
+    LiquidNonFungible,
+    LockedFungible,
+    LockedNonFungible,
 }
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ProofOffset {
-    Proof,
+    Info,
+    Fungible,
+    NonFungible,
 }
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]

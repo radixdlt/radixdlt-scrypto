@@ -1,33 +1,26 @@
-use crate::blueprints::auth_zone::AuthZoneStackSubstate;
-use crate::blueprints::resource::{ProofError, ProofSubstate, ResourceManagerSubstate};
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::auth::convert_contextless;
-use crate::system::kernel_modules::auth::*;
 use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE};
-use crate::system::node::RENodeInit;
 use crate::types::*;
+use native_sdk::resource::SysProof;
 use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::{
-    Address, AuthZoneStackOffset, ProofOffset, RENodeId, ResourceManagerOffset, SubstateOffset,
-};
+use radix_engine_interface::api::types::{AuthZoneStackOffset, RENodeId, SubstateOffset};
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
-use sbor::rust::vec::Vec;
+
+use super::{
+    compose_proof_by_amount, compose_proof_by_ids, AuthZoneStackSubstate, ComposeProofError,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthZoneError {
-    EmptyAuthZone,
-    ProofError(ProofError),
-    CouldNotCreateProof,
     InvalidRequestData(DecodeError),
-    CouldNotGetProof,
-    CouldNotGetResource,
-    NoMethodSpecified,
-    AssertAccessRuleError(MethodAuthorization, MethodAuthorizationError),
+    EmptyAuthZone,
+    AssertAccessRuleFailed,
+    ComposeProofError(ComposeProofError),
 }
 
 pub struct AuthZoneNativePackage;
@@ -137,15 +130,15 @@ impl AuthZoneBlueprint {
         let proof = {
             let auth_zone_stack: &mut AuthZoneStackSubstate =
                 api.kernel_get_substate_ref_mut(auth_zone_handle)?;
-            let proof = auth_zone_stack.cur_auth_zone_mut().pop()?;
-            proof
+            auth_zone_stack
+                .cur_auth_zone_mut()
+                .pop()
+                .ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::AuthZoneError(AuthZoneError::EmptyAuthZone),
+                ))?
         };
 
-        let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
-        api.kernel_create_node(node_id, RENodeInit::Proof(proof), BTreeMap::new())?;
-        let proof_id = node_id.into();
-
-        Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
+        Ok(IndexedScryptoValue::from_typed(&proof))
     }
 
     pub(crate) fn push<Y>(
@@ -165,19 +158,9 @@ impl AuthZoneBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let handle = api.sys_lock_substate(
-            RENodeId::Proof(input.proof.0),
-            SubstateOffset::Proof(ProofOffset::Proof),
-            LockFlags::read_only(),
-        )?;
-        let proof: &ProofSubstate = api.kernel_get_substate_ref(handle)?;
-        // Take control of the proof lock as the proof in the call frame will lose it's lock once dropped
-        let mut cloned_proof = proof.clone();
-        cloned_proof.change_to_unrestricted();
-
         let auth_zone_stack: &mut AuthZoneStackSubstate =
             api.kernel_get_substate_ref_mut(auth_zone_handle)?;
-        auth_zone_stack.cur_auth_zone_mut().push(cloned_proof);
+        auth_zone_stack.cur_auth_zone_mut().push(input.proof);
         api.sys_drop_lock(auth_zone_handle)?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
@@ -200,27 +183,15 @@ impl AuthZoneBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let resource_type = {
-            let resource_id = RENodeId::Global(Address::Resource(input.resource_address));
-            let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-            let resource_handle =
-                api.sys_lock_substate(resource_id, offset, LockFlags::read_only())?;
-            let resource_manager: &ResourceManagerSubstate =
-                api.kernel_get_substate_ref(resource_handle)?;
-            resource_manager.resource_type
-        };
-
-        let proof = {
-            let auth_zone_stack: &mut AuthZoneStackSubstate =
+        let composed_proof = {
+            let auth_zone_stack_ref: &AuthZoneStackSubstate =
                 api.kernel_get_substate_ref_mut(auth_zone_handle)?;
-            let proof = auth_zone_stack
-                .cur_auth_zone()
-                .create_proof(input.resource_address, resource_type)?;
-            proof
+            let auth_zone = auth_zone_stack_ref.cur_auth_zone().clone();
+            compose_proof_by_amount(&auth_zone.proofs, input.resource_address, None, api)?
         };
 
         let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
-        api.kernel_create_node(node_id, RENodeInit::Proof(proof), BTreeMap::new())?;
+        api.kernel_create_node(node_id, composed_proof.into(), BTreeMap::new())?;
         let proof_id = node_id.into();
 
         Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
@@ -241,33 +212,23 @@ impl AuthZoneBlueprint {
         let auth_zone_handle = api.sys_lock_substate(
             receiver,
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
-            LockFlags::MUTABLE,
+            LockFlags::read_only(),
         )?;
 
-        let resource_type = {
-            let resource_id = RENodeId::Global(Address::Resource(input.resource_address));
-            let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-            let resource_handle =
-                api.sys_lock_substate(resource_id, offset, LockFlags::read_only())?;
-            let resource_manager: &ResourceManagerSubstate =
-                api.kernel_get_substate_ref(resource_handle)?;
-            resource_manager.resource_type
-        };
-
-        let proof = {
-            let auth_zone_stack: &mut AuthZoneStackSubstate =
-                api.kernel_get_substate_ref_mut(auth_zone_handle)?;
-            let proof = auth_zone_stack.cur_auth_zone().create_proof_by_amount(
-                input.amount,
+        let composed_proof = {
+            let auth_zone_stack_ref: &AuthZoneStackSubstate =
+                api.kernel_get_substate_ref(auth_zone_handle)?;
+            let auth_zone = auth_zone_stack_ref.cur_auth_zone().clone();
+            compose_proof_by_amount(
+                &auth_zone.proofs,
                 input.resource_address,
-                resource_type,
-            )?;
-
-            proof
+                Some(input.amount),
+                api,
+            )?
         };
 
         let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
-        api.kernel_create_node(node_id, RENodeInit::Proof(proof), BTreeMap::new())?;
+        api.kernel_create_node(node_id, composed_proof.into(), BTreeMap::new())?;
         let proof_id = node_id.into();
 
         Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
@@ -290,30 +251,20 @@ impl AuthZoneBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let resource_type = {
-            let resource_id = RENodeId::Global(Address::Resource(input.resource_address));
-            let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-            let resource_handle =
-                api.sys_lock_substate(resource_id, offset, LockFlags::read_only())?;
-            let resource_manager: &ResourceManagerSubstate =
-                api.kernel_get_substate_ref(resource_handle)?;
-            resource_manager.resource_type
-        };
-
-        let proof = {
-            let auth_zone_stack: &AuthZoneStackSubstate =
+        let composed_proof = {
+            let auth_zone_stack_ref: &AuthZoneStackSubstate =
                 api.kernel_get_substate_ref(auth_zone_handle)?;
-            let proof = auth_zone_stack.cur_auth_zone().create_proof_by_ids(
-                &input.ids,
+            let auth_zone = auth_zone_stack_ref.cur_auth_zone().clone();
+            compose_proof_by_ids(
+                &auth_zone.proofs,
                 input.resource_address,
-                resource_type,
-            )?;
-
-            proof
+                Some(input.ids),
+                api,
+            )?
         };
 
         let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
-        api.kernel_create_node(node_id, RENodeInit::Proof(proof), BTreeMap::new())?;
+        api.kernel_create_node(node_id, composed_proof.into(), BTreeMap::new())?;
         let proof_id = node_id.into();
 
         Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
@@ -330,14 +281,19 @@ impl AuthZoneBlueprint {
         let _input: AuthZoneClearInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let auth_zone_handle = api.sys_lock_substate(
+        let handle = api.sys_lock_substate(
             receiver,
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,
         )?;
         let auth_zone_stack: &mut AuthZoneStackSubstate =
-            api.kernel_get_substate_ref_mut(auth_zone_handle)?;
-        auth_zone_stack.cur_auth_zone_mut().clear();
+            api.kernel_get_substate_ref_mut(handle)?;
+        let proofs = auth_zone_stack.cur_auth_zone_mut().drain();
+        api.sys_drop_lock(handle)?;
+
+        for proof in proofs {
+            proof.sys_drop(api)?;
+        }
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -362,21 +318,10 @@ impl AuthZoneBlueprint {
         let proofs = {
             let auth_zone_stack: &mut AuthZoneStackSubstate =
                 api.kernel_get_substate_ref_mut(auth_zone_handle)?;
-            let proofs = auth_zone_stack.cur_auth_zone_mut().drain();
-            proofs
+            auth_zone_stack.cur_auth_zone_mut().drain()
         };
 
-        let mut proof_ids: Vec<Proof> = Vec::new();
-        let mut nodes_to_move = Vec::new();
-        for proof in proofs {
-            let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
-            api.kernel_create_node(node_id, RENodeInit::Proof(proof), BTreeMap::new())?;
-            let proof_id = node_id.into();
-            proof_ids.push(Proof(proof_id));
-            nodes_to_move.push(RENodeId::Proof(proof_id));
-        }
-
-        Ok(IndexedScryptoValue::from_typed(&proof_ids))
+        Ok(IndexedScryptoValue::from_typed(&proofs))
     }
 
     pub(crate) fn assert_access_rule<Y>(
@@ -395,17 +340,16 @@ impl AuthZoneBlueprint {
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::read_only(),
         )?;
-        let auth_zone_stack: &AuthZoneStackSubstate = api.kernel_get_substate_ref(handle)?;
+        let auth_zone_stack_ref: &AuthZoneStackSubstate = api.kernel_get_substate_ref(handle)?;
+        let auth_zone_stack = auth_zone_stack_ref.clone();
         let authorization = convert_contextless(&input.access_rule);
 
         // Authorization check
-        auth_zone_stack
-            .check_auth(false, vec![authorization])
-            .map_err(|(authorization, error)| {
-                RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
-                    AuthZoneError::AssertAccessRuleError(authorization, error),
-                ))
-            })?;
+        if !auth_zone_stack.check_auth(false, &[authorization], api)? {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::AuthZoneError(AuthZoneError::AssertAccessRuleFailed),
+            ));
+        }
 
         api.sys_drop_lock(handle)?;
 

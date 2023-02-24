@@ -289,6 +289,38 @@ impl ResourceManagerNativePackage {
                 ))?;
                 VaultBlueprint::create_proof_by_ids(receiver, input, api)
             }
+            VAULT_LOCK_AMOUNT_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                VaultBlueprint::lock_amount(receiver, input, api)
+            }
+            VAULT_LOCK_NON_FUNGIBLES_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                VaultBlueprint::lock_non_fungibles(receiver, input, api)
+            }
+            VAULT_UNLOCK_AMOUNT_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                VaultBlueprint::unlock_amount(receiver, input, api)
+            }
+            VAULT_UNLOCK_NON_FUNGIBLES_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                VaultBlueprint::unlock_non_fungibles(receiver, input, api)
+            }
             PROOF_CLONE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
 
@@ -376,6 +408,38 @@ impl ResourceManagerNativePackage {
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 BucketBlueprint::create_proof(receiver, input, api)
+            }
+            BUCKET_LOCK_AMOUNT_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                BucketBlueprint::lock_amount(receiver, input, api)
+            }
+            BUCKET_LOCK_NON_FUNGIBLES_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                BucketBlueprint::lock_non_fungibles(receiver, input, api)
+            }
+            BUCKET_UNLOCK_AMOUNT_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                BucketBlueprint::unlock_amount(receiver, input, api)
+            }
+            BUCKET_UNLOCK_NON_FUNGIBLES_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                BucketBlueprint::unlock_non_fungibles(receiver, input, api)
             }
             WORKTOP_PUT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;

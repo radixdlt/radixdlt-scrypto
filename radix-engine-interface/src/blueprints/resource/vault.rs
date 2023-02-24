@@ -90,3 +90,31 @@ pub const VAULT_CREATE_PROOF_BY_IDS_IDENT: &str = "create_proof_by_ids";
 pub struct VaultCreateProofByIdsInput {
     pub ids: BTreeSet<NonFungibleLocalId>,
 }
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct VaultLockAmountInput {
+    pub amount: Decimal,
+}
+
+pub const VAULT_LOCK_AMOUNT_IDENT: &str = "Vault_lock_amount";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct VaultUnlockAmountInput {
+    pub amount: Decimal,
+}
+
+pub const VAULT_UNLOCK_AMOUNT_IDENT: &str = "Vault_unlock_amount";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct VaultLockNonFungiblesInput {
+    pub local_ids: BTreeSet<NonFungibleLocalId>,
+}
+
+pub const VAULT_LOCK_NON_FUNGIBLES_IDENT: &str = "Vault_lock_non_fungibles";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct VaultUnlockNonFungiblesInput {
+    pub local_ids: BTreeSet<NonFungibleLocalId>,
+}
+
+pub const VAULT_UNLOCK_NON_FUNGIBLES_IDENT: &str = "Vault_unlock_non_fungibles";

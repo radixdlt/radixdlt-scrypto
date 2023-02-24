@@ -1,12 +1,12 @@
-use crate::blueprints::resource::{BucketSubstate, ProofSubstate};
+use crate::blueprints::resource::ProofInfoSubstate;
 use crate::errors::{ModuleError, RuntimeError};
-use crate::kernel::actor::ResolvedActor;
+use crate::kernel::actor::{ResolvedActor, ResolvedReceiver};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
 use crate::types::*;
-use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::{BucketOffset, ProofOffset, RENodeId, SubstateOffset};
+use radix_engine_interface::api::types::{ProofOffset, RENodeId, SubstateOffset};
+use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::*;
 
@@ -22,50 +22,44 @@ pub struct NodeMoveModule {}
 impl NodeMoveModule {
     fn prepare_move_downstream<Y: KernelModuleApi<RuntimeError>>(
         node_id: RENodeId,
+        actor: &Option<ResolvedActor>,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
         match node_id {
-            RENodeId::Bucket(..) => {
-                let handle = api.kernel_lock_substate(
-                    node_id,
-                    NodeModuleId::SELF,
-                    SubstateOffset::Bucket(BucketOffset::Bucket),
-                    LockFlags::read_only(),
-                )?;
-                let bucket: &BucketSubstate = api.kernel_get_substate_ref(handle)?;
-                let locked = bucket.is_locked();
-                api.kernel_drop_lock(handle)?;
-                if locked {
-                    Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
-                        NodeMoveError::CantMoveDownstream(node_id),
-                    )))
-                } else {
-                    Ok(())
-                }
-            }
             RENodeId::Proof(..) => {
                 let handle = api.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,
-                    SubstateOffset::Proof(ProofOffset::Proof),
+                    SubstateOffset::Proof(ProofOffset::Info),
                     LockFlags::MUTABLE,
                 )?;
-                let proof: &mut ProofSubstate = api.kernel_get_substate_ref_mut(handle)?;
+                let proof: &mut ProofInfoSubstate = api.kernel_get_substate_ref_mut(handle)?;
 
-                let rtn = if proof.is_restricted() {
-                    Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
+                if proof.restricted {
+                    return Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
                         NodeMoveError::CantMoveDownstream(node_id),
-                    )))
-                } else {
+                    )));
+                }
+
+                // Change to restricted unless it's for auth zone.
+                if !matches!(
+                    actor,
+                    Some(ResolvedActor {
+                        receiver: Some(ResolvedReceiver {
+                            receiver: MethodReceiver(RENodeId::AuthZoneStack, ..),
+                            ..
+                        }),
+                        ..
+                    })
+                ) {
                     proof.change_to_restricted();
-                    Ok(())
-                };
+                }
 
                 api.kernel_drop_lock(handle)?;
-
-                rtn
+                Ok(())
             }
-            RENodeId::Component(..) => Ok(()),
+
+            RENodeId::Bucket(..) | RENodeId::Component(..) => Ok(()),
 
             RENodeId::TransactionRuntime
             | RENodeId::AuthZoneStack
@@ -90,28 +84,11 @@ impl NodeMoveModule {
 
     fn prepare_move_upstream<Y: KernelModuleApi<RuntimeError>>(
         node_id: RENodeId,
-        api: &mut Y,
+        _api: &mut Y,
     ) -> Result<(), RuntimeError> {
         match node_id {
-            RENodeId::Bucket(..) => {
-                let handle = api.kernel_lock_substate(
-                    node_id,
-                    NodeModuleId::SELF,
-                    SubstateOffset::Bucket(BucketOffset::Bucket),
-                    LockFlags::read_only(),
-                )?;
-                let bucket: &BucketSubstate = api.kernel_get_substate_ref(handle)?;
-                let locked = bucket.is_locked();
-                api.kernel_drop_lock(handle)?;
-                if locked {
-                    Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
-                        NodeMoveError::CantMoveUpstream(node_id),
-                    )))
-                } else {
-                    Ok(())
-                }
-            }
-            RENodeId::Proof(..)
+            RENodeId::Bucket(..)
+            | RENodeId::Proof(..)
             | RENodeId::Component(..)
             | RENodeId::Vault(..)
             | RENodeId::Account(..) => Ok(()),
@@ -139,12 +116,12 @@ impl NodeMoveModule {
 impl KernelModule for NodeMoveModule {
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        _actor: &Option<ResolvedActor>,
+        actor: &Option<ResolvedActor>,
         call_frame_update: &mut CallFrameUpdate,
         _args: &ScryptoValue,
     ) -> Result<(), RuntimeError> {
         for node_id in &call_frame_update.nodes_to_move {
-            Self::prepare_move_downstream(*node_id, api)?;
+            Self::prepare_move_downstream(*node_id, actor, api)?;
         }
 
         Ok(())

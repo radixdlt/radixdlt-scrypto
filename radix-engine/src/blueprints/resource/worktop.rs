@@ -191,13 +191,12 @@ impl WorktopBlueprint {
 
         let worktop: &WorktopSubstate = api.kernel_get_substate_ref(worktop_handle)?;
 
-        let total_amount =
-            if let Some(bucket) = worktop.resources.get(&input.resource_address).cloned() {
-                Bucket(bucket.bucket_id()).sys_amount(api)?
-            } else {
-                Decimal::zero()
-            };
-        if total_amount.is_zero() {
+        let amount = if let Some(bucket) = worktop.resources.get(&input.resource_address).cloned() {
+            Bucket(bucket.bucket_id()).sys_amount(api)?
+        } else {
+            Decimal::zero()
+        };
+        if amount.is_zero() {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::WorktopError(WorktopError::AssertionFailed),
             ));
@@ -225,13 +224,12 @@ impl WorktopBlueprint {
         )?;
 
         let worktop: &WorktopSubstate = api.kernel_get_substate_ref(worktop_handle)?;
-        let total_amount =
-            if let Some(bucket) = worktop.resources.get(&input.resource_address).cloned() {
-                Bucket(bucket.bucket_id()).sys_amount(api)?
-            } else {
-                Decimal::zero()
-            };
-        if total_amount < input.amount {
+        let amount = if let Some(bucket) = worktop.resources.get(&input.resource_address).cloned() {
+            Bucket(bucket.bucket_id()).sys_amount(api)?
+        } else {
+            Decimal::zero()
+        };
+        if amount < input.amount {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::WorktopError(WorktopError::AssertionFailed),
             ));
@@ -262,7 +260,7 @@ impl WorktopBlueprint {
 
         let ids = if let Some(bucket) = worktop.resources.get(&input.resource_address) {
             let bucket = Bucket(bucket.bucket_id());
-            bucket.sys_total_ids(api)?
+            bucket.sys_non_fungible_local_ids(api)?
         } else {
             BTreeSet::new()
         };
@@ -291,20 +289,9 @@ impl WorktopBlueprint {
             SubstateOffset::Worktop(WorktopOffset::Worktop),
             LockFlags::MUTABLE,
         )?;
-        let mut buckets = Vec::new();
         let worktop: &mut WorktopSubstate = api.kernel_get_substate_ref_mut(worktop_handle)?;
-        let bucket_ids: Vec<BucketId> = worktop
-            .resources
-            .iter()
-            .map(|(_, own)| own.bucket_id())
-            .collect();
-        for bucket_id in bucket_ids {
-            let bucket = Bucket(bucket_id);
-            let amount = bucket.sys_amount(api)?;
-            let bucket = bucket.sys_take(amount, api)?;
-            buckets.push(bucket);
-        }
-
+        let buckets: Vec<Own> = worktop.resources.values().cloned().collect();
+        worktop.resources.clear();
         Ok(IndexedScryptoValue::from_typed(&buckets))
     }
 }

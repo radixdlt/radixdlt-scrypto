@@ -295,9 +295,9 @@ impl TestRunner {
                 .get_substate(&SubstateId(
                     RENodeId::Vault(royalty_vault.vault_id()),
                     NodeModuleId::SELF,
-                    SubstateOffset::Vault(VaultOffset::Vault),
+                    SubstateOffset::Vault(VaultOffset::LiquidFungible),
                 ))
-                .map(|output| output.substate.vault().0.amount())
+                .map(|mut output| output.substate.vault_liquid_fungible_mut().amount())
         } else {
             None
         }
@@ -321,9 +321,9 @@ impl TestRunner {
                 .get_substate(&SubstateId(
                     RENodeId::Vault(royalty_vault.vault_id()),
                     NodeModuleId::SELF,
-                    SubstateOffset::Vault(VaultOffset::Vault),
+                    SubstateOffset::Vault(VaultOffset::LiquidFungible),
                 ))
-                .map(|output| output.substate.vault().0.amount())
+                .map(|mut output| output.substate.vault_liquid_fungible_mut().amount())
         } else {
             None
         }
@@ -366,23 +366,49 @@ impl TestRunner {
     }
 
     pub fn inspect_vault_balance(&mut self, vault_id: VaultId) -> Option<Decimal> {
-        self.substate_store()
-            .get_substate(&SubstateId(
-                RENodeId::Vault(vault_id),
-                NodeModuleId::SELF,
-                SubstateOffset::Vault(VaultOffset::Vault),
-            ))
-            .map(|output| output.substate.vault().0.amount())
+        if let Some(output) = self.substate_store().get_substate(&SubstateId(
+            RENodeId::Vault(vault_id),
+            NodeModuleId::SELF,
+            SubstateOffset::Vault(VaultOffset::Info),
+        )) {
+            if output.substate.vault_info().resource_type.is_fungible() {
+                self.inspect_fungible_vault(vault_id)
+            } else {
+                self.inspect_non_fungible_vault(vault_id)
+                    .map(|ids| ids.len().into())
+            }
+        } else {
+            None
+        }
     }
 
-    pub fn inspect_nft_vault(&mut self, vault_id: VaultId) -> Option<BTreeSet<NonFungibleLocalId>> {
+    pub fn inspect_fungible_vault(&mut self, vault_id: VaultId) -> Option<Decimal> {
         self.substate_store()
             .get_substate(&SubstateId(
                 RENodeId::Vault(vault_id),
                 NodeModuleId::SELF,
-                SubstateOffset::Vault(VaultOffset::Vault),
+                SubstateOffset::Vault(VaultOffset::LiquidFungible),
             ))
-            .map(|output| output.substate.vault().0.ids().clone())
+            .map(|mut output| output.substate.vault_liquid_fungible_mut().amount())
+    }
+
+    pub fn inspect_non_fungible_vault(
+        &mut self,
+        vault_id: VaultId,
+    ) -> Option<BTreeSet<NonFungibleLocalId>> {
+        self.substate_store()
+            .get_substate(&SubstateId(
+                RENodeId::Vault(vault_id),
+                NodeModuleId::SELF,
+                SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
+            ))
+            .map(|mut output| {
+                output
+                    .substate
+                    .vault_liquid_non_fungible_mut()
+                    .ids()
+                    .clone()
+            })
     }
 
     pub fn get_component_resources(

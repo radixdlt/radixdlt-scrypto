@@ -133,17 +133,12 @@ fn test_take_with_invalid_granularity() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        if let RuntimeError::ApplicationError(ApplicationError::BucketError(
-            BucketError::ResourceOperationError(ResourceOperationError::InvalidAmount(
-                amount,
-                granularity,
-            )),
-        )) = e
-        {
-            amount.eq(&dec!("1.123")) && *granularity == 2
-        } else {
-            false
-        }
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::BucketError(
+                BucketError::InvalidAmount,
+            ))
+        )
     });
 }
 
@@ -176,17 +171,12 @@ fn test_take_with_negative_amount() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        if let RuntimeError::ApplicationError(ApplicationError::BucketError(
-            BucketError::ResourceOperationError(ResourceOperationError::InvalidAmount(
-                amount,
-                granularity,
-            )),
-        )) = e
-        {
-            amount.eq(&dec!("-2")) && *granularity == 2
-        } else {
-            false
-        }
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::BucketError(
+                BucketError::InvalidAmount,
+            ))
+        )
     });
 }
 

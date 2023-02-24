@@ -1,21 +1,22 @@
-use crate::errors::*;
-use crate::system::kernel_modules::execution_trace::ProofSnapshot;
-use crate::system::node::RENodeInit;
-use crate::system::node::RENodeModuleInit;
-use crate::system::node_substates::{SubstateRef, SubstateRefMut};
-use crate::types::*;
-use crate::wasm::WasmEngine;
-use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::ScryptoValue;
-
 use super::actor::ResolvedActor;
 use super::call_frame::CallFrameUpdate;
 use super::call_frame::RENodeVisibilityOrigin;
 use super::heap::HeapRENode;
 use super::module_mixer::KernelModuleMixer;
+use crate::errors::*;
+use crate::system::kernel_modules::execution_trace::BucketSnapshot;
+use crate::system::kernel_modules::execution_trace::ProofSnapshot;
+use crate::system::node::RENodeInit;
+use crate::system::node::RENodeModuleInit;
+use crate::system::node_substates::SubstateRef;
+use crate::system::node_substates::SubstateRefMut;
+use crate::types::*;
+use crate::wasm::WasmEngine;
+use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::api::types::*;
+use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::ClientComponentApi;
+use radix_engine_interface::data::ScryptoValue;
 
 pub struct LockInfo {
     pub offset: SubstateOffset,
@@ -142,8 +143,11 @@ pub trait KernelInternalApi {
     fn kernel_get_current_actor(&self) -> Option<ResolvedActor>;
 
     /* Super unstable interface, specifically for `ExecutionTrace` kernel module */
-    fn kernel_read_bucket(&mut self, bucket_id: BucketId) -> Option<Resource>;
+    fn kernel_read_bucket(&mut self, bucket_id: BucketId) -> Option<BucketSnapshot>;
     fn kernel_read_proof(&mut self, proof_id: BucketId) -> Option<ProofSnapshot>;
 }
 
-pub trait KernelModuleApi<E>: KernelNodeApi + KernelSubstateApi + KernelInternalApi {}
+pub trait KernelModuleApi<E>:
+    KernelNodeApi + KernelSubstateApi + KernelInternalApi + ClientComponentApi<E>
+{
+}

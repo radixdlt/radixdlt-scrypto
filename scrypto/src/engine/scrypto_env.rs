@@ -1,7 +1,6 @@
 use crate::engine::wasm_api::*;
 use radix_engine_interface::api::package::{PackageCodeSubstate, PackageInfoSubstate};
-use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::*;
+use radix_engine_interface::api::{types::*, LockFlags};
 use radix_engine_interface::api::{
     ClientActorApi, ClientComponentApi, ClientNodeApi, ClientPackageApi, ClientSubstateApi,
 };

@@ -1,304 +1,64 @@
-use crate::errors::{InterpreterError, InvokeError, RuntimeError};
+use crate::errors::{ApplicationError, InterpreterError, RuntimeError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::kernel_modules::execution_trace::ProofSnapshot;
 use crate::system::node::RENodeInit;
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{ProofOffset, RENodeId, SubstateOffset};
-use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
+use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{types::*, ClientSubstateApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum ProofError {
-    /// Error produced by a resource container.
-    ResourceOperationError(ResourceOperationError),
-    /// Can't generate zero-amount or empty non-fungible set proofs.
-    EmptyProofNotAllowed,
-    /// The base proofs are not enough to cover the requested amount or non-fungible ids.
-    InsufficientBaseProofs,
-    /// Can't apply a non-fungible operation on fungible proofs.
-    NonFungibleOperationNotAllowed,
-    /// Can't apply a fungible operation on non-fungible proofs.
-    FungibleOperationNotAllowed,
-    CouldNotCreateProof,
-    InvalidRequestData(DecodeError),
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, ScryptoSbor)]
+pub enum LocalRef {
+    Bucket(BucketId),
+    Vault(VaultId),
 }
 
-#[derive(Debug)]
-pub struct ProofSubstate {
+impl LocalRef {
+    pub fn to_re_node_id(&self) -> RENodeId {
+        match self {
+            LocalRef::Bucket(id) => RENodeId::Bucket(id.clone()),
+            LocalRef::Vault(id) => RENodeId::Vault(id.clone()),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum ProofError {
+    InvalidRequestData(DecodeError),
+    /// Error produced by a resource container.
+    ResourceError(ResourceError),
+    /// Can't generate zero-amount or empty non-fungible set proofs.
+    EmptyProofNotAllowed,
+    /// Can't apply a non-fungible operation on fungible proofs.
+    NonFungibleOperationNotSupported,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct ProofInfoSubstate {
     /// The resource address.
     pub resource_address: ResourceAddress,
     /// The resource type.
     pub resource_type: ResourceType,
     /// Whether movement of this proof is restricted.
     pub restricted: bool,
-    /// The total locked amount or non-fungible ids.
-    pub total_locked: LockedAmountOrIds,
-    /// The supporting containers.
-    pub evidence: HashMap<ResourceContainerId, (Rc<RefCell<LockableResource>>, LockedAmountOrIds)>,
 }
 
-impl ProofSubstate {
-    pub fn new(
-        resource_address: ResourceAddress,
-        resource_type: ResourceType,
-        total_locked: LockedAmountOrIds,
-        evidence: HashMap<ResourceContainerId, (Rc<RefCell<LockableResource>>, LockedAmountOrIds)>,
-    ) -> Result<ProofSubstate, ProofError> {
-        if total_locked.is_empty() {
-            return Err(ProofError::EmptyProofNotAllowed);
-        }
-
-        Ok(Self {
-            resource_address,
-            resource_type,
-            restricted: false,
-            total_locked,
-            evidence,
-        })
-    }
-
-    /// Computes the locked amount or non-fungible IDs, in total and per resource container.
-    pub fn compute_total_locked(
-        proofs: &[ProofSubstate],
-        resource_address: ResourceAddress,
-        resource_type: ResourceType,
-    ) -> (
-        LockedAmountOrIds,
-        HashMap<ResourceContainerId, LockedAmountOrIds>,
-    ) {
-        // filter proofs by resource address and restricted flag
-        let proofs: Vec<&ProofSubstate> = proofs
-            .iter()
-            .filter(|p| p.resource_address() == resource_address && !p.is_restricted())
-            .collect();
-
-        // calculate the max locked amount (or ids) of each container
-        match resource_type {
-            ResourceType::Fungible { .. } => {
-                let mut max = HashMap::<ResourceContainerId, Decimal>::new();
-                for proof in &proofs {
-                    for (container_id, (_, locked_amount_or_ids)) in &proof.evidence {
-                        let new_amount = locked_amount_or_ids.amount();
-                        if let Some(existing) = max.get_mut(container_id) {
-                            *existing = Decimal::max(*existing, new_amount);
-                        } else {
-                            max.insert(container_id.clone(), new_amount);
-                        }
-                    }
-                }
-                let total = max
-                    .values()
-                    .cloned()
-                    .reduce(|a, b| a + b)
-                    .unwrap_or_default();
-                let per_container = max
-                    .into_iter()
-                    .map(|(k, v)| (k, LockedAmountOrIds::Amount(v)))
-                    .collect();
-                (LockedAmountOrIds::Amount(total), per_container)
-            }
-            ResourceType::NonFungible { .. } => {
-                let mut max = HashMap::<ResourceContainerId, BTreeSet<NonFungibleLocalId>>::new();
-                for proof in &proofs {
-                    for (container_id, (_, locked_amount_or_ids)) in &proof.evidence {
-                        let new_ids = locked_amount_or_ids
-                            .ids()
-                            .expect("Failed to list non-fungible IDS on non-fungible proof");
-                        if let Some(ids) = max.get_mut(container_id) {
-                            ids.extend(new_ids);
-                        } else {
-                            max.insert(container_id.clone(), new_ids);
-                        }
-                    }
-                }
-                let mut total = BTreeSet::<NonFungibleLocalId>::new();
-                for value in max.values() {
-                    total.extend(value.clone());
-                }
-                let per_container = max
-                    .into_iter()
-                    .map(|(k, v)| (k, LockedAmountOrIds::Ids(v)))
-                    .collect();
-                (LockedAmountOrIds::Ids(total), per_container)
-            }
-        }
-    }
-
-    /// Creates a composite proof from proofs. This method will generate a max proof.
-    pub fn compose(
-        proofs: &[ProofSubstate],
-        resource_address: ResourceAddress,
-        resource_type: ResourceType,
-    ) -> Result<ProofSubstate, ProofError> {
-        let (total, _) = Self::compute_total_locked(proofs, resource_address, resource_type);
-        match total {
-            LockedAmountOrIds::Amount(amount) => {
-                Self::compose_by_amount(proofs, amount, resource_address, resource_type)
-            }
-            LockedAmountOrIds::Ids(ids) => {
-                Self::compose_by_ids(proofs, &ids, resource_address, resource_type)
-            }
-        }
-    }
-
-    pub fn compose_by_amount(
-        proofs: &[ProofSubstate],
-        amount: Decimal,
-        resource_address: ResourceAddress,
-        resource_type: ResourceType,
-    ) -> Result<ProofSubstate, ProofError> {
-        let (total_locked, mut per_container) =
-            Self::compute_total_locked(proofs, resource_address, resource_type);
-
-        match total_locked {
-            LockedAmountOrIds::Amount(locked_amount) => {
-                if amount > locked_amount {
-                    return Err(ProofError::InsufficientBaseProofs);
-                }
-
-                // Locked the max (or needed) amount from the containers, in the order that the containers were referenced.
-                // TODO: observe the performance/feedback of this container selection algorithm and decide next steps
-                let mut evidence = HashMap::new();
-                let mut remaining = amount.clone();
-                'outer: for proof in proofs {
-                    for (container_id, (container, _)) in &proof.evidence {
-                        if remaining.is_zero() {
-                            break 'outer;
-                        }
-
-                        if let Some(quota) = per_container.remove(container_id) {
-                            let amount = Decimal::min(remaining, quota.amount());
-                            container
-                                .borrow_mut()
-                                .lock_by_amount(amount)
-                                .map_err(ProofError::ResourceOperationError)?;
-                            remaining -= amount;
-                            evidence.insert(
-                                container_id.clone(),
-                                (container.clone(), LockedAmountOrIds::Amount(amount)),
-                            );
-                        }
-                    }
-                }
-
-                ProofSubstate::new(
-                    resource_address,
-                    resource_type,
-                    LockedAmountOrIds::Amount(amount),
-                    evidence,
-                )
-            }
-            LockedAmountOrIds::Ids(locked_ids) => {
-                if amount > locked_ids.len().into() {
-                    Err(ProofError::InsufficientBaseProofs)
-                } else {
-                    let n: usize = amount
-                        .to_string()
-                        .parse()
-                        .expect("Failed to convert non-fungible amount to usize");
-                    let ids: BTreeSet<NonFungibleLocalId> =
-                        locked_ids.iter().take(n).cloned().collect();
-                    Self::compose_by_ids(proofs, &ids, resource_address, resource_type)
-                }
-            }
-        }
-    }
-
-    pub fn compose_by_ids(
-        proofs: &[ProofSubstate],
-        ids: &BTreeSet<NonFungibleLocalId>,
-        resource_address: ResourceAddress,
-        resource_type: ResourceType,
-    ) -> Result<ProofSubstate, ProofError> {
-        let (total_locked, mut per_container) =
-            Self::compute_total_locked(proofs, resource_address, resource_type);
-
-        match total_locked {
-            LockedAmountOrIds::Amount(_) => Err(ProofError::NonFungibleOperationNotAllowed),
-            LockedAmountOrIds::Ids(locked_ids) => {
-                if !locked_ids.is_superset(ids) {
-                    return Err(ProofError::InsufficientBaseProofs);
-                }
-
-                // Locked the max (or needed) ids from the containers, in the order that the containers were referenced.
-                // TODO: observe the performance/feedback of this container selection algorithm and decide next steps
-                let mut evidence = HashMap::new();
-                let mut remaining = ids.clone();
-                'outer: for proof in proofs {
-                    for (container_id, (container, _)) in &proof.evidence {
-                        if remaining.is_empty() {
-                            break 'outer;
-                        }
-
-                        if let Some(quota) = per_container.remove(container_id) {
-                            let ids = remaining
-                                .intersection(&quota.ids().expect(
-                                    "Failed to list non-fungible ids on non-fungible resource",
-                                ))
-                                .cloned()
-                                .collect();
-                            container
-                                .borrow_mut()
-                                .lock_by_ids(&ids)
-                                .map_err(ProofError::ResourceOperationError)?;
-                            for id in &ids {
-                                remaining.remove(id);
-                            }
-                            evidence.insert(
-                                container_id.clone(),
-                                (container.clone(), LockedAmountOrIds::Ids(ids)),
-                            );
-                        }
-                    }
-                }
-
-                ProofSubstate::new(
-                    resource_address,
-                    resource_type,
-                    LockedAmountOrIds::Ids(ids.clone()),
-                    evidence,
-                )
-            }
-        }
-    }
-
-    /// Makes a clone of this proof.
-    ///
-    /// Note that cloning a proof will update the ref count of the locked
-    /// resources in the source containers.
-    pub fn clone(&self) -> Self {
-        for (_, (container, locked_amount_or_ids)) in &self.evidence {
-            match locked_amount_or_ids {
-                LockedAmountOrIds::Amount(amount) => {
-                    container
-                        .borrow_mut()
-                        .lock_by_amount(*amount)
-                        .expect("Failed to clone a proof");
-                }
-                LockedAmountOrIds::Ids(ids) => {
-                    container
-                        .borrow_mut()
-                        .lock_by_ids(ids)
-                        .expect("Failed to clone a proof");
-                }
-            }
-        }
-        Self {
-            resource_address: self.resource_address.clone(),
-            resource_type: self.resource_type.clone(),
-            restricted: self.restricted,
-            total_locked: self.total_locked.clone(),
-            evidence: self.evidence.clone(),
-        }
-    }
-
-    pub fn drop(&mut self) {
-        for (_, (container, locked_amount_or_ids)) in &mut self.evidence {
-            container.borrow_mut().unlock(locked_amount_or_ids);
-        }
+impl ProofInfoSubstate {
+    pub fn of<Y: KernelSubstateApi + ClientSubstateApi<RuntimeError>>(
+        node_id: RENodeId,
+        api: &mut Y,
+    ) -> Result<Self, RuntimeError> {
+        let handle = api.sys_lock_substate(
+            node_id,
+            SubstateOffset::Proof(ProofOffset::Info),
+            LockFlags::read_only(),
+        )?;
+        let substate_ref: &ProofInfoSubstate = api.kernel_get_substate_ref(handle)?;
+        let info = substate_ref.clone();
+        api.sys_drop_lock(handle)?;
+        Ok(info)
     }
 
     pub fn change_to_unrestricted(&mut self) {
@@ -308,32 +68,132 @@ impl ProofSubstate {
     pub fn change_to_restricted(&mut self) {
         self.restricted = true;
     }
+}
 
-    pub fn resource_address(&self) -> ResourceAddress {
-        self.resource_address
-    }
+#[derive(Debug, Clone)]
+pub struct FungibleProof {
+    pub total_locked: Decimal,
+    /// The supporting containers.
+    pub evidence: BTreeMap<LocalRef, Decimal>,
+}
 
-    pub fn total_amount(&self) -> Decimal {
-        self.total_locked.amount()
-    }
-
-    pub fn total_ids(&self) -> Result<BTreeSet<NonFungibleLocalId>, InvokeError<ProofError>> {
-        self.total_locked
-            .ids()
-            .map_err(|_| InvokeError::SelfError(ProofError::NonFungibleOperationNotAllowed))
-    }
-
-    pub fn is_restricted(&self) -> bool {
-        self.restricted
-    }
-
-    pub fn snapshot(&self) -> ProofSnapshot {
-        ProofSnapshot {
-            resource_address: self.resource_address,
-            resource_type: self.resource_type,
-            restricted: self.restricted,
-            total_locked: self.total_locked.clone(),
+impl FungibleProof {
+    pub fn new(
+        total_locked: Decimal,
+        evidence: BTreeMap<LocalRef, Decimal>,
+    ) -> Result<FungibleProof, ProofError> {
+        if total_locked.is_zero() {
+            return Err(ProofError::EmptyProofNotAllowed);
         }
+
+        Ok(Self {
+            total_locked,
+            evidence,
+        })
+    }
+
+    pub fn clone_proof<Y: ClientApi<RuntimeError>>(
+        &self,
+        api: &mut Y,
+    ) -> Result<Self, RuntimeError> {
+        for (container_id, locked_amount) in &self.evidence {
+            api.call_method(
+                container_id.to_re_node_id(),
+                match container_id {
+                    LocalRef::Bucket(_) => BUCKET_LOCK_AMOUNT_IDENT,
+                    LocalRef::Vault(_) => VAULT_LOCK_AMOUNT_IDENT,
+                },
+                scrypto_args!(locked_amount),
+            )?;
+        }
+        Ok(Self {
+            total_locked: self.total_locked.clone(),
+            evidence: self.evidence.clone(),
+        })
+    }
+
+    pub fn drop_proof<Y: ClientApi<RuntimeError>>(self, api: &mut Y) -> Result<(), RuntimeError> {
+        for (container_id, locked_amount) in &self.evidence {
+            api.call_method(
+                container_id.to_re_node_id(),
+                match container_id {
+                    LocalRef::Bucket(_) => BUCKET_UNLOCK_AMOUNT_IDENT,
+                    LocalRef::Vault(_) => VAULT_UNLOCK_AMOUNT_IDENT,
+                },
+                scrypto_args!(locked_amount),
+            )?;
+        }
+        Ok(())
+    }
+
+    pub fn amount(&self) -> Decimal {
+        self.total_locked
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct NonFungibleProof {
+    /// The total locked amount or non-fungible ids.
+    pub total_locked: BTreeSet<NonFungibleLocalId>,
+    /// The supporting containers.
+    pub evidence: BTreeMap<LocalRef, BTreeSet<NonFungibleLocalId>>,
+}
+
+impl NonFungibleProof {
+    pub fn new(
+        total_locked: BTreeSet<NonFungibleLocalId>,
+        evidence: BTreeMap<LocalRef, BTreeSet<NonFungibleLocalId>>,
+    ) -> Result<NonFungibleProof, ProofError> {
+        if total_locked.is_empty() {
+            return Err(ProofError::EmptyProofNotAllowed);
+        }
+
+        Ok(Self {
+            total_locked,
+            evidence,
+        })
+    }
+
+    pub fn clone_proof<Y: ClientApi<RuntimeError>>(
+        &self,
+        api: &mut Y,
+    ) -> Result<Self, RuntimeError> {
+        for (container_id, locked_ids) in &self.evidence {
+            api.call_method(
+                container_id.to_re_node_id(),
+                match container_id {
+                    LocalRef::Bucket(_) => BUCKET_LOCK_NON_FUNGIBLES_IDENT,
+                    LocalRef::Vault(_) => VAULT_LOCK_NON_FUNGIBLES_IDENT,
+                },
+                scrypto_args!(locked_ids),
+            )?;
+        }
+        Ok(Self {
+            total_locked: self.total_locked.clone(),
+            evidence: self.evidence.clone(),
+        })
+    }
+
+    pub fn drop_proof<Y: ClientApi<RuntimeError>>(self, api: &mut Y) -> Result<(), RuntimeError> {
+        for (container_id, locked_ids) in &self.evidence {
+            api.call_method(
+                container_id.to_re_node_id(),
+                match container_id {
+                    LocalRef::Bucket(_) => BUCKET_UNLOCK_NON_FUNGIBLES_IDENT,
+                    LocalRef::Vault(_) => VAULT_UNLOCK_NON_FUNGIBLES_IDENT,
+                },
+                scrypto_args!(locked_ids),
+            )?;
+        }
+        Ok(())
+    }
+
+    pub fn amount(&self) -> Decimal {
+        self.non_fungible_local_ids().len().into()
+    }
+
+    pub fn non_fungible_local_ids(&self) -> &BTreeSet<NonFungibleLocalId> {
+        &self.total_locked
     }
 }
 
@@ -346,27 +206,52 @@ impl ProofBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let _input: ProofCloneInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle = api.sys_lock_substate(
-            receiver,
-            SubstateOffset::Proof(ProofOffset::Proof),
-            LockFlags::read_only(),
-        )?;
-        let proof: &ProofSubstate = api.kernel_get_substate_ref(handle)?;
-        let cloned_proof = proof.clone();
+        let proof_info = ProofInfoSubstate::of(receiver, api)?;
+        let node_id = if proof_info.resource_type.is_fungible() {
+            let handle = api.sys_lock_substate(
+                receiver,
+                SubstateOffset::Proof(ProofOffset::Fungible),
+                LockFlags::read_only(),
+            )?;
+            let substate_ref: &FungibleProof = api.kernel_get_substate_ref(handle)?;
+            let proof = substate_ref.clone();
+            let clone = proof.clone_proof(api)?;
+            api.sys_drop_lock(handle)?;
 
-        let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
-        api.kernel_create_node(node_id, RENodeInit::Proof(cloned_proof), BTreeMap::new())?;
+            let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
+            api.kernel_create_node(
+                node_id,
+                RENodeInit::FungibleProof(proof_info, clone),
+                BTreeMap::new(),
+            )?;
+            node_id
+        } else {
+            let handle = api.sys_lock_substate(
+                receiver,
+                SubstateOffset::Proof(ProofOffset::NonFungible),
+                LockFlags::read_only(),
+            )?;
+            let substate_ref: &NonFungibleProof = api.kernel_get_substate_ref(handle)?;
+            let proof = substate_ref.clone();
+            let clone = proof.clone_proof(api)?;
+            api.sys_drop_lock(handle)?;
+
+            let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
+            api.kernel_create_node(
+                node_id,
+                RENodeInit::NonFungibleProof(proof_info, clone),
+                BTreeMap::new(),
+            )?;
+            node_id
+        };
+
         let proof_id = node_id.into();
-
         Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
     }
 
@@ -376,22 +261,35 @@ impl ProofBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let _input: ProofGetAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle = api.sys_lock_substate(
-            receiver,
-            SubstateOffset::Proof(ProofOffset::Proof),
-            LockFlags::read_only(),
-        )?;
-        let proof: &ProofSubstate = api.kernel_get_substate_ref(handle)?;
-        Ok(IndexedScryptoValue::from_typed(&proof.total_amount()))
+        let proof_info = ProofInfoSubstate::of(receiver, api)?;
+        let amount = if proof_info.resource_type.is_fungible() {
+            let handle = api.sys_lock_substate(
+                receiver,
+                SubstateOffset::Proof(ProofOffset::Fungible),
+                LockFlags::read_only(),
+            )?;
+            let substate_ref: &FungibleProof = api.kernel_get_substate_ref(handle)?;
+            let amount = substate_ref.amount();
+            api.sys_drop_lock(handle)?;
+            amount
+        } else {
+            let handle = api.sys_lock_substate(
+                receiver,
+                SubstateOffset::Proof(ProofOffset::NonFungible),
+                LockFlags::read_only(),
+            )?;
+            let substate_ref: &NonFungibleProof = api.kernel_get_substate_ref(handle)?;
+            let amount = substate_ref.amount();
+            api.sys_drop_lock(handle)?;
+            amount
+        };
+        Ok(IndexedScryptoValue::from_typed(&amount))
     }
 
     pub(crate) fn get_non_fungible_local_ids<Y>(
@@ -400,24 +298,29 @@ impl ProofBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let _input: ProofGetNonFungibleLocalIdsInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle = api.sys_lock_substate(
-            receiver,
-            SubstateOffset::Proof(ProofOffset::Proof),
-            LockFlags::read_only(),
-        )?;
-        let proof: &ProofSubstate = api.kernel_get_substate_ref(handle)?;
-        let ids = proof.total_ids()?;
-        Ok(IndexedScryptoValue::from_typed(&ids))
+        let proof_info = ProofInfoSubstate::of(receiver, api)?;
+        if proof_info.resource_type.is_fungible() {
+            Err(RuntimeError::ApplicationError(
+                ApplicationError::ProofError(ProofError::NonFungibleOperationNotSupported),
+            ))
+        } else {
+            let handle = api.sys_lock_substate(
+                receiver,
+                SubstateOffset::Proof(ProofOffset::NonFungible),
+                LockFlags::read_only(),
+            )?;
+            let substate_ref: &NonFungibleProof = api.kernel_get_substate_ref(handle)?;
+            let ids = substate_ref.non_fungible_local_ids().clone();
+            api.sys_drop_lock(handle)?;
+            Ok(IndexedScryptoValue::from_typed(&ids))
+        }
     }
 
     pub(crate) fn get_resource_address<Y>(
@@ -426,21 +329,15 @@ impl ProofBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let _input: ProofGetResourceAddressInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle = api.sys_lock_substate(
-            receiver,
-            SubstateOffset::Proof(ProofOffset::Proof),
-            LockFlags::read_only(),
-        )?;
-        let proof: &ProofSubstate = api.kernel_get_substate_ref(handle)?;
-        Ok(IndexedScryptoValue::from_typed(&proof.resource_address))
+        let proof_info = ProofInfoSubstate::of(receiver, api)?;
+        Ok(IndexedScryptoValue::from_typed(
+            &proof_info.resource_address,
+        ))
     }
 }

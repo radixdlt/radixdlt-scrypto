@@ -780,12 +780,11 @@ impl From<Error> for InvokeError<WasmRuntimeError> {
         let e_str = format!("{:?}", err);
         match err {
             Error::Trap(trap) => {
-                let invoke_err = trap
-                    .downcast_ref::<InvokeError<WasmRuntimeError>>()
-                    .unwrap_or(&InvokeError::SelfError(
-                        WasmRuntimeError::InvalidWasmPointer,
-                    ));
-                invoke_err.clone()
+                if let Some(invoke_err) = trap.downcast_ref::<InvokeError<WasmRuntimeError>>() {
+                    invoke_err.clone()
+                } else {
+                    InvokeError::SelfError(WasmRuntimeError::Trap(format!("{:?}", trap)))
+                }
             }
             _ => InvokeError::SelfError(WasmRuntimeError::InterpreterError(e_str)),
         }

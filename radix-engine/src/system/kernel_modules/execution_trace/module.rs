@@ -6,7 +6,6 @@ use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
-use crate::system::node_substates::PersistedSubstate;
 use crate::types::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -44,7 +43,6 @@ pub struct ExecutionTraceModule {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ResourceChange {
-    pub resource_address: ResourceAddress,
     pub component_id: ComponentId, // TODO: support non component actor
     pub vault_id: VaultId,
     pub amount: Decimal,
@@ -64,16 +62,76 @@ pub enum VaultOp {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, ScryptoSbor)]
-pub struct ProofSnapshot {
-    pub resource_address: ResourceAddress,
-    pub resource_type: ResourceType,
-    pub restricted: bool,
-    pub total_locked: LockedAmountOrIds,
+pub enum BucketSnapshot {
+    Fungible {
+        resource_address: ResourceAddress,
+        resource_type: ResourceType,
+        liquid: Decimal,
+    },
+    NonFungible {
+        resource_address: ResourceAddress,
+        resource_type: ResourceType,
+        liquid: BTreeSet<NonFungibleLocalId>,
+    },
+}
+
+impl BucketSnapshot {
+    pub fn resource_address(&self) -> ResourceAddress {
+        match self {
+            BucketSnapshot::Fungible {
+                resource_address, ..
+            } => resource_address.clone(),
+            BucketSnapshot::NonFungible {
+                resource_address, ..
+            } => resource_address.clone(),
+        }
+    }
+    pub fn amount(&self) -> Decimal {
+        match self {
+            BucketSnapshot::Fungible { liquid, .. } => liquid.clone(),
+            BucketSnapshot::NonFungible { liquid, .. } => liquid.len().into(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, ScryptoSbor)]
+pub enum ProofSnapshot {
+    Fungible {
+        resource_address: ResourceAddress,
+        resource_type: ResourceType,
+        restricted: bool,
+        total_locked: Decimal,
+    },
+    NonFungible {
+        resource_address: ResourceAddress,
+        resource_type: ResourceType,
+        restricted: bool,
+        total_locked: BTreeSet<NonFungibleLocalId>,
+    },
+}
+
+impl ProofSnapshot {
+    pub fn resource_address(&self) -> ResourceAddress {
+        match self {
+            ProofSnapshot::Fungible {
+                resource_address, ..
+            } => resource_address.clone(),
+            ProofSnapshot::NonFungible {
+                resource_address, ..
+            } => resource_address.clone(),
+        }
+    }
+    pub fn amount(&self) -> Decimal {
+        match self {
+            ProofSnapshot::Fungible { total_locked, .. } => total_locked.clone(),
+            ProofSnapshot::NonFungible { total_locked, .. } => total_locked.len().into(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct ResourceSummary {
-    pub buckets: HashMap<BucketId, Resource>,
+    pub buckets: HashMap<BucketId, BucketSnapshot>,
     pub proofs: HashMap<ProofId, ProofSnapshot>,
 }
 
@@ -563,7 +621,6 @@ impl ExecutionTraceReceipt {
     pub fn new(
         ops: Vec<(TraceActor, VaultId, VaultOp)>,
         actual_fee_payments: &BTreeMap<VaultId, Decimal>,
-        to_persist: &HashMap<SubstateId, (PersistedSubstate, Option<u32>)>,
         is_commit_success: bool,
     ) -> Self {
         // TODO: Might want to change the key from being a ComponentId to being an enum to
@@ -630,9 +687,7 @@ impl ExecutionTraceReceipt {
 
                 // Add a resource change log if non-zero
                 if !amount.is_zero() {
-                    let resource_address = Self::get_vault_resource_address(vault_id, to_persist);
                     resource_changes.push(ResourceChange {
-                        resource_address,
                         component_id,
                         vault_id,
                         amount,
@@ -642,19 +697,5 @@ impl ExecutionTraceReceipt {
         }
 
         ExecutionTraceReceipt { resource_changes }
-    }
-
-    fn get_vault_resource_address(
-        vault_id: VaultId,
-        to_persist: &HashMap<SubstateId, (PersistedSubstate, Option<u32>)>,
-    ) -> ResourceAddress {
-        let (substate, _) = to_persist
-            .get(&SubstateId(
-                RENodeId::Vault(vault_id),
-                NodeModuleId::SELF,
-                SubstateOffset::Vault(VaultOffset::Vault),
-            ))
-            .expect("Failed to find the vault substate");
-        substate.vault().resource_address()
     }
 }

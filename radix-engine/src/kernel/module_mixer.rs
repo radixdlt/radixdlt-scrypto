@@ -27,7 +27,7 @@ use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::types::RENodeType;
 use radix_engine_interface::api::types::SubstateOffset;
 use radix_engine_interface::api::types::VaultId;
-use radix_engine_interface::blueprints::resource::Resource;
+use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::ScryptoValue;
 use sbor::rust::collections::BTreeMap;
@@ -753,9 +753,9 @@ impl KernelModule for KernelModuleMixer {
     fn on_credit_cost_units<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         vault_id: VaultId,
-        mut fee: Resource,
+        mut fee: LiquidFungibleResource,
         contingent: bool,
-    ) -> Result<Resource, RuntimeError> {
+    ) -> Result<LiquidFungibleResource, RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             fee = KernelDebugModule::on_credit_cost_units(api, vault_id, fee, contingent)?;
