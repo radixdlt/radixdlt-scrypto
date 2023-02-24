@@ -1,5 +1,3 @@
-use core::ops::SubAssign;
-
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
@@ -215,11 +213,13 @@ impl FungibleVault {
         let locked = substate_ref.vault_locked_fungible();
 
         let max_locked = locked.amount();
-        locked
+        let cnt = locked
             .amounts
-            .get_mut(&amount)
-            .expect("Attempted to unlock an amount that is not locked in container")
-            .sub_assign(1);
+            .remove(&amount)
+            .expect("Attempted to unlock an amount that is not locked");
+        if cnt > 1 {
+            locked.amounts.insert(amount, cnt - 1);
+        }
 
         let delta = max_locked - locked.amount();
         FungibleVault::put(node_id, LiquidFungibleResource::new(delta), api)
@@ -752,6 +752,11 @@ impl VaultBlueprint {
                 ApplicationError::VaultError(VaultError::LockFeeNotRadixToken),
             ));
         }
+        if !info.resource_type.check_amount(input.amount) {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::InvalidAmount),
+            ));
+        }
 
         // Lock the substate (with special flags)
         let vault_handle = api.kernel_lock_substate(
@@ -799,6 +804,12 @@ impl VaultBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let info = VaultInfoSubstate::of(receiver, api)?;
+        if !info.resource_type.check_amount(input.amount) {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::InvalidAmount),
+            ));
+        }
+
         let node_id = if info.resource_type.is_fungible() {
             let taken = FungibleVault::take(receiver, input.amount, api)?;
             let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
@@ -886,8 +897,9 @@ impl VaultBlueprint {
 
         let info = VaultInfoSubstate::of(receiver, api)?;
         let node_id = if info.resource_type.is_fungible() {
-            let amount = FungibleVault::locked_amount(receiver, api)?
-                + FungibleVault::liquid_amount(receiver, api)?;
+            let amount = FungibleVault::liquid_amount(receiver, api)?
+                + FungibleVault::locked_amount(receiver, api)?;
+
             let proof = FungibleVault::lock_amount(receiver, amount, api)?;
 
             let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
@@ -905,8 +917,9 @@ impl VaultBlueprint {
             )?;
             node_id
         } else {
-            let amount = NonFungibleVault::locked_amount(receiver, api)?
-                + NonFungibleVault::liquid_amount(receiver, api)?;
+            let amount = NonFungibleVault::liquid_amount(receiver, api)?
+                + NonFungibleVault::locked_amount(receiver, api)?;
+
             let proof = NonFungibleVault::lock_amount(receiver, amount, api)?;
 
             let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
@@ -941,6 +954,12 @@ impl VaultBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let info = VaultInfoSubstate::of(receiver, api)?;
+        if !info.resource_type.check_amount(input.amount) {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::InvalidAmount),
+            ));
+        }
+
         let node_id = if info.resource_type.is_fungible() {
             let proof = FungibleVault::lock_amount(receiver, input.amount, api)?;
 

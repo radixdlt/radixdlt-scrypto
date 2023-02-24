@@ -10,7 +10,6 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
-use sbor::rust::ops::SubAssign;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum BucketError {
@@ -210,11 +209,13 @@ impl FungibleBucket {
         let locked = substate_ref.bucket_locked_fungible();
 
         let max_locked = locked.amount();
-        locked
+        let cnt = locked
             .amounts
-            .get_mut(&amount)
-            .expect("Attempted to unlock an amount that is not locked in container")
-            .sub_assign(1);
+            .remove(&amount)
+            .expect("Attempted to unlock an amount that is not locked");
+        if cnt > 1 {
+            locked.amounts.insert(amount, cnt - 1);
+        }
 
         let delta = max_locked - locked.amount();
         FungibleBucket::put(node_id, LiquidFungibleResource::new(delta), api)
@@ -756,6 +757,7 @@ impl BucketBlueprint {
         let node_id = if info.resource_type.is_fungible() {
             let amount = FungibleBucket::locked_amount(receiver, api)?
                 + FungibleBucket::liquid_amount(receiver, api)?;
+
             let proof = FungibleBucket::lock_amount(receiver, amount, api)?;
 
             let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
@@ -775,6 +777,7 @@ impl BucketBlueprint {
         } else {
             let amount = NonFungibleBucket::locked_amount(receiver, api)?
                 + NonFungibleBucket::liquid_amount(receiver, api)?;
+
             let proof = NonFungibleBucket::lock_amount(receiver, amount, api)?;
 
             let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;

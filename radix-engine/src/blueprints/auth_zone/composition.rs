@@ -40,6 +40,16 @@ pub fn compose_proof_by_amount<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
 ) -> Result<ComposedProof, RuntimeError> {
     let resource_type = ResourceManager(resource_address).resource_type(api)?;
 
+    if let Some(amount) = amount {
+        if !resource_type.check_amount(amount) {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::AuthZoneError(AuthZoneError::ComposeProofError(
+                    ComposeProofError::InvalidAmount,
+                )),
+            ));
+        }
+    }
+
     match resource_type {
         ResourceType::Fungible { .. } => {
             compose_fungible_proof(proofs, resource_address, amount, api).map(|proof| {
@@ -57,17 +67,9 @@ pub fn compose_proof_by_amount<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
             proofs,
             resource_address,
             match amount {
-                Some(amount) => {
-                    if let Ok(n) = amount.to_string().parse() {
-                        NonFungiblesSpecification::Some(n)
-                    } else {
-                        return Err(RuntimeError::ApplicationError(
-                            ApplicationError::AuthZoneError(AuthZoneError::ComposeProofError(
-                                ComposeProofError::InvalidAmount,
-                            )),
-                        ));
-                    }
-                }
+                Some(amount) => NonFungiblesSpecification::Some(
+                    amount.to_string().parse().expect("Amount checked upfront"),
+                ),
                 None => NonFungiblesSpecification::All,
             },
             api,
