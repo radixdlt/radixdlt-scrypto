@@ -1,12 +1,13 @@
 use super::state_machine::*;
 use crate::errors::{ApplicationError, InterpreterError, RuntimeError};
-use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, LockFlags};
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::global::GlobalSubstate;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use native_sdk::resource::{SysBucket, Vault};
 use radix_engine_interface::api::node_modules::auth::*;
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::blueprints::access_controller::*;
@@ -699,26 +700,20 @@ fn transition<Y, I>(
     input: I,
 ) -> Result<<AccessControllerSubstate as Transition<I>>::Output, RuntimeError>
 where
-    Y: KernelNodeApi
-        + KernelSubstateApi
-        + ClientApi<RuntimeError>
-        + ClientNodeApi<RuntimeError>
-        + ClientSubstateApi<RuntimeError>,
+    Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     AccessControllerSubstate: Transition<I>,
 {
     let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
-    let handle =
-        api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::read_only())?;
+    let handle = api.sys_lock_substate(node_id, offset, LockFlags::read_only())?;
 
     let access_controller_clone = {
-        let substate = api.kernel_get_substate_ref(handle)?;
-        let access_controller = substate.access_controller();
+        let access_controller: &AccessControllerSubstate = api.kernel_get_substate_ref(handle)?;
         access_controller.clone()
     };
 
     let rtn = access_controller_clone.transition(api, input)?;
 
-    api.kernel_drop_lock(handle)?;
+    api.sys_drop_lock(handle)?;
 
     Ok(rtn)
 }
@@ -729,32 +724,26 @@ fn transition_mut<Y, I>(
     input: I,
 ) -> Result<<AccessControllerSubstate as TransitionMut<I>>::Output, RuntimeError>
 where
-    Y: KernelNodeApi
-        + KernelSubstateApi
-        + ClientApi<RuntimeError>
-        + ClientNodeApi<RuntimeError>
-        + ClientSubstateApi<RuntimeError>,
+    Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     AccessControllerSubstate: TransitionMut<I>,
 {
     let offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
-    let handle =
-        api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+    let handle = api.sys_lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
     let mut access_controller_clone = {
-        let substate = api.kernel_get_substate_ref(handle)?;
-        let access_controller = substate.access_controller();
+        let access_controller: &AccessControllerSubstate = api.kernel_get_substate_ref(handle)?;
         access_controller.clone()
     };
 
     let rtn = access_controller_clone.transition_mut(api, input)?;
 
     {
-        let mut substate = api.kernel_get_substate_ref_mut(handle)?;
-        let access_controller = substate.access_controller();
+        let access_controller: &mut AccessControllerSubstate =
+            api.kernel_get_substate_ref_mut(handle)?;
         *access_controller = access_controller_clone
     }
 
-    api.kernel_drop_lock(handle)?;
+    api.sys_drop_lock(handle)?;
 
     Ok(rtn)
 }

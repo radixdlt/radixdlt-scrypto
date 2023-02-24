@@ -1,8 +1,8 @@
 use super::node::{RENodeInit, RENodeModuleInit};
 use crate::errors::{KernelError, RuntimeError};
 use crate::kernel::actor::{ExecutionMode, ResolvedActor, ResolvedReceiver};
-use crate::kernel::kernel_api::LockFlags;
 use radix_engine_interface::api::package::*;
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     AccessControllerOffset, AccountOffset, AuthZoneStackOffset, BucketOffset, ComponentOffset,

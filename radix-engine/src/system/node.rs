@@ -124,7 +124,7 @@ pub enum RENodeInit {
     Package(
         PackageInfoSubstate,
         PackageCodeTypeSubstate,
-        WasmCodeSubstate,
+        PackageCodeSubstate,
     ),
     ResourceManager(ResourceManagerSubstate),
     EpochManager(

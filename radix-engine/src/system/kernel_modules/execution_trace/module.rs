@@ -9,6 +9,7 @@ use crate::system::node::RENodeModuleInit;
 use crate::types::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::*;
 use sbor::rust::fmt::Debug;
@@ -267,6 +268,7 @@ impl KernelModule for ExecutionTraceModule {
         api: &mut Y,
         callee: &Option<ResolvedActor>,
         update: &mut CallFrameUpdate,
+        _args: &ScryptoValue,
     ) -> Result<(), RuntimeError> {
         let current_actor = api.kernel_get_current_actor();
         let resource_summary = ResourceSummary::from_call_frame_update(api, update);

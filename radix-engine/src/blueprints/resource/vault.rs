@@ -2,11 +2,11 @@ use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::heap::{DroppedBucket, DroppedBucketResource};
-use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::CostingError;
 use crate::system::node::RENodeInit;
 use crate::types::*;
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{RENodeId, SubstateOffset, VaultOffset};
 use radix_engine_interface::api::ClientApi;
@@ -45,8 +45,8 @@ impl VaultInfoSubstate {
             SubstateOffset::Vault(VaultOffset::Info),
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let info = substate_ref.vault_info().clone();
+        let substate_ref: &VaultInfoSubstate = api.kernel_get_substate_ref(handle)?;
+        let info = substate_ref.clone();
         api.kernel_drop_lock(handle)?;
         Ok(info)
     }
@@ -65,8 +65,8 @@ impl FungibleVault {
             SubstateOffset::Vault(VaultOffset::LiquidFungible),
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let amount = substate_ref.vault_liquid_fungible().amount();
+        let substate_ref: &LiquidFungibleResource = api.kernel_get_substate_ref(handle)?;
+        let amount = substate_ref.amount();
         api.kernel_drop_lock(handle)?;
         Ok(amount)
     }
@@ -81,8 +81,8 @@ impl FungibleVault {
             SubstateOffset::Vault(VaultOffset::LockedFungible),
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let amount = substate_ref.vault_locked_fungible().amount();
+        let substate_ref: &LockedFungibleResource = api.kernel_get_substate_ref(handle)?;
+        let amount = substate_ref.amount();
         api.kernel_drop_lock(handle)?;
         Ok(amount)
     }
@@ -108,15 +108,12 @@ impl FungibleVault {
             SubstateOffset::Vault(VaultOffset::LiquidFungible),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
-        let taken = substate_ref
-            .vault_liquid_fungible()
-            .take_by_amount(amount)
-            .map_err(|e| {
-                RuntimeError::ApplicationError(ApplicationError::VaultError(
-                    VaultError::ResourceError(e),
-                ))
-            })?;
+        let substate_ref: &mut LiquidFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
+        let taken = substate_ref.take_by_amount(amount).map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ResourceError(
+                e,
+            )))
+        })?;
         api.kernel_drop_lock(handle)?;
         Ok(taken)
     }
@@ -139,15 +136,12 @@ impl FungibleVault {
             SubstateOffset::Vault(VaultOffset::LiquidFungible),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
-        substate_ref
-            .vault_liquid_fungible()
-            .put(resource)
-            .map_err(|e| {
-                RuntimeError::ApplicationError(ApplicationError::VaultError(
-                    VaultError::ResourceError(e),
-                ))
-            })?;
+        let substate_ref: &mut LiquidFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
+        substate_ref.put(resource).map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ResourceError(
+                e,
+            )))
+        })?;
         api.kernel_drop_lock(handle)?;
         Ok(())
     }
@@ -167,8 +161,7 @@ impl FungibleVault {
             SubstateOffset::Vault(VaultOffset::LockedFungible),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
-        let mut locked = substate_ref.vault_locked_fungible();
+        let mut locked: &mut LockedFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
         let max_locked = locked.amount();
 
         // Take from liquid if needed
@@ -178,8 +171,7 @@ impl FungibleVault {
         }
 
         // Increase lock count
-        substate_ref = api.kernel_get_substate_ref_mut(handle)?; // grab ref again
-        locked = substate_ref.vault_locked_fungible();
+        locked = api.kernel_get_substate_ref_mut(handle)?; // grab ref again
         locked.amounts.entry(amount).or_default().add_assign(1);
 
         // Issue proof
@@ -209,8 +201,7 @@ impl FungibleVault {
             SubstateOffset::Vault(VaultOffset::LockedFungible),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
-        let locked = substate_ref.vault_locked_fungible();
+        let locked: &mut LockedFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
 
         let max_locked = locked.amount();
         let cnt = locked
@@ -239,8 +230,8 @@ impl NonFungibleVault {
             SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let amount = substate_ref.vault_liquid_non_fungible().amount();
+        let substate_ref: &LiquidNonFungibleResource = api.kernel_get_substate_ref(handle)?;
+        let amount = substate_ref.amount();
         api.kernel_drop_lock(handle)?;
         Ok(amount)
     }
@@ -255,8 +246,8 @@ impl NonFungibleVault {
             SubstateOffset::Vault(VaultOffset::LockedNonFungible),
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let amount = substate_ref.vault_locked_non_fungible().amount();
+        let substate_ref: &LockedNonFungibleResource = api.kernel_get_substate_ref(handle)?;
+        let amount = substate_ref.amount();
         api.kernel_drop_lock(handle)?;
         Ok(amount)
     }
@@ -281,8 +272,8 @@ impl NonFungibleVault {
             SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let ids = substate_ref.vault_liquid_non_fungible().ids().clone();
+        let substate_ref: &LiquidNonFungibleResource = api.kernel_get_substate_ref(handle)?;
+        let ids = substate_ref.ids().clone();
         api.kernel_drop_lock(handle)?;
         Ok(ids)
     }
@@ -300,8 +291,8 @@ impl NonFungibleVault {
             SubstateOffset::Vault(VaultOffset::LockedNonFungible),
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let ids = substate_ref.vault_locked_non_fungible().ids();
+        let substate_ref: &LockedNonFungibleResource = api.kernel_get_substate_ref(handle)?;
+        let ids = substate_ref.ids();
         api.kernel_drop_lock(handle)?;
         Ok(ids)
     }
@@ -320,15 +311,13 @@ impl NonFungibleVault {
             SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
-        let taken = substate_ref
-            .vault_liquid_non_fungible()
-            .take_by_amount(amount)
-            .map_err(|e| {
-                RuntimeError::ApplicationError(ApplicationError::VaultError(
-                    VaultError::ResourceError(e),
-                ))
-            })?;
+        let substate_ref: &mut LiquidNonFungibleResource =
+            api.kernel_get_substate_ref_mut(handle)?;
+        let taken = substate_ref.take_by_amount(amount).map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ResourceError(
+                e,
+            )))
+        })?;
         api.kernel_drop_lock(handle)?;
         Ok(taken)
     }
@@ -347,9 +336,9 @@ impl NonFungibleVault {
             SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
+        let substate_ref: &mut LiquidNonFungibleResource =
+            api.kernel_get_substate_ref_mut(handle)?;
         let taken = substate_ref
-            .vault_liquid_non_fungible()
             .take_by_ids(ids)
             .map_err(VaultError::ResourceError)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::VaultError(e)))?;
@@ -375,15 +364,13 @@ impl NonFungibleVault {
             SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
-        substate_ref
-            .vault_liquid_non_fungible()
-            .put(resource)
-            .map_err(|e| {
-                RuntimeError::ApplicationError(ApplicationError::VaultError(
-                    VaultError::ResourceError(e),
-                ))
-            })?;
+        let substate_ref: &mut LiquidNonFungibleResource =
+            api.kernel_get_substate_ref_mut(handle)?;
+        substate_ref.put(resource).map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ResourceError(
+                e,
+            )))
+        })?;
         api.kernel_drop_lock(handle)?;
         Ok(())
     }
@@ -403,8 +390,7 @@ impl NonFungibleVault {
             SubstateOffset::Vault(VaultOffset::LockedNonFungible),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
-        let mut locked = substate_ref.vault_locked_non_fungible();
+        let mut locked: &mut LockedNonFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
         let max_locked: Decimal = locked.ids.len().into();
 
         // Take from liquid if needed
@@ -412,8 +398,7 @@ impl NonFungibleVault {
             let delta = amount - max_locked;
             let resource = NonFungibleVault::take(node_id, delta, api)?;
 
-            substate_ref = api.kernel_get_substate_ref_mut(handle)?; // grab ref again
-            locked = substate_ref.vault_locked_non_fungible();
+            locked = api.kernel_get_substate_ref_mut(handle)?; // grab ref again
             for nf in resource.into_ids() {
                 locked.ids.insert(nf, 0);
             }
@@ -457,8 +442,7 @@ impl NonFungibleVault {
             SubstateOffset::Vault(VaultOffset::LockedNonFungible),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
-        let mut locked = substate_ref.vault_locked_non_fungible();
+        let mut locked: &mut LockedNonFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
 
         // Take from liquid if needed
         let delta: BTreeSet<NonFungibleLocalId> = ids
@@ -469,8 +453,7 @@ impl NonFungibleVault {
         NonFungibleVault::take_non_fungibles(node_id, &delta, api)?;
 
         // Increase lock count
-        substate_ref = api.kernel_get_substate_ref_mut(handle)?; // grab ref again
-        locked = substate_ref.vault_locked_non_fungible();
+        locked = api.kernel_get_substate_ref_mut(handle)?; // grab ref again
         for id in &ids {
             locked.ids.entry(id.clone()).or_default().add_assign(1);
         }
@@ -502,8 +485,7 @@ impl NonFungibleVault {
             SubstateOffset::Vault(VaultOffset::LockedNonFungible),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
-        let locked = substate_ref.vault_locked_non_fungible();
+        let locked: &mut LockedNonFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
 
         let mut liquid_non_fungibles = BTreeSet::<NonFungibleLocalId>::new();
         for id in ids {
@@ -768,8 +750,8 @@ impl VaultBlueprint {
 
         // Take by amount
         let fee = {
-            let mut substate_mut = api.kernel_get_substate_ref_mut(vault_handle)?;
-            let vault = substate_mut.vault_liquid_fungible();
+            let vault: &mut LiquidFungibleResource =
+                api.kernel_get_substate_ref_mut(vault_handle)?;
 
             // Take fee from the vault
             vault.take_by_amount(input.amount).map_err(|_| {
@@ -784,8 +766,8 @@ impl VaultBlueprint {
 
         // Keep changes
         {
-            let mut substate_mut = api.kernel_get_substate_ref_mut(vault_handle)?;
-            let vault = substate_mut.vault_liquid_fungible();
+            let vault: &mut LiquidFungibleResource =
+                api.kernel_get_substate_ref_mut(vault_handle)?;
             vault.put(changes).expect("Failed to put fee changes");
         }
 

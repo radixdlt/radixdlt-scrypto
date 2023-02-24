@@ -2,10 +2,10 @@ use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::heap::{DroppedBucket, DroppedBucketResource};
-use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node::RENodeInit;
 use crate::types::*;
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
@@ -39,8 +39,8 @@ impl BucketInfoSubstate {
             SubstateOffset::Bucket(BucketOffset::Info),
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let info = substate_ref.bucket_info().clone();
+        let substate_ref: &BucketInfoSubstate = api.kernel_get_substate_ref(handle)?;
+        let info = substate_ref.clone();
         api.kernel_drop_lock(handle)?;
         Ok(info)
     }
@@ -59,8 +59,8 @@ impl FungibleBucket {
             SubstateOffset::Bucket(BucketOffset::LiquidFungible),
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let amount = substate_ref.bucket_liquid_fungible().amount();
+        let substate_ref: &LiquidFungibleResource = api.kernel_get_substate_ref(handle)?;
+        let amount = substate_ref.amount();
         api.kernel_drop_lock(handle)?;
         Ok(amount)
     }
@@ -75,8 +75,8 @@ impl FungibleBucket {
             SubstateOffset::Bucket(BucketOffset::LockedFungible),
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let amount = substate_ref.bucket_locked_fungible().amount();
+        let substate_ref: &LockedFungibleResource = api.kernel_get_substate_ref(handle)?;
+        let amount = substate_ref.amount();
         api.kernel_drop_lock(handle)?;
         Ok(amount)
     }
@@ -102,15 +102,12 @@ impl FungibleBucket {
             SubstateOffset::Bucket(BucketOffset::LiquidFungible),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
-        let taken = substate_ref
-            .bucket_liquid_fungible()
-            .take_by_amount(amount)
-            .map_err(|e| {
-                RuntimeError::ApplicationError(ApplicationError::BucketError(
-                    BucketError::ResourceError(e),
-                ))
-            })?;
+        let substate_ref: &mut LiquidFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
+        let taken = substate_ref.take_by_amount(amount).map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::BucketError(
+                BucketError::ResourceError(e),
+            ))
+        })?;
         api.kernel_drop_lock(handle)?;
         Ok(taken)
     }
@@ -133,15 +130,12 @@ impl FungibleBucket {
             SubstateOffset::Bucket(BucketOffset::LiquidFungible),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
-        substate_ref
-            .bucket_liquid_fungible()
-            .put(resource)
-            .map_err(|e| {
-                RuntimeError::ApplicationError(ApplicationError::BucketError(
-                    BucketError::ResourceError(e),
-                ))
-            })?;
+        let substate_ref: &mut LiquidFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
+        substate_ref.put(resource).map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::BucketError(
+                BucketError::ResourceError(e),
+            ))
+        })?;
         api.kernel_drop_lock(handle)?;
         Ok(())
     }
@@ -161,8 +155,7 @@ impl FungibleBucket {
             SubstateOffset::Bucket(BucketOffset::LockedFungible),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
-        let mut locked = substate_ref.bucket_locked_fungible();
+        let mut locked: &mut LockedFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
         let max_locked = locked.amount();
 
         // Take from liquid if needed
@@ -172,8 +165,7 @@ impl FungibleBucket {
         }
 
         // Increase lock count
-        substate_ref = api.kernel_get_substate_ref_mut(handle)?; // grab ref again
-        locked = substate_ref.bucket_locked_fungible();
+        locked = api.kernel_get_substate_ref_mut(handle)?; // grab ref again
         locked.amounts.entry(amount).or_default().add_assign(1);
 
         // Issue proof
@@ -205,8 +197,7 @@ impl FungibleBucket {
             SubstateOffset::Bucket(BucketOffset::LockedFungible),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
-        let locked = substate_ref.bucket_locked_fungible();
+        let locked: &mut LockedFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
 
         let max_locked = locked.amount();
         let cnt = locked
@@ -235,8 +226,8 @@ impl NonFungibleBucket {
             SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let amount = substate_ref.bucket_liquid_non_fungible().amount();
+        let substate_ref: &LiquidNonFungibleResource = api.kernel_get_substate_ref(handle)?;
+        let amount = substate_ref.amount();
         api.kernel_drop_lock(handle)?;
         Ok(amount)
     }
@@ -251,8 +242,8 @@ impl NonFungibleBucket {
             SubstateOffset::Bucket(BucketOffset::LockedNonFungible),
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let amount = substate_ref.bucket_locked_non_fungible().amount();
+        let substate_ref: &LockedNonFungibleResource = api.kernel_get_substate_ref(handle)?;
+        let amount = substate_ref.amount();
         api.kernel_drop_lock(handle)?;
         Ok(amount)
     }
@@ -277,8 +268,8 @@ impl NonFungibleBucket {
             SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let ids = substate_ref.bucket_liquid_non_fungible().ids().clone();
+        let substate_ref: &LiquidNonFungibleResource = api.kernel_get_substate_ref(handle)?;
+        let ids = substate_ref.ids().clone();
         api.kernel_drop_lock(handle)?;
         Ok(ids)
     }
@@ -296,8 +287,8 @@ impl NonFungibleBucket {
             SubstateOffset::Bucket(BucketOffset::LockedNonFungible),
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let ids = substate_ref.bucket_locked_non_fungible().ids();
+        let substate_ref: &LockedNonFungibleResource = api.kernel_get_substate_ref(handle)?;
+        let ids = substate_ref.ids();
         api.kernel_drop_lock(handle)?;
         Ok(ids)
     }
@@ -316,15 +307,13 @@ impl NonFungibleBucket {
             SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
-        let taken = substate_ref
-            .bucket_liquid_non_fungible()
-            .take_by_amount(amount)
-            .map_err(|e| {
-                RuntimeError::ApplicationError(ApplicationError::BucketError(
-                    BucketError::ResourceError(e),
-                ))
-            })?;
+        let substate_ref: &mut LiquidNonFungibleResource =
+            api.kernel_get_substate_ref_mut(handle)?;
+        let taken = substate_ref.take_by_amount(amount).map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::BucketError(
+                BucketError::ResourceError(e),
+            ))
+        })?;
         api.kernel_drop_lock(handle)?;
         Ok(taken)
     }
@@ -343,9 +332,9 @@ impl NonFungibleBucket {
             SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
+        let substate_ref: &mut LiquidNonFungibleResource =
+            api.kernel_get_substate_ref_mut(handle)?;
         let taken = substate_ref
-            .bucket_liquid_non_fungible()
             .take_by_ids(ids)
             .map_err(BucketError::ResourceError)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::BucketError(e)))?;
@@ -371,15 +360,13 @@ impl NonFungibleBucket {
             SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
-        substate_ref
-            .bucket_liquid_non_fungible()
-            .put(resource)
-            .map_err(|e| {
-                RuntimeError::ApplicationError(ApplicationError::BucketError(
-                    BucketError::ResourceError(e),
-                ))
-            })?;
+        let substate_ref: &mut LiquidNonFungibleResource =
+            api.kernel_get_substate_ref_mut(handle)?;
+        substate_ref.put(resource).map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::BucketError(
+                BucketError::ResourceError(e),
+            ))
+        })?;
         api.kernel_drop_lock(handle)?;
         Ok(())
     }
@@ -399,8 +386,7 @@ impl NonFungibleBucket {
             SubstateOffset::Bucket(BucketOffset::LockedNonFungible),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
-        let mut locked = substate_ref.bucket_locked_non_fungible();
+        let mut locked: &mut LockedNonFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
         let max_locked: Decimal = locked.ids.len().into();
 
         // Take from liquid if needed
@@ -408,8 +394,7 @@ impl NonFungibleBucket {
             let delta = amount - max_locked;
             let resource = NonFungibleBucket::take(node_id, delta, api)?;
 
-            substate_ref = api.kernel_get_substate_ref_mut(handle)?; // grab ref again
-            locked = substate_ref.bucket_locked_non_fungible();
+            locked = api.kernel_get_substate_ref_mut(handle)?; // grab ref again
             for nf in resource.into_ids() {
                 locked.ids.insert(nf, 0);
             }
@@ -455,8 +440,7 @@ impl NonFungibleBucket {
             SubstateOffset::Bucket(BucketOffset::LockedNonFungible),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
-        let mut locked = substate_ref.bucket_locked_non_fungible();
+        let mut locked: &mut LockedNonFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
 
         // Take from liquid if needed
         let delta: BTreeSet<NonFungibleLocalId> = ids
@@ -467,8 +451,7 @@ impl NonFungibleBucket {
         NonFungibleBucket::take_non_fungibles(node_id, &delta, api)?;
 
         // Increase lock count
-        substate_ref = api.kernel_get_substate_ref_mut(handle)?; // grab ref again
-        locked = substate_ref.bucket_locked_non_fungible();
+        locked = api.kernel_get_substate_ref_mut(handle)?; // grab ref again
         for id in &ids {
             locked.ids.entry(id.clone()).or_default().add_assign(1);
         }
@@ -502,8 +485,7 @@ impl NonFungibleBucket {
             SubstateOffset::Bucket(BucketOffset::LockedNonFungible),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
-        let locked = substate_ref.bucket_locked_non_fungible();
+        let locked: &mut LockedNonFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
 
         let mut liquid_non_fungibles = BTreeSet::<NonFungibleLocalId>::new();
         for id in ids {

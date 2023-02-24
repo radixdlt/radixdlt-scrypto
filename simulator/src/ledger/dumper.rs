@@ -7,7 +7,7 @@ use radix_engine::system::global::GlobalSubstate;
 use radix_engine::system::node_modules::metadata::MetadataSubstate;
 use radix_engine::types::*;
 use radix_engine_interface::api::component::*;
-use radix_engine_interface::api::package::WasmCodeSubstate;
+use radix_engine_interface::api::package::PackageCodeSubstate;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::blueprints::resource::{
     AccessRules, LiquidFungibleResource, LiquidNonFungibleResource,
@@ -44,7 +44,7 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
         ))
         .map(|s| s.substate)
         .map(|s| s.to_runtime().into());
-    let package: Option<WasmCodeSubstate> = global.and_then(|global| {
+    let package: Option<PackageCodeSubstate> = global.and_then(|global| {
         substate_store
             .get_substate(&SubstateId(
                 global.node_deref(),

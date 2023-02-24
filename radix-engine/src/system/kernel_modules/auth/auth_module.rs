@@ -1,23 +1,29 @@
+use crate::blueprints::resource::VaultInfoSubstate;
 use crate::errors::*;
 use crate::kernel::actor::ResolvedActor;
 use crate::kernel::actor::ResolvedReceiver;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::call_frame::RENodeVisibilityOrigin;
 use crate::kernel::kernel_api::KernelModuleApi;
-use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::module::KernelModule;
 use crate::system::node::RENodeInit;
-use crate::system::node_modules::access_rules::AuthZoneStackSubstate;
+use crate::system::node_modules::access_rules::{
+    AccessRulesNativePackage, AuthZoneStackSubstate, ObjectAccessRulesChainSubstate,
+    PackageAccessRulesSubstate,
+};
 use crate::types::*;
+use radix_engine_interface::api::component::ComponentStateSubstate;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::package::{
-    PACKAGE_LOADER_BLUEPRINT, PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT,
+    PackageInfoSubstate, PACKAGE_LOADER_BLUEPRINT, PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT,
 };
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
     Address, AuthZoneStackOffset, ComponentOffset, PackageOffset, RENodeId, SubstateOffset,
     VaultOffset,
 };
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::data::ScryptoValue;
 use transaction::model::AuthZoneParams;
 
 use super::auth_converter::convert_contextless;
@@ -79,6 +85,7 @@ impl KernelModule for AuthModule {
         api: &mut Y,
         actor: &Option<ResolvedActor>,
         call_frame_update: &mut CallFrameUpdate,
+        args: &ScryptoValue,
     ) -> Result<(), RuntimeError> {
         if matches!(
             actor,
@@ -120,35 +127,56 @@ impl KernelModule for AuthModule {
                             SubstateOffset::PackageAccessRules,
                             LockFlags::read_only(),
                         )?;
-                        let substate_ref = api.kernel_get_substate_ref(handle)?;
-                        let substate = substate_ref.package_access_rules();
+                        let package_access_rules: &PackageAccessRulesSubstate =
+                            api.kernel_get_substate_ref(handle)?;
                         let local_fn_identifier = (
                             identifier.blueprint_name.to_string(),
                             identifier.ident.to_string(),
                         );
-                        let access_rule = substate
+                        let access_rule = package_access_rules
                             .access_rules
                             .get(&local_fn_identifier)
-                            .unwrap_or(&substate.default_auth);
+                            .unwrap_or(&package_access_rules.default_auth);
                         let func_auth = convert_contextless(access_rule);
                         vec![func_auth]
                     }
                 }
 
                 // TODO: Cleanup
-                // SetAccessRule auth is done manually within the method
                 ResolvedActor {
                     receiver:
                         Some(ResolvedReceiver {
-                            receiver:
-                                MethodReceiver(
-                                    _,
-                                    NodeModuleId::AccessRules | NodeModuleId::AccessRules1,
-                                ),
+                            receiver: MethodReceiver(node_id, module_id),
                             ..
                         }),
                     ..
-                } => vec![],
+                } if module_id.eq(&NodeModuleId::AccessRules)
+                    || module_id.eq(&NodeModuleId::AccessRules1) =>
+                {
+                    match actor.identifier.ident.as_str() {
+                        ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT => {
+                            AccessRulesNativePackage::set_method_access_rule_authorization(
+                                *node_id, *module_id, args, api,
+                            )?
+                        }
+                        ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT => {
+                            AccessRulesNativePackage::set_method_mutability_authorization(
+                                *node_id, *module_id, args, api,
+                            )?
+                        }
+                        ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT => {
+                            AccessRulesNativePackage::set_group_access_rule_authorization(
+                                *node_id, *module_id, args, api,
+                            )?
+                        }
+                        ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT => {
+                            AccessRulesNativePackage::set_group_mutability_authorization(
+                                *node_id, *module_id, args, api,
+                            )?
+                        }
+                        _ => vec![],
+                    }
+                }
 
                 // TODO: Cleanup
                 ResolvedActor {
@@ -201,8 +229,9 @@ impl KernelModule for AuthModule {
                                 offset,
                                 LockFlags::read_only(),
                             )?;
-                            let substate_ref = api.kernel_get_substate_ref(handle)?;
-                            let resource_address = substate_ref.vault_info().resource_address;
+                            let substate_ref: &VaultInfoSubstate =
+                                api.kernel_get_substate_ref(handle)?;
+                            let resource_address = substate_ref.resource_address;
                             api.kernel_drop_lock(handle)?;
                             resource_address
                         };
@@ -215,8 +244,8 @@ impl KernelModule for AuthModule {
                             LockFlags::read_only(),
                         )?;
 
-                        let substate_ref = api.kernel_get_substate_ref(handle)?;
-                        let substate = substate_ref.access_rules_chain();
+                        let substate: &ObjectAccessRulesChainSubstate =
+                            api.kernel_get_substate_ref(handle)?;
 
                         // TODO: Revisit what the correct abstraction is for visibility in the auth module
                         let auth = match visibility {
@@ -265,8 +294,7 @@ impl KernelModule for AuthModule {
                     if let NodeModuleId::SELF = module_id {
                         // Assume that package_address/blueprint is the original impl of Component for now
                         // TODO: Remove this assumption
-                        let substate_ref = api.kernel_get_substate_ref(handle)?;
-                        let package = substate_ref.package_info();
+                        let package: &PackageInfoSubstate = api.kernel_get_substate_ref(handle)?;
                         let schema = package
                             .blueprint_abi(&identifier.blueprint_name)
                             .expect("Blueprint not found for existing component")
@@ -282,8 +310,9 @@ impl KernelModule for AuthModule {
                                 offset,
                                 LockFlags::read_only(),
                             )?;
-                            let substate_ref = api.kernel_get_substate_ref(handle)?;
-                            let state = substate_ref.component_state().clone(); // TODO: Remove clone
+                            let state: &ComponentStateSubstate =
+                                api.kernel_get_substate_ref(handle)?;
+                            let state = state.clone(); // TODO: Remove clone
                             api.kernel_drop_lock(handle)?;
                             state
                         };
@@ -297,8 +326,8 @@ impl KernelModule for AuthModule {
                                 ),
                                 LockFlags::read_only(),
                             )?;
-                            let substate_ref = api.kernel_get_substate_ref(handle)?;
-                            let access_rules = substate_ref.access_rules_chain();
+                            let access_rules: &ObjectAccessRulesChainSubstate =
+                                api.kernel_get_substate_ref(handle)?;
                             let auth = access_rules.method_authorization(
                                 &state,
                                 &schema,
@@ -317,8 +346,8 @@ impl KernelModule for AuthModule {
                             ),
                             LockFlags::read_only(),
                         )?;
-                        let substate_ref = api.kernel_get_substate_ref(handle)?;
-                        let access_rules = substate_ref.access_rules_chain();
+                        let access_rules: &ObjectAccessRulesChainSubstate =
+                            api.kernel_get_substate_ref(handle)?;
                         let auth =
                             access_rules.native_fn_authorization(*module_id, identifier.clone());
                         api.kernel_drop_lock(handle)?;
@@ -335,8 +364,8 @@ impl KernelModule for AuthModule {
                         SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                         LockFlags::read_only(),
                     )?;
-                    let substate_ref = api.kernel_get_substate_ref(handle)?;
-                    let substate = substate_ref.access_rules_chain();
+                    let substate: &ObjectAccessRulesChainSubstate =
+                        api.kernel_get_substate_ref(handle)?;
                     let auth = substate.native_fn_authorization(receiver.1, identifier.clone());
                     api.kernel_drop_lock(handle)?;
                     auth
@@ -352,8 +381,8 @@ impl KernelModule for AuthModule {
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::read_only(),
         )?;
-        let substate_ref = api.kernel_get_substate_ref(handle)?;
-        let auth_zone_stack = substate_ref.auth_zone_stack().clone();
+        let substate_ref: &AuthZoneStackSubstate = api.kernel_get_substate_ref(handle)?;
+        let auth_zone_stack = substate_ref.clone();
         let is_barrier = Self::is_barrier(actor);
 
         // Authorization check
@@ -387,8 +416,8 @@ impl KernelModule for AuthModule {
                 SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
                 LockFlags::MUTABLE,
             )?;
-            let mut substate_ref_mut = api.kernel_get_substate_ref_mut(handle)?;
-            let auth_zone_stack = substate_ref_mut.auth_zone_stack();
+            let auth_zone_stack: &mut AuthZoneStackSubstate =
+                api.kernel_get_substate_ref_mut(handle)?;
 
             // New auth zone frame managed by the AuthModule
             let is_barrier = Self::is_barrier(actor);
@@ -432,8 +461,8 @@ impl KernelModule for AuthModule {
             LockFlags::MUTABLE,
         )?;
         {
-            let mut substate_ref_mut = api.kernel_get_substate_ref_mut(handle)?;
-            let auth_zone_stack = substate_ref_mut.auth_zone_stack();
+            let auth_zone_stack: &mut AuthZoneStackSubstate =
+                api.kernel_get_substate_ref_mut(handle)?;
             auth_zone_stack.pop_auth_zone();
         }
         api.kernel_drop_lock(handle)?;

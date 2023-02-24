@@ -1,11 +1,11 @@
 use crate::blueprints::resource::*;
 use crate::errors::{ApplicationError, RuntimeError};
-use crate::kernel::kernel_api::{KernelSubstateApi, LockFlags};
+use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::node::RENodeInit;
 use crate::types::*;
 use native_sdk::resource::ResourceManager;
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{types::*, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
 
 use super::AuthZoneError;
@@ -144,8 +144,7 @@ fn max_amount_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
             SubstateOffset::Proof(ProofOffset::Info),
             LockFlags::read_only(),
         )?;
-        let substate = api.kernel_get_substate_ref(handle)?;
-        let proof_info = substate.proof_info();
+        let proof_info: &ProofInfoSubstate = api.kernel_get_substate_ref(handle)?;
         if proof_info.resource_address == resource_address {
             api.kernel_drop_lock(handle)?;
 
@@ -155,8 +154,7 @@ fn max_amount_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
                 SubstateOffset::Proof(ProofOffset::Fungible),
                 LockFlags::read_only(),
             )?;
-            let substate = api.kernel_get_substate_ref(handle)?;
-            let proof = substate.fungible_proof();
+            let proof: &FungibleProof = api.kernel_get_substate_ref(handle)?;
             for (container_id, locked_amount) in &proof.evidence {
                 if let Some(existing) = max.get_mut(container_id) {
                     *existing = Decimal::max(*existing, locked_amount.clone());
@@ -198,8 +196,7 @@ fn max_ids_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
             SubstateOffset::Proof(ProofOffset::Info),
             LockFlags::read_only(),
         )?;
-        let substate = api.kernel_get_substate_ref(handle)?;
-        let proof_info = substate.proof_info();
+        let proof_info: &ProofInfoSubstate = api.kernel_get_substate_ref(handle)?;
         if proof_info.resource_address == resource_address {
             api.kernel_drop_lock(handle)?;
 
@@ -209,8 +206,7 @@ fn max_ids_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
                 SubstateOffset::Proof(ProofOffset::NonFungible),
                 LockFlags::read_only(),
             )?;
-            let substate = api.kernel_get_substate_ref(handle)?;
-            let proof = substate.non_fungible_proof();
+            let proof: &NonFungibleProof = api.kernel_get_substate_ref(handle)?;
             for (container_id, locked_ids) in &proof.evidence {
                 let new_ids = locked_ids.clone();
                 if let Some(ids) = max.get_mut(container_id) {
@@ -259,8 +255,8 @@ fn compose_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
             SubstateOffset::Proof(ProofOffset::Fungible),
             LockFlags::read_only(),
         )?;
-        let substate = api.kernel_get_substate_ref(handle)?;
-        let proof = substate.fungible_proof().clone();
+        let substate: &FungibleProof = api.kernel_get_substate_ref(handle)?;
+        let proof = substate.clone();
         for (container_id, _) in &proof.evidence {
             if remaining.is_zero() {
                 break 'outer;
@@ -343,8 +339,8 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
             SubstateOffset::Proof(ProofOffset::NonFungible),
             LockFlags::read_only(),
         )?;
-        let substate = api.kernel_get_substate_ref(handle)?;
-        let proof = substate.non_fungible_proof().clone();
+        let substate: &NonFungibleProof = api.kernel_get_substate_ref(handle)?;
+        let proof = substate.clone();
         for (container_id, _) in &proof.evidence {
             if remaining.is_empty() {
                 break 'outer;

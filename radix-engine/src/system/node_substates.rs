@@ -45,8 +45,7 @@ pub enum PersistedSubstate {
     ComponentState(ComponentStateSubstate),
     PackageInfo(PackageInfoSubstate),
     PackageCodeType(PackageCodeTypeSubstate),
-    WasmCode(WasmCodeSubstate),
-    NativeCode(NativeCodeSubstate),
+    PackageCode(PackageCodeSubstate),
     Account(AccountSubstate),
     AccessController(AccessControllerSubstate),
     VaultInfo(VaultInfoSubstate),
@@ -186,8 +185,7 @@ impl PersistedSubstate {
             PersistedSubstate::ComponentState(value) => RuntimeSubstate::ComponentState(value),
             PersistedSubstate::PackageInfo(value) => RuntimeSubstate::PackageInfo(value),
             PersistedSubstate::PackageCodeType(value) => RuntimeSubstate::PackageCodeType(value),
-            PersistedSubstate::WasmCode(value) => RuntimeSubstate::WasmCode(value),
-            PersistedSubstate::NativeCode(value) => RuntimeSubstate::NativeCode(value),
+            PersistedSubstate::PackageCode(value) => RuntimeSubstate::PackageCode(value),
             PersistedSubstate::VaultInfo(value) => RuntimeSubstate::VaultInfo(value),
             PersistedSubstate::VaultLiquidFungible(value) => {
                 RuntimeSubstate::VaultLiquidFungible(value)
@@ -226,13 +224,9 @@ impl PersistedSubstate {
             }
             PersistedSubstate::ComponentRoyaltyAccumulator(value) => {
                 RuntimeSubstate::ComponentRoyaltyAccumulator(value)
-            } /* Node module ends */
+            }
         }
     }
-}
-
-pub enum PersistError {
-    VaultLocked,
 }
 
 #[derive(Debug)]
@@ -245,10 +239,9 @@ pub enum RuntimeSubstate {
     CurrentTimeRoundedToMinutes(CurrentTimeRoundedToMinutesSubstate),
     ResourceManager(ResourceManagerSubstate),
     ComponentState(ComponentStateSubstate),
+    PackageCode(PackageCodeSubstate),
     PackageInfo(PackageInfoSubstate),
     PackageCodeType(PackageCodeTypeSubstate),
-    WasmCode(WasmCodeSubstate),
-    NativeCode(NativeCodeSubstate),
     AuthZoneStack(AuthZoneStackSubstate),
     Worktop(WorktopSubstate),
     Logger(LoggerSubstate),
@@ -256,9 +249,8 @@ pub enum RuntimeSubstate {
     Account(AccountSubstate),
     AccessController(AccessControllerSubstate),
 
-    // TODO: we may want to move some of the static info into `TypeInfo` 
+    // TODO: we may want to move some of the static info into `TypeInfo`
     // And split the "Blueprint" into fungible and non-fungible.
-
     VaultInfo(VaultInfoSubstate),
     VaultLiquidFungible(LiquidFungibleResource),
     VaultLiquidNonFungible(LiquidNonFungibleResource),
@@ -316,8 +308,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::PackageCodeType(value) => {
                 PersistedSubstate::PackageCodeType(value.clone())
             }
-            RuntimeSubstate::WasmCode(value) => PersistedSubstate::WasmCode(value.clone()),
-            RuntimeSubstate::NativeCode(value) => PersistedSubstate::NativeCode(value.clone()),
+            RuntimeSubstate::PackageCode(value) => PersistedSubstate::PackageCode(value.clone()),
             RuntimeSubstate::NonFungible(value) => PersistedSubstate::NonFungible(value.clone()),
             RuntimeSubstate::KeyValueStoreEntry(value) => {
                 PersistedSubstate::KeyValueStoreEntry(value.clone())
@@ -388,8 +379,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::ComponentState(value) => PersistedSubstate::ComponentState(value),
             RuntimeSubstate::PackageInfo(value) => PersistedSubstate::PackageInfo(value),
             RuntimeSubstate::PackageCodeType(value) => PersistedSubstate::PackageCodeType(value),
-            RuntimeSubstate::WasmCode(value) => PersistedSubstate::WasmCode(value),
-            RuntimeSubstate::NativeCode(value) => PersistedSubstate::NativeCode(value),
+            RuntimeSubstate::PackageCode(value) => PersistedSubstate::PackageCode(value),
             RuntimeSubstate::NonFungible(value) => PersistedSubstate::NonFungible(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => {
                 PersistedSubstate::KeyValueStoreEntry(value)
@@ -500,8 +490,7 @@ impl RuntimeSubstate {
             }
             RuntimeSubstate::PackageInfo(value) => SubstateRefMut::PackageInfo(value),
             RuntimeSubstate::PackageAccessRules(value) => SubstateRefMut::PackageAccessRules(value),
-            RuntimeSubstate::WasmCode(value) => SubstateRefMut::WasmCode(value),
-            RuntimeSubstate::NativeCode(value) => SubstateRefMut::NativeCode(value),
+            RuntimeSubstate::PackageCode(value) => SubstateRefMut::PackageCode(value),
             RuntimeSubstate::PackageRoyaltyConfig(value) => {
                 SubstateRefMut::PackageRoyaltyConfig(value)
             }
@@ -569,10 +558,9 @@ impl RuntimeSubstate {
                 SubstateRef::ComponentRoyaltyAccumulator(value)
             }
             RuntimeSubstate::PackageInfo(value) => SubstateRef::PackageInfo(value),
-            RuntimeSubstate::PackageAccessRules(value) => SubstateRef::PackageAccessRules(value),
             RuntimeSubstate::PackageCodeType(value) => SubstateRef::PackageCodeType(value),
-            RuntimeSubstate::WasmCode(value) => SubstateRef::WasmCode(value),
-            RuntimeSubstate::NativeCode(value) => SubstateRef::NativeCode(value),
+            RuntimeSubstate::PackageAccessRules(value) => SubstateRef::PackageAccessRules(value),
+            RuntimeSubstate::PackageCode(value) => SubstateRef::PackageCode(value),
             RuntimeSubstate::PackageRoyaltyConfig(value) => {
                 SubstateRef::PackageRoyaltyConfig(value)
             }
@@ -623,14 +611,6 @@ impl RuntimeSubstate {
         }
     }
 
-    pub fn vault_info(&self) -> &VaultInfoSubstate {
-        if let RuntimeSubstate::VaultInfo(vault) = self {
-            vault
-        } else {
-            panic!("Not a vault");
-        }
-    }
-
     pub fn vault_info_mut(&mut self) -> &mut VaultInfoSubstate {
         if let RuntimeSubstate::VaultInfo(vault) = self {
             vault
@@ -655,22 +635,6 @@ impl RuntimeSubstate {
         }
     }
 
-    pub fn package_royalty_accumulator(&self) -> &PackageRoyaltyAccumulatorSubstate {
-        if let RuntimeSubstate::PackageRoyaltyAccumulator(acc) = self {
-            acc
-        } else {
-            panic!("Not a package accumulator");
-        }
-    }
-
-    pub fn non_fungible(&self) -> &NonFungibleSubstate {
-        if let RuntimeSubstate::NonFungible(non_fungible) = self {
-            non_fungible
-        } else {
-            panic!("Not a NonFungible");
-        }
-    }
-
     pub fn kv_store_entry(&self) -> &KeyValueStoreEntrySubstate {
         if let RuntimeSubstate::KeyValueStoreEntry(kv_store_entry) = self {
             kv_store_entry
@@ -679,27 +643,11 @@ impl RuntimeSubstate {
         }
     }
 
-    pub fn logger(&self) -> &LoggerSubstate {
-        if let RuntimeSubstate::Logger(logger) = self {
-            logger
-        } else {
-            panic!("Not a logger");
-        }
-    }
-
     pub fn metadata(&self) -> &MetadataSubstate {
         if let RuntimeSubstate::Metadata(metadata) = self {
             metadata
         } else {
             panic!("Not metadata");
-        }
-    }
-
-    pub fn epoch_manager(&self) -> &EpochManagerSubstate {
-        if let RuntimeSubstate::EpochManager(epoch_manager) = self {
-            epoch_manager
-        } else {
-            panic!("Not epoch manager");
         }
     }
 
@@ -772,33 +720,26 @@ impl Into<RuntimeSubstate> for CurrentTimeRoundedToMinutesSubstate {
     }
 }
 
-impl Into<RuntimeSubstate> for WasmCodeSubstate {
-    fn into(self) -> RuntimeSubstate {
-        RuntimeSubstate::WasmCode(self)
-    }
-}
-
 impl Into<RuntimeSubstate> for PackageInfoSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::PackageInfo(self)
     }
 }
 
+impl Into<RuntimeSubstate> for PackageCodeTypeSubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::PackageCodeType(self)
+    }
+}
 impl Into<RuntimeSubstate> for PackageAccessRulesSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::PackageAccessRules(self)
     }
 }
 
-impl Into<RuntimeSubstate> for NativeCodeSubstate {
+impl Into<RuntimeSubstate> for PackageCodeSubstate {
     fn into(self) -> RuntimeSubstate {
-        RuntimeSubstate::NativeCode(self)
-    }
-}
-
-impl Into<RuntimeSubstate> for PackageCodeTypeSubstate {
-    fn into(self) -> RuntimeSubstate {
-        RuntimeSubstate::PackageCodeType(self)
+        RuntimeSubstate::PackageCode(self)
     }
 }
 
@@ -960,12 +901,12 @@ impl Into<ResourceManagerSubstate> for RuntimeSubstate {
     }
 }
 
-impl Into<WasmCodeSubstate> for RuntimeSubstate {
-    fn into(self) -> WasmCodeSubstate {
-        if let RuntimeSubstate::WasmCode(package) = self {
-            package
+impl Into<PackageCodeSubstate> for RuntimeSubstate {
+    fn into(self) -> PackageCodeSubstate {
+        if let RuntimeSubstate::PackageCode(code) = self {
+            code
         } else {
-            panic!("Not a resource manager");
+            panic!("Not a wasm code");
         }
     }
 }
@@ -1125,21 +1066,19 @@ impl Into<TransactionRuntimeSubstate> for RuntimeSubstate {
 }
 
 pub enum SubstateRef<'a> {
+    TypeInfo(&'a TypeInfoSubstate),
     AuthZoneStack(&'a AuthZoneStackSubstate),
     Worktop(&'a WorktopSubstate),
     Logger(&'a LoggerSubstate),
-    ProofInfo(&'a ProofInfoSubstate),
-    FungibleProof(&'a FungibleProof),
-    NonFungibleProof(&'a NonFungibleProof),
-    TypeInfo(&'a TypeInfoSubstate),
+    ComponentInfo(&'a TypeInfoSubstate),
     ComponentState(&'a ComponentStateSubstate),
     ComponentRoyaltyConfig(&'a ComponentRoyaltyConfigSubstate),
     ComponentRoyaltyAccumulator(&'a ComponentRoyaltyAccumulatorSubstate),
     NonFungible(&'a NonFungibleSubstate),
     KeyValueStoreEntry(&'a KeyValueStoreEntrySubstate),
-    WasmCode(&'a WasmCodeSubstate),
     PackageInfo(&'a PackageInfoSubstate),
-    NativeCode(&'a NativeCodeSubstate),
+    PackageCodeType(&'a PackageCodeTypeSubstate),
+    PackageCode(&'a PackageCodeSubstate),
     PackageRoyaltyConfig(&'a PackageRoyaltyConfigSubstate),
     PackageRoyaltyAccumulator(&'a PackageRoyaltyAccumulatorSubstate),
     VaultInfo(&'a VaultInfoSubstate),
@@ -1152,6 +1091,9 @@ pub enum SubstateRef<'a> {
     BucketLiquidNonFungible(&'a LiquidNonFungibleResource),
     BucketLockedFungible(&'a LockedFungibleResource),
     BucketLockedNonFungible(&'a LockedNonFungibleResource),
+    ProofInfo(&'a ProofInfoSubstate),
+    FungibleProof(&'a FungibleProof),
+    NonFungibleProof(&'a NonFungibleProof),
     ResourceManager(&'a ResourceManagerSubstate),
     EpochManager(&'a EpochManagerSubstate),
     ValidatorSet(&'a ValidatorSetSubstate),
@@ -1161,10 +1103,310 @@ pub enum SubstateRef<'a> {
     PackageAccessRules(&'a PackageAccessRulesSubstate),
     Metadata(&'a MetadataSubstate),
     Global(&'a GlobalSubstate),
-    PackageCodeType(&'a PackageCodeTypeSubstate),
     TransactionRuntime(&'a TransactionRuntimeSubstate),
     Account(&'a AccountSubstate),
     AccessController(&'a AccessControllerSubstate),
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a VaultInfoSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::VaultInfo(value) => value,
+            _ => panic!("Not a VaultInfo"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a LiquidFungibleResource {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::VaultLiquidFungible(value) => value,
+            SubstateRef::BucketLiquidFungible(value) => value,
+            _ => panic!("Not a vault/bucket liquid fungible"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a LiquidNonFungibleResource {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::VaultLiquidNonFungible(value) => value,
+            SubstateRef::BucketLiquidNonFungible(value) => value,
+            _ => panic!("Not a vault/bucket liquid non-fungible"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a LockedFungibleResource {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::VaultLockedFungible(value) => value,
+            SubstateRef::BucketLockedFungible(value) => value,
+            _ => panic!("Not a vault/bucket locked fungible"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a LockedNonFungibleResource {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::VaultLockedNonFungible(value) => value,
+            SubstateRef::BucketLockedNonFungible(value) => value,
+            _ => panic!("Not a vault/bucket locked non-fungible"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a BucketInfoSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::BucketInfo(value) => value,
+            _ => panic!("Not a BucketInfo"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a ProofInfoSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::ProofInfo(value) => value,
+            _ => panic!("Not a ProofInfo"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a FungibleProof {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::FungibleProof(value) => value,
+            _ => panic!("Not a FungibleProof"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a NonFungibleProof {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::NonFungibleProof(value) => value,
+            _ => panic!("Not a NonFungibleProof"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a TypeInfoSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::TypeInfo(value) => value,
+            _ => panic!("Not a TypeInfo"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a PackageRoyaltyAccumulatorSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::PackageRoyaltyAccumulator(value) => value,
+            _ => panic!("Not a PackageRoyaltyAccumulator"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a NonFungibleSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::NonFungible(value) => value,
+            _ => panic!("Not a non fungible"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a EpochManagerSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::EpochManager(value) => value,
+            _ => panic!("Not an epoch manager"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a ValidatorSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::Validator(value) => value,
+            _ => panic!("Not a validator"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a ComponentStateSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::ComponentState(value) => value,
+            _ => panic!("Not a component state"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a ComponentRoyaltyConfigSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::ComponentRoyaltyConfig(value) => value,
+            _ => panic!("Not a component royalty config"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a ComponentRoyaltyAccumulatorSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::ComponentRoyaltyAccumulator(value) => value,
+            _ => panic!("Not a component royalty accumulator"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a PackageCodeSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::PackageCode(value) => value,
+            _ => panic!("Not a package code"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a PackageRoyaltyConfigSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::PackageRoyaltyConfig(value) => value,
+            _ => panic!("Not a package royalty config"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a PackageAccessRulesSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::PackageAccessRules(value) => value,
+            _ => panic!("Not a package access rules"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a WorktopSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::Worktop(value) => value,
+            _ => panic!("Not a worktop"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a KeyValueStoreEntrySubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::KeyValueStoreEntry(value) => value,
+            _ => panic!("Not a kv entry"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a ResourceManagerSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::ResourceManager(value) => value,
+            _ => panic!("Not a resource manager"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a PackageInfoSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::PackageInfo(value) => value,
+            _ => panic!("Not package info"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a PackageCodeTypeSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::PackageCodeType(value) => value,
+            _ => panic!("Not package code type"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a ObjectAccessRulesChainSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::AccessRulesChain(value) => value,
+            _ => panic!("Not access rules chain"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a GlobalSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::Global(value) => value,
+            _ => panic!("Not global"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a MetadataSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::Metadata(value) => value,
+            _ => panic!("Not global"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a TransactionRuntimeSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::TransactionRuntime(value) => value,
+            _ => panic!("Not transaction runtime"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a CurrentTimeRoundedToMinutesSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::CurrentTimeRoundedToMinutes(value) => value,
+            _ => panic!("Not current time"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a AccountSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::Account(value) => value,
+            _ => panic!("Not an account"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a AccessControllerSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::AccessController(value) => value,
+            _ => panic!("Not an access controller"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a AuthZoneStackSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::AuthZoneStack(value) => value,
+            _ => panic!("Not an AuthZoneStack"),
+        }
+    }
 }
 
 impl<'a> SubstateRef<'a> {
@@ -1184,7 +1426,6 @@ impl<'a> SubstateRef<'a> {
                 IndexedScryptoValue::from_typed(*value)
             }
             SubstateRef::PackageInfo(value) => IndexedScryptoValue::from_typed(*value),
-            SubstateRef::NativeCode(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::PackageRoyaltyConfig(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::PackageRoyaltyAccumulator(value) => {
                 IndexedScryptoValue::from_typed(*value)
@@ -1193,265 +1434,6 @@ impl<'a> SubstateRef<'a> {
             SubstateRef::KeyValueStoreEntry(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::AccessRulesChain(value) => IndexedScryptoValue::from_typed(*value),
             _ => panic!("Unsupported scrypto value"),
-        }
-    }
-
-    pub fn non_fungible(&self) -> &NonFungibleSubstate {
-        match self {
-            SubstateRef::NonFungible(non_fungible_substate) => *non_fungible_substate,
-            _ => panic!("Not a non fungible"),
-        }
-    }
-
-    pub fn epoch_manager(&self) -> &EpochManagerSubstate {
-        match self {
-            SubstateRef::EpochManager(epoch_manager_substate) => *epoch_manager_substate,
-            _ => panic!("Not an epoch manager substate"),
-        }
-    }
-
-    pub fn validator(&self) -> &ValidatorSubstate {
-        match self {
-            SubstateRef::Validator(substate) => *substate,
-            _ => panic!("Not a validator substate"),
-        }
-    }
-
-    pub fn component_state(&self) -> &ComponentStateSubstate {
-        match self {
-            SubstateRef::ComponentState(state) => *state,
-            _ => panic!("Not a component state"),
-        }
-    }
-
-    pub fn component_info(&self) -> &TypeInfoSubstate {
-        match self {
-            SubstateRef::TypeInfo(info) => *info,
-            _ => panic!("Not a component info"),
-        }
-    }
-
-    pub fn component_royalty_config(&self) -> &ComponentRoyaltyConfigSubstate {
-        match self {
-            SubstateRef::ComponentRoyaltyConfig(info) => *info,
-            _ => panic!("Not a component royalty config"),
-        }
-    }
-
-    pub fn component_royalty_accumulator(&self) -> &ComponentRoyaltyAccumulatorSubstate {
-        match self {
-            SubstateRef::ComponentRoyaltyAccumulator(info) => *info,
-            _ => panic!("Not a component royalty accumulator"),
-        }
-    }
-
-    pub fn package_royalty_config(&self) -> &PackageRoyaltyConfigSubstate {
-        match self {
-            SubstateRef::PackageRoyaltyConfig(info) => *info,
-            _ => panic!("Not a package royalty config"),
-        }
-    }
-
-    pub fn package_royalty_accumulator(&self) -> &PackageRoyaltyAccumulatorSubstate {
-        match self {
-            SubstateRef::PackageRoyaltyAccumulator(info) => *info,
-            _ => panic!("Not a package royalty accumulator"),
-        }
-    }
-
-    pub fn package_access_rules(&self) -> &PackageAccessRulesSubstate {
-        match self {
-            SubstateRef::PackageAccessRules(info) => *info,
-            _ => panic!("Not package access rules"),
-        }
-    }
-
-    pub fn proof_info(&self) -> &ProofInfoSubstate {
-        match self {
-            SubstateRef::ProofInfo(value) => *value,
-            _ => panic!("Not a proof"),
-        }
-    }
-
-    pub fn fungible_proof(&self) -> &FungibleProof {
-        match self {
-            SubstateRef::FungibleProof(value) => *value,
-            _ => panic!("Not a proof"),
-        }
-    }
-
-    pub fn non_fungible_proof(&self) -> &NonFungibleProof {
-        match self {
-            SubstateRef::NonFungibleProof(value) => *value,
-            _ => panic!("Not a proof"),
-        }
-    }
-
-    pub fn auth_zone_stack(&self) -> &AuthZoneStackSubstate {
-        match self {
-            SubstateRef::AuthZoneStack(value) => *value,
-            _ => panic!("Not an authzone"),
-        }
-    }
-
-    pub fn worktop(&self) -> &WorktopSubstate {
-        match self {
-            SubstateRef::Worktop(value) => *value,
-            _ => panic!("Not a worktop"),
-        }
-    }
-
-    pub fn bucket_info(&self) -> &BucketInfoSubstate {
-        match self {
-            SubstateRef::BucketInfo(value) => *value,
-            _ => panic!("Not a bucket"),
-        }
-    }
-
-    pub fn bucket_liquid_fungible(&self) -> &LiquidFungibleResource {
-        match self {
-            SubstateRef::BucketLiquidFungible(value) => *value,
-            _ => panic!("Not a bucket"),
-        }
-    }
-
-    pub fn bucket_liquid_non_fungible(&self) -> &LiquidNonFungibleResource {
-        match self {
-            SubstateRef::BucketLiquidNonFungible(value) => *value,
-            _ => panic!("Not a bucket"),
-        }
-    }
-
-    pub fn bucket_locked_fungible(&self) -> &LockedFungibleResource {
-        match self {
-            SubstateRef::BucketLockedFungible(value) => *value,
-            _ => panic!("Not a bucket"),
-        }
-    }
-
-    pub fn bucket_locked_non_fungible(&self) -> &LockedNonFungibleResource {
-        match self {
-            SubstateRef::BucketLockedNonFungible(value) => *value,
-            _ => panic!("Not a bucket"),
-        }
-    }
-
-    pub fn vault_info(&self) -> &VaultInfoSubstate {
-        match self {
-            SubstateRef::VaultInfo(value) => *value,
-            _ => panic!("Not a vault"),
-        }
-    }
-
-    pub fn vault_liquid_fungible(&self) -> &LiquidFungibleResource {
-        match self {
-            SubstateRef::VaultLiquidFungible(value) => *value,
-            _ => panic!("Not a vault"),
-        }
-    }
-
-    pub fn vault_liquid_non_fungible(&self) -> &LiquidNonFungibleResource {
-        match self {
-            SubstateRef::VaultLiquidNonFungible(value) => *value,
-            _ => panic!("Not a vault"),
-        }
-    }
-
-    pub fn vault_locked_fungible(&self) -> &LockedFungibleResource {
-        match self {
-            SubstateRef::VaultLockedFungible(value) => *value,
-            _ => panic!("Not a vault"),
-        }
-    }
-
-    pub fn vault_locked_non_fungible(&self) -> &LockedNonFungibleResource {
-        match self {
-            SubstateRef::VaultLockedNonFungible(value) => *value,
-            _ => panic!("Not a vault"),
-        }
-    }
-
-    pub fn kv_store_entry(&self) -> &KeyValueStoreEntrySubstate {
-        match self {
-            SubstateRef::KeyValueStoreEntry(value) => *value,
-            _ => panic!("Not a vault"),
-        }
-    }
-
-    pub fn resource_manager(&self) -> &ResourceManagerSubstate {
-        match self {
-            SubstateRef::ResourceManager(value) => *value,
-            _ => panic!("Not a resource manager"),
-        }
-    }
-
-    pub fn code_type(&self) -> &PackageCodeTypeSubstate {
-        match self {
-            SubstateRef::PackageCodeType(value) => *value,
-            _ => panic!("Not code type"),
-        }
-    }
-
-    pub fn code(&self) -> &WasmCodeSubstate {
-        match self {
-            SubstateRef::WasmCode(value) => *value,
-            _ => panic!("Not wasm code"),
-        }
-    }
-
-    pub fn package_info(&self) -> &PackageInfoSubstate {
-        match self {
-            SubstateRef::PackageInfo(value) => *value,
-            _ => panic!("Not a package"),
-        }
-    }
-
-    pub fn access_rules_chain(&self) -> &ObjectAccessRulesChainSubstate {
-        match self {
-            SubstateRef::AccessRulesChain(value) => *value,
-            _ => panic!("Not access rules chain"),
-        }
-    }
-
-    pub fn global_address(&self) -> &GlobalSubstate {
-        match self {
-            SubstateRef::Global(value) => *value,
-            _ => panic!("Not a global address"),
-        }
-    }
-
-    pub fn metadata(&self) -> &MetadataSubstate {
-        match self {
-            SubstateRef::Metadata(value) => *value,
-            _ => panic!("Not metadata"),
-        }
-    }
-
-    pub fn transaction_runtime(&self) -> &TransactionRuntimeSubstate {
-        match self {
-            SubstateRef::TransactionRuntime(value) => *value,
-            _ => panic!("Not transaction runtime"),
-        }
-    }
-
-    pub fn current_time_rounded_to_minutes(&self) -> &CurrentTimeRoundedToMinutesSubstate {
-        match self {
-            SubstateRef::CurrentTimeRoundedToMinutes(substate) => *substate,
-            _ => panic!("Not a current time rounded to minutes substate ref"),
-        }
-    }
-
-    pub fn account(&self) -> &AccountSubstate {
-        match self {
-            SubstateRef::Account(value) => *value,
-            _ => panic!("Not an account"),
-        }
-    }
-
-    pub fn access_controller(&self) -> &AccessControllerSubstate {
-        match self {
-            SubstateRef::AccessController(substate) => *substate,
-            _ => panic!("Not an access controller substate"),
         }
     }
 
@@ -1627,8 +1609,7 @@ pub enum SubstateRefMut<'a> {
     ComponentRoyaltyAccumulator(&'a mut ComponentRoyaltyAccumulatorSubstate),
     PackageInfo(&'a mut PackageInfoSubstate),
     PackageCodeType(&'a mut PackageCodeTypeSubstate),
-    WasmCode(&'a mut WasmCodeSubstate),
-    NativeCode(&'a mut NativeCodeSubstate),
+    PackageCode(&'a mut PackageCodeSubstate),
     PackageRoyaltyConfig(&'a mut PackageRoyaltyConfigSubstate),
     PackageRoyaltyAccumulator(&'a mut PackageRoyaltyAccumulatorSubstate),
     PackageAccessRules(&'a mut PackageAccessRulesSubstate),
@@ -1664,235 +1645,240 @@ pub enum SubstateRefMut<'a> {
     AccessController(&'a mut AccessControllerSubstate),
 }
 
-impl<'a> SubstateRefMut<'a> {
-    pub fn auth_zone_stack(&mut self) -> &mut AuthZoneStackSubstate {
-        match self {
-            SubstateRefMut::AuthZoneStack(value) => *value,
-            _ => panic!("Not an authzone"),
+impl<'a> From<SubstateRefMut<'a>> for &'a mut AuthZoneStackSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::AuthZoneStack(value) => value,
+            _ => panic!("Not an auth zone"),
         }
     }
+}
 
-    pub fn worktop(&mut self) -> &mut WorktopSubstate {
-        match self {
-            SubstateRefMut::Worktop(value) => *value,
-            _ => panic!("Not a worktop"),
+impl<'a> From<SubstateRefMut<'a>> for &'a mut WorktopSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::Worktop(value) => value,
+            _ => panic!("Not an auth zone"),
         }
     }
+}
 
-    pub fn vault_info(&mut self) -> &mut VaultInfoSubstate {
-        match self {
-            SubstateRefMut::VaultInfo(value) => *value,
-            _ => panic!("Not a vault"),
-        }
-    }
-
-    pub fn vault_liquid_fungible(&mut self) -> &mut LiquidFungibleResource {
-        match self {
-            SubstateRefMut::VaultLiquidFungible(value) => *value,
-            _ => panic!("Not a vault"),
-        }
-    }
-
-    pub fn vault_liquid_non_fungible(&mut self) -> &mut LiquidNonFungibleResource {
-        match self {
-            SubstateRefMut::VaultLiquidNonFungible(value) => *value,
-            _ => panic!("Not a vault"),
-        }
-    }
-
-    pub fn vault_locked_fungible(&mut self) -> &mut LockedFungibleResource {
-        match self {
-            SubstateRefMut::VaultLockedFungible(value) => *value,
-            _ => panic!("Not a vault"),
-        }
-    }
-
-    pub fn vault_locked_non_fungible(&mut self) -> &mut LockedNonFungibleResource {
-        match self {
-            SubstateRefMut::VaultLockedNonFungible(value) => *value,
-            _ => panic!("Not a vault"),
-        }
-    }
-
-    pub fn bucket_info(&mut self) -> &mut BucketInfoSubstate {
-        match self {
-            SubstateRefMut::BucketInfo(value) => *value,
+impl<'a> From<SubstateRefMut<'a>> for &'a mut NonFungibleSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::NonFungible(value) => value,
             _ => panic!("Not a bucket"),
         }
     }
+}
 
-    pub fn bucket_liquid_fungible(&mut self) -> &mut LiquidFungibleResource {
-        match self {
-            SubstateRefMut::BucketLiquidFungible(value) => *value,
-            _ => panic!("Not a bucket"),
+impl<'a> From<SubstateRefMut<'a>> for &'a mut ResourceManagerSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::ResourceManager(value) => value,
+            _ => panic!("Not a resource manager"),
         }
     }
+}
 
-    pub fn bucket_liquid_non_fungible(&mut self) -> &mut LiquidNonFungibleResource {
-        match self {
-            SubstateRefMut::BucketLiquidNonFungible(value) => *value,
-            _ => panic!("Not a bucket"),
+impl<'a> From<SubstateRefMut<'a>> for &'a mut KeyValueStoreEntrySubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::KeyValueStoreEntry(value) => value,
+            _ => panic!("Not a kv store entry"),
         }
     }
+}
 
-    pub fn bucket_locked_fungible(&mut self) -> &mut LockedFungibleResource {
-        match self {
-            SubstateRefMut::BucketLockedFungible(value) => *value,
-            _ => panic!("Not a bucket"),
+impl<'a> From<SubstateRefMut<'a>> for &'a mut ComponentStateSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::ComponentState(value) => value,
+            _ => panic!("Not a component state"),
         }
     }
+}
 
-    pub fn bucket_locked_non_fungible(&mut self) -> &mut LockedNonFungibleResource {
-        match self {
-            SubstateRefMut::BucketLockedNonFungible(value) => *value,
-            _ => panic!("Not a bucket"),
+impl<'a> From<SubstateRefMut<'a>> for &'a mut ComponentRoyaltyConfigSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::ComponentRoyaltyConfig(value) => value,
+            _ => panic!("Not a component royalty config"),
         }
     }
+}
 
-    pub fn proof_info(&mut self) -> &mut ProofInfoSubstate {
-        match self {
-            SubstateRefMut::ProofInfo(value) => *value,
-            _ => panic!("Not a proof"),
+impl<'a> From<SubstateRefMut<'a>> for &'a mut ComponentRoyaltyAccumulatorSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::ComponentRoyaltyAccumulator(value) => value,
+            _ => panic!("Not a component royalty accumulator"),
         }
     }
+}
 
-    pub fn fungible_proof(&mut self) -> &mut FungibleProof {
-        match self {
-            SubstateRefMut::FungibleProof(value) => *value,
-            _ => panic!("Not a proof"),
+impl<'a> From<SubstateRefMut<'a>> for &'a mut PackageRoyaltyConfigSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::PackageRoyaltyConfig(value) => value,
+            _ => panic!("Not a package royalty config"),
         }
     }
+}
 
-    pub fn non_fungible_proof(&mut self) -> &mut NonFungibleProof {
-        match self {
-            SubstateRefMut::NonFungibleProof(value) => *value,
-            _ => panic!("Not a proof"),
+impl<'a> From<SubstateRefMut<'a>> for &'a mut PackageRoyaltyAccumulatorSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::PackageRoyaltyAccumulator(value) => value,
+            _ => panic!("Not a package royalty accumulator"),
         }
     }
+}
 
-    pub fn non_fungible(&mut self) -> &mut NonFungibleSubstate {
-        match self {
-            SubstateRefMut::NonFungible(value) => *value,
-            _ => panic!("Not a non fungible"),
+impl<'a> From<SubstateRefMut<'a>> for &'a mut EpochManagerSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::EpochManager(value) => value,
+            _ => panic!("Not a epoch manager"),
         }
     }
+}
 
-    pub fn resource_manager(&mut self) -> &mut ResourceManagerSubstate {
-        match self {
-            SubstateRefMut::ResourceManager(value) => *value,
-            _ => panic!("Not resource manager"),
+impl<'a> From<SubstateRefMut<'a>> for &'a mut ValidatorSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::Validator(value) => value,
+            _ => panic!("Not a validator"),
         }
     }
+}
 
-    pub fn kv_store_entry(&mut self) -> &mut KeyValueStoreEntrySubstate {
-        match self {
-            SubstateRefMut::KeyValueStoreEntry(value) => *value,
-            _ => panic!("Not a key value store entry"),
-        }
-    }
-
-    pub fn component_state(&mut self) -> &mut ComponentStateSubstate {
-        match self {
-            SubstateRefMut::ComponentState(value) => *value,
-            _ => panic!("Not component state"),
-        }
-    }
-
-    pub fn component_info(&mut self) -> &mut TypeInfoSubstate {
-        match self {
-            SubstateRefMut::TypeInfo(value) => *value,
-            _ => panic!("Not component info"),
-        }
-    }
-
-    pub fn component_royalty_config(&mut self) -> &mut ComponentRoyaltyConfigSubstate {
-        match self {
-            SubstateRefMut::ComponentRoyaltyConfig(value) => *value,
-            _ => panic!("Not component royalty config"),
-        }
-    }
-
-    pub fn component_royalty_accumulator(&mut self) -> &mut ComponentRoyaltyAccumulatorSubstate {
-        match self {
-            SubstateRefMut::ComponentRoyaltyAccumulator(value) => *value,
-            _ => panic!("Not component royalty accumulator"),
-        }
-    }
-
-    pub fn package_royalty_config(&mut self) -> &mut PackageRoyaltyConfigSubstate {
-        match self {
-            SubstateRefMut::PackageRoyaltyConfig(value) => *value,
-            _ => panic!("Not package royalty config"),
-        }
-    }
-
-    pub fn package_royalty_accumulator(&mut self) -> &mut PackageRoyaltyAccumulatorSubstate {
-        match self {
-            SubstateRefMut::PackageRoyaltyAccumulator(value) => *value,
-            _ => panic!("Not package royalty accumulator"),
-        }
-    }
-
-    pub fn epoch_manager(&mut self) -> &mut EpochManagerSubstate {
-        match self {
-            SubstateRefMut::EpochManager(value) => *value,
-            _ => panic!("Not epoch manager"),
-        }
-    }
-
-    pub fn validator(&mut self) -> &mut ValidatorSubstate {
-        match self {
-            SubstateRefMut::Validator(value) => *value,
-            _ => panic!("Not validator"),
-        }
-    }
-
-    pub fn validator_set(&mut self) -> &mut ValidatorSetSubstate {
-        match self {
-            SubstateRefMut::ValidatorSet(value) => *value,
+impl<'a> From<SubstateRefMut<'a>> for &'a mut ValidatorSetSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::ValidatorSet(value) => value,
             _ => panic!("Not a validator set"),
         }
     }
+}
 
-    pub fn current_time_rounded_to_minutes(&mut self) -> &mut CurrentTimeRoundedToMinutesSubstate {
-        match self {
-            SubstateRefMut::CurrentTimeRoundedToMinutes(value) => *value,
-            _ => panic!("Not a current time rounded to minutes"),
+impl<'a> From<SubstateRefMut<'a>> for &'a mut CurrentTimeRoundedToMinutesSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::CurrentTimeRoundedToMinutes(value) => value,
+            _ => panic!("Not current time"),
         }
     }
+}
 
-    pub fn transaction_runtime(&mut self) -> &mut TransactionRuntimeSubstate {
-        match self {
-            SubstateRefMut::TransactionRuntime(value) => *value,
+impl<'a> From<SubstateRefMut<'a>> for &'a mut TransactionRuntimeSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::TransactionRuntime(value) => value,
             _ => panic!("Not a transaction runtime"),
         }
     }
+}
 
-    pub fn logger(&mut self) -> &mut LoggerSubstate {
-        match self {
-            SubstateRefMut::Logger(value) => *value,
+impl<'a> From<SubstateRefMut<'a>> for &'a mut LoggerSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::Logger(value) => value,
             _ => panic!("Not a logger"),
         }
     }
+}
 
-    pub fn access_rules_chain(&mut self) -> &mut ObjectAccessRulesChainSubstate {
-        match self {
-            SubstateRefMut::AccessRulesChain(value) => *value,
-            _ => panic!("Not access rules"),
+impl<'a> From<SubstateRefMut<'a>> for &'a mut ObjectAccessRulesChainSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::AccessRulesChain(value) => value,
+            _ => panic!("Not a logger"),
         }
     }
+}
 
-    pub fn metadata(&mut self) -> &mut MetadataSubstate {
-        match self {
-            SubstateRefMut::Metadata(value) => *value,
+impl<'a> From<SubstateRefMut<'a>> for &'a mut MetadataSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::Metadata(value) => value,
             _ => panic!("Not metadata"),
         }
     }
+}
 
-    pub fn access_controller(&mut self) -> &mut AccessControllerSubstate {
-        match self {
-            SubstateRefMut::AccessController(value) => *value,
+impl<'a> From<SubstateRefMut<'a>> for &'a mut AccessControllerSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::AccessController(value) => value,
             _ => panic!("Not access controller"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRefMut<'a>> for &'a mut ProofInfoSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::ProofInfo(value) => value,
+            _ => panic!("Not ProofInfo"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRefMut<'a>> for &'a mut VaultInfoSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::VaultInfo(value) => value,
+            _ => panic!("Not a VaultInfo"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRefMut<'a>> for &'a mut LiquidFungibleResource {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::VaultLiquidFungible(value) => value,
+            SubstateRefMut::BucketLiquidFungible(value) => value,
+            _ => panic!("Not a vault/bucket liquid fungible"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRefMut<'a>> for &'a mut LiquidNonFungibleResource {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::VaultLiquidNonFungible(value) => value,
+            SubstateRefMut::BucketLiquidNonFungible(value) => value,
+            _ => panic!("Not a vault/bucket liquid non-fungible"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRefMut<'a>> for &'a mut LockedFungibleResource {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::VaultLockedFungible(value) => value,
+            SubstateRefMut::BucketLockedFungible(value) => value,
+            _ => panic!("Not a vault/bucket locked fungible"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRefMut<'a>> for &'a mut LockedNonFungibleResource {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::VaultLockedNonFungible(value) => value,
+            SubstateRefMut::BucketLockedNonFungible(value) => value,
+            _ => panic!("Not a vault/bucket locked non-fungible"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRefMut<'a>> for &'a mut BucketInfoSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::BucketInfo(value) => value,
+            _ => panic!("Not a BucketInfo"),
         }
     }
 }

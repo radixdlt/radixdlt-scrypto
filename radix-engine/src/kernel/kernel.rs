@@ -1,6 +1,9 @@
 use crate::blueprints::account::AccountSubstate;
+use crate::blueprints::auth_zone::AuthZoneStackSubstate;
 use crate::blueprints::identity::Identity;
-use crate::blueprints::resource::ProofInfoSubstate;
+use crate::blueprints::resource::{
+    BucketInfoSubstate, FungibleProof, NonFungibleProof, ProofInfoSubstate, WorktopSubstate,
+};
 use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::system::global::GlobalSubstate;
@@ -13,8 +16,10 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{SysBucket, SysProof};
 use radix_engine_interface::api::component::TypeInfoSubstate;
-use radix_engine_interface::api::package::PACKAGE_LOADER_BLUEPRINT;
+use radix_engine_interface::api::package::{PackageCodeSubstate, PACKAGE_LOADER_BLUEPRINT};
+use radix_engine_interface::api::substate_api::LockFlags;
 // TODO: clean this up!
+use crate::kernel::kernel_api::TemporaryResolvedInvocation;
 use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use radix_engine_interface::api::types::{
     Address, AuthZoneStackOffset, GlobalOffset, LockHandle, ProofOffset, RENodeId, SubstateId,
@@ -32,21 +37,22 @@ use radix_engine_interface::blueprints::epoch_manager::{
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::logger::LOGGER_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::{
-    require, AccessRule, AccessRuleKey, AccessRules, Bucket, ResourceType, BUCKET_BLUEPRINT,
-    PROOF_BLUEPRINT, RESOURCE_MANAGER_BLUEPRINT, VAULT_BLUEPRINT, WORKTOP_BLUEPRINT,
+    require, AccessRule, AccessRuleKey, AccessRules, Bucket, LiquidFungibleResource,
+    LiquidNonFungibleResource, ResourceType, BUCKET_BLUEPRINT, PROOF_BLUEPRINT,
+    RESOURCE_MANAGER_BLUEPRINT, VAULT_BLUEPRINT, WORKTOP_BLUEPRINT,
 };
 use radix_engine_interface::blueprints::transaction_runtime::TRANSACTION_RUNTIME_BLUEPRINT;
 use radix_engine_interface::rule;
 use sbor::rust::mem;
 
 use super::actor::{ExecutionMode, ResolvedActor, ResolvedReceiver};
-use super::call_frame::{CallFrame, CallFrameUpdate, RENodeVisibilityOrigin};
+use super::call_frame::{CallFrame, RENodeVisibilityOrigin};
 use super::heap::{Heap, HeapRENode};
 use super::id_allocator::IdAllocator;
 use super::interpreters::ScryptoInterpreter;
 use super::kernel_api::{
     ExecutableInvocation, Executor, Invokable, KernelApi, KernelInternalApi, KernelModuleApi,
-    KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockFlags, LockInfo,
+    KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockInfo,
 };
 use super::module::KernelModule;
 use super::module_mixer::KernelModuleMixer;
@@ -289,8 +295,8 @@ where
                     SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
                     LockFlags::MUTABLE,
                 )?;
-                let mut substate_ref_mut = api.kernel_get_substate_ref_mut(handle)?;
-                let mut auth_zone_stack = substate_ref_mut.auth_zone_stack().clone();
+                let substate_ref: &AuthZoneStackSubstate = api.kernel_get_substate_ref(handle)?;
+                let mut auth_zone_stack = substate_ref.clone();
                 loop {
                     if let Some(mut auth_zone) = auth_zone_stack.pop_auth_zone() {
                         for p in auth_zone.drain() {
@@ -310,10 +316,10 @@ where
                         node_id,
                         NodeModuleId::SELF,
                         SubstateOffset::Proof(ProofOffset::Fungible),
-                        LockFlags::MUTABLE,
+                        LockFlags::read_only(),
                     )?;
-                    let mut substate_ref_mut = api.kernel_get_substate_ref_mut(handle)?;
-                    let proof = substate_ref_mut.fungible_proof().clone();
+                    let proof: &FungibleProof = api.kernel_get_substate_ref(handle)?;
+                    let proof = proof.clone();
                     proof.drop_proof(api)?;
                     api.kernel_drop_lock(handle)?;
                 } else {
@@ -321,10 +327,10 @@ where
                         node_id,
                         NodeModuleId::SELF,
                         SubstateOffset::Proof(ProofOffset::NonFungible),
-                        LockFlags::MUTABLE,
+                        LockFlags::read_only(),
                     )?;
-                    let mut substate_ref_mut = api.kernel_get_substate_ref_mut(handle)?;
-                    let proof = substate_ref_mut.non_fungible_proof().clone();
+                    let proof: &NonFungibleProof = api.kernel_get_substate_ref(handle)?;
+                    let proof = proof.clone();
                     proof.drop_proof(api)?;
                     api.kernel_drop_lock(handle)?;
                 }
@@ -339,11 +345,10 @@ where
                     node_id,
                     NodeModuleId::SELF,
                     SubstateOffset::Worktop(WorktopOffset::Worktop),
-                    LockFlags::MUTABLE,
+                    LockFlags::read_only(),
                 )?;
                 let buckets: Vec<Own> = {
-                    let mut substate_ref_mut = api.kernel_get_substate_ref_mut(handle)?;
-                    let worktop = substate_ref_mut.worktop();
+                    let worktop: &WorktopSubstate = api.kernel_get_substate_ref(handle)?;
                     worktop.resources.values().cloned().collect()
                 };
                 for bucket in buckets {
@@ -403,10 +408,13 @@ where
 
     fn run<X: Executor>(
         &mut self,
-        executor: X,
-        actor: ResolvedActor,
-        mut call_frame_update: CallFrameUpdate,
+        resolved: TemporaryResolvedInvocation<X>,
     ) -> Result<X::Output, RuntimeError> {
+        let executor = resolved.executor;
+        let actor = resolved.resolved_actor;
+        let args = resolved.args;
+        let mut call_frame_update = resolved.update;
+
         let derefed_lock = if let Some(ResolvedReceiver {
             derefed_from: Some((_, derefed_lock)),
             ..
@@ -425,6 +433,7 @@ where
                     api,
                     &Some(actor.clone()),
                     &mut call_frame_update,
+                    &args,
                 )
             })?;
         }
@@ -455,7 +464,7 @@ where
 
             // Run
             let (output, mut update) =
-                self.execute_in_mode(ExecutionMode::Client, |api| executor.execute(api))?;
+                self.execute_in_mode(ExecutionMode::Client, |api| executor.execute(args, api))?;
 
             // Handle execution finish
             self.execute_in_mode(ExecutionMode::KernelModule, |api| {
@@ -514,14 +523,12 @@ where
 
     fn invoke_internal<X: Executor>(
         &mut self,
-        executor: X,
-        actor: ResolvedActor,
-        call_frame_update: CallFrameUpdate,
+        resolved: TemporaryResolvedInvocation<X>,
     ) -> Result<X::Output, RuntimeError> {
         let depth = self.current_frame.depth;
         // TODO: Move to higher layer
         if depth == 0 {
-            for node_id in &call_frame_update.node_refs_to_copy {
+            for node_id in &resolved.update.node_refs_to_copy {
                 match node_id {
                     RENodeId::Global(global_address) => {
                         if self.current_frame.get_node_visibility(node_id).is_none() {
@@ -606,7 +613,7 @@ where
             }
         }
 
-        let output = self.run(executor, actor, call_frame_update)?;
+        let output = self.run(resolved)?;
 
         Ok(output)
     }
@@ -934,7 +941,8 @@ where
             NodeModuleId::SELF,
             &SubstateOffset::Bucket(BucketOffset::Info),
         ) {
-            let info = substate.bucket_info().clone();
+            let info: &BucketInfoSubstate = substate.into();
+            let info = info.clone();
 
             match info.resource_type {
                 ResourceType::Fungible { .. } => {
@@ -946,11 +954,12 @@ where
                             &SubstateOffset::Bucket(BucketOffset::LiquidFungible),
                         )
                         .unwrap();
+                    let liquid: &LiquidFungibleResource = substate.into();
 
                     Some(BucketSnapshot::Fungible {
                         resource_address: info.resource_address,
                         resource_type: info.resource_type,
-                        liquid: substate.bucket_liquid_fungible().amount(),
+                        liquid: liquid.amount(),
                     })
                 }
                 ResourceType::NonFungible { .. } => {
@@ -962,11 +971,12 @@ where
                             &SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
                         )
                         .unwrap();
+                    let liquid: &LiquidNonFungibleResource = substate.into();
 
                     Some(BucketSnapshot::NonFungible {
                         resource_address: info.resource_address,
                         resource_type: info.resource_type,
-                        liquid: substate.bucket_liquid_non_fungible().ids().clone(),
+                        liquid: liquid.ids().clone(),
                     })
                 }
             }
@@ -981,7 +991,8 @@ where
             NodeModuleId::SELF,
             &SubstateOffset::Proof(ProofOffset::Info),
         ) {
-            let info = substate.proof_info().clone();
+            let info: &ProofInfoSubstate = substate.into();
+            let info = info.clone();
 
             match info.resource_type {
                 ResourceType::Fungible { .. } => {
@@ -993,12 +1004,13 @@ where
                             &SubstateOffset::Proof(ProofOffset::Fungible),
                         )
                         .unwrap();
+                    let proof: &FungibleProof = substate.into();
 
                     Some(ProofSnapshot::Fungible {
                         resource_address: info.resource_address,
                         resource_type: info.resource_type,
                         restricted: info.restricted,
-                        total_locked: substate.fungible_proof().amount(),
+                        total_locked: proof.amount(),
                     })
                 }
                 ResourceType::NonFungible { .. } => {
@@ -1010,15 +1022,13 @@ where
                             &SubstateOffset::Proof(ProofOffset::NonFungible),
                         )
                         .unwrap();
+                    let proof: &NonFungibleProof = substate.into();
 
                     Some(ProofSnapshot::NonFungible {
                         resource_address: info.resource_address,
                         resource_type: info.resource_type,
                         restricted: info.restricted,
-                        total_locked: substate
-                            .non_fungible_proof()
-                            .non_fungible_local_ids()
-                            .clone(),
+                        total_locked: proof.non_fungible_local_ids().clone(),
                     })
                 }
             }
@@ -1056,8 +1066,8 @@ where
                     SubstateOffset::Global(GlobalOffset::Global),
                     LockFlags::empty(),
                 )?;
-                let substate_ref = self.kernel_get_substate_ref(handle)?;
-                (substate_ref.global_address().node_deref(), Some(handle))
+                let global: &GlobalSubstate = self.kernel_get_substate_ref(handle)?;
+                (global.node_deref(), Some(handle))
             }
             _ => (node_id, None),
         };
@@ -1174,10 +1184,10 @@ where
         Ok(())
     }
 
-    fn kernel_get_substate_ref(
+    fn kernel_read_substate(
         &mut self,
         lock_handle: LockHandle,
-    ) -> Result<SubstateRef, RuntimeError> {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         // A little hacky: this post sys call is called before the sys call happens due to
         // a mutable borrow conflict for substate ref.
         // Some modules (specifically: ExecutionTraceModule) require that all
@@ -1195,20 +1205,44 @@ where
             self.current_frame
                 .get_ref(lock_handle, &mut self.heap, &mut self.track)?;
 
-        Ok(substate_ref)
+        Ok(substate_ref.to_scrypto_value())
     }
 
-    fn kernel_get_substate_ref_mut(
-        &mut self,
+    fn kernel_get_substate_ref<'a, 'b, S>(
+        &'b mut self,
         lock_handle: LockHandle,
-    ) -> Result<SubstateRefMut, RuntimeError> {
+    ) -> Result<&'a S, RuntimeError>
+    where
+        &'a S: From<SubstateRef<'a>>,
+        'b: 'a,
+    {
+        KernelModuleMixer::on_read_substate(
+            self,
+            lock_handle,
+            0, //  TODO: pass the right size
+        )?;
+
+        let substate_ref =
+            self.current_frame
+                .get_ref(lock_handle, &mut self.heap, &mut self.track)?;
+
+        Ok(substate_ref.into())
+    }
+
+    fn kernel_get_substate_ref_mut<'a, 'b, S>(
+        &'b mut self,
+        lock_handle: LockHandle,
+    ) -> Result<&'a mut S, RuntimeError>
+    where
+        &'a mut S: From<SubstateRefMut<'a>>,
+        'b: 'a,
+    {
         // A little hacky: this post sys call is called before the sys call happens due to
         // a mutable borrow conflict for substate ref.
         // Some modules (specifically: ExecutionTraceModule) require that all
         // pre/post callbacks are balanced.
         // TODO: Move post sys call to substate_ref drop() so that it's actually
         // after the sys call processing, not before.
-
         KernelModuleMixer::on_write_substate(
             self,
             lock_handle,
@@ -1219,7 +1253,7 @@ where
             self.current_frame
                 .get_ref_mut(lock_handle, &mut self.heap, &mut self.track)?;
 
-        Ok(substate_ref_mut)
+        Ok(substate_ref_mut.into())
     }
 }
 
@@ -1238,9 +1272,10 @@ where
         let substate_ref = self
             .current_frame
             .get_ref(handle, &mut self.heap, &mut self.track)?;
+        let code: &PackageCodeSubstate = substate_ref.into();
         let instance = self
             .scrypto_interpreter
-            .create_instance(package_address, &substate_ref.code().code);
+            .create_instance(package_address, &code.code);
         Ok(instance)
     }
 }
@@ -1261,10 +1296,10 @@ where
         let saved_mode = self.execution_mode;
 
         self.execution_mode = ExecutionMode::Resolver;
-        let (actor, call_frame_update, executor) = invocation.resolve(self)?;
+        let resolved = invocation.resolve(self)?;
 
         self.execution_mode = ExecutionMode::Kernel;
-        let rtn = self.invoke_internal(executor, actor, call_frame_update)?;
+        let rtn = self.invoke_internal(resolved)?;
 
         // Restore previous mode
         self.execution_mode = saved_mode;

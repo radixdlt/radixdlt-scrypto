@@ -112,7 +112,7 @@ impl Package {
             blueprint_abis: input.abi,
         };
         let code_type = PackageCodeTypeSubstate::Precompiled;
-        let code = WasmCodeSubstate {
+        let code = PackageCodeSubstate {
             code: vec![input.native_package_code_id],
         };
 
@@ -163,7 +163,7 @@ impl Package {
             })?;
 
         let code_type_substate = PackageCodeTypeSubstate::Wasm;
-        let wasm_code_substate = WasmCodeSubstate { code: input.code };
+        let wasm_code_substate = PackageCodeSubstate { code: input.code };
         let package_info_substate = PackageInfoSubstate {
             blueprint_abis: input.abi,
             dependent_resources: BTreeSet::new(),

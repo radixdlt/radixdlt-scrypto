@@ -1,10 +1,13 @@
+use crate::blueprints::resource::ProofInfoSubstate;
 use crate::errors::{ModuleError, RuntimeError};
 use crate::kernel::actor::{ResolvedActor, ResolvedReceiver};
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::{KernelModuleApi, LockFlags};
+use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
 use crate::types::*;
 use radix_engine_interface::api::types::{ProofOffset, RENodeId, SubstateOffset};
+use radix_engine_interface::api::LockFlags;
+use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -30,8 +33,7 @@ impl NodeMoveModule {
                     SubstateOffset::Proof(ProofOffset::Info),
                     LockFlags::MUTABLE,
                 )?;
-                let mut substate_ref_mut = api.kernel_get_substate_ref_mut(handle)?;
-                let proof = substate_ref_mut.proof_info();
+                let proof: &mut ProofInfoSubstate = api.kernel_get_substate_ref_mut(handle)?;
 
                 if proof.restricted {
                     return Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
@@ -116,6 +118,7 @@ impl KernelModule for NodeMoveModule {
         api: &mut Y,
         actor: &Option<ResolvedActor>,
         call_frame_update: &mut CallFrameUpdate,
+        _args: &ScryptoValue,
     ) -> Result<(), RuntimeError> {
         for node_id in &call_frame_update.nodes_to_move {
             Self::prepare_move_downstream(*node_id, actor, api)?;
