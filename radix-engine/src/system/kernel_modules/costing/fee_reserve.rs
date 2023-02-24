@@ -104,7 +104,6 @@ pub enum CostingReason {
     ReadSubstate,
     WriteSubstate,
     DropLock,
-    InstantiateWasm,
     RunWasm,
     RunPrecompiled,
 }

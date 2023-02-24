@@ -7,8 +7,7 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     AccessControllerOffset, AccountOffset, AuthZoneStackOffset, BucketOffset, ComponentOffset,
     FnIdentifier, GlobalOffset, KeyValueStoreOffset, PackageOffset, ProofOffset, RENodeId,
-    ResourceManagerOffset, RoyaltyOffset, SubstateOffset, ValidatorOffset, VaultOffset,
-    WorktopOffset,
+    ResourceManagerOffset, RoyaltyOffset, SubstateOffset, ValidatorOffset,
 };
 use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLUEPRINT;
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
@@ -182,8 +181,8 @@ impl VisibilityProperties {
                 SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => {
                     read_only
                 }
-                SubstateOffset::Vault(VaultOffset::Info) => true,
-                SubstateOffset::Bucket(BucketOffset::Info) => read_only,
+                SubstateOffset::Vault(..) => true,
+                SubstateOffset::Bucket(..) => read_only,
                 SubstateOffset::Proof(..) => true,
                 SubstateOffset::Global(GlobalOffset::Global) => read_only,
                 SubstateOffset::Package(PackageOffset::Info) => read_only,

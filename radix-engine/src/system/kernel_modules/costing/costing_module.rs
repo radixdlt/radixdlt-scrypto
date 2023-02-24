@@ -188,12 +188,12 @@ impl KernelModule for CostingModule {
             .unwrap_or(0);
         api.kernel_drop_lock(handle)?;
 
-        // TODO: refactor to defer substate loading to finalization.
+        // FIXME: refactor to defer substate loading to finalization.
         let handle = api.kernel_lock_substate(
             package_node_id,
             NodeModuleId::PackageRoyalty,
             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
-            LockFlags::MUTABLE,
+            LockFlags::read_only(),
         )?;
         let substate = api.kernel_get_substate_ref(handle)?;
         {
@@ -203,6 +203,13 @@ impl KernelModule for CostingModule {
                 vault_node_id,
                 NodeModuleId::SELF,
                 SubstateOffset::Vault(VaultOffset::Info),
+                LockFlags::read_only(),
+            )?;
+            api.kernel_drop_lock(vault_handle)?;
+            let vault_handle = api.kernel_lock_substate(
+                vault_node_id,
+                NodeModuleId::SELF,
+                SubstateOffset::Vault(VaultOffset::LiquidFungible),
                 LockFlags::MUTABLE,
             )?;
             api.kernel_drop_lock(vault_handle)?;
@@ -235,12 +242,12 @@ impl KernelModule for CostingModule {
                 .clone();
             api.kernel_drop_lock(handle)?;
 
-            // TODO: refactor to defer substate loading to finalization.
+            // FIXME: refactor to defer substate loading to finalization.
             let handle = api.kernel_lock_substate(
                 component_node_id,
                 NodeModuleId::ComponentRoyalty,
                 SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
-                LockFlags::MUTABLE,
+                LockFlags::read_only(),
             )?;
             let substate = api.kernel_get_substate_ref(handle)?;
             {
@@ -250,6 +257,13 @@ impl KernelModule for CostingModule {
                     vault_node_id,
                     NodeModuleId::SELF,
                     SubstateOffset::Vault(VaultOffset::Info),
+                    LockFlags::read_only(),
+                )?;
+                api.kernel_drop_lock(vault_handle)?;
+                let vault_handle = api.kernel_lock_substate(
+                    vault_node_id,
+                    NodeModuleId::SELF,
+                    SubstateOffset::Vault(VaultOffset::LiquidFungible),
                     LockFlags::MUTABLE,
                 )?;
                 api.kernel_drop_lock(vault_handle)?;
