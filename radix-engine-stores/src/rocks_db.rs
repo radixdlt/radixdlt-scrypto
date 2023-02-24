@@ -64,32 +64,30 @@ impl RadixEngineDB {
     ) -> Vec<ComponentAddress> {
         let start = &scrypto_encode(&SubstateId(
             RENodeId::GlobalComponent(start),
-            NodeModuleId::SELF,
-            SubstateOffset::Global(GlobalOffset::Global),
+            NodeModuleId::TypeInfo,
+            SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
         ))
         .unwrap();
         let end = &scrypto_encode(&SubstateId(
             RENodeId::GlobalComponent(end),
-            NodeModuleId::SELF,
-            SubstateOffset::Global(GlobalOffset::Global),
+            NodeModuleId::TypeInfo,
+            SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
         ))
         .unwrap();
         let substate_ids: Vec<SubstateId> = self.list_items(start, end);
-        substate_ids
-            .into_iter()
-            .map(|id| {
-                if let SubstateId(
-                    RENodeId::GlobalComponent(component_address),
-                    NodeModuleId::SELF,
-                    SubstateOffset::Global(GlobalOffset::Global),
-                ) = id
-                {
-                    component_address
-                } else {
-                    panic!("Expected a component global substate id.")
-                }
-            })
-            .collect()
+        let mut addresses = Vec::new();
+        for substate_id in substate_ids {
+            if let SubstateId(
+                RENodeId::GlobalComponent(component_address),
+                NodeModuleId::TypeInfo,
+                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+            ) = substate_id
+            {
+                addresses.push(component_address);
+            }
+        }
+
+        addresses
     }
 
     pub fn list_components(&self) -> Vec<ComponentAddress> {

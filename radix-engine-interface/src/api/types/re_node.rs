@@ -131,7 +131,7 @@ impl Into<[u8; 36]> for RENodeId {
             RENodeId::Logger => [4u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
             RENodeId::TransactionRuntime => [5u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
             RENodeId::AuthZoneStack => [6u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
-            _ => panic!("Not a stored id"),
+            _ => panic!("Not a stored id: {:?}", self),
         }
     }
 }
@@ -281,11 +281,6 @@ pub enum PackageOffset {
 }
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum GlobalOffset {
-    Global,
-}
-
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ResourceManagerOffset {
     ResourceManager,
 }
@@ -360,7 +355,6 @@ pub enum AccessControllerOffset {
 /// Specifies a specific Substate into a given RENode
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
 pub enum SubstateOffset {
-    Global(GlobalOffset),
     AuthZoneStack(AuthZoneStackOffset),
     Component(ComponentOffset),
     Package(PackageOffset),

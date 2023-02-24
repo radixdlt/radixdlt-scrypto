@@ -6,7 +6,7 @@ use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     AccessControllerOffset, AccountOffset, AuthZoneStackOffset, BucketOffset, ComponentOffset,
-    FnIdentifier, GlobalOffset, KeyValueStoreOffset, PackageOffset, ProofOffset, RENodeId,
+    FnIdentifier, KeyValueStoreOffset, PackageOffset, ProofOffset, RENodeId,
     ResourceManagerOffset, RoyaltyOffset, SubstateOffset, ValidatorOffset, VaultOffset,
     WorktopOffset,
 };
@@ -79,6 +79,7 @@ impl VisibilityProperties {
                 RENodeId::Account(..) => true,
                 RENodeId::Validator(..) => true,
                 RENodeId::Component(..) => true,
+                RENodeId::AccessController(..) => true,
                 _ => false,
             },
             _ => return false,
@@ -163,11 +164,9 @@ impl VisibilityProperties {
         // TODO: Cleanup and reduce to least privilege
         match (mode, offset) {
             (ExecutionMode::Kernel, offset) => match offset {
-                SubstateOffset::Global(GlobalOffset::Global) => read_only,
                 _ => false, // Protect ourselves!
             },
             (ExecutionMode::Resolver, offset) => match offset {
-                SubstateOffset::Global(GlobalOffset::Global) => read_only,
                 SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo) => read_only,
                 SubstateOffset::Package(PackageOffset::CodeType) => read_only,
                 SubstateOffset::Package(PackageOffset::Info) => read_only,
@@ -191,7 +190,6 @@ impl VisibilityProperties {
                 SubstateOffset::Bucket(BucketOffset::Bucket) => read_only,
                 SubstateOffset::Proof(ProofOffset::Proof) => true,
                 SubstateOffset::Vault(VaultOffset::Vault) => true,
-                SubstateOffset::Global(GlobalOffset::Global) => read_only,
                 SubstateOffset::Package(PackageOffset::Info) => read_only,
                 SubstateOffset::Package(PackageOffset::CodeType) => read_only,
                 SubstateOffset::Package(PackageOffset::Code) => read_only,
@@ -245,9 +243,6 @@ impl VisibilityProperties {
                                     SubstateOffset::Package(PackageOffset::Code), // TODO: Remove
                                 ) => read_only,
                                 // READ global substates
-                                (RENodeId::GlobalComponent(_), SubstateOffset::Global(_)) => {
-                                    read_only
-                                }
                                 (
                                     RENodeId::Component(_),
                                     SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
@@ -277,14 +272,6 @@ impl VisibilityProperties {
                                     RENodeId::GlobalPackage(_),
                                     SubstateOffset::Package(PackageOffset::Code), // TODO: Remove
                                 ) => read_only,
-                                // READ global substates
-                                (RENodeId::GlobalComponent(_), SubstateOffset::Global(_)) => {
-                                    read_only
-                                }
-                                (
-                                    RENodeId::Component(_),
-                                    SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-                                ) => read_only,
                                 // READ/WRITE KVStore entry
                                 (
                                     RENodeId::KeyValueStore(_),
@@ -293,6 +280,36 @@ impl VisibilityProperties {
                                 // READ/WRITE component application state
                                 (
                                     RENodeId::Component(addr),
+                                    SubstateOffset::Component(ComponentOffset::State0),
+                                ) => addr.eq(component_address),
+                                // Otherwise, false
+                                _ => false,
+                            },
+                            Some(ResolvedReceiver {
+                                     receiver: MethodReceiver(RENodeId::GlobalComponent(component_address), ..),
+                                     ..
+                                 }) => match (node_id, offset) {
+                                // READ package code & abi
+                                (
+                                    RENodeId::GlobalPackage(_),
+                                    SubstateOffset::Package(PackageOffset::Info), // TODO: Remove
+                                )
+                                | (
+                                    RENodeId::GlobalPackage(_),
+                                    SubstateOffset::Package(PackageOffset::CodeType), // TODO: Remove
+                                )
+                                | (
+                                    RENodeId::GlobalPackage(_),
+                                    SubstateOffset::Package(PackageOffset::Code), // TODO: Remove
+                                ) => read_only,
+                                // READ/WRITE KVStore entry
+                                (
+                                    RENodeId::KeyValueStore(_),
+                                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
+                                ) => true,
+                                // READ/WRITE component application state
+                                (
+                                    RENodeId::GlobalComponent(addr),
                                     SubstateOffset::Component(ComponentOffset::State0),
                                 ) => addr.eq(component_address),
                                 // Otherwise, false
@@ -352,6 +369,20 @@ impl VisibilityProperties {
                                 ) => addr.eq(component_address),
                                 _ => false,
                             },
+                            Some(ResolvedReceiver {
+                                     receiver: MethodReceiver(RENodeId::GlobalComponent(component_address), ..),
+                                     ..
+                                 }) => match (node_id, offset) {
+                                (
+                                    RENodeId::KeyValueStore(_),
+                                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
+                                ) => true,
+                                (
+                                    RENodeId::GlobalComponent(addr),
+                                    SubstateOffset::Component(ComponentOffset::State0),
+                                ) => addr.eq(component_address),
+                                _ => false,
+                            },
                             _ => false,
                         },
                     }
@@ -366,7 +397,6 @@ pub struct SubstateProperties;
 impl SubstateProperties {
     pub fn is_persisted(offset: &SubstateOffset) -> bool {
         match offset {
-            SubstateOffset::Global(..) => true,
             SubstateOffset::AuthZoneStack(..) => false,
             SubstateOffset::Component(..) => true,
             SubstateOffset::Royalty(..) => true,
@@ -445,21 +475,6 @@ impl SubstateProperties {
             },
             SubstateOffset::Account(AccountOffset::Account) => match node_id {
                 RENodeId::KeyValueStore(..) => Ok(()),
-                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
-                    offset.clone(),
-                    node_id,
-                ))),
-            },
-            SubstateOffset::Global(GlobalOffset::Global) => match node_id {
-                RENodeId::Component(..)
-                | RENodeId::GlobalPackage(..)
-                | RENodeId::GlobalResourceManager(..)
-                | RENodeId::EpochManager(..)
-                | RENodeId::Validator(..)
-                | RENodeId::Clock(..)
-                | RENodeId::Identity(..)
-                | RENodeId::Account(..)
-                | RENodeId::AccessController(..) => Ok(()),
                 _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
                     offset.clone(),
                     node_id,

@@ -221,20 +221,10 @@ impl TestRunner {
     }
 
     pub fn get_metadata(&mut self, address: Address) -> BTreeMap<String, String> {
-        let node_id = match address {
-            Address::Component(component_address) => {
-                self.deref_component_address(component_address)
-            }
-            Address::Package(package_address) => RENodeId::GlobalPackage(package_address),
-            Address::Resource(resource_address) => {
-                RENodeId::GlobalResourceManager(resource_address)
-            }
-        };
-
         let metadata = self
             .substate_store
             .get_substate(&SubstateId(
-                node_id,
+                address.into(),
                 NodeModuleId::Metadata,
                 SubstateOffset::Metadata(MetadataOffset::Metadata),
             ))
@@ -245,27 +235,12 @@ impl TestRunner {
         metadata.metadata
     }
 
-    pub fn deref_component(&mut self, component_address: ComponentAddress) -> Option<RENodeId> {
-        let node_id = RENodeId::GlobalComponent(component_address);
-        let global = self
-            .substate_store
-            .get_substate(&SubstateId(
-                node_id,
-                NodeModuleId::SELF,
-                SubstateOffset::Global(GlobalOffset::Global),
-            ))
-            .map(|s| s.substate.to_runtime())?;
-        Some(global.global().node_deref())
-    }
-
     pub fn inspect_component_royalty(
         &mut self,
         component_address: ComponentAddress,
     ) -> Option<Decimal> {
-        let node_id = self.deref_component(component_address)?;
-
         if let Some(output) = self.substate_store.get_substate(&SubstateId(
-            node_id,
+            RENodeId::GlobalComponent(component_address),
             NodeModuleId::ComponentRoyalty,
             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
         )) {
@@ -429,24 +404,9 @@ impl TestRunner {
         (pub_key, priv_key, account)
     }
 
-    pub fn deref_component_address(&mut self, component_address: ComponentAddress) -> RENodeId {
-        let substate: GlobalSubstate = self
-            .substate_store
-            .get_substate(&SubstateId(
-                RENodeId::GlobalComponent(component_address),
-                NodeModuleId::SELF,
-                SubstateOffset::Global(GlobalOffset::Global),
-            ))
-            .map(|output| output.substate.to_runtime().into())
-            .unwrap();
-
-        substate.node_deref()
-    }
-
     pub fn get_validator_info(&mut self, system_address: ComponentAddress) -> ValidatorSubstate {
-        let node_id = self.deref_component_address(system_address);
         let substate_id = SubstateId(
-            node_id,
+            RENodeId::GlobalComponent(system_address),
             NodeModuleId::SELF,
             SubstateOffset::Validator(ValidatorOffset::Validator),
         );
@@ -461,9 +421,8 @@ impl TestRunner {
     }
 
     pub fn get_validator_with_key(&mut self, key: &EcdsaSecp256k1PublicKey) -> ComponentAddress {
-        let node_id = self.deref_component_address(EPOCH_MANAGER);
         let substate_id = SubstateId(
-            node_id,
+            RENodeId::GlobalComponent(EPOCH_MANAGER),
             NodeModuleId::SELF,
             SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet),
         );

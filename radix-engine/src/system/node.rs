@@ -14,7 +14,7 @@ use crate::types::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::{
-    AuthZoneStackOffset, BucketOffset, ComponentOffset, EpochManagerOffset, GlobalOffset,
+    AuthZoneStackOffset, BucketOffset, ComponentOffset, EpochManagerOffset,
     NonFungibleStoreOffset, PackageOffset, ProofOffset, ResourceManagerOffset, SubstateOffset,
     VaultOffset, WorktopOffset,
 };

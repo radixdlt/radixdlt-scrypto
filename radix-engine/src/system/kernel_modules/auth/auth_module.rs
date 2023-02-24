@@ -46,7 +46,7 @@ impl AuthModule {
             actor,
             Some(ResolvedActor {
                 receiver: Some(ResolvedReceiver {
-                    derefed_from: Some((RENodeId::GlobalComponent(..), _)),
+                    receiver: MethodReceiver(RENodeId::GlobalComponent(..), ..),
                     ..
                 }),
                 ..
@@ -241,10 +241,10 @@ impl KernelModule for AuthModule {
                     identifier,
                     receiver:
                         Some(ResolvedReceiver {
-                            receiver: MethodReceiver(RENodeId::Component(component_id), module_id),
+                            receiver: MethodReceiver(node_id, module_id),
                             ..
                         }),
-                } => {
+                } if matches!(node_id, RENodeId::Component(..)) || matches!(node_id, RENodeId::GlobalComponent(ComponentAddress::Normal(..)))=> {
                     let offset = SubstateOffset::Package(PackageOffset::Info);
                     let handle = api.kernel_lock_substate(
                         RENodeId::GlobalPackage(identifier.package_address),
@@ -268,7 +268,7 @@ impl KernelModule for AuthModule {
                         let state = {
                             let offset = SubstateOffset::Component(ComponentOffset::State0);
                             let handle = api.kernel_lock_substate(
-                                RENodeId::Component(*component_id),
+                                *node_id,
                                 NodeModuleId::SELF,
                                 offset,
                                 LockFlags::read_only(),
@@ -281,7 +281,7 @@ impl KernelModule for AuthModule {
 
                         {
                             let handle = api.kernel_lock_substate(
-                                RENodeId::Component(*component_id),
+                                *node_id,
                                 NodeModuleId::AccessRules,
                                 SubstateOffset::AccessRulesChain(
                                     AccessRulesChainOffset::AccessRulesChain,
@@ -301,7 +301,7 @@ impl KernelModule for AuthModule {
                         }
                     } else {
                         let handle = api.kernel_lock_substate(
-                            RENodeId::Component(*component_id),
+                            *node_id,
                             NodeModuleId::AccessRules,
                             SubstateOffset::AccessRulesChain(
                                 AccessRulesChainOffset::AccessRulesChain,

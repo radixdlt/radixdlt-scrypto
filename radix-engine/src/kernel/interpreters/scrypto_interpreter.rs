@@ -438,12 +438,11 @@ impl Executor for ScryptoExecutor {
                         let mut runtime: Box<dyn WasmRuntime> = Box::new(ScryptoRuntime::new(api));
 
                         let mut input = Vec::new();
-                        if let Some(MethodReceiver(component_id, _)) = self.receiver {
-                            let component_id: ComponentId = component_id.into();
+                        if let Some(MethodReceiver(node_id, _)) = self.receiver {
                             input.push(
                                 runtime
                                     .allocate_buffer(
-                                        scrypto_encode(&component_id)
+                                        scrypto_encode(&node_id)
                                             .expect("Failed to encode component id"),
                                     )
                                     .expect("Failed to allocate buffer"),

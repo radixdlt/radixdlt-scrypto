@@ -17,7 +17,7 @@ use radix_engine_interface::api::package::PACKAGE_LOADER_BLUEPRINT;
 // TODO: clean this up!
 use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use radix_engine_interface::api::types::{
-    AuthZoneStackOffset, GlobalOffset, LockHandle, ProofOffset, RENodeId, SubstateId,
+    AuthZoneStackOffset, LockHandle, ProofOffset, RENodeId, SubstateId,
     SubstateOffset, WorktopOffset,
 };
 use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLUEPRINT;
@@ -322,6 +322,7 @@ where
             RENodeId::Account(..) => Ok(()),
             RENodeId::Validator(..) => Ok(()),
             RENodeId::Component(..) => Ok(()),
+            RENodeId::AccessController(..) => Ok(()),
             _ => Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
                 node_id,
             ))),
@@ -509,13 +510,17 @@ where
                                     SubstateId(*node_id, NodeModuleId::TypeInfo, offset.clone()),
                                     LockFlags::read_only(),
                                 )
-                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
+                                .map_err(|_| {
+                                    KernelError::RENodeNotFound(*node_id)
+                                })?;
                             self.track
                                 .release_lock(
                                     SubstateId(*node_id, NodeModuleId::TypeInfo, offset),
                                     false,
                                 )
-                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
+                                .map_err(|_| {
+                                    KernelError::RENodeNotFound(*node_id)
+                                })?;
                             self.current_frame
                                 .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
                         }
@@ -548,7 +553,9 @@ where
                                                 ),
                                                 LockFlags::read_only(),
                                             )
-                                            .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
+                                            .map_err(|_| {
+                                                KernelError::RENodeNotFound(*node_id)
+                                            })?;
                                         self.track
                                             .release_lock(
                                                 SubstateId(
@@ -558,7 +565,9 @@ where
                                                 ),
                                                 false,
                                             )
-                                            .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
+                                            .map_err(|_| {
+                                                KernelError::RENodeNotFound(*node_id)
+                                            })?;
                                         self.current_frame.add_stored_ref(
                                             *node_id,
                                             RENodeVisibilityOrigin::Normal,
@@ -591,16 +600,20 @@ where
                             let offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
                             self.track
                                 .acquire_lock(
-                                    SubstateId(*node_id, NodeModuleId::SELF, offset.clone()),
+                                    SubstateId(*node_id, NodeModuleId::TypeInfo, offset.clone()),
                                     LockFlags::read_only(),
                                 )
-                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
+                                .map_err(|_| {
+                                    KernelError::RENodeNotFound(*node_id)
+                                })?;
                             self.track
                                 .release_lock(
-                                    SubstateId(*node_id, NodeModuleId::SELF, offset),
+                                    SubstateId(*node_id, NodeModuleId::TypeInfo, offset),
                                     false,
                                 )
-                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
+                                .map_err(|_| {
+                                    KernelError::RENodeNotFound(*node_id)
+                                })?;
                             self.current_frame
                                 .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
                         }

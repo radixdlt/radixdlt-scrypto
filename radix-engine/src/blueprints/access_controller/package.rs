@@ -1,7 +1,6 @@
 use super::state_machine::*;
 use crate::errors::{ApplicationError, InterpreterError, RuntimeError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, LockFlags};
-use crate::system::global::GlobalSubstate;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
