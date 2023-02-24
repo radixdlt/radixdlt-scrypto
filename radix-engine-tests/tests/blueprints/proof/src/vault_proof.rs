@@ -83,11 +83,12 @@ mod vault_proof {
         }
 
         pub fn compose_vault_and_bucket_proof(&mut self, bucket: Bucket) {
+            let expected_amount = self.vault.amount() + bucket.amount();
             self.vault.authorize(|| {
                 bucket.authorize(|| {
                     let proof = ComponentAuthZone::create_proof(bucket.resource_address());
                     let proof = proof.validate_proof(self.vault.resource_address()).unwrap();
-                    assert_eq!(proof.amount(), self.vault.amount() + bucket.amount());
+                    assert_eq!(proof.amount(), expected_amount);
                     proof.drop();
                 })
             });

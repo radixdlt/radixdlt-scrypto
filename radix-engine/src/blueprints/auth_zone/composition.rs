@@ -47,7 +47,7 @@ pub fn compose_proof_by_amount<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
                     ProofInfoSubstate {
                         resource_address,
                         resource_type,
-                        restricted: false,
+                        restricted: false, // TODO: follow existing impl, but need to revisit this
                     },
                     proof,
                 )
@@ -77,7 +77,7 @@ pub fn compose_proof_by_amount<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
                 ProofInfoSubstate {
                     resource_address,
                     resource_type,
-                    restricted: false,
+                    restricted: false, // TODO: follow existing impl, but need to revisit this
                 },
                 proof,
             )
@@ -144,7 +144,7 @@ fn max_amount_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
         )?;
         let substate = api.kernel_get_substate_ref(handle)?;
         let proof_info = substate.proof_info();
-        if proof_info.resource_address == resource_address && !proof_info.restricted {
+        if proof_info.resource_address == resource_address {
             api.kernel_drop_lock(handle)?;
 
             let handle = api.kernel_lock_substate(
@@ -198,7 +198,7 @@ fn max_ids_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
         )?;
         let substate = api.kernel_get_substate_ref(handle)?;
         let proof_info = substate.proof_info();
-        if proof_info.resource_address == resource_address && !proof_info.restricted {
+        if proof_info.resource_address == resource_address {
             api.kernel_drop_lock(handle)?;
 
             let handle = api.kernel_lock_substate(
