@@ -1,29 +1,13 @@
 use crate::types::*;
 
-/// Resolved receiver including info whether receiver was derefed
-/// or not
-#[derive(Debug, Copy, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct ResolvedReceiver {
-    pub receiver: MethodReceiver,
-    // TODO: Add receiver type
-}
-
-impl ResolvedReceiver {
-    pub fn new(receiver: MethodReceiver) -> Self {
-        Self {
-            receiver,
-        }
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ResolvedActor {
     pub identifier: FnIdentifier,
-    pub receiver: Option<ResolvedReceiver>,
+    pub receiver: Option<MethodReceiver>,
 }
 
 impl ResolvedActor {
-    pub fn method<I: Into<FnIdentifier>>(identifier: I, receiver: ResolvedReceiver) -> Self {
+    pub fn method<I: Into<FnIdentifier>>(identifier: I, receiver: MethodReceiver) -> Self {
         Self {
             identifier: identifier.into(),
             receiver: Some(receiver),

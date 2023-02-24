@@ -196,9 +196,7 @@ impl AccountNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: AccountCreateGlobalInput = scrypto_decode(&scrypto_encode(&input).unwrap())

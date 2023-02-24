@@ -49,28 +49,29 @@ impl ClientComponentApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
-    fn globalize(
-        &mut self,
-        node_id: RENodeId,
-    ) -> Result<ComponentAddress, ClientApiError> {
+    fn globalize(&mut self, node_id: RENodeId) -> Result<ComponentAddress, ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
 
-        let bytes =
-            copy_buffer(unsafe { globalize_component(node_id.as_ptr(), node_id.len()) });
+        let bytes = copy_buffer(unsafe { globalize_component(node_id.as_ptr(), node_id.len()) });
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
-    fn globalize_with_address(&mut self, node_id: RENodeId, address: Address) -> Result<ComponentAddress, ClientApiError> {
+    fn globalize_with_address(
+        &mut self,
+        node_id: RENodeId,
+        address: Address,
+    ) -> Result<ComponentAddress, ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
         let address = scrypto_encode(&address).unwrap();
 
-        let bytes =
-            copy_buffer(unsafe { globalize_with_address(
+        let bytes = copy_buffer(unsafe {
+            globalize_with_address(
                 node_id.as_ptr(),
                 node_id.len(),
                 address.as_ptr(),
                 address.len(),
-            ) });
+            )
+        });
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
@@ -113,9 +114,8 @@ impl ClientComponentApi<ClientApiError> for ScryptoEnv {
     ) -> Result<(PackageAddress, String), ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
 
-        let bytes = copy_buffer(unsafe {
-            get_component_type_info(node_id.as_ptr(), node_id.len())
-        });
+        let bytes =
+            copy_buffer(unsafe { get_component_type_info(node_id.as_ptr(), node_id.len()) });
 
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }

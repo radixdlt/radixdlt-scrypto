@@ -10,14 +10,14 @@ use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::SysBucket;
-use radix_engine_interface::api::ClientComponentApi;
 use radix_engine_interface::api::component::TypeInfoSubstate;
 use radix_engine_interface::api::package::PACKAGE_LOADER_BLUEPRINT;
+use radix_engine_interface::api::ClientComponentApi;
 // TODO: clean this up!
 use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use radix_engine_interface::api::types::{
-    AuthZoneStackOffset, LockHandle, ProofOffset, RENodeId, SubstateId,
-    SubstateOffset, WorktopOffset,
+    AuthZoneStackOffset, LockHandle, ProofOffset, RENodeId, SubstateId, SubstateOffset,
+    WorktopOffset,
 };
 use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLUEPRINT;
 use radix_engine_interface::blueprints::account::{
@@ -38,7 +38,7 @@ use radix_engine_interface::blueprints::transaction_runtime::TRANSACTION_RUNTIME
 use radix_engine_interface::rule;
 use sbor::rust::mem;
 
-use super::actor::{ExecutionMode, ResolvedActor, ResolvedReceiver};
+use super::actor::{ExecutionMode, ResolvedActor};
 use super::call_frame::{CallFrame, CallFrameUpdate, RENodeVisibilityOrigin};
 use super::heap::{Heap, HeapRENode};
 use super::id_allocator::IdAllocator;
@@ -210,13 +210,12 @@ where
     fn try_virtualize(
         &mut self,
         node_id: RENodeId,
-        offset: &SubstateOffset,
+        _module_id: NodeModuleId,
+        _offset: &SubstateOffset,
     ) -> Result<bool, RuntimeError> {
-        match (node_id, offset) {
-            (
-                RENodeId::GlobalComponent(component_address),
-                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo), // TODO: Is this the right substate? or should we do all possible?
-            ) => {
+        match node_id {
+            // TODO: Need to have a schema check in place before this in order to not create virtual components when accessing illegal substates
+            RENodeId::GlobalComponent(component_address) => {
                 // Lazy create component if missing
                 match component_address {
                     ComponentAddress::EcdsaSecp256k1VirtualAccount(address) => {
@@ -322,6 +321,7 @@ where
             RENodeId::Validator(..) => Ok(()),
             RENodeId::Component(..) => Ok(()),
             RENodeId::AccessController(..) => Ok(()),
+            RENodeId::Identity(..) => Ok(()),
             _ => Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
                 node_id,
             ))),
@@ -495,17 +495,13 @@ where
                                     SubstateId(*node_id, NodeModuleId::TypeInfo, offset.clone()),
                                     LockFlags::read_only(),
                                 )
-                                .map_err(|_| {
-                                    KernelError::RENodeNotFound(*node_id)
-                                })?;
+                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
                             self.track
                                 .release_lock(
                                     SubstateId(*node_id, NodeModuleId::TypeInfo, offset),
                                     false,
                                 )
-                                .map_err(|_| {
-                                    KernelError::RENodeNotFound(*node_id)
-                                })?;
+                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
                             self.current_frame
                                 .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
                         }
@@ -538,9 +534,7 @@ where
                                                 ),
                                                 LockFlags::read_only(),
                                             )
-                                            .map_err(|_| {
-                                                KernelError::RENodeNotFound(*node_id)
-                                            })?;
+                                            .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
                                         self.track
                                             .release_lock(
                                                 SubstateId(
@@ -550,9 +544,7 @@ where
                                                 ),
                                                 false,
                                             )
-                                            .map_err(|_| {
-                                                KernelError::RENodeNotFound(*node_id)
-                                            })?;
+                                            .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
                                         self.current_frame.add_stored_ref(
                                             *node_id,
                                             RENodeVisibilityOrigin::Normal,
@@ -588,17 +580,13 @@ where
                                     SubstateId(*node_id, NodeModuleId::TypeInfo, offset.clone()),
                                     LockFlags::read_only(),
                                 )
-                                .map_err(|_| {
-                                    KernelError::RENodeNotFound(*node_id)
-                                })?;
+                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
                             self.track
                                 .release_lock(
                                     SubstateId(*node_id, NodeModuleId::TypeInfo, offset),
                                     false,
                                 )
-                                .map_err(|_| {
-                                    KernelError::RENodeNotFound(*node_id)
-                                })?;
+                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
                             self.current_frame
                                 .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
                         }
@@ -726,10 +714,7 @@ where
         }
 
         match (node_id, &re_node) {
-            (
-                RENodeId::GlobalComponent(..),
-                RENodeInit::GlobalComponent(..),
-            ) => {}
+            (RENodeId::GlobalComponent(..), RENodeInit::GlobalComponent(..)) => {}
             (RENodeId::Component(..), RENodeInit::Component(..)) => {}
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
             (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
@@ -1000,7 +985,7 @@ where
             Err(RuntimeError::KernelError(KernelError::TrackError(TrackError::NotFound(
                 SubstateId(node_id, module_id, ref offset),
             )))) => {
-                if self.try_virtualize(node_id, &offset)? {
+                if self.try_virtualize(node_id, module_id, &offset)? {
                     self.current_frame.acquire_lock(
                         &mut self.heap,
                         &mut self.track,

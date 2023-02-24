@@ -1,14 +1,13 @@
 use super::node::{RENodeInit, RENodeModuleInit};
 use crate::errors::{KernelError, RuntimeError};
-use crate::kernel::actor::{ExecutionMode, ResolvedActor, ResolvedReceiver};
+use crate::kernel::actor::{ExecutionMode, ResolvedActor};
 use crate::kernel::kernel_api::LockFlags;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     AccessControllerOffset, AccountOffset, AuthZoneStackOffset, BucketOffset, ComponentOffset,
-    FnIdentifier, KeyValueStoreOffset, PackageOffset, ProofOffset, RENodeId,
-    ResourceManagerOffset, RoyaltyOffset, SubstateOffset, ValidatorOffset, VaultOffset,
-    WorktopOffset,
+    FnIdentifier, KeyValueStoreOffset, PackageOffset, ProofOffset, RENodeId, ResourceManagerOffset,
+    RoyaltyOffset, SubstateOffset, ValidatorOffset, VaultOffset, WorktopOffset,
 };
 use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLUEPRINT;
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
@@ -28,7 +27,9 @@ impl VisibilityProperties {
     ) -> bool {
         match mode {
             ExecutionMode::Kernel => match node_id {
+                // TODO: Remove
                 RENodeId::Account(..) => true,
+                RENodeId::Identity(..) => true,
                 _ => false,
             },
             ExecutionMode::KernelModule => match node_id {
@@ -80,6 +81,7 @@ impl VisibilityProperties {
                 RENodeId::Validator(..) => true,
                 RENodeId::Component(..) => true,
                 RENodeId::AccessController(..) => true,
+                RENodeId::Identity(..) => true,
                 _ => false,
             },
             _ => return false,
@@ -255,40 +257,41 @@ impl VisibilityProperties {
                                 // Otherwise, false
                                 _ => false,
                             },
-                            Some(ResolvedReceiver {
-                                receiver: MethodReceiver(RENodeId::Component(component_address), ..),
-                                ..
-                            }) => match (node_id, offset) {
-                                // READ package code & abi
-                                (
-                                    RENodeId::GlobalPackage(_),
-                                    SubstateOffset::Package(PackageOffset::Info), // TODO: Remove
-                                )
-                                | (
-                                    RENodeId::GlobalPackage(_),
-                                    SubstateOffset::Package(PackageOffset::CodeType), // TODO: Remove
-                                )
-                                | (
-                                    RENodeId::GlobalPackage(_),
-                                    SubstateOffset::Package(PackageOffset::Code), // TODO: Remove
-                                ) => read_only,
-                                // READ/WRITE KVStore entry
-                                (
-                                    RENodeId::KeyValueStore(_),
-                                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
-                                ) => true,
-                                // READ/WRITE component application state
-                                (
-                                    RENodeId::Component(addr),
-                                    SubstateOffset::Component(ComponentOffset::State0),
-                                ) => addr.eq(component_address),
-                                // Otherwise, false
-                                _ => false,
-                            },
-                            Some(ResolvedReceiver {
-                                     receiver: MethodReceiver(RENodeId::GlobalComponent(component_address), ..),
-                                     ..
-                                 }) => match (node_id, offset) {
+                            Some(MethodReceiver(RENodeId::Component(component_address), ..)) => {
+                                match (node_id, offset) {
+                                    // READ package code & abi
+                                    (
+                                        RENodeId::GlobalPackage(_),
+                                        SubstateOffset::Package(PackageOffset::Info), // TODO: Remove
+                                    )
+                                    | (
+                                        RENodeId::GlobalPackage(_),
+                                        SubstateOffset::Package(PackageOffset::CodeType), // TODO: Remove
+                                    )
+                                    | (
+                                        RENodeId::GlobalPackage(_),
+                                        SubstateOffset::Package(PackageOffset::Code), // TODO: Remove
+                                    ) => read_only,
+                                    // READ/WRITE KVStore entry
+                                    (
+                                        RENodeId::KeyValueStore(_),
+                                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                                            ..,
+                                        )),
+                                    ) => true,
+                                    // READ/WRITE component application state
+                                    (
+                                        RENodeId::Component(addr),
+                                        SubstateOffset::Component(ComponentOffset::State0),
+                                    ) => addr.eq(component_address),
+                                    // Otherwise, false
+                                    _ => false,
+                                }
+                            }
+                            Some(MethodReceiver(
+                                RENodeId::GlobalComponent(component_address),
+                                ..,
+                            )) => match (node_id, offset) {
                                 // READ package code & abi
                                 (
                                     RENodeId::GlobalPackage(_),
@@ -335,8 +338,7 @@ impl VisibilityProperties {
                             || package_address.eq(&ROYALTY_PACKAGE)
                             || package_address.eq(&ACCESS_RULES_PACKAGE)
                             || package_address.eq(&PACKAGE_LOADER)
-                            || package_address.eq(&ACCOUNT_PACKAGE)
-                        =>
+                            || package_address.eq(&ACCOUNT_PACKAGE) =>
                         {
                             true
                         }
@@ -351,28 +353,26 @@ impl VisibilityProperties {
                                 _ => false,
                             },
 
-                            Some(ResolvedReceiver {
-                                receiver: MethodReceiver(RENodeId::Component(component_address), ..),
-                                ..
-                            })
-                            | Some(ResolvedReceiver {
-                                receiver: MethodReceiver(RENodeId::Account(component_address), ..),
-                                ..
-                            }) => match (node_id, offset) {
-                                (
-                                    RENodeId::KeyValueStore(_),
-                                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
-                                ) => true,
-                                (
-                                    RENodeId::Component(addr),
-                                    SubstateOffset::Component(ComponentOffset::State0),
-                                ) => addr.eq(component_address),
-                                _ => false,
-                            },
-                            Some(ResolvedReceiver {
-                                     receiver: MethodReceiver(RENodeId::GlobalComponent(component_address), ..),
-                                     ..
-                                 }) => match (node_id, offset) {
+                            Some(MethodReceiver(RENodeId::Component(component_address), ..))
+                            | Some(MethodReceiver(RENodeId::Account(component_address), ..)) => {
+                                match (node_id, offset) {
+                                    (
+                                        RENodeId::KeyValueStore(_),
+                                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                                            ..,
+                                        )),
+                                    ) => true,
+                                    (
+                                        RENodeId::Component(addr),
+                                        SubstateOffset::Component(ComponentOffset::State0),
+                                    ) => addr.eq(component_address),
+                                    _ => false,
+                                }
+                            }
+                            Some(MethodReceiver(
+                                RENodeId::GlobalComponent(component_address),
+                                ..,
+                            )) => match (node_id, offset) {
                                 (
                                     RENodeId::KeyValueStore(_),
                                     SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),

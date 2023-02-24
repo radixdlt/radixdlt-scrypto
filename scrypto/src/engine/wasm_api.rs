@@ -210,10 +210,7 @@ pub unsafe fn new_key_value_store() -> Buffer {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn globalize_component(
-    _node_id_ptr: *const u8,
-    _node_id_len: usize,
-) -> Buffer {
+pub unsafe fn globalize_component(_node_id_ptr: *const u8, _node_id_len: usize) -> Buffer {
     todo!()
 }
 
@@ -226,7 +223,6 @@ pub unsafe fn globalize_with_address(
 ) -> Buffer {
     todo!()
 }
-
 
 #[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn get_component_type_info(

@@ -1,5 +1,5 @@
 use crate::errors::*;
-use crate::kernel::actor::{ResolvedActor, ResolvedReceiver};
+use crate::kernel::actor::ResolvedActor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::event::TrackedEvent;
 use crate::kernel::kernel_api::KernelModuleApi;
@@ -368,11 +368,7 @@ impl ExecutionTraceModule {
                         blueprint_name,
                         ident,
                     },
-                receiver:
-                    Some(ResolvedReceiver {
-                        receiver: MethodReceiver(RENodeId::Vault(vault_id), ..),
-                        ..
-                    }),
+                receiver: Some(MethodReceiver(RENodeId::Vault(vault_id), ..)),
             }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_PUT_IDENT) =>
@@ -386,11 +382,7 @@ impl ExecutionTraceModule {
                         blueprint_name,
                         ident,
                     },
-                receiver:
-                    Some(ResolvedReceiver {
-                        receiver: MethodReceiver(RENodeId::Vault(vault_id), ..),
-                        ..
-                    }),
+                receiver: Some(MethodReceiver(RENodeId::Vault(vault_id), ..)),
             }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_LOCK_FEE_IDENT) =>
@@ -416,11 +408,7 @@ impl ExecutionTraceModule {
                         blueprint_name,
                         ident,
                     },
-                receiver:
-                    Some(ResolvedReceiver {
-                        receiver: MethodReceiver(RENodeId::Vault(vault_id), ..),
-                        ..
-                    }),
+                receiver: Some(MethodReceiver(RENodeId::Vault(vault_id), ..)),
             }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_TAKE_IDENT) =>
@@ -570,7 +558,7 @@ impl ExecutionTraceReceipt {
         let mut vault_locked_by = HashMap::<VaultId, RENodeId>::new();
         for (actor, vault_id, vault_op) in ops {
             if let TraceActor::Actor(ResolvedActor {
-                receiver: Some(resolved_receiver),
+                receiver: Some(receiver),
                 ..
             }) = actor
             {
@@ -578,21 +566,21 @@ impl ExecutionTraceReceipt {
                     VaultOp::Create(_) => todo!("Not supported yet!"),
                     VaultOp::Put(amount) => {
                         *vault_changes
-                            .entry(resolved_receiver.receiver.0)
+                            .entry(receiver.0)
                             .or_default()
                             .entry(vault_id)
                             .or_default() += amount;
                     }
                     VaultOp::Take(amount) => {
                         *vault_changes
-                            .entry(resolved_receiver.receiver.0)
+                            .entry(receiver.0)
                             .or_default()
                             .entry(vault_id)
                             .or_default() -= amount;
                     }
                     VaultOp::LockFee => {
                         *vault_changes
-                            .entry(resolved_receiver.receiver.0)
+                            .entry(receiver.0)
                             .or_default()
                             .entry(vault_id)
                             .or_default() -= 0;
@@ -600,7 +588,7 @@ impl ExecutionTraceReceipt {
                         // Hack: Additional check to avoid second `lock_fee` attempts (runtime failure) from
                         // polluting the `vault_locked_by` index.
                         if !vault_locked_by.contains_key(&vault_id) {
-                            vault_locked_by.insert(vault_id, resolved_receiver.receiver.0);
+                            vault_locked_by.insert(vault_id, receiver.0);
                         }
                     }
                 }

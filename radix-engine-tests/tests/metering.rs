@@ -71,8 +71,8 @@ fn test_basic_transfer() {
         + 12500 /* DropNode */
         + 0 /* InstantiateWasm */
         + 6500 /* Invoke */
-        + 73500 /* LockSubstate */
-        + 49000 /* ReadSubstate */
+        + 70500 /* LockSubstate */
+        + 46000 /* ReadSubstate */
         + 62500 /* RunPrecompiled */
         + 0 /* RunWasm */
         + 50000 /* TxBaseCost */
@@ -203,10 +203,10 @@ fn test_radiswap() {
         + 188500 /* DropLock */
         + 17500 /* DropNode */
         + 19000 /* Invoke */
-        + 209500 /* LockSubstate */
-        + 143500 /* ReadSubstate */
+        + 205500 /* LockSubstate */
+        + 139500 /* ReadSubstate */
         + 162500 /* RunPrecompiled */
-        + 1643045 /* RunWasm */
+        + 1639290 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1705 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */

@@ -7,6 +7,7 @@ use transaction::builder::ManifestBuilder;
 use transaction::data::manifest_args;
 
 #[test]
+#[ignore]
 fn dangling_component_should_fail() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();

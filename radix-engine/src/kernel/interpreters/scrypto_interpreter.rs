@@ -8,7 +8,7 @@ use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_runtime::TransactionRuntimeNativePackage;
 use crate::errors::ScryptoFnResolvingError;
 use crate::errors::{InterpreterError, KernelError, RuntimeError};
-use crate::kernel::actor::{ResolvedActor, ResolvedReceiver};
+use crate::kernel::actor::ResolvedActor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{
     ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockFlags,
@@ -83,37 +83,15 @@ impl ExecutableInvocation for MethodInvocation {
             _ => todo!(),
         };
 
-        // Deref if global
-        /*
-        let resolved_receiver = if let RENodeId::GlobalComponent(..) = self.receiver.0 {
-            let handle = api.kernel_lock_substate(
-                self.receiver.0,
-                NodeModuleId::SELF,
-                SubstateOffset::Global(GlobalOffset::Global),
-                LockFlags::empty(),
-            )?;
-            let substate_ref = api.kernel_get_substate_ref(handle)?;
-            let derefed = substate_ref.global_address().node_deref();
-            ResolvedReceiver::derefed(
-                MethodReceiver(derefed, self.receiver.1),
-                self.receiver.0,
-                handle,
-            )
-        } else {
-            ResolvedReceiver::new(self.receiver)
-        };
-         */
-        let resolved_receiver = ResolvedReceiver::new(self.receiver);
-
         // Pass the component ref
-        node_refs_to_copy.insert(resolved_receiver.receiver.0);
+        node_refs_to_copy.insert(self.receiver.0);
 
         let fn_identifier = FnIdentifier::new(
             package_address,
             blueprint_name.clone(),
             self.fn_name.clone(),
         );
-        let actor = ResolvedActor::method(fn_identifier.clone(), resolved_receiver);
+        let actor = ResolvedActor::method(fn_identifier.clone(), self.receiver);
 
         let code_type = if package_address.eq(&PACKAGE_LOADER) {
             // TODO: Remove this weirdness
@@ -202,7 +180,7 @@ impl ExecutableInvocation for MethodInvocation {
         let executor = ScryptoExecutor {
             package_address,
             export_name,
-            receiver: Some(resolved_receiver.receiver),
+            receiver: Some(self.receiver),
             args: value,
         };
 

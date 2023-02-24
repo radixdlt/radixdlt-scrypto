@@ -124,7 +124,8 @@ fn test_trace_fee_payments() {
     assert_eq!(1, resource_changes.len());
     assert!(resource_changes
         .iter()
-        .any(|r| r.node_id == RENodeId::GlobalComponent(funded_component) && r.amount == -total_fee_paid));
+        .any(|r| r.node_id == RENodeId::GlobalComponent(funded_component)
+            && r.amount == -total_fee_paid));
 }
 
 #[test]

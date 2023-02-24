@@ -81,7 +81,9 @@ impl fmt::Debug for RENodeId {
             Self::Worktop => write!(f, "Worktop"),
             Self::Logger => write!(f, "Logger"),
             Self::TransactionRuntime => write!(f, "TransactionRuntime"),
-            Self::GlobalComponent(address) => f.debug_tuple("GlobalComponent").field(address).finish(),
+            Self::GlobalComponent(address) => {
+                f.debug_tuple("GlobalComponent").field(address).finish()
+            }
             Self::KeyValueStore(id) => f
                 .debug_tuple("KeyValueStore")
                 .field(&hex::encode(id))
@@ -142,7 +144,7 @@ impl From<RENodeId> for Address {
             RENodeId::GlobalComponent(component_address) => component_address.into(),
             RENodeId::GlobalResourceManager(resource_address) => resource_address.into(),
             RENodeId::GlobalPackage(package_address) => package_address.into(),
-            _ => panic!("Not an address")
+            _ => panic!("Not an address"),
         }
     }
 }

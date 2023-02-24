@@ -251,10 +251,7 @@ where
         Ok(node_id.into())
     }
 
-    fn globalize(
-        &mut self,
-        node_id: RENodeId,
-    ) -> Result<ComponentAddress, RuntimeError> {
+    fn globalize(&mut self, node_id: RENodeId) -> Result<ComponentAddress, RuntimeError> {
         let node_type = match node_id {
             RENodeId::Component(..) => RENodeType::GlobalComponent,
             RENodeId::Identity(..) => RENodeType::GlobalIdentity,
@@ -270,7 +267,11 @@ where
         self.globalize_with_address(node_id, global_node_id.into())
     }
 
-    fn globalize_with_address(&mut self, node_id: RENodeId, address: Address) -> Result<ComponentAddress, RuntimeError> {
+    fn globalize_with_address(
+        &mut self,
+        node_id: RENodeId,
+        address: Address,
+    ) -> Result<ComponentAddress, RuntimeError> {
         let node = self.kernel_drop_node(node_id)?;
 
         let mut module_substates = BTreeMap::new();
@@ -284,24 +285,59 @@ where
 
         let mut module_init = BTreeMap::new();
 
-        let type_info = module_substates.remove(&(NodeModuleId::TypeInfo, SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo))).unwrap();
+        let type_info = module_substates
+            .remove(&(
+                NodeModuleId::TypeInfo,
+                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+            ))
+            .unwrap();
         let type_info_substate: TypeInfoSubstate = type_info.into();
-        module_init.insert(NodeModuleId::TypeInfo, RENodeModuleInit::TypeInfo(type_info_substate));
+        module_init.insert(
+            NodeModuleId::TypeInfo,
+            RENodeModuleInit::TypeInfo(type_info_substate),
+        );
 
-        if let Some(access_rules) = module_substates.remove(&(NodeModuleId::AccessRules, SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain))) {
+        if let Some(access_rules) = module_substates.remove(&(
+            NodeModuleId::AccessRules,
+            SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+        )) {
             let access_rules_substate: ObjectAccessRulesChainSubstate = access_rules.into();
-            module_init.insert(NodeModuleId::AccessRules, RENodeModuleInit::ObjectAccessRulesChain(access_rules_substate));
+            module_init.insert(
+                NodeModuleId::AccessRules,
+                RENodeModuleInit::ObjectAccessRulesChain(access_rules_substate),
+            );
         }
-        if let Some(royalty_config) = module_substates.remove(&(NodeModuleId::ComponentRoyalty, SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig))) {
+        if let Some(royalty_config) = module_substates.remove(&(
+            NodeModuleId::ComponentRoyalty,
+            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
+        )) {
             let royalty_config_substate: ComponentRoyaltyConfigSubstate = royalty_config.into();
-            let royalty_accumulator = module_substates.remove(&(NodeModuleId::ComponentRoyalty, SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator))).unwrap();
-            let royalty_accumulator_substate: ComponentRoyaltyAccumulatorSubstate = royalty_accumulator.into();
-            module_init.insert(NodeModuleId::ComponentRoyalty, RENodeModuleInit::ComponentRoyalty(royalty_config_substate, royalty_accumulator_substate));
+            let royalty_accumulator = module_substates
+                .remove(&(
+                    NodeModuleId::ComponentRoyalty,
+                    SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
+                ))
+                .unwrap();
+            let royalty_accumulator_substate: ComponentRoyaltyAccumulatorSubstate =
+                royalty_accumulator.into();
+            module_init.insert(
+                NodeModuleId::ComponentRoyalty,
+                RENodeModuleInit::ComponentRoyalty(
+                    royalty_config_substate,
+                    royalty_accumulator_substate,
+                ),
+            );
         }
 
-        if let Some(metadata) = module_substates.remove(&(NodeModuleId::Metadata, SubstateOffset::Metadata(MetadataOffset::Metadata))) {
+        if let Some(metadata) = module_substates.remove(&(
+            NodeModuleId::Metadata,
+            SubstateOffset::Metadata(MetadataOffset::Metadata),
+        )) {
             let metadata_substate: MetadataSubstate = metadata.into();
-            module_init.insert(NodeModuleId::Metadata, RENodeModuleInit::Metadata(metadata_substate));
+            module_init.insert(
+                NodeModuleId::Metadata,
+                RENodeModuleInit::Metadata(metadata_substate),
+            );
         }
 
         self.kernel_create_node(

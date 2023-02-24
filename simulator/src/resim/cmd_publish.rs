@@ -1,7 +1,6 @@
 use clap::Parser;
 use colored::*;
 use radix_engine::ledger::{OutputValue, ReadableSubstateStore, WriteableSubstateStore};
-use radix_engine::system::global::GlobalSubstate;
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::*;
 use radix_engine_interface::api::package::PackageCodeSubstate;
@@ -66,17 +65,8 @@ impl Publish {
             let mut substate_store =
                 RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
 
-            let global: GlobalSubstate = substate_store
-                .get_substate(&SubstateId(
-                    RENodeId::GlobalPackage(package_address.0),
-                    NodeModuleId::SELF,
-                    SubstateOffset::Global(GlobalOffset::Global),
-                ))
-                .map(|s| s.substate)
-                .map(|s| s.to_runtime().into())
-                .ok_or(Error::PackageAddressNotFound)?;
             let substate_id = SubstateId(
-                global.node_deref(),
+                RENodeId::GlobalPackage(package_address.0),
                 NodeModuleId::SELF,
                 SubstateOffset::Package(PackageOffset::Code),
             );
@@ -95,7 +85,7 @@ impl Publish {
             // TODO: implement real package overwrite
             substate_store.put_substate(
                 SubstateId(
-                    global.node_deref(),
+                    RENodeId::GlobalPackage(package_address.0),
                     NodeModuleId::SELF,
                     SubstateOffset::Package(PackageOffset::Code),
                 ),
@@ -115,7 +105,7 @@ impl Publish {
 
             substate_store.put_substate(
                 SubstateId(
-                    global.node_deref(),
+                    RENodeId::GlobalPackage(package_address.0),
                     NodeModuleId::SELF,
                     SubstateOffset::Package(PackageOffset::Info),
                 ),

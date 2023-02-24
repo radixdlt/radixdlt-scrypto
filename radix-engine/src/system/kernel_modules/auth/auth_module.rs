@@ -1,6 +1,5 @@
 use crate::errors::*;
 use crate::kernel::actor::ResolvedActor;
-use crate::kernel::actor::ResolvedReceiver;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::call_frame::RENodeVisibilityOrigin;
 use crate::kernel::kernel_api::KernelModuleApi;
@@ -45,10 +44,7 @@ impl AuthModule {
         matches!(
             actor,
             Some(ResolvedActor {
-                receiver: Some(ResolvedReceiver {
-                    receiver: MethodReceiver(RENodeId::GlobalComponent(..), ..),
-                    ..
-                }),
+                receiver: Some(MethodReceiver(RENodeId::GlobalComponent(..), ..)),
                 ..
             })
         )
@@ -142,43 +138,28 @@ impl KernelModule for AuthModule {
                 // SetAccessRule auth is done manually within the method
                 ResolvedActor {
                     receiver:
-                        Some(ResolvedReceiver {
-                            receiver:
-                                MethodReceiver(
-                                    _,
-                                    NodeModuleId::AccessRules | NodeModuleId::AccessRules1,
-                                ),
-                            ..
-                        }),
+                        Some(MethodReceiver(_, NodeModuleId::AccessRules | NodeModuleId::AccessRules1)),
                     ..
                 } => vec![],
 
                 // TODO: Cleanup
                 ResolvedActor {
                     receiver:
-                        Some(ResolvedReceiver {
-                            receiver:
-                                MethodReceiver(
-                                    RENodeId::Proof(..)
-                                    | RENodeId::Bucket(..)
-                                    | RENodeId::Worktop
-                                    | RENodeId::Logger
-                                    | RENodeId::TransactionRuntime
-                                    | RENodeId::AuthZoneStack,
-                                    ..,
-                                ),
-                            ..
-                        }),
+                        Some(MethodReceiver(
+                            RENodeId::Proof(..)
+                            | RENodeId::Bucket(..)
+                            | RENodeId::Worktop
+                            | RENodeId::Logger
+                            | RENodeId::TransactionRuntime
+                            | RENodeId::AuthZoneStack,
+                            ..,
+                        )),
                     ..
                 } => vec![],
 
                 ResolvedActor {
                     identifier,
-                    receiver:
-                        Some(ResolvedReceiver {
-                            receiver: MethodReceiver(RENodeId::Vault(vault_id), module_id),
-                            ..
-                        }),
+                    receiver: Some(MethodReceiver(RENodeId::Vault(vault_id), module_id)),
                 } => {
                     let vault_node_id = RENodeId::Vault(*vault_id);
                     let visibility = api.kernel_get_node_visibility_origin(vault_node_id).ok_or(
@@ -239,12 +220,13 @@ impl KernelModule for AuthModule {
 
                 ResolvedActor {
                     identifier,
-                    receiver:
-                        Some(ResolvedReceiver {
-                            receiver: MethodReceiver(node_id, module_id),
-                            ..
-                        }),
-                } if matches!(node_id, RENodeId::Component(..)) || matches!(node_id, RENodeId::GlobalComponent(ComponentAddress::Normal(..)))=> {
+                    receiver: Some(MethodReceiver(node_id, module_id)),
+                } if matches!(node_id, RENodeId::Component(..))
+                    || matches!(
+                        node_id,
+                        RENodeId::GlobalComponent(ComponentAddress::Normal(..))
+                    ) =>
+                {
                     let offset = SubstateOffset::Package(PackageOffset::Info);
                     let handle = api.kernel_lock_substate(
                         RENodeId::GlobalPackage(identifier.package_address),
@@ -318,7 +300,7 @@ impl KernelModule for AuthModule {
                 }
                 ResolvedActor {
                     identifier,
-                    receiver: Some(ResolvedReceiver { receiver, .. }),
+                    receiver: Some(receiver),
                 } => {
                     let handle = api.kernel_lock_substate(
                         receiver.0,

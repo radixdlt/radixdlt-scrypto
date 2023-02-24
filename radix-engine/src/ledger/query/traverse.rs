@@ -1,7 +1,10 @@
 use crate::blueprints::resource::VaultSubstate;
 use crate::ledger::{QueryableSubstateStore, ReadableSubstateStore};
 use crate::system::node_substates::PersistedSubstate;
-use radix_engine_interface::api::types::{AccountOffset, ComponentAddress, ComponentOffset, KeyValueStoreOffset, NodeModuleId, RENodeId, SubstateId, SubstateOffset, VaultId, VaultOffset};
+use radix_engine_interface::api::types::{
+    AccountOffset, ComponentAddress, ComponentOffset, KeyValueStoreOffset, NodeModuleId, RENodeId,
+    SubstateId, SubstateOffset, VaultId, VaultOffset,
+};
 
 #[derive(Debug)]
 pub enum StateTreeTraverserError {
@@ -104,10 +107,10 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                         .expect("Broken Node Store");
                 }
             }
-            RENodeId::GlobalComponent(ComponentAddress::Account(..)) |
-            RENodeId::GlobalComponent(ComponentAddress::EcdsaSecp256k1VirtualAccount(..)) |
-            RENodeId::GlobalComponent(ComponentAddress::EddsaEd25519VirtualAccount(..)) |
-            RENodeId::Account(..) => {
+            RENodeId::GlobalComponent(ComponentAddress::Account(..))
+            | RENodeId::GlobalComponent(ComponentAddress::EcdsaSecp256k1VirtualAccount(..))
+            | RENodeId::GlobalComponent(ComponentAddress::EddsaEd25519VirtualAccount(..))
+            | RENodeId::Account(..) => {
                 let substate_id = SubstateId(
                     node_id,
                     NodeModuleId::SELF,

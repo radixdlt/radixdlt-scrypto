@@ -18,12 +18,14 @@ pub trait ClientComponentApi<E> {
 
     fn globalize(&mut self, node_id: RENodeId) -> Result<ComponentAddress, E>;
 
-    fn globalize_with_address(&mut self, node_id: RENodeId, address: Address) -> Result<ComponentAddress, E>;
-
-    fn get_component_type_info(
+    fn globalize_with_address(
         &mut self,
         node_id: RENodeId,
-    ) -> Result<(PackageAddress, String), E>;
+        address: Address,
+    ) -> Result<ComponentAddress, E>;
+
+    fn get_component_type_info(&mut self, node_id: RENodeId)
+        -> Result<(PackageAddress, String), E>;
 
     fn call_method(
         &mut self,

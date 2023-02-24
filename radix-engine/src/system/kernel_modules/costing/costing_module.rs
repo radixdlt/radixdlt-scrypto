@@ -1,6 +1,6 @@
 use super::*;
 use super::{CostingReason, FeeReserveError, FeeTable, SystemLoanFeeReserve};
-use crate::kernel::actor::{ResolvedActor, ResolvedReceiver};
+use crate::kernel::actor::ResolvedActor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{KernelModuleApi, LockFlags};
 use crate::kernel::module::KernelModule;
@@ -10,7 +10,10 @@ use crate::{
     system::node::RENodeInit,
     transaction::AbortReason,
 };
-use radix_engine_interface::api::types::{ComponentAddress, InvocationIdentifier, LockHandle, MethodReceiver, NodeModuleId, RoyaltyOffset, SubstateOffset, VaultId, VaultOffset};
+use radix_engine_interface::api::types::{
+    ComponentAddress, InvocationIdentifier, LockHandle, MethodReceiver, NodeModuleId,
+    RoyaltyOffset, SubstateOffset, VaultId, VaultOffset,
+};
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::blueprints::resource::Resource;
 use radix_engine_interface::constants::*;
@@ -120,9 +123,15 @@ impl KernelModule for CostingModule {
                 identifier,
             }) => {
                 let maybe_component = match &receiver {
-                    Some(ResolvedReceiver {
-                        receiver: MethodReceiver(node_id, ..),
-                    }) if matches!(node_id, RENodeId::Component(..) | RENodeId::GlobalComponent(ComponentAddress::Normal(..))) => Some(node_id),
+                    Some(MethodReceiver(node_id, ..))
+                        if matches!(
+                            node_id,
+                            RENodeId::Component(..)
+                                | RENodeId::GlobalComponent(ComponentAddress::Normal(..))
+                        ) =>
+                    {
+                        Some(node_id)
+                    }
                     _ => None,
                 };
 
