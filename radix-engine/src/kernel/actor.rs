@@ -2,22 +2,22 @@ use crate::types::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ResolvedActor {
-    pub identifier: FnIdentifier,
-    pub receiver: Option<MethodReceiver>,
+    pub fn_identifier: FnIdentifier,
+    pub method: Option<MethodIdentifier>,
 }
 
 impl ResolvedActor {
-    pub fn method<I: Into<FnIdentifier>>(identifier: I, receiver: MethodReceiver) -> Self {
+    pub fn method<I: Into<FnIdentifier>>(identifier: I, method: MethodIdentifier) -> Self {
         Self {
-            identifier: identifier.into(),
-            receiver: Some(receiver),
+            fn_identifier: identifier.into(),
+            method: Some(method),
         }
     }
 
     pub fn function<I: Into<FnIdentifier>>(identifier: I) -> Self {
         Self {
-            identifier: identifier.into(),
-            receiver: None,
+            fn_identifier: identifier.into(),
+            method: None,
         }
     }
 }

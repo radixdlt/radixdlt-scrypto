@@ -44,7 +44,7 @@ impl AuthModule {
         matches!(
             actor,
             Some(ResolvedActor {
-                receiver: Some(MethodReceiver(RENodeId::GlobalComponent(..), ..)),
+                method: Some(MethodIdentifier(RENodeId::GlobalComponent(..), ..)),
                 ..
             })
         )
@@ -88,6 +88,181 @@ impl AuthModule {
 
         Ok(auth)
     }
+
+    fn method_auth<Y: KernelModuleApi<RuntimeError>>(identifier: &MethodIdentifier, api: &mut Y) -> Result<Vec<MethodAuthorization>, RuntimeError> {
+        let auth = match identifier {
+            MethodIdentifier(_, NodeModuleId::AccessRules | NodeModuleId::AccessRules1, _) => vec![],
+            MethodIdentifier(
+                RENodeId::Proof(..)
+                | RENodeId::Bucket(..)
+                | RENodeId::Worktop
+                | RENodeId::Logger
+                | RENodeId::TransactionRuntime
+                | RENodeId::AuthZoneStack,
+                ..,
+            ) => vec![],
+            MethodIdentifier(RENodeId::Vault(vault_id), module_id, ident) => {
+                let vault_node_id = RENodeId::Vault(*vault_id);
+                let visibility = api.kernel_get_node_visibility_origin(vault_node_id).ok_or(
+                    RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(
+                        vault_node_id,
+                    )),
+                )?;
+
+                let resource_address = {
+                    let offset = SubstateOffset::Vault(VaultOffset::Vault);
+                    let handle = api.kernel_lock_substate(
+                        vault_node_id,
+                        NodeModuleId::SELF,
+                        offset,
+                        LockFlags::read_only(),
+                    )?;
+                    let substate_ref = api.kernel_get_substate_ref(handle)?;
+                    let resource_address = substate_ref.vault().resource_address();
+                    api.kernel_drop_lock(handle)?;
+                    resource_address
+                };
+                let handle = api.kernel_lock_substate(
+                    RENodeId::GlobalResourceManager(resource_address),
+                    NodeModuleId::AccessRules1,
+                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                    LockFlags::read_only(),
+                )?;
+
+                let substate_ref = api.kernel_get_substate_ref(handle)?;
+                let substate = substate_ref.access_rules_chain();
+
+                // TODO: Revisit what the correct abstraction is for visibility in the auth module
+                let auth = match visibility {
+                    RENodeVisibilityOrigin::Normal => {
+                        substate.native_fn_authorization(*module_id, ident.clone())
+                    }
+                    RENodeVisibilityOrigin::DirectAccess => {
+                        // TODO: Do we want to allow recaller to be able to withdraw from
+                        // TODO: any visible vault?
+                        if ident.eq(VAULT_RECALL_IDENT)
+                            || ident.eq(VAULT_RECALL_NON_FUNGIBLES_IDENT)
+                        {
+                            let access_rule =
+                                substate.access_rules_chain[0].get_group("recall");
+                            let authorization = convert_contextless(access_rule);
+                            vec![authorization]
+                        } else {
+                            return Err(RuntimeError::ModuleError(ModuleError::AuthError(
+                                AuthError::VisibilityError(vault_node_id),
+                            )));
+                        }
+                    }
+                };
+
+                api.kernel_drop_lock(handle)?;
+                auth
+            }
+            MethodIdentifier(node_id, module_id, ident) if matches!(node_id, RENodeId::Component(..)) || matches!(
+                        node_id,
+                        RENodeId::GlobalComponent(ComponentAddress::Normal(..))
+                    ) => {
+
+                let handle = api.kernel_lock_substate(
+                    *node_id,
+                    NodeModuleId::TypeInfo,
+                    SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+                    LockFlags::read_only(),
+                )?;
+                let substate_ref = api.kernel_get_substate_ref(handle)?;
+                let info = substate_ref.component_info();
+                let package_address = info.package_address.clone();
+                let blueprint_ident = info.blueprint_name.clone();
+                api.kernel_drop_lock(handle)?;
+
+                let offset = SubstateOffset::Package(PackageOffset::Info);
+                let handle = api.kernel_lock_substate(
+                    RENodeId::GlobalPackage(package_address),
+                    NodeModuleId::SELF,
+                    offset,
+                    LockFlags::read_only(),
+                )?;
+
+                if let NodeModuleId::SELF = module_id {
+                    // Assume that package_address/blueprint is the original impl of Component for now
+                    // TODO: Remove this assumption
+                    let substate_ref = api.kernel_get_substate_ref(handle)?;
+                    let package = substate_ref.package_info();
+                    let schema = package
+                        .blueprint_abi(&blueprint_ident)
+                        .expect("Blueprint not found for existing component")
+                        .structure
+                        .clone();
+                    api.kernel_drop_lock(handle)?;
+
+                    let state = {
+                        let offset = SubstateOffset::Component(ComponentOffset::State0);
+                        let handle = api.kernel_lock_substate(
+                            *node_id,
+                            NodeModuleId::SELF,
+                            offset,
+                            LockFlags::read_only(),
+                        )?;
+                        let substate_ref = api.kernel_get_substate_ref(handle)?;
+                        let state = substate_ref.component_state().clone(); // TODO: Remove clone
+                        api.kernel_drop_lock(handle)?;
+                        state
+                    };
+
+                    {
+                        let handle = api.kernel_lock_substate(
+                            *node_id,
+                            NodeModuleId::AccessRules,
+                            SubstateOffset::AccessRulesChain(
+                                AccessRulesChainOffset::AccessRulesChain,
+                            ),
+                            LockFlags::read_only(),
+                        )?;
+                        let substate_ref = api.kernel_get_substate_ref(handle)?;
+                        let access_rules = substate_ref.access_rules_chain();
+                        let auth = access_rules.method_authorization(
+                            &state,
+                            &schema,
+                            *module_id,
+                            ident.clone(),
+                        );
+                        api.kernel_drop_lock(handle)?;
+                        auth
+                    }
+                } else {
+                    let handle = api.kernel_lock_substate(
+                        *node_id,
+                        NodeModuleId::AccessRules,
+                        SubstateOffset::AccessRulesChain(
+                            AccessRulesChainOffset::AccessRulesChain,
+                        ),
+                        LockFlags::read_only(),
+                    )?;
+                    let substate_ref = api.kernel_get_substate_ref(handle)?;
+                    let access_rules = substate_ref.access_rules_chain();
+                    let auth =
+                        access_rules.native_fn_authorization(*module_id, ident.clone());
+                    api.kernel_drop_lock(handle)?;
+                    auth
+                }
+            }
+            MethodIdentifier(node_id, module_id, ident) => {
+                let handle = api.kernel_lock_substate(
+                    *node_id,
+                    NodeModuleId::AccessRules,
+                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                    LockFlags::read_only(),
+                )?;
+                let substate_ref = api.kernel_get_substate_ref(handle)?;
+                let substate = substate_ref.access_rules_chain();
+                let auth = substate.native_fn_authorization(*module_id, ident.clone());
+                api.kernel_drop_lock(handle)?;
+                auth
+            }
+        };
+
+        Ok(auth)
+    }
 }
 
 impl KernelModule for AuthModule {
@@ -115,13 +290,13 @@ impl KernelModule for AuthModule {
 
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        actor: &Option<ResolvedActor>,
+        next_actor: &Option<ResolvedActor>,
         call_frame_update: &mut CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         if matches!(
-            actor,
+            next_actor,
             Some(ResolvedActor {
-                identifier: FnIdentifier {
+                fn_identifier: FnIdentifier {
                     package_address: AUTH_ZONE_PACKAGE,
                     ..
                 },
@@ -131,206 +306,16 @@ impl KernelModule for AuthModule {
             return Ok(());
         }
 
-
-        let method_auths = if let Some(actor) = actor {
+        let method_auths = if let Some(actor) = next_actor {
             match &actor {
                 ResolvedActor {
-                    identifier,
-                    receiver: None,
+                    fn_identifier: identifier,
+                    method: None,
                 } => Self::function_auth(identifier, api)?,
-
-                // TODO: Cleanup
-                // SetAccessRule auth is done manually within the method
                 ResolvedActor {
-                    receiver:
-                        Some(MethodReceiver(_, NodeModuleId::AccessRules | NodeModuleId::AccessRules1)),
-                    ..
-                } => vec![],
-
-                // TODO: Cleanup
-                ResolvedActor {
-                    receiver:
-                        Some(MethodReceiver(
-                            RENodeId::Proof(..)
-                            | RENodeId::Bucket(..)
-                            | RENodeId::Worktop
-                            | RENodeId::Logger
-                            | RENodeId::TransactionRuntime
-                            | RENodeId::AuthZoneStack,
-                            ..,
-                        )),
-                    ..
-                } => vec![],
-
-                ResolvedActor {
-                    identifier,
-                    receiver: Some(MethodReceiver(RENodeId::Vault(vault_id), module_id)),
-                } => {
-                    let vault_node_id = RENodeId::Vault(*vault_id);
-                    let visibility = api.kernel_get_node_visibility_origin(vault_node_id).ok_or(
-                        RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(
-                            vault_node_id,
-                        )),
-                    )?;
-
-                    let resource_address = {
-                        let offset = SubstateOffset::Vault(VaultOffset::Vault);
-                        let handle = api.kernel_lock_substate(
-                            vault_node_id,
-                            NodeModuleId::SELF,
-                            offset,
-                            LockFlags::read_only(),
-                        )?;
-                        let substate_ref = api.kernel_get_substate_ref(handle)?;
-                        let resource_address = substate_ref.vault().resource_address();
-                        api.kernel_drop_lock(handle)?;
-                        resource_address
-                    };
-                    let handle = api.kernel_lock_substate(
-                        RENodeId::GlobalResourceManager(resource_address),
-                        NodeModuleId::AccessRules1,
-                        SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
-                        LockFlags::read_only(),
-                    )?;
-
-                    let substate_ref = api.kernel_get_substate_ref(handle)?;
-                    let substate = substate_ref.access_rules_chain();
-
-                    // TODO: Revisit what the correct abstraction is for visibility in the auth module
-                    let auth = match visibility {
-                        RENodeVisibilityOrigin::Normal => {
-                            substate.native_fn_authorization(*module_id, identifier.ident.clone())
-                        }
-                        RENodeVisibilityOrigin::DirectAccess => {
-                            // TODO: Do we want to allow recaller to be able to withdraw from
-                            // TODO: any visible vault?
-                            if identifier.ident.eq(VAULT_RECALL_IDENT)
-                                || identifier.ident.eq(VAULT_RECALL_NON_FUNGIBLES_IDENT)
-                            {
-                                let access_rule =
-                                    substate.access_rules_chain[0].get_group("recall");
-                                let authorization = convert_contextless(access_rule);
-                                vec![authorization]
-                            } else {
-                                return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                                    AuthError::VisibilityError(vault_node_id),
-                                )));
-                            }
-                        }
-                    };
-
-                    api.kernel_drop_lock(handle)?;
-                    auth
-                }
-
-                ResolvedActor {
-                    identifier,
-                    receiver: Some(MethodReceiver(node_id, module_id)),
-                } if matches!(node_id, RENodeId::Component(..))
-                    || matches!(
-                        node_id,
-                        RENodeId::GlobalComponent(ComponentAddress::Normal(..))
-                    ) =>
-                {
-                    let handle = api.kernel_lock_substate(
-                        *node_id,
-                        NodeModuleId::TypeInfo,
-                        SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-                        LockFlags::read_only(),
-                    )?;
-                    let substate_ref = api.kernel_get_substate_ref(handle)?;
-                    let info = substate_ref.component_info();
-                    let package_address = info.package_address.clone();
-                    let blueprint_ident = info.blueprint_name.clone();
-                    api.kernel_drop_lock(handle)?;
-
-                    let offset = SubstateOffset::Package(PackageOffset::Info);
-                    let handle = api.kernel_lock_substate(
-                        RENodeId::GlobalPackage(package_address),
-                        NodeModuleId::SELF,
-                        offset,
-                        LockFlags::read_only(),
-                    )?;
-
-                    if let NodeModuleId::SELF = module_id {
-                        // Assume that package_address/blueprint is the original impl of Component for now
-                        // TODO: Remove this assumption
-                        let substate_ref = api.kernel_get_substate_ref(handle)?;
-                        let package = substate_ref.package_info();
-                        let schema = package
-                            .blueprint_abi(&blueprint_ident)
-                            .expect("Blueprint not found for existing component")
-                            .structure
-                            .clone();
-                        api.kernel_drop_lock(handle)?;
-
-                        let state = {
-                            let offset = SubstateOffset::Component(ComponentOffset::State0);
-                            let handle = api.kernel_lock_substate(
-                                *node_id,
-                                NodeModuleId::SELF,
-                                offset,
-                                LockFlags::read_only(),
-                            )?;
-                            let substate_ref = api.kernel_get_substate_ref(handle)?;
-                            let state = substate_ref.component_state().clone(); // TODO: Remove clone
-                            api.kernel_drop_lock(handle)?;
-                            state
-                        };
-
-                        {
-                            let handle = api.kernel_lock_substate(
-                                *node_id,
-                                NodeModuleId::AccessRules,
-                                SubstateOffset::AccessRulesChain(
-                                    AccessRulesChainOffset::AccessRulesChain,
-                                ),
-                                LockFlags::read_only(),
-                            )?;
-                            let substate_ref = api.kernel_get_substate_ref(handle)?;
-                            let access_rules = substate_ref.access_rules_chain();
-                            let auth = access_rules.method_authorization(
-                                &state,
-                                &schema,
-                                *module_id,
-                                identifier.ident.clone(),
-                            );
-                            api.kernel_drop_lock(handle)?;
-                            auth
-                        }
-                    } else {
-                        let handle = api.kernel_lock_substate(
-                            *node_id,
-                            NodeModuleId::AccessRules,
-                            SubstateOffset::AccessRulesChain(
-                                AccessRulesChainOffset::AccessRulesChain,
-                            ),
-                            LockFlags::read_only(),
-                        )?;
-                        let substate_ref = api.kernel_get_substate_ref(handle)?;
-                        let access_rules = substate_ref.access_rules_chain();
-                        let auth =
-                            access_rules.native_fn_authorization(*module_id, identifier.ident.clone());
-                        api.kernel_drop_lock(handle)?;
-                        auth
-                    }
-                }
-                ResolvedActor {
-                    identifier,
-                    receiver: Some(receiver),
-                } => {
-                    let handle = api.kernel_lock_substate(
-                        receiver.0,
-                        NodeModuleId::AccessRules,
-                        SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
-                        LockFlags::read_only(),
-                    )?;
-                    let substate_ref = api.kernel_get_substate_ref(handle)?;
-                    let substate = substate_ref.access_rules_chain();
-                    let auth = substate.native_fn_authorization(receiver.1, identifier.ident.clone());
-                    api.kernel_drop_lock(handle)?;
-                    auth
-                }
+                    method: Some(method_identifier),
+                    fn_identifier: _fn_identifier,
+                } => Self::method_auth(method_identifier, api)?,
             }
         } else {
             vec![]
@@ -344,7 +329,7 @@ impl KernelModule for AuthModule {
         )?;
         let substate_ref = api.kernel_get_substate_ref(handle)?;
         let auth_zone_stack = substate_ref.auth_zone_stack();
-        let is_barrier = Self::is_barrier(actor);
+        let is_barrier = Self::is_barrier(next_actor);
 
         // Authorization check
         auth_zone_stack
@@ -365,9 +350,9 @@ impl KernelModule for AuthModule {
             .insert(RENodeId::AuthZoneStack);
 
         if !matches!(
-            actor,
+            next_actor,
             Some(ResolvedActor {
-                identifier: FnIdentifier {
+                fn_identifier: FnIdentifier {
                     package_address: ACCESS_RULES_PACKAGE | AUTH_ZONE_PACKAGE,
                     ..
                 },
@@ -384,12 +369,12 @@ impl KernelModule for AuthModule {
             let auth_zone_stack = substate_ref_mut.auth_zone_stack();
 
             // New auth zone frame managed by the AuthModule
-            let is_barrier = Self::is_barrier(actor);
+            let is_barrier = Self::is_barrier(next_actor);
 
             // Add Package Actor Auth
             let mut virtual_non_fungibles = BTreeSet::new();
-            if let Some(actor) = actor {
-                let package_address = actor.identifier.package_address();
+            if let Some(actor) = next_actor {
+                let package_address = actor.fn_identifier.package_address();
                 let id = scrypto_encode(&package_address).unwrap();
                 let non_fungible_global_id =
                     NonFungibleGlobalId::new(PACKAGE_TOKEN, NonFungibleLocalId::bytes(id).unwrap());
@@ -409,7 +394,7 @@ impl KernelModule for AuthModule {
         _update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         if matches!(
-            api.kernel_get_current_actor().unwrap().identifier,
+            api.kernel_get_current_actor().unwrap().fn_identifier,
             FnIdentifier {
                 package_address: ACCESS_RULES_PACKAGE | AUTH_ZONE_PACKAGE,
                 ..

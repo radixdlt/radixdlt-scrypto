@@ -337,8 +337,8 @@ impl ExecutionTraceModule {
         if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
             let origin = match &callee {
                 Some(ResolvedActor {
-                    identifier,
-                    receiver,
+                         fn_identifier: identifier,
+                         method: receiver,
                 }) => {
                     if receiver.is_some() {
                         KernelCallOrigin::ScryptoMethod(identifier.clone())
@@ -362,13 +362,13 @@ impl ExecutionTraceModule {
 
         match &callee {
             Some(ResolvedActor {
-                identifier:
+                fn_identifier:
                     FnIdentifier {
                         package_address,
                         blueprint_name,
                         ident,
                     },
-                receiver: Some(MethodReceiver(RENodeId::Vault(vault_id), ..)),
+                method: Some(MethodIdentifier(RENodeId::Vault(vault_id), ..)),
             }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_PUT_IDENT) =>
@@ -376,13 +376,13 @@ impl ExecutionTraceModule {
                 self.handle_vault_put_input(&resource_summary, &current_actor, vault_id)
             }
             Some(ResolvedActor {
-                identifier:
+                fn_identifier:
                     FnIdentifier {
                         package_address,
                         blueprint_name,
                         ident,
                     },
-                receiver: Some(MethodReceiver(RENodeId::Vault(vault_id), ..)),
+                method: Some(MethodIdentifier(RENodeId::Vault(vault_id), ..)),
             }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_LOCK_FEE_IDENT) =>
@@ -402,13 +402,13 @@ impl ExecutionTraceModule {
     ) {
         match &current_actor {
             Some(ResolvedActor {
-                identifier:
+                fn_identifier:
                     FnIdentifier {
                         package_address,
                         blueprint_name,
                         ident,
                     },
-                receiver: Some(MethodReceiver(RENodeId::Vault(vault_id), ..)),
+                method: Some(MethodIdentifier(RENodeId::Vault(vault_id), ..)),
             }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_TAKE_IDENT) =>
@@ -558,7 +558,7 @@ impl ExecutionTraceReceipt {
         let mut vault_locked_by = HashMap::<VaultId, RENodeId>::new();
         for (actor, vault_id, vault_op) in ops {
             if let TraceActor::Actor(ResolvedActor {
-                receiver: Some(receiver),
+                method: Some(receiver),
                 ..
             }) = actor
             {

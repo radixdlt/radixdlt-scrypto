@@ -101,7 +101,7 @@ where
     W: WasmEngine,
 {
     fn get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
-        Ok(self.kernel_get_current_actor().unwrap().identifier)
+        Ok(self.kernel_get_current_actor().unwrap().fn_identifier)
     }
 }
 
@@ -223,7 +223,7 @@ where
         let package_address = self
             .kernel_get_current_actor()
             .unwrap()
-            .identifier
+            .fn_identifier
             .package_address();
 
         let blueprint_ident = blueprint_ident.to_string();
@@ -366,8 +366,7 @@ where
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         let invocation = MethodInvocation {
-            receiver: MethodReceiver(receiver, node_module_id),
-            fn_name: method_name.to_string(),
+            identifier: MethodIdentifier(receiver, node_module_id, method_name.to_string()),
             args,
         };
 

@@ -29,7 +29,7 @@ fn should_not_be_able_to_node_create_with_invalid_blueprint() {
             e,
             RuntimeError::KernelError(KernelError::InvalidCreateNodeAccess {
                 actor: ResolvedActor {
-                    identifier: FnIdentifier {
+                    fn_identifier: FnIdentifier {
                         package_address: addr,
                         blueprint_name: blueprint,
                         ident

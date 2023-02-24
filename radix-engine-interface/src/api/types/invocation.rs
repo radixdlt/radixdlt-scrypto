@@ -8,7 +8,7 @@ use sbor::rust::string::String;
 pub enum InvocationIdentifier {
     Transaction, // TODO: Remove
     Function(FnIdentifier),
-    Method(MethodReceiver, String),
+    Method(MethodIdentifier),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
@@ -17,6 +17,13 @@ pub struct FnIdentifier {
     pub blueprint_name: String,
     pub ident: String,
 }
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq, ScryptoSbor)]
+pub struct MethodReceiver(pub RENodeId, pub NodeModuleId);
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct MethodIdentifier(pub RENodeId, pub NodeModuleId, pub String);
+
 
 impl FnIdentifier {
     pub fn new(package_address: PackageAddress, blueprint_name: String, ident: String) -> Self {
@@ -50,13 +57,9 @@ impl Invocation for FunctionInvocation {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, ScryptoSbor)]
-pub struct MethodReceiver(pub RENodeId, pub NodeModuleId);
-
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct MethodInvocation {
-    pub receiver: MethodReceiver,
-    pub fn_name: String,
+    pub identifier: MethodIdentifier,
     pub args: Vec<u8>,
 }
 
@@ -64,6 +67,6 @@ impl Invocation for MethodInvocation {
     type Output = ScryptoValue;
 
     fn identifier(&self) -> InvocationIdentifier {
-        InvocationIdentifier::Method(self.receiver, self.fn_name.clone())
+        InvocationIdentifier::Method(self.identifier.clone())
     }
 }

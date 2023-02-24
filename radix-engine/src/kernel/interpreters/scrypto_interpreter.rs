@@ -46,10 +46,10 @@ impl ExecutableInvocation for MethodInvocation {
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?
                 .unpack();
 
-        let (package_address, blueprint_name) = match self.receiver.1 {
+        let (package_address, blueprint_name) = match self.identifier.1 {
             NodeModuleId::SELF => {
                 let handle = api.kernel_lock_substate(
-                    self.receiver.0,
+                    self.identifier.0,
                     NodeModuleId::TypeInfo,
                     SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
                     LockFlags::read_only(),
@@ -84,14 +84,14 @@ impl ExecutableInvocation for MethodInvocation {
         };
 
         // Pass the component ref
-        node_refs_to_copy.insert(self.receiver.0);
+        node_refs_to_copy.insert(self.identifier.0);
 
         let fn_identifier = FnIdentifier::new(
             package_address,
             blueprint_name.clone(),
-            self.fn_name.clone(),
+            self.identifier.2.clone(),
         );
-        let actor = ResolvedActor::method(fn_identifier.clone(), self.receiver);
+        let actor = ResolvedActor::method(fn_identifier.clone(), self.identifier.clone());
 
         let code_type = if package_address.eq(&PACKAGE_LOADER) {
             // TODO: Remove this weirdness
@@ -114,7 +114,7 @@ impl ExecutableInvocation for MethodInvocation {
             PackageCodeTypeSubstate::Precompiled => {
                 // TODO: Do we need to check against the abi? Probably not since we should be able to verify this
                 // TODO: in the native package itself.
-                self.fn_name.to_string() // TODO: Clean this up
+                self.identifier.2.to_string() // TODO: Clean this up
             }
             PackageCodeTypeSubstate::Wasm => {
                 node_refs_to_copy.insert(RENodeId::GlobalComponent(EPOCH_MANAGER));
@@ -147,7 +147,7 @@ impl ExecutableInvocation for MethodInvocation {
                             ),
                         ))?;
                 let fn_abi =
-                    abi.get_fn_abi(&self.fn_name)
+                    abi.get_fn_abi(&self.identifier.2)
                         .ok_or(RuntimeError::InterpreterError(
                             InterpreterError::InvalidScryptoInvocation(
                                 fn_identifier.clone(),
@@ -180,7 +180,7 @@ impl ExecutableInvocation for MethodInvocation {
         let executor = ScryptoExecutor {
             package_address,
             export_name,
-            receiver: Some(self.receiver),
+            receiver: Some(self.identifier),
             args: value,
         };
 
@@ -318,7 +318,7 @@ impl ExecutableInvocation for FunctionInvocation {
 pub struct ScryptoExecutor {
     pub package_address: PackageAddress,
     pub export_name: String,
-    pub receiver: Option<MethodReceiver>,
+    pub receiver: Option<MethodIdentifier>,
     pub args: ScryptoValue,
 }
 
@@ -416,7 +416,7 @@ impl Executor for ScryptoExecutor {
                         let mut runtime: Box<dyn WasmRuntime> = Box::new(ScryptoRuntime::new(api));
 
                         let mut input = Vec::new();
-                        if let Some(MethodReceiver(node_id, _)) = self.receiver {
+                        if let Some(MethodIdentifier(node_id, ..)) = self.receiver {
                             input.push(
                                 runtime
                                     .allocate_buffer(
@@ -470,7 +470,7 @@ struct NativeVm;
 impl NativeVm {
     pub fn invoke_native_package<Y>(
         native_package_code_id: u8,
-        receiver: Option<MethodReceiver>,
+        receiver: Option<MethodIdentifier>,
         export_name: &str,
         input: ScryptoValue,
         api: &mut Y,

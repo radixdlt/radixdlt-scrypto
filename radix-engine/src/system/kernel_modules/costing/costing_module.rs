@@ -11,7 +11,7 @@ use crate::{
     transaction::AbortReason,
 };
 use radix_engine_interface::api::types::{
-    ComponentAddress, InvocationIdentifier, LockHandle, MethodReceiver, NodeModuleId,
+    ComponentAddress, InvocationIdentifier, LockHandle, MethodIdentifier, NodeModuleId,
     RoyaltyOffset, SubstateOffset, VaultId, VaultOffset,
 };
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
@@ -119,11 +119,11 @@ impl KernelModule for CostingModule {
         // Identify the function, and optional component address
         let (fn_identifier, optional_component) = match &callee {
             Some(ResolvedActor {
-                receiver,
-                identifier,
+                     method: receiver,
+                     fn_identifier: identifier,
             }) => {
                 let maybe_component = match &receiver {
-                    Some(MethodReceiver(node_id, ..))
+                    Some(MethodIdentifier(node_id, ..))
                         if matches!(
                             node_id,
                             RENodeId::Component(..)
