@@ -84,6 +84,7 @@ impl ExecutableInvocation for MethodInvocation {
         };
 
         // Deref if global
+        /*
         let resolved_receiver = if let RENodeId::GlobalComponent(..) = self.receiver.0 {
             let handle = api.kernel_lock_substate(
                 self.receiver.0,
@@ -101,6 +102,8 @@ impl ExecutableInvocation for MethodInvocation {
         } else {
             ResolvedReceiver::new(self.receiver)
         };
+         */
+        let resolved_receiver = ResolvedReceiver::new(self.receiver);
 
         // Pass the component ref
         node_refs_to_copy.insert(resolved_receiver.receiver.0);

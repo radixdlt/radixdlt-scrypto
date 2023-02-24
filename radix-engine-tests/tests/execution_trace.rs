@@ -62,7 +62,7 @@ fn test_trace_resource_transfers() {
         .resource_changes
         .iter()
         .any(|r| r.resource_address == resource_address
-            && r.component_id == source_component_id
+            && r.node_id == RENodeId::Component(source_component_id)
             && r.amount == -Decimal::from(transfer_amount)));
 
     // Target vault deposit
@@ -71,7 +71,7 @@ fn test_trace_resource_transfers() {
         .resource_changes
         .iter()
         .any(|r| r.resource_address == resource_address
-            && r.component_id == target_component_id
+            && r.node_id == RENodeId::Component(target_component_id)
             && r.amount == Decimal::from(transfer_amount)));
 
     // Fee withdrawal
@@ -80,7 +80,7 @@ fn test_trace_resource_transfers() {
         .resource_changes
         .iter()
         .any(|r| r.resource_address == RADIX_TOKEN
-            && r.component_id == account_component_id
+            && r.node_id == RENodeId::Component(account_component_id)
             && r.amount == -Decimal::from(total_fee_paid)));
 }
 
@@ -139,7 +139,7 @@ fn test_trace_fee_payments() {
     assert_eq!(1, resource_changes.len());
     assert!(resource_changes
         .iter()
-        .any(|r| r.component_id == funded_component_id && r.amount == -total_fee_paid));
+        .any(|r| r.node_id == RENodeId::Component(funded_component_id) && r.amount == -total_fee_paid));
 }
 
 #[test]

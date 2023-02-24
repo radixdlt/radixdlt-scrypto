@@ -283,14 +283,7 @@ impl AccessControllerNativePackage {
         api.kernel_create_node(node_id, access_controller, node_modules)?;
 
         // Creating a global component address for the access controller RENode
-        let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalAccessController)?;
-        api.kernel_create_node(
-            global_node_id,
-            RENodeInit::GlobalComponent(GlobalSubstate::AccessController(node_id.into())),
-            BTreeMap::new(),
-        )?;
-
-        let address: ComponentAddress = global_node_id.into();
+        let address = api.globalize(node_id)?;
         Ok(IndexedScryptoValue::from_typed(&address))
     }
 

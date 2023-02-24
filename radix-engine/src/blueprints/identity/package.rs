@@ -50,22 +50,15 @@ impl IdentityNativePackage {
 
     fn create<Y>(input: ScryptoValue, api: &mut Y) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: IdentityCreateInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let node_id = Identity::create(input.access_rule, api)?;
-        let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalIdentity)?;
-        api.kernel_create_node(
-            global_node_id,
-            RENodeInit::GlobalComponent(GlobalSubstate::Identity(node_id.into())),
-            BTreeMap::new(),
-        )?;
-        let identity_address: ComponentAddress = global_node_id.into();
-
-        Ok(IndexedScryptoValue::from_typed(&identity_address))
+        let address = api.globalize(node_id)?;
+        Ok(IndexedScryptoValue::from_typed(&address))
     }
 }
 

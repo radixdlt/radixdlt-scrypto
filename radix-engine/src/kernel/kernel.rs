@@ -11,6 +11,7 @@ use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::SysBucket;
+use radix_engine_interface::api::ClientComponentApi;
 use radix_engine_interface::api::component::TypeInfoSubstate;
 use radix_engine_interface::api::package::PACKAGE_LOADER_BLUEPRINT;
 // TODO: clean this up!
@@ -134,7 +135,7 @@ where
 
     fn create_virtual_account(
         &mut self,
-        node_id: RENodeId,
+        global_node_id: RENodeId,
         non_fungible_global_id: NonFungibleGlobalId,
     ) -> Result<(), RuntimeError> {
         // TODO: Replace with trusted IndexedScryptoValue
@@ -189,41 +190,20 @@ where
             node_id
         };
 
-        // TODO: Use api to globalize component when create_node is refactored
-        // TODO: to allow for address selection
-        let global_substate = GlobalSubstate::Account(component_id.into());
-
-        self.current_frame.create_node(
-            node_id,
-            RENodeInit::GlobalComponent(global_substate),
-            BTreeMap::new(),
-            &mut self.heap,
-            &mut self.track,
-            true,
-        )?;
+        self.globalize_with_address(component_id, global_node_id.into())?;
 
         Ok(())
     }
 
     fn create_virtual_identity(
         &mut self,
-        node_id: RENodeId,
+        global_node_id: RENodeId,
         non_fungible_global_id: NonFungibleGlobalId,
     ) -> Result<(), RuntimeError> {
         let access_rule = rule!(require(non_fungible_global_id));
-        let underlying_node_id = Identity::create(access_rule, self)?;
+        let local_id = Identity::create(access_rule, self)?;
 
-        // TODO: Use api to globalize component when create_node is refactored
-        // TODO: to allow for address selection
-        let global_substate = GlobalSubstate::Identity(underlying_node_id.into());
-        self.current_frame.create_node(
-            node_id,
-            RENodeInit::GlobalComponent(global_substate),
-            BTreeMap::new(),
-            &mut self.heap,
-            &mut self.track,
-            true,
-        )?;
+        self.globalize_with_address(local_id, global_node_id.into())?;
 
         Ok(())
     }
@@ -236,11 +216,12 @@ where
         match (node_id, offset) {
             (
                 RENodeId::GlobalComponent(component_address),
-                SubstateOffset::Global(GlobalOffset::Global),
+                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo), // TODO: Is this the right substate? or should we do all possible?
             ) => {
                 // Lazy create component if missing
                 match component_address {
                     ComponentAddress::EcdsaSecp256k1VirtualAccount(address) => {
+                        self.id_allocator.allocate_virtual_node_id(node_id);
                         let non_fungible_global_id = NonFungibleGlobalId::new(
                             ECDSA_SECP256K1_TOKEN,
                             NonFungibleLocalId::bytes(address.to_vec()).unwrap(),
@@ -248,6 +229,7 @@ where
                         self.create_virtual_account(node_id, non_fungible_global_id)?;
                     }
                     ComponentAddress::EddsaEd25519VirtualAccount(address) => {
+                        self.id_allocator.allocate_virtual_node_id(node_id);
                         let non_fungible_global_id = NonFungibleGlobalId::new(
                             EDDSA_ED25519_TOKEN,
                             NonFungibleLocalId::bytes(address.to_vec()).unwrap(),
@@ -255,6 +237,7 @@ where
                         self.create_virtual_account(node_id, non_fungible_global_id)?;
                     }
                     ComponentAddress::EcdsaSecp256k1VirtualIdentity(address) => {
+                        self.id_allocator.allocate_virtual_node_id(node_id);
                         let non_fungible_global_id = NonFungibleGlobalId::new(
                             ECDSA_SECP256K1_TOKEN,
                             NonFungibleLocalId::bytes(address.to_vec()).unwrap(),
@@ -262,6 +245,7 @@ where
                         self.create_virtual_identity(node_id, non_fungible_global_id)?;
                     }
                     ComponentAddress::EddsaEd25519VirtualIdentity(address) => {
+                        self.id_allocator.allocate_virtual_node_id(node_id);
                         let non_fungible_global_id = NonFungibleGlobalId::new(
                             EDDSA_ED25519_TOKEN,
                             NonFungibleLocalId::bytes(address.to_vec()).unwrap(),
@@ -333,12 +317,19 @@ where
                 Ok(())
             }
             RENodeId::Bucket(..) => Ok(()),
+            RENodeId::Clock(..) => Ok(()),
+            RENodeId::EpochManager(..) => Ok(()),
+            RENodeId::Account(..) => Ok(()),
+            RENodeId::Validator(..) => Ok(()),
+            RENodeId::Component(..) => Ok(()),
             _ => Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
                 node_id,
             ))),
         })?;
 
         let node = self.current_frame.remove_node(&mut self.heap, node_id)?;
+
+        /*
         for (_, substate) in &node.substates {
             let (_, child_nodes) = substate.to_ref().references_and_owned_nodes();
             for child_node in child_nodes {
@@ -346,25 +337,40 @@ where
                 self.kernel_drop_node(child_node)?;
             }
         }
+         */
+
         // TODO: REmove
         Ok(node)
+    }
+
+    fn kernel_drop_node_recursively(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
+        let node = self.kernel_drop_node(node_id)?;
+        for (_, substate) in &node.substates {
+            let (_, child_nodes) = substate.to_ref().references_and_owned_nodes();
+            for child_node in child_nodes {
+                // Need to go through api so that visibility issues can be caught
+                self.kernel_drop_node_recursively(child_node)?;
+            }
+        }
+
+        Ok(())
     }
 
     fn drop_nodes_in_frame(&mut self) -> Result<(), RuntimeError> {
         let mut worktops = Vec::new();
         let owned_nodes = self.current_frame.owned_nodes();
 
-        // Need to go through api so that visibility issues can be caught
+        // Need to go through api so that access rules can be caught
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Client, |api| {
             for node_id in owned_nodes {
                 if let RENodeId::Worktop = node_id {
                     worktops.push(node_id);
                 } else {
-                    api.kernel_drop_node(node_id)?;
+                    api.kernel_drop_node_recursively(node_id)?;
                 }
             }
             for worktop_id in worktops {
-                api.kernel_drop_node(worktop_id)?;
+                api.kernel_drop_node_recursively(worktop_id)?;
             }
 
             Ok(())
@@ -582,7 +588,7 @@ where
                         }
 
                         if self.current_frame.get_node_location(*node_id).is_err() {
-                            let offset = SubstateOffset::Global(GlobalOffset::Global);
+                            let offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
                             self.track
                                 .acquire_lock(
                                     SubstateId(*node_id, NodeModuleId::SELF, offset.clone()),
@@ -724,31 +730,7 @@ where
         match (node_id, &re_node) {
             (
                 RENodeId::GlobalComponent(..),
-                RENodeInit::GlobalComponent(GlobalSubstate::EpochManager(..)),
-            ) => {}
-            (
-                RENodeId::GlobalComponent(..),
-                RENodeInit::GlobalComponent(GlobalSubstate::Clock(..)),
-            ) => {}
-            (
-                RENodeId::GlobalComponent(..),
-                RENodeInit::GlobalComponent(GlobalSubstate::Validator(..)),
-            ) => {}
-            (
-                RENodeId::GlobalComponent(..),
-                RENodeInit::GlobalComponent(GlobalSubstate::Identity(..)),
-            ) => {}
-            (
-                RENodeId::GlobalComponent(..),
-                RENodeInit::GlobalComponent(GlobalSubstate::AccessController(..)),
-            ) => {}
-            (
-                RENodeId::GlobalComponent(..),
-                RENodeInit::GlobalComponent(GlobalSubstate::Component(..)),
-            ) => {}
-            (
-                RENodeId::GlobalComponent(..),
-                RENodeInit::GlobalComponent(GlobalSubstate::Account(..)),
+                RENodeInit::GlobalComponent(..),
             ) => {}
             (RENodeId::Component(..), RENodeInit::Component(..)) => {}
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
@@ -984,6 +966,7 @@ where
         self.execution_mode = ExecutionMode::Kernel;
 
         // Deref
+        /*
         let (node_id, derefed_lock) = match node_id {
             RENodeId::GlobalComponent(..)
                 if !matches!(offset, SubstateOffset::Global(GlobalOffset::Global)) =>
@@ -999,6 +982,7 @@ where
             }
             _ => (node_id, None),
         };
+         */
 
         // TODO: Check if valid offset for node_id
 
@@ -1084,10 +1068,12 @@ where
             }
         };
 
+        /*
         if let Some(lock_handle) = derefed_lock {
             self.current_frame
                 .drop_lock(&mut self.heap, &mut self.track, lock_handle)?;
         }
+         */
 
         // Restore current mode
         self.execution_mode = current_mode;

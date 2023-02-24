@@ -58,12 +58,12 @@ pub enum RENodeId {
     Logger,
     TransactionRuntime,
     GlobalComponent(ComponentAddress),
+    GlobalResourceManager(ResourceAddress),
+    GlobalPackage(PackageAddress),
     KeyValueStore(KeyValueStoreId),
     NonFungibleStore(NonFungibleStoreId),
     Component(ComponentId),
     Vault(VaultId),
-    GlobalResourceManager(ResourceAddress),
-    GlobalPackage(PackageAddress),
     EpochManager(EpochManagerId),
     Identity(IdentityId),
     Clock(ClockId),
@@ -81,7 +81,7 @@ impl fmt::Debug for RENodeId {
             Self::Worktop => write!(f, "Worktop"),
             Self::Logger => write!(f, "Logger"),
             Self::TransactionRuntime => write!(f, "TransactionRuntime"),
-            Self::GlobalComponent(address) => f.debug_tuple("Global").field(address).finish(),
+            Self::GlobalComponent(address) => f.debug_tuple("GlobalComponent").field(address).finish(),
             Self::KeyValueStore(id) => f
                 .debug_tuple("KeyValueStore")
                 .field(&hex::encode(id))
@@ -132,6 +132,17 @@ impl Into<[u8; 36]> for RENodeId {
             RENodeId::TransactionRuntime => [5u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
             RENodeId::AuthZoneStack => [6u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
             _ => panic!("Not a stored id"),
+        }
+    }
+}
+
+impl From<RENodeId> for Address {
+    fn from(node_id: RENodeId) -> Self {
+        match node_id {
+            RENodeId::GlobalComponent(component_address) => component_address.into(),
+            RENodeId::GlobalResourceManager(resource_address) => resource_address.into(),
+            RENodeId::GlobalPackage(package_address) => package_address.into(),
+            _ => panic!("Not an address")
         }
     }
 }

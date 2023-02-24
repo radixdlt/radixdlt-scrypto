@@ -171,6 +171,6 @@ fn assert_resource_changes_for_transfer(
     assert!(resource_changes
         .iter()
         .any(|r| r.resource_address == resource_address
-            && r.component_id == target_account
+            && r.node_id == RENodeId::Component(target_account)
             && r.amount == Decimal::from(transfer_amount)));
 }

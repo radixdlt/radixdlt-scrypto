@@ -97,7 +97,7 @@ impl ClockNativePackage {
 
     fn create<Y>(input: ScryptoValue, api: &mut Y) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ClockCreateInput = scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -138,16 +138,8 @@ impl ClockNativePackage {
             node_modules,
         )?;
 
-        let global_node_id =
-            RENodeId::GlobalComponent(ComponentAddress::Clock(input.component_address));
-        api.kernel_create_node(
-            global_node_id,
-            RENodeInit::GlobalComponent(GlobalSubstate::Clock(underlying_node_id.into())),
-            BTreeMap::new(),
-        )?;
-
-        let address: ComponentAddress = global_node_id.into();
-
+        let address = ComponentAddress::Clock(input.component_address);
+        api.globalize_with_address(underlying_node_id, address.into())?;
         Ok(IndexedScryptoValue::from_typed(&address))
     }
 

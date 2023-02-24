@@ -27,6 +27,10 @@ impl VisibilityProperties {
         node_id: RENodeId,
     ) -> bool {
         match mode {
+            ExecutionMode::Kernel => match node_id {
+                RENodeId::Account(..) => true,
+                _ => false,
+            },
             ExecutionMode::KernelModule => match node_id {
                 RENodeId::Logger => true,
                 RENodeId::TransactionRuntime => true,
@@ -69,6 +73,12 @@ impl VisibilityProperties {
                     }
                     _ => true,
                 },
+                // TODO: CLEAN THESE UP, these are used for globalization
+                RENodeId::Clock(..) => true,
+                RENodeId::EpochManager(..) => true,
+                RENodeId::Account(..) => true,
+                RENodeId::Validator(..) => true,
+                RENodeId::Component(..) => true,
                 _ => false,
             },
             _ => return false,
@@ -307,7 +317,9 @@ impl VisibilityProperties {
                             || package_address.eq(&METADATA_PACKAGE)
                             || package_address.eq(&ROYALTY_PACKAGE)
                             || package_address.eq(&ACCESS_RULES_PACKAGE)
-                            || package_address.eq(&PACKAGE_LOADER) =>
+                            || package_address.eq(&PACKAGE_LOADER)
+                            || package_address.eq(&ACCOUNT_PACKAGE)
+                        =>
                         {
                             true
                         }

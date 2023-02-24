@@ -25,7 +25,7 @@ use crate::wasm::WasmRuntimeError;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum IdAllocationError {
     RENodeIdWasNotAllocated(RENodeId),
-    AllocatedIDsNotEmpty,
+    AllocatedIDsNotEmpty(BTreeSet<RENodeId>),
     OutOfID,
 }
 

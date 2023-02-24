@@ -88,7 +88,7 @@ impl RENodeModuleInit {
 
 #[derive(Debug)]
 pub enum RENodeInit {
-    GlobalComponent(ComponentStateSubstate),
+    GlobalComponent(BTreeMap<SubstateOffset, RuntimeSubstate>),
     Package(
         PackageInfoSubstate,
         PackageCodeTypeSubstate,
@@ -139,11 +139,8 @@ impl RENodeInit {
                     RuntimeSubstate::AuthZoneStack(auth_zone),
                 );
             }
-            RENodeInit::GlobalComponent(global_node) => {
-                substates.insert(
-                    SubstateOffset::Global(GlobalOffset::Global),
-                    RuntimeSubstate::Global(global_node),
-                );
+            RENodeInit::GlobalComponent(component_substates) => {
+                substates.extend(component_substates);
             }
             RENodeInit::Vault(vault) => {
                 substates.insert(SubstateOffset::Vault(VaultOffset::Vault), vault.into());

@@ -64,11 +64,10 @@ impl EpochManagerBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let underlying_node_id = api.kernel_allocate_node_id(RENodeType::EpochManager)?;
-        let global_node_id =
-            RENodeId::GlobalComponent(ComponentAddress::EpochManager(input.component_address));
+        let address = ComponentAddress::EpochManager(input.component_address);
 
         let epoch_manager = EpochManagerSubstate {
-            address: global_node_id.into(),
+            address,
             epoch: input.initial_epoch,
             round: 0,
             rounds_per_epoch: input.rounds_per_epoch,
@@ -125,7 +124,7 @@ impl EpochManagerBlueprint {
 
             let stake = validator_init.initial_stake.sys_amount(api)?;
             let (address, lp_bucket) = ValidatorCreator::create_with_initial_stake(
-                global_node_id.into(),
+                address,
                 key,
                 rule!(require(global_id)),
                 validator_init.initial_stake,
@@ -210,14 +209,9 @@ impl EpochManagerBlueprint {
             node_modules,
         )?;
 
-        api.kernel_create_node(
-            global_node_id,
-            RENodeInit::GlobalComponent(GlobalSubstate::EpochManager(underlying_node_id.into())),
-            BTreeMap::new(),
-        )?;
+        api.globalize_with_address(underlying_node_id, address.into())?;
 
-        let component_address: ComponentAddress = global_node_id.into();
-        Ok(IndexedScryptoValue::from_typed(&component_address))
+        Ok(IndexedScryptoValue::from_typed(&address))
     }
 
     pub(crate) fn get_current_epoch<Y>(
