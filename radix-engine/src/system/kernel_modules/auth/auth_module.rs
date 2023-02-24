@@ -6,7 +6,7 @@ use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::module::KernelModule;
 use crate::system::node::RENodeInit;
-use crate::system::node_modules::access_rules::AuthZoneStackSubstate;
+use crate::system::node_modules::access_rules::{AuthZoneStackSubstate, ObjectAccessRulesChainSubstate};
 use crate::types::*;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::package::{
@@ -131,26 +131,32 @@ impl AuthModule {
                     api.kernel_drop_lock(handle)?;
                     resource_address
                 };
-                let handle = api.kernel_lock_substate(
-                    RENodeId::GlobalResourceManager(resource_address),
-                    NodeModuleId::AccessRules1,
-                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
-                    LockFlags::read_only(),
-                )?;
-
-                let substate_ref = api.kernel_get_substate_ref(handle)?;
-                let substate = substate_ref.access_rules_chain();
 
                 // TODO: Revisit what the correct abstraction is for visibility in the auth module
                 let method_key = identifier.method_key();
                 let auth = match visibility {
                     RENodeVisibilityOrigin::Normal => {
-                        substate.native_fn_authorization(method_key)
+                        ObjectAccessRulesChainSubstate::method_authorization_contextless(
+                            RENodeId::GlobalResourceManager(resource_address),
+                            NodeModuleId::AccessRules1,
+                            method_key,
+                            api
+                        )?
                     }
                     RENodeVisibilityOrigin::DirectAccess => {
+                        let handle = api.kernel_lock_substate(
+                            RENodeId::GlobalResourceManager(resource_address),
+                            NodeModuleId::AccessRules1,
+                            SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                            LockFlags::read_only(),
+                        )?;
+
+                        let substate_ref = api.kernel_get_substate_ref(handle)?;
+                        let substate = substate_ref.access_rules_chain();
+
                         // TODO: Do we want to allow recaller to be able to withdraw from
                         // TODO: any visible vault?
-                        if method_key.node_module_id.eq(&NodeModuleId::SELF) && (method_key.ident.eq(VAULT_RECALL_IDENT)
+                        let auth = if method_key.node_module_id.eq(&NodeModuleId::SELF) && (method_key.ident.eq(VAULT_RECALL_IDENT)
                             || method_key.ident.eq(VAULT_RECALL_NON_FUNGIBLES_IDENT))
                         {
                             let access_rule = substate.access_rules_chain[0].get_group("recall");
@@ -160,11 +166,14 @@ impl AuthModule {
                             return Err(RuntimeError::ModuleError(ModuleError::AuthError(
                                 AuthError::VisibilityError(vault_node_id),
                             )));
-                        }
+                        };
+
+                        api.kernel_drop_lock(handle)?;
+
+                        auth
                     }
                 };
 
-                api.kernel_drop_lock(handle)?;
                 auth
             }
             MethodIdentifier(node_id, module_id, ..) => {
@@ -227,7 +236,7 @@ impl AuthModule {
                         )?;
                         let substate_ref = api.kernel_get_substate_ref(handle)?;
                         let access_rules = substate_ref.access_rules_chain();
-                        let auth = access_rules.method_authorization(
+                        let auth = access_rules.normal_component_method_authorization(
                             &state,
                             &schema,
                             method_key,
@@ -236,17 +245,12 @@ impl AuthModule {
                         auth
                     }
                 } else {
-                    let handle = api.kernel_lock_substate(
+                    ObjectAccessRulesChainSubstate::method_authorization_contextless(
                         *node_id,
                         NodeModuleId::AccessRules,
-                        SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
-                        LockFlags::read_only(),
-                    )?;
-                    let substate_ref = api.kernel_get_substate_ref(handle)?;
-                    let access_rules = substate_ref.access_rules_chain();
-                    let auth = access_rules.native_fn_authorization(method_key);
-                    api.kernel_drop_lock(handle)?;
-                    auth
+                        method_key,
+                        api
+                    )?
                 }
             }
         };
