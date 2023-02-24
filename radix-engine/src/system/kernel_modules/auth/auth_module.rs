@@ -49,6 +49,45 @@ impl AuthModule {
             })
         )
     }
+
+    fn function_auth<Y: KernelModuleApi<RuntimeError>>(identifier: &FnIdentifier, api: &mut Y) -> Result<Vec<MethodAuthorization>, RuntimeError> {
+        let auth = if identifier.package_address.eq(&PACKAGE_LOADER) {
+            if identifier.blueprint_name.eq(PACKAGE_LOADER_BLUEPRINT)
+                && identifier
+                .ident
+                .eq(PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT)
+            {
+                vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
+                    HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
+                        AuthAddresses::system_role(),
+                    )),
+                ))]
+            } else {
+                vec![]
+            }
+        } else {
+            let handle = api.kernel_lock_substate(
+                RENodeId::GlobalPackage(identifier.package_address),
+                NodeModuleId::PackageAccessRules,
+                SubstateOffset::PackageAccessRules,
+                LockFlags::read_only(),
+            )?;
+            let substate_ref = api.kernel_get_substate_ref(handle)?;
+            let substate = substate_ref.package_access_rules();
+            let local_fn_identifier = (
+                identifier.blueprint_name.to_string(),
+                identifier.ident.to_string(),
+            );
+            let access_rule = substate
+                .access_rules
+                .get(&local_fn_identifier)
+                .unwrap_or(&substate.default_auth);
+            let func_auth = convert_contextless(access_rule);
+            vec![func_auth]
+        };
+
+        Ok(auth)
+    }
 }
 
 impl KernelModule for AuthModule {
@@ -92,47 +131,13 @@ impl KernelModule for AuthModule {
             return Ok(());
         }
 
+
         let method_auths = if let Some(actor) = actor {
             match &actor {
                 ResolvedActor {
                     identifier,
                     receiver: None,
-                } => {
-                    if identifier.package_address.eq(&PACKAGE_LOADER) {
-                        if identifier.blueprint_name.eq(PACKAGE_LOADER_BLUEPRINT)
-                            && identifier
-                                .ident
-                                .eq(PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT)
-                        {
-                            vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
-                                HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
-                                    AuthAddresses::system_role(),
-                                )),
-                            ))]
-                        } else {
-                            vec![]
-                        }
-                    } else {
-                        let handle = api.kernel_lock_substate(
-                            RENodeId::GlobalPackage(identifier.package_address),
-                            NodeModuleId::PackageAccessRules,
-                            SubstateOffset::PackageAccessRules,
-                            LockFlags::read_only(),
-                        )?;
-                        let substate_ref = api.kernel_get_substate_ref(handle)?;
-                        let substate = substate_ref.package_access_rules();
-                        let local_fn_identifier = (
-                            identifier.blueprint_name.to_string(),
-                            identifier.ident.to_string(),
-                        );
-                        let access_rule = substate
-                            .access_rules
-                            .get(&local_fn_identifier)
-                            .unwrap_or(&substate.default_auth);
-                        let func_auth = convert_contextless(access_rule);
-                        vec![func_auth]
-                    }
-                }
+                } => Self::function_auth(identifier, api)?,
 
                 // TODO: Cleanup
                 // SetAccessRule auth is done manually within the method
@@ -194,7 +199,7 @@ impl KernelModule for AuthModule {
                     // TODO: Revisit what the correct abstraction is for visibility in the auth module
                     let auth = match visibility {
                         RENodeVisibilityOrigin::Normal => {
-                            substate.native_fn_authorization(*module_id, identifier.clone())
+                            substate.native_fn_authorization(*module_id, identifier.ident.clone())
                         }
                         RENodeVisibilityOrigin::DirectAccess => {
                             // TODO: Do we want to allow recaller to be able to withdraw from
@@ -227,9 +232,21 @@ impl KernelModule for AuthModule {
                         RENodeId::GlobalComponent(ComponentAddress::Normal(..))
                     ) =>
                 {
+                    let handle = api.kernel_lock_substate(
+                        *node_id,
+                        NodeModuleId::TypeInfo,
+                        SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+                        LockFlags::read_only(),
+                    )?;
+                    let substate_ref = api.kernel_get_substate_ref(handle)?;
+                    let info = substate_ref.component_info();
+                    let package_address = info.package_address.clone();
+                    let blueprint_ident = info.blueprint_name.clone();
+                    api.kernel_drop_lock(handle)?;
+
                     let offset = SubstateOffset::Package(PackageOffset::Info);
                     let handle = api.kernel_lock_substate(
-                        RENodeId::GlobalPackage(identifier.package_address),
+                        RENodeId::GlobalPackage(package_address),
                         NodeModuleId::SELF,
                         offset,
                         LockFlags::read_only(),
@@ -241,7 +258,7 @@ impl KernelModule for AuthModule {
                         let substate_ref = api.kernel_get_substate_ref(handle)?;
                         let package = substate_ref.package_info();
                         let schema = package
-                            .blueprint_abi(&identifier.blueprint_name)
+                            .blueprint_abi(&blueprint_ident)
                             .expect("Blueprint not found for existing component")
                             .structure
                             .clone();
@@ -293,7 +310,7 @@ impl KernelModule for AuthModule {
                         let substate_ref = api.kernel_get_substate_ref(handle)?;
                         let access_rules = substate_ref.access_rules_chain();
                         let auth =
-                            access_rules.native_fn_authorization(*module_id, identifier.clone());
+                            access_rules.native_fn_authorization(*module_id, identifier.ident.clone());
                         api.kernel_drop_lock(handle)?;
                         auth
                     }
@@ -310,7 +327,7 @@ impl KernelModule for AuthModule {
                     )?;
                     let substate_ref = api.kernel_get_substate_ref(handle)?;
                     let substate = substate_ref.access_rules_chain();
-                    let auth = substate.native_fn_authorization(receiver.1, identifier.clone());
+                    let auth = substate.native_fn_authorization(receiver.1, identifier.ident.clone());
                     api.kernel_drop_lock(handle)?;
                     auth
                 }
