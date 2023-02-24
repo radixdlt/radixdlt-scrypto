@@ -1,4 +1,4 @@
-use crate::blueprints::resource::VaultRuntimeSubstate;
+use crate::blueprints::resource::VaultInfoSubstate;
 use crate::errors::*;
 use crate::kernel::actor::ResolvedActor;
 use crate::kernel::actor::ResolvedReceiver;
@@ -28,7 +28,6 @@ use transaction::model::AuthZoneParams;
 
 use super::auth_converter::convert_contextless;
 use super::method_authorization::MethodAuthorization;
-use super::method_authorization::MethodAuthorizationError;
 use super::HardAuthRule;
 use super::HardProofRule;
 use super::HardResourceOrNonFungible;
@@ -36,10 +35,7 @@ use super::HardResourceOrNonFungible;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
     VisibilityError(RENodeId),
-    Unauthorized {
-        authorization: MethodAuthorization,
-        error: MethodAuthorizationError,
-    },
+    Unauthorized(Vec<MethodAuthorization>),
 }
 
 #[derive(Debug, Clone)]
@@ -209,61 +205,74 @@ impl KernelModule for AuthModule {
                             ..
                         }),
                 } => {
-                    let vault_node_id = RENodeId::Vault(*vault_id);
-                    let visibility = api.kernel_get_node_visibility_origin(vault_node_id).ok_or(
-                        RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(
-                            vault_node_id,
-                        )),
-                    )?;
+                    let fn_ident = identifier.ident.as_str();
+                    if fn_ident == VAULT_LOCK_AMOUNT_IDENT
+                        || fn_ident == VAULT_LOCK_NON_FUNGIBLES_IDENT
+                        || fn_ident == VAULT_UNLOCK_AMOUNT_IDENT
+                        || fn_ident == VAULT_UNLOCK_NON_FUNGIBLES_IDENT
+                    {
+                        // TODO: require package auth, and similarly for bucket above!
+                        vec![]
+                    } else {
+                        let vault_node_id = RENodeId::Vault(*vault_id);
+                        let visibility = api
+                            .kernel_get_node_visibility_origin(vault_node_id)
+                            .ok_or(RuntimeError::CallFrameError(
+                                CallFrameError::RENodeNotVisible(vault_node_id),
+                            ))?;
 
-                    let resource_address = {
-                        let offset = SubstateOffset::Vault(VaultOffset::Vault);
+                        let resource_address = {
+                            let offset = SubstateOffset::Vault(VaultOffset::Info);
+                            let handle = api.kernel_lock_substate(
+                                vault_node_id,
+                                NodeModuleId::SELF,
+                                offset,
+                                LockFlags::read_only(),
+                            )?;
+                            let substate_ref: &VaultInfoSubstate =
+                                api.kernel_get_substate_ref(handle)?;
+                            let resource_address = substate_ref.resource_address;
+                            api.kernel_drop_lock(handle)?;
+                            resource_address
+                        };
                         let handle = api.kernel_lock_substate(
-                            vault_node_id,
-                            NodeModuleId::SELF,
-                            offset,
+                            RENodeId::Global(Address::Resource(resource_address)),
+                            NodeModuleId::AccessRules1,
+                            SubstateOffset::AccessRulesChain(
+                                AccessRulesChainOffset::AccessRulesChain,
+                            ),
                             LockFlags::read_only(),
                         )?;
-                        let vault: &VaultRuntimeSubstate = api.kernel_get_substate_ref(handle)?;
-                        let resource_address = vault.resource_address();
-                        api.kernel_drop_lock(handle)?;
-                        resource_address
-                    };
-                    let handle = api.kernel_lock_substate(
-                        RENodeId::Global(Address::Resource(resource_address)),
-                        NodeModuleId::AccessRules1,
-                        SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
-                        LockFlags::read_only(),
-                    )?;
 
-                    let substate: &ObjectAccessRulesChainSubstate =
-                        api.kernel_get_substate_ref(handle)?;
+                        let substate: &ObjectAccessRulesChainSubstate =
+                            api.kernel_get_substate_ref(handle)?;
 
-                    // TODO: Revisit what the correct abstraction is for visibility in the auth module
-                    let auth = match visibility {
-                        RENodeVisibilityOrigin::Normal => {
-                            substate.native_fn_authorization(*module_id, identifier.clone())
-                        }
-                        RENodeVisibilityOrigin::DirectAccess => {
-                            // TODO: Do we want to allow recaller to be able to withdraw from
-                            // TODO: any visible vault?
-                            if identifier.ident.eq(VAULT_RECALL_IDENT)
-                                || identifier.ident.eq(VAULT_RECALL_NON_FUNGIBLES_IDENT)
-                            {
-                                let access_rule =
-                                    substate.access_rules_chain[0].get_group("recall");
-                                let authorization = convert_contextless(access_rule);
-                                vec![authorization]
-                            } else {
-                                return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                                    AuthError::VisibilityError(vault_node_id),
-                                )));
+                        // TODO: Revisit what the correct abstraction is for visibility in the auth module
+                        let auth = match visibility {
+                            RENodeVisibilityOrigin::Normal => {
+                                substate.native_fn_authorization(*module_id, identifier.clone())
                             }
-                        }
-                    };
+                            RENodeVisibilityOrigin::DirectAccess => {
+                                // TODO: Do we want to allow recaller to be able to withdraw from
+                                // TODO: any visible vault?
+                                if identifier.ident.eq(VAULT_RECALL_IDENT)
+                                    || identifier.ident.eq(VAULT_RECALL_NON_FUNGIBLES_IDENT)
+                                {
+                                    let access_rule =
+                                        substate.access_rules_chain[0].get_group("recall");
+                                    let authorization = convert_contextless(access_rule);
+                                    vec![authorization]
+                                } else {
+                                    return Err(RuntimeError::ModuleError(ModuleError::AuthError(
+                                        AuthError::VisibilityError(vault_node_id),
+                                    )));
+                                }
+                            }
+                        };
 
-                    api.kernel_drop_lock(handle)?;
-                    auth
+                        api.kernel_drop_lock(handle)?;
+                        auth
+                    }
                 }
 
                 ResolvedActor {
@@ -372,18 +381,16 @@ impl KernelModule for AuthModule {
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::read_only(),
         )?;
-        let auth_zone_stack: &AuthZoneStackSubstate = api.kernel_get_substate_ref(handle)?;
+        let substate_ref: &AuthZoneStackSubstate = api.kernel_get_substate_ref(handle)?;
+        let auth_zone_stack = substate_ref.clone();
         let is_barrier = Self::is_barrier(actor);
 
         // Authorization check
-        auth_zone_stack
-            .check_auth(is_barrier, method_auths)
-            .map_err(|(authorization, error)| {
-                RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized {
-                    authorization,
-                    error,
-                }))
-            })?;
+        if !auth_zone_stack.check_auth(is_barrier, &method_auths, api)? {
+            return Err(RuntimeError::ModuleError(ModuleError::AuthError(
+                AuthError::Unauthorized(method_auths),
+            )));
+        }
 
         api.kernel_drop_lock(handle)?;
 
@@ -425,7 +432,7 @@ impl KernelModule for AuthModule {
                 virtual_non_fungibles.insert(non_fungible_global_id);
             }
 
-            auth_zone_stack.new_frame(virtual_non_fungibles, is_barrier);
+            auth_zone_stack.push_auth_zone(virtual_non_fungibles, is_barrier);
             api.kernel_drop_lock(handle)?;
         }
 
@@ -456,7 +463,7 @@ impl KernelModule for AuthModule {
         {
             let auth_zone_stack: &mut AuthZoneStackSubstate =
                 api.kernel_get_substate_ref_mut(handle)?;
-            auth_zone_stack.pop_frame();
+            auth_zone_stack.pop_auth_zone();
         }
         api.kernel_drop_lock(handle)?;
 

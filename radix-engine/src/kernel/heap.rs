@@ -1,6 +1,6 @@
 use super::track::Track;
 use crate::blueprints::logger::LoggerSubstate;
-use crate::blueprints::resource::{BucketSubstate, NonFungibleSubstate, ProofSubstate};
+use crate::blueprints::resource::{BucketInfoSubstate, NonFungibleSubstate, ProofInfoSubstate};
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::errors::CallFrameError;
 use crate::system::node_modules::access_rules::AuthZoneStackSubstate;
@@ -11,6 +11,10 @@ use radix_engine_interface::api::types::{
     AuthZoneStackOffset, BucketOffset, LoggerOffset, NodeModuleId, ProofOffset, RENodeId,
     SubstateId, SubstateOffset, TransactionRuntimeOffset,
 };
+use radix_engine_interface::blueprints::resource::{
+    LiquidFungibleResource, LiquidNonFungibleResource, ResourceType,
+};
+use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
 
@@ -23,6 +27,10 @@ impl Heap {
         Self {
             nodes: HashMap::new(),
         }
+    }
+
+    pub fn contains_node(&self, node_id: &RENodeId) -> bool {
+        self.nodes.contains_key(node_id)
     }
 
     pub fn get_substate(
@@ -139,25 +147,65 @@ pub struct HeapRENode {
     pub substates: BTreeMap<(NodeModuleId, SubstateOffset), RuntimeSubstate>,
 }
 
-impl Into<BucketSubstate> for HeapRENode {
-    fn into(mut self) -> BucketSubstate {
-        self.substates
-            .remove(&(
-                NodeModuleId::SELF,
-                SubstateOffset::Bucket(BucketOffset::Bucket),
-            ))
-            .unwrap()
-            .into()
+pub struct DroppedBucket {
+    pub info: BucketInfoSubstate,
+    pub resource: DroppedBucketResource,
+}
+
+pub enum DroppedBucketResource {
+    Fungible(LiquidFungibleResource),
+    NonFungible(LiquidNonFungibleResource),
+}
+
+impl DroppedBucket {
+    pub fn amount(&self) -> Decimal {
+        match &self.resource {
+            DroppedBucketResource::Fungible(f) => f.amount(),
+            DroppedBucketResource::NonFungible(f) => f.amount(),
+        }
     }
 }
 
-impl Into<ProofSubstate> for HeapRENode {
-    fn into(mut self) -> ProofSubstate {
-        self.substates
+impl Into<DroppedBucket> for HeapRENode {
+    fn into(mut self) -> DroppedBucket {
+        let info: BucketInfoSubstate = self
+            .substates
             .remove(&(
                 NodeModuleId::SELF,
-                SubstateOffset::Proof(ProofOffset::Proof),
+                SubstateOffset::Bucket(BucketOffset::Info),
             ))
+            .unwrap()
+            .into();
+
+        let resource = match info.resource_type {
+            ResourceType::Fungible { .. } => DroppedBucketResource::Fungible(
+                self.substates
+                    .remove(&(
+                        NodeModuleId::SELF,
+                        SubstateOffset::Bucket(BucketOffset::LiquidFungible),
+                    ))
+                    .map(|s| Into::<LiquidFungibleResource>::into(s))
+                    .unwrap(),
+            ),
+            ResourceType::NonFungible { .. } => DroppedBucketResource::NonFungible(
+                self.substates
+                    .remove(&(
+                        NodeModuleId::SELF,
+                        SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
+                    ))
+                    .map(|s| Into::<LiquidNonFungibleResource>::into(s))
+                    .unwrap(),
+            ),
+        };
+
+        DroppedBucket { info, resource }
+    }
+}
+
+impl Into<ProofInfoSubstate> for HeapRENode {
+    fn into(mut self) -> ProofInfoSubstate {
+        self.substates
+            .remove(&(NodeModuleId::SELF, SubstateOffset::Proof(ProofOffset::Info)))
             .unwrap()
             .into()
     }

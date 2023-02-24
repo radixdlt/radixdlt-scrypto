@@ -30,14 +30,14 @@ mod vault_proof {
 
         pub fn create_clone_drop_vault_proof_by_amount(
             &self,
-            total_amount: Decimal,
+            amount: Decimal,
             proof_amount: Decimal,
         ) {
             let proof = self.vault.create_proof_by_amount(proof_amount);
             let proof = proof.validate_proof(self.vault.resource_address()).unwrap();
             let clone = proof.clone();
 
-            assert_eq!(self.vault.amount(), total_amount);
+            assert_eq!(self.vault.amount(), amount);
             assert_eq!(proof.amount(), proof_amount);
             assert_eq!(clone.amount(), proof_amount);
 
@@ -47,16 +47,18 @@ mod vault_proof {
 
         pub fn create_clone_drop_vault_proof_by_ids(
             &self,
-            total_ids: BTreeSet<NonFungibleLocalId>,
-            proof_ids: BTreeSet<NonFungibleLocalId>,
+            non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
+            proof_non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
         ) {
-            let proof = self.vault.create_proof_by_ids(&proof_ids);
+            let proof = self
+                .vault
+                .create_proof_by_ids(&proof_non_fungible_local_ids);
             let proof = proof.validate_proof(self.vault.resource_address()).unwrap();
             let clone = proof.clone();
 
-            assert_eq!(self.vault.non_fungible_local_ids(), total_ids);
-            assert_eq!(proof.non_fungible_local_ids(), proof_ids);
-            assert_eq!(clone.non_fungible_local_ids(), proof_ids);
+            assert_eq!(self.vault.non_fungible_local_ids(), non_fungible_local_ids);
+            assert_eq!(proof.non_fungible_local_ids(), proof_non_fungible_local_ids);
+            assert_eq!(clone.non_fungible_local_ids(), proof_non_fungible_local_ids);
 
             clone.drop();
             proof.drop();
@@ -81,11 +83,12 @@ mod vault_proof {
         }
 
         pub fn compose_vault_and_bucket_proof(&mut self, bucket: Bucket) {
+            let expected_amount = self.vault.amount() + bucket.amount();
             self.vault.authorize(|| {
                 bucket.authorize(|| {
                     let proof = ComponentAuthZone::create_proof(bucket.resource_address());
                     let proof = proof.validate_proof(self.vault.resource_address()).unwrap();
-                    assert_eq!(proof.amount(), self.vault.amount() + bucket.amount());
+                    assert_eq!(proof.amount(), expected_amount);
                     proof.drop();
                 })
             });

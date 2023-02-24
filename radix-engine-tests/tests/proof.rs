@@ -148,18 +148,18 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
     );
 
     // Act
-    let total_ids = BTreeSet::from([
+    let non_fungible_local_ids = BTreeSet::from([
         NonFungibleLocalId::integer(1),
         NonFungibleLocalId::integer(2),
         NonFungibleLocalId::integer(3),
     ]);
-    let proof_ids = BTreeSet::from([NonFungibleLocalId::integer(2)]);
+    let proof_non_fungible_local_ids = BTreeSet::from([NonFungibleLocalId::integer(2)]);
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_method(
             component_address,
             "create_clone_drop_vault_proof_by_ids",
-            manifest_args!(total_ids, proof_ids),
+            manifest_args!(non_fungible_local_ids, proof_non_fungible_local_ids),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -322,7 +322,7 @@ fn cant_move_restricted_proof() {
 }
 
 #[test]
-fn cant_move_locked_bucket() {
+fn can_move_locked_bucket() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
@@ -342,6 +342,11 @@ fn cant_move_locked_bucket() {
                 manifest_args!(bucket_id),
             )
         })
+        .call_method(
+            account,
+            "deposit_batch",
+            manifest_args!(ManifestExpression::EntireWorktop),
+        )
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -349,14 +354,7 @@ fn cant_move_locked_bucket() {
     );
 
     // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::ModuleError(ModuleError::NodeMoveError(NodeMoveError::CantMoveUpstream(
-                RENodeId::Bucket(..)
-            )))
-        )
-    });
+    receipt.expect_commit_success();
 }
 
 #[test]

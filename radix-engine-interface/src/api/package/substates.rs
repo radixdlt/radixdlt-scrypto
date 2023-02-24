@@ -33,7 +33,7 @@ impl PackageCodeSubstate {
 
 impl Debug for PackageCodeSubstate {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.debug_struct("WasmCodeSubstate").finish()
+        f.debug_struct("PackageCodeSubstate").finish()
     }
 }
 

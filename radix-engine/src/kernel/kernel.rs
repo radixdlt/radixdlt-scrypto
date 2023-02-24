@@ -1,27 +1,29 @@
 use crate::blueprints::account::AccountSubstate;
+use crate::blueprints::auth_zone::AuthZoneStackSubstate;
 use crate::blueprints::identity::Identity;
+use crate::blueprints::resource::{
+    BucketInfoSubstate, FungibleProof, NonFungibleProof, ProofInfoSubstate, WorktopSubstate,
+};
 use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::system::global::GlobalSubstate;
-use crate::system::kernel_modules::execution_trace::ProofSnapshot;
+use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_properties::VisibilityProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use native_sdk::resource::SysBucket;
+use native_sdk::resource::{SysBucket, SysProof};
 use radix_engine_interface::api::component::TypeInfoSubstate;
 use radix_engine_interface::api::package::{PackageCodeSubstate, PACKAGE_LOADER_BLUEPRINT};
 use radix_engine_interface::api::substate_api::LockFlags;
 // TODO: clean this up!
-use crate::blueprints::auth_zone::AuthZoneStackSubstate;
-use crate::blueprints::resource::{BucketSubstate, ProofSubstate, WorktopSubstate};
 use crate::kernel::kernel_api::TemporaryResolvedInvocation;
 use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use radix_engine_interface::api::types::{
     Address, AuthZoneStackOffset, GlobalOffset, LockHandle, ProofOffset, RENodeId, SubstateId,
-    SubstateOffset, WorktopOffset,
+    SubstateOffset,
 };
 use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLUEPRINT;
 use radix_engine_interface::blueprints::account::{
@@ -35,8 +37,9 @@ use radix_engine_interface::blueprints::epoch_manager::{
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::logger::LOGGER_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::{
-    require, AccessRule, AccessRuleKey, AccessRules, Bucket, Resource, BUCKET_BLUEPRINT,
-    PROOF_BLUEPRINT, RESOURCE_MANAGER_BLUEPRINT, VAULT_BLUEPRINT, WORKTOP_BLUEPRINT,
+    require, AccessRule, AccessRuleKey, AccessRules, Bucket, LiquidFungibleResource,
+    LiquidNonFungibleResource, ResourceType, BUCKET_BLUEPRINT, PROOF_BLUEPRINT,
+    RESOURCE_MANAGER_BLUEPRINT, VAULT_BLUEPRINT, WORKTOP_BLUEPRINT,
 };
 use radix_engine_interface::blueprints::transaction_runtime::TRANSACTION_RUNTIME_BLUEPRINT;
 use radix_engine_interface::rule;
@@ -292,37 +295,63 @@ where
                     SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
                     LockFlags::MUTABLE,
                 )?;
-                let auth_zone_stack: &mut AuthZoneStackSubstate =
-                    api.kernel_get_substate_ref_mut(handle)?;
-                auth_zone_stack.clear_all();
+                let substate_ref: &AuthZoneStackSubstate = api.kernel_get_substate_ref(handle)?;
+                let mut auth_zone_stack = substate_ref.clone();
+                loop {
+                    if let Some(mut auth_zone) = auth_zone_stack.pop_auth_zone() {
+                        for p in auth_zone.drain() {
+                            p.sys_drop(api)?;
+                        }
+                    } else {
+                        break;
+                    }
+                }
                 api.kernel_drop_lock(handle)?;
                 Ok(())
             }
             RENodeId::Proof(..) => {
-                let handle = api.kernel_lock_substate(
-                    node_id,
-                    NodeModuleId::SELF,
-                    SubstateOffset::Proof(ProofOffset::Proof),
-                    LockFlags::MUTABLE,
-                )?;
-                let proof: &mut ProofSubstate = api.kernel_get_substate_ref_mut(handle)?;
-                proof.drop();
-                api.kernel_drop_lock(handle)?;
+                let proof_info = ProofInfoSubstate::of(node_id, api)?;
+                if proof_info.resource_type.is_fungible() {
+                    let handle = api.kernel_lock_substate(
+                        node_id,
+                        NodeModuleId::SELF,
+                        SubstateOffset::Proof(ProofOffset::Fungible),
+                        LockFlags::read_only(),
+                    )?;
+                    let proof: &FungibleProof = api.kernel_get_substate_ref(handle)?;
+                    let proof = proof.clone();
+                    proof.drop_proof(api)?;
+                    api.kernel_drop_lock(handle)?;
+                } else {
+                    let handle = api.kernel_lock_substate(
+                        node_id,
+                        NodeModuleId::SELF,
+                        SubstateOffset::Proof(ProofOffset::NonFungible),
+                        LockFlags::read_only(),
+                    )?;
+                    let proof: &NonFungibleProof = api.kernel_get_substate_ref(handle)?;
+                    let proof = proof.clone();
+                    proof.drop_proof(api)?;
+                    api.kernel_drop_lock(handle)?;
+                }
+
                 Ok(())
             }
             RENodeId::Worktop => {
+                // TODO: Once `ResourceManager::burn_empty()` is available, change to:
+                // for bucket in worktop.drain() { bucket.burn_empty(); }
+
                 let handle = api.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,
                     SubstateOffset::Worktop(WorktopOffset::Worktop),
-                    LockFlags::MUTABLE,
+                    LockFlags::read_only(),
                 )?;
-
-                let buckets = {
-                    let worktop: &mut WorktopSubstate = api.kernel_get_substate_ref_mut(handle)?;
-                    mem::replace(&mut worktop.resources, BTreeMap::new())
+                let buckets: Vec<Own> = {
+                    let worktop: &WorktopSubstate = api.kernel_get_substate_ref(handle)?;
+                    worktop.resources.values().cloned().collect()
                 };
-                for (_, bucket) in buckets {
+                for bucket in buckets {
                     let bucket = Bucket(bucket.bucket_id());
                     if !bucket.sys_is_empty(api)? {
                         return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
@@ -330,7 +359,6 @@ where
                         )));
                     }
                 }
-
                 api.kernel_drop_lock(handle)?;
                 Ok(())
             }
@@ -341,11 +369,14 @@ where
         })?;
 
         let node = self.current_frame.remove_node(&mut self.heap, node_id)?;
-        for (_, substate) in &node.substates {
-            let (_, child_nodes) = substate.to_ref().references_and_owned_nodes();
-            for child_node in child_nodes {
-                // Need to go through api so that visibility issues can be caught
-                self.kernel_drop_node(child_node)?;
+        // TODO: remove condition; see notes above!
+        if !matches!(node_id, RENodeId::Worktop) {
+            for (_, substate) in &node.substates {
+                let (_, child_nodes) = substate.to_ref().references_and_owned_nodes();
+                for child_node in child_nodes {
+                    // Need to go through api so that visibility issues can be caught
+                    self.kernel_drop_node(child_node)?;
+                }
             }
         }
         // TODO: REmove
@@ -500,7 +531,7 @@ where
             for node_id in &resolved.update.node_refs_to_copy {
                 match node_id {
                     RENodeId::Global(global_address) => {
-                        if self.current_frame.get_node_location(*node_id).is_err() {
+                        if self.current_frame.get_node_visibility(node_id).is_none() {
                             if matches!(
                                 global_address,
                                 Address::Component(ComponentAddress::EcdsaSecp256k1VirtualAccount(
@@ -521,85 +552,45 @@ where
                                 Address::Component(ComponentAddress::EddsaEd25519VirtualIdentity(
                                     ..
                                 ))
-                            ) {
-                                self.current_frame
-                                    .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                                continue;
-                            }
-
-                            // TODO: Cleanup
-                            {
-                                if matches!(global_address, Address::Package(PACKAGE_LOADER)) {
-                                    self.current_frame
-                                        .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                                    continue;
-                                }
-
-                                if matches!(
+                            ) || matches!(global_address, Address::Package(PACKAGE_LOADER))
+                                || matches!(
                                     global_address,
                                     Address::Package(RESOURCE_MANAGER_PACKAGE)
-                                ) {
-                                    self.current_frame
-                                        .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                                    continue;
-                                }
-
-                                if matches!(global_address, Address::Package(IDENTITY_PACKAGE)) {
-                                    self.current_frame
-                                        .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                                    continue;
-                                }
-
-                                if matches!(global_address, Address::Package(EPOCH_MANAGER_PACKAGE))
-                                {
-                                    self.current_frame
-                                        .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                                    continue;
-                                }
-
-                                if matches!(global_address, Address::Package(CLOCK_PACKAGE)) {
-                                    self.current_frame
-                                        .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                                    continue;
-                                }
-
-                                if matches!(global_address, Address::Package(ACCOUNT_PACKAGE)) {
-                                    self.current_frame
-                                        .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                                    continue;
-                                }
-
-                                if matches!(
+                                )
+                                || matches!(global_address, Address::Package(IDENTITY_PACKAGE))
+                                || matches!(global_address, Address::Package(EPOCH_MANAGER_PACKAGE))
+                                || matches!(global_address, Address::Package(CLOCK_PACKAGE))
+                                || matches!(global_address, Address::Package(ACCOUNT_PACKAGE))
+                                || matches!(
                                     global_address,
                                     Address::Package(ACCESS_CONTROLLER_PACKAGE)
-                                ) {
-                                    self.current_frame
-                                        .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                                    continue;
-                                }
+                                )
+                            {
+                                // For virtual accounts and native packages, create a reference directly
+                                self.current_frame
+                                    .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                            } else {
+                                let offset = SubstateOffset::Global(GlobalOffset::Global);
+                                self.track
+                                    .acquire_lock(
+                                        SubstateId(*node_id, NodeModuleId::SELF, offset.clone()),
+                                        LockFlags::read_only(),
+                                    )
+                                    .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
+                                self.track
+                                    .release_lock(
+                                        SubstateId(*node_id, NodeModuleId::SELF, offset),
+                                        false,
+                                    )
+                                    .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
+                                self.current_frame
+                                    .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
                             }
-
-                            let offset = SubstateOffset::Global(GlobalOffset::Global);
-
-                            self.track
-                                .acquire_lock(
-                                    SubstateId(*node_id, NodeModuleId::SELF, offset.clone()),
-                                    LockFlags::read_only(),
-                                )
-                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
-                            self.track
-                                .release_lock(
-                                    SubstateId(*node_id, NodeModuleId::SELF, offset),
-                                    false,
-                                )
-                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
-                            self.current_frame
-                                .add_stored_ref(*node_id, RENodeVisibilityOrigin::Normal);
                         }
                     }
                     RENodeId::Vault(..) => {
-                        if self.current_frame.get_node_location(*node_id).is_err() {
-                            let offset = SubstateOffset::Vault(VaultOffset::Vault);
+                        if self.current_frame.get_node_visibility(node_id).is_none() {
+                            let offset = SubstateOffset::Vault(VaultOffset::Info);
                             self.track
                                 .acquire_lock(
                                     SubstateId(*node_id, NodeModuleId::SELF, offset.clone()),
@@ -614,7 +605,7 @@ where
                                 .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
 
                             self.current_frame
-                                .add_stored_ref(*node_id, RENodeVisibilityOrigin::DirectAccess);
+                                .add_ref(*node_id, RENodeVisibilityOrigin::DirectAccess);
                         }
                     }
                     _ => {}
@@ -789,7 +780,8 @@ where
                     }),
                 );
             }
-            (RENodeId::Bucket(..), RENodeInit::Bucket(..)) => {
+            (RENodeId::Bucket(..), RENodeInit::FungibleBucket(..))
+            | (RENodeId::Bucket(..), RENodeInit::NonFungibleBucket(..)) => {
                 module_init.insert(
                     NodeModuleId::TypeInfo,
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
@@ -798,7 +790,8 @@ where
                     }),
                 );
             }
-            (RENodeId::Proof(..), RENodeInit::Proof(..)) => {
+            (RENodeId::Proof(..), RENodeInit::FungibleProof(..))
+            | (RENodeId::Proof(..), RENodeInit::NonFungibleProof(..)) => {
                 module_init.insert(
                     NodeModuleId::TypeInfo,
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
@@ -807,7 +800,8 @@ where
                     }),
                 );
             }
-            (RENodeId::Vault(..), RENodeInit::Vault(..)) => {
+            (RENodeId::Vault(..), RENodeInit::FungibleVault(..))
+            | (RENodeId::Vault(..), RENodeInit::NonFungibleVault(..)) => {
                 module_init.insert(
                     NodeModuleId::TypeInfo,
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
@@ -925,7 +919,7 @@ where
         &self,
         node_id: RENodeId,
     ) -> Option<RENodeVisibilityOrigin> {
-        let visibility = self.current_frame.get_node_visibility(node_id)?;
+        let visibility = self.current_frame.get_node_visibility(&node_id)?;
         Some(visibility)
     }
 
@@ -941,32 +935,106 @@ where
         self.current_frame.actor.clone()
     }
 
-    fn kernel_read_bucket(&mut self, bucket_id: BucketId) -> Option<Resource> {
-        self.heap
-            .get_substate(
-                RENodeId::Bucket(bucket_id),
-                NodeModuleId::SELF,
-                &SubstateOffset::Bucket(BucketOffset::Bucket),
-            )
-            .and_then(|substate| {
-                let bucket: &BucketSubstate = substate.into();
-                Ok(bucket.peek_resource())
-            })
-            .ok()
+    fn kernel_read_bucket(&mut self, bucket_id: BucketId) -> Option<BucketSnapshot> {
+        if let Ok(substate) = self.heap.get_substate(
+            RENodeId::Bucket(bucket_id),
+            NodeModuleId::SELF,
+            &SubstateOffset::Bucket(BucketOffset::Info),
+        ) {
+            let info: &BucketInfoSubstate = substate.into();
+            let info = info.clone();
+
+            match info.resource_type {
+                ResourceType::Fungible { .. } => {
+                    let substate = self
+                        .heap
+                        .get_substate(
+                            RENodeId::Bucket(bucket_id),
+                            NodeModuleId::SELF,
+                            &SubstateOffset::Bucket(BucketOffset::LiquidFungible),
+                        )
+                        .unwrap();
+                    let liquid: &LiquidFungibleResource = substate.into();
+
+                    Some(BucketSnapshot::Fungible {
+                        resource_address: info.resource_address,
+                        resource_type: info.resource_type,
+                        liquid: liquid.amount(),
+                    })
+                }
+                ResourceType::NonFungible { .. } => {
+                    let substate = self
+                        .heap
+                        .get_substate(
+                            RENodeId::Bucket(bucket_id),
+                            NodeModuleId::SELF,
+                            &SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
+                        )
+                        .unwrap();
+                    let liquid: &LiquidNonFungibleResource = substate.into();
+
+                    Some(BucketSnapshot::NonFungible {
+                        resource_address: info.resource_address,
+                        resource_type: info.resource_type,
+                        liquid: liquid.ids().clone(),
+                    })
+                }
+            }
+        } else {
+            None
+        }
     }
 
     fn kernel_read_proof(&mut self, proof_id: BucketId) -> Option<ProofSnapshot> {
-        self.heap
-            .get_substate(
-                RENodeId::Proof(proof_id),
-                NodeModuleId::SELF,
-                &SubstateOffset::Proof(ProofOffset::Proof),
-            )
-            .and_then(|substate| {
-                let proof: &ProofSubstate = substate.into();
-                Ok(proof.snapshot())
-            })
-            .ok()
+        if let Ok(substate) = self.heap.get_substate(
+            RENodeId::Proof(proof_id),
+            NodeModuleId::SELF,
+            &SubstateOffset::Proof(ProofOffset::Info),
+        ) {
+            let info: &ProofInfoSubstate = substate.into();
+            let info = info.clone();
+
+            match info.resource_type {
+                ResourceType::Fungible { .. } => {
+                    let substate = self
+                        .heap
+                        .get_substate(
+                            RENodeId::Proof(proof_id),
+                            NodeModuleId::SELF,
+                            &SubstateOffset::Proof(ProofOffset::Fungible),
+                        )
+                        .unwrap();
+                    let proof: &FungibleProof = substate.into();
+
+                    Some(ProofSnapshot::Fungible {
+                        resource_address: info.resource_address,
+                        resource_type: info.resource_type,
+                        restricted: info.restricted,
+                        total_locked: proof.amount(),
+                    })
+                }
+                ResourceType::NonFungible { .. } => {
+                    let substate = self
+                        .heap
+                        .get_substate(
+                            RENodeId::Proof(proof_id),
+                            NodeModuleId::SELF,
+                            &SubstateOffset::Proof(ProofOffset::NonFungible),
+                        )
+                        .unwrap();
+                    let proof: &NonFungibleProof = substate.into();
+
+                    Some(ProofSnapshot::NonFungible {
+                        resource_address: info.resource_address,
+                        resource_type: info.resource_type,
+                        restricted: info.restricted,
+                        total_locked: proof.non_fungible_local_ids().clone(),
+                    })
+                }
+            }
+        } else {
+            None
+        }
     }
 }
 
@@ -1074,7 +1142,7 @@ where
                             .release_lock(SubstateId(node_id, module_id, offset.clone()), false)
                             .map_err(|_| err)?;
                         self.current_frame
-                            .add_stored_ref(node_id, RENodeVisibilityOrigin::Normal);
+                            .add_ref(node_id, RENodeVisibilityOrigin::Normal);
                         self.current_frame.acquire_lock(
                             &mut self.heap,
                             &mut self.track,

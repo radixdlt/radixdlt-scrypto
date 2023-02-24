@@ -63,7 +63,7 @@ fn can_burn_non_fungible() {
         .entity_changes
         .new_resource_addresses[0];
     let vault_id = test_runner.get_component_vaults(account, resource_address)[0];
-    let ids = test_runner.inspect_nft_vault(vault_id).unwrap();
+    let ids = test_runner.inspect_non_fungible_vault(vault_id).unwrap();
     let first_id = ids.into_iter().next().unwrap();
 
     let non_fungible_global_id = NonFungibleGlobalId::new(resource_address, first_id);

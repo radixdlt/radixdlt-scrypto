@@ -3,12 +3,6 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;
 use sbor::rust::vec::Vec;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Sbor)]
-pub enum MethodAuthorizationError {
-    NotAuthorized,
-    UnsupportedMethod,
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
 pub enum HardDecimal {
     Amount(Decimal),
@@ -57,8 +51,7 @@ pub enum HardAuthRule {
 /// Authorization of a method call
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
 pub enum MethodAuthorization {
-    Protected(HardAuthRule),
     AllowAll,
     DenyAll,
-    Unsupported,
+    Protected(HardAuthRule),
 }

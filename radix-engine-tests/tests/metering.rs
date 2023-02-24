@@ -67,19 +67,18 @@ fn test_basic_transfer() {
     // Or you can run just this test with the below:
     // (cd radix-engine && cargo test --test metering -- test_basic_transfer)
     assert_eq!(
-        15000 /* CreateNode */
-        + 65500 /* DropLock */
+        12500 /* CreateNode */
+        + 53500 /* DropLock */
         + 12500 /* DropNode */
-        + 0 /* InstantiateWasm */
-        + 11670 /* Invoke */
-        + 101000 /* LockSubstate */
-        + 76500 /* ReadSubstate */
-        + 62500 /* RunPrecompiled */
+        + 9300 /* Invoke */
+        + 79500 /* LockSubstate */
+        + 61000 /* ReadSubstate */
+        + 55000 /* RunPrecompiled */
         + 0 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1320 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 18500, /* WriteSubstate */
+        + 14000, /* WriteSubstate */
         receipt.execution.fee_summary.total_cost_units_consumed
     );
 }
@@ -200,18 +199,18 @@ fn test_radiswap() {
     // Or you can run just this test with the below:
     // (cd radix-engine && cargo test --test metering -- test_radiswap)
     assert_eq!(
-        25000 /* CreateNode */
-        + 189000 /* DropLock */
+        20000 /* CreateNode */
+        + 179500 /* DropLock */
         + 17500 /* DropNode */
-        + 31450 /* Invoke */
-        + 296000 /* LockSubstate */
-        + 230000 /* ReadSubstate */
-        + 162500 /* RunPrecompiled */
-        + 1644040 /* RunWasm */
+        + 26710 /* Invoke */
+        + 261000 /* LockSubstate */
+        + 205500 /* ReadSubstate */
+        + 147500 /* RunPrecompiled */
+        + 1638460 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1705 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 48000 /* WriteSubstate */
+        + 39500 /* WriteSubstate */
         + 2, /* royalty in cost units */
         receipt.execution.fee_summary.total_cost_units_consumed
     );

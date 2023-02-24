@@ -1,10 +1,13 @@
-use crate::blueprints::resource::VaultSubstate;
+use crate::blueprints::resource::VaultInfoSubstate;
 use crate::ledger::{QueryableSubstateStore, ReadableSubstateStore};
 use crate::system::global::GlobalSubstate;
 use crate::system::node_substates::PersistedSubstate;
 use radix_engine_interface::api::types::{
     AccountOffset, Address, ComponentOffset, GlobalOffset, KeyValueStoreOffset, NodeModuleId,
     RENodeId, SubstateId, SubstateOffset, VaultId, VaultOffset,
+};
+use radix_engine_interface::blueprints::resource::{
+    LiquidFungibleResource, LiquidNonFungibleResource, ResourceType,
 };
 
 #[derive(Debug)]
@@ -25,7 +28,22 @@ pub struct StateTreeTraverser<
 }
 
 pub trait StateTreeVisitor {
-    fn visit_vault(&mut self, _vault_id: VaultId, _vault_substate: &VaultSubstate) {}
+    fn visit_fungible_vault(
+        &mut self,
+        _vault_id: VaultId,
+        _info: &VaultInfoSubstate,
+        _resource: &LiquidFungibleResource,
+    ) {
+    }
+
+    fn visit_non_fungible_vault(
+        &mut self,
+        _vault_id: VaultId,
+        _info: &VaultInfoSubstate,
+        _resource: &LiquidNonFungibleResource,
+    ) {
+    }
+
     fn visit_node_id(&mut self, _parent_id: Option<&SubstateId>, _node_id: &RENodeId, _depth: u32) {
     }
 }
@@ -76,15 +94,43 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                     .expect("Broken Node Store");
             }
             RENodeId::Vault(vault_id) => {
-                let substate_id = SubstateId(
+                if let Some(output_value) = self.substate_store.get_substate(&SubstateId(
                     RENodeId::Vault(vault_id),
                     NodeModuleId::SELF,
-                    SubstateOffset::Vault(VaultOffset::Vault),
-                );
-                if let Some(output_value) = self.substate_store.get_substate(&substate_id) {
-                    let vault_substate: VaultSubstate = output_value.substate.into();
+                    SubstateOffset::Vault(VaultOffset::Info),
+                )) {
+                    let info: VaultInfoSubstate = output_value.substate.into();
+                    match &info.resource_type {
+                        ResourceType::Fungible { .. } => {
+                            let liquid: LiquidFungibleResource = self
+                                .substate_store
+                                .get_substate(&SubstateId(
+                                    RENodeId::Vault(vault_id),
+                                    NodeModuleId::SELF,
+                                    SubstateOffset::Vault(VaultOffset::LiquidFungible),
+                                ))
+                                .unwrap()
+                                .substate
+                                .into();
 
-                    self.visitor.visit_vault(vault_id, &vault_substate);
+                            self.visitor.visit_fungible_vault(vault_id, &info, &liquid);
+                        }
+                        ResourceType::NonFungible { .. } => {
+                            let liquid: LiquidNonFungibleResource = self
+                                .substate_store
+                                .get_substate(&SubstateId(
+                                    RENodeId::Vault(vault_id),
+                                    NodeModuleId::SELF,
+                                    SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
+                                ))
+                                .unwrap()
+                                .substate
+                                .into();
+
+                            self.visitor
+                                .visit_non_fungible_vault(vault_id, &info, &liquid);
+                        }
+                    }
                 } else {
                     return Err(StateTreeTraverserError::RENodeNotFound(node_id));
                 }
