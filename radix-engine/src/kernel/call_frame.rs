@@ -151,7 +151,7 @@ impl CallFrame {
             if (matches!(node_id, RENodeId::Global(_)) || matches!(node_id, RENodeId::Package(_)))
                 || matches!(node_id, RENodeId::ResourceManager(_))
             {
-                // May overwrite existing node refs (better visibility origin)
+                // May overwrite existing node refs (for better visibility origin)
                 self.immortal_node_refs.insert(
                     node_id,
                     RENodeRefData {

@@ -6,14 +6,7 @@ use sbor::rust::collections::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ResourceError {
-    /// Resource addresses do not match.
-    ResourceAddressNotMatching,
-    /// The amount is invalid, according to the resource divisibility.
-    InvalidAmount(Decimal, u8),
-    /// The balance is not enough.
     InsufficientBalance,
-    /// Resource is locked because of proofs
-    ResourceLocked,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -105,9 +98,6 @@ impl LiquidNonFungibleResource {
         &mut self,
         amount_to_take: Decimal,
     ) -> Result<LiquidNonFungibleResource, ResourceError> {
-        // check amount granularity
-        check_amount(amount_to_take, 0)?;
-
         // deduct from liquidity pool
         if Decimal::from(self.ids.len()) < amount_to_take {
             return Err(ResourceError::InsufficientBalance);
@@ -187,15 +177,5 @@ impl LockedNonFungibleResource {
 
     pub fn ids(&self) -> BTreeSet<NonFungibleLocalId> {
         self.ids.keys().cloned().collect()
-    }
-}
-
-pub fn check_amount(amount: Decimal, divisibility: u8) -> Result<(), ResourceError> {
-    if amount.is_negative()
-        || amount.0 % BnumI256::from(10i128.pow((18 - divisibility).into())) != BnumI256::from(0)
-    {
-        Err(ResourceError::InvalidAmount(amount, divisibility))
-    } else {
-        Ok(())
     }
 }

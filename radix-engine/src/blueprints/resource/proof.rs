@@ -35,8 +35,6 @@ pub enum ProofError {
     NonFungibleOperationNotSupported,
 }
 
-// TODO: remove redundant info in `FungibleProof` and `NonFungibleProof`.
-
 #[derive(Debug, Copy, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ProofInfoSubstate {
     /// The resource address.
@@ -69,8 +67,6 @@ impl ProofInfoSubstate {
         self.restricted = true;
     }
 }
-
-// TODO: remove redundant info in `FungibleProof` and `NonFungibleProof`.
 
 #[derive(Debug, Clone)]
 pub struct FungibleProof {

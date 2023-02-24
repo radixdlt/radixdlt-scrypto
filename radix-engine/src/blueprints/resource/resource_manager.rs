@@ -1106,8 +1106,7 @@ impl ResourceManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        // FIXME: check if locked bucket drop is disallowed
-        // Especially if the bucket is locked!!!
+        // FIXME: check if the bucket is locked!!!
         let dropped_bucket: DroppedBucket = api
             .kernel_drop_node(RENodeId::Bucket(input.bucket.0))?
             .into();

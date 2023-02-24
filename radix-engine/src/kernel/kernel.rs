@@ -332,7 +332,7 @@ where
                 Ok(())
             }
             RENodeId::Worktop => {
-                // TODO: change to the following, once ResourceManager::burn_empty() is ready
+                // TODO: Once `ResourceManager::burn_empty()` is available, change to:
                 // for bucket in worktop.drain() { bucket.burn_empty(); }
 
                 let handle = api.kernel_lock_substate(
