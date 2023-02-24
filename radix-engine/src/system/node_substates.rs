@@ -1,4 +1,3 @@
-use super::global::GlobalSubstate;
 use super::node_modules::access_rules::AuthZoneStackSubstate;
 use super::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use super::node_modules::metadata::MetadataSubstate;
@@ -30,7 +29,6 @@ use radix_engine_interface::data::IndexedScryptoValue;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PersistedSubstate {
-    Global(GlobalSubstate),
     EpochManager(EpochManagerSubstate),
     ValidatorSet(ValidatorSetSubstate),
     Validator(ValidatorSubstate),
@@ -89,14 +87,6 @@ impl PersistedSubstate {
         }
     }
 
-    pub fn global(&self) -> &GlobalSubstate {
-        if let PersistedSubstate::Global(state) = self {
-            state
-        } else {
-            panic!("Not a global address substate");
-        }
-    }
-
     pub fn resource_manager(&self) -> &ResourceManagerSubstate {
         if let PersistedSubstate::ResourceManager(state) = self {
             state
@@ -119,7 +109,6 @@ impl Into<VaultSubstate> for PersistedSubstate {
 impl PersistedSubstate {
     pub fn to_runtime(self) -> RuntimeSubstate {
         match self {
-            PersistedSubstate::Global(value) => RuntimeSubstate::Global(value),
             PersistedSubstate::PackageTypeInfo(value) => RuntimeSubstate::TypeInfo(value),
             PersistedSubstate::EpochManager(value) => RuntimeSubstate::EpochManager(value),
             PersistedSubstate::ValidatorSet(value) => RuntimeSubstate::ValidatorSet(value),
@@ -169,7 +158,6 @@ pub enum PersistError {
 
 #[derive(Debug)]
 pub enum RuntimeSubstate {
-    Global(GlobalSubstate),
     TypeInfo(PackageCodeTypeSubstate),
     EpochManager(EpochManagerSubstate),
     ValidatorSet(ValidatorSetSubstate),
@@ -204,7 +192,6 @@ pub enum RuntimeSubstate {
 impl RuntimeSubstate {
     pub fn clone_to_persisted(&self) -> PersistedSubstate {
         match self {
-            RuntimeSubstate::Global(value) => PersistedSubstate::Global(value.clone()),
             RuntimeSubstate::TypeInfo(value) => PersistedSubstate::PackageTypeInfo(value.clone()),
             RuntimeSubstate::EpochManager(value) => PersistedSubstate::EpochManager(value.clone()),
             RuntimeSubstate::ValidatorSet(value) => PersistedSubstate::ValidatorSet(value.clone()),
@@ -270,7 +257,6 @@ impl RuntimeSubstate {
 
     pub fn to_persisted(self) -> PersistedSubstate {
         match self {
-            RuntimeSubstate::Global(value) => PersistedSubstate::Global(value),
             RuntimeSubstate::TypeInfo(value) => PersistedSubstate::PackageTypeInfo(value),
             RuntimeSubstate::EpochManager(value) => PersistedSubstate::EpochManager(value),
             RuntimeSubstate::ValidatorSet(value) => PersistedSubstate::ValidatorSet(value),
@@ -356,7 +342,6 @@ impl RuntimeSubstate {
 
     pub fn to_ref_mut(&mut self) -> SubstateRefMut {
         match self {
-            RuntimeSubstate::Global(value) => SubstateRefMut::Global(value),
             RuntimeSubstate::TypeInfo(value) => SubstateRefMut::TypeInfo(value),
             RuntimeSubstate::EpochManager(value) => SubstateRefMut::EpochManager(value),
             RuntimeSubstate::ValidatorSet(value) => SubstateRefMut::ValidatorSet(value),
@@ -401,7 +386,6 @@ impl RuntimeSubstate {
 
     pub fn to_ref(&self) -> SubstateRef {
         match self {
-            RuntimeSubstate::Global(value) => SubstateRef::Global(value),
             RuntimeSubstate::TypeInfo(value) => SubstateRef::PackageCodeType(value),
             RuntimeSubstate::EpochManager(value) => SubstateRef::EpochManager(value),
             RuntimeSubstate::ValidatorSet(value) => SubstateRef::ValidatorSet(value),
@@ -441,14 +425,6 @@ impl RuntimeSubstate {
             RuntimeSubstate::TransactionRuntime(value) => SubstateRef::TransactionRuntime(value),
             RuntimeSubstate::Account(value) => SubstateRef::Account(value),
             RuntimeSubstate::AccessController(value) => SubstateRef::AccessController(value),
-        }
-    }
-
-    pub fn global(&self) -> &GlobalSubstate {
-        if let RuntimeSubstate::Global(global) = self {
-            global
-        } else {
-            panic!("Not a global RENode");
         }
     }
 
@@ -841,16 +817,6 @@ impl Into<ValidatorSubstate> for RuntimeSubstate {
     }
 }
 
-impl Into<GlobalSubstate> for RuntimeSubstate {
-    fn into(self) -> GlobalSubstate {
-        if let RuntimeSubstate::Global(substate) = self {
-            substate
-        } else {
-            panic!("Not a global address substate");
-        }
-    }
-}
-
 impl Into<BucketSubstate> for RuntimeSubstate {
     fn into(self) -> BucketSubstate {
         if let RuntimeSubstate::Bucket(substate) = self {
@@ -947,7 +913,6 @@ pub enum SubstateRef<'a> {
     CurrentTimeRoundedToMinutes(&'a CurrentTimeRoundedToMinutesSubstate),
     AccessRulesChain(&'a ObjectAccessRulesChainSubstate),
     Metadata(&'a MetadataSubstate),
-    Global(&'a GlobalSubstate),
     PackageCodeType(&'a PackageCodeTypeSubstate),
     TransactionRuntime(&'a TransactionRuntimeSubstate),
     Account(&'a AccountSubstate),
@@ -957,7 +922,6 @@ pub enum SubstateRef<'a> {
 impl<'a> SubstateRef<'a> {
     pub fn to_scrypto_value(&self) -> IndexedScryptoValue {
         match self {
-            SubstateRef::Global(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::PackageCodeType(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::EpochManager(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::CurrentTimeRoundedToMinutes(value) => {
@@ -1130,13 +1094,6 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
-    pub fn global_address(&self) -> &GlobalSubstate {
-        match self {
-            SubstateRef::Global(value) => *value,
-            _ => panic!("Not a global address"),
-        }
-    }
-
     pub fn metadata(&self) -> &MetadataSubstate {
         match self {
             SubstateRef::Metadata(value) => *value,
@@ -1174,32 +1131,6 @@ impl<'a> SubstateRef<'a> {
 
     pub fn references_and_owned_nodes(&self) -> (HashSet<RENodeId>, Vec<RENodeId>) {
         match self {
-            SubstateRef::Global(global) => {
-                let mut owned_nodes = Vec::new();
-                match global {
-                    GlobalSubstate::Component(component_id) => {
-                        owned_nodes.push(RENodeId::Component(*component_id))
-                    }
-                    GlobalSubstate::Identity(identity_id) => {
-                        owned_nodes.push(RENodeId::Identity(*identity_id))
-                    }
-                    GlobalSubstate::EpochManager(epoch_manager_id) => {
-                        owned_nodes.push(RENodeId::EpochManager(*epoch_manager_id))
-                    }
-                    GlobalSubstate::Clock(clock_id) => owned_nodes.push(RENodeId::Clock(*clock_id)),
-                    GlobalSubstate::Validator(validator_id) => {
-                        owned_nodes.push(RENodeId::Validator(*validator_id))
-                    }
-                    GlobalSubstate::Account(account_id) => {
-                        owned_nodes.push(RENodeId::Account(*account_id))
-                    }
-                    GlobalSubstate::AccessController(access_controller_id) => {
-                        owned_nodes.push(RENodeId::AccessController(*access_controller_id))
-                    }
-                };
-
-                (HashSet::new(), owned_nodes)
-            }
             SubstateRef::Worktop(worktop) => {
                 let nodes = worktop
                     .resources
@@ -1329,7 +1260,6 @@ pub enum SubstateRefMut<'a> {
     CurrentTimeRoundedToMinutes(&'a mut CurrentTimeRoundedToMinutesSubstate),
     AccessRulesChain(&'a mut ObjectAccessRulesChainSubstate),
     Metadata(&'a mut MetadataSubstate),
-    Global(&'a mut GlobalSubstate),
     TypeInfo(&'a mut PackageCodeTypeSubstate),
     Bucket(&'a mut BucketSubstate),
     Proof(&'a mut ProofSubstate),

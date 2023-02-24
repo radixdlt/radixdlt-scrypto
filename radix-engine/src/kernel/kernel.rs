@@ -2,7 +2,6 @@ use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::identity::Identity;
 use crate::errors::RuntimeError;
 use crate::errors::*;
-use crate::system::global::GlobalSubstate;
 use crate::system::kernel_modules::execution_trace::ProofSnapshot;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::metadata::MetadataSubstate;

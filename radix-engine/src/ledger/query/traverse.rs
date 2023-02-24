@@ -1,6 +1,5 @@
 use crate::blueprints::resource::VaultSubstate;
 use crate::ledger::{QueryableSubstateStore, ReadableSubstateStore};
-use crate::system::global::GlobalSubstate;
 use crate::system::node_substates::PersistedSubstate;
 use radix_engine_interface::api::types::{AccountOffset, ComponentAddress, ComponentOffset, KeyValueStoreOffset, NodeModuleId, RENodeId, SubstateId, SubstateOffset, VaultId, VaultOffset};
 

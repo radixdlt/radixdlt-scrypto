@@ -19,7 +19,7 @@ mod read {
             ScryptoEnv
                 .sys_lock_substate(
                     RENodeId::GlobalComponent(component_address),
-                    SubstateOffset::Global(GlobalOffset::Global),
+                    SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
                     false,
                 )
                 .unwrap();

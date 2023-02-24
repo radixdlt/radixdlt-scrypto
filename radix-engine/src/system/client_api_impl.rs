@@ -7,7 +7,6 @@ use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::kernel_api::{Invokable, KernelInternalApi};
 use crate::kernel::module::KernelModule;
 use crate::kernel::module_mixer::KernelModuleMixer;
-use crate::system::global::GlobalSubstate;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;

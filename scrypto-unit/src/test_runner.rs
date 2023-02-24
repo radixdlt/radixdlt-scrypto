@@ -8,7 +8,6 @@ use radix_engine::blueprints::epoch_manager::*;
 use radix_engine::errors::*;
 use radix_engine::kernel::interpreters::ScryptoInterpreter;
 use radix_engine::ledger::*;
-use radix_engine::system::global::GlobalSubstate;
 use radix_engine::system::node_modules::metadata::MetadataSubstate;
 use radix_engine::system::package::*;
 use radix_engine::transaction::{
