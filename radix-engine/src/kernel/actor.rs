@@ -28,6 +28,7 @@ pub enum ExecutionMode {
     Kernel,
     Resolver,
     DropNode,
+    AutoDrop,
 
     /* Kernel modules */
     KernelModule,

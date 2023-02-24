@@ -38,7 +38,7 @@ impl VisibilityProperties {
                 RENodeId::AuthZoneStack => true,
                 _ => false,
             },
-            ExecutionMode::Client => match node_id {
+            ExecutionMode::Client | ExecutionMode::AutoDrop => match node_id {
                 RENodeId::Worktop => match &actor.identifier {
                     FnIdentifier {
                         package_address,
@@ -75,13 +75,13 @@ impl VisibilityProperties {
                     _ => true,
                 },
                 // TODO: CLEAN THESE UP, these are used for globalization
-                RENodeId::Clock(..) => true,
-                RENodeId::EpochManager(..) => true,
-                RENodeId::Account(..) => true,
-                RENodeId::Validator(..) => true,
-                RENodeId::Component(..) => true,
-                RENodeId::AccessController(..) => true,
-                RENodeId::Identity(..) => true,
+                RENodeId::Clock(..) => mode.eq(&ExecutionMode::Client),
+                RENodeId::EpochManager(..) => mode.eq(&ExecutionMode::Client),
+                RENodeId::Account(..) => mode.eq(&ExecutionMode::Client),
+                RENodeId::Validator(..) => mode.eq(&ExecutionMode::Client),
+                RENodeId::Component(..) => mode.eq(&ExecutionMode::Client),
+                RENodeId::AccessController(..) => mode.eq(&ExecutionMode::Client),
+                RENodeId::Identity(..) => mode.eq(&ExecutionMode::Client),
                 _ => false,
             },
             _ => return false,
@@ -175,6 +175,9 @@ impl VisibilityProperties {
                 SubstateOffset::Bucket(BucketOffset::Bucket) => read_only,
                 _ => false,
             },
+            (ExecutionMode::AutoDrop, offset) => match offset {
+                _ => false,
+            }
             (ExecutionMode::DropNode, offset) => match offset {
                 SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo) => true,
                 SubstateOffset::Bucket(BucketOffset::Bucket) => true,

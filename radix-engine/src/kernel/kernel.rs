@@ -328,18 +328,6 @@ where
         })?;
 
         let node = self.current_frame.remove_node(&mut self.heap, node_id)?;
-
-        /*
-        for (_, substate) in &node.substates {
-            let (_, child_nodes) = substate.to_ref().references_and_owned_nodes();
-            for child_node in child_nodes {
-                // Need to go through api so that visibility issues can be caught
-                self.kernel_drop_node(child_node)?;
-            }
-        }
-         */
-
-        // TODO: REmove
         Ok(node)
     }
 
@@ -348,7 +336,6 @@ where
         for (_, substate) in &node.substates {
             let (_, child_nodes) = substate.to_ref().references_and_owned_nodes();
             for child_node in child_nodes {
-                // Need to go through api so that visibility issues can be caught
                 self.kernel_drop_node_recursively(child_node)?;
             }
         }
@@ -361,7 +348,7 @@ where
         let owned_nodes = self.current_frame.owned_nodes();
 
         // Need to go through api so that access rules can be caught
-        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Client, |api| {
+        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AutoDrop, |api| {
             for node_id in owned_nodes {
                 if let RENodeId::Worktop = node_id {
                     worktops.push(node_id);

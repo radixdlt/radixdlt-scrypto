@@ -7,7 +7,6 @@ use transaction::builder::ManifestBuilder;
 use transaction::data::manifest_args;
 
 #[test]
-#[ignore]
 fn dangling_component_should_fail() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
@@ -30,7 +29,7 @@ fn dangling_component_should_fail() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::InvalidDropNodeAccess {
-                mode: ExecutionMode::Client,
+                mode: ExecutionMode::AutoDrop,
                 actor: ResolvedActor { receiver: None, .. },
                 node_id: RENodeId::Component(..)
             })
@@ -61,7 +60,7 @@ fn dangling_bucket_should_fail() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::InvalidDropNodeAccess {
-                mode: ExecutionMode::Client,
+                mode: ExecutionMode::AutoDrop,
                 actor: ResolvedActor { receiver: None, .. },
                 node_id: RENodeId::Bucket(..)
             })
@@ -87,7 +86,7 @@ fn dangling_vault_should_fail() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::InvalidDropNodeAccess {
-                mode: ExecutionMode::Client,
+                mode: ExecutionMode::AutoDrop,
                 actor: ResolvedActor { receiver: None, .. },
                 node_id: RENodeId::Vault(..)
             })
@@ -140,7 +139,7 @@ fn dangling_kv_store_should_fail() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::InvalidDropNodeAccess {
-                mode: ExecutionMode::Client,
+                mode: ExecutionMode::AutoDrop,
                 actor: ResolvedActor { receiver: None, .. },
                 node_id: RENodeId::KeyValueStore(..)
             })
@@ -171,7 +170,7 @@ fn dangling_bucket_with_proof_should_fail() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::InvalidDropNodeAccess {
-                mode: ExecutionMode::Client,
+                mode: ExecutionMode::AutoDrop,
                 actor: ResolvedActor { receiver: None, .. },
                 node_id: RENodeId::Bucket(..)
             })
