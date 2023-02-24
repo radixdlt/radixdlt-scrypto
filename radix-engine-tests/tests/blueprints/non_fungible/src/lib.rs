@@ -66,6 +66,7 @@ mod non_fungible_test {
         }
 
         pub fn create_burnable_non_fungible() -> Bucket {
+            info!("HELLO");
             ResourceBuilder::new_uuid_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
                 .burnable(rule!(allow_all), rule!(deny_all))

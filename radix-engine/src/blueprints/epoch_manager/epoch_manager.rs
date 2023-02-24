@@ -46,6 +46,17 @@ pub enum EpochManagerError {
     InvalidRoundUpdate { from: u64, to: u64 },
 }
 
+#[derive(ScryptoSbor, LegacyDescribe)]
+struct EpochManagerRoundChangeEvent {
+    epoch: u64, // New epoch
+    round: u64, // New round
+}
+
+#[derive(ScryptoSbor, LegacyDescribe)]
+struct EpochManagerValidatorSetUpdateEvent {
+    validators: BTreeSet<ComponentAddress>,
+}
+
 pub struct EpochManagerBlueprint;
 
 impl EpochManagerBlueprint {
@@ -293,15 +304,30 @@ impl EpochManagerBlueprint {
             epoch_manager.epoch = prepared_epoch;
             epoch_manager.round = 0;
 
+            api.emit_event(EpochManagerRoundChangeEvent {
+                epoch: prepared_epoch,
+                round: 0,
+            })?;
+
             let offset = SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet);
             let handle =
                 api.kernel_lock_substate(receiver, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
             let mut substate_mut = api.kernel_get_substate_ref_mut(handle)?;
             let validator_set = substate_mut.validator_set();
             validator_set.epoch = prepared_epoch;
-            validator_set.validator_set = next_validator_set;
+            validator_set.validator_set = next_validator_set.clone();
+
+            api.emit_event(EpochManagerValidatorSetUpdateEvent {
+                validators: next_validator_set.into_iter().map(|(k, _)| k).collect(),
+            })?;
         } else {
             epoch_manager.round = input.round;
+
+            let epoch = epoch_manager.epoch;
+            api.emit_event(EpochManagerRoundChangeEvent {
+                epoch: epoch,
+                round: input.round,
+            })?;
         }
 
         Ok(IndexedScryptoValue::from_typed(&()))
@@ -329,7 +355,8 @@ impl EpochManagerBlueprint {
         )?;
 
         let mut substate_mut = api.kernel_get_substate_ref_mut(handle)?;
-        substate_mut.epoch_manager().epoch = input.epoch;
+        let epoch_manager = substate_mut.epoch_manager();
+        epoch_manager.epoch = input.epoch;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }

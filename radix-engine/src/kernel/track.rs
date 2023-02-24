@@ -1,4 +1,3 @@
-use crate::blueprints::logger::LoggerSubstate;
 use crate::blueprints::resource::NonFungibleSubstate;
 use crate::blueprints::transaction_processor::{InstructionOutput, TransactionProcessorError};
 use crate::errors::*;
@@ -24,6 +23,7 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::blueprints::resource::{Resource, ResourceType};
 use radix_engine_interface::crypto::hash;
+use radix_engine_interface::events::EventTypeIdentifier;
 use sbor::rust::collections::*;
 
 use super::event::TrackedEvent;
@@ -64,7 +64,6 @@ pub struct LoadedSubstate {
 
 /// Transaction-wide states and side effects
 pub struct Track<'s> {
-    application_logs: Vec<(Level, String)>,
     substate_store: &'s dyn ReadableSubstateStore,
     loaded_substates: HashMap<SubstateId, LoadedSubstate>,
     new_global_addresses: Vec<Address>,
@@ -80,7 +79,6 @@ pub enum TrackError {
 
 pub struct TrackReceipt {
     pub fee_summary: FeeSummary,
-    //pub application_logs: Vec<(Level, String)>,
     pub result: TransactionResult,
     pub events: Vec<TrackedEvent>,
 }
@@ -93,16 +91,10 @@ pub struct PreExecutionError {
 impl<'s> Track<'s> {
     pub fn new(substate_store: &'s dyn ReadableSubstateStore) -> Self {
         Self {
-            application_logs: Vec::new(),
             substate_store,
             loaded_substates: HashMap::new(),
             new_global_addresses: Vec::new(),
         }
-    }
-
-    /// Adds a log message.
-    pub fn add_log(&mut self, level: Level, message: String) {
-        self.application_logs.push((level, message));
     }
 
     /// Returns a copy of the substate associated with the given address, if exists
@@ -456,6 +448,8 @@ impl<'s> Track<'s> {
         mut fee_reserve: SystemLoanFeeReserve,
         vault_ops: Vec<(TraceActor, VaultId, VaultOp)>,
         events: Vec<TrackedEvent>,
+        application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
+        application_logs: Vec<(Level, String)>,
     ) -> TrackReceipt {
         // A `SuccessButFeeLoanNotRepaid` error is issued if a transaction finishes before SYSTEM_LOAN_AMOUNT is reached
         // and despite enough fee has been locked.
@@ -481,7 +475,13 @@ impl<'s> Track<'s> {
                     new_global_addresses: self.new_global_addresses,
                     loaded_substates: self.loaded_substates.into_iter().collect(),
                 };
-                finalizing_track.calculate_commit_result(invoke_result, &mut fee_summary, vault_ops)
+                finalizing_track.calculate_commit_result(
+                    invoke_result,
+                    &mut fee_summary,
+                    vault_ops,
+                    application_events,
+                    application_logs,
+                )
             }
             TransactionResultType::Reject(rejection_error) => {
                 TransactionResult::Reject(RejectResult {
@@ -574,12 +574,13 @@ impl<'s> FinalizingTrack<'s> {
         invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
         fee_summary: &mut FeeSummary,
         vault_ops: Vec<(TraceActor, VaultId, VaultOp)>,
+        application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
+        application_logs: Vec<(Level, String)>,
     ) -> TransactionResult {
         let is_success = invoke_result.is_ok();
 
         // Commit/rollback application state changes
         let mut to_persist = HashMap::new();
-        let mut application_logs = Vec::new();
         let mut next_epoch = None;
         let new_global_addresses = if is_success {
             for (id, loaded) in self.loaded_substates {
@@ -589,10 +590,6 @@ impl<'s> FinalizingTrack<'s> {
                 };
 
                 match id.2 {
-                    SubstateOffset::Logger(LoggerOffset::Logger) => {
-                        let logger: LoggerSubstate = loaded.substate.into();
-                        application_logs.extend(logger.logs);
-                    }
                     SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet) => {
                         // TODO: Use application layer events rather than state updates to get this info
                         match &loaded.metastate {
@@ -766,6 +763,7 @@ impl<'s> FinalizingTrack<'s> {
             state_updates: Self::generate_diff(self.substate_store, to_persist),
             entity_changes: EntityChanges::new(new_global_addresses),
             resource_changes: execution_trace_receipt.resource_changes,
+            application_events,
             application_logs,
             next_epoch,
         })

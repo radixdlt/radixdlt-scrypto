@@ -145,6 +145,7 @@ fn test_take_non_fungibles() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
+    println!("{:?}", receipt);
 
     // Assert
     receipt.expect_commit_success();

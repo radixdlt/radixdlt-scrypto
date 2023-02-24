@@ -104,7 +104,7 @@ impl KernelModuleMixer {
             auth: AuthModule {
                 params: auth_zone_params.clone(),
             },
-            logger: LoggerModule {},
+            logger: LoggerModule::default(),
             transaction_runtime: TransactionRuntimeModule { tx_hash },
             transaction_limits: TransactionLimitsModule::new(TransactionLimitsConfig {
                 max_wasm_memory,
@@ -113,7 +113,7 @@ impl KernelModuleMixer {
                 max_substate_writes,
             }),
             execution_trace: ExecutionTraceModule::new(max_kernel_call_depth_traced.unwrap_or(0)),
-            events: EventsModule {},
+            events: EventsModule::default(),
         }
     }
 }

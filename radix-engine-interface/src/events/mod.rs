@@ -5,4 +5,4 @@ use crate::ScryptoSbor;
 /// event, this identifier also stores information relevant to the emitter of the event, namely
 /// their node id and node module id.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct EventTypeIdentifier(RENodeId, NodeModuleId, Hash);
+pub struct EventTypeIdentifier(pub RENodeId, pub NodeModuleId, pub Hash);

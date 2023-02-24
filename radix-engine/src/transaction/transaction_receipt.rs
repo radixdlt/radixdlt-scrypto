@@ -10,7 +10,8 @@ use colored::*;
 use radix_engine_interface::address::{AddressDisplayContext, NO_NETWORK};
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::logger::Level;
-use radix_engine_interface::data::{ScryptoDecode, ScryptoValueDisplayContext};
+use radix_engine_interface::data::{ScryptoDecode, ScryptoValue, ScryptoValueDisplayContext};
+use radix_engine_interface::events::EventTypeIdentifier;
 use utils::ContextualDisplay;
 
 #[derive(Debug, Clone, Default, ScryptoSbor)]
@@ -52,6 +53,7 @@ pub struct CommitResult {
     pub entity_changes: EntityChanges,
     pub resource_changes: Vec<ResourceChange>,
     pub application_logs: Vec<(Level, String)>,
+    pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
     pub next_epoch: Option<(BTreeMap<ComponentAddress, Validator>, u64)>,
 }
 
@@ -357,6 +359,26 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                     Level::Trace => ("TRACE".normal(), msg.normal()),
                 };
                 write!(f, "\n{} [{:5}] {}", prefix!(i, c.application_logs), l, m)?;
+            }
+
+            // TODO: Pretty print the events
+            write!(
+                f,
+                "\n{} {}",
+                "Events:".bold().green(),
+                c.application_events.len()
+            )?;
+            for (i, (event_type_identifier, event_data)) in c.application_events.iter().enumerate()
+            {
+                let event_data_value =
+                    scrypto_decode::<ScryptoValue>(&event_data).expect("Event must be decodable!");
+                write!(
+                    f,
+                    "\n{} Identifier: {:?}, Event Data: {:?}",
+                    prefix!(i, c.application_events),
+                    event_type_identifier,
+                    event_data_value
+                )?;
             }
         }
 

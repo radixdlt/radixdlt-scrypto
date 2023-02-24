@@ -44,6 +44,32 @@ pub enum ValidatorError {
     EpochUnlockHasNotOccurredYet,
 }
 
+#[derive(ScryptoSbor, LegacyDescribe)]
+struct ValidatorRegisterEvent {}
+
+#[derive(ScryptoSbor, LegacyDescribe)]
+struct ValidatorUnregisterEvent {}
+
+#[derive(ScryptoSbor, LegacyDescribe)]
+struct ValidatorStakeEvent {
+    xrd_staked: Decimal,
+}
+
+#[derive(ScryptoSbor, LegacyDescribe)]
+struct ValidatorUnstakeEvent {
+    xrd_unstaked: Decimal,
+}
+
+#[derive(ScryptoSbor, LegacyDescribe)]
+struct ValidatorClaimXrdEvent {
+    claimed_xrd: Decimal,
+}
+
+#[derive(ScryptoSbor, LegacyDescribe)]
+struct ValidatorUpdateAcceptDelegationEvent {
+    accepts_delegation: bool,
+}
+
 pub struct ValidatorBlueprint;
 
 impl ValidatorBlueprint {
@@ -106,6 +132,9 @@ impl ValidatorBlueprint {
             }
         }
 
+        // Emit an event
+        api.emit_event(ValidatorRegisterEvent {})?;
+
         return Ok(IndexedScryptoValue::from_typed(&()));
     }
 
@@ -159,6 +188,9 @@ impl ValidatorBlueprint {
             )?;
         }
 
+        // Emit an event
+        api.emit_event(ValidatorUnregisterEvent {})?;
+
         return Ok(IndexedScryptoValue::from_typed(&()));
     }
 
@@ -176,6 +208,7 @@ impl ValidatorBlueprint {
         // TODO: Remove decode/encode mess
         let input: ValidatorStakeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+        let stake_amount = input.stake.sys_amount(api)?;
 
         let handle = api.kernel_lock_substate(
             receiver,
@@ -229,6 +262,11 @@ impl ValidatorBlueprint {
             }
         }
 
+        // Emit an event
+        api.emit_event(ValidatorStakeEvent {
+            xrd_staked: stake_amount,
+        })?;
+
         Ok(IndexedScryptoValue::from_typed(&lp_token_bucket))
     }
 
@@ -255,7 +293,7 @@ impl ValidatorBlueprint {
         )?;
 
         // Unstake
-        let unstake_bucket = {
+        let (unstake_bucket, xrd_unstaked) = {
             let substate = api.kernel_get_substate_ref(handle)?;
             let validator = substate.validator();
 
@@ -296,7 +334,7 @@ impl ValidatorBlueprint {
 
             let bucket = stake_vault.sys_take(xrd_amount, api)?;
             unstake_vault.sys_put(bucket, api)?;
-            nft_resman.mint_non_fungible_uuid(data, api)?
+            (nft_resman.mint_non_fungible_uuid(data, api)?, xrd_amount)
         };
 
         // Update Epoch Manager
@@ -327,6 +365,9 @@ impl ValidatorBlueprint {
                 )?;
             }
         };
+
+        // Emit an event
+        api.emit_event(ValidatorUnstakeEvent { xrd_unstaked })?;
 
         Ok(IndexedScryptoValue::from_typed(&unstake_bucket))
     }
@@ -394,6 +435,11 @@ impl ValidatorBlueprint {
         nft_resman.burn(bucket, api)?;
 
         let claimed_bucket = unstake_vault.sys_take(unstake_amount, api)?;
+
+        let amount = claimed_bucket.sys_amount(api)?;
+        api.emit_event(ValidatorClaimXrdEvent {
+            claimed_xrd: amount,
+        })?;
 
         Ok(IndexedScryptoValue::from_typed(&claimed_bucket))
     }
@@ -482,6 +528,10 @@ impl ValidatorBlueprint {
             })
             .unwrap(),
         )?;
+
+        api.emit_event(ValidatorUpdateAcceptDelegationEvent {
+            accepts_delegation: input.accept_delegated_stake,
+        })?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }

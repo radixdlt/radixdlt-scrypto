@@ -35,6 +35,21 @@ pub struct ResourceManagerSubstate {
     pub nf_store_id: Option<NonFungibleStoreId>,
 }
 
+#[derive(ScryptoSbor, LegacyDescribe)]
+struct ResourceManagerNewVaultEvent {}
+
+#[derive(ScryptoSbor, LegacyDescribe)]
+enum ResourceManagerMintEvent {
+    Amount(Decimal),
+    Ids(BTreeSet<NonFungibleLocalId>),
+}
+
+#[derive(ScryptoSbor, LegacyDescribe)]
+enum ResourceManagerBurnEvent {
+    Amount(Decimal),
+    Ids(BTreeSet<NonFungibleLocalId>),
+}
+
 impl ResourceManagerSubstate {
     pub fn new(
         resource_type: ResourceType,
@@ -81,6 +96,7 @@ pub enum ResourceManagerError {
     NonFungibleIdTypeDoesNotMatch(NonFungibleIdType, NonFungibleIdType),
     ResourceTypeDoesNotMatch,
     InvalidNonFungibleIdType,
+    ResourceOperationError(ResourceOperationError),
 }
 
 fn build_non_fungible_resource_manager_substate_with_initial_supply<Y>(
@@ -877,7 +893,7 @@ impl ResourceManagerBlueprint {
             // Allocate non-fungibles
             let mut ids = BTreeSet::new();
             let mut non_fungibles = BTreeMap::new();
-            for (id, data) in input.entries {
+            for (id, data) in input.entries.clone() {
                 if id.id_type() != id_type {
                     return Err(RuntimeError::ApplicationError(
                         ApplicationError::ResourceManagerError(
@@ -943,6 +959,10 @@ impl ResourceManagerBlueprint {
 
             api.kernel_drop_lock(non_fungible_handle)?;
         }
+
+        api.emit_event(ResourceManagerMintEvent::Ids(
+            input.entries.into_iter().map(|(k, _)| k).collect(),
+        ))?;
 
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
@@ -1027,12 +1047,15 @@ impl ResourceManagerBlueprint {
                 node_id,
                 RENodeInit::Bucket(BucketSubstate::new(Resource::new_non_fungible(
                     resource_address,
-                    ids,
+                    ids.clone(),
                     id_type,
                 ))),
                 BTreeMap::new(),
             )?;
             let bucket_id: BucketId = node_id.into();
+
+            api.emit_event(ResourceManagerMintEvent::Ids(ids))?;
+
             bucket_id
         };
 
@@ -1102,6 +1125,8 @@ impl ResourceManagerBlueprint {
         )?;
         let bucket_id = node_id.into();
 
+        api.emit_event(ResourceManagerMintEvent::Amount(input.amount))?;
+
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
 
@@ -1129,6 +1154,20 @@ impl ResourceManagerBlueprint {
         let bucket: BucketSubstate = api
             .kernel_drop_node(RENodeId::Bucket(input.bucket.0))?
             .into();
+
+        let event = match bucket.resource_type() {
+            ResourceType::Fungible { .. } => {
+                ResourceManagerBurnEvent::Amount(bucket.total_amount())
+            }
+            ResourceType::NonFungible { .. } => bucket
+                .total_ids()
+                .map(ResourceManagerBurnEvent::Ids)
+                .map_err(|error| {
+                    RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(
+                        ResourceManagerError::ResourceOperationError(error),
+                    ))
+                })?,
+        };
 
         // Check if resource matches
         // TODO: Move this check into actor check
@@ -1178,6 +1217,8 @@ impl ResourceManagerBlueprint {
                 api.kernel_drop_lock(non_fungible_handle)?;
             }
         }
+
+        api.emit_event(event)?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }

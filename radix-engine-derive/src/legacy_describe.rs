@@ -48,15 +48,15 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
                 let types = ns.iter().map(|f| &f.ty);
 
                 quote! {
-                    impl scrypto_abi::LegacyDescribe for #ident {
-                        fn describe() -> scrypto_abi::Type {
+                    impl radix_engine_interface::abi::LegacyDescribe for #ident {
+                        fn describe() -> radix_engine_interface::abi::Type {
                             use ::sbor::rust::borrow::ToOwned;
                             use ::sbor::rust::vec;
-                            use scrypto_abi::LegacyDescribe;
+                            use radix_engine_interface::abi::LegacyDescribe;
 
-                            scrypto_abi::Type::Struct {
+                            radix_engine_interface::abi::Type::Struct {
                                 name: #ident_str.to_owned(),
-                                fields: scrypto_abi::Fields::Named {
+                                fields: radix_engine_interface::abi::Fields::Named {
                                     named: vec![#((#names.to_owned(), <#types>::describe())),*]
                                 },
                             }
@@ -70,15 +70,15 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
                 let types = ns.iter().map(|f| &f.ty);
 
                 quote! {
-                    impl scrypto_abi::LegacyDescribe for #ident {
-                        fn describe() -> scrypto_abi::Type {
+                    impl radix_engine_interface::abi::LegacyDescribe for #ident {
+                        fn describe() -> radix_engine_interface::abi::Type {
                             use ::sbor::rust::borrow::ToOwned;
                             use ::sbor::rust::vec;
-                            use scrypto_abi::LegacyDescribe;
+                            use radix_engine_interface::abi::LegacyDescribe;
 
-                            scrypto_abi::Type::Struct {
+                            radix_engine_interface::abi::Type::Struct {
                                 name: #ident_str.to_owned(),
-                                fields: scrypto_abi::Fields::Unnamed {
+                                fields: radix_engine_interface::abi::Fields::Unnamed {
                                     unnamed: vec![#(<#types>::describe()),*]
                                 },
                             }
@@ -88,11 +88,11 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
             }
             syn::Fields::Unit => {
                 quote! {
-                    impl scrypto_abi::LegacyDescribe for #ident {
-                        fn describe() -> scrypto_abi::Type {
+                    impl radix_engine_interface::abi::LegacyDescribe for #ident {
+                        fn describe() -> radix_engine_interface::abi::Type {
                             use ::sbor::rust::borrow::ToOwned;
 
-                            scrypto_abi::Type::Struct {
+                            radix_engine_interface::abi::Type::Struct {
                                 name: #ident_str.to_owned(),
                                 fields: Fields::Unit,
                             }
@@ -120,7 +120,7 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
 
                         quote! {
                             {
-                                scrypto_abi::Fields::Named {
+                                radix_engine_interface::abi::Fields::Named {
                                     named: vec![#((#names.to_owned(), <#types>::describe())),*]
                                 }
                             }
@@ -133,7 +133,7 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
 
                         quote! {
                             {
-                                scrypto_abi::Fields::Unnamed {
+                                radix_engine_interface::abi::Fields::Unnamed {
                                     unnamed: vec![#(<#types>::describe()),*]
                                 }
                             }
@@ -142,7 +142,7 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
                     syn::Fields::Unit => {
                         quote! {
                             {
-                                scrypto_abi::Fields::Unit
+                                radix_engine_interface::abi::Fields::Unit
                             }
                         }
                     }
@@ -150,16 +150,16 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
             });
 
             quote! {
-                impl scrypto_abi::LegacyDescribe for #ident {
-                    fn describe() -> scrypto_abi::Type {
+                impl radix_engine_interface::abi::LegacyDescribe for #ident {
+                    fn describe() -> radix_engine_interface::abi::Type {
                         use ::sbor::rust::borrow::ToOwned;
                         use ::sbor::rust::vec;
-                        use scrypto_abi::LegacyDescribe;
+                        use radix_engine_interface::abi::LegacyDescribe;
 
-                        scrypto_abi::Type::Enum {
+                        radix_engine_interface::abi::Type::Enum {
                             name: #ident_str.to_owned(),
                             variants: vec![
-                                #(scrypto_abi::Variant {
+                                #(radix_engine_interface::abi::Variant {
                                     name: #names.to_owned(),
                                     fields: #fields
                                 }),*
@@ -200,15 +200,15 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl scrypto_abi::LegacyDescribe for Test {
-                    fn describe() -> scrypto_abi::Type {
+                impl radix_engine_interface::abi::LegacyDescribe for Test {
+                    fn describe() -> radix_engine_interface::abi::Type {
                         use ::sbor::rust::borrow::ToOwned;
                         use ::sbor::rust::vec;
-                        use scrypto_abi::LegacyDescribe;
+                        use radix_engine_interface::abi::LegacyDescribe;
 
-                        scrypto_abi::Type::Struct {
+                        radix_engine_interface::abi::Type::Struct {
                             name: "Test".to_owned(),
-                            fields: scrypto_abi::Fields::Named {
+                            fields: radix_engine_interface::abi::Fields::Named {
                                 named: vec![("a".to_owned(), <u32>::describe())]
                             },
                         }
@@ -226,29 +226,29 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl scrypto_abi::LegacyDescribe for Test {
-                    fn describe() -> scrypto_abi::Type {
+                impl radix_engine_interface::abi::LegacyDescribe for Test {
+                    fn describe() -> radix_engine_interface::abi::Type {
                         use ::sbor::rust::borrow::ToOwned;
                         use ::sbor::rust::vec;
-                        use scrypto_abi::LegacyDescribe;
+                        use radix_engine_interface::abi::LegacyDescribe;
 
-                        scrypto_abi::Type::Enum {
+                        radix_engine_interface::abi::Type::Enum {
                             name: "Test".to_owned(),
                             variants: vec![
-                                scrypto_abi::Variant {
+                                radix_engine_interface::abi::Variant {
                                     name: "A".to_owned(),
-                                    fields: { scrypto_abi::Fields::Unit }
+                                    fields: { radix_engine_interface::abi::Fields::Unit }
                                 },
-                                scrypto_abi::Variant {
+                                radix_engine_interface::abi::Variant {
                                     name: "B".to_owned(),
                                     fields: {
-                                        scrypto_abi::Fields::Unnamed { unnamed: vec![<u32>::describe()] }
+                                        radix_engine_interface::abi::Fields::Unnamed { unnamed: vec![<u32>::describe()] }
                                     }
                                 },
-                                scrypto_abi::Variant {
+                                radix_engine_interface::abi::Variant {
                                     name: "C".to_owned(),
                                     fields: {
-                                        scrypto_abi::Fields::Named { named: vec![("x".to_owned(), <u8>::describe())] }
+                                        radix_engine_interface::abi::Fields::Named { named: vec![("x".to_owned(), <u8>::describe())] }
                                     }
                                 }
                             ]
@@ -267,15 +267,15 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl scrypto_abi::LegacyDescribe for Test {
-                    fn describe() -> scrypto_abi::Type {
+                impl radix_engine_interface::abi::LegacyDescribe for Test {
+                    fn describe() -> radix_engine_interface::abi::Type {
                         use ::sbor::rust::borrow::ToOwned;
                         use ::sbor::rust::vec;
-                        use scrypto_abi::LegacyDescribe;
+                        use radix_engine_interface::abi::LegacyDescribe;
 
-                        scrypto_abi::Type::Struct {
+                        radix_engine_interface::abi::Type::Struct {
                             name: "Test".to_owned(),
-                            fields: scrypto_abi::Fields::Named { named: vec![] },
+                            fields: radix_engine_interface::abi::Fields::Named { named: vec![] },
                         }
                     }
                 }
@@ -294,29 +294,29 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl scrypto_abi::LegacyDescribe for Test {
-                    fn describe() -> scrypto_abi::Type {
+                impl radix_engine_interface::abi::LegacyDescribe for Test {
+                    fn describe() -> radix_engine_interface::abi::Type {
                         use ::sbor::rust::borrow::ToOwned;
                         use ::sbor::rust::vec;
-                        use scrypto_abi::LegacyDescribe;
+                        use radix_engine_interface::abi::LegacyDescribe;
 
-                        scrypto_abi::Type::Enum {
+                        radix_engine_interface::abi::Type::Enum {
                             name: "Test".to_owned(),
                             variants: vec![
-                                scrypto_abi::Variant {
+                                radix_engine_interface::abi::Variant {
                                     name: "A".to_owned(),
-                                    fields: { scrypto_abi::Fields::Unit }
+                                    fields: { radix_engine_interface::abi::Fields::Unit }
                                 },
-                                scrypto_abi::Variant {
+                                radix_engine_interface::abi::Variant {
                                     name: "B".to_owned(),
                                     fields: {
-                                        scrypto_abi::Fields::Unnamed { unnamed: vec![] }
+                                        radix_engine_interface::abi::Fields::Unnamed { unnamed: vec![] }
                                     }
                                 },
-                                scrypto_abi::Variant {
+                                radix_engine_interface::abi::Variant {
                                     name: "C".to_owned(),
                                     fields: {
-                                        scrypto_abi::Fields::Named { named: vec![] }
+                                        radix_engine_interface::abi::Fields::Named { named: vec![] }
                                     }
                                 }
                             ]

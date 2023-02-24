@@ -22,6 +22,29 @@ impl VaultSubstate {
     }
 }
 
+#[derive(ScryptoSbor, LegacyDescribe)]
+struct VaultLockFeeEvent {
+    amount: Decimal,
+}
+
+#[derive(ScryptoSbor, LegacyDescribe)]
+enum VaultTakeEvent {
+    Amount(Decimal),
+    Ids(BTreeSet<NonFungibleLocalId>),
+}
+
+#[derive(ScryptoSbor, LegacyDescribe)]
+enum VaultDepositEvent {
+    Amount(Decimal),
+    Ids(BTreeSet<NonFungibleLocalId>),
+}
+
+#[derive(ScryptoSbor, LegacyDescribe)]
+enum VaultRecallEvent {
+    Amount(Decimal),
+    Ids(BTreeSet<NonFungibleLocalId>),
+}
+
 #[derive(Debug)]
 pub struct VaultRuntimeSubstate {
     resource: Rc<RefCell<LockableResource>>,
@@ -300,6 +323,8 @@ impl VaultBlueprint {
 
         let bucket = Self::take_internal(receiver, input.amount, api)?;
 
+        api.emit_event(VaultTakeEvent::Amount(input.amount))?;
+
         Ok(IndexedScryptoValue::from_typed(&bucket))
     }
 
@@ -318,7 +343,9 @@ impl VaultBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let bucket =
-            Self::take_non_fungibles_internal(receiver, input.non_fungible_local_ids, api)?;
+            Self::take_non_fungibles_internal(receiver, input.non_fungible_local_ids.clone(), api)?;
+
+        api.emit_event(VaultTakeEvent::Ids(input.non_fungible_local_ids))?;
 
         Ok(IndexedScryptoValue::from_typed(&bucket))
     }
@@ -336,6 +363,8 @@ impl VaultBlueprint {
     {
         let input: VaultPutInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        // TODO: Vault deposit event
 
         let vault_handle = api.kernel_lock_substate(
             receiver,
@@ -503,6 +532,11 @@ impl VaultBlueprint {
             })?;
         }
 
+        // Emit a lock fee event
+        api.emit_event(VaultLockFeeEvent {
+            amount: input.amount,
+        })?;
+
         Ok(IndexedScryptoValue::from_typed(&()))
     }
 
@@ -522,6 +556,8 @@ impl VaultBlueprint {
 
         let bucket = Self::take_internal(receiver, input.amount, api)?;
 
+        api.emit_event(VaultRecallEvent::Amount(input.amount))?;
+
         Ok(IndexedScryptoValue::from_typed(&bucket))
     }
 
@@ -540,7 +576,9 @@ impl VaultBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let bucket =
-            Self::take_non_fungibles_internal(receiver, input.non_fungible_local_ids, api)?;
+            Self::take_non_fungibles_internal(receiver, input.non_fungible_local_ids.clone(), api)?;
+
+        api.emit_event(VaultRecallEvent::Ids(input.non_fungible_local_ids))?;
 
         Ok(IndexedScryptoValue::from_typed(&bucket))
     }

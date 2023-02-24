@@ -723,6 +723,16 @@ impl Into<LoggerSubstate> for RuntimeSubstate {
     }
 }
 
+impl Into<EventStoreSubstate> for RuntimeSubstate {
+    fn into(self) -> EventStoreSubstate {
+        if let RuntimeSubstate::EventStore(event_store) = self {
+            event_store
+        } else {
+            panic!("Not a event_store");
+        }
+    }
+}
+
 impl Into<TypeInfoSubstate> for RuntimeSubstate {
     fn into(self) -> TypeInfoSubstate {
         if let RuntimeSubstate::ComponentInfo(component) = self {
@@ -1185,6 +1195,20 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
+    pub fn event_store(&self) -> &EventStoreSubstate {
+        match self {
+            SubstateRef::EventStore(value) => *value,
+            _ => panic!("Not an event store"),
+        }
+    }
+
+    pub fn logger(&self) -> &LoggerSubstate {
+        match self {
+            SubstateRef::Logger(value) => *value,
+            _ => panic!("Not a logger"),
+        }
+    }
+
     pub fn references_and_owned_nodes(&self) -> (HashSet<RENodeId>, Vec<RENodeId>) {
         match self {
             SubstateRef::Global(global) => {
@@ -1542,6 +1566,13 @@ impl<'a> SubstateRefMut<'a> {
         match self {
             SubstateRefMut::AccessController(value) => *value,
             _ => panic!("Not access controller"),
+        }
+    }
+
+    pub fn event_store(&mut self) -> &mut EventStoreSubstate {
+        match self {
+            SubstateRefMut::EventStore(value) => *value,
+            _ => panic!("Not an event store"),
         }
     }
 }
