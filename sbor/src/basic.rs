@@ -153,7 +153,6 @@ impl CustomTraversal for NoCustomTraversal {
         _: ParentRelationship,
         _: usize,
         _: u8,
-        _: u8,
     ) -> Self::CustomValueTraverser {
         unreachable!("The NoCustomValueKind parameter can't exist")
     }

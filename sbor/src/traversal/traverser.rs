@@ -19,7 +19,6 @@ pub trait CustomTraversal: Copy + Debug + Clone + PartialEq + Eq {
         custom_value_kind: Self::CustomValueKind,
         parent_relationship: ParentRelationship,
         start_offset: usize,
-        current_depth: u8,
         max_depth: u8,
     ) -> Self::CustomValueTraverser;
 }
@@ -328,16 +327,14 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
             ValueKind::Enum => self.decode_enum_variant_header(start_offset, relationship),
             ValueKind::Tuple => self.decode_tuple_header(start_offset, relationship),
             ValueKind::Custom(custom_value_kind) => {
-                let depth = self.get_sbor_depth_for_next_value();
                 self.next_event_override = NextEventOverride::CustomValueTraversal(
                     T::new_value_traversal(
                         custom_value_kind,
                         relationship,
                         start_offset,
-                        depth,
                         self.max_depth,
                     ),
-                    depth,
+                    self.get_sbor_depth_for_next_value(),
                 );
                 self.custom_event_override()
             }

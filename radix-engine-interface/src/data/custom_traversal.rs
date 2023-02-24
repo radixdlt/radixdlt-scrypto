@@ -58,14 +58,12 @@ impl CustomTraversal for ScryptoCustomTraversal {
         custom_value_kind: Self::CustomValueKind,
         parent_relationship: ParentRelationship,
         start_offset: usize,
-        current_depth: u8,
         _: u8,
     ) -> Self::CustomValueTraverser {
         ScryptoCustomTraverser {
             custom_value_kind,
             parent_relationship,
             start_offset,
-            current_depth,
         }
     }
 }
@@ -74,7 +72,6 @@ pub struct ScryptoCustomTraverser {
     custom_value_kind: ScryptoCustomValueKind,
     parent_relationship: ParentRelationship,
     start_offset: usize,
-    current_depth: u8,
 }
 
 impl CustomValueTraverser for ScryptoCustomTraverser {
@@ -96,9 +93,8 @@ impl CustomValueTraverser for ScryptoCustomTraverser {
         let location = Location {
             start_offset: self.start_offset,
             end_offset: decoder.get_offset(),
-            sbor_depth: self.current_depth,
             parent_relationship: self.parent_relationship,
-            resultant_path: container_stack,
+            ancestor_path: container_stack,
         };
         let event = match result {
             Ok(custom_value) => TraversalEvent::TerminalValue(TerminalValueRef::Custom(
