@@ -3,17 +3,20 @@ use crate::traversal::*;
 use crate::typed_traversal::*;
 use crate::*;
 
-pub enum ValidationError<X: CustomValueKind> {
-    TraversalError(TypedTraversalError<X>),
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ValidationError<E: CustomTypeExtension> {
+    TraversalError(TypedTraversalError<E::CustomValueKind>),
     TypeValidationError(TypeValidationError),
     SchemaInconsistency(SchemaInconsistencyError),
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SchemaInconsistencyError {
     TypeValidationNotFound(LocalTypeIndex),
     TypeValidationMismatch,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TypeValidationError {
     LengthValidationError {
         required: LengthValidation,
@@ -61,140 +64,140 @@ pub enum TypeValidationError {
     },
 }
 
-pub type FullValidationError<X> = LocatedError<ValidationError<X>>;
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LocatedValidationError<E: CustomTypeExtension> {
+    error: ValidationError<E>,
+    location: ErrorLocation,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ErrorLocation {
+    start_offset: usize,
+    end_offset: usize,
+    sbor_depth: u8,
+}
 
 pub fn validate<E: CustomTypeExtension>(
     payload: &[u8],
     schema: &Schema<E>,
     index: LocalTypeIndex,
-) -> Result<(), FullValidationError<E::CustomValueKind>> {
+) -> Result<(), LocatedValidationError<E>> {
     let mut traverser = traverse_payload_with_types::<E>(payload, &schema.type_kinds, index);
     // NB - we use loop rather than a while loop partly for borrow-checker reasons
     loop {
-        let event = traverser.next_event();
-        if matches!(event, TypedTraversalEvent::End(_)) {
+        let TypedLocatedTraversalEvent {
+            event,
+            location: typed_location,
+        } = traverser.next_event();
+        if matches!(event, TypedTraversalEvent::End) {
             return Ok(());
         }
-        validate_event::<E>(&schema.type_validations, event)?;
+        validate_event::<E>(&schema.type_validations, event).map_err(|error| {
+            LocatedValidationError {
+                error,
+                location: ErrorLocation {
+                    start_offset: typed_location.location.start_offset,
+                    end_offset: typed_location.location.end_offset,
+                    sbor_depth: typed_location.location.sbor_depth,
+                    // TODO - add context from location + type metadata
+                    // This enables a full path to be provided in the error message, which can have a debug such as:
+                    // TypeOne["hello"]->Enum::Variant[4]->TypeTwo[0]->Array[4]->Map[Key]->StructWhichErrored
+                },
+            }
+        })?;
     }
 }
 
 fn validate_event<E: CustomTypeExtension>(
     type_validations: &[SchemaTypeValidation<E>],
     event: TypedTraversalEvent<E::CustomTraversal>,
-) -> Result<(), FullValidationError<E::CustomValueKind>> {
+) -> Result<(), ValidationError<E>> {
     match event {
-        TypedTraversalEvent::PayloadPrefix(_) => Ok(()),
-        TypedTraversalEvent::ContainerStart(event) => {
-            validate_container::<E>(type_validations, event)
+        TypedTraversalEvent::PayloadPrefix => Ok(()),
+        TypedTraversalEvent::ContainerStart(typed_header) => {
+            validate_container::<E>(type_validations, typed_header)
         }
         TypedTraversalEvent::ContainerEnd(_) => Ok(()), // Validation already handled at Container Start
-        TypedTraversalEvent::TerminalValue(event) => {
-            validate_terminal_value::<E>(type_validations, event)
+        TypedTraversalEvent::TerminalValue(typed_value) => {
+            validate_terminal_value::<E>(type_validations, typed_value)
         }
-        TypedTraversalEvent::TerminalValueBatch(event) => {
-            validate_terminal_value_batch::<E>(type_validations, event)
+        TypedTraversalEvent::TerminalValueBatch(typed_terminal_value) => {
+            validate_terminal_value_batch::<E>(type_validations, typed_terminal_value)
         }
-        TypedTraversalEvent::End(_) => {
+        TypedTraversalEvent::End => {
             unreachable!("End should already have been covered in the parent function")
         }
-        TypedTraversalEvent::Error(located_error) => Err(FullValidationError {
-            error: ValidationError::TraversalError(located_error.error),
-            location: located_error.location,
-        }),
+        TypedTraversalEvent::Error(error) => Err(ValidationError::TraversalError(error)),
     }
 }
 
 #[macro_export]
 macro_rules! return_type_validation_mismatch {
-    ($location: expr) => {
-        return Err(FullValidationError {
-            error: ValidationError::SchemaInconsistency(
-                SchemaInconsistencyError::TypeValidationMismatch,
-            ),
-            location: $location,
-        })
+    () => {
+        return Err(ValidationError::SchemaInconsistency(
+            SchemaInconsistencyError::TypeValidationMismatch,
+        ))
     };
 }
 
 #[macro_export]
 macro_rules! return_type_validation_error {
-    ($location: expr, $error: expr) => {
-        return Err(FullValidationError {
-            error: ValidationError::TypeValidationError($error),
-            location: $location,
-        })
+    ($error: expr) => {
+        return Err(ValidationError::TypeValidationError($error));
     };
 }
 
 pub fn validate_container<E: CustomTypeExtension>(
     type_validations: &[SchemaTypeValidation<E>],
-    event: TypedLocatedDecoding<ContainerHeader<E::CustomTraversal>, E::CustomTraversal>,
-) -> Result<(), FullValidationError<E::CustomValueKind>> {
-    let TypedLocatedDecoding {
-        inner: header,
-        type_index,
-        location,
-        ..
-    } = event;
+    typed_header: TypedContainerHeader<E::CustomTraversal>,
+) -> Result<(), ValidationError<E>> {
+    let TypedContainerHeader { header, type_index } = typed_header;
     let Some(validation) = resolve_type_validation::<E>(&type_validations, type_index) else {
-        return Err(FullValidationError {
-            error: ValidationError::SchemaInconsistency(SchemaInconsistencyError::TypeValidationNotFound(type_index)),
-            location,
-        })
+        return Err(ValidationError::SchemaInconsistency(SchemaInconsistencyError::TypeValidationNotFound(type_index)))
     };
     match validation {
         TypeValidation::None => {}
         TypeValidation::Array { length_validation } => {
             let ContainerHeader::Array(ArrayHeader { length, .. }) = header else {
-                return_type_validation_mismatch!(location)
+                return_type_validation_mismatch!()
             };
             if !length_validation.is_valid(length) {
-                return_type_validation_error!(
-                    location,
-                    TypeValidationError::LengthValidationError {
-                        required: *length_validation,
-                        actual: length,
-                    }
-                );
+                return_type_validation_error!(TypeValidationError::LengthValidationError {
+                    required: *length_validation,
+                    actual: length,
+                });
             }
         }
         TypeValidation::Map { length_validation } => {
             let ContainerHeader::Map(MapHeader { length, .. }) = header else {
-                return_type_validation_mismatch!(location)
+                return_type_validation_mismatch!()
             };
             if !length_validation.is_valid(length) {
-                return_type_validation_error!(
-                    location,
-                    TypeValidationError::LengthValidationError {
-                        required: *length_validation,
-                        actual: length,
-                    }
-                );
+                return_type_validation_error!(TypeValidationError::LengthValidationError {
+                    required: *length_validation,
+                    actual: length,
+                });
             }
         }
         TypeValidation::Custom(_) => {
             // TODO - add this in when we have custom validations
             unreachable!("Unreachable at present")
         }
-        _ => return_type_validation_mismatch!(location),
+        _ => return_type_validation_mismatch!(),
     }
     Ok(())
 }
 
 #[macro_export]
 macro_rules! numeric_validation_match {
-    ($numeric_validation: ident, $value: expr, $location: expr, $type: ident, $error_type: ident) => {{
+    ($numeric_validation: ident, $value: expr, $type: ident, $error_type: ident) => {{
         {
-            let TerminalValueRef::$type(value) = $value else { return_type_validation_mismatch!($location) };
+            let TerminalValueRef::$type(value) = $value else { return_type_validation_mismatch!() };
             if !$numeric_validation.is_valid(value) {
-                return_type_validation_error!(
-                    $location,
-                    TypeValidationError::$error_type {
-                        required: *$numeric_validation,
-                        actual: value,
-                    }
-                );
+                return_type_validation_error!(TypeValidationError::$error_type {
+                    required: *$numeric_validation,
+                    actual: value,
+                });
             }
         }
     }};
@@ -202,92 +205,76 @@ macro_rules! numeric_validation_match {
 
 pub fn validate_terminal_value<'de, E: CustomTypeExtension>(
     type_validations: &[SchemaTypeValidation<E>],
-    event: TypedLocatedDecoding<TerminalValueRef<'de, E::CustomTraversal>, E::CustomTraversal>,
-) -> Result<(), FullValidationError<E::CustomValueKind>> {
-    let TypedLocatedDecoding {
-        inner: value,
-        type_index,
-        location,
-        ..
-    } = event;
+    event: TypedTerminalValueRef<'de, E::CustomTraversal>,
+) -> Result<(), ValidationError<E>> {
+    let TypedTerminalValueRef { value, type_index } = event;
     let Some(validation) = resolve_type_validation::<E>(&type_validations, type_index) else {
-        return Err(FullValidationError {
-            error: ValidationError::SchemaInconsistency(SchemaInconsistencyError::TypeValidationNotFound(type_index)),
-            location,
-        })
+        return Err(ValidationError::SchemaInconsistency(SchemaInconsistencyError::TypeValidationNotFound(type_index)));
     };
     match validation {
         TypeValidation::None => {}
         TypeValidation::I8(x) => {
-            numeric_validation_match!(x, value, location, I8, I8ValidationError)
+            numeric_validation_match!(x, value, I8, I8ValidationError)
         }
         TypeValidation::I16(x) => {
-            numeric_validation_match!(x, value, location, I16, I16ValidationError)
+            numeric_validation_match!(x, value, I16, I16ValidationError)
         }
         TypeValidation::I32(x) => {
-            numeric_validation_match!(x, value, location, I32, I32ValidationError)
+            numeric_validation_match!(x, value, I32, I32ValidationError)
         }
         TypeValidation::I64(x) => {
-            numeric_validation_match!(x, value, location, I64, I64ValidationError)
+            numeric_validation_match!(x, value, I64, I64ValidationError)
         }
         TypeValidation::I128(x) => {
-            numeric_validation_match!(x, value, location, I128, I128ValidationError)
+            numeric_validation_match!(x, value, I128, I128ValidationError)
         }
         TypeValidation::U8(x) => {
-            numeric_validation_match!(x, value, location, U8, U8ValidationError)
+            numeric_validation_match!(x, value, U8, U8ValidationError)
         }
         TypeValidation::U16(x) => {
-            numeric_validation_match!(x, value, location, U16, U16ValidationError)
+            numeric_validation_match!(x, value, U16, U16ValidationError)
         }
         TypeValidation::U32(x) => {
-            numeric_validation_match!(x, value, location, U32, U32ValidationError)
+            numeric_validation_match!(x, value, U32, U32ValidationError)
         }
         TypeValidation::U64(x) => {
-            numeric_validation_match!(x, value, location, U64, U64ValidationError)
+            numeric_validation_match!(x, value, U64, U64ValidationError)
         }
         TypeValidation::U128(x) => {
-            numeric_validation_match!(x, value, location, U128, U128ValidationError)
+            numeric_validation_match!(x, value, U128, U128ValidationError)
         }
         TypeValidation::Custom(_) => {
             // TODO - add this in when we have custom validations
             unreachable!("Unreachable at present")
         }
-        _ => return_type_validation_mismatch!(location),
+        _ => return_type_validation_mismatch!(),
     }
     Ok(())
 }
 
 pub fn validate_terminal_value_batch<'de, E: CustomTypeExtension>(
     type_validations: &[SchemaTypeValidation<E>],
-    event: TypedLocatedDecoding<TerminalValueBatchRef<'de, E::CustomTraversal>, E::CustomTraversal>,
-) -> Result<(), FullValidationError<E::CustomValueKind>> {
-    let TypedLocatedDecoding {
-        inner: value_batch,
+    event: TypedTerminalValueBatchRef<'de, E::CustomTraversal>,
+) -> Result<(), ValidationError<E>> {
+    let TypedTerminalValueBatchRef {
+        value_batch,
         type_index,
-        location,
-        ..
     } = event;
     let Some(validation) = resolve_type_validation::<E>(&type_validations, type_index) else {
-        return Err(FullValidationError {
-            error: ValidationError::SchemaInconsistency(SchemaInconsistencyError::TypeValidationNotFound(type_index)),
-            location,
-        })
+        return Err(ValidationError::SchemaInconsistency(SchemaInconsistencyError::TypeValidationNotFound(type_index)));
     };
     match validation {
         TypeValidation::None => {}
         TypeValidation::U8(numeric_validation) => {
             let TerminalValueBatchRef::U8(value_batch) = value_batch else {
-                return_type_validation_mismatch!(location)
+                return_type_validation_mismatch!()
             };
             for byte in value_batch.iter() {
                 if !numeric_validation.is_valid(*byte) {
-                    return_type_validation_error!(
-                        location,
-                        TypeValidationError::U8ValidationError {
-                            required: *numeric_validation,
-                            actual: *byte,
-                        }
-                    );
+                    return_type_validation_error!(TypeValidationError::U8ValidationError {
+                        required: *numeric_validation,
+                        actual: *byte,
+                    });
                 }
             }
         }
@@ -295,14 +282,16 @@ pub fn validate_terminal_value_batch<'de, E: CustomTypeExtension>(
             // TODO - add this in when we have custom validations
             unreachable!("Unreachable at present")
         }
-        _ => return_type_validation_mismatch!(location),
+        _ => return_type_validation_mismatch!(),
     }
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{rust::prelude::*, traversal::LocatedError, *};
+    use crate::{rust::prelude::*, *};
+
+    use super::LocatedValidationError;
 
     #[derive(Sbor)]
     struct TestStructArray {
@@ -339,7 +328,7 @@ mod tests {
         let result = validate(&payload, &schema, type_index);
         assert!(matches!(
             result,
-            Err(LocatedError {
+            Err(LocatedValidationError {
                 error: ValidationError::TypeValidationError(
                     TypeValidationError::LengthValidationError {
                         required: LengthValidation {

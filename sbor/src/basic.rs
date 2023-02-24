@@ -172,7 +172,7 @@ impl CustomValueTraverser for NoCustomTraverser {
         &mut self,
         _: &'t mut Vec<ContainerChild<Self::CustomTraversal>>,
         _: &mut R,
-    ) -> TraversalEvent<'t, 'de, Self::CustomTraversal> {
+    ) -> LocatedTraversalEvent<'t, 'de, Self::CustomTraversal> {
         unreachable!("NoCustomTraverser can't exist")
     }
 }

@@ -4,29 +4,23 @@ use crate::*;
 use super::CustomTraversal;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TraversalEvent<'t, 'de, C: CustomTraversal> {
-    PayloadPrefix(Location),
-    ContainerStart(LocatedDecoding<'t, ContainerHeader<C>, C>),
-    ContainerEnd(LocatedDecoding<'t, ContainerHeader<C>, C>),
-    TerminalValue(LocatedDecoding<'t, TerminalValueRef<'de, C>, C>),
-    TerminalValueBatch(LocatedDecoding<'t, TerminalValueBatchRef<'de, C>, C>),
-    End(Location),
-    DecodeError(LocatedError<DecodeError>),
+pub struct LocatedTraversalEvent<'t, 'de, C: CustomTraversal> {
+    pub location: Location<'t, C>,
+    pub event: TraversalEvent<'de, C>,
 }
 
-impl<'t, 'de, C: CustomTraversal> TraversalEvent<'t, 'de, C> {
-    pub fn get_next_sbor_depth(&self) -> u8 {
-        match self {
-            TraversalEvent::PayloadPrefix(location) => location.sbor_depth + 1,
-            TraversalEvent::ContainerStart(le) => le.location.sbor_depth + 1,
-            TraversalEvent::ContainerEnd(le) => le.location.sbor_depth,
-            TraversalEvent::TerminalValue(le) => le.location.sbor_depth,
-            TraversalEvent::TerminalValueBatch(le) => le.location.sbor_depth,
-            TraversalEvent::End(location) => location.sbor_depth,
-            TraversalEvent::DecodeError(le) => le.location.sbor_depth,
-        }
-    }
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TraversalEvent<'de, C: CustomTraversal> {
+    PayloadPrefix,
+    ContainerStart(ContainerHeader<C>),
+    ContainerEnd(ContainerHeader<C>),
+    TerminalValue(TerminalValueRef<'de, C>),
+    TerminalValueBatch(TerminalValueBatchRef<'de, C>),
+    End,
+    DecodeError(DecodeError),
+}
 
+impl<'de, C: CustomTraversal> TraversalEvent<'de, C> {
     pub fn is_error(&self) -> bool {
         match self {
             TraversalEvent::DecodeError(_) => true,
@@ -36,31 +30,51 @@ impl<'t, 'de, C: CustomTraversal> TraversalEvent<'t, 'de, C> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct LocatedError<E> {
+pub struct LocatedError<'t, E, C: CustomTraversal> {
     pub error: E,
-    pub location: Location,
+    pub location: Location<'t, C>,
 }
 
-/// A wrapper for traversal event bodies, given the context inside the payload.
-///
-/// The `start_offset` and `end_offset` in `Location` have different meanings in the context of the event.
-/// * For ContainerValueStart, they're the start/end of the header
-/// * For ContainerValueEnd, they're the start/end of the whole value (including the header)
-///
-/// The `resultant_path` captures the path up to this point.
+/// A wrapper for traversal event bodies, given the location context inside the payload.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct LocatedDecoding<'t, T, C: CustomTraversal> {
     pub inner: T,
+    pub location: Location<'t, C>,
+}
+
+/// The Location of the encoding - capturing both the byte offset in the payload, and also
+/// the container-path-based location in the SBOR value model.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Location<'t, C: CustomTraversal> {
+    /// An offset in the payload, where this `Location` starts.
+    /// The meaning of this offset depends on the context of the event, eg:
+    /// * For ContainerStart, this is the start of the value
+    /// * For ContainerEnd, this is the start of the value
+    /// * For DecodeError, this is the location where the error occurred
+    pub start_offset: usize,
+    /// An offset in the payload, where this `Location` ends (could be the same as start_offset).
+    /// The meaning of this offset depends on the context of the event, eg:
+    /// * For ContainerStart, this is the end of the header
+    /// * For ContainerEnd, this is the end of the whole container value
+    /// * For DecodeError, this is the location where the error occurred
+    pub end_offset: usize,
+    /// The current SBOR depth of the stack
+    pub sbor_depth: u8,
+    /// The relationship of the value currently under consideration with its container parent
     pub parent_relationship: ParentRelationship,
-    pub location: Location,
+    /// The path of containers from the root to the current value.
+    /// If the event is ContainerStart, this includes the started container.
     pub resultant_path: &'t [ContainerChild<C>],
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Location {
-    pub start_offset: usize,
-    pub end_offset: usize,
-    pub sbor_depth: u8,
+impl<'t, C: CustomTraversal> Location<'t, C> {
+    pub fn get_next_sbor_depth(&self) -> u8 {
+        // OVERFLOW SAFETY:
+        // The invariant self.container_stack.len() + 1 <= max_depth is maintained in `traverser.enter_container(..)` before
+        // we push to the stack.
+        // As `max_depth` is a u8, this can't overflow.
+        (self.resultant_path.len() as u8) + 1
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -98,6 +112,7 @@ pub struct MapHeader<X: CustomValueKind> {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ParentRelationship {
+    NotInValueModel,
     Root,
     Element { index: u32 },
     ArrayElementBatch { from_index: u32, to_index: u32 },

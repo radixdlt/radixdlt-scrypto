@@ -62,7 +62,7 @@ pub trait CustomValueTraverser {
         &mut self,
         container_stack: &'t mut Vec<ContainerChild<Self::CustomTraversal>>,
         reader: &mut R,
-    ) -> TraversalEvent<'t, 'de, Self::CustomTraversal>;
+    ) -> LocatedTraversalEvent<'t, 'de, Self::CustomTraversal>;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -111,27 +111,27 @@ macro_rules! terminal_value_from_body {
 macro_rules! terminal_value {
     ($self: expr, $value_type: ident, $parent_relationship: expr, $start_offset: expr, $decoded: expr) => {{
         match $decoded {
-            Ok(value) => TraversalEvent::TerminalValue(LocatedDecoding {
-                inner: TerminalValueRef::$value_type(value),
-                parent_relationship: $parent_relationship,
-                resultant_path: &$self.container_stack,
+            Ok(value) => LocatedTraversalEvent {
+                event: TraversalEvent::TerminalValue(TerminalValueRef::$value_type(value)),
                 location: Location {
                     start_offset: $start_offset,
                     end_offset: $self.get_offset(),
                     sbor_depth: $self.get_sbor_depth_for_next_value(),
+                    parent_relationship: $parent_relationship,
+                    resultant_path: &$self.container_stack,
                 },
-            }),
-            Err(error) => $self.map_error(error),
+            },
+            Err(error) => $self.map_error($start_offset, $parent_relationship, error),
         }
     }};
 }
 
 #[macro_export]
 macro_rules! return_if_error {
-    ($self: expr, $result: expr) => {{
+    ($self: expr, $parent_relationship: expr, $result: expr) => {{
         match $result {
             Ok(value) => value,
-            Err(error) => return $self.map_error(error),
+            Err(error) => return $self.map_error($self.get_offset(), $parent_relationship, error),
         }
     }};
 }
@@ -158,19 +158,27 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
     pub fn read_and_check_payload_prefix<'t>(
         &'t mut self,
         expected_prefix: u8,
-    ) -> TraversalEvent<'t, 'de, T> {
+    ) -> LocatedTraversalEvent<'t, 'de, T> {
+        let parent_relationship = ParentRelationship::NotInValueModel;
+        let start_offset = self.get_offset();
         return_if_error!(
             self,
+            parent_relationship,
             self.decoder.read_and_check_payload_prefix(expected_prefix)
         );
-        TraversalEvent::PayloadPrefix(Location {
-            start_offset: 0,
-            end_offset: 1,
-            sbor_depth: 0,
-        })
+        LocatedTraversalEvent {
+            event: TraversalEvent::PayloadPrefix,
+            location: Location {
+                start_offset,
+                end_offset: self.get_offset(),
+                sbor_depth: 0,
+                parent_relationship,
+                resultant_path: &self.container_stack,
+            },
+        }
     }
 
-    pub fn next_event<'t>(&'t mut self) -> TraversalEvent<'t, 'de, T> {
+    pub fn next_event<'t>(&'t mut self) -> LocatedTraversalEvent<'t, 'de, T> {
         let event = match &mut self.next_event_override {
             NextEventOverride::Prefix(expected_prefix) => {
                 let expected_prefix = *expected_prefix;
@@ -205,11 +213,15 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
         start_offset: usize,
         container_parent_relationship: ParentRelationship,
         container_header: ContainerHeader<T>,
-    ) -> TraversalEvent<'t, 'de, T> {
+    ) -> LocatedTraversalEvent<'t, 'de, T> {
         let stack_depth_of_container = self.get_sbor_depth_for_next_value();
         if stack_depth_of_container >= self.max_depth {
             // We're already at the max depth, we can't add any more containers to the stack
-            return self.map_error(DecodeError::MaxDepthExceeded(self.max_depth));
+            return self.map_error(
+                start_offset,
+                container_parent_relationship,
+                DecodeError::MaxDepthExceeded(self.max_depth),
+            );
         }
         self.container_stack.push(ContainerChild {
             container_header,
@@ -218,39 +230,41 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
             container_child_count: container_header.get_child_count(),
             current_child_index: 0,
         });
-        TraversalEvent::ContainerStart(LocatedDecoding {
-            inner: container_header,
-            parent_relationship: container_parent_relationship,
-            resultant_path: &self.container_stack,
+        LocatedTraversalEvent {
+            event: TraversalEvent::ContainerStart(container_header),
             location: Location {
                 start_offset,
                 end_offset: self.get_offset(),
                 sbor_depth: stack_depth_of_container,
+                parent_relationship: container_parent_relationship,
+                resultant_path: &self.container_stack,
             },
-        })
+        }
     }
 
-    fn exit_container<'t>(&'t mut self) -> TraversalEvent<'t, 'de, T> {
+    fn exit_container<'t>(&'t mut self) -> LocatedTraversalEvent<'t, 'de, T> {
         let container = self.container_stack.pop().unwrap();
-        TraversalEvent::ContainerEnd(LocatedDecoding {
-            inner: container.container_header,
-            parent_relationship: container.container_parent_relationship,
-            resultant_path: &self.container_stack,
+        LocatedTraversalEvent {
+            event: TraversalEvent::ContainerEnd(container.container_header),
             location: Location {
                 start_offset: container.container_start_offset,
                 end_offset: self.get_offset(),
                 sbor_depth: self.get_sbor_depth_for_next_value(),
+                parent_relationship: container.container_parent_relationship,
+                resultant_path: &self.container_stack,
             },
-        })
+        }
     }
 
-    fn root_value<'t>(&'t mut self) -> TraversalEvent<'t, 'de, T> {
+    fn root_value<'t>(&'t mut self) -> LocatedTraversalEvent<'t, 'de, T> {
         let start_offset = self.decoder.get_offset();
-        let value_kind = return_if_error!(self, self.decoder.read_value_kind());
-        self.next_value(ParentRelationship::Root, start_offset, value_kind)
+        let parent_relationship = ParentRelationship::Root;
+        let value_kind =
+            return_if_error!(self, parent_relationship, self.decoder.read_value_kind());
+        self.next_value(start_offset, parent_relationship, value_kind)
     }
 
-    fn child_value<'t>(&'t mut self) -> TraversalEvent<'t, 'de, T> {
+    fn child_value<'t>(&'t mut self) -> LocatedTraversalEvent<'t, 'de, T> {
         let start_offset = self.decoder.get_offset();
         let current_child = self.container_stack.last_mut().unwrap();
         let (relationship, value_kind) = current_child
@@ -258,18 +272,18 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
             .get_implicit_child_value_kind(current_child.current_child_index);
         let value_kind = match value_kind {
             Some(value_kind) => value_kind,
-            None => return_if_error!(self, self.decoder.read_value_kind()),
+            None => return_if_error!(self, relationship, self.decoder.read_value_kind()),
         };
         current_child.current_child_index += 1;
-        self.next_value(relationship, start_offset, value_kind)
+        self.next_value(start_offset, relationship, value_kind)
     }
 
     fn next_value<'t>(
         &'t mut self,
-        relationship: ParentRelationship,
         start_offset: usize,
+        relationship: ParentRelationship,
         value_kind: ValueKind<T::CustomValueKind>,
-    ) -> TraversalEvent<'t, 'de, T> {
+    ) -> LocatedTraversalEvent<'t, 'de, T> {
         match value_kind {
             ValueKind::Bool => {
                 terminal_value_from_body!(self, Bool, bool, relationship, start_offset, value_kind)
@@ -313,10 +327,10 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
                     self.decode_string_slice()
                 )
             }
-            ValueKind::Array => self.decode_array_header(relationship, start_offset),
-            ValueKind::Map => self.decode_map_header(relationship, start_offset),
-            ValueKind::Enum => self.decode_enum_variant_header(relationship, start_offset),
-            ValueKind::Tuple => self.decode_tuple_header(relationship, start_offset),
+            ValueKind::Array => self.decode_array_header(start_offset, relationship),
+            ValueKind::Map => self.decode_map_header(start_offset, relationship),
+            ValueKind::Enum => self.decode_enum_variant_header(start_offset, relationship),
+            ValueKind::Tuple => self.decode_tuple_header(start_offset, relationship),
             ValueKind::Custom(custom_value_kind) => {
                 let depth = self.get_sbor_depth_for_next_value();
                 self.next_event_override = NextEventOverride::CustomValueTraversal(
@@ -334,16 +348,22 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
         }
     }
 
-    fn map_error<'t>(&'t self, error: DecodeError) -> TraversalEvent<'t, 'de, T> {
-        let offset = self.get_offset();
-        TraversalEvent::DecodeError(LocatedError {
-            error: error,
+    fn map_error<'t>(
+        &'t self,
+        start_offset: usize,
+        parent_relationship: ParentRelationship,
+        error: DecodeError,
+    ) -> LocatedTraversalEvent<'t, 'de, T> {
+        LocatedTraversalEvent {
+            event: TraversalEvent::DecodeError(error),
             location: Location {
-                start_offset: offset,
-                end_offset: offset,
+                start_offset,
+                end_offset: self.get_offset(),
                 sbor_depth: self.get_sbor_depth_for_next_value(),
+                parent_relationship,
+                resultant_path: &self.container_stack,
             },
-        })
+        }
     }
 
     #[inline]
@@ -367,11 +387,11 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
 
     fn decode_enum_variant_header<'t>(
         &'t mut self,
-        parent_relationship: ParentRelationship,
         start_offset: usize,
-    ) -> TraversalEvent<'t, 'de, T> {
-        let variant = return_if_error!(self, self.decoder.read_byte());
-        let length = return_if_error!(self, self.decoder.read_size_u32());
+        parent_relationship: ParentRelationship,
+    ) -> LocatedTraversalEvent<'t, 'de, T> {
+        let variant = return_if_error!(self, parent_relationship, self.decoder.read_byte());
+        let length = return_if_error!(self, parent_relationship, self.decoder.read_size_u32());
         self.enter_container(
             start_offset,
             parent_relationship,
@@ -381,10 +401,10 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
 
     fn decode_tuple_header<'t>(
         &'t mut self,
-        parent_relationship: ParentRelationship,
         start_offset: usize,
-    ) -> TraversalEvent<'t, 'de, T> {
-        let length = return_if_error!(self, self.decoder.read_size_u32());
+        parent_relationship: ParentRelationship,
+    ) -> LocatedTraversalEvent<'t, 'de, T> {
+        let length = return_if_error!(self, parent_relationship, self.decoder.read_size_u32());
         self.enter_container(
             start_offset,
             parent_relationship,
@@ -394,11 +414,12 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
 
     fn decode_array_header<'t>(
         &'t mut self,
-        parent_relationship: ParentRelationship,
         start_offset: usize,
-    ) -> TraversalEvent<'t, 'de, T> {
-        let element_value_kind = return_if_error!(self, self.decoder.read_value_kind());
-        let length = return_if_error!(self, self.decoder.read_size_u32());
+        parent_relationship: ParentRelationship,
+    ) -> LocatedTraversalEvent<'t, 'de, T> {
+        let element_value_kind =
+            return_if_error!(self, parent_relationship, self.decoder.read_value_kind());
+        let length = return_if_error!(self, parent_relationship, self.decoder.read_size_u32());
         if element_value_kind == ValueKind::U8 && length > 0 {
             self.next_event_override = NextEventOverride::ReadBytes(length);
         }
@@ -414,12 +435,14 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
 
     fn decode_map_header<'t>(
         &'t mut self,
-        parent_relationship: ParentRelationship,
         start_offset: usize,
-    ) -> TraversalEvent<'t, 'de, T> {
-        let key_value_kind = return_if_error!(self, self.decoder.read_value_kind());
-        let value_value_kind = return_if_error!(self, self.decoder.read_value_kind());
-        let length = return_if_error!(self, self.decoder.read_size_u32());
+        parent_relationship: ParentRelationship,
+    ) -> LocatedTraversalEvent<'t, 'de, T> {
+        let key_value_kind =
+            return_if_error!(self, parent_relationship, self.decoder.read_value_kind());
+        let value_value_kind =
+            return_if_error!(self, parent_relationship, self.decoder.read_value_kind());
+        let length = return_if_error!(self, parent_relationship, self.decoder.read_size_u32());
         self.enter_container(
             start_offset,
             parent_relationship,
@@ -431,20 +454,26 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
         )
     }
 
-    fn end_event<'t>(&'t self) -> TraversalEvent<'t, 'de, T> {
+    fn end_event<'t>(&'t self) -> LocatedTraversalEvent<'t, 'de, T> {
+        let parent_relationship = ParentRelationship::NotInValueModel;
         if self.check_exact_end {
-            return_if_error!(self, self.decoder.check_end());
+            return_if_error!(self, parent_relationship, self.decoder.check_end());
         }
         let offset = self.decoder.get_offset();
 
-        TraversalEvent::End(Location {
-            start_offset: offset,
-            end_offset: offset,
-            sbor_depth: 0,
-        })
+        LocatedTraversalEvent {
+            event: TraversalEvent::End,
+            location: Location {
+                start_offset: offset,
+                end_offset: offset,
+                sbor_depth: 0,
+                parent_relationship,
+                resultant_path: &self.container_stack,
+            },
+        }
     }
 
-    fn custom_event_override<'t>(&'t mut self) -> TraversalEvent<'t, 'de, T> {
+    fn custom_event_override<'t>(&'t mut self) -> LocatedTraversalEvent<'t, 'de, T> {
         let NextEventOverride::CustomValueTraversal(custom_traverser, entry_depth) = &mut self.next_event_override else {
             panic!("self.next_event_override expected to be NextEventOverride::Custom to hit this code")
         };
@@ -455,34 +484,39 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
         // - Emitting multiple events representing a single container value, which will return to the current depth
         // Either way, when the traversal_event's next sbor depth matches the sbor depth when the custom traverser was entered,
         // this means that the custom traverser has returned
-        if traversal_event.get_next_sbor_depth() == *entry_depth {
+        if traversal_event.location.get_next_sbor_depth() == *entry_depth {
             self.next_event_override = NextEventOverride::None;
         }
         traversal_event
     }
 
-    fn read_bytes_event_override<'t>(&'t mut self) -> TraversalEvent<'t, 'de, T> {
+    fn read_bytes_event_override<'t>(&'t mut self) -> LocatedTraversalEvent<'t, 'de, T> {
         let NextEventOverride::ReadBytes(size) = self.next_event_override else {
             panic!("self.next_event_override expected to be NextEventOverride::ReadBytes to hit this code")
         };
         let start_offset = self.get_offset();
-        let bytes = return_if_error!(self, self.decoder.read_slice_from_payload(size as usize));
+        let parent_relationship = ParentRelationship::ArrayElementBatch {
+            from_index: 0,
+            to_index: size,
+        };
+        let bytes = return_if_error!(
+            self,
+            parent_relationship,
+            self.decoder.read_slice_from_payload(size as usize)
+        );
         // Set it up so that we jump to the end of the child iteration
         self.container_stack.last_mut().unwrap().current_child_index = size;
         self.next_event_override = NextEventOverride::None;
-        TraversalEvent::TerminalValueBatch(LocatedDecoding {
-            inner: TerminalValueBatchRef::U8(bytes),
-            parent_relationship: ParentRelationship::ArrayElementBatch {
-                from_index: 0,
-                to_index: size,
-            },
-            resultant_path: &self.container_stack,
+        LocatedTraversalEvent {
+            event: TraversalEvent::TerminalValueBatch(TerminalValueBatchRef::U8(bytes)),
             location: Location {
                 start_offset,
                 end_offset: self.get_offset(),
                 sbor_depth: self.get_sbor_depth_for_next_value(),
+                parent_relationship,
+                resultant_path: &self.container_stack,
             },
-        })
+        }
     }
 }
 
@@ -728,7 +762,7 @@ mod tests {
             1,
             55,
         );
-        next_event_is_payload_end(&mut traverser, 0, 55, 55);
+        next_event_is_end(&mut traverser, 0, 55, 55);
     }
 
     pub fn next_event_is_payload_prefix(
@@ -738,11 +772,15 @@ mod tests {
         expected_end_offset: usize,
     ) {
         let event = traverser.next_event();
-        let TraversalEvent::PayloadPrefix(Location {
-            sbor_depth,
-            start_offset,
-            end_offset,
-        }) = event else {
+        let LocatedTraversalEvent {
+            event: TraversalEvent::PayloadPrefix,
+            location: Location {
+                sbor_depth,
+                start_offset,
+                end_offset,
+                ..
+            },
+        } = event else {
             panic!("Invalid event - expected PayloadPrefix, was {:?}", event);
         };
         assert_eq!(sbor_depth, expected_depth);
@@ -758,15 +796,15 @@ mod tests {
         expected_end_offset: usize,
     ) {
         let event = traverser.next_event();
-        let TraversalEvent::ContainerStart(LocatedDecoding {
-            inner: header,
+        let LocatedTraversalEvent {
+            event: TraversalEvent::ContainerStart(header),
             location: Location {
                 sbor_depth,
                 start_offset,
                 end_offset,
+                ..
             },
-            ..
-        }) = event else {
+        } = event else {
             panic!("Invalid event - expected ContainerStart, was {:?}", event);
         };
         assert_eq!(header, expected_header);
@@ -783,15 +821,15 @@ mod tests {
         expected_end_offset: usize,
     ) {
         let event = traverser.next_event();
-        let TraversalEvent::ContainerEnd(LocatedDecoding {
-            inner: header,
+        let LocatedTraversalEvent {
+            event: TraversalEvent::ContainerEnd(header),
             location: Location {
                 sbor_depth,
                 start_offset,
                 end_offset,
+                ..
             },
-            ..
-        }) = event else {
+        } = event else {
             panic!("Invalid event - expected ContainerEnd, was {:?}", event);
         };
         assert_eq!(header, expected_header);
@@ -808,15 +846,15 @@ mod tests {
         expected_end_offset: usize,
     ) {
         let event = traverser.next_event();
-        let TraversalEvent::TerminalValue(LocatedDecoding {
-            inner: value,
+        let LocatedTraversalEvent {
+            event: TraversalEvent::TerminalValue(value),
             location: Location {
                 sbor_depth,
                 start_offset,
                 end_offset,
+                ..
             },
-            ..
-        }) = event else {
+        } = event else {
             panic!("Invalid event - expected TerminalValue, was {:?}", event);
         };
         assert_eq!(value, expected_value);
@@ -833,15 +871,15 @@ mod tests {
         expected_end_offset: usize,
     ) {
         let event = traverser.next_event();
-        let TraversalEvent::TerminalValueBatch(LocatedDecoding {
-            inner: value_batch,
+        let LocatedTraversalEvent {
+            event: TraversalEvent::TerminalValueBatch(value_batch),
             location: Location {
                 sbor_depth,
                 start_offset,
                 end_offset,
+                ..
             },
-            ..
-        }) = event else {
+        } = event else {
             panic!("Invalid event - expected TerminalValueBatch, was {:?}", event);
         };
         assert_eq!(value_batch, expected_value_batch);
@@ -850,19 +888,23 @@ mod tests {
         assert_eq!(end_offset, expected_end_offset);
     }
 
-    pub fn next_event_is_payload_end(
+    pub fn next_event_is_end(
         traverser: &mut BasicTraverser,
         expected_depth: u8,
         expected_start_offset: usize,
         expected_end_offset: usize,
     ) {
         let event = traverser.next_event();
-        let TraversalEvent::End(Location {
-            sbor_depth,
-            start_offset,
-            end_offset,
-        }) = event else {
-            panic!("Invalid event - expected ContainerEnd, was {:?}", event);
+        let LocatedTraversalEvent {
+            event: TraversalEvent::End,
+            location: Location {
+                sbor_depth,
+                start_offset,
+                end_offset,
+                ..
+            },
+        } = event else {
+            panic!("Invalid event - expected End, was {:?}", event);
         };
         assert_eq!(sbor_depth, expected_depth);
         assert_eq!(start_offset, expected_start_offset);
