@@ -140,14 +140,12 @@ impl KernelModule for TransactionLimitsModule {
         _identifier: &InvocationIdentifier,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
-        // depth == 0 is called for the whole transaction execution
-        if api.kernel_get_current_depth() > 0
-            && input_size
-                > api
-                    .kernel_get_module_state()
-                    .transaction_limits
-                    .limits_config
-                    .max_invoke_payload_size
+        if input_size
+            > api
+                .kernel_get_module_state()
+                .transaction_limits
+                .limits_config
+                .max_invoke_payload_size
         {
             Err(RuntimeError::ModuleError(
                 ModuleError::TransactionLimitsError(

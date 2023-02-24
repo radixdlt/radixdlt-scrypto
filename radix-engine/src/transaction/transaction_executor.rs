@@ -243,13 +243,7 @@ where
                 executable.auth_zone_params().clone(),
                 fee_reserve,
                 fee_table,
-                execution_config.max_call_depth,
-                execution_config.max_kernel_call_depth_traced,
-                execution_config.max_wasm_mem_per_transaction,
-                execution_config.max_wasm_mem_per_call_frame,
-                execution_config.max_substate_reads_per_transaction,
-                execution_config.max_substate_writes_per_transaction,
-                execution_config.max_invoke_input_size,
+                execution_config,
             );
             let mut kernel = Kernel::new(
                 &mut id_allocator,
