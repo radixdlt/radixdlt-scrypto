@@ -93,7 +93,7 @@ fn create_basic_sample_schema_works_correctly() {
     let type_data = schema.resolve(LocalTypeIndex::SchemaLocalIndex(0)).unwrap();
     assert_eq!(type_data.metadata.type_name, "BasicSample");
     assert!(
-        matches!(&type_data.metadata.children, Children::Fields(field_names) if matches!(field_names[..], [
+        matches!(&type_data.metadata.children, Children::NamedFields(field_names) if matches!(field_names[..], [
             FieldMetadata { field_name: Cow::Borrowed("a") },
             FieldMetadata { field_name: Cow::Borrowed("b") },
         ]))
@@ -131,7 +131,7 @@ fn create_advanced_sample_schema_works_correctly() {
     let type_data = schema.resolve(LocalTypeIndex::SchemaLocalIndex(0)).unwrap();
     assert_eq!(type_data.metadata.type_name, "AdvancedSample");
     assert!(
-        matches!(&type_data.metadata.children, Children::Fields(field_names) if matches!(field_names[..], [
+        matches!(&type_data.metadata.children, Children::NamedFields(field_names) if matches!(field_names[..], [
             FieldMetadata { field_name: Cow::Borrowed("a") },
             FieldMetadata { field_name: Cow::Borrowed("b") },
             FieldMetadata { field_name: Cow::Borrowed("c") },

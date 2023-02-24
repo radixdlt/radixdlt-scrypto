@@ -46,12 +46,7 @@ macro_rules! create_well_known_lookup {
                 };
                 // Now add in the basic types
                 lookup[sbor::basic_well_known_types::ANY_ID as usize] = Some(TypeData::named_no_child_names("Any", TypeKind::Any));
-                lookup[sbor::basic_well_known_types::UNIT_ID as usize] = Some(TypeData::named_no_child_names(
-                    "-",
-                    TypeKind::Tuple {
-                        field_types: sbor::rust::vec::Vec::new(),
-                    },
-                ));
+                lookup[sbor::basic_well_known_types::UNIT_ID as usize] = Some(TypeData::named_unit("-"));
                 lookup[sbor::basic_well_known_types::BOOL_ID as usize] = Some(TypeData::named_no_child_names("Bool", TypeKind::Bool));
                 lookup[sbor::basic_well_known_types::I8_ID as usize] = Some(TypeData::named_no_child_names("I8", TypeKind::I8));
                 lookup[sbor::basic_well_known_types::I16_ID as usize] = Some(TypeData::named_no_child_names("I16", TypeKind::I16));

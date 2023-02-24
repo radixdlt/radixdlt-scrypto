@@ -10,6 +10,7 @@ pub use type_kind_validation::*;
 pub use type_metadata_validation::*;
 pub use type_validation_validation::*;
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SchemaValidationError {
     MetadataLengthMismatch,
     ValidationsLengthMismatch,
@@ -19,7 +20,7 @@ pub enum SchemaValidationError {
     TypeKindInvalidSchemaLocalIndex,
     TypeKindInvalidWellKnownIndex,
     TypeMetadataContainedUnexpectedChildNames,
-    TypeMetadataContainedWrongNumberOfChildNames,
+    TypeMetadataContainedWrongNumberOfChildren,
     TypeMetadataForFieldsContainedEnumVariantChildNames,
     TypeMetadataForEnumIsNotEnumVariantChildNames,
     TypeMetadataHasMismatchingEnumDiscriminator,
