@@ -14,7 +14,7 @@ use radix_engine_interface::api::ClientNodeApi;
 use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::AccessRule;
-use radix_engine_interface::blueprints::resource::AccessRuleKey;
+use radix_engine_interface::blueprints::resource::MethodKey;
 use radix_engine_interface::blueprints::resource::AccessRules;
 
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
@@ -845,12 +845,12 @@ impl AccountNativePackage {
 fn access_rules_from_withdraw_rule(withdraw_rule: AccessRule) -> AccessRules {
     let mut access_rules = AccessRules::new();
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_IDENT.to_string()),
+        MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_IDENT.to_string()),
         AccessRule::AllowAll,
         AccessRule::DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_BATCH_IDENT.to_string()),
+        MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_BATCH_IDENT.to_string()),
         AccessRule::AllowAll,
         AccessRule::DenyAll,
     );

@@ -7,7 +7,7 @@ use crate::{
     system::node::{RENodeInit, RENodeModuleInit},
 };
 use radix_engine_interface::api::types::{
-    InvocationIdentifier, LockHandle, NodeModuleId, RENodeId, RENodeType, SubstateOffset,
+    InvocationDebugIdentifier, LockHandle, NodeModuleId, RENodeId, RENodeType, SubstateOffset,
 };
 use sbor::rust::collections::BTreeMap;
 
@@ -26,7 +26,7 @@ macro_rules! log {
 impl KernelModule for KernelDebugModule {
     fn before_invoke<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        identifier: &InvocationIdentifier,
+        identifier: &InvocationDebugIdentifier,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
         log!(

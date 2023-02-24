@@ -209,12 +209,12 @@ fn build_substates(
 
     let mut access_rules = AccessRules::new();
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
+        MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
         update_metadata_access_rule,
         update_metadata_mutability,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(NodeModuleId::Metadata, METADATA_GET_IDENT.to_string()),
+        MethodKey::new(NodeModuleId::Metadata, METADATA_GET_IDENT.to_string()),
         AllowAll,
         DenyAll,
     );
@@ -224,7 +224,7 @@ fn build_substates(
         mint_mutability,
     );
     access_rules.set_group_and_mutability(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             RESOURCE_MANAGER_MINT_NON_FUNGIBLE.to_string(),
         ),
@@ -232,7 +232,7 @@ fn build_substates(
         DenyAll,
     );
     access_rules.set_group_and_mutability(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE.to_string(),
         ),
@@ -240,7 +240,7 @@ fn build_substates(
         DenyAll,
     );
     access_rules.set_group_and_mutability(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             RESOURCE_MANAGER_MINT_FUNGIBLE.to_string(),
         ),
@@ -249,12 +249,12 @@ fn build_substates(
     );
 
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(NodeModuleId::SELF, RESOURCE_MANAGER_BURN_IDENT.to_string()),
+        MethodKey::new(NodeModuleId::SELF, RESOURCE_MANAGER_BURN_IDENT.to_string()),
         burn_access_rule,
         burn_mutability,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT.to_string(),
         ),
@@ -262,7 +262,7 @@ fn build_substates(
         update_non_fungible_data_mutability,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             RESOURCE_MANAGER_CREATE_BUCKET_IDENT.to_string(),
         ),
@@ -270,7 +270,7 @@ fn build_substates(
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT.to_string(),
         ),
@@ -278,7 +278,7 @@ fn build_substates(
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT.to_string(),
         ),
@@ -286,7 +286,7 @@ fn build_substates(
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             RESOURCE_MANAGER_CREATE_VAULT_IDENT.to_string(),
         ),
@@ -294,7 +294,7 @@ fn build_substates(
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             RESOURCE_MANAGER_NON_FUNGIBLE_EXISTS_IDENT.to_string(),
         ),
@@ -302,7 +302,7 @@ fn build_substates(
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT.to_string(),
         ),
@@ -336,12 +336,12 @@ fn build_substates(
         recall_mutability,
     );
     vault_access_rules.set_group_and_mutability(
-        AccessRuleKey::new(NodeModuleId::SELF, VAULT_TAKE_IDENT.to_string()),
+        MethodKey::new(NodeModuleId::SELF, VAULT_TAKE_IDENT.to_string()),
         "withdraw".to_string(),
         DenyAll,
     );
     vault_access_rules.set_group_and_mutability(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             VAULT_TAKE_NON_FUNGIBLES_IDENT.to_string(),
         ),
@@ -349,23 +349,23 @@ fn build_substates(
         DenyAll,
     );
     vault_access_rules.set_group_and_mutability(
-        AccessRuleKey::new(NodeModuleId::SELF, VAULT_LOCK_FEE_IDENT.to_string()),
+        MethodKey::new(NodeModuleId::SELF, VAULT_LOCK_FEE_IDENT.to_string()),
         "withdraw".to_string(),
         DenyAll,
     );
 
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string()),
+        MethodKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string()),
         deposit_access_rule,
         deposit_mutability,
     );
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(NodeModuleId::SELF, VAULT_GET_AMOUNT_IDENT.to_string()),
+        MethodKey::new(NodeModuleId::SELF, VAULT_GET_AMOUNT_IDENT.to_string()),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             VAULT_GET_RESOURCE_ADDRESS_IDENT.to_string(),
         ),
@@ -373,7 +373,7 @@ fn build_substates(
         DenyAll,
     );
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
         ),
@@ -381,12 +381,12 @@ fn build_substates(
         DenyAll,
     );
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(NodeModuleId::SELF, VAULT_CREATE_PROOF_IDENT.to_string()),
+        MethodKey::new(NodeModuleId::SELF, VAULT_CREATE_PROOF_IDENT.to_string()),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             VAULT_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
         ),
@@ -394,7 +394,7 @@ fn build_substates(
         DenyAll,
     );
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             VAULT_CREATE_PROOF_BY_IDS_IDENT.to_string(),
         ),

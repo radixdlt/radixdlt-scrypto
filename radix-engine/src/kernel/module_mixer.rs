@@ -20,7 +20,7 @@ use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::types::api::unsafe_api::ClientCostingReason;
 use bitflags::bitflags;
-use radix_engine_interface::api::types::InvocationIdentifier;
+use radix_engine_interface::api::types::InvocationDebugIdentifier;
 use radix_engine_interface::api::types::LockHandle;
 use radix_engine_interface::api::types::NodeModuleId;
 use radix_engine_interface::api::types::RENodeId;
@@ -195,7 +195,7 @@ impl KernelModule for KernelModuleMixer {
 
     fn before_invoke<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        identifier: &InvocationIdentifier,
+        identifier: &InvocationDebugIdentifier,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;

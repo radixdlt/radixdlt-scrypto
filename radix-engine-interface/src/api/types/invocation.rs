@@ -3,10 +3,12 @@ use crate::api::types::*;
 use crate::data::ScryptoValue;
 use crate::*;
 use sbor::rust::string::String;
+use crate::blueprints::resource::MethodKey;
 
+// TODO: Remove
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub enum InvocationIdentifier {
-    Transaction, // TODO: Remove
+pub enum InvocationDebugIdentifier {
+    Transaction,
     Function(FnIdentifier),
     Method(MethodIdentifier),
 }
@@ -24,6 +26,11 @@ pub struct MethodReceiver(pub RENodeId, pub NodeModuleId);
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct MethodIdentifier(pub RENodeId, pub NodeModuleId, pub String);
 
+impl MethodIdentifier {
+    pub fn method_key(&self) -> MethodKey {
+        MethodKey::new(self.1, self.2.clone())
+    }
+}
 
 impl FnIdentifier {
     pub fn new(package_address: PackageAddress, blueprint_name: String, ident: String) -> Self {
@@ -52,8 +59,8 @@ pub struct FunctionInvocation {
 impl Invocation for FunctionInvocation {
     type Output = ScryptoValue;
 
-    fn identifier(&self) -> InvocationIdentifier {
-        InvocationIdentifier::Function(self.fn_identifier.clone())
+    fn debug_identifier(&self) -> InvocationDebugIdentifier {
+        InvocationDebugIdentifier::Function(self.fn_identifier.clone())
     }
 }
 
@@ -66,7 +73,7 @@ pub struct MethodInvocation {
 impl Invocation for MethodInvocation {
     type Output = ScryptoValue;
 
-    fn identifier(&self) -> InvocationIdentifier {
-        InvocationIdentifier::Method(self.identifier.clone())
+    fn debug_identifier(&self) -> InvocationDebugIdentifier {
+        InvocationDebugIdentifier::Method(self.identifier.clone())
     }
 }

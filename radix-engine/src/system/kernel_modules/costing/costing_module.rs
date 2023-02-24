@@ -1,6 +1,6 @@
 use super::*;
 use super::{CostingReason, FeeReserveError, FeeTable, SystemLoanFeeReserve};
-use crate::kernel::actor::ResolvedActor;
+use crate::kernel::actor::{ActorIdentifier, ResolvedActor};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{KernelModuleApi, LockFlags};
 use crate::kernel::module::KernelModule;
@@ -11,7 +11,7 @@ use crate::{
     transaction::AbortReason,
 };
 use radix_engine_interface::api::types::{
-    ComponentAddress, InvocationIdentifier, LockHandle, MethodIdentifier, NodeModuleId,
+    ComponentAddress, InvocationDebugIdentifier, LockHandle, MethodIdentifier, NodeModuleId,
     RoyaltyOffset, SubstateOffset, VaultId, VaultOffset,
 };
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
@@ -84,7 +84,7 @@ fn apply_royalty_cost<Y: KernelModuleApi<RuntimeError>>(
 impl KernelModule for CostingModule {
     fn before_invoke<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        _identifier: &InvocationIdentifier,
+        _identifier: &InvocationDebugIdentifier,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
         let current_depth = api.kernel_get_current_depth();
@@ -119,11 +119,11 @@ impl KernelModule for CostingModule {
         // Identify the function, and optional component address
         let (fn_identifier, optional_component) = match &callee {
             Some(ResolvedActor {
-                     method: receiver,
-                     fn_identifier: identifier,
+                identifier,
+                fn_identifier,
             }) => {
-                let maybe_component = match &receiver {
-                    Some(MethodIdentifier(node_id, ..))
+                let maybe_component = match &identifier {
+                    ActorIdentifier::Method(MethodIdentifier(node_id, ..))
                         if matches!(
                             node_id,
                             RENodeId::Component(..)
@@ -135,7 +135,7 @@ impl KernelModule for CostingModule {
                     _ => None,
                 };
 
-                (identifier, maybe_component)
+                (fn_identifier, maybe_component)
             }
             _ => {
                 return Ok(());

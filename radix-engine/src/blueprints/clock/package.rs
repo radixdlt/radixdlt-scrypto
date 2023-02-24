@@ -14,7 +14,7 @@ use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::blueprints::clock::ClockCreateInput;
 use radix_engine_interface::blueprints::clock::TimePrecision;
 use radix_engine_interface::blueprints::clock::*;
-use radix_engine_interface::blueprints::resource::AccessRuleKey;
+use radix_engine_interface::blueprints::resource::MethodKey;
 use radix_engine_interface::blueprints::resource::AccessRules;
 use radix_engine_interface::blueprints::resource::{require, AccessRule};
 use radix_engine_interface::data::ScryptoValue;
@@ -106,15 +106,15 @@ impl ClockNativePackage {
 
         let mut access_rules = AccessRules::new();
         access_rules.set_method_access_rule(
-            AccessRuleKey::new(NodeModuleId::SELF, CLOCK_SET_CURRENT_TIME_IDENT.to_string()),
+            MethodKey::new(NodeModuleId::SELF, CLOCK_SET_CURRENT_TIME_IDENT.to_string()),
             rule!(require(AuthAddresses::validator_role())),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::new(NodeModuleId::SELF, CLOCK_GET_CURRENT_TIME_IDENT.to_string()),
+            MethodKey::new(NodeModuleId::SELF, CLOCK_GET_CURRENT_TIME_IDENT.to_string()),
             rule!(allow_all),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::new(
+            MethodKey::new(
                 NodeModuleId::SELF,
                 CLOCK_COMPARE_CURRENT_TIME_IDENT.to_string(),
             ),

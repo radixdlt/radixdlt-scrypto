@@ -1,23 +1,30 @@
 use crate::types::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum ActorIdentifier {
+    Method(MethodIdentifier),
+    Function(FnIdentifier),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ResolvedActor {
     pub fn_identifier: FnIdentifier,
-    pub method: Option<MethodIdentifier>,
+    pub identifier: ActorIdentifier,
 }
 
 impl ResolvedActor {
     pub fn method<I: Into<FnIdentifier>>(identifier: I, method: MethodIdentifier) -> Self {
         Self {
             fn_identifier: identifier.into(),
-            method: Some(method),
+            identifier: ActorIdentifier::Method(method),
         }
     }
 
     pub fn function<I: Into<FnIdentifier>>(identifier: I) -> Self {
+        let fn_identifier = identifier.into();
         Self {
-            fn_identifier: identifier.into(),
-            method: None,
+            fn_identifier: fn_identifier.clone(),
+            identifier: ActorIdentifier::Function(fn_identifier),
         }
     }
 }

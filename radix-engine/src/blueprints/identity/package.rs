@@ -72,12 +72,12 @@ impl Identity {
 
         let mut access_rules = AccessRules::new();
         access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
+            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
             access_rule.clone(),
             access_rule,
         );
         access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::new(NodeModuleId::Metadata, METADATA_GET_IDENT.to_string()),
+            MethodKey::new(NodeModuleId::Metadata, METADATA_GET_IDENT.to_string()),
             AccessRule::AllowAll,
             AccessRule::DenyAll,
         );

@@ -1,5 +1,5 @@
 use crate::errors::*;
-use crate::kernel::actor::ResolvedActor;
+use crate::kernel::actor::{ActorIdentifier, ResolvedActor};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::event::TrackedEvent;
 use crate::kernel::kernel_api::KernelModuleApi;
@@ -337,15 +337,16 @@ impl ExecutionTraceModule {
         if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
             let origin = match &callee {
                 Some(ResolvedActor {
-                         fn_identifier: identifier,
-                         method: receiver,
-                }) => {
-                    if receiver.is_some() {
+                    fn_identifier: identifier,
+                    identifier: receiver,
+                }) => match receiver {
+                    ActorIdentifier::Method(..) => {
                         KernelCallOrigin::ScryptoMethod(identifier.clone())
-                    } else {
+                    }
+                    ActorIdentifier::Function(..) => {
                         KernelCallOrigin::ScryptoFunction(identifier.clone())
                     }
-                }
+                },
                 _ => panic!("Should not get here."),
             };
 
@@ -368,7 +369,7 @@ impl ExecutionTraceModule {
                         blueprint_name,
                         ident,
                     },
-                method: Some(MethodIdentifier(RENodeId::Vault(vault_id), ..)),
+                identifier: ActorIdentifier::Method(MethodIdentifier(RENodeId::Vault(vault_id), ..)),
             }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_PUT_IDENT) =>
@@ -382,7 +383,7 @@ impl ExecutionTraceModule {
                         blueprint_name,
                         ident,
                     },
-                method: Some(MethodIdentifier(RENodeId::Vault(vault_id), ..)),
+                identifier: ActorIdentifier::Method(MethodIdentifier(RENodeId::Vault(vault_id), ..)),
             }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_LOCK_FEE_IDENT) =>
@@ -408,7 +409,7 @@ impl ExecutionTraceModule {
                         blueprint_name,
                         ident,
                     },
-                method: Some(MethodIdentifier(RENodeId::Vault(vault_id), ..)),
+                identifier: ActorIdentifier::Method(MethodIdentifier(RENodeId::Vault(vault_id), ..)),
             }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_TAKE_IDENT) =>
@@ -558,7 +559,7 @@ impl ExecutionTraceReceipt {
         let mut vault_locked_by = HashMap::<VaultId, RENodeId>::new();
         for (actor, vault_id, vault_op) in ops {
             if let TraceActor::Actor(ResolvedActor {
-                method: Some(receiver),
+                identifier: ActorIdentifier::Method(method),
                 ..
             }) = actor
             {
@@ -566,21 +567,21 @@ impl ExecutionTraceReceipt {
                     VaultOp::Create(_) => todo!("Not supported yet!"),
                     VaultOp::Put(amount) => {
                         *vault_changes
-                            .entry(receiver.0)
+                            .entry(method.0)
                             .or_default()
                             .entry(vault_id)
                             .or_default() += amount;
                     }
                     VaultOp::Take(amount) => {
                         *vault_changes
-                            .entry(receiver.0)
+                            .entry(method.0)
                             .or_default()
                             .entry(vault_id)
                             .or_default() -= amount;
                     }
                     VaultOp::LockFee => {
                         *vault_changes
-                            .entry(receiver.0)
+                            .entry(method.0)
                             .or_default()
                             .entry(vault_id)
                             .or_default() -= 0;
@@ -588,7 +589,7 @@ impl ExecutionTraceReceipt {
                         // Hack: Additional check to avoid second `lock_fee` attempts (runtime failure) from
                         // polluting the `vault_locked_by` index.
                         if !vault_locked_by.contains_key(&vault_id) {
-                            vault_locked_by.insert(vault_id, receiver.0);
+                            vault_locked_by.insert(vault_id, method.0);
                         }
                     }
                 }

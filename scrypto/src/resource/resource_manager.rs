@@ -71,7 +71,7 @@ impl ResourceManager {
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
                     index: 0,
-                    key: AccessRuleKey::new(
+                    key: MethodKey::new(
                         NodeModuleId::SELF,
                         RESOURCE_MANAGER_BURN_IDENT.to_string(),
                     ),
@@ -106,7 +106,7 @@ impl ResourceManager {
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
                     index: 0,
-                    key: AccessRuleKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string()),
+                    key: MethodKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string()),
                     rule: AccessRuleEntry::AccessRule(access_rule),
                 })
                 .unwrap(),
@@ -138,7 +138,7 @@ impl ResourceManager {
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
                     index: 0,
-                    key: AccessRuleKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
+                    key: MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
                     rule: AccessRuleEntry::AccessRule(access_rule),
                 })
                 .unwrap(),
@@ -154,7 +154,7 @@ impl ResourceManager {
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
                     index: 0,
-                    key: AccessRuleKey::new(
+                    key: MethodKey::new(
                         NodeModuleId::SELF,
                         RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT.to_string(),
                     ),
@@ -189,7 +189,7 @@ impl ResourceManager {
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
                     index: 0,
-                    key: AccessRuleKey::new(
+                    key: MethodKey::new(
                         NodeModuleId::SELF,
                         RESOURCE_MANAGER_BURN_IDENT.to_string(),
                     ),
@@ -208,7 +208,7 @@ impl ResourceManager {
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
                     index: 0,
-                    key: AccessRuleKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
+                    key: MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
                     mutability: AccessRule::DenyAll,
                 })
                 .unwrap(),
@@ -224,7 +224,7 @@ impl ResourceManager {
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
                     index: 0,
-                    key: AccessRuleKey::new(
+                    key: MethodKey::new(
                         NodeModuleId::SELF,
                         RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT.to_string(),
                     ),
@@ -256,7 +256,7 @@ impl ResourceManager {
             ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
             scrypto_encode(&AccessRulesSetMethodMutabilityInput {
                 index: 0,
-                key: AccessRuleKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string()),
+                key: MethodKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string()),
                 mutability: AccessRule::DenyAll,
             })
             .unwrap(),

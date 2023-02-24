@@ -1,5 +1,5 @@
 use crate::errors::*;
-use crate::kernel::actor::ResolvedActor;
+use crate::kernel::actor::{ActorIdentifier, ResolvedActor};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::call_frame::RENodeVisibilityOrigin;
 use crate::kernel::kernel_api::KernelModuleApi;
@@ -44,18 +44,24 @@ impl AuthModule {
         matches!(
             actor,
             Some(ResolvedActor {
-                method: Some(MethodIdentifier(RENodeId::GlobalComponent(..), ..)),
+                identifier: ActorIdentifier::Method(MethodIdentifier(
+                    RENodeId::GlobalComponent(..),
+                    ..
+                )),
                 ..
             })
         )
     }
 
-    fn function_auth<Y: KernelModuleApi<RuntimeError>>(identifier: &FnIdentifier, api: &mut Y) -> Result<Vec<MethodAuthorization>, RuntimeError> {
+    fn function_auth<Y: KernelModuleApi<RuntimeError>>(
+        identifier: &FnIdentifier,
+        api: &mut Y,
+    ) -> Result<Vec<MethodAuthorization>, RuntimeError> {
         let auth = if identifier.package_address.eq(&PACKAGE_LOADER) {
             if identifier.blueprint_name.eq(PACKAGE_LOADER_BLUEPRINT)
                 && identifier
-                .ident
-                .eq(PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT)
+                    .ident
+                    .eq(PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT)
             {
                 vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
                     HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
@@ -89,9 +95,14 @@ impl AuthModule {
         Ok(auth)
     }
 
-    fn method_auth<Y: KernelModuleApi<RuntimeError>>(identifier: &MethodIdentifier, api: &mut Y) -> Result<Vec<MethodAuthorization>, RuntimeError> {
+    fn method_auth<Y: KernelModuleApi<RuntimeError>>(
+        identifier: &MethodIdentifier,
+        api: &mut Y,
+    ) -> Result<Vec<MethodAuthorization>, RuntimeError> {
         let auth = match identifier {
-            MethodIdentifier(_, NodeModuleId::AccessRules | NodeModuleId::AccessRules1, _) => vec![],
+            MethodIdentifier(_, NodeModuleId::AccessRules | NodeModuleId::AccessRules1, _) => {
+                vec![]
+            }
             MethodIdentifier(
                 RENodeId::Proof(..)
                 | RENodeId::Bucket(..)
@@ -101,12 +112,10 @@ impl AuthModule {
                 | RENodeId::AuthZoneStack,
                 ..,
             ) => vec![],
-            MethodIdentifier(RENodeId::Vault(vault_id), module_id, ident) => {
+            MethodIdentifier(RENodeId::Vault(vault_id), ..) => {
                 let vault_node_id = RENodeId::Vault(*vault_id);
                 let visibility = api.kernel_get_node_visibility_origin(vault_node_id).ok_or(
-                    RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(
-                        vault_node_id,
-                    )),
+                    RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(vault_node_id)),
                 )?;
 
                 let resource_address = {
@@ -133,18 +142,18 @@ impl AuthModule {
                 let substate = substate_ref.access_rules_chain();
 
                 // TODO: Revisit what the correct abstraction is for visibility in the auth module
+                let method_key = identifier.method_key();
                 let auth = match visibility {
                     RENodeVisibilityOrigin::Normal => {
-                        substate.native_fn_authorization(*module_id, ident.clone())
+                        substate.native_fn_authorization(method_key)
                     }
                     RENodeVisibilityOrigin::DirectAccess => {
                         // TODO: Do we want to allow recaller to be able to withdraw from
                         // TODO: any visible vault?
-                        if ident.eq(VAULT_RECALL_IDENT)
-                            || ident.eq(VAULT_RECALL_NON_FUNGIBLES_IDENT)
+                        if method_key.node_module_id.eq(&NodeModuleId::SELF) && (method_key.ident.eq(VAULT_RECALL_IDENT)
+                            || method_key.ident.eq(VAULT_RECALL_NON_FUNGIBLES_IDENT))
                         {
-                            let access_rule =
-                                substate.access_rules_chain[0].get_group("recall");
+                            let access_rule = substate.access_rules_chain[0].get_group("recall");
                             let authorization = convert_contextless(access_rule);
                             vec![authorization]
                         } else {
@@ -158,11 +167,9 @@ impl AuthModule {
                 api.kernel_drop_lock(handle)?;
                 auth
             }
-            MethodIdentifier(node_id, module_id, ident) if matches!(node_id, RENodeId::Component(..)) || matches!(
-                        node_id,
-                        RENodeId::GlobalComponent(ComponentAddress::Normal(..))
-                    ) => {
-
+            MethodIdentifier(node_id, module_id, ..)
+                if matches!(node_id, RENodeId::Component(..) | RENodeId::GlobalComponent(ComponentAddress::Normal(..))) =>
+            {
                 let handle = api.kernel_lock_substate(
                     *node_id,
                     NodeModuleId::TypeInfo,
@@ -183,9 +190,9 @@ impl AuthModule {
                     LockFlags::read_only(),
                 )?;
 
+                let method_key = identifier.method_key();
+
                 if let NodeModuleId::SELF = module_id {
-                    // Assume that package_address/blueprint is the original impl of Component for now
-                    // TODO: Remove this assumption
                     let substate_ref = api.kernel_get_substate_ref(handle)?;
                     let package = substate_ref.package_info();
                     let schema = package
@@ -223,8 +230,7 @@ impl AuthModule {
                         let auth = access_rules.method_authorization(
                             &state,
                             &schema,
-                            *module_id,
-                            ident.clone(),
+                            method_key,
                         );
                         api.kernel_drop_lock(handle)?;
                         auth
@@ -233,20 +239,18 @@ impl AuthModule {
                     let handle = api.kernel_lock_substate(
                         *node_id,
                         NodeModuleId::AccessRules,
-                        SubstateOffset::AccessRulesChain(
-                            AccessRulesChainOffset::AccessRulesChain,
-                        ),
+                        SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
                         LockFlags::read_only(),
                     )?;
                     let substate_ref = api.kernel_get_substate_ref(handle)?;
                     let access_rules = substate_ref.access_rules_chain();
-                    let auth =
-                        access_rules.native_fn_authorization(*module_id, ident.clone());
+                    let auth = access_rules.native_fn_authorization(method_key);
                     api.kernel_drop_lock(handle)?;
                     auth
                 }
             }
-            MethodIdentifier(node_id, module_id, ident) => {
+            MethodIdentifier(node_id, ..) => {
+                let method_key = identifier.method_key();
                 let handle = api.kernel_lock_substate(
                     *node_id,
                     NodeModuleId::AccessRules,
@@ -255,7 +259,7 @@ impl AuthModule {
                 )?;
                 let substate_ref = api.kernel_get_substate_ref(handle)?;
                 let substate = substate_ref.access_rules_chain();
-                let auth = substate.native_fn_authorization(*module_id, ident.clone());
+                let auth = substate.native_fn_authorization(method_key);
                 api.kernel_drop_lock(handle)?;
                 auth
             }
@@ -307,15 +311,9 @@ impl KernelModule for AuthModule {
         }
 
         let method_auths = if let Some(actor) = next_actor {
-            match &actor {
-                ResolvedActor {
-                    fn_identifier: identifier,
-                    method: None,
-                } => Self::function_auth(identifier, api)?,
-                ResolvedActor {
-                    method: Some(method_identifier),
-                    fn_identifier: _fn_identifier,
-                } => Self::method_auth(method_identifier, api)?,
+            match &actor.identifier {
+                ActorIdentifier::Method(method) => Self::method_auth(method, api)?,
+                ActorIdentifier::Function(function) => Self::function_auth(function, api)?,
             }
         } else {
             vec![]

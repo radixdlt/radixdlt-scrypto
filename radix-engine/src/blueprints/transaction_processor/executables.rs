@@ -75,8 +75,8 @@ pub enum InstructionOutput {
 impl<'a> Invocation for TransactionProcessorRunInvocation<'a> {
     type Output = Vec<InstructionOutput>;
 
-    fn identifier(&self) -> InvocationIdentifier {
-        InvocationIdentifier::Transaction
+    fn debug_identifier(&self) -> InvocationDebugIdentifier {
+        InvocationDebugIdentifier::Transaction
     }
 }
 
