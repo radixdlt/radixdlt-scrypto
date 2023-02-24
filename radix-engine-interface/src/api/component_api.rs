@@ -27,6 +27,8 @@ pub trait ClientComponentApi<E> {
 
     fn globalize(&mut self, node_id: RENodeId) -> Result<ComponentAddress, E>;
 
+    fn globalize_with_address(&mut self, node_id: RENodeId, address: Address) -> Result<ComponentAddress, E>;
+
     fn get_component_type_info(
         &mut self,
         component_id: ComponentId,

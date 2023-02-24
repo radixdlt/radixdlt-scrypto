@@ -73,6 +73,13 @@ extern "C" {
 
     pub fn globalize_component(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
 
+    pub fn globalize_with_address(
+        _node_id_ptr: *const u8,
+        _node_id_len: usize,
+        _address_ptr: *const u8,
+        _address_len: usize,
+    ) -> Buffer;
+
     pub fn get_component_type_info(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
 
     /// Invokes a method on a component.
@@ -209,6 +216,17 @@ pub unsafe fn globalize_component(
 ) -> Buffer {
     todo!()
 }
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn globalize_with_address(
+    _node_id_ptr: *const u8,
+    _node_id_len: usize,
+    _address_ptr: *const u8,
+    _address_len: usize,
+) -> Buffer {
+    todo!()
+}
+
 
 #[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn get_component_type_info(
