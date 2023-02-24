@@ -256,6 +256,9 @@ pub enum RuntimeSubstate {
     Account(AccountSubstate),
     AccessController(AccessControllerSubstate),
 
+    // TODO: we may want to move some of the static info into `TypeInfo` 
+    // And split the "Blueprint" into fungible and non-fungible.
+
     VaultInfo(VaultInfoSubstate),
     VaultLiquidFungible(LiquidFungibleResource),
     VaultLiquidNonFungible(LiquidNonFungibleResource),
