@@ -9,7 +9,7 @@ use transaction::data::manifest_args;
 use transaction::{builder::ManifestBuilder, data::ManifestExpression};
 use utils::ContextualDisplay;
 
-fn test_bucket_internal(method_name: &str) {
+fn test_bucket_internal(method_name: &str, args: Vec<u8>, expect_success: bool) {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
@@ -18,7 +18,7 @@ fn test_bucket_internal(method_name: &str) {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(account, 10.into())
-        .call_function(package_address, "BucketTest", method_name, manifest_args!())
+        .call_function(package_address, "BucketTest", method_name, args)
         .call_method(
             account,
             "deposit_batch",
@@ -31,52 +31,66 @@ fn test_bucket_internal(method_name: &str) {
     );
 
     // Assert
-    receipt.expect_commit_success();
+    if expect_success {
+        receipt.expect_commit_success();
+    } else {
+        receipt.expect_commit_failure();
+    }
+}
+
+#[test]
+fn test_bucket_drop_empty() {
+    test_bucket_internal("drop_empty", manifest_args!(0u32), true);
+}
+
+#[test]
+fn test_bucket_drop_not_empty() {
+    test_bucket_internal("drop_empty", manifest_args!(1u32), false);
 }
 
 #[test]
 fn test_bucket_combine() {
-    test_bucket_internal("combine");
+    test_bucket_internal("combine", manifest_args!(), true);
 }
 
 #[test]
 fn test_bucket_split() {
-    test_bucket_internal("split");
+    test_bucket_internal("split", manifest_args!(), true);
 }
 
 #[test]
 fn test_bucket_borrow() {
-    test_bucket_internal("borrow");
+    test_bucket_internal("borrow", manifest_args!(), true);
 }
 
 #[test]
 fn test_bucket_query() {
-    test_bucket_internal("query");
+    test_bucket_internal("query", manifest_args!(), true);
 }
 
 #[test]
 fn test_bucket_restricted_transfer() {
-    test_bucket_internal("test_restricted_transfer");
+    test_bucket_internal("test_restricted_transfer", manifest_args!(), true);
 }
 
 #[test]
 fn test_bucket_burn() {
-    test_bucket_internal("test_burn");
+    test_bucket_internal("test_burn", manifest_args!(), true);
 }
 
 #[test]
 fn test_bucket_burn_freely() {
-    test_bucket_internal("test_burn_freely");
+    test_bucket_internal("test_burn_freely", manifest_args!(), true);
 }
 
 #[test]
 fn test_bucket_empty_fungible() {
-    test_bucket_internal("create_empty_bucket_fungible");
+    test_bucket_internal("create_empty_bucket_fungible", manifest_args!(), true);
 }
 
 #[test]
 fn test_bucket_empty_non_fungible() {
-    test_bucket_internal("create_empty_bucket_non_fungible");
+    test_bucket_internal("create_empty_bucket_non_fungible", manifest_args!(), true);
 }
 
 #[test]

@@ -1,4 +1,3 @@
-use native_sdk::resource::SysBucket;
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
@@ -6,6 +5,7 @@ use crate::kernel::heap::{DroppedBucket, DroppedBucketResource};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node::RENodeInit;
 use crate::types::*;
+use native_sdk::resource::SysBucket;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::{types::*, ClientSubstateApi};
@@ -500,10 +500,8 @@ impl BucketBlueprint {
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientApi<RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: BucketDropEmptyInput = scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -514,7 +512,9 @@ impl BucketBlueprint {
             api.kernel_drop_node(RENodeId::Bucket(input.bucket.0))?;
             Ok(IndexedScryptoValue::from_typed(&()))
         } else {
-            Err(RuntimeError::ApplicationError(ApplicationError::BucketError(BucketError::NotEmpty)))
+            Err(RuntimeError::ApplicationError(
+                ApplicationError::BucketError(BucketError::NotEmpty),
+            ))
         }
     }
 
