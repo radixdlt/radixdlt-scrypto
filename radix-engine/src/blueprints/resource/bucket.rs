@@ -1,3 +1,4 @@
+use native_sdk::resource::SysBucket;
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
@@ -19,6 +20,7 @@ pub enum BucketError {
     ProofError(ProofError),
     NonFungibleOperationNotSupported,
     MismatchingResource,
+    NotEmpty,
     InvalidAmount,
 }
 
@@ -494,6 +496,28 @@ impl NonFungibleBucket {
 pub struct BucketBlueprint;
 
 impl BucketBlueprint {
+    pub fn drop_empty<Y>(
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientApi<RuntimeError>
+    {
+        // TODO: Remove decode/encode mess
+        let input: BucketDropEmptyInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        let amount = input.bucket.sys_amount(api)?;
+        if amount.is_zero() {
+            api.kernel_drop_node(RENodeId::Bucket(input.bucket.0))?;
+            Ok(IndexedScryptoValue::from_typed(&()))
+        } else {
+            Err(RuntimeError::ApplicationError(ApplicationError::BucketError(BucketError::NotEmpty)))
+        }
+    }
+
     pub fn take<Y>(
         receiver: RENodeId,
         input: ScryptoValue,

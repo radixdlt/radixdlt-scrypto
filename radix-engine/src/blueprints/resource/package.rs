@@ -353,6 +353,17 @@ impl ResourceManagerNativePackage {
                 ))?;
                 ProofBlueprint::get_resource_address(receiver, input, api)
             }
+            BUCKET_DROP_EMPTY_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
+                if receiver.is_some() {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    ));
+                }
+
+                BucketBlueprint::drop_empty(input, api)
+            }
             BUCKET_PUT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
 
