@@ -16,7 +16,7 @@ use radix_engine_interface::api::node_modules::royalty::{
 use radix_engine_interface::api::types::{ComponentId, RENodeId};
 use radix_engine_interface::api::{types::*, ClientComponentApi};
 use radix_engine_interface::blueprints::resource::{
-    require, AccessRule, MethodKey, AccessRules, Bucket,
+    require, AccessRule, AccessRules, Bucket, MethodKey,
 };
 use radix_engine_interface::data::{
     scrypto_decode, scrypto_encode, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,

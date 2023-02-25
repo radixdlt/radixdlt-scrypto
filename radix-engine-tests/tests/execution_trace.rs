@@ -30,7 +30,7 @@ fn test_trace_resource_transfers() {
     );
 
     // Assert
-    let (resource_address, source_component, target_component): (
+    let (_resource_address, source_component, target_component): (
         ResourceAddress,
         ComponentAddress,
         ComponentAddress,
@@ -51,8 +51,7 @@ fn test_trace_resource_transfers() {
         .expect_commit()
         .resource_changes
         .iter()
-        .any(|r| r.resource_address == resource_address
-            && r.node_id == RENodeId::GlobalComponent(source_component)
+        .any(|r| r.node_id == RENodeId::GlobalComponent(source_component)
             && r.amount == -Decimal::from(transfer_amount)));
 
     // Target vault deposit
@@ -60,8 +59,7 @@ fn test_trace_resource_transfers() {
         .expect_commit()
         .resource_changes
         .iter()
-        .any(|r| r.resource_address == resource_address
-            && r.node_id == RENodeId::GlobalComponent(target_component)
+        .any(|r| r.node_id == RENodeId::GlobalComponent(target_component)
             && r.amount == Decimal::from(transfer_amount)));
 
     // Fee withdrawal
@@ -69,8 +67,7 @@ fn test_trace_resource_transfers() {
         .expect_commit()
         .resource_changes
         .iter()
-        .any(|r| r.resource_address == RADIX_TOKEN
-            && r.node_id == RENodeId::GlobalComponent(account)
+        .any(|r| r.node_id == RENodeId::GlobalComponent(account)
             && r.amount == -Decimal::from(total_fee_paid)));
 }
 
@@ -268,11 +265,8 @@ fn test_instruction_traces() {
         assert_eq!(1, trace.output.proofs.len());
 
         let output_proof = trace.output.proofs.values().nth(0).unwrap();
-        assert_eq!(RADIX_TOKEN, output_proof.resource_address);
-        assert_eq!(
-            LockedAmountOrIds::Amount(dec!("10000")),
-            output_proof.total_locked
-        );
+        assert_eq!(RADIX_TOKEN, output_proof.resource_address());
+        assert_eq!(dec!("10000"), output_proof.amount());
     }
 
     {
@@ -287,11 +281,8 @@ fn test_instruction_traces() {
         assert_eq!(1, trace.input.proofs.len());
 
         let input_proof = trace.input.proofs.values().nth(0).unwrap();
-        assert_eq!(RADIX_TOKEN, input_proof.resource_address);
-        assert_eq!(
-            LockedAmountOrIds::Amount(dec!("10000")),
-            input_proof.total_locked
-        );
+        assert_eq!(RADIX_TOKEN, input_proof.resource_address());
+        assert_eq!(dec!("10000"), input_proof.amount());
     }
 
     {

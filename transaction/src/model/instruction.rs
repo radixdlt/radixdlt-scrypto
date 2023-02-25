@@ -1,5 +1,5 @@
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::blueprints::resource::{AccessRule, MethodKey, AccessRules};
+use radix_engine_interface::blueprints::resource::{AccessRule, AccessRules, MethodKey};
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;

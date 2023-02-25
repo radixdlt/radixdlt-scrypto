@@ -1,14 +1,15 @@
 use crate::kernel::actor::ResolvedActor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::LockFlags;
 use crate::{
     errors::RuntimeError,
     kernel::{kernel_api::KernelModuleApi, module::KernelModule},
     system::node::{RENodeInit, RENodeModuleInit},
 };
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
     InvocationDebugIdentifier, LockHandle, NodeModuleId, RENodeId, RENodeType, SubstateOffset,
 };
+use radix_engine_interface::data::ScryptoValue;
 use sbor::rust::collections::BTreeMap;
 
 #[derive(Debug, Clone)]
@@ -42,6 +43,7 @@ impl KernelModule for KernelDebugModule {
         api: &mut Y,
         callee: &Option<ResolvedActor>,
         nodes_and_refs: &mut CallFrameUpdate,
+        _args: &ScryptoValue,
     ) -> Result<(), RuntimeError> {
         log!(api, "Sending nodes: {:?}", nodes_and_refs.nodes_to_move);
         log!(api, "Sending refs: {:?}", nodes_and_refs.node_refs_to_copy);
@@ -109,7 +111,6 @@ impl KernelModule for KernelDebugModule {
         offset: &SubstateOffset,
         flags: &LockFlags,
     ) -> Result<(), RuntimeError> {
-        /*
         log!(
             api,
             "Locking substate: node id = {:?}, module_id = {:?}, offset = {:?}, flags = {:?}",
@@ -118,7 +119,15 @@ impl KernelModule for KernelDebugModule {
             offset,
             flags
         );
-         */
+        Ok(())
+    }
+
+    fn after_lock_substate<Y: KernelModuleApi<RuntimeError>>(
+        api: &mut Y,
+        handle: LockHandle,
+        size: usize,
+    ) -> Result<(), RuntimeError> {
+        log!(api, "Substate locked: handle = {:?}", handle);
         Ok(())
     }
 
@@ -127,14 +136,12 @@ impl KernelModule for KernelDebugModule {
         lock_handle: LockHandle,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        /*
         log!(
             api,
             "Reading substate: handle = {}, size = {:?}",
             lock_handle,
             size
         );
-         */
         Ok(())
     }
 
@@ -143,14 +150,12 @@ impl KernelModule for KernelDebugModule {
         lock_handle: LockHandle,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        /*
         log!(
             api,
             "Writing substate: handle = {}, size = {:?}",
             lock_handle,
             size
         );
-         */
         Ok(())
     }
 
@@ -158,9 +163,7 @@ impl KernelModule for KernelDebugModule {
         api: &mut Y,
         lock_handle: LockHandle,
     ) -> Result<(), RuntimeError> {
-        /*
         log!(api, "Dropping lock: handle = {} ", lock_handle);
-         */
         Ok(())
     }
 }

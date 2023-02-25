@@ -1,9 +1,9 @@
 use crate::api::package::PackageAddress;
 use crate::api::types::*;
+use crate::blueprints::resource::MethodKey;
 use crate::data::ScryptoValue;
 use crate::*;
 use sbor::rust::string::String;
-use crate::blueprints::resource::MethodKey;
 
 // TODO: Remove
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
@@ -47,6 +47,10 @@ impl FnIdentifier {
 
     pub fn blueprint_name(&self) -> &String {
         &self.blueprint_name
+    }
+
+    pub fn size(&self) -> usize {
+        self.blueprint_name.len() + self.ident.len() + self.package_address.size()
     }
 }
 

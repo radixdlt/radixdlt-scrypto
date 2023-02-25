@@ -1,388 +1,871 @@
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
-use crate::kernel::kernel_api::LockFlags;
+use crate::kernel::heap::{DroppedBucket, DroppedBucketResource};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node::RENodeInit;
 use crate::types::*;
-use radix_engine_interface::api::types::*;
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{types::*, ClientSubstateApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum BucketError {
-    InvalidDivisibility,
     InvalidRequestData(DecodeError),
-    CouldNotCreateBucket,
-    CouldNotTakeBucket,
-    ResourceOperationError(ResourceOperationError),
+
+    ResourceError(ResourceError),
     ProofError(ProofError),
-    CouldNotCreateProof,
+    NonFungibleOperationNotSupported,
+    MismatchingResource,
+    InvalidAmount,
 }
 
-/// A transient resource container.
-#[derive(Debug)]
-pub struct BucketSubstate {
-    resource: Rc<RefCell<LockableResource>>,
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct BucketInfoSubstate {
+    pub resource_address: ResourceAddress,
+    pub resource_type: ResourceType,
 }
 
-impl BucketSubstate {
-    pub fn new(resource: Resource) -> Self {
-        Self {
-            resource: Rc::new(RefCell::new(resource.into())),
-        }
+impl BucketInfoSubstate {
+    pub fn of<Y>(node_id: RENodeId, api: &mut Y) -> Result<Self, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+    {
+        let handle = api.sys_lock_substate(
+            node_id,
+            SubstateOffset::Bucket(BucketOffset::Info),
+            LockFlags::read_only(),
+        )?;
+        let substate_ref: &BucketInfoSubstate = api.kernel_get_substate_ref(handle)?;
+        let info = substate_ref.clone();
+        api.sys_drop_lock(handle)?;
+        Ok(info)
+    }
+}
+
+pub struct FungibleBucket;
+
+impl FungibleBucket {
+    pub fn liquid_amount<Y>(node_id: RENodeId, api: &mut Y) -> Result<Decimal, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+    {
+        let handle = api.sys_lock_substate(
+            node_id,
+            SubstateOffset::Bucket(BucketOffset::LiquidFungible),
+            LockFlags::read_only(),
+        )?;
+        let substate_ref: &LiquidFungibleResource = api.kernel_get_substate_ref(handle)?;
+        let amount = substate_ref.amount();
+        api.sys_drop_lock(handle)?;
+        Ok(amount)
     }
 
-    pub fn put(&mut self, other: BucketSubstate) -> Result<(), ResourceOperationError> {
-        self.borrow_resource_mut().put(other.resource()?)
+    pub fn locked_amount<Y>(node_id: RENodeId, api: &mut Y) -> Result<Decimal, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+    {
+        let handle = api.sys_lock_substate(
+            node_id,
+            SubstateOffset::Bucket(BucketOffset::LockedFungible),
+            LockFlags::read_only(),
+        )?;
+        let substate_ref: &LockedFungibleResource = api.kernel_get_substate_ref(handle)?;
+        let amount = substate_ref.amount();
+        api.sys_drop_lock(handle)?;
+        Ok(amount)
     }
 
-    pub fn take(&mut self, amount: Decimal) -> Result<Resource, ResourceOperationError> {
-        self.borrow_resource_mut().take_by_amount(amount)
+    pub fn is_locked<Y>(node_id: RENodeId, api: &mut Y) -> Result<bool, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+    {
+        Ok(!Self::locked_amount(node_id, api)?.is_zero())
     }
 
-    pub fn take_non_fungibles(
-        &mut self,
-        ids: &BTreeSet<NonFungibleLocalId>,
-    ) -> Result<Resource, ResourceOperationError> {
-        self.borrow_resource_mut().take_by_ids(ids)
-    }
-
-    pub fn create_proof(&mut self, self_bucket_id: BucketId) -> Result<ProofSubstate, ProofError> {
-        let container_id = ResourceContainerId::Bucket(self_bucket_id);
-        match self.resource_type() {
-            ResourceType::Fungible { .. } => {
-                self.create_proof_by_amount(self.total_amount(), container_id)
-            }
-            ResourceType::NonFungible { .. } => self.create_proof_by_ids(
-                &self
-                    .total_ids()
-                    .expect("Failed to list non-fungible IDs on non-fungible Bucket"),
-                container_id,
-            ),
-        }
-    }
-
-    pub fn create_proof_by_amount(
-        &mut self,
+    pub fn take<Y>(
+        node_id: RENodeId,
         amount: Decimal,
-        container_id: ResourceContainerId,
-    ) -> Result<ProofSubstate, ProofError> {
-        // lock the specified amount
-        let locked_amount_or_ids = self
-            .borrow_resource_mut()
-            .lock_by_amount(amount)
-            .map_err(ProofError::ResourceOperationError)?;
-
-        // produce proof
-        let mut evidence = HashMap::new();
-        evidence.insert(
-            container_id,
-            (self.resource.clone(), locked_amount_or_ids.clone()),
-        );
-        ProofSubstate::new(
-            self.resource_address(),
-            self.resource_type(),
-            locked_amount_or_ids,
-            evidence,
-        )
+        api: &mut Y,
+    ) -> Result<LiquidFungibleResource, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+    {
+        let handle = api.sys_lock_substate(
+            node_id,
+            SubstateOffset::Bucket(BucketOffset::LiquidFungible),
+            LockFlags::MUTABLE,
+        )?;
+        let substate_ref: &mut LiquidFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
+        let taken = substate_ref.take_by_amount(amount).map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::BucketError(
+                BucketError::ResourceError(e),
+            ))
+        })?;
+        api.sys_drop_lock(handle)?;
+        Ok(taken)
     }
 
-    pub fn create_proof_by_ids(
-        &mut self,
+    pub fn put<Y>(
+        node_id: RENodeId,
+        resource: LiquidFungibleResource,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+    {
+        if resource.is_empty() {
+            return Ok(());
+        }
+
+        let handle = api.sys_lock_substate(
+            node_id,
+            SubstateOffset::Bucket(BucketOffset::LiquidFungible),
+            LockFlags::MUTABLE,
+        )?;
+        let substate_ref: &mut LiquidFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
+        substate_ref.put(resource).map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::BucketError(
+                BucketError::ResourceError(e),
+            ))
+        })?;
+        api.sys_drop_lock(handle)?;
+        Ok(())
+    }
+
+    // protected method
+    pub fn lock_amount<Y>(
+        node_id: RENodeId,
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<FungibleProof, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+    {
+        let handle = api.sys_lock_substate(
+            node_id,
+            SubstateOffset::Bucket(BucketOffset::LockedFungible),
+            LockFlags::MUTABLE,
+        )?;
+        let mut locked: &mut LockedFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
+        let max_locked = locked.amount();
+
+        // Take from liquid if needed
+        if amount > max_locked {
+            let delta = amount - max_locked;
+            FungibleBucket::take(node_id, delta, api)?;
+        }
+
+        // Increase lock count
+        locked = api.kernel_get_substate_ref_mut(handle)?; // grab ref again
+        locked.amounts.entry(amount).or_default().add_assign(1);
+
+        // Issue proof
+        Ok(FungibleProof::new(
+            amount,
+            btreemap!(
+                LocalRef::Bucket(node_id.into()) => amount
+            ),
+        )
+        .map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::BucketError(BucketError::ProofError(
+                e,
+            )))
+        })?)
+    }
+
+    // protected method
+    pub fn unlock_amount<Y>(
+        node_id: RENodeId,
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+    {
+        let handle = api.sys_lock_substate(
+            node_id,
+            SubstateOffset::Bucket(BucketOffset::LockedFungible),
+            LockFlags::MUTABLE,
+        )?;
+        let locked: &mut LockedFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
+
+        let max_locked = locked.amount();
+        let cnt = locked
+            .amounts
+            .remove(&amount)
+            .expect("Attempted to unlock an amount that is not locked");
+        if cnt > 1 {
+            locked.amounts.insert(amount, cnt - 1);
+        }
+
+        let delta = max_locked - locked.amount();
+        FungibleBucket::put(node_id, LiquidFungibleResource::new(delta), api)
+    }
+}
+
+pub struct NonFungibleBucket;
+
+impl NonFungibleBucket {
+    pub fn liquid_amount<Y>(node_id: RENodeId, api: &mut Y) -> Result<Decimal, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+    {
+        let handle = api.sys_lock_substate(
+            node_id,
+            SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
+            LockFlags::read_only(),
+        )?;
+        let substate_ref: &LiquidNonFungibleResource = api.kernel_get_substate_ref(handle)?;
+        let amount = substate_ref.amount();
+        api.sys_drop_lock(handle)?;
+        Ok(amount)
+    }
+
+    pub fn locked_amount<Y>(node_id: RENodeId, api: &mut Y) -> Result<Decimal, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+    {
+        let handle = api.sys_lock_substate(
+            node_id,
+            SubstateOffset::Bucket(BucketOffset::LockedNonFungible),
+            LockFlags::read_only(),
+        )?;
+        let substate_ref: &LockedNonFungibleResource = api.kernel_get_substate_ref(handle)?;
+        let amount = substate_ref.amount();
+        api.sys_drop_lock(handle)?;
+        Ok(amount)
+    }
+
+    pub fn is_locked<Y>(node_id: RENodeId, api: &mut Y) -> Result<bool, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+    {
+        Ok(!Self::locked_amount(node_id, api)?.is_zero())
+    }
+
+    pub fn liquid_non_fungible_local_ids<Y>(
+        node_id: RENodeId,
+        api: &mut Y,
+    ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+    {
+        let handle = api.sys_lock_substate(
+            node_id,
+            SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
+            LockFlags::read_only(),
+        )?;
+        let substate_ref: &LiquidNonFungibleResource = api.kernel_get_substate_ref(handle)?;
+        let ids = substate_ref.ids().clone();
+        api.sys_drop_lock(handle)?;
+        Ok(ids)
+    }
+
+    pub fn locked_non_fungible_local_ids<Y>(
+        node_id: RENodeId,
+        api: &mut Y,
+    ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+    {
+        let handle = api.sys_lock_substate(
+            node_id,
+            SubstateOffset::Bucket(BucketOffset::LockedNonFungible),
+            LockFlags::read_only(),
+        )?;
+        let substate_ref: &LockedNonFungibleResource = api.kernel_get_substate_ref(handle)?;
+        let ids = substate_ref.ids();
+        api.sys_drop_lock(handle)?;
+        Ok(ids)
+    }
+
+    pub fn take<Y>(
+        node_id: RENodeId,
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<LiquidNonFungibleResource, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+    {
+        let handle = api.sys_lock_substate(
+            node_id,
+            SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
+            LockFlags::MUTABLE,
+        )?;
+        let substate_ref: &mut LiquidNonFungibleResource =
+            api.kernel_get_substate_ref_mut(handle)?;
+        let taken = substate_ref.take_by_amount(amount).map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::BucketError(
+                BucketError::ResourceError(e),
+            ))
+        })?;
+        api.sys_drop_lock(handle)?;
+        Ok(taken)
+    }
+
+    pub fn take_non_fungibles<Y>(
+        node_id: RENodeId,
         ids: &BTreeSet<NonFungibleLocalId>,
-        container_id: ResourceContainerId,
-    ) -> Result<ProofSubstate, ProofError> {
-        // lock the specified id set
-        let locked_amount_or_ids = self
-            .borrow_resource_mut()
-            .lock_by_ids(ids)
-            .map_err(ProofError::ResourceOperationError)?;
+        api: &mut Y,
+    ) -> Result<LiquidNonFungibleResource, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+    {
+        let handle = api.sys_lock_substate(
+            node_id,
+            SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
+            LockFlags::MUTABLE,
+        )?;
+        let substate_ref: &mut LiquidNonFungibleResource =
+            api.kernel_get_substate_ref_mut(handle)?;
+        let taken = substate_ref
+            .take_by_ids(ids)
+            .map_err(BucketError::ResourceError)
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::BucketError(e)))?;
+        api.sys_drop_lock(handle)?;
+        Ok(taken)
+    }
 
-        // produce proof
-        let mut evidence = HashMap::new();
-        evidence.insert(
-            container_id,
-            (self.resource.clone(), locked_amount_or_ids.clone()),
-        );
-        ProofSubstate::new(
-            self.resource_address(),
-            self.resource_type(),
-            locked_amount_or_ids,
-            evidence,
+    pub fn put<Y>(
+        node_id: RENodeId,
+        resource: LiquidNonFungibleResource,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+    {
+        if resource.is_empty() {
+            return Ok(());
+        }
+
+        let handle = api.sys_lock_substate(
+            node_id,
+            SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
+            LockFlags::MUTABLE,
+        )?;
+        let substate_ref: &mut LiquidNonFungibleResource =
+            api.kernel_get_substate_ref_mut(handle)?;
+        substate_ref.put(resource).map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::BucketError(
+                BucketError::ResourceError(e),
+            ))
+        })?;
+        api.sys_drop_lock(handle)?;
+        Ok(())
+    }
+
+    // protected method
+    pub fn lock_amount<Y>(
+        node_id: RENodeId,
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<NonFungibleProof, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+    {
+        let handle = api.sys_lock_substate(
+            node_id,
+            SubstateOffset::Bucket(BucketOffset::LockedNonFungible),
+            LockFlags::MUTABLE,
+        )?;
+        let mut locked: &mut LockedNonFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
+        let max_locked: Decimal = locked.ids.len().into();
+
+        // Take from liquid if needed
+        if amount > max_locked {
+            let delta = amount - max_locked;
+            let resource = NonFungibleBucket::take(node_id, delta, api)?;
+
+            locked = api.kernel_get_substate_ref_mut(handle)?; // grab ref again
+            for nf in resource.into_ids() {
+                locked.ids.insert(nf, 0);
+            }
+        }
+
+        // Increase lock count
+        let n: usize = amount
+            .to_string()
+            .parse()
+            .expect("Failed to convert amount to usize");
+        let ids_for_proof: BTreeSet<NonFungibleLocalId> =
+            locked.ids.keys().cloned().into_iter().take(n).collect();
+        for id in &ids_for_proof {
+            locked.ids.entry(id.clone()).or_default().add_assign(1);
+        }
+
+        // Issue proof
+        Ok(NonFungibleProof::new(
+            ids_for_proof.clone(),
+            btreemap!(
+                LocalRef::Bucket(node_id.into()) => ids_for_proof
+            ),
         )
+        .map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::BucketError(BucketError::ProofError(
+                e,
+            )))
+        })?)
     }
 
-    pub fn resource_address(&self) -> ResourceAddress {
-        self.borrow_resource().resource_address()
+    // protected method
+    pub fn lock_non_fungibles<Y>(
+        node_id: RENodeId,
+        ids: BTreeSet<NonFungibleLocalId>,
+        api: &mut Y,
+    ) -> Result<NonFungibleProof, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+    {
+        let handle = api.sys_lock_substate(
+            node_id,
+            SubstateOffset::Bucket(BucketOffset::LockedNonFungible),
+            LockFlags::MUTABLE,
+        )?;
+        let mut locked: &mut LockedNonFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
+
+        // Take from liquid if needed
+        let delta: BTreeSet<NonFungibleLocalId> = ids
+            .iter()
+            .cloned()
+            .filter(|id| !locked.ids.contains_key(id))
+            .collect();
+        NonFungibleBucket::take_non_fungibles(node_id, &delta, api)?;
+
+        // Increase lock count
+        locked = api.kernel_get_substate_ref_mut(handle)?; // grab ref again
+        for id in &ids {
+            locked.ids.entry(id.clone()).or_default().add_assign(1);
+        }
+
+        // Issue proof
+        Ok(NonFungibleProof::new(
+            ids.clone(),
+            btreemap!(
+                LocalRef::Bucket(node_id.into()) => ids
+            ),
+        )
+        .map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::BucketError(BucketError::ProofError(
+                e,
+            )))
+        })?)
     }
 
-    pub fn resource_type(&self) -> ResourceType {
-        self.borrow_resource().resource_type()
-    }
+    // protected method
+    pub fn unlock_non_fungibles<Y>(
+        node_id: RENodeId,
+        ids: BTreeSet<NonFungibleLocalId>,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+    {
+        let handle = api.sys_lock_substate(
+            node_id,
+            SubstateOffset::Bucket(BucketOffset::LockedNonFungible),
+            LockFlags::MUTABLE,
+        )?;
+        let locked: &mut LockedNonFungibleResource = api.kernel_get_substate_ref_mut(handle)?;
 
-    pub fn total_amount(&self) -> Decimal {
-        self.borrow_resource().total_amount()
-    }
+        let mut liquid_non_fungibles = BTreeSet::<NonFungibleLocalId>::new();
+        for id in ids {
+            let cnt = locked
+                .ids
+                .remove(&id)
+                .expect("Attempted to unlock non-fungible that was not locked");
+            if cnt > 1 {
+                locked.ids.insert(id, cnt - 1);
+            } else {
+                liquid_non_fungibles.insert(id);
+            }
+        }
 
-    pub fn total_ids(&self) -> Result<BTreeSet<NonFungibleLocalId>, ResourceOperationError> {
-        self.borrow_resource().total_ids()
-    }
-
-    pub fn is_locked(&self) -> bool {
-        self.borrow_resource().is_locked()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.borrow_resource().is_empty()
-    }
-
-    pub fn resource(self) -> Result<Resource, ResourceOperationError> {
-        Rc::try_unwrap(self.resource)
-            .map_err(|_| ResourceOperationError::ResourceLocked)
-            .map(|c| c.into_inner())
-            .map(Into::into)
-    }
-
-    pub fn borrow_resource(&self) -> Ref<LockableResource> {
-        self.resource.borrow()
-    }
-
-    pub fn borrow_resource_mut(&mut self) -> RefMut<LockableResource> {
-        self.resource.borrow_mut()
-    }
-
-    pub fn peek_resource(&self) -> Resource {
-        let lockable_resource: &LockableResource = &self.borrow_resource();
-        lockable_resource.peek_resource()
+        NonFungibleBucket::put(
+            node_id,
+            LiquidNonFungibleResource::new(liquid_non_fungibles),
+            api,
+        )
     }
 }
 
 pub struct BucketBlueprint;
 
 impl BucketBlueprint {
-    pub(crate) fn take<Y>(
+    pub fn take<Y>(
         receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: BucketTakeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let bucket_handle = api.kernel_lock_substate(
-            receiver,
-            NodeModuleId::SELF,
-            SubstateOffset::Bucket(BucketOffset::Bucket),
-            LockFlags::MUTABLE,
-        )?;
+        // Check amount
+        let info = BucketInfoSubstate::of(receiver, api)?;
+        if !info.resource_type.check_amount(input.amount) {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::BucketError(BucketError::InvalidAmount),
+            ));
+        }
 
-        let mut substate_mut = api.kernel_get_substate_ref_mut(bucket_handle)?;
-        let bucket = substate_mut.bucket();
-        let container = bucket.take(input.amount).map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::BucketError(
-                BucketError::ResourceOperationError(e),
-            ))
-        })?;
+        let node_id = if info.resource_type.is_fungible() {
+            // Take
+            let taken = FungibleBucket::take(receiver, input.amount, api)?;
 
-        let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
-        api.kernel_create_node(
-            node_id,
-            RENodeInit::Bucket(BucketSubstate::new(container)),
-            BTreeMap::new(),
-        )?;
+            // Create node
+            let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
+            api.kernel_create_node(
+                node_id,
+                RENodeInit::FungibleBucket(
+                    BucketInfoSubstate {
+                        resource_address: info.resource_address,
+                        resource_type: info.resource_type,
+                    },
+                    taken,
+                ),
+                BTreeMap::new(),
+            )?;
+
+            node_id
+        } else {
+            // Take
+            let taken = NonFungibleBucket::take(receiver, input.amount, api)?;
+
+            // Create node
+            let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
+            api.kernel_create_node(
+                node_id,
+                RENodeInit::NonFungibleBucket(
+                    BucketInfoSubstate {
+                        resource_address: info.resource_address,
+                        resource_type: info.resource_type,
+                    },
+                    taken,
+                ),
+                BTreeMap::new(),
+            )?;
+
+            node_id
+        };
         let bucket_id = node_id.into();
 
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
 
-    pub(crate) fn take_non_fungibles<Y>(
+    pub fn take_non_fungibles<Y>(
         receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: BucketTakeNonFungiblesInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let bucket_handle = api.kernel_lock_substate(
-            receiver,
-            NodeModuleId::SELF,
-            SubstateOffset::Bucket(BucketOffset::Bucket),
-            LockFlags::MUTABLE,
-        )?;
+        let info = BucketInfoSubstate::of(receiver, api)?;
 
-        let mut substate_mut = api.kernel_get_substate_ref_mut(bucket_handle)?;
-        let bucket = substate_mut.bucket();
-        let container = bucket.take_non_fungibles(&input.ids).map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::BucketError(
-                BucketError::ResourceOperationError(e),
-            ))
-        })?;
+        if info.resource_type.is_fungible() {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::BucketError(BucketError::NonFungibleOperationNotSupported),
+            ));
+        } else {
+            // Take
+            let taken = NonFungibleBucket::take_non_fungibles(receiver, &input.ids, api)?;
 
-        let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
-        api.kernel_create_node(
-            node_id,
-            RENodeInit::Bucket(BucketSubstate::new(container)),
-            BTreeMap::new(),
-        )?;
-        let bucket_id = node_id.into();
+            // Create node
+            let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
+            api.kernel_create_node(
+                node_id,
+                RENodeInit::NonFungibleBucket(
+                    BucketInfoSubstate {
+                        resource_address: info.resource_address,
+                        resource_type: info.resource_type,
+                    },
+                    taken,
+                ),
+                BTreeMap::new(),
+            )?;
+            let bucket_id = node_id.into();
 
-        Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
+            Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
+        }
     }
 
-    pub(crate) fn put<Y>(
+    pub fn put<Y>(
         receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: BucketPutInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let bucket_handle = api.kernel_lock_substate(
-            receiver,
-            NodeModuleId::SELF,
-            SubstateOffset::Bucket(BucketOffset::Bucket),
-            LockFlags::MUTABLE,
-        )?;
-
-        let other_bucket = api
+        // Drop other bucket
+        let other_bucket: DroppedBucket = api
             .kernel_drop_node(RENodeId::Bucket(input.bucket.0))?
             .into();
-        let mut substate_mut = api.kernel_get_substate_ref_mut(bucket_handle)?;
-        let bucket = substate_mut.bucket();
-        bucket.put(other_bucket).map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::BucketError(
-                BucketError::ResourceOperationError(e),
-            ))
-        })?;
 
+        // Check resource address
+        let info = BucketInfoSubstate::of(receiver, api)?;
+        if info.resource_address != other_bucket.info.resource_address {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::BucketError(BucketError::MismatchingResource),
+            ));
+        }
+
+        // Put
+        match other_bucket.resource {
+            DroppedBucketResource::Fungible(r) => {
+                FungibleBucket::put(receiver, r, api)?;
+            }
+            DroppedBucketResource::NonFungible(r) => {
+                NonFungibleBucket::put(receiver, r, api)?;
+            }
+        }
         Ok(IndexedScryptoValue::from_typed(&()))
     }
 
-    pub(crate) fn create_proof<Y>(
+    pub fn get_non_fungible_local_ids<Y>(
         receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
-    {
-        // TODO: Remove decode/encode mess
-        let _input: BucketCreateProofInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
-
-        let bucket_handle = api.kernel_lock_substate(
-            receiver,
-            NodeModuleId::SELF,
-            SubstateOffset::Bucket(BucketOffset::Bucket),
-            LockFlags::MUTABLE,
-        )?;
-
-        let mut substate_mut = api.kernel_get_substate_ref_mut(bucket_handle)?;
-        let bucket = substate_mut.bucket();
-        let proof = bucket.create_proof(receiver.into()).map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::BucketError(BucketError::ProofError(
-                e,
-            )))
-        })?;
-
-        let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
-        api.kernel_create_node(node_id, RENodeInit::Proof(proof), BTreeMap::new())?;
-        let proof_id = node_id.into();
-
-        Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
-    }
-
-    pub(crate) fn get_non_fungible_local_ids<Y>(
-        receiver: RENodeId,
-        input: ScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let _input: BucketGetNonFungibleLocalIdsInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let bucket_handle = api.kernel_lock_substate(
-            receiver,
-            NodeModuleId::SELF,
-            SubstateOffset::Bucket(BucketOffset::Bucket),
-            LockFlags::read_only(),
-        )?;
-        let substate_ref = api.kernel_get_substate_ref(bucket_handle)?;
-        let bucket = substate_ref.bucket();
-        let ids = bucket.total_ids().map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::BucketError(
-                BucketError::ResourceOperationError(e),
-            ))
-        })?;
-
-        Ok(IndexedScryptoValue::from_typed(&ids))
+        let info = BucketInfoSubstate::of(receiver, api)?;
+        if info.resource_type.is_fungible() {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::BucketError(BucketError::NonFungibleOperationNotSupported),
+            ));
+        } else {
+            let mut ids = NonFungibleBucket::liquid_non_fungible_local_ids(receiver, api)?;
+            ids.extend(NonFungibleBucket::locked_non_fungible_local_ids(
+                receiver, api,
+            )?);
+            Ok(IndexedScryptoValue::from_typed(&ids))
+        }
     }
 
-    pub(crate) fn get_amount<Y>(
+    pub fn get_amount<Y>(
         receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let _input: BucketGetAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let bucket_handle = api.kernel_lock_substate(
-            receiver,
-            NodeModuleId::SELF,
-            SubstateOffset::Bucket(BucketOffset::Bucket),
-            LockFlags::read_only(),
-        )?;
+        let info = BucketInfoSubstate::of(receiver, api)?;
+        let amount = if info.resource_type.is_fungible() {
+            FungibleBucket::liquid_amount(receiver, api)?
+                + FungibleBucket::locked_amount(receiver, api)?
+        } else {
+            NonFungibleBucket::liquid_amount(receiver, api)?
+                + NonFungibleBucket::locked_amount(receiver, api)?
+        };
 
-        let substate = api.kernel_get_substate_ref(bucket_handle)?;
-        let bucket = substate.bucket();
-        Ok(IndexedScryptoValue::from_typed(&bucket.total_amount()))
+        Ok(IndexedScryptoValue::from_typed(&amount))
     }
 
-    pub(crate) fn get_resource_address<Y>(
+    pub fn get_resource_address<Y>(
         receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let _input: BucketGetResourceAddressInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let bucket_handle = api.kernel_lock_substate(
-            receiver,
-            NodeModuleId::SELF,
-            SubstateOffset::Bucket(BucketOffset::Bucket),
-            LockFlags::read_only(),
-        )?;
+        let info = BucketInfoSubstate::of(receiver, api)?;
 
-        let substate = api.kernel_get_substate_ref(bucket_handle)?;
-        let bucket = substate.bucket();
+        Ok(IndexedScryptoValue::from_typed(&info.resource_address))
+    }
 
-        Ok(IndexedScryptoValue::from_typed(&bucket.resource_address()))
+    pub fn create_proof<Y>(
+        receiver: RENodeId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>,
+    {
+        // TODO: Remove decode/encode mess
+        let _input: BucketCreateProofInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        let info = BucketInfoSubstate::of(receiver, api)?;
+        let node_id = if info.resource_type.is_fungible() {
+            let amount = FungibleBucket::locked_amount(receiver, api)?
+                + FungibleBucket::liquid_amount(receiver, api)?;
+
+            let proof = FungibleBucket::lock_amount(receiver, amount, api)?;
+
+            let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
+            api.kernel_create_node(
+                node_id,
+                RENodeInit::FungibleProof(
+                    ProofInfoSubstate {
+                        resource_address: info.resource_address,
+                        resource_type: info.resource_type,
+                        restricted: false,
+                    },
+                    proof,
+                ),
+                BTreeMap::new(),
+            )?;
+            node_id
+        } else {
+            let amount = NonFungibleBucket::locked_amount(receiver, api)?
+                + NonFungibleBucket::liquid_amount(receiver, api)?;
+
+            let proof = NonFungibleBucket::lock_amount(receiver, amount, api)?;
+
+            let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
+            api.kernel_create_node(
+                node_id,
+                RENodeInit::NonFungibleProof(
+                    ProofInfoSubstate {
+                        resource_address: info.resource_address,
+                        resource_type: info.resource_type,
+                        restricted: false,
+                    },
+                    proof,
+                ),
+                BTreeMap::new(),
+            )?;
+            node_id
+        };
+
+        let proof_id = node_id.into();
+        Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
+    }
+
+    //===================
+    // Protected method
+    //===================
+
+    // FIXME: set up auth
+
+    pub fn lock_amount<Y>(
+        receiver: RENodeId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>,
+    {
+        let input: BucketLockAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        FungibleBucket::lock_amount(receiver, input.amount, api)?;
+
+        Ok(IndexedScryptoValue::from_typed(&()))
+    }
+
+    pub fn lock_non_fungibles<Y>(
+        receiver: RENodeId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>,
+    {
+        let input: BucketLockNonFungiblesInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap())
+                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        NonFungibleBucket::lock_non_fungibles(receiver, input.local_ids, api)?;
+
+        Ok(IndexedScryptoValue::from_typed(&()))
+    }
+
+    pub fn unlock_amount<Y>(
+        receiver: RENodeId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>,
+    {
+        let input: BucketUnlockAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        FungibleBucket::unlock_amount(receiver, input.amount, api)?;
+
+        Ok(IndexedScryptoValue::from_typed(&()))
+    }
+
+    pub fn unlock_non_fungibles<Y>(
+        receiver: RENodeId,
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientApi<RuntimeError>,
+    {
+        let input: BucketUnlockNonFungiblesInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        NonFungibleBucket::unlock_non_fungibles(receiver, input.local_ids, api)?;
+
+        Ok(IndexedScryptoValue::from_typed(&()))
     }
 }

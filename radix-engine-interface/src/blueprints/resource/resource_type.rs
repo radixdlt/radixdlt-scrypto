@@ -1,5 +1,8 @@
 use super::NonFungibleIdType;
-use crate::*;
+use crate::{
+    math::{BnumI256, Decimal},
+    *,
+};
 use sbor::*;
 
 /// Represents the type of a resource.
@@ -13,10 +16,30 @@ pub enum ResourceType {
 }
 
 impl ResourceType {
-    pub fn divisibility(&self) -> u8 {
+    pub fn divisibility(&self) -> Option<u8> {
         match self {
-            ResourceType::Fungible { divisibility } => *divisibility,
-            ResourceType::NonFungible { .. } => 0,
+            ResourceType::Fungible { divisibility } => Some(*divisibility),
+            ResourceType::NonFungible { .. } => None,
         }
+    }
+
+    pub fn id_type(&self) -> Option<NonFungibleIdType> {
+        match self {
+            ResourceType::Fungible { .. } => None,
+            ResourceType::NonFungible { id_type } => Some(*id_type),
+        }
+    }
+
+    pub fn is_fungible(&self) -> bool {
+        match self {
+            ResourceType::Fungible { .. } => true,
+            ResourceType::NonFungible { .. } => false,
+        }
+    }
+
+    pub fn check_amount(&self, amount: Decimal) -> bool {
+        !amount.is_negative()
+            && amount.0 % BnumI256::from(10i128.pow((18 - self.divisibility().unwrap_or(0)).into()))
+                == BnumI256::from(0)
     }
 }

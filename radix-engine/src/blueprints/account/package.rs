@@ -1,12 +1,12 @@
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
-use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use crate::types::*;
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{RENodeId, SubstateOffset};
 use radix_engine_interface::api::ClientApi;
@@ -14,8 +14,8 @@ use radix_engine_interface::api::ClientNodeApi;
 use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::AccessRule;
-use radix_engine_interface::blueprints::resource::MethodKey;
 use radix_engine_interface::blueprints::resource::AccessRules;
+use radix_engine_interface::blueprints::resource::MethodKey;
 
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::system::node_modules::metadata::MetadataSubstate;
@@ -55,10 +55,7 @@ impl AccountNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         match export_name {
             ACCOUNT_CREATE_GLOBAL_IDENT => {
@@ -315,34 +312,27 @@ impl AccountNativePackage {
         let resource_address = RADIX_TOKEN;
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Account(AccountOffset::Account),
             LockFlags::read_only(),
         )?; // TODO: should this be an R or RW lock?
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
-            let substate = api.kernel_get_substate_ref(handle)?;
-            let account = substate.account();
+            let account: &AccountSubstate = api.kernel_get_substate_ref(handle)?;
             let kv_store_id = account.vaults.key_value_store_id();
 
             let node_id = RENodeId::KeyValueStore(kv_store_id);
             let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle = api.kernel_lock_substate(
-                node_id,
-                NodeModuleId::SELF,
-                offset,
-                LockFlags::read_only(),
-            )?;
+            let handle = api.sys_lock_substate(node_id, offset, LockFlags::read_only())?;
             handle
         };
 
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then error out.
         let mut vault = {
-            let substate = api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
-            let entry = substate.kv_store_entry();
+            let entry: &KeyValueStoreEntrySubstate =
+                api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
 
             match entry {
                 KeyValueStoreEntrySubstate::Some(_, value) => {
@@ -364,8 +354,8 @@ impl AccountNativePackage {
         }
 
         // Drop locks (LIFO)
-        api.kernel_drop_lock(kv_store_entry_lock_handle)?;
-        api.kernel_drop_lock(handle)?;
+        api.sys_drop_lock(kv_store_entry_lock_handle)?;
+        api.sys_drop_lock(handle)?;
 
         Ok(())
     }
@@ -419,31 +409,28 @@ impl AccountNativePackage {
         let resource_address = input.bucket.sys_resource_address(api)?;
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Account(AccountOffset::Account),
             LockFlags::read_only(),
         )?;
 
         // Getting an RW lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
-            let substate = api.kernel_get_substate_ref(handle)?;
-            let account = substate.account();
+            let account: &AccountSubstate = api.kernel_get_substate_ref(handle)?;
             let kv_store_id = account.vaults.key_value_store_id();
 
             let node_id = RENodeId::KeyValueStore(kv_store_id);
             let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle =
-                api.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, LockFlags::MUTABLE)?;
+            let handle = api.sys_lock_substate(node_id, offset, LockFlags::MUTABLE)?;
             handle
         };
 
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then create it and
         // insert it's entry into the KVStore
         let mut vault = {
-            let substate = api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
-            let entry = substate.kv_store_entry();
+            let entry: &KeyValueStoreEntrySubstate =
+                api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
 
             match entry {
                 KeyValueStoreEntrySubstate::Some(_, value) => {
@@ -456,9 +443,8 @@ impl AccountNativePackage {
                     let encoded_key = IndexedScryptoValue::from_typed(&resource_address);
                     let encoded_value = IndexedScryptoValue::from_typed(&Own::Vault(vault.0));
 
-                    let mut substate =
+                    let entry: &mut KeyValueStoreEntrySubstate =
                         api.kernel_get_substate_ref_mut(kv_store_entry_lock_handle)?;
-                    let entry = substate.kv_store_entry();
                     *entry =
                         KeyValueStoreEntrySubstate::Some(encoded_key.into(), encoded_value.into());
 
@@ -471,8 +457,8 @@ impl AccountNativePackage {
         vault.sys_put(input.bucket, api)?;
 
         // Drop locks (LIFO)
-        api.kernel_drop_lock(kv_store_entry_lock_handle)?;
-        api.kernel_drop_lock(handle)?;
+        api.sys_drop_lock(kv_store_entry_lock_handle)?;
+        api.sys_drop_lock(handle)?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -489,9 +475,8 @@ impl AccountNativePackage {
         let input: AccountDepositBatchInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Account(AccountOffset::Account),
             LockFlags::read_only(),
         )?; // TODO: should this be an R or RW lock?
@@ -506,26 +491,20 @@ impl AccountNativePackage {
 
             // Getting an RW lock handle on the KVStore ENTRY
             let kv_store_entry_lock_handle = {
-                let substate = api.kernel_get_substate_ref(handle)?;
-                let account = substate.account();
+                let account: &AccountSubstate = api.kernel_get_substate_ref(handle)?;
                 let kv_store_id = account.vaults.key_value_store_id();
 
                 let node_id = RENodeId::KeyValueStore(kv_store_id);
                 let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-                let handle = api.kernel_lock_substate(
-                    node_id,
-                    NodeModuleId::SELF,
-                    offset,
-                    LockFlags::MUTABLE,
-                )?;
+                let handle = api.sys_lock_substate(node_id, offset, LockFlags::MUTABLE)?;
                 handle
             };
 
             // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then create it
             // and insert it's entry into the KVStore
             let mut vault = {
-                let substate = api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
-                let entry = substate.kv_store_entry();
+                let entry: &KeyValueStoreEntrySubstate =
+                    api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
 
                 match entry {
                     KeyValueStoreEntrySubstate::Some(_, value) => {
@@ -538,9 +517,8 @@ impl AccountNativePackage {
                         let encoded_key = IndexedScryptoValue::from_typed(&resource_address);
                         let encoded_value = IndexedScryptoValue::from_typed(&Own::Vault(vault.0));
 
-                        let mut substate =
+                        let entry: &mut KeyValueStoreEntrySubstate =
                             api.kernel_get_substate_ref_mut(kv_store_entry_lock_handle)?;
-                        let entry = substate.kv_store_entry();
                         *entry = KeyValueStoreEntrySubstate::Some(
                             encoded_key.into(),
                             encoded_value.into(),
@@ -554,10 +532,10 @@ impl AccountNativePackage {
             // Put the bucket in the vault
             vault.sys_put(bucket, api)?;
 
-            api.kernel_drop_lock(kv_store_entry_lock_handle)?;
+            api.sys_drop_lock(kv_store_entry_lock_handle)?;
         }
 
-        api.kernel_drop_lock(handle)?;
+        api.sys_drop_lock(handle)?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -569,42 +547,32 @@ impl AccountNativePackage {
         api: &mut Y,
     ) -> Result<R, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientNodeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
         F: FnOnce(&mut Vault, &mut Y) -> Result<R, RuntimeError>,
     {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Account(AccountOffset::Account),
             LockFlags::read_only(),
         )?; // TODO: should this be an R or RW lock?
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
-            let substate = api.kernel_get_substate_ref(handle)?;
-            let account = substate.account();
+            let account: &AccountSubstate = api.kernel_get_substate_ref(handle)?;
             let kv_store_id = account.vaults.key_value_store_id();
 
             let node_id = RENodeId::KeyValueStore(kv_store_id);
             let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(encoded_key));
-            let handle = api.kernel_lock_substate(
-                node_id,
-                NodeModuleId::SELF,
-                offset,
-                LockFlags::read_only(),
-            )?;
+            let handle = api.sys_lock_substate(node_id, offset, LockFlags::read_only())?;
             handle
         };
 
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then error out.
         let mut vault = {
-            let substate = api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
-            let entry = substate.kv_store_entry();
+            let entry: &KeyValueStoreEntrySubstate =
+                api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
 
             match entry {
                 KeyValueStoreEntrySubstate::Some(_, value) => {
@@ -622,8 +590,8 @@ impl AccountNativePackage {
         let rtn = vault_fn(&mut vault, api)?;
 
         // Drop locks (LIFO)
-        api.kernel_drop_lock(kv_store_entry_lock_handle)?;
-        api.kernel_drop_lock(handle)?;
+        api.sys_drop_lock(kv_store_entry_lock_handle)?;
+        api.sys_drop_lock(handle)?;
 
         Ok(rtn)
     }

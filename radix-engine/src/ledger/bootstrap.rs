@@ -711,8 +711,7 @@ mod tests {
         assert!(commit_result
             .resource_changes
             .iter()
-            .any(|rc| rc.resource_address == RADIX_TOKEN
-                && rc.amount == allocation_amount
+            .any(|rc| rc.amount == allocation_amount
                 && rc.node_id == RENodeId::GlobalComponent(account_component_address)));
     }
 

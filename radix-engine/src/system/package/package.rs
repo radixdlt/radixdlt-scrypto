@@ -125,7 +125,7 @@ impl Package {
 
         api.kernel_create_node(
             node_id,
-            RENodeInit::Package(info, code_type, code),
+            RENodeInit::GlobalPackage(info, code_type, code),
             node_modules,
         )?;
 
@@ -209,7 +209,7 @@ impl Package {
 
         api.kernel_create_node(
             node_id,
-            RENodeInit::Package(
+            RENodeInit::GlobalPackage(
                 package_info_substate,
                 code_type_substate,
                 wasm_code_substate,

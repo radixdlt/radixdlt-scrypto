@@ -2,12 +2,14 @@ use crate::errors::RuntimeError;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
-use radix_engine_interface::blueprints::resource::Resource;
+use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use sbor::rust::collections::BTreeMap;
 
 use super::actor::ResolvedActor;
 use super::call_frame::CallFrameUpdate;
-use super::kernel_api::{KernelModuleApi, LockFlags};
+use super::kernel_api::KernelModuleApi;
+use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::data::ScryptoValue;
 
 pub trait KernelModule {
     //======================
@@ -48,6 +50,7 @@ pub trait KernelModule {
         _api: &mut Y,
         _actor: &Option<ResolvedActor>,
         _down_movement: &mut CallFrameUpdate,
+        _args: &ScryptoValue,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -192,9 +195,9 @@ pub trait KernelModule {
     fn on_credit_cost_units<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _vault_id: VaultId,
-        locked_fee: Resource,
+        locked_fee: LiquidFungibleResource,
         _contingent: bool,
-    ) -> Result<Resource, RuntimeError> {
+    ) -> Result<LiquidFungibleResource, RuntimeError> {
         Ok(locked_fee)
     }
 

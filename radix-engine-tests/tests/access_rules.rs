@@ -1,6 +1,5 @@
 use radix_engine::errors::{ApplicationError, ModuleError, RuntimeError};
-use radix_engine::system::kernel_modules::auth::AuthError;
-use radix_engine::system::node_modules::access_rules::{AccessRulesChainError, AuthZoneError};
+use radix_engine::system::node_modules::access_rules::AuthZoneError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::{
@@ -100,12 +99,7 @@ fn access_rules_method_auth_can_not_be_mutated_when_locked() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(
-                AccessRulesChainError::Unauthorized(..)
-            ))
-        )
+        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
     });
 }
 
@@ -131,12 +125,7 @@ fn access_rules_method_auth_cant_be_mutated_when_required_proofs_are_not_present
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(
-                AccessRulesChainError::Unauthorized(..)
-            ))
-        )
+        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
     });
 }
 
@@ -162,12 +151,7 @@ fn access_rules_method_auth_cant_be_locked_when_required_proofs_are_not_present(
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(
-                AccessRulesChainError::Unauthorized(..)
-            ))
-        )
+        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
     });
 }
 
@@ -225,12 +209,7 @@ fn access_rules_method_auth_can_be_locked_when_required_proofs_are_present() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(
-                AccessRulesChainError::Unauthorized(..)
-            ))
-        )
+        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
     });
 }
 
@@ -259,12 +238,7 @@ fn method_that_falls_within_default_cant_have_its_auth_mutated() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(
-                AccessRulesChainError::Unauthorized(..)
-            ))
-        )
+        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
     });
 }
 
@@ -306,10 +280,7 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
     receipt.expect_commit_success();
     let receipt = test_runner.borrow_funds();
     receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized { .. }))
-        )
+        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
     });
 }
 
@@ -370,10 +341,7 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
 
         // Assert
         receipt.expect_specific_failure(|e| {
-            matches!(
-                e,
-                RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(..))
-            )
+            matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
         });
     }
 }
@@ -381,7 +349,7 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
 #[test]
 fn assert_access_rule_through_manifest_when_not_fulfilled_fails() {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunner::builder().build();
     let (public_key, _, _account_component) = test_runner.new_account(false);
 
     let manifest = ManifestBuilder::new()
@@ -399,7 +367,7 @@ fn assert_access_rule_through_manifest_when_not_fulfilled_fails() {
         matches!(
             error,
             RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
-                AuthZoneError::AssertAccessRuleError(..)
+                AuthZoneError::AssertAccessRuleFailed
             ))
         )
     })
@@ -472,7 +440,7 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
         matches!(
             error,
             RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
-                AuthZoneError::AssertAccessRuleError(..)
+                AuthZoneError::AssertAccessRuleFailed
             ))
         )
     })
