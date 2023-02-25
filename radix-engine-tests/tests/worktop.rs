@@ -1,5 +1,5 @@
 use radix_engine::blueprints::resource::BucketError;
-use radix_engine::errors::{ApplicationError};
+use radix_engine::errors::ApplicationError;
 use radix_engine::errors::RuntimeError;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
@@ -15,7 +15,7 @@ fn test_worktop_resource_leak() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .withdraw_all_from_account(account, RADIX_TOKEN)
+        .withdraw_from_account(account, RADIX_TOKEN, 1.into())
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,

@@ -118,14 +118,6 @@ impl AccountNativePackage {
                 ))?;
                 Self::withdraw(receiver, input, api)
             }
-            ACCOUNT_WITHDRAW_ALL_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
-
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                Self::withdraw_all(receiver, input, api)
-            }
             ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
 
@@ -141,14 +133,6 @@ impl AccountNativePackage {
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 Self::lock_fee_and_withdraw(receiver, input, api)
-            }
-            ACCOUNT_LOCK_FEE_AND_WITHDRAW_ALL_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
-
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                Self::lock_fee_and_withdraw_all(receiver, input, api)
             }
             ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
@@ -618,28 +602,6 @@ impl AccountNativePackage {
         Ok(IndexedScryptoValue::from_typed(&bucket))
     }
 
-    fn withdraw_all<Y>(
-        receiver: RENodeId,
-        input: ScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
-    {
-        // TODO: Remove decode/encode mess
-        let input: AccountWithdrawAllInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
-
-        let bucket = Self::get_vault(
-            receiver,
-            input.resource_address,
-            |vault, api| vault.sys_take_all(api),
-            api,
-        )?;
-
-        Ok(IndexedScryptoValue::from_typed(&bucket))
-    }
-
     fn withdraw_non_fungibles<Y>(
         receiver: RENodeId,
         input: ScryptoValue,
@@ -682,31 +644,6 @@ impl AccountNativePackage {
             receiver,
             input.resource_address,
             |vault, api| vault.sys_take(input.amount, api),
-            api,
-        )?;
-
-        Ok(IndexedScryptoValue::from_typed(&bucket))
-    }
-
-    fn lock_fee_and_withdraw_all<Y>(
-        receiver: RENodeId,
-        input: ScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
-    {
-        // TODO: Remove decode/encode mess
-        let input: AccountLockFeeAndWithdrawAllInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
-
-        Self::lock_fee_internal(receiver, input.amount_to_lock, false, api)?;
-
-        let bucket = Self::get_vault(
-            receiver,
-            input.resource_address,
-            |vault, api| vault.sys_take_all(api),
             api,
         )?;
 
