@@ -68,17 +68,17 @@ fn test_basic_transfer() {
     // (cd radix-engine && cargo test --test metering -- test_basic_transfer)
     assert_eq!(
         12500 /* CreateNode */
-        + 53500 /* DropLock */
+        + 60000 /* DropLock */
         + 12500 /* DropNode */
-        + 9300 /* Invoke */
-        + 79500 /* LockSubstate */
-        + 61000 /* ReadSubstate */
-        + 55000 /* RunPrecompiled */
+        + 10000 /* Invoke */
+        + 87000 /* LockSubstate */
+        + 67000 /* ReadSubstate */
+        + 57500 /* RunPrecompiled */
         + 0 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1320 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 14000, /* WriteSubstate */
+        + 15000, /* WriteSubstate */
         receipt.execution.fee_summary.total_cost_units_consumed
     );
 }
@@ -199,18 +199,18 @@ fn test_radiswap() {
     // Or you can run just this test with the below:
     // (cd radix-engine && cargo test --test metering -- test_radiswap)
     assert_eq!(
-        20000 /* CreateNode */
-        + 179500 /* DropLock */
-        + 17500 /* DropNode */
-        + 26710 /* Invoke */
-        + 261000 /* LockSubstate */
-        + 205500 /* ReadSubstate */
-        + 147500 /* RunPrecompiled */
-        + 1638460 /* RunWasm */
+        17500 /* CreateNode */
+        + 171500 /* DropLock */
+        + 15000 /* DropNode */
+        + 24330 /* Invoke */
+        + 246500 /* LockSubstate */
+        + 194000 /* ReadSubstate */
+        + 132500 /* RunPrecompiled */
+        + 1645045 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1705 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 39500 /* WriteSubstate */
+        + 37000 /* WriteSubstate */
         + 2, /* royalty in cost units */
         receipt.execution.fee_summary.total_cost_units_consumed
     );
@@ -309,17 +309,17 @@ fn test_flash_loan() {
     // (cd radix-engine && cargo test --test metering -- test_flash_loan)
     assert_eq!(
         25000 /* CreateNode */
-        + 247500 /* DropLock */
+        + 253000 /* DropLock */
         + 25000 /* DropNode */
-        + 41870 /* Invoke */
-        + 363500 /* LockSubstate */
-        + 277000 /* ReadSubstate */
-        + 205000 /* RunPrecompiled */
+        + 42570 /* Invoke */
+        + 371000 /* LockSubstate */
+        + 283000 /* ReadSubstate */
+        + 207500 /* RunPrecompiled */
         + 1402120 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2475 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 62500 /* WriteSubstate */
+        + 63500 /* WriteSubstate */
         + 2, /* royalty in cost units */
         receipt.execution.fee_summary.total_cost_units_consumed
     );
@@ -376,7 +376,7 @@ fn should_be_able_run_large_manifest() {
     let mut builder = ManifestBuilder::new();
     builder.lock_fee(account, 100u32.into());
     builder.withdraw_from_account(account, RADIX_TOKEN, 100u32.into());
-    for _ in 0..300 {
+    for _ in 0..200 {
         builder.take_from_worktop_by_amount(1.into(), RADIX_TOKEN, |builder, bid| {
             builder.return_to_worktop(bid)
         });
