@@ -11,14 +11,13 @@ use crate::system::node_modules::access_rules::{
     PackageAccessRulesSubstate,
 };
 use crate::types::*;
-use radix_engine_interface::api::component::{ComponentStateSubstate, TypeInfoSubstate};
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::package::{
-    PackageInfoSubstate, PACKAGE_LOADER_BLUEPRINT, PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT,
+    PACKAGE_LOADER_BLUEPRINT, PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT,
 };
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
-    AuthZoneStackOffset, ComponentOffset, PackageOffset, RENodeId, SubstateOffset, VaultOffset,
+    AuthZoneStackOffset, RENodeId, SubstateOffset, VaultOffset,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
@@ -211,69 +210,18 @@ impl AuthModule {
             MethodIdentifier(node_id, module_id, ..) => {
                 let method_key = identifier.method_key();
 
+                // TODO: Clean this up
                 if matches!(
                     node_id,
-                    RENodeId::Component(..)
-                        | RENodeId::GlobalComponent(ComponentAddress::Normal(..))
+                    RENodeId::Component(..) | RENodeId::GlobalComponent(ComponentAddress::Normal(..))
                 ) && module_id.eq(&NodeModuleId::SELF)
                 {
-                    let handle = api.kernel_lock_substate(
+                    ObjectAccessRulesChainSubstate::normal_component_method_authorization(
                         *node_id,
-                        NodeModuleId::TypeInfo,
-                        SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-                        LockFlags::read_only(),
-                    )?;
-                    let info: &TypeInfoSubstate = api.kernel_get_substate_ref(handle)?;
-                    let package_address = info.package_address.clone();
-                    let blueprint_ident = info.blueprint_name.clone();
-                    api.kernel_drop_lock(handle)?;
-
-                    let offset = SubstateOffset::Package(PackageOffset::Info);
-                    let handle = api.kernel_lock_substate(
-                        RENodeId::GlobalPackage(package_address),
-                        NodeModuleId::SELF,
-                        offset,
-                        LockFlags::read_only(),
-                    )?;
-
-                    let package: &PackageInfoSubstate = api.kernel_get_substate_ref(handle)?;
-                    let schema = package
-                        .blueprint_abi(&blueprint_ident)
-                        .expect("Blueprint not found for existing component")
-                        .structure
-                        .clone();
-                    api.kernel_drop_lock(handle)?;
-
-                    let state = {
-                        let offset = SubstateOffset::Component(ComponentOffset::State0);
-                        let handle = api.kernel_lock_substate(
-                            *node_id,
-                            NodeModuleId::SELF,
-                            offset,
-                            LockFlags::read_only(),
-                        )?;
-                        let state: &ComponentStateSubstate = api.kernel_get_substate_ref(handle)?;
-                        let state = state.clone(); // TODO: Remove clone
-                        api.kernel_drop_lock(handle)?;
-                        state
-                    };
-
-                    {
-                        let handle = api.kernel_lock_substate(
-                            *node_id,
-                            NodeModuleId::AccessRules,
-                            SubstateOffset::AccessRulesChain(
-                                AccessRulesChainOffset::AccessRulesChain,
-                            ),
-                            LockFlags::read_only(),
-                        )?;
-                        let access_rules: &ObjectAccessRulesChainSubstate =
-                            api.kernel_get_substate_ref(handle)?;
-                        let auth = access_rules
-                            .normal_component_method_authorization(&state, &schema, method_key);
-                        api.kernel_drop_lock(handle)?;
-                        auth
-                    }
+                        NodeModuleId::AccessRules,
+                        method_key,
+                        api,
+                    )?
                 } else {
                     ObjectAccessRulesChainSubstate::method_authorization_contextless(
                         *node_id,
