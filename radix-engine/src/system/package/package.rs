@@ -234,11 +234,30 @@ impl Package {
         Ok(IndexedScryptoValue::from_typed(&package_address))
     }
 
+    pub(crate) fn get_code_type<Y>(
+        receiver: RENodeId,
+        api: &mut Y,
+    ) -> Result<PackageCodeTypeSubstate, RuntimeError>
+        where
+            Y: KernelSubstateApi,
+    {
+        let handle = api.kernel_lock_substate(
+            receiver,
+            NodeModuleId::SELF,
+            SubstateOffset::Package(PackageOffset::CodeType),
+            LockFlags::read_only(),
+        )?;
+        let code_type: &PackageCodeTypeSubstate = api.kernel_get_substate_ref(handle)?;
+        let code_type = code_type.clone();
+        api.kernel_drop_lock(handle)?;
+        Ok(code_type)
+    }
+
     pub(crate) fn get_fn_abi<Y>(
         receiver: RENodeId,
         input: PackageGetFnAbiInput,
         api: &mut Y,
-    ) -> Result<(Fn, BTreeSet<ResourceAddress>), RuntimeError>
+    ) -> Result<Fn, RuntimeError>
         where
             Y: KernelSubstateApi,
     {
@@ -250,8 +269,6 @@ impl Package {
             LockFlags::read_only(),
         )?;
         let info: &PackageInfoSubstate = api.kernel_get_substate_ref(handle)?;
-
-        let dependent_resources = info.dependent_resources.clone();
 
         // Find the abi
         let abi = info.blueprint_abi(&input.fn_key.blueprint).ok_or(
@@ -267,6 +284,6 @@ impl Package {
             )),
         )?;
 
-        Ok((fn_abi.clone(), dependent_resources))
+        Ok(fn_abi.clone())
     }
 }
