@@ -308,18 +308,18 @@ fn test_flash_loan() {
     // Or you can run just this test with the below:
     // (cd radix-engine && cargo test --test metering -- test_flash_loan)
     assert_eq!(
-        20000 /* CreateNode */
-        + 179500 /* DropLock */
-        + 17500 /* DropNode */
-        + 26710 /* Invoke */
-        + 261000 /* LockSubstate */
-        + 205500 /* ReadSubstate */
-        + 147500 /* RunPrecompiled */
-        + 1638460 /* RunWasm */
+        25000 /* CreateNode */
+        + 247500 /* DropLock */
+        + 25000 /* DropNode */
+        + 41870 /* Invoke */
+        + 363500 /* LockSubstate */
+        + 277000 /* ReadSubstate */
+        + 205000 /* RunPrecompiled */
+        + 1402120 /* RunWasm */
         + 50000 /* TxBaseCost */
-        + 1705 /* TxPayloadCost */
+        + 2475 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 39500 /* WriteSubstate */
+        + 62500 /* WriteSubstate */
         + 2, /* royalty in cost units */
         receipt.execution.fee_summary.total_cost_units_consumed
     );
