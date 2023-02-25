@@ -97,7 +97,7 @@ impl ExecutableInvocation for MethodInvocation {
         let code_type = if package_address.eq(&PACKAGE_LOADER) {
             // TODO: Remove this weirdness
             node_refs_to_copy.insert(RENodeId::GlobalResourceManager(RADIX_TOKEN));
-            PackageCodeTypeSubstate::Precompiled
+            PackageCodeTypeSubstate::Native
         } else {
             let handle = api.kernel_lock_substate(
                 RENodeId::GlobalPackage(package_address),
@@ -113,7 +113,7 @@ impl ExecutableInvocation for MethodInvocation {
 
         let export_name =
             match code_type {
-                PackageCodeTypeSubstate::Precompiled => {
+                PackageCodeTypeSubstate::Native => {
                     // TODO: Do we need to check against the abi? Probably not since we should be able to verify this
                     // TODO: in the native package itself.
                     self.identifier.2.to_string() // TODO: Clean this up
@@ -219,7 +219,7 @@ impl ExecutableInvocation for FunctionInvocation {
         let code_type = if self.fn_identifier.package_address.eq(&PACKAGE_LOADER) {
             // TODO: Remove this weirdness
             node_refs_to_copy.insert(RENodeId::GlobalResourceManager(RADIX_TOKEN));
-            PackageCodeTypeSubstate::Precompiled
+            PackageCodeTypeSubstate::Native
         } else {
             let handle = api.kernel_lock_substate(
                 RENodeId::GlobalPackage(self.fn_identifier.package_address),
@@ -234,7 +234,7 @@ impl ExecutableInvocation for FunctionInvocation {
         };
 
         let export_name = match code_type {
-            PackageCodeTypeSubstate::Precompiled => {
+            PackageCodeTypeSubstate::Native => {
                 // TODO: Do we need to check against the abi? Probably not since we should be able to verify this
                 // TODO: in the native package itself.
                 self.fn_identifier.ident.to_string() // TODO: Clean this up
@@ -374,7 +374,7 @@ impl Executor for ScryptoExecutor {
             };
 
             let output = match code_type {
-                PackageCodeTypeSubstate::Precompiled => {
+                PackageCodeTypeSubstate::Native => {
                     let handle = api.kernel_lock_substate(
                         RENodeId::GlobalPackage(self.package_address),
                         NodeModuleId::SELF,

@@ -13,7 +13,7 @@ use crate::system::node_modules::access_rules::{
 };
 use crate::types::*;
 use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::package::{PACKAGE_LOADER_BLUEPRINT, PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT, PackageInfoSubstate};
+use radix_engine_interface::api::package::{PACKAGE_LOADER_BLUEPRINT, PACKAGE_LOADER_PUBLISH_NATIVE_IDENT, PackageInfoSubstate};
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, RENodeId, SubstateOffset, VaultOffset,
@@ -62,7 +62,7 @@ impl AuthModule {
             if identifier.blueprint_name.eq(PACKAGE_LOADER_BLUEPRINT)
                 && identifier
                     .ident
-                    .eq(PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT)
+                    .eq(PACKAGE_LOADER_PUBLISH_NATIVE_IDENT)
             {
                 vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
                     HardProofRule::Require(HardResourceOrNonFungible::NonFungible(

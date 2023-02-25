@@ -12,7 +12,7 @@ use radix_engine_interface::api::node_modules::metadata::MetadataAbi;
 use radix_engine_interface::api::node_modules::royalty::RoyaltyAbi;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::package::{
-    PackageLoaderPublishPrecompiledInput, PackageLoaderPublishWasmInput,
+    PackageLoaderPublishNativeInput, PackageLoaderPublishWasmInput,
 };
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::access_controller::AccessControllerAbi;
@@ -65,8 +65,8 @@ pub fn create_genesis(
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
+            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: METADATA_CODE_ID,
                 abi: MetadataAbi::blueprint_abis(),
@@ -89,8 +89,8 @@ pub fn create_genesis(
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
+            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: ROYALTY_CODE_ID,
                 abi: RoyaltyAbi::blueprint_abis(),
@@ -112,8 +112,8 @@ pub fn create_genesis(
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
+            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: ACCESS_RULES_CODE_ID,
                 abi: AccessRulesAbi::blueprint_abis(),
@@ -135,8 +135,8 @@ pub fn create_genesis(
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
+            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: RESOURCE_MANAGER_PACKAGE_CODE_ID,
                 abi: ResourceManagerAbi::blueprint_abis(),
@@ -210,8 +210,8 @@ pub fn create_genesis(
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
+            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: IdentityAbi::blueprint_abis(),
                 dependent_resources: vec![],
@@ -233,8 +233,8 @@ pub fn create_genesis(
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
+            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: EpochManagerAbi::blueprint_abis(),
                 native_package_code_id: EPOCH_MANAGER_PACKAGE_CODE_ID,
@@ -256,8 +256,8 @@ pub fn create_genesis(
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
+            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: ClockAbi::blueprint_abis(),
                 native_package_code_id: CLOCK_PACKAGE_CODE_ID,
@@ -279,8 +279,8 @@ pub fn create_genesis(
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
+            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: AccountAbi::blueprint_abis(),
                 native_package_code_id: ACCOUNT_PACKAGE_CODE_ID,
@@ -302,8 +302,8 @@ pub fn create_genesis(
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
+            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: AccessControllerAbi::blueprint_abis(),
                 metadata: BTreeMap::new(),
@@ -325,8 +325,8 @@ pub fn create_genesis(
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
+            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: TransactionRuntimeAbi::blueprint_abis(),
                 metadata: BTreeMap::new(),
@@ -348,8 +348,8 @@ pub fn create_genesis(
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
+            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: LoggerAbi::blueprint_abis(),
                 metadata: BTreeMap::new(),
@@ -371,8 +371,8 @@ pub fn create_genesis(
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
+            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 abi: AuthZoneAbi::blueprint_abis(),
                 metadata: BTreeMap::new(),

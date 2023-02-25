@@ -52,7 +52,7 @@ impl ClockNativePackage {
     {
         match export_name {
             CLOCK_CREATE_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
                     return Err(RuntimeError::InterpreterError(
@@ -62,7 +62,7 @@ impl ClockNativePackage {
                 Self::create(input, api)
             }
             CLOCK_GET_CURRENT_TIME_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -70,7 +70,7 @@ impl ClockNativePackage {
                 Self::get_current_time(receiver, input, api)
             }
             CLOCK_SET_CURRENT_TIME_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -78,7 +78,7 @@ impl ClockNativePackage {
                 Self::set_current_time(receiver, input, api)
             }
             CLOCK_COMPARE_CURRENT_TIME_IDENT => {
-                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),

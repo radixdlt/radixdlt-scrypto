@@ -29,7 +29,7 @@ impl IdentityNativePackage {
     {
         match export_name {
             IDENTITY_CREATE_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
                     return Err(RuntimeError::InterpreterError(

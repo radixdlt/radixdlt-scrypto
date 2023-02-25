@@ -42,8 +42,8 @@ impl Package {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         match export_name {
-            PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT => {
-                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunPrecompiled)?;
+            PACKAGE_LOADER_PUBLISH_NATIVE_IDENT => {
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
                     return Err(RuntimeError::InterpreterError(
@@ -51,10 +51,10 @@ impl Package {
                     ));
                 }
 
-                Self::publish_precompiled(input, api)
+                Self::publish_native(input, api)
             }
             PACKAGE_LOADER_PUBLISH_WASM_IDENT => {
-                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
                     return Err(RuntimeError::InterpreterError(
@@ -70,14 +70,14 @@ impl Package {
         }
     }
 
-    pub(crate) fn publish_precompiled<Y>(
+    pub(crate) fn publish_native<Y>(
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: PackageLoaderPublishPrecompiledInput =
+        let input: PackageLoaderPublishNativeInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
@@ -110,7 +110,7 @@ impl Package {
             dependent_components: input.dependent_components.into_iter().collect(),
             blueprint_abis: input.abi,
         };
-        let code_type = PackageCodeTypeSubstate::Precompiled;
+        let code_type = PackageCodeTypeSubstate::Native;
         let code = PackageCodeSubstate {
             code: vec![input.native_package_code_id],
         };

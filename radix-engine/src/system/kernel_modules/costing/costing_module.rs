@@ -378,7 +378,7 @@ impl KernelModule for CostingModule {
             api,
             match reason {
                 ClientCostingReason::RunWasm => CostingReason::RunWasm,
-                ClientCostingReason::RunPrecompiled => CostingReason::RunPrecompiled,
+                ClientCostingReason::RunNative => CostingReason::RunPrecompiled,
             },
             |_| units,
             5,

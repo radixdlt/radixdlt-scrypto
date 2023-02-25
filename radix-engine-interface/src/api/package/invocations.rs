@@ -30,12 +30,12 @@ pub struct PackageLoaderPublishWasmInput {
     pub access_rules: AccessRules,
 }
 
-pub const PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT: &str = "publish_precompiled";
+pub const PACKAGE_LOADER_PUBLISH_NATIVE_IDENT: &str = "publish_native";
 
 #[derive(
     Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
 )]
-pub struct PackageLoaderPublishPrecompiledInput {
+pub struct PackageLoaderPublishNativeInput {
     pub package_address: Option<[u8; 26]>, // TODO: Clean this up
     pub native_package_code_id: u8,
     pub abi: BTreeMap<String, BlueprintAbi>,

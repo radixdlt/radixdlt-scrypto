@@ -59,7 +59,7 @@ impl AccountNativePackage {
     {
         match export_name {
             ACCOUNT_CREATE_GLOBAL_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
                     return Err(RuntimeError::InterpreterError(
@@ -69,7 +69,7 @@ impl AccountNativePackage {
                 Self::create_global(input, api)
             }
             ACCOUNT_CREATE_LOCAL_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
                     return Err(RuntimeError::InterpreterError(
@@ -79,7 +79,7 @@ impl AccountNativePackage {
                 Self::create_local(input, api)
             }
             ACCOUNT_LOCK_FEE_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -87,7 +87,7 @@ impl AccountNativePackage {
                 Self::lock_fee(receiver, input, api)
             }
             ACCOUNT_LOCK_CONTINGENT_FEE_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -95,7 +95,7 @@ impl AccountNativePackage {
                 Self::lock_contingent_fee(receiver, input, api)
             }
             ACCOUNT_DEPOSIT_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -103,7 +103,7 @@ impl AccountNativePackage {
                 Self::deposit(receiver, input, api)
             }
             ACCOUNT_DEPOSIT_BATCH_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -111,7 +111,7 @@ impl AccountNativePackage {
                 Self::deposit_batch(receiver, input, api)
             }
             ACCOUNT_WITHDRAW_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -119,7 +119,7 @@ impl AccountNativePackage {
                 Self::withdraw(receiver, input, api)
             }
             ACCOUNT_WITHDRAW_ALL_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -127,7 +127,7 @@ impl AccountNativePackage {
                 Self::withdraw_all(receiver, input, api)
             }
             ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -135,7 +135,7 @@ impl AccountNativePackage {
                 Self::withdraw_non_fungibles(receiver, input, api)
             }
             ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -143,7 +143,7 @@ impl AccountNativePackage {
                 Self::lock_fee_and_withdraw(receiver, input, api)
             }
             ACCOUNT_LOCK_FEE_AND_WITHDRAW_ALL_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -151,7 +151,7 @@ impl AccountNativePackage {
                 Self::lock_fee_and_withdraw_all(receiver, input, api)
             }
             ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -159,7 +159,7 @@ impl AccountNativePackage {
                 Self::lock_fee_and_withdraw_non_fungibles(receiver, input, api)
             }
             ACCOUNT_CREATE_PROOF_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -167,7 +167,7 @@ impl AccountNativePackage {
                 Self::create_proof(receiver, input, api)
             }
             ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -175,7 +175,7 @@ impl AccountNativePackage {
                 Self::create_proof_by_amount(receiver, input, api)
             }
             ACCOUNT_CREATE_PROOF_BY_IDS_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
