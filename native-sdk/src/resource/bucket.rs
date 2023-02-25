@@ -47,7 +47,7 @@ pub trait SysBucket {
         Y: ClientApi<E>;
 
     fn sys_take_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        &mut self,
+        &self,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Bucket, E>
@@ -164,7 +164,7 @@ impl SysBucket for Bucket {
     }
 
     fn sys_take_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        &mut self,
+        &self,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Bucket, E>

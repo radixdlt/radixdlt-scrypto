@@ -64,6 +64,7 @@ pub enum ResourceManagerError {
     NonFungibleIdTypeDoesNotMatch(NonFungibleIdType, NonFungibleIdType),
     ResourceTypeDoesNotMatch,
     InvalidNonFungibleIdType,
+    CantDropNotEmptyBucket,
 }
 
 fn build_non_fungible_resource_manager_substate_with_initial_supply<Y>(
@@ -799,7 +800,11 @@ impl ResourceManagerBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        input.bucket.sys_burn(api)?;
+        if input.bucket.sys_amount(api)?.is_zero() {
+            api.kernel_drop_node(RENodeId::Bucket(input.bucket.0))?;
+        } else {
+            input.bucket.sys_burn(api)?;
+        }
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
