@@ -14,7 +14,7 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::clock::ClockCreateInput;
 use radix_engine_interface::blueprints::clock::TimePrecision;
 use radix_engine_interface::blueprints::clock::*;
-use radix_engine_interface::blueprints::resource::{AccessRules, FunctionKey};
+use radix_engine_interface::blueprints::resource::{AccessRules, FnKey};
 use radix_engine_interface::blueprints::resource::MethodKey;
 use radix_engine_interface::blueprints::resource::{require, AccessRule};
 use radix_engine_interface::data::ScryptoValue;
@@ -32,10 +32,10 @@ const MINUTES_TO_MS_FACTOR: i64 = SECONDS_TO_MS_FACTOR * MINUTES_TO_SECONDS_FACT
 
 pub struct ClockNativePackage;
 impl ClockNativePackage {
-    pub fn package_access_rules() -> BTreeMap<FunctionKey, AccessRule> {
+    pub fn package_access_rules() -> BTreeMap<FnKey, AccessRule> {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(
-            FunctionKey::new(CLOCK_BLUEPRINT.to_string(), CLOCK_CREATE_IDENT.to_string()),
+            FnKey::new(CLOCK_BLUEPRINT.to_string(), CLOCK_CREATE_IDENT.to_string()),
             rule!(require(AuthAddresses::system_role())),
         );
         access_rules

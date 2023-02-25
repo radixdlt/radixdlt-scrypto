@@ -26,12 +26,12 @@ ManifestEncode,
 ManifestDecode,
 LegacyDescribe,
 )]
-pub struct FunctionKey {
+pub struct FnKey {
     pub blueprint: String,
     pub ident: String,
 }
 
-impl FunctionKey {
+impl FnKey {
     pub fn new(blueprint: String, ident: String) -> Self {
         Self {
             blueprint,

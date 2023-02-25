@@ -81,7 +81,7 @@ impl AuthModule {
             )?;
             let package_access_rules: &FunctionAccessRulesSubstate =
                 api.kernel_get_substate_ref(handle)?;
-            let function_key = FunctionKey::new(identifier.blueprint_name.to_string(), identifier.ident.to_string());
+            let function_key = FnKey::new(identifier.blueprint_name.to_string(), identifier.ident.to_string());
             let access_rule = package_access_rules
                 .access_rules
                 .get(&function_key)

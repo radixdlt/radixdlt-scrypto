@@ -200,7 +200,7 @@ fn test_radiswap() {
     // (cd radix-engine && cargo test --test metering -- test_radiswap)
     assert_eq!(
         20000 /* CreateNode */
-        + 179000 /* DropLock */
+        + 178500 /* DropLock */
         + 17500 /* DropNode */
         + 26710 /* Invoke */
         + 182500 /* LockSubstate */

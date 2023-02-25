@@ -1,6 +1,6 @@
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::kernel_modules::costing::FIXED_HIGH_FEE;
+use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_MEDIUM_FEE};
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::{
@@ -16,7 +16,7 @@ use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::data::ScryptoValue;
 
@@ -63,6 +63,18 @@ impl Package {
                 }
 
                 Self::publish_wasm(input, api)
+            }
+            PACKAGE_GET_FN_ABI_IDENT => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+
+                let input: PackageGetFnAbiInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+                    .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+                Self::get_fn_abi(receiver, input, api).map(|r| IndexedScryptoValue::from_typed(&r))
             }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
@@ -220,5 +232,41 @@ impl Package {
         let package_address: PackageAddress = node_id.into();
 
         Ok(IndexedScryptoValue::from_typed(&package_address))
+    }
+
+    pub(crate) fn get_fn_abi<Y>(
+        receiver: RENodeId,
+        input: PackageGetFnAbiInput,
+        api: &mut Y,
+    ) -> Result<(Fn, BTreeSet<ResourceAddress>), RuntimeError>
+        where
+            Y: KernelSubstateApi,
+    {
+
+        let handle = api.kernel_lock_substate(
+            receiver,
+            NodeModuleId::SELF,
+            SubstateOffset::Package(PackageOffset::Info),
+            LockFlags::read_only(),
+        )?;
+        let info: &PackageInfoSubstate = api.kernel_get_substate_ref(handle)?;
+
+        let dependent_resources = info.dependent_resources.clone();
+
+        // Find the abi
+        let abi = info.blueprint_abi(&input.fn_key.blueprint).ok_or(
+            RuntimeError::InterpreterError(InterpreterError::InvalidScryptoInvocation(
+                FnIdentifier::new(receiver.into(), input.fn_key.blueprint.clone(), input.fn_key.ident.clone()),
+                ScryptoFnResolvingError::BlueprintNotFound,
+            )),
+        )?;
+        let fn_abi = abi.get_fn_abi(&input.fn_key.ident).ok_or(
+            RuntimeError::InterpreterError(InterpreterError::InvalidScryptoInvocation(
+                FnIdentifier::new(receiver.into(), input.fn_key.blueprint.clone(), input.fn_key.ident.clone()),
+                ScryptoFnResolvingError::MethodNotFound,
+            )),
+        )?;
+
+        Ok((fn_abi.clone(), dependent_resources))
     }
 }

@@ -1,6 +1,6 @@
 use crate::api::package::PackageAddress;
 use crate::api::types::*;
-use crate::blueprints::resource::MethodKey;
+use crate::blueprints::resource::{FnKey, MethodKey};
 use crate::data::ScryptoValue;
 use crate::*;
 use sbor::rust::string::String;
@@ -19,6 +19,14 @@ pub struct FnIdentifier {
     pub blueprint_name: String,
     pub ident: String,
 }
+
+impl FnIdentifier {
+    pub fn fn_key(&self) -> FnKey {
+        FnKey::new(self.blueprint_name.clone(), self.ident.clone())
+    }
+}
+
+
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, ScryptoSbor)]
 pub struct MethodReceiver(pub RENodeId, pub NodeModuleId);
