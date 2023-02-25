@@ -99,7 +99,13 @@ impl RENodeModuleInit {
 
 #[derive(Debug)]
 pub enum RENodeInit {
-    Global(GlobalSubstate),
+    GlobalComponent(GlobalSubstate),
+    GlobalPackage(
+        PackageInfoSubstate,
+        PackageCodeTypeSubstate,
+        PackageCodeSubstate,
+    ),
+    GlobalResourceManager(ResourceManagerSubstate),
     FungibleVault(VaultInfoSubstate, LiquidFungibleResource),
     NonFungibleVault(VaultInfoSubstate, LiquidNonFungibleResource),
     FungibleBucket(BucketInfoSubstate, LiquidFungibleResource),
@@ -112,12 +118,6 @@ pub enum RENodeInit {
     NonFungibleStore(NonFungibleStore),
     Identity(),
     Component(ComponentStateSubstate),
-    Package(
-        PackageInfoSubstate,
-        PackageCodeTypeSubstate,
-        PackageCodeSubstate,
-    ),
-    ResourceManager(ResourceManagerSubstate),
     EpochManager(
         EpochManagerSubstate,
         ValidatorSetSubstate,
@@ -217,7 +217,7 @@ impl RENodeInit {
                     RuntimeSubstate::AuthZoneStack(auth_zone),
                 );
             }
-            RENodeInit::Global(global_node) => {
+            RENodeInit::GlobalComponent(global_node) => {
                 substates.insert(
                     SubstateOffset::Global(GlobalOffset::Global),
                     RuntimeSubstate::Global(global_node),
@@ -243,7 +243,7 @@ impl RENodeInit {
                     RuntimeSubstate::Logger(logger),
                 );
             }
-            RENodeInit::Package(package_info, code_type, code) => {
+            RENodeInit::GlobalPackage(package_info, code_type, code) => {
                 substates.insert(
                     SubstateOffset::Package(PackageOffset::Info),
                     package_info.into(),
@@ -254,7 +254,7 @@ impl RENodeInit {
                 );
                 substates.insert(SubstateOffset::Package(PackageOffset::Code), code.into());
             }
-            RENodeInit::ResourceManager(resource_manager) => {
+            RENodeInit::GlobalResourceManager(resource_manager) => {
                 substates.insert(
                     SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
                     resource_manager.into(),

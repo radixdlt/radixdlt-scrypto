@@ -86,7 +86,7 @@ impl ValidatorBlueprint {
                 let validator_address = validator.address;
                 let manager = validator.manager;
                 api.call_method(
-                    RENodeId::Global(manager.into()),
+                    RENodeId::GlobalComponent(manager.into()),
                     EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
                     scrypto_encode(&EpochManagerUpdateValidatorInput {
                         update: UpdateValidator::Register(key, stake_amount),
@@ -130,7 +130,7 @@ impl ValidatorBlueprint {
             let manager = validator.manager;
             let validator_address = validator.address;
             api.call_method(
-                RENodeId::Global(manager.into()),
+                RENodeId::GlobalComponent(manager.into()),
                 EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
                 scrypto_encode(&EpochManagerUpdateValidatorInput {
                     validator_address,
@@ -193,7 +193,7 @@ impl ValidatorBlueprint {
                 let xrd_amount = xrd_vault.sys_amount(api)?;
 
                 api.call_method(
-                    RENodeId::Global(receiver.into()),
+                    RENodeId::GlobalComponent(receiver.into()),
                     EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
                     scrypto_encode(&EpochManagerUpdateValidatorInput {
                         validator_address,
@@ -248,7 +248,7 @@ impl ValidatorBlueprint {
             lp_token_resman.burn(lp_tokens, api)?;
 
             let manager_handle = api.sys_lock_substate(
-                RENodeId::Global(Address::Component(manager)),
+                RENodeId::GlobalComponent(manager),
                 SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
                 LockFlags::read_only(),
             )?;
@@ -284,7 +284,7 @@ impl ValidatorBlueprint {
                 };
 
                 api.call_method(
-                    RENodeId::Global(manager.into()),
+                    RENodeId::GlobalComponent(manager.into()),
                     EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
                     scrypto_encode(&EpochManagerUpdateValidatorInput {
                         validator_address,
@@ -331,7 +331,7 @@ impl ValidatorBlueprint {
 
         let current_epoch = {
             let mgr_handle = api.sys_lock_substate(
-                RENodeId::Global(Address::Component(manager)),
+                RENodeId::GlobalComponent(manager),
                 SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
                 LockFlags::read_only(),
             )?;
@@ -390,7 +390,7 @@ impl ValidatorBlueprint {
                 if !stake_amount.is_zero() {
                     let update = UpdateValidator::Register(key, stake_amount);
                     api.call_method(
-                        RENodeId::Global(manager.into()),
+                        RENodeId::GlobalComponent(manager.into()),
                         EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
                         scrypto_encode(&EpochManagerUpdateValidatorInput {
                             validator_address,
@@ -648,7 +648,7 @@ impl ValidatorCreator {
         api.kernel_create_node(node_id, node, node_modules)?;
         api.kernel_create_node(
             global_node_id,
-            RENodeInit::Global(GlobalSubstate::Validator(node_id.into())),
+            RENodeInit::GlobalComponent(GlobalSubstate::Validator(node_id.into())),
             BTreeMap::new(),
         )?;
 
@@ -700,7 +700,7 @@ impl ValidatorCreator {
         api.kernel_create_node(node_id, node, node_modules)?;
         api.kernel_create_node(
             global_node_id,
-            RENodeInit::Global(GlobalSubstate::Validator(node_id.into())),
+            RENodeInit::GlobalComponent(GlobalSubstate::Validator(node_id.into())),
             BTreeMap::new(),
         )?;
 

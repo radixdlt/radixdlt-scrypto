@@ -7,8 +7,6 @@ use scrypto::prelude::*;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum GlobalSubstate {
     Component(ComponentId),
-    Resource(ResourceManagerId),
-    Package(PackageId),
     EpochManager(EpochManagerId),
     Clock(ClockId),
 }
@@ -21,7 +19,7 @@ mod read {
         pub fn read_global_substate(component_address: ComponentAddress) {
             ScryptoEnv
                 .sys_lock_substate(
-                    RENodeId::Global(Address::Component(component_address)),
+                    RENodeId::GlobalComponent(component_address),
                     SubstateOffset::Global(GlobalOffset::Global),
                     LockFlags::read_only(),
                 )

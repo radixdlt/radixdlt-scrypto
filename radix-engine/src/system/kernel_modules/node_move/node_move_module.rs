@@ -64,17 +64,17 @@ impl NodeMoveModule {
             RENodeId::TransactionRuntime
             | RENodeId::AuthZoneStack
             | RENodeId::Logger
-            | RENodeId::ResourceManager(..)
+            | RENodeId::GlobalResourceManager(..)
             | RENodeId::KeyValueStore(..)
             | RENodeId::NonFungibleStore(..)
             | RENodeId::Vault(..)
-            | RENodeId::Package(..)
+            | RENodeId::GlobalPackage(..)
             | RENodeId::Worktop
             | RENodeId::EpochManager(..)
             | RENodeId::Identity(..)
             | RENodeId::Validator(..)
             | RENodeId::Clock(..)
-            | RENodeId::Global(..)
+            | RENodeId::GlobalComponent(..)
             | RENodeId::Account(..)
             | RENodeId::AccessController(..) => Err(RuntimeError::ModuleError(
                 ModuleError::NodeMoveError(NodeMoveError::CantMoveDownstream(node_id)),
@@ -96,16 +96,16 @@ impl NodeMoveModule {
             RENodeId::TransactionRuntime
             | RENodeId::AuthZoneStack
             | RENodeId::Logger
-            | RENodeId::ResourceManager(..)
+            | RENodeId::GlobalResourceManager(..)
             | RENodeId::KeyValueStore(..)
             | RENodeId::NonFungibleStore(..)
-            | RENodeId::Package(..)
+            | RENodeId::GlobalPackage(..)
             | RENodeId::Worktop
             | RENodeId::EpochManager(..)
             | RENodeId::Identity(..)
             | RENodeId::Validator(..)
             | RENodeId::Clock(..)
-            | RENodeId::Global(..)
+            | RENodeId::GlobalComponent(..)
             | RENodeId::AccessController(..) => Err(RuntimeError::ModuleError(
                 ModuleError::NodeMoveError(NodeMoveError::CantMoveUpstream(node_id)),
             )),

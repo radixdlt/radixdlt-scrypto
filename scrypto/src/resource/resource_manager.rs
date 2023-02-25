@@ -26,7 +26,7 @@ impl ResourceManager {
     pub fn set_metadata(&mut self, key: String, value: String) {
         ScryptoEnv
             .call_module_method(
-                RENodeId::Global(self.0.into()),
+                RENodeId::GlobalResourceManager(self.0),
                 NodeModuleId::Metadata,
                 METADATA_SET_IDENT,
                 scrypto_encode(&MetadataSetInput { key, value }).unwrap(),
@@ -37,7 +37,7 @@ impl ResourceManager {
     pub fn get_metadata(&mut self, key: String) -> Option<String> {
         let rtn = ScryptoEnv
             .call_module_method(
-                RENodeId::Global(self.0.into()),
+                RENodeId::GlobalResourceManager(self.0),
                 NodeModuleId::Metadata,
                 METADATA_GET_IDENT,
                 scrypto_encode(&MetadataGetInput { key }).unwrap(),
@@ -50,7 +50,7 @@ impl ResourceManager {
     pub fn set_mintable(&mut self, access_rule: AccessRule) {
         ScryptoEnv
             .call_module_method(
-                RENodeId::Global(self.0.into()),
+                RENodeId::GlobalResourceManager(self.0),
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
@@ -66,7 +66,7 @@ impl ResourceManager {
     pub fn set_burnable(&mut self, access_rule: AccessRule) -> () {
         ScryptoEnv
             .call_module_method(
-                RENodeId::Global(self.0.into()),
+                RENodeId::GlobalResourceManager(self.0),
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
@@ -85,7 +85,7 @@ impl ResourceManager {
     pub fn set_withdrawable(&mut self, access_rule: AccessRule) {
         let _rtn = ScryptoEnv
             .call_module_method(
-                RENodeId::Global(self.0.into()),
+                RENodeId::GlobalResourceManager(self.0),
                 NodeModuleId::AccessRules1,
                 ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
@@ -101,7 +101,7 @@ impl ResourceManager {
     pub fn set_depositable(&mut self, access_rule: AccessRule) {
         let _rtn = ScryptoEnv
             .call_module_method(
-                RENodeId::Global(self.0.into()),
+                RENodeId::GlobalResourceManager(self.0),
                 NodeModuleId::AccessRules1,
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
@@ -117,7 +117,7 @@ impl ResourceManager {
     pub fn set_recallable(&mut self, access_rule: AccessRule) {
         let _rtn = ScryptoEnv
             .call_module_method(
-                RENodeId::Global(self.0.into()),
+                RENodeId::GlobalResourceManager(self.0),
                 NodeModuleId::AccessRules1,
                 ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
@@ -133,7 +133,7 @@ impl ResourceManager {
     pub fn set_updateable_metadata(&self, access_rule: AccessRule) {
         ScryptoEnv
             .call_module_method(
-                RENodeId::Global(self.0.into()),
+                RENodeId::GlobalResourceManager(self.0),
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
@@ -149,7 +149,7 @@ impl ResourceManager {
     pub fn set_updateable_non_fungible_data(&self, access_rule: AccessRule) {
         ScryptoEnv
             .call_module_method(
-                RENodeId::Global(self.0.into()),
+                RENodeId::GlobalResourceManager(self.0),
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
@@ -168,7 +168,7 @@ impl ResourceManager {
     pub fn lock_mintable(&mut self) {
         ScryptoEnv
             .call_module_method(
-                RENodeId::Global(self.0.into()),
+                RENodeId::GlobalResourceManager(self.0),
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetGroupMutabilityInput {
@@ -184,7 +184,7 @@ impl ResourceManager {
     pub fn lock_burnable(&mut self) {
         ScryptoEnv
             .call_module_method(
-                RENodeId::Global(self.0.into()),
+                RENodeId::GlobalResourceManager(self.0),
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
@@ -203,7 +203,7 @@ impl ResourceManager {
     pub fn lock_updateable_metadata(&mut self) {
         ScryptoEnv
             .call_module_method(
-                RENodeId::Global(self.0.into()),
+                RENodeId::GlobalResourceManager(self.0),
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
@@ -219,7 +219,7 @@ impl ResourceManager {
     pub fn lock_updateable_non_fungible_data(&mut self) {
         ScryptoEnv
             .call_module_method(
-                RENodeId::Global(self.0.into()),
+                RENodeId::GlobalResourceManager(self.0),
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
@@ -237,7 +237,7 @@ impl ResourceManager {
 
     pub fn lock_withdrawable(&mut self) {
         let _rtn = ScryptoEnv.call_module_method(
-            RENodeId::Global(self.0.into()),
+            RENodeId::GlobalResourceManager(self.0),
             NodeModuleId::AccessRules1,
             ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
             scrypto_encode(&AccessRulesSetGroupMutabilityInput {
@@ -251,7 +251,7 @@ impl ResourceManager {
 
     pub fn lock_depositable(&mut self) {
         let _rtn = ScryptoEnv.call_module_method(
-            RENodeId::Global(self.0.into()),
+            RENodeId::GlobalResourceManager(self.0),
             NodeModuleId::AccessRules1,
             ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
             scrypto_encode(&AccessRulesSetMethodMutabilityInput {
@@ -265,7 +265,7 @@ impl ResourceManager {
 
     pub fn lock_recallable(&mut self) {
         let _rtn = ScryptoEnv.call_module_method(
-            RENodeId::Global(self.0.into()),
+            RENodeId::GlobalResourceManager(self.0),
             NodeModuleId::AccessRules1,
             ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
             scrypto_encode(&AccessRulesSetGroupMutabilityInput {
@@ -281,7 +281,7 @@ impl ResourceManager {
         let mut env = ScryptoEnv;
         let _rtn = env
             .call_method(
-                RENodeId::Global(self.0.into()),
+                RENodeId::GlobalResourceManager(self.0),
                 RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT,
                 scrypto_encode(&ResourceManagerUpdateNonFungibleDataInput { id, data }).unwrap(),
             )
@@ -292,7 +292,7 @@ impl ResourceManager {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                RENodeId::Global(self.0.into()),
+                RENodeId::GlobalResourceManager(self.0),
                 RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT,
                 scrypto_encode(&ResourceManagerGetNonFungibleInput { id }).unwrap(),
             )
@@ -304,7 +304,7 @@ impl ResourceManager {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                RENodeId::Global(self.0.into()),
+                RENodeId::GlobalResourceManager(self.0),
                 RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT,
                 scrypto_encode(&ResourceManagerGetResourceTypeInput {}).unwrap(),
             )
@@ -316,7 +316,7 @@ impl ResourceManager {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                RENodeId::Global(self.0.into()),
+                RENodeId::GlobalResourceManager(self.0),
                 RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT,
                 scrypto_encode(&ResourceManagerGetTotalSupplyInput {}).unwrap(),
             )
@@ -329,7 +329,7 @@ impl ResourceManager {
 
         let rtn = env
             .call_method(
-                RENodeId::Global(self.0.into()),
+                RENodeId::GlobalResourceManager(self.0),
                 RESOURCE_MANAGER_NON_FUNGIBLE_EXISTS_IDENT,
                 scrypto_encode(&ResourceManagerNonFungibleExistsInput { id: id.clone() }).unwrap(),
             )
@@ -343,7 +343,7 @@ impl ResourceManager {
 
         let _rtn = env
             .call_method(
-                RENodeId::Global(self.0.into()),
+                RENodeId::GlobalResourceManager(self.0),
                 RESOURCE_MANAGER_BURN_IDENT,
                 scrypto_encode(&ResourceManagerBurnInput {
                     bucket: Bucket(bucket.0),
@@ -359,7 +359,7 @@ impl ResourceManager {
 
         let rtn = env
             .call_method(
-                RENodeId::Global(self.0.into()),
+                RENodeId::GlobalResourceManager(self.0),
                 RESOURCE_MANAGER_MINT_FUNGIBLE,
                 scrypto_encode(&ResourceManagerMintFungibleInput {
                     amount: amount.into(),
@@ -385,7 +385,7 @@ impl ResourceManager {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                RENodeId::Global(self.0.into()),
+                RENodeId::GlobalResourceManager(self.0),
                 RESOURCE_MANAGER_MINT_NON_FUNGIBLE,
                 scrypto_encode(&ResourceManagerMintNonFungibleInput { entries }).unwrap(),
             )
@@ -402,7 +402,7 @@ impl ResourceManager {
 
         let rtn = env
             .call_method(
-                RENodeId::Global(self.0.into()),
+                RENodeId::GlobalResourceManager(self.0),
                 RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE,
                 scrypto_encode(&ResourceManagerMintUuidNonFungibleInput { entries }).unwrap(),
             )

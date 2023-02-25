@@ -1,6 +1,5 @@
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::global::GlobalSubstate;
 use crate::system::kernel_modules::costing::FIXED_HIGH_FEE;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
@@ -14,8 +13,8 @@ use crate::wasm::{PrepareError, WasmValidator};
 use core::fmt::Debug;
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::package::*;
+use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::types::{PackageId, RENodeId};
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::AccessRule;
@@ -117,28 +116,20 @@ impl Package {
         };
 
         // Create package node
-        let node_id = api.kernel_allocate_node_id(RENodeType::Package)?;
-        api.kernel_create_node(
-            node_id,
-            RENodeInit::Package(info, code_type, code),
-            node_modules,
-        )?;
-        let package_id: PackageId = node_id.into();
-
         // Globalize
-        let global_node_id = if let Some(address) = input.package_address {
-            RENodeId::Global(Address::Package(PackageAddress::Normal(address)))
+        let node_id = if let Some(address) = input.package_address {
+            RENodeId::GlobalPackage(PackageAddress::Normal(address))
         } else {
             api.kernel_allocate_node_id(RENodeType::GlobalPackage)?
         };
 
         api.kernel_create_node(
-            global_node_id,
-            RENodeInit::Global(GlobalSubstate::Package(package_id)),
-            BTreeMap::new(),
+            node_id,
+            RENodeInit::GlobalPackage(info, code_type, code),
+            node_modules,
         )?;
 
-        let package_address: PackageAddress = global_node_id.into();
+        let package_address: PackageAddress = node_id.into();
         Ok(IndexedScryptoValue::from_typed(&package_address))
     }
 
@@ -210,32 +201,23 @@ impl Package {
         );
 
         // Create package node
-        let node_id = api.kernel_allocate_node_id(RENodeType::Package)?;
+        let node_id = if let Some(address) = input.package_address {
+            RENodeId::GlobalPackage(PackageAddress::Normal(address))
+        } else {
+            api.kernel_allocate_node_id(RENodeType::GlobalPackage)?
+        };
+
         api.kernel_create_node(
             node_id,
-            RENodeInit::Package(
+            RENodeInit::GlobalPackage(
                 package_info_substate,
                 code_type_substate,
                 wasm_code_substate,
             ),
             node_modules,
         )?;
-        let package_id: PackageId = node_id.into();
 
-        // Globalize
-        let global_node_id = if let Some(address) = input.package_address {
-            RENodeId::Global(Address::Package(PackageAddress::Normal(address)))
-        } else {
-            api.kernel_allocate_node_id(RENodeType::GlobalPackage)?
-        };
-
-        api.kernel_create_node(
-            global_node_id,
-            RENodeInit::Global(GlobalSubstate::Package(package_id)),
-            BTreeMap::new(),
-        )?;
-
-        let package_address: PackageAddress = global_node_id.into();
+        let package_address: PackageAddress = node_id.into();
 
         Ok(IndexedScryptoValue::from_typed(&package_address))
     }

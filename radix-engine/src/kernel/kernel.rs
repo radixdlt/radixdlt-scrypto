@@ -22,7 +22,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use crate::kernel::kernel_api::TemporaryResolvedInvocation;
 use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use radix_engine_interface::api::types::{
-    Address, AuthZoneStackOffset, GlobalOffset, LockHandle, ProofOffset, RENodeId, SubstateId,
+    AuthZoneStackOffset, GlobalOffset, LockHandle, ProofOffset, RENodeId, SubstateId,
     SubstateOffset,
 };
 use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLUEPRINT;
@@ -202,7 +202,7 @@ where
 
         self.current_frame.create_node(
             node_id,
-            RENodeInit::Global(global_substate),
+            RENodeInit::GlobalComponent(global_substate),
             BTreeMap::new(),
             &mut self.heap,
             &mut self.track,
@@ -225,7 +225,7 @@ where
         let global_substate = GlobalSubstate::Identity(underlying_node_id.into());
         self.current_frame.create_node(
             node_id,
-            RENodeInit::Global(global_substate),
+            RENodeInit::GlobalComponent(global_substate),
             BTreeMap::new(),
             &mut self.heap,
             &mut self.track,
@@ -242,7 +242,7 @@ where
     ) -> Result<bool, RuntimeError> {
         match (node_id, offset) {
             (
-                RENodeId::Global(Address::Component(component_address)),
+                RENodeId::GlobalComponent(component_address),
                 SubstateOffset::Global(GlobalOffset::Global),
             ) => {
                 // Lazy create component if missing
@@ -518,62 +518,107 @@ where
         if depth == 0 {
             for node_id in &resolved.update.node_refs_to_copy {
                 match node_id {
-                    RENodeId::Global(global_address) => {
+                    RENodeId::GlobalResourceManager(..) => {
                         if self.current_frame.get_node_visibility(node_id).is_none() {
-                            if matches!(
-                                global_address,
-                                Address::Component(ComponentAddress::EcdsaSecp256k1VirtualAccount(
-                                    ..
-                                ))
-                            ) || matches!(
-                                global_address,
-                                Address::Component(ComponentAddress::EddsaEd25519VirtualAccount(
-                                    ..
-                                ))
-                            ) || matches!(
-                                global_address,
-                                Address::Component(
-                                    ComponentAddress::EcdsaSecp256k1VirtualIdentity(..)
+                            let offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
+                            self.track
+                                .acquire_lock(
+                                    SubstateId(*node_id, NodeModuleId::TypeInfo, offset.clone()),
+                                    LockFlags::read_only(),
                                 )
-                            ) || matches!(
-                                global_address,
-                                Address::Component(ComponentAddress::EddsaEd25519VirtualIdentity(
-                                    ..
-                                ))
-                            ) || matches!(global_address, Address::Package(PACKAGE_LOADER))
-                                || matches!(
-                                    global_address,
-                                    Address::Package(RESOURCE_MANAGER_PACKAGE)
+                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
+                            self.track
+                                .release_lock(
+                                    SubstateId(*node_id, NodeModuleId::TypeInfo, offset),
+                                    false,
                                 )
-                                || matches!(global_address, Address::Package(IDENTITY_PACKAGE))
-                                || matches!(global_address, Address::Package(EPOCH_MANAGER_PACKAGE))
-                                || matches!(global_address, Address::Package(CLOCK_PACKAGE))
-                                || matches!(global_address, Address::Package(ACCOUNT_PACKAGE))
-                                || matches!(
-                                    global_address,
-                                    Address::Package(ACCESS_CONTROLLER_PACKAGE)
-                                )
-                            {
-                                // For virtual accounts and native packages, create a reference directly
-                                self.current_frame
-                                    .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                            } else {
-                                let offset = SubstateOffset::Global(GlobalOffset::Global);
-                                self.track
-                                    .acquire_lock(
-                                        SubstateId(*node_id, NodeModuleId::SELF, offset.clone()),
-                                        LockFlags::read_only(),
-                                    )
-                                    .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
-                                self.track
-                                    .release_lock(
-                                        SubstateId(*node_id, NodeModuleId::SELF, offset),
-                                        false,
-                                    )
-                                    .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
-                                self.current_frame
-                                    .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
+                            self.current_frame
+                                .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                        }
+                    }
+                    RENodeId::GlobalPackage(package_address) => {
+                        // TODO: Cleanup
+                        {
+                            match *package_address {
+                                PACKAGE_LOADER
+                                | RESOURCE_MANAGER_PACKAGE
+                                | IDENTITY_PACKAGE
+                                | EPOCH_MANAGER_PACKAGE
+                                | CLOCK_PACKAGE
+                                | ACCOUNT_PACKAGE
+                                | ACCESS_CONTROLLER_PACKAGE => {
+                                    self.current_frame
+                                        .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                                    continue;
+                                }
+                                _ => {
+                                    if self.current_frame.get_node_visibility(node_id).is_none() {
+                                        let offset =
+                                            SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
+                                        self.track
+                                            .acquire_lock(
+                                                SubstateId(
+                                                    *node_id,
+                                                    NodeModuleId::TypeInfo,
+                                                    offset.clone(),
+                                                ),
+                                                LockFlags::read_only(),
+                                            )
+                                            .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
+                                        self.track
+                                            .release_lock(
+                                                SubstateId(
+                                                    *node_id,
+                                                    NodeModuleId::TypeInfo,
+                                                    offset,
+                                                ),
+                                                false,
+                                            )
+                                            .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
+                                        self.current_frame
+                                            .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                                    }
+                                }
                             }
+                        }
+                    }
+                    RENodeId::GlobalComponent(global_address) => {
+                        if matches!(
+                            global_address,
+                            ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
+                        ) || matches!(
+                            global_address,
+                            ComponentAddress::EddsaEd25519VirtualAccount(..)
+                        ) || matches!(
+                            global_address,
+                            ComponentAddress::EcdsaSecp256k1VirtualIdentity(..)
+                        ) || matches!(
+                            global_address,
+                            ComponentAddress::EddsaEd25519VirtualIdentity(..)
+                        ) {
+                            // For virtual accounts and native packages, create a reference directly
+                            self.current_frame
+                                .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                            continue;
+                        }
+
+                        if self.current_frame.get_node_visibility(node_id).is_none() {
+                            let offset = SubstateOffset::Global(GlobalOffset::Global);
+                            self.track
+                                .acquire_lock(
+                                    SubstateId(*node_id, NodeModuleId::SELF, offset.clone()),
+                                    LockFlags::read_only(),
+                                )
+                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
+                            self.track
+                                .release_lock(
+                                    SubstateId(*node_id, NodeModuleId::SELF, offset),
+                                    false,
+                                )
+                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
+                            self.current_frame
+                                .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
                         }
                     }
                     RENodeId::Vault(..) => {
@@ -700,35 +745,33 @@ where
 
         match (node_id, &re_node) {
             (
-                RENodeId::Global(Address::Package(..)),
-                RENodeInit::Global(GlobalSubstate::Package(..)),
+                RENodeId::GlobalComponent(..),
+                RENodeInit::GlobalComponent(GlobalSubstate::EpochManager(..)),
             ) => {}
             (
-                RENodeId::Global(Address::Resource(..)),
-                RENodeInit::Global(GlobalSubstate::Resource(..)),
+                RENodeId::GlobalComponent(..),
+                RENodeInit::GlobalComponent(GlobalSubstate::Clock(..)),
             ) => {}
             (
-                RENodeId::Global(Address::Component(..)),
-                RENodeInit::Global(GlobalSubstate::EpochManager(..)),
+                RENodeId::GlobalComponent(..),
+                RENodeInit::GlobalComponent(GlobalSubstate::Validator(..)),
             ) => {}
             (
-                RENodeId::Global(Address::Component(..)),
-                RENodeInit::Global(GlobalSubstate::Clock(..)),
+                RENodeId::GlobalComponent(..),
+                RENodeInit::GlobalComponent(GlobalSubstate::Identity(..)),
             ) => {}
             (
-                RENodeId::Global(Address::Component(..)),
-                RENodeInit::Global(GlobalSubstate::Validator(..)),
+                RENodeId::GlobalComponent(..),
+                RENodeInit::GlobalComponent(GlobalSubstate::AccessController(..)),
             ) => {}
             (
-                RENodeId::Global(Address::Component(..)),
-                RENodeInit::Global(GlobalSubstate::Identity(..)),
+                RENodeId::GlobalComponent(..),
+                RENodeInit::GlobalComponent(GlobalSubstate::Component(..)),
             ) => {}
             (
-                RENodeId::Global(Address::Component(..)),
-                RENodeInit::Global(GlobalSubstate::AccessController(..)),
+                RENodeId::GlobalComponent(..),
+                RENodeInit::GlobalComponent(GlobalSubstate::Account(..)),
             ) => {}
-            (RENodeId::Global(..), RENodeInit::Global(GlobalSubstate::Component(..))) => {}
-            (RENodeId::Global(..), RENodeInit::Global(GlobalSubstate::Account(..))) => {}
             (RENodeId::Component(..), RENodeInit::Component(..)) => {}
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
             (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
@@ -798,7 +841,7 @@ where
                     }),
                 );
             }
-            (RENodeId::Package(..), RENodeInit::Package(..)) => {
+            (RENodeId::GlobalPackage(..), RENodeInit::GlobalPackage(..)) => {
                 module_init.insert(
                     NodeModuleId::TypeInfo,
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
@@ -807,7 +850,7 @@ where
                     }),
                 );
             }
-            (RENodeId::ResourceManager(..), RENodeInit::ResourceManager(..)) => {
+            (RENodeId::GlobalResourceManager(..), RENodeInit::GlobalResourceManager(..)) => {
                 module_init.insert(
                     NodeModuleId::TypeInfo,
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
@@ -876,7 +919,9 @@ where
         // TODO: For Scrypto components, check state against blueprint schema
 
         let push_to_store = match re_node {
-            RENodeInit::Global(..) => true,
+            RENodeInit::GlobalComponent(..)
+            | RENodeInit::GlobalPackage(..)
+            | RENodeInit::GlobalResourceManager(..) => true,
             _ => false,
         };
 
@@ -1045,7 +1090,7 @@ where
 
         // Deref
         let (node_id, derefed_lock) = match node_id {
-            RENodeId::Global(..)
+            RENodeId::GlobalComponent(..)
                 if !matches!(offset, SubstateOffset::Global(GlobalOffset::Global)) =>
             {
                 let handle = self.kernel_lock_substate(
@@ -1115,11 +1160,10 @@ where
                     // TODO: This is a hack to allow for package imports to be visible
                     // TODO: Remove this once we are able to get this information through the Blueprint ABI
                     RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(
-                        RENodeId::Global(Address::Package(package_address)),
+                        RENodeId::GlobalPackage(package_address),
                     )) => {
-                        let node_id = RENodeId::Global(Address::Package(*package_address));
+                        let node_id = RENodeId::GlobalPackage(*package_address);
                         let module_id = NodeModuleId::SELF;
-                        let offset = SubstateOffset::Global(GlobalOffset::Global);
                         self.track
                             .acquire_lock(
                                 SubstateId(node_id, module_id, offset.clone()),

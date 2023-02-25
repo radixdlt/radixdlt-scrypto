@@ -1,6 +1,4 @@
-use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
-use scrypto::radix_engine_interface::api::ClientSubstateApi;
 
 #[blueprint]
 mod transaction_limits {
@@ -21,7 +19,7 @@ mod transaction_limits {
         pub fn read_kv_stores(n: u32) -> ComponentAddress {
             let kv_store = KeyValueStore::new();
             kv_store.insert(0, 0);
-            for i in 0..n {
+            for _i in 0..n {
                 kv_store.get(&0);
             }
 

@@ -281,7 +281,7 @@ impl AccessControllerNativePackage {
         let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalAccessController)?;
         api.kernel_create_node(
             global_node_id,
-            RENodeInit::Global(GlobalSubstate::AccessController(node_id.into())),
+            RENodeInit::GlobalComponent(GlobalSubstate::AccessController(node_id.into())),
             BTreeMap::new(),
         )?;
 
