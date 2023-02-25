@@ -1,4 +1,5 @@
 use radix_engine_interface::api::component::*;
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::data::{
@@ -125,7 +126,7 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
             .sys_lock_substate(
                 RENodeId::Component(self.component_id),
                 SubstateOffset::Component(ComponentOffset::State0),
-                false,
+                LockFlags::read_only(),
             )
             .unwrap();
         let raw_substate = env.sys_read_substate(lock_handle).unwrap();
@@ -142,7 +143,7 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
             .sys_lock_substate(
                 RENodeId::Component(self.component_id),
                 SubstateOffset::Component(ComponentOffset::State0),
-                true,
+                LockFlags::MUTABLE,
             )
             .unwrap();
         let raw_substate = env.sys_read_substate(lock_handle).unwrap();

@@ -7,7 +7,6 @@ use crate::blueprints::resource::{
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::blueprints::transaction_runtime::TransactionRuntimeError;
 use crate::kernel::actor::{ExecutionMode, ResolvedActor};
-use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::track::TrackError;
 use crate::system::kernel_modules::auth::AuthError;
 use crate::system::kernel_modules::costing::CostingError;
@@ -16,6 +15,7 @@ use crate::system::kernel_modules::transaction_limits::TransactionLimitsError;
 use crate::system::node_modules::access_rules::{AccessRulesChainError, AuthZoneError};
 use crate::system::package::PackageError;
 use crate::transaction::AbortReason;
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{Address, LockHandle, RENodeId, SubstateOffset};
 use sbor::*;
 
@@ -63,6 +63,8 @@ pub enum RuntimeError {
     /// An error occurred within call frame.
     CallFrameError(CallFrameError),
 
+    SystemError(SystemError),
+
     /// An error occurred within an interpreter
     InterpreterError(InterpreterError),
 
@@ -109,6 +111,7 @@ impl CanBeAbortion for RuntimeError {
             RuntimeError::KernelError(err) => err.abortion(),
             RuntimeError::CallFrameError(_) => None,
             RuntimeError::InterpreterError(_) => None,
+            RuntimeError::SystemError(_) => None,
             RuntimeError::ModuleError(err) => err.abortion(),
             RuntimeError::ApplicationError(_) => None,
         }
@@ -192,6 +195,11 @@ pub enum ScryptoFnResolvingError {
     BlueprintNotFound,
     MethodNotFound,
     InvalidInput,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum SystemError {
+    InvalidLockFlags,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

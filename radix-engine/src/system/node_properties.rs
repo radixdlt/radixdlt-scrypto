@@ -1,14 +1,13 @@
 use super::node::{RENodeInit, RENodeModuleInit};
 use crate::errors::{KernelError, RuntimeError};
 use crate::kernel::actor::{ExecutionMode, ResolvedActor, ResolvedReceiver};
-use crate::kernel::kernel_api::LockFlags;
 use radix_engine_interface::api::package::*;
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     AccessControllerOffset, AccountOffset, AuthZoneStackOffset, BucketOffset, ComponentOffset,
     FnIdentifier, GlobalOffset, KeyValueStoreOffset, PackageOffset, ProofOffset, RENodeId,
-    ResourceManagerOffset, RoyaltyOffset, SubstateOffset, ValidatorOffset, VaultOffset,
-    WorktopOffset,
+    ResourceManagerOffset, RoyaltyOffset, SubstateOffset, ValidatorOffset,
 };
 use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLUEPRINT;
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
@@ -105,10 +104,13 @@ impl VisibilityProperties {
                     package_address.eq(&PACKAGE_LOADER)
                 }
                 RENodeInit::ResourceManager(..)
-                | RENodeInit::Vault(..)
-                | RENodeInit::Bucket(..)
+                | RENodeInit::FungibleVault(..)
+                | RENodeInit::NonFungibleVault(..)
+                | RENodeInit::FungibleBucket(..)
+                | RENodeInit::NonFungibleBucket(..)
                 | RENodeInit::NonFungibleStore(..)
-                | RENodeInit::Proof(..) => {
+                | RENodeInit::FungibleProof(..)
+                | RENodeInit::NonFungibleProof(..) => {
                     package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                         || package_address.eq(&AUTH_ZONE_PACKAGE)
                 } // TODO: Remove AuthZonePackage
@@ -161,14 +163,15 @@ impl VisibilityProperties {
                 SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo) => read_only,
                 SubstateOffset::Package(PackageOffset::CodeType) => read_only,
                 SubstateOffset::Package(PackageOffset::Info) => read_only,
-                SubstateOffset::Bucket(BucketOffset::Bucket) => read_only,
+                SubstateOffset::Bucket(BucketOffset::Info) => read_only,
                 _ => false,
             },
             (ExecutionMode::DropNode, offset) => match offset {
                 SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo) => true,
-                SubstateOffset::Bucket(BucketOffset::Bucket) => true,
-                SubstateOffset::Proof(ProofOffset::Proof) => true,
+                SubstateOffset::Bucket(BucketOffset::Info) => true,
+                SubstateOffset::Proof(ProofOffset::Info) => true,
                 SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack) => true,
+                SubstateOffset::Proof(..) => true,
                 SubstateOffset::Worktop(WorktopOffset::Worktop) => true,
                 _ => false,
             },
@@ -178,9 +181,9 @@ impl VisibilityProperties {
                 SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => {
                     read_only
                 }
-                SubstateOffset::Bucket(BucketOffset::Bucket) => read_only,
-                SubstateOffset::Proof(ProofOffset::Proof) => true,
-                SubstateOffset::Vault(VaultOffset::Vault) => true,
+                SubstateOffset::Vault(..) => true,
+                SubstateOffset::Bucket(..) => read_only,
+                SubstateOffset::Proof(..) => true,
                 SubstateOffset::Global(GlobalOffset::Global) => read_only,
                 SubstateOffset::Package(PackageOffset::Info) => read_only,
                 SubstateOffset::Package(PackageOffset::CodeType) => read_only,
@@ -433,6 +436,13 @@ impl SubstateProperties {
             },
             SubstateOffset::Account(AccountOffset::Account) => match node_id {
                 RENodeId::KeyValueStore(..) => Ok(()),
+                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
+                    offset.clone(),
+                    node_id,
+                ))),
+            },
+            SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack) => match node_id {
+                RENodeId::Proof(..) => Ok(()),
                 _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
                     offset.clone(),
                     node_id,

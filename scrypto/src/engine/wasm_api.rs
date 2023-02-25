@@ -138,7 +138,7 @@ extern "C" {
         node_id_len: usize,
         offset_ptr: *const u8,
         offset_len: usize,
-        mutable: bool,
+        flags: u32,
     ) -> u32;
 
     // Reads a substate
@@ -277,7 +277,7 @@ pub unsafe fn lock_substate(
     _node_id_len: usize,
     _offset: *const u8,
     _offset_len: usize,
-    _mutable: bool,
+    _flags: u32,
 ) -> u32 {
     todo!()
 }

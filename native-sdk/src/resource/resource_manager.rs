@@ -177,6 +177,19 @@ impl ResourceManager {
         Ok(data)
     }
 
+    pub fn resource_type<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<ResourceType, E>
+    where
+        Y: ClientApi<E>,
+    {
+        let rtn = api.call_method(
+            RENodeId::GlobalResourceManager(self.0),
+            RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT,
+            scrypto_encode(&ResourceManagerGetResourceTypeInput {}).unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
+    }
+
     pub fn burn<Y, E: Debug + ScryptoDecode>(
         &mut self,
         bucket: Bucket,

@@ -1,3 +1,4 @@
+use radix_engine_interface::api::substate_api::LockFlags;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 use scrypto::radix_engine_interface::api::ClientSubstateApi;
@@ -13,7 +14,7 @@ mod data_access {
                 .sys_lock_substate(
                     RENodeId::GlobalComponent(component_address),
                     SubstateOffset::Component(ComponentOffset::State0),
-                    false,
+                    LockFlags::read_only(),
                 )
                 .unwrap();
             ScryptoEnv.sys_read_substate(lock_handle).unwrap();
@@ -25,7 +26,7 @@ mod data_access {
                 .sys_lock_substate(
                     RENodeId::GlobalComponent(component_address),
                     SubstateOffset::Component(ComponentOffset::State0),
-                    true,
+                    LockFlags::MUTABLE,
                 )
                 .unwrap();
             ScryptoEnv

@@ -6,9 +6,15 @@ use std::process::Command;
 
 use radix_engine::blueprints::epoch_manager::*;
 use radix_engine::errors::*;
+use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::interpreters::ScryptoInterpreter;
+use radix_engine::kernel::kernel::Kernel;
+use radix_engine::kernel::module_mixer::KernelModuleMixer;
+use radix_engine::kernel::track::Track;
 use radix_engine::ledger::*;
 use radix_engine::system::global::GlobalSubstate;
+use radix_engine::system::kernel_modules::costing::FeeTable;
+use radix_engine::system::kernel_modules::costing::SystemLoanFeeReserve;
 use radix_engine::system::node_modules::metadata::MetadataSubstate;
 use radix_engine::system::package::*;
 use radix_engine::transaction::{
@@ -20,6 +26,7 @@ use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig
 use radix_engine_constants::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::types::{RENodeId, VaultOffset};
+use radix_engine_interface::api::ClientPackageApi;
 use radix_engine_interface::blueprints::clock::{
     ClockGetCurrentTimeInput, ClockSetCurrentTimeInput, TimePrecision,
     CLOCK_GET_CURRENT_TIME_IDENT, CLOCK_SET_CURRENT_TIME_IDENT,
@@ -42,8 +49,8 @@ use transaction::builder::ManifestBuilder;
 use transaction::data::model::ManifestExpression;
 use transaction::data::{manifest_args, manifest_encode};
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
+use transaction::model::{AuthZoneParams, PreviewIntent, TestTransaction};
 use transaction::model::{Executable, Instruction, SystemTransaction, TransactionManifest};
-use transaction::model::{PreviewIntent, TestTransaction};
 use transaction::validation::TestIntentHashManager;
 
 pub struct Compile;
@@ -279,9 +286,9 @@ impl TestRunner {
                 .get_substate(&SubstateId(
                     RENodeId::Vault(royalty_vault.vault_id()),
                     NodeModuleId::SELF,
-                    SubstateOffset::Vault(VaultOffset::Vault),
+                    SubstateOffset::Vault(VaultOffset::LiquidFungible),
                 ))
-                .map(|output| output.substate.vault().0.amount())
+                .map(|mut output| output.substate.vault_liquid_fungible_mut().amount())
         } else {
             None
         }
@@ -303,9 +310,9 @@ impl TestRunner {
                 .get_substate(&SubstateId(
                     RENodeId::Vault(royalty_vault.vault_id()),
                     NodeModuleId::SELF,
-                    SubstateOffset::Vault(VaultOffset::Vault),
+                    SubstateOffset::Vault(VaultOffset::LiquidFungible),
                 ))
-                .map(|output| output.substate.vault().0.amount())
+                .map(|mut output| output.substate.vault_liquid_fungible_mut().amount())
         } else {
             None
         }
@@ -348,23 +355,49 @@ impl TestRunner {
     }
 
     pub fn inspect_vault_balance(&mut self, vault_id: VaultId) -> Option<Decimal> {
-        self.substate_store()
-            .get_substate(&SubstateId(
-                RENodeId::Vault(vault_id),
-                NodeModuleId::SELF,
-                SubstateOffset::Vault(VaultOffset::Vault),
-            ))
-            .map(|output| output.substate.vault().0.amount())
+        if let Some(output) = self.substate_store().get_substate(&SubstateId(
+            RENodeId::Vault(vault_id),
+            NodeModuleId::SELF,
+            SubstateOffset::Vault(VaultOffset::Info),
+        )) {
+            if output.substate.vault_info().resource_type.is_fungible() {
+                self.inspect_fungible_vault(vault_id)
+            } else {
+                self.inspect_non_fungible_vault(vault_id)
+                    .map(|ids| ids.len().into())
+            }
+        } else {
+            None
+        }
     }
 
-    pub fn inspect_nft_vault(&mut self, vault_id: VaultId) -> Option<BTreeSet<NonFungibleLocalId>> {
+    pub fn inspect_fungible_vault(&mut self, vault_id: VaultId) -> Option<Decimal> {
         self.substate_store()
             .get_substate(&SubstateId(
                 RENodeId::Vault(vault_id),
                 NodeModuleId::SELF,
-                SubstateOffset::Vault(VaultOffset::Vault),
+                SubstateOffset::Vault(VaultOffset::LiquidFungible),
             ))
-            .map(|output| output.substate.vault().0.ids().clone())
+            .map(|mut output| output.substate.vault_liquid_fungible_mut().amount())
+    }
+
+    pub fn inspect_non_fungible_vault(
+        &mut self,
+        vault_id: VaultId,
+    ) -> Option<BTreeSet<NonFungibleLocalId>> {
+        self.substate_store()
+            .get_substate(&SubstateId(
+                RENodeId::Vault(vault_id),
+                NodeModuleId::SELF,
+                SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
+            ))
+            .map(|mut output| {
+                output
+                    .substate
+                    .vault_liquid_non_fungible_mut()
+                    .ids()
+                    .clone()
+            })
     }
 
     pub fn get_component_resources(
@@ -1075,6 +1108,50 @@ impl TestRunner {
             .get_executable(vec![AuthAddresses::validator_role()]),
         );
         receipt.output(0)
+    }
+
+    pub fn kernel_invoke_function(
+        package_address: PackageAddress,
+        blueprint_name: &str,
+        function_name: &str,
+        args: &Vec<u8>,
+    ) -> Result<Vec<u8>, RuntimeError> {
+        // Prepare data for creating kernel
+        let substate_store = TypedInMemorySubstateStore::new();
+        let mut track = Track::new(&substate_store);
+        let transaction_hash = hash(vec![0]);
+        let mut id_allocator = IdAllocator::new(transaction_hash, BTreeSet::new());
+        let execution_config = ExecutionConfig::standard();
+        let modules = KernelModuleMixer::standard(
+            execution_config.debug,
+            transaction_hash,
+            AuthZoneParams {
+                initial_proofs: vec![],
+                virtualizable_proofs_resource_addresses: BTreeSet::new(),
+            },
+            SystemLoanFeeReserve::no_fee(),
+            FeeTable::new(),
+            &execution_config,
+        );
+        let scrypto_interpreter = ScryptoInterpreter {
+            wasm_metering_config: WasmMeteringConfig::V0,
+            wasm_engine: DefaultWasmEngine::default(),
+            wasm_instrumenter: WasmInstrumenter::default(),
+        };
+
+        // Create kernel
+        let mut kernel = Kernel::new(&mut id_allocator, &mut track, &scrypto_interpreter, modules);
+
+        // Initialize kernel
+        kernel.initialize().expect("Failed to initialize kernel");
+
+        // Call function
+        kernel.call_function(
+            package_address,
+            blueprint_name,
+            function_name,
+            scrypto_args!(args),
+        )
     }
 }
 

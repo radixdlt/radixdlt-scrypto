@@ -721,9 +721,7 @@ mod tests {
         assert!(commit_result
             .resource_changes
             .iter()
-            .any(|rc| rc.resource_address == RADIX_TOKEN
-                && rc.amount == allocation_amount
-                && rc.component_id == derefed_component_id));
+            .any(|rc| rc.amount == allocation_amount && rc.component_id == derefed_component_id));
     }
 
     #[test]

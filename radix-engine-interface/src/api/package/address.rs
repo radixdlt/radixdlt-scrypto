@@ -9,10 +9,12 @@ use sbor::*;
 use transaction_data::*;
 use utils::{copy_u8_array, ContextualDisplay};
 
+const PACKAGE_ADDRESS_LENGTH: usize = 26;
+
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum PackageAddress {
-    Normal([u8; 26]),
+    Normal([u8; PACKAGE_ADDRESS_LENGTH]),
 }
 
 impl TryFrom<&[u8]> for PackageAddress {
@@ -32,7 +34,7 @@ impl TryFrom<&[u8]> for PackageAddress {
 }
 
 impl PackageAddress {
-    pub fn to_array_without_entity_id(&self) -> [u8; 26] {
+    pub fn to_array_without_entity_id(&self) -> [u8; PACKAGE_ADDRESS_LENGTH] {
         match self {
             Self::Normal(v) => v.clone(),
         }
@@ -55,6 +57,10 @@ impl PackageAddress {
         let bytes = hex::decode(hex_str).map_err(|_| AddressError::HexDecodingError)?;
 
         Self::try_from(bytes.as_ref())
+    }
+
+    pub fn size(self) -> usize {
+        PACKAGE_ADDRESS_LENGTH
     }
 }
 

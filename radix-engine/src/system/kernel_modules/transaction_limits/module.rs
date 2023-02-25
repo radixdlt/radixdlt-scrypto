@@ -7,7 +7,11 @@ use crate::{
     },
     types::Vec,
 };
-use radix_engine_interface::{api::types::LockHandle, ScryptoSbor};
+use radix_engine_interface::{
+    api::types::{InvocationIdentifier, LockHandle},
+    data::ScryptoValue,
+    ScryptoSbor,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TransactionLimitsError {
@@ -23,6 +27,9 @@ pub enum TransactionLimitsError {
     /// Returned when substate writes count during transaction execution
     /// exceeds defined limit just after write occurs.
     MaxSubstateWritesCountExceeded,
+    /// Returned when function or method invocation payload size exceeds defined limit,
+    /// as parameter actual payload size is returned.
+    MaxInvokePayloadSizeExceeded(usize),
 }
 
 /// Representation of data which needs to be limited for each call frame.
@@ -41,6 +48,8 @@ pub struct TransactionLimitsConfig {
     pub max_substate_reads: usize,
     /// Maximum Substates writes for a transaction.
     pub max_substate_writes: usize,
+    /// Maximum Invoke payload size.
+    pub max_invoke_payload_size: usize,
 }
 
 /// Tracks and verifies transaction limits during transactino execution,
@@ -127,10 +136,33 @@ impl TransactionLimitsModule {
 }
 
 impl KernelModule for TransactionLimitsModule {
+    fn before_invoke<Y: KernelModuleApi<RuntimeError>>(
+        api: &mut Y,
+        _identifier: &InvocationIdentifier,
+        input_size: usize,
+    ) -> Result<(), RuntimeError> {
+        if input_size
+            > api
+                .kernel_get_module_state()
+                .transaction_limits
+                .limits_config
+                .max_invoke_payload_size
+        {
+            Err(RuntimeError::ModuleError(
+                ModuleError::TransactionLimitsError(
+                    TransactionLimitsError::MaxInvokePayloadSizeExceeded(input_size),
+                ),
+            ))
+        } else {
+            Ok(())
+        }
+    }
+
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         _actor: &Option<ResolvedActor>,
         _down_movement: &mut CallFrameUpdate,
+        _args: &ScryptoValue,
     ) -> Result<(), RuntimeError> {
         // push new empty wasm memory value refencing current call frame to internal stack
         api.kernel_get_module_state()
