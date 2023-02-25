@@ -13,6 +13,34 @@ use transaction_data::*;
 use super::AccessRule;
 
 #[derive(
+Debug,
+Clone,
+PartialEq,
+Eq,
+Hash,
+Ord,
+PartialOrd,
+ScryptoSbor,
+ManifestCategorize,
+ManifestEncode,
+ManifestDecode,
+LegacyDescribe,
+)]
+pub struct FunctionKey {
+    pub blueprint: String,
+    pub ident: String,
+}
+
+impl FunctionKey {
+    pub fn new(blueprint: String, ident: String) -> Self {
+        Self {
+            blueprint,
+            ident,
+        }
+    }
+}
+
+#[derive(
     Debug,
     Clone,
     PartialEq,

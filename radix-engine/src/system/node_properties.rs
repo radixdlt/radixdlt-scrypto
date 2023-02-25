@@ -1,6 +1,6 @@
 use super::node::{RENodeInit, RENodeModuleInit};
 use crate::errors::{KernelError, RuntimeError};
-use crate::kernel::actor::{ActorIdentifier, ExecutionMode, ResolvedActor};
+use crate::kernel::actor::{ActorIdentifier, ExecutionMode, Actor};
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
@@ -22,7 +22,7 @@ pub struct VisibilityProperties;
 impl VisibilityProperties {
     pub fn check_drop_node_visibility(
         mode: ExecutionMode,
-        actor: &ResolvedActor,
+        actor: &Actor,
         node_id: RENodeId,
     ) -> bool {
         match mode {
@@ -90,7 +90,7 @@ impl VisibilityProperties {
 
     pub fn check_create_node_access(
         mode: ExecutionMode,
-        actor: &ResolvedActor,
+        actor: &Actor,
         node: &RENodeInit,
         module_init: &BTreeMap<NodeModuleId, RENodeModuleInit>,
     ) -> bool {
@@ -159,7 +159,7 @@ impl VisibilityProperties {
 
     pub fn check_substate_access(
         mode: ExecutionMode,
-        actor: &ResolvedActor,
+        actor: &Actor,
         node_id: RENodeId,
         offset: SubstateOffset,
         flags: LockFlags,

@@ -1,6 +1,6 @@
 use super::*;
 use super::{CostingReason, FeeReserveError, FeeTable, SystemLoanFeeReserve};
-use crate::kernel::actor::{ActorIdentifier, ResolvedActor};
+use crate::kernel::actor::{ActorIdentifier, Actor};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
@@ -121,13 +121,13 @@ impl KernelModule for CostingModule {
 
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        callee: &Option<ResolvedActor>,
+        callee: &Option<Actor>,
         _nodes_and_refs: &mut CallFrameUpdate,
         _args: &ScryptoValue,
     ) -> Result<(), RuntimeError> {
         // Identify the function, and optional component address
         let (fn_identifier, optional_component) = match &callee {
-            Some(ResolvedActor {
+            Some(Actor {
                 identifier,
                 fn_identifier,
             }) => {

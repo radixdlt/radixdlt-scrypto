@@ -1,5 +1,5 @@
 use crate::errors::*;
-use crate::kernel::actor::{ActorIdentifier, ResolvedActor};
+use crate::kernel::actor::{ActorIdentifier, Actor};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::event::TrackedEvent;
 use crate::kernel::kernel_api::KernelModuleApi;
@@ -139,7 +139,7 @@ pub struct ResourceSummary {
 #[derive(Debug, Clone, ScryptoSbor)]
 pub enum TraceActor {
     Root,
-    Actor(ResolvedActor),
+    Actor(Actor),
 }
 
 #[derive(Debug, Clone, ScryptoSbor)]
@@ -266,7 +266,7 @@ impl KernelModule for ExecutionTraceModule {
 
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        callee: &Option<ResolvedActor>,
+        callee: &Option<Actor>,
         update: &mut CallFrameUpdate,
         _args: &ScryptoValue,
     ) -> Result<(), RuntimeError> {
@@ -280,7 +280,7 @@ impl KernelModule for ExecutionTraceModule {
 
     fn on_execution_finish<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        caller: &Option<ResolvedActor>,
+        caller: &Option<Actor>,
         update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         let current_actor = api.kernel_get_current_actor();
@@ -332,7 +332,7 @@ impl ExecutionTraceModule {
 
     fn handle_after_create_node(
         &mut self,
-        current_actor: Option<ResolvedActor>,
+        current_actor: Option<Actor>,
         current_depth: usize,
         resource_summary: ResourceSummary,
     ) {
@@ -368,7 +368,7 @@ impl ExecutionTraceModule {
 
     fn handle_after_drop_node(
         &mut self,
-        current_actor: Option<ResolvedActor>,
+        current_actor: Option<Actor>,
         current_depth: usize,
     ) {
         // Important to always update the counter (even if we're over the depth limit).
@@ -390,13 +390,13 @@ impl ExecutionTraceModule {
 
     fn handle_before_push_frame(
         &mut self,
-        current_actor: Option<ResolvedActor>,
-        callee: &Option<ResolvedActor>,
+        current_actor: Option<Actor>,
+        callee: &Option<Actor>,
         resource_summary: ResourceSummary,
     ) {
         if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
             let origin = match &callee {
-                Some(ResolvedActor {
+                Some(Actor {
                     fn_identifier: identifier,
                     identifier: receiver,
                 }) => match receiver {
@@ -422,7 +422,7 @@ impl ExecutionTraceModule {
         self.current_kernel_call_depth += 1;
 
         match &callee {
-            Some(ResolvedActor {
+            Some(Actor {
                 fn_identifier:
                     FnIdentifier {
                         package_address,
@@ -436,7 +436,7 @@ impl ExecutionTraceModule {
             {
                 self.handle_vault_put_input(&resource_summary, &current_actor, vault_id)
             }
-            Some(ResolvedActor {
+            Some(Actor {
                 fn_identifier:
                     FnIdentifier {
                         package_address,
@@ -456,13 +456,13 @@ impl ExecutionTraceModule {
 
     fn handle_on_execution_finish(
         &mut self,
-        current_actor: Option<ResolvedActor>,
+        current_actor: Option<Actor>,
         current_depth: usize,
-        caller: &Option<ResolvedActor>,
+        caller: &Option<Actor>,
         resource_summary: ResourceSummary,
     ) {
         match &current_actor {
-            Some(ResolvedActor {
+            Some(Actor {
                 fn_identifier:
                     FnIdentifier {
                         package_address,
@@ -554,7 +554,7 @@ impl ExecutionTraceModule {
     fn handle_vault_put_input<'s>(
         &mut self,
         resource_summary: &ResourceSummary,
-        caller: &Option<ResolvedActor>,
+        caller: &Option<Actor>,
         vault_id: &VaultId,
     ) {
         let actor = caller
@@ -572,7 +572,7 @@ impl ExecutionTraceModule {
 
     fn handle_vault_lock_fee_input<'s>(
         &mut self,
-        caller: &Option<ResolvedActor>,
+        caller: &Option<Actor>,
         vault_id: &VaultId,
     ) {
         let actor = caller
@@ -586,7 +586,7 @@ impl ExecutionTraceModule {
     fn handle_vault_take_output<'s>(
         &mut self,
         resource_summary: &ResourceSummary,
-        caller: &Option<ResolvedActor>,
+        caller: &Option<Actor>,
         vault_id: &VaultId,
     ) {
         let actor = caller
@@ -617,7 +617,7 @@ impl ExecutionTraceReceipt {
         let mut vault_changes = HashMap::<RENodeId, HashMap<VaultId, Decimal>>::new();
         let mut vault_locked_by = HashMap::<VaultId, RENodeId>::new();
         for (actor, vault_id, vault_op) in ops {
-            if let TraceActor::Actor(ResolvedActor {
+            if let TraceActor::Actor(Actor {
                 identifier: ActorIdentifier::Method(method),
                 ..
             }) = actor

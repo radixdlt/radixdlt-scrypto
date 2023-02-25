@@ -5,7 +5,7 @@ use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use sbor::rust::collections::BTreeMap;
 
-use super::actor::ResolvedActor;
+use super::actor::Actor;
 use super::call_frame::CallFrameUpdate;
 use super::kernel_api::KernelModuleApi;
 use radix_engine_interface::api::substate_api::LockFlags;
@@ -48,7 +48,7 @@ pub trait KernelModule {
     #[inline(always)]
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
-        _actor: &Option<ResolvedActor>,
+        _actor: &Option<Actor>,
         _down_movement: &mut CallFrameUpdate,
         _args: &ScryptoValue,
     ) -> Result<(), RuntimeError> {
@@ -58,7 +58,7 @@ pub trait KernelModule {
     #[inline(always)]
     fn on_execution_start<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
-        _caller: &Option<ResolvedActor>,
+        _caller: &Option<Actor>,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -66,7 +66,7 @@ pub trait KernelModule {
     #[inline(always)]
     fn on_execution_finish<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
-        _caller: &Option<ResolvedActor>,
+        _caller: &Option<Actor>,
         _up_movement: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         Ok(())

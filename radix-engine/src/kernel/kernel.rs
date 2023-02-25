@@ -20,7 +20,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientComponentApi;
 // TODO: clean this up!
 use crate::kernel::kernel_api::TemporaryResolvedInvocation;
-use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
+use crate::system::node_modules::access_rules::MethodAccessRulesChainSubstate;
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, LockHandle, ProofOffset, RENodeId, SubstateId, SubstateOffset,
     WorktopOffset,
@@ -45,7 +45,7 @@ use radix_engine_interface::blueprints::transaction_runtime::TRANSACTION_RUNTIME
 use radix_engine_interface::rule;
 use sbor::rust::mem;
 
-use super::actor::{ExecutionMode, ResolvedActor};
+use super::actor::{ExecutionMode, Actor};
 use super::call_frame::{CallFrame, RENodeVisibilityOrigin};
 use super::heap::{Heap, HeapRENode};
 use super::id_allocator::IdAllocator;
@@ -177,7 +177,7 @@ where
                         metadata: BTreeMap::new(),
                     }),
                 );
-                let access_rules_substate = ObjectAccessRulesChainSubstate {
+                let access_rules_substate = MethodAccessRulesChainSubstate {
                     access_rules_chain: vec![access_rules],
                 };
                 node_modules.insert(
@@ -925,7 +925,7 @@ where
         self.current_frame.depth
     }
 
-    fn kernel_get_current_actor(&self) -> Option<ResolvedActor> {
+    fn kernel_get_current_actor(&self) -> Option<Actor> {
         self.current_frame.actor.clone()
     }
 

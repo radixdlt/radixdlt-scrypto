@@ -9,19 +9,17 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::epoch_manager::*;
-use radix_engine_interface::blueprints::resource::{require, AccessRule};
+use radix_engine_interface::blueprints::resource::{require, AccessRule, FunctionKey};
 use radix_engine_interface::data::ScryptoValue;
 
 pub struct EpochManagerNativePackage;
 
 impl EpochManagerNativePackage {
-    pub fn package_access_rules() -> BTreeMap<(String, String), AccessRule> {
+    pub fn package_access_rules() -> BTreeMap<FunctionKey, AccessRule> {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(
-            (
-                EPOCH_MANAGER_BLUEPRINT.to_string(),
-                EPOCH_MANAGER_CREATE_IDENT.to_string(),
-            ),
+            FunctionKey::new(EPOCH_MANAGER_BLUEPRINT.to_string(),
+                EPOCH_MANAGER_CREATE_IDENT.to_string()),
             rule!(require(AuthAddresses::system_role())),
         );
         access_rules

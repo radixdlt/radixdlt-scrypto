@@ -1,20 +1,19 @@
+use radix_engine_interface::api::component::{ComponentStateSubstate, TypeInfoSubstate};
 use crate::blueprints::resource::VaultInfoSubstate;
 use crate::errors::*;
-use crate::kernel::actor::{ActorIdentifier, ResolvedActor};
+use crate::kernel::actor::{ActorIdentifier, Actor};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::call_frame::RENodeVisibilityOrigin;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
 use crate::system::node::RENodeInit;
 use crate::system::node_modules::access_rules::{
-    AccessRulesNativePackage, AuthZoneStackSubstate, ObjectAccessRulesChainSubstate,
-    PackageAccessRulesSubstate,
+    AccessRulesNativePackage, AuthZoneStackSubstate, MethodAccessRulesChainSubstate,
+    FunctionAccessRulesSubstate,
 };
 use crate::types::*;
 use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::package::{
-    PACKAGE_LOADER_BLUEPRINT, PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT,
-};
+use radix_engine_interface::api::package::{PACKAGE_LOADER_BLUEPRINT, PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT, PackageInfoSubstate};
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, RENodeId, SubstateOffset, VaultOffset,
@@ -22,6 +21,7 @@ use radix_engine_interface::api::types::{
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
 use transaction::model::AuthZoneParams;
+use crate::system::kernel_modules::auth::convert;
 
 use super::auth_converter::convert_contextless;
 use super::method_authorization::MethodAuthorization;
@@ -41,10 +41,10 @@ pub struct AuthModule {
 }
 
 impl AuthModule {
-    fn is_barrier(actor: &Option<ResolvedActor>) -> bool {
+    fn is_barrier(actor: &Option<Actor>) -> bool {
         matches!(
             actor,
-            Some(ResolvedActor {
+            Some(Actor {
                 identifier: ActorIdentifier::Method(MethodIdentifier(
                     RENodeId::GlobalComponent(..),
                     ..
@@ -75,19 +75,16 @@ impl AuthModule {
         } else {
             let handle = api.kernel_lock_substate(
                 RENodeId::GlobalPackage(identifier.package_address),
-                NodeModuleId::PackageAccessRules,
+                NodeModuleId::FunctionAccessRules,
                 SubstateOffset::PackageAccessRules,
                 LockFlags::read_only(),
             )?;
-            let package_access_rules: &PackageAccessRulesSubstate =
+            let package_access_rules: &FunctionAccessRulesSubstate =
                 api.kernel_get_substate_ref(handle)?;
-            let local_fn_identifier = (
-                identifier.blueprint_name.to_string(),
-                identifier.ident.to_string(),
-            );
+            let function_key = FunctionKey::new(identifier.blueprint_name.to_string(), identifier.ident.to_string());
             let access_rule = package_access_rules
                 .access_rules
-                .get(&local_fn_identifier)
+                .get(&function_key)
                 .unwrap_or(&package_access_rules.default_auth);
             let func_auth = convert_contextless(access_rule);
             vec![func_auth]
@@ -164,7 +161,7 @@ impl AuthModule {
                 let method_key = identifier.method_key();
                 let auth = match visibility {
                     RENodeVisibilityOrigin::Normal => {
-                        ObjectAccessRulesChainSubstate::method_authorization_contextless(
+                        Self::method_authorization_contextless(
                             RENodeId::GlobalResourceManager(resource_address),
                             NodeModuleId::AccessRules1,
                             method_key,
@@ -181,7 +178,7 @@ impl AuthModule {
                             LockFlags::read_only(),
                         )?;
 
-                        let substate: &ObjectAccessRulesChainSubstate =
+                        let substate: &MethodAccessRulesChainSubstate =
                             api.kernel_get_substate_ref(handle)?;
 
                         // TODO: Do we want to allow recaller to be able to withdraw from
@@ -216,14 +213,14 @@ impl AuthModule {
                     RENodeId::Component(..) | RENodeId::GlobalComponent(ComponentAddress::Normal(..))
                 ) && module_id.eq(&NodeModuleId::SELF)
                 {
-                    ObjectAccessRulesChainSubstate::normal_component_method_authorization(
+                    Self::normal_component_method_authorization(
                         *node_id,
                         NodeModuleId::AccessRules,
                         method_key,
                         api,
                     )?
                 } else {
-                    ObjectAccessRulesChainSubstate::method_authorization_contextless(
+                    Self::method_authorization_contextless(
                         *node_id,
                         NodeModuleId::AccessRules,
                         method_key,
@@ -234,6 +231,105 @@ impl AuthModule {
         };
 
         Ok(auth)
+    }
+
+    fn normal_component_method_authorization<Y: KernelModuleApi<RuntimeError>>(
+        receiver: RENodeId,
+        module_id: NodeModuleId,
+        key: MethodKey,
+        api: &mut Y,
+    ) -> Result<Vec<MethodAuthorization>, RuntimeError> {
+        let schema = {
+            let handle = api.kernel_lock_substate(
+                receiver,
+                NodeModuleId::TypeInfo,
+                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+                LockFlags::read_only(),
+            )?;
+            let info: &TypeInfoSubstate = api.kernel_get_substate_ref(handle)?;
+            let package_address = info.package_address.clone();
+            let blueprint_ident = info.blueprint_name.clone();
+
+            api.kernel_drop_lock(handle)?;
+            let handle = api.kernel_lock_substate(
+                RENodeId::GlobalPackage(package_address),
+                NodeModuleId::SELF,
+                SubstateOffset::Package(PackageOffset::Info),
+                LockFlags::read_only(),
+            )?;
+            let package: &PackageInfoSubstate = api.kernel_get_substate_ref(handle)?;
+
+            let schema = package
+                .blueprint_abi(&blueprint_ident)
+                .expect("Blueprint not found for existing component")
+                .structure
+                .clone();
+            api.kernel_drop_lock(handle)?;
+            schema
+        };
+
+        let state = {
+            let offset = SubstateOffset::Component(ComponentOffset::State0);
+            let handle = api.kernel_lock_substate(
+                receiver,
+                NodeModuleId::SELF,
+                offset,
+                LockFlags::read_only(),
+            )?;
+            let state: &ComponentStateSubstate = api.kernel_get_substate_ref(handle)?;
+            let state = IndexedScryptoValue::from_slice(&state.raw)
+                .expect("Failed to decode component state");
+            api.kernel_drop_lock(handle)?;
+            state
+        };
+
+        let mut authorizations = Vec::new();
+
+        let handle = api.kernel_lock_substate(
+            receiver,
+            module_id,
+            SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+            LockFlags::read_only(),
+        )?;
+        let access_rules: &MethodAccessRulesChainSubstate = api.kernel_get_substate_ref(handle)?;
+
+        for auth in &access_rules.access_rules_chain {
+            let method_auth = auth.get(&key);
+            let authorization = convert(&schema, &state, method_auth);
+            authorizations.push(authorization);
+        }
+
+        api.kernel_drop_lock(handle)?;
+
+        Ok(authorizations)
+    }
+
+    pub fn method_authorization_contextless<Y: KernelModuleApi<RuntimeError>>(
+        receiver: RENodeId,
+        module_id: NodeModuleId,
+        key: MethodKey,
+        api: &mut Y,
+    ) -> Result<Vec<MethodAuthorization>, RuntimeError> {
+        let handle = api.kernel_lock_substate(
+            receiver,
+            module_id,
+            SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+            LockFlags::read_only(),
+        )?;
+        let access_rules: &MethodAccessRulesChainSubstate = api.kernel_get_substate_ref(handle)?;
+
+        let mut authorizations = Vec::new();
+        for auth in &access_rules.access_rules_chain {
+            let method_auth = auth.get(&key);
+
+            // TODO: Remove
+            let authorization = convert_contextless(method_auth);
+            authorizations.push(authorization);
+        }
+
+        api.kernel_drop_lock(handle)?;
+
+        Ok(authorizations)
     }
 }
 
@@ -262,13 +358,13 @@ impl KernelModule for AuthModule {
 
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        next_actor: &Option<ResolvedActor>,
+        next_actor: &Option<Actor>,
         call_frame_update: &mut CallFrameUpdate,
         args: &ScryptoValue,
     ) -> Result<(), RuntimeError> {
         if matches!(
             next_actor,
-            Some(ResolvedActor {
+            Some(Actor {
                 fn_identifier: FnIdentifier {
                     package_address: AUTH_ZONE_PACKAGE,
                     ..
@@ -318,7 +414,7 @@ impl KernelModule for AuthModule {
 
         if !matches!(
             next_actor,
-            Some(ResolvedActor {
+            Some(Actor {
                 fn_identifier: FnIdentifier {
                     package_address: ACCESS_RULES_PACKAGE | AUTH_ZONE_PACKAGE,
                     ..
@@ -357,7 +453,7 @@ impl KernelModule for AuthModule {
 
     fn on_execution_finish<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        _caller: &Option<ResolvedActor>,
+        _caller: &Option<Actor>,
         _update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         if matches!(

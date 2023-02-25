@@ -1,6 +1,6 @@
 use crate::blueprints::resource::ProofInfoSubstate;
 use crate::errors::{ModuleError, RuntimeError};
-use crate::kernel::actor::{ActorIdentifier, ResolvedActor};
+use crate::kernel::actor::{ActorIdentifier, Actor};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
@@ -22,7 +22,7 @@ pub struct NodeMoveModule {}
 impl NodeMoveModule {
     fn prepare_move_downstream<Y: KernelModuleApi<RuntimeError>>(
         node_id: RENodeId,
-        actor: &Option<ResolvedActor>,
+        actor: &Option<Actor>,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
         match node_id {
@@ -44,7 +44,7 @@ impl NodeMoveModule {
                 // Change to restricted unless it's for auth zone.
                 if !matches!(
                     actor,
-                    Some(ResolvedActor {
+                    Some(Actor {
                         identifier: ActorIdentifier::Method(MethodIdentifier(
                             RENodeId::AuthZoneStack,
                             ..
@@ -116,7 +116,7 @@ impl NodeMoveModule {
 impl KernelModule for NodeMoveModule {
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        actor: &Option<ResolvedActor>,
+        actor: &Option<Actor>,
         call_frame_update: &mut CallFrameUpdate,
         _args: &ScryptoValue,
     ) -> Result<(), RuntimeError> {
@@ -129,7 +129,7 @@ impl KernelModule for NodeMoveModule {
 
     fn on_execution_finish<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        _caller: &Option<ResolvedActor>,
+        _caller: &Option<Actor>,
         call_frame_update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         for node_id in &call_frame_update.nodes_to_move {

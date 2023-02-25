@@ -1,4 +1,4 @@
-use super::actor::ResolvedActor;
+use super::actor::Actor;
 use super::kernel_api::KernelModuleApi;
 use crate::errors::*;
 use crate::kernel::call_frame::CallFrameUpdate;
@@ -227,7 +227,7 @@ impl KernelModule for KernelModuleMixer {
 
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        actor: &Option<ResolvedActor>,
+        actor: &Option<Actor>,
         update: &mut CallFrameUpdate,
         args: &ScryptoValue,
     ) -> Result<(), RuntimeError> {
@@ -261,7 +261,7 @@ impl KernelModule for KernelModuleMixer {
 
     fn on_execution_start<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        caller: &Option<ResolvedActor>,
+        caller: &Option<Actor>,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
@@ -293,7 +293,7 @@ impl KernelModule for KernelModuleMixer {
 
     fn on_execution_finish<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        caller: &Option<ResolvedActor>,
+        caller: &Option<Actor>,
         update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;

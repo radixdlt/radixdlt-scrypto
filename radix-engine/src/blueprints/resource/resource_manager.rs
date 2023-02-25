@@ -7,7 +7,7 @@ use crate::kernel::heap::DroppedBucketResource;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
+use crate::system::node_modules::access_rules::MethodAccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use native_sdk::resource::SysBucket;
@@ -188,8 +188,8 @@ where
 fn build_substates(
     mut access_rules_map: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
 ) -> (
-    ObjectAccessRulesChainSubstate,
-    ObjectAccessRulesChainSubstate,
+    MethodAccessRulesChainSubstate,
+    MethodAccessRulesChainSubstate,
 ) {
     let (mint_access_rule, mint_mutability) = access_rules_map
         .remove(&Mint)
@@ -308,7 +308,7 @@ fn build_substates(
         DenyAll,
     );
 
-    let substate = ObjectAccessRulesChainSubstate {
+    let substate = MethodAccessRulesChainSubstate {
         access_rules_chain: vec![access_rules],
     };
 
@@ -426,7 +426,7 @@ fn build_substates(
         DenyAll,
     );
 
-    let vault_substate = ObjectAccessRulesChainSubstate {
+    let vault_substate = MethodAccessRulesChainSubstate {
         access_rules_chain: vec![vault_access_rules],
     };
 

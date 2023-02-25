@@ -3,7 +3,7 @@ use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
+use crate::system::node_modules::access_rules::MethodAccessRulesChainSubstate;
 use crate::types::*;
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::substate_api::LockFlags;
@@ -220,7 +220,7 @@ impl AccountNativePackage {
                     metadata: BTreeMap::new(),
                 }),
             );
-            let access_rules_substate = ObjectAccessRulesChainSubstate {
+            let access_rules_substate = MethodAccessRulesChainSubstate {
                 access_rules_chain: [access_rules].into(),
             };
             node_modules.insert(
@@ -278,7 +278,7 @@ impl AccountNativePackage {
                     metadata: BTreeMap::new(),
                 }),
             );
-            let access_rules_substate = ObjectAccessRulesChainSubstate {
+            let access_rules_substate = MethodAccessRulesChainSubstate {
                 access_rules_chain: [access_rules].into(),
             };
             node_modules.insert(

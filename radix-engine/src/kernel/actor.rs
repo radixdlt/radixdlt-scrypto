@@ -7,12 +7,12 @@ pub enum ActorIdentifier {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct ResolvedActor {
+pub struct Actor {
     pub fn_identifier: FnIdentifier,
     pub identifier: ActorIdentifier,
 }
 
-impl ResolvedActor {
+impl Actor {
     pub fn method<I: Into<FnIdentifier>>(identifier: I, method: MethodIdentifier) -> Self {
         Self {
             fn_identifier: identifier.into(),

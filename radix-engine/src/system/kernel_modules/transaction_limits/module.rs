@@ -2,7 +2,7 @@ use crate::{
     errors::ModuleError,
     errors::RuntimeError,
     kernel::{
-        actor::ResolvedActor, call_frame::CallFrameUpdate, kernel_api::KernelModuleApi,
+        actor::Actor, call_frame::CallFrameUpdate, kernel_api::KernelModuleApi,
         module::KernelModule,
     },
     types::Vec,
@@ -160,7 +160,7 @@ impl KernelModule for TransactionLimitsModule {
 
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        _actor: &Option<ResolvedActor>,
+        _actor: &Option<Actor>,
         _down_movement: &mut CallFrameUpdate,
         _args: &ScryptoValue,
     ) -> Result<(), RuntimeError> {

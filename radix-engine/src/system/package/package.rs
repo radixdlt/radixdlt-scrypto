@@ -4,7 +4,7 @@ use crate::system::kernel_modules::costing::FIXED_HIGH_FEE;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::{
-    ObjectAccessRulesChainSubstate, PackageAccessRulesSubstate,
+    MethodAccessRulesChainSubstate, FunctionAccessRulesSubstate,
 };
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::type_info::PackageCodeTypeSubstate;
@@ -84,7 +84,7 @@ impl Package {
         let metadata_substate = MetadataSubstate {
             metadata: input.metadata,
         };
-        let access_rules = ObjectAccessRulesChainSubstate {
+        let access_rules = MethodAccessRulesChainSubstate {
             access_rules_chain: vec![input.access_rules],
         };
 
@@ -98,8 +98,8 @@ impl Package {
             RENodeModuleInit::ObjectAccessRulesChain(access_rules),
         );
         node_modules.insert(
-            NodeModuleId::PackageAccessRules,
-            RENodeModuleInit::PackageAccessRules(PackageAccessRulesSubstate {
+            NodeModuleId::FunctionAccessRules,
+            RENodeModuleInit::PackageAccessRules(FunctionAccessRulesSubstate {
                 access_rules: input.package_access_rules,
                 default_auth: input.default_package_access_rule,
             }),
@@ -169,7 +169,7 @@ impl Package {
         let metadata_substate = MetadataSubstate {
             metadata: input.metadata,
         };
-        let access_rules = ObjectAccessRulesChainSubstate {
+        let access_rules = MethodAccessRulesChainSubstate {
             access_rules_chain: vec![input.access_rules],
         };
 
@@ -193,8 +193,8 @@ impl Package {
             RENodeModuleInit::ObjectAccessRulesChain(access_rules),
         );
         node_modules.insert(
-            NodeModuleId::PackageAccessRules,
-            RENodeModuleInit::PackageAccessRules(PackageAccessRulesSubstate {
+            NodeModuleId::FunctionAccessRules,
+            RENodeModuleInit::PackageAccessRules(FunctionAccessRulesSubstate {
                 access_rules: BTreeMap::new(),
                 default_auth: AccessRule::AllowAll,
             }),

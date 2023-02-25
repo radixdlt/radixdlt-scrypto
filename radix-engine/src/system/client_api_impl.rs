@@ -10,7 +10,7 @@ use crate::kernel::module::KernelModule;
 use crate::kernel::module_mixer::KernelModuleMixer;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
+use crate::system::node_modules::access_rules::MethodAccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
@@ -230,7 +230,7 @@ where
         let metadata_substate = MetadataSubstate { metadata };
 
         // Create auth substates
-        let auth_substate = ObjectAccessRulesChainSubstate { access_rules_chain };
+        let auth_substate = MethodAccessRulesChainSubstate { access_rules_chain };
 
         // Create component RENode
         // FIXME: support native blueprints
@@ -315,7 +315,7 @@ where
             NodeModuleId::AccessRules,
             SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
         )) {
-            let access_rules_substate: ObjectAccessRulesChainSubstate = access_rules.into();
+            let access_rules_substate: MethodAccessRulesChainSubstate = access_rules.into();
             module_init.insert(
                 NodeModuleId::AccessRules,
                 RENodeModuleInit::ObjectAccessRulesChain(access_rules_substate),
