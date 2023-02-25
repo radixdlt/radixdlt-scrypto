@@ -170,9 +170,8 @@ where
     }
 
     fn get_code(&mut self, package_address: PackageAddress) -> Result<PackageCode, RuntimeError> {
-        let package_global = RENodeId::Global(Address::Package(package_address));
         let handle = self.kernel_lock_substate(
-            package_global,
+            RENodeId::GlobalPackage(package_address),
             NodeModuleId::SELF,
             SubstateOffset::Package(PackageOffset::Code),
             LockFlags::read_only(),
@@ -187,9 +186,8 @@ where
         &mut self,
         package_address: PackageAddress,
     ) -> Result<BTreeMap<String, BlueprintAbi>, RuntimeError> {
-        let package_global = RENodeId::Global(Address::Package(package_address));
         let handle = self.kernel_lock_substate(
-            package_global,
+            RENodeId::GlobalPackage(package_address),
             NodeModuleId::SELF,
             SubstateOffset::Package(PackageOffset::Info),
             LockFlags::read_only(),
@@ -211,7 +209,7 @@ where
     ) -> Result<ComponentId, RuntimeError> {
         let offset = SubstateOffset::Global(GlobalOffset::Global);
         let handle = self.kernel_lock_substate(
-            RENodeId::Global(Address::Component(component_address)),
+            RENodeId::GlobalComponent(component_address),
             NodeModuleId::SELF,
             offset,
             LockFlags::empty(),
@@ -287,7 +285,7 @@ where
 
         self.kernel_create_node(
             node_id,
-            RENodeInit::Global(GlobalSubstate::Component(component_id)),
+            RENodeInit::GlobalComponent(GlobalSubstate::Component(component_id)),
             btreemap!(),
         )?;
 

@@ -90,7 +90,7 @@ impl SysBucket for Bucket {
         Y: ClientComponentApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::Global(receiver.into()),
+            RENodeId::GlobalResourceManager(receiver),
             RESOURCE_MANAGER_CREATE_BUCKET_IDENT,
             scrypto_encode(&ResourceManagerCreateBucketInput {}).unwrap(),
         )?;
@@ -186,7 +186,7 @@ impl SysBucket for Bucket {
     {
         let receiver = self.sys_resource_address(api)?;
         let rtn = api.call_method(
-            RENodeId::Global(receiver.into()),
+            RENodeId::GlobalResourceManager(receiver),
             RESOURCE_MANAGER_BURN_IDENT,
             scrypto_encode(&ResourceManagerBurnInput {
                 bucket: Bucket(self.0),

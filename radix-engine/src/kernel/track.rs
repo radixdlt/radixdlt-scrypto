@@ -296,11 +296,24 @@ impl<'s> Track<'s> {
 
         match &substate_id {
             SubstateId(
-                RENodeId::Global(global_address),
+                RENodeId::GlobalComponent(component_address),
                 NodeModuleId::SELF,
                 SubstateOffset::Global(GlobalOffset::Global),
             ) => {
-                self.new_global_addresses.push(*global_address);
+                self.new_global_addresses
+                    .push(Address::Component(*component_address));
+            }
+            SubstateId(
+                RENodeId::GlobalResourceManager(resource_address),
+                NodeModuleId::TypeInfo,
+                ..,
+            ) => {
+                self.new_global_addresses
+                    .push(Address::Resource(*resource_address));
+            }
+            SubstateId(RENodeId::GlobalPackage(package_address), NodeModuleId::TypeInfo, ..) => {
+                self.new_global_addresses
+                    .push(Address::Package(*package_address));
             }
             _ => {}
         }
@@ -683,9 +696,9 @@ impl<'s> FinalizingTrack<'s> {
 
         for (receiver, amount) in &fee_summary.royalty_cost_unit_breakdown {
             match receiver {
-                RoyaltyReceiver::Package(_, package_id) => {
+                RoyaltyReceiver::Package(package_address) => {
                     let substate_id = SubstateId(
-                        RENodeId::Package(*package_id),
+                        RENodeId::GlobalPackage(*package_address),
                         NodeModuleId::PackageRoyalty,
                         SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                     );

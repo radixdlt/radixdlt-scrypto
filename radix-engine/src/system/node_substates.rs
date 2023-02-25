@@ -25,7 +25,7 @@ use crate::types::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::{
-    Address, ComponentOffset, KeyValueStoreOffset, NonFungibleStoreOffset, RENodeId, SubstateOffset,
+    ComponentOffset, KeyValueStoreOffset, NonFungibleStoreOffset, RENodeId, SubstateOffset,
 };
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::resource::LiquidNonFungibleResource;
@@ -1442,9 +1442,6 @@ impl<'a> SubstateRef<'a> {
             SubstateRef::Global(global) => {
                 let mut owned_nodes = Vec::new();
                 match global {
-                    GlobalSubstate::Resource(resource_manager_id) => {
-                        owned_nodes.push(RENodeId::ResourceManager(*resource_manager_id))
-                    }
                     GlobalSubstate::Component(component_id) => {
                         owned_nodes.push(RENodeId::Component(*component_id))
                     }
@@ -1455,9 +1452,6 @@ impl<'a> SubstateRef<'a> {
                         owned_nodes.push(RENodeId::EpochManager(*epoch_manager_id))
                     }
                     GlobalSubstate::Clock(clock_id) => owned_nodes.push(RENodeId::Clock(*clock_id)),
-                    GlobalSubstate::Package(package_id) => {
-                        owned_nodes.push(RENodeId::Package(*package_id))
-                    }
                     GlobalSubstate::Validator(validator_id) => {
                         owned_nodes.push(RENodeId::Validator(*validator_id))
                     }
@@ -1481,12 +1475,12 @@ impl<'a> SubstateRef<'a> {
             }
             SubstateRef::VaultInfo(vault) => {
                 let mut references = HashSet::new();
-                references.insert(RENodeId::Global(Address::Resource(vault.resource_address)));
+                references.insert(RENodeId::GlobalResourceManager(vault.resource_address));
                 (references, Vec::new())
             }
             SubstateRef::ProofInfo(proof) => {
                 let mut references = HashSet::new();
-                references.insert(RENodeId::Global(Address::Resource(proof.resource_address)));
+                references.insert(RENodeId::GlobalResourceManager(proof.resource_address));
                 (references, Vec::new())
             }
             SubstateRef::FungibleProof(proof) => {
@@ -1505,22 +1499,22 @@ impl<'a> SubstateRef<'a> {
             }
             SubstateRef::BucketInfo(bucket) => {
                 let mut references = HashSet::new();
-                references.insert(RENodeId::Global(Address::Resource(bucket.resource_address)));
+                references.insert(RENodeId::GlobalResourceManager(bucket.resource_address));
                 (references, Vec::new())
             }
             SubstateRef::PackageInfo(substate) => {
                 let mut references = HashSet::new();
                 for component_ref in &substate.dependent_components {
-                    references.insert(RENodeId::Global(Address::Component(*component_ref)));
+                    references.insert(RENodeId::GlobalComponent(*component_ref));
                 }
                 for resource_ref in &substate.dependent_resources {
-                    references.insert(RENodeId::Global(Address::Resource(*resource_ref)));
+                    references.insert(RENodeId::GlobalResourceManager(*resource_ref));
                 }
                 (references, Vec::new())
             }
             SubstateRef::TypeInfo(substate) => {
                 let mut references = HashSet::new();
-                references.insert(RENodeId::Global(Address::Package(substate.package_address)));
+                references.insert(RENodeId::GlobalPackage(substate.package_address));
                 (references, Vec::new())
             }
             SubstateRef::ResourceManager(substate) => {
@@ -1533,12 +1527,10 @@ impl<'a> SubstateRef<'a> {
             SubstateRef::Validator(substate) => {
                 let mut references = HashSet::new();
                 let mut owned_nodes = Vec::new();
-                references.insert(RENodeId::Global(Address::Component(substate.manager)));
-                references.insert(RENodeId::Global(Address::Component(substate.address)));
-                references.insert(RENodeId::Global(Address::Resource(substate.unstake_nft)));
-                references.insert(RENodeId::Global(Address::Resource(
-                    substate.liquidity_token,
-                )));
+                references.insert(RENodeId::GlobalComponent(substate.manager));
+                references.insert(RENodeId::GlobalComponent(substate.address));
+                references.insert(RENodeId::GlobalResourceManager(substate.unstake_nft));
+                references.insert(RENodeId::GlobalResourceManager(substate.liquidity_token));
                 owned_nodes.push(RENodeId::Vault(substate.stake_xrd_vault_id));
                 owned_nodes.push(RENodeId::Vault(substate.pending_xrd_withdraw_vault_id));
                 (references, owned_nodes)

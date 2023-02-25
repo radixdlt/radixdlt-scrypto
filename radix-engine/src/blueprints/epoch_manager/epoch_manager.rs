@@ -61,9 +61,8 @@ impl EpochManagerBlueprint {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let underlying_node_id = api.kernel_allocate_node_id(RENodeType::EpochManager)?;
-        let global_node_id = RENodeId::Global(Address::Component(ComponentAddress::EpochManager(
-            input.component_address,
-        )));
+        let global_node_id =
+            RENodeId::GlobalComponent(ComponentAddress::EpochManager(input.component_address));
 
         let epoch_manager = EpochManagerSubstate {
             address: global_node_id.into(),
@@ -113,7 +112,7 @@ impl EpochManagerBlueprint {
             let owner_token_bucket =
                 olympia_validator_token_resman.mint_non_fungible(local_id, api)?;
             api.call_method(
-                RENodeId::Global(validator_init.validator_account_address.into()),
+                RENodeId::GlobalComponent(validator_init.validator_account_address.into()),
                 ACCOUNT_DEPOSIT_IDENT,
                 scrypto_encode(&AccountDepositInput {
                     bucket: owner_token_bucket,
@@ -134,7 +133,7 @@ impl EpochManagerBlueprint {
             validator_set.insert(address, validator);
 
             api.call_method(
-                RENodeId::Global(validator_init.stake_account_address.into()),
+                RENodeId::GlobalComponent(validator_init.stake_account_address.into()),
                 ACCOUNT_DEPOSIT_IDENT,
                 scrypto_encode(&AccountDepositInput { bucket: lp_bucket }).unwrap(),
             )?;
@@ -210,7 +209,7 @@ impl EpochManagerBlueprint {
 
         api.kernel_create_node(
             global_node_id,
-            RENodeInit::Global(GlobalSubstate::EpochManager(underlying_node_id.into())),
+            RENodeInit::GlobalComponent(GlobalSubstate::EpochManager(underlying_node_id.into())),
             BTreeMap::new(),
         )?;
 

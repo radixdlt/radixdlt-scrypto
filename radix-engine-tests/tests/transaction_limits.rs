@@ -108,7 +108,7 @@ fn transaction_limit_exceeded_substate_reads_should_fail() {
             package_address,
             "TransactionLimitTest",
             "read_kv_stores",
-            manifest_args!(100 as u32),
+            manifest_args!(200 as u32),
         )
         .build();
 

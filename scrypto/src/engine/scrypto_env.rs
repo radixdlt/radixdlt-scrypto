@@ -165,7 +165,7 @@ impl ClientPackageApi<ClientApiError> for ScryptoEnv {
     }
 
     fn get_code(&mut self, package_address: PackageAddress) -> Result<PackageCode, ClientApiError> {
-        let package_global = RENodeId::Global(Address::Package(package_address));
+        let package_global = RENodeId::GlobalPackage(package_address);
         let handle = self.sys_lock_substate(
             package_global,
             SubstateOffset::Package(PackageOffset::Code),
@@ -182,7 +182,7 @@ impl ClientPackageApi<ClientApiError> for ScryptoEnv {
         &mut self,
         package_address: PackageAddress,
     ) -> Result<BTreeMap<String, scrypto_abi::BlueprintAbi>, ClientApiError> {
-        let package_global = RENodeId::Global(Address::Package(package_address));
+        let package_global = RENodeId::GlobalPackage(package_address);
         let handle = self.sys_lock_substate(
             package_global,
             SubstateOffset::Package(PackageOffset::Info),

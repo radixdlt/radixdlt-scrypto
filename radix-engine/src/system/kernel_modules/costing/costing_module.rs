@@ -4,7 +4,6 @@ use crate::kernel::actor::{ResolvedActor, ResolvedReceiver};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
-use crate::system::global::GlobalSubstate;
 use crate::system::node::RENodeModuleInit;
 use crate::{
     errors::{CanBeAbortion, ModuleError, RuntimeError},
@@ -19,8 +18,8 @@ use radix_engine_interface::api::package::{
 };
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
-    Address, GlobalOffset, InvocationIdentifier, LockHandle, MethodReceiver, NodeModuleId,
-    RoyaltyOffset, SubstateOffset, VaultId, VaultOffset,
+    InvocationIdentifier, LockHandle, MethodReceiver, NodeModuleId, RoyaltyOffset, SubstateOffset,
+    VaultId, VaultOffset,
 };
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
@@ -134,8 +133,7 @@ impl KernelModule for CostingModule {
             }) => {
                 let maybe_component = match &receiver {
                     Some(ResolvedReceiver {
-                        derefed_from:
-                            Some((RENodeId::Global(Address::Component(component_address)), ..)),
+                        derefed_from: Some((RENodeId::GlobalComponent(component_address), ..)),
                         receiver: MethodReceiver(RENodeId::Component(component_id), ..),
                     }) => Some((*component_address, *component_id)),
                     _ => None,
@@ -170,21 +168,8 @@ impl KernelModule for CostingModule {
         /*
          * Apply package royalty
          */
-        let package_global_node_id = RENodeId::Global(Address::Package(package_address));
-        let (package_id, package_lock) = {
-            let handle = api.kernel_lock_substate(
-                package_global_node_id,
-                NodeModuleId::SELF,
-                SubstateOffset::Global(GlobalOffset::Global),
-                LockFlags::read_only(),
-            )?;
-            let global: &GlobalSubstate = api.kernel_get_substate_ref(handle)?;
-            let package_id = global.node_deref().into();
-            (package_id, handle)
-        };
-        let package_node_id = RENodeId::Package(package_id);
         let handle = api.kernel_lock_substate(
-            package_node_id,
+            RENodeId::GlobalPackage(package_address),
             NodeModuleId::PackageRoyalty,
             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
             LockFlags::read_only(),
@@ -200,7 +185,7 @@ impl KernelModule for CostingModule {
 
         // FIXME: refactor to defer substate loading to finalization.
         let handle = api.kernel_lock_substate(
-            package_node_id,
+            RENodeId::GlobalPackage(package_address),
             NodeModuleId::PackageRoyalty,
             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
             LockFlags::read_only(),
@@ -229,10 +214,9 @@ impl KernelModule for CostingModule {
 
         apply_royalty_cost(
             api,
-            RoyaltyReceiver::Package(fn_identifier.package_address, package_id),
+            RoyaltyReceiver::Package(fn_identifier.package_address),
             royalty_amount,
         )?;
-        api.kernel_drop_lock(package_lock)?;
 
         /*
          * Apply component royalty

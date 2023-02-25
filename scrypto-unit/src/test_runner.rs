@@ -228,23 +228,20 @@ impl TestRunner {
     }
 
     pub fn get_metadata(&mut self, address: Address) -> BTreeMap<String, String> {
-        let node_id = RENodeId::Global(address);
-        let global = self
-            .substate_store
-            .get_substate(&SubstateId(
-                node_id,
-                NodeModuleId::SELF,
-                SubstateOffset::Global(GlobalOffset::Global),
-            ))
-            .map(|s| s.substate.to_runtime())
-            .unwrap();
-
-        let underlying_node = global.global().node_deref();
+        let node_id = match address {
+            Address::Component(component_address) => {
+                self.deref_component_address(component_address)
+            }
+            Address::Package(package_address) => RENodeId::GlobalPackage(package_address),
+            Address::Resource(resource_address) => {
+                RENodeId::GlobalResourceManager(resource_address)
+            }
+        };
 
         let metadata = self
             .substate_store
             .get_substate(&SubstateId(
-                underlying_node,
+                node_id,
                 NodeModuleId::Metadata,
                 SubstateOffset::Metadata(MetadataOffset::Metadata),
             ))
@@ -256,20 +253,7 @@ impl TestRunner {
     }
 
     pub fn deref_component(&mut self, component_address: ComponentAddress) -> Option<RENodeId> {
-        let node_id = RENodeId::Global(Address::Component(component_address));
-        let global = self
-            .substate_store
-            .get_substate(&SubstateId(
-                node_id,
-                NodeModuleId::SELF,
-                SubstateOffset::Global(GlobalOffset::Global),
-            ))
-            .map(|s| s.substate.to_runtime())?;
-        Some(global.global().node_deref())
-    }
-
-    pub fn deref_package(&mut self, package_address: PackageAddress) -> Option<RENodeId> {
-        let node_id = RENodeId::Global(Address::Package(package_address));
+        let node_id = RENodeId::GlobalComponent(component_address);
         let global = self
             .substate_store
             .get_substate(&SubstateId(
@@ -311,10 +295,8 @@ impl TestRunner {
     }
 
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
-        let node_id = self.deref_package(package_address)?;
-
         if let Some(output) = self.substate_store.get_substate(&SubstateId(
-            node_id,
+            RENodeId::GlobalPackage(package_address),
             NodeModuleId::PackageRoyalty,
             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
         )) {
@@ -361,7 +343,7 @@ impl TestRunner {
         component_address: ComponentAddress,
         resource_address: ResourceAddress,
     ) -> Vec<VaultId> {
-        let node_id = RENodeId::Global(Address::Component(component_address));
+        let node_id = RENodeId::GlobalComponent(component_address);
         let mut vault_finder = VaultFinder::new(resource_address);
 
         let mut state_tree_visitor =
@@ -422,7 +404,7 @@ impl TestRunner {
         &mut self,
         component_address: ComponentAddress,
     ) -> HashMap<ResourceAddress, Decimal> {
-        let node_id = RENodeId::Global(Address::Component(component_address));
+        let node_id = RENodeId::GlobalComponent(component_address);
         let mut accounter = ResourceAccounter::new(&self.substate_store);
         accounter.add_resources(node_id).unwrap();
         accounter.into_map()
@@ -484,21 +466,7 @@ impl TestRunner {
         let substate: GlobalSubstate = self
             .substate_store
             .get_substate(&SubstateId(
-                RENodeId::Global(Address::Component(component_address)),
-                NodeModuleId::SELF,
-                SubstateOffset::Global(GlobalOffset::Global),
-            ))
-            .map(|output| output.substate.to_runtime().into())
-            .unwrap();
-
-        substate.node_deref()
-    }
-
-    pub fn deref_package_address(&mut self, package_address: PackageAddress) -> RENodeId {
-        let substate: GlobalSubstate = self
-            .substate_store
-            .get_substate(&SubstateId(
-                RENodeId::Global(Address::Package(package_address)),
+                RENodeId::GlobalComponent(component_address),
                 NodeModuleId::SELF,
                 SubstateOffset::Global(GlobalOffset::Global),
             ))

@@ -6,7 +6,7 @@ use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
-    Address, LockHandle, NonFungibleStoreOffset, RENodeId, SubstateId, SubstateOffset,
+    LockHandle, NonFungibleStoreOffset, RENodeId, SubstateId, SubstateOffset,
 };
 
 use super::heap::{Heap, HeapRENode};
@@ -148,8 +148,9 @@ impl CallFrame {
         let mut temp_references = HashSet::new();
         for node_id in references {
             // TODO: fix this ugly condition
-            if (matches!(node_id, RENodeId::Global(_)) || matches!(node_id, RENodeId::Package(_)))
-                || matches!(node_id, RENodeId::ResourceManager(_))
+            if (matches!(node_id, RENodeId::GlobalComponent(_))
+                || matches!(node_id, RENodeId::GlobalPackage(_)))
+                || matches!(node_id, RENodeId::GlobalResourceManager(_))
             {
                 // May overwrite existing node refs (for better visibility origin)
                 self.immortal_node_refs.insert(
@@ -311,35 +312,35 @@ impl CallFrame {
 
         // Add well-known global refs to current frame
         frame.add_ref(
-            RENodeId::Global(Address::Resource(RADIX_TOKEN)),
+            RENodeId::GlobalResourceManager(RADIX_TOKEN),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::Global(Address::Resource(SYSTEM_TOKEN)),
+            RENodeId::GlobalResourceManager(SYSTEM_TOKEN),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::Global(Address::Resource(ECDSA_SECP256K1_TOKEN)),
+            RENodeId::GlobalResourceManager(ECDSA_SECP256K1_TOKEN),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::Global(Address::Resource(EDDSA_ED25519_TOKEN)),
+            RENodeId::GlobalResourceManager(EDDSA_ED25519_TOKEN),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::Global(Address::Resource(PACKAGE_TOKEN)),
+            RENodeId::GlobalResourceManager(PACKAGE_TOKEN),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::Global(Address::Component(EPOCH_MANAGER)),
+            RENodeId::GlobalComponent(EPOCH_MANAGER),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::Global(Address::Component(CLOCK)),
+            RENodeId::GlobalComponent(CLOCK),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::Global(Address::Package(FAUCET_PACKAGE)),
+            RENodeId::GlobalPackage(FAUCET_PACKAGE),
             RENodeVisibilityOrigin::Normal,
         );
 

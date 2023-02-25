@@ -100,10 +100,10 @@ impl VisibilityProperties {
                         false
                     }
                 }
-                RENodeInit::Worktop(..) | RENodeInit::Package(..) => {
+                RENodeInit::Worktop(..) | RENodeInit::GlobalPackage(..) => {
                     package_address.eq(&PACKAGE_LOADER)
                 }
-                RENodeInit::ResourceManager(..)
+                RENodeInit::GlobalResourceManager(..)
                 | RENodeInit::FungibleVault(..)
                 | RENodeInit::NonFungibleVault(..)
                 | RENodeInit::FungibleBucket(..)
@@ -136,7 +136,7 @@ impl VisibilityProperties {
                         && blueprint_name.eq(ACCESS_CONTROLLER_BLUEPRINT)
                 }
                 RENodeInit::KeyValueStore => true,
-                RENodeInit::Global(..) => true,
+                RENodeInit::GlobalComponent(..) => true,
                 _ => false,
             },
             _ => true,
@@ -226,19 +226,21 @@ impl VisibilityProperties {
                             None => match (node_id, offset) {
                                 // READ package code & abi
                                 (
-                                    RENodeId::Package(_),
+                                    RENodeId::GlobalPackage(_),
                                     SubstateOffset::Package(PackageOffset::Info), // TODO: Remove
                                 )
                                 | (
-                                    RENodeId::Package(_),
+                                    RENodeId::GlobalPackage(_),
                                     SubstateOffset::Package(PackageOffset::CodeType), // TODO: Remove
                                 )
                                 | (
-                                    RENodeId::Package(_),
+                                    RENodeId::GlobalPackage(_),
                                     SubstateOffset::Package(PackageOffset::Code), // TODO: Remove
                                 ) => read_only,
                                 // READ global substates
-                                (RENodeId::Global(_), SubstateOffset::Global(_)) => read_only,
+                                (RENodeId::GlobalComponent(_), SubstateOffset::Global(_)) => {
+                                    read_only
+                                }
                                 (
                                     RENodeId::Component(_),
                                     SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
@@ -257,19 +259,21 @@ impl VisibilityProperties {
                             }) => match (node_id, offset) {
                                 // READ package code & abi
                                 (
-                                    RENodeId::Package(_),
+                                    RENodeId::GlobalPackage(_),
                                     SubstateOffset::Package(PackageOffset::Info), // TODO: Remove
                                 )
                                 | (
-                                    RENodeId::Package(_),
+                                    RENodeId::GlobalPackage(_),
                                     SubstateOffset::Package(PackageOffset::CodeType), // TODO: Remove
                                 )
                                 | (
-                                    RENodeId::Package(_),
+                                    RENodeId::GlobalPackage(_),
                                     SubstateOffset::Package(PackageOffset::Code), // TODO: Remove
                                 ) => read_only,
                                 // READ global substates
-                                (RENodeId::Global(_), SubstateOffset::Global(_)) => read_only,
+                                (RENodeId::GlobalComponent(_), SubstateOffset::Global(_)) => {
+                                    read_only
+                                }
                                 (
                                     RENodeId::Component(_),
                                     SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
@@ -446,8 +450,8 @@ impl SubstateProperties {
             },
             SubstateOffset::Global(GlobalOffset::Global) => match node_id {
                 RENodeId::Component(..)
-                | RENodeId::Package(..)
-                | RENodeId::ResourceManager(..)
+                | RENodeId::GlobalPackage(..)
+                | RENodeId::GlobalResourceManager(..)
                 | RENodeId::EpochManager(..)
                 | RENodeId::Validator(..)
                 | RENodeId::Clock(..)
