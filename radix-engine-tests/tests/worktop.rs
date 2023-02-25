@@ -1,7 +1,7 @@
-use radix_engine::errors::KernelError;
+use radix_engine::blueprints::resource::BucketError;
+use radix_engine::errors::{ApplicationError};
 use radix_engine::errors::RuntimeError;
 use radix_engine::types::*;
-use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -26,7 +26,7 @@ fn test_worktop_resource_leak() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::DropNodeFailure(RENodeId::Worktop))
+            RuntimeError::ApplicationError(ApplicationError::BucketError(BucketError::NotEmpty))
         )
     });
 }

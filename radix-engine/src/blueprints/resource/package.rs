@@ -452,6 +452,17 @@ impl ResourceManagerNativePackage {
                 ))?;
                 BucketBlueprint::unlock_non_fungibles(receiver, input, api)
             }
+            WORKTOP_DROP_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
+                if receiver.is_some() {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    ));
+                }
+
+                WorktopBlueprint::drop(input, api)
+            }
             WORKTOP_PUT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
 

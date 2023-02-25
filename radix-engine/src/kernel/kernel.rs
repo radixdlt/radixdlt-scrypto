@@ -2,7 +2,7 @@ use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::auth_zone::AuthZoneStackSubstate;
 use crate::blueprints::identity::Identity;
 use crate::blueprints::resource::{
-    BucketInfoSubstate, FungibleProof, NonFungibleProof, ProofInfoSubstate, WorktopSubstate,
+    BucketInfoSubstate, FungibleProof, NonFungibleProof, ProofInfoSubstate,
 };
 use crate::errors::RuntimeError;
 use crate::errors::*;
@@ -13,7 +13,7 @@ use crate::system::node_properties::VisibilityProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use native_sdk::resource::{SysBucket, SysProof};
+use native_sdk::resource::SysProof;
 use radix_engine_interface::api::component::TypeInfoSubstate;
 use radix_engine_interface::api::package::{PackageCodeSubstate, PACKAGE_LOADER_BLUEPRINT};
 use radix_engine_interface::api::substate_api::LockFlags;
@@ -23,7 +23,6 @@ use crate::kernel::kernel_api::TemporaryResolvedInvocation;
 use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, LockHandle, ProofOffset, RENodeId, SubstateId, SubstateOffset,
-    WorktopOffset,
 };
 use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLUEPRINT;
 use radix_engine_interface::blueprints::account::{
@@ -37,7 +36,7 @@ use radix_engine_interface::blueprints::epoch_manager::{
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::logger::LOGGER_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::{
-    require, AccessRule, AccessRuleKey, AccessRules, Bucket, LiquidFungibleResource,
+    require, AccessRule, AccessRuleKey, AccessRules, LiquidFungibleResource,
     LiquidNonFungibleResource, ResourceType, BUCKET_BLUEPRINT, PROOF_BLUEPRINT,
     RESOURCE_MANAGER_BLUEPRINT, VAULT_BLUEPRINT, WORKTOP_BLUEPRINT,
 };
@@ -317,35 +316,8 @@ where
 
                 api.current_frame.remove_node(&mut api.heap, node_id)
             }
-            RENodeId::Worktop => {
-                // TODO: Once `ResourceManager::burn_empty()` is available, change to:
-                // for bucket in worktop.drain() { bucket.burn_empty(); }
-
-                let mut node = api.current_frame.remove_node(&mut api.heap, node_id)?;
-
-                let substate = node
-                    .substates
-                    .remove(&(
-                        NodeModuleId::SELF,
-                        SubstateOffset::Worktop(WorktopOffset::Worktop),
-                    ))
-                    .unwrap();
-                let worktop: WorktopSubstate = substate.into();
-                for (_, bucket) in worktop.resources {
-                    let bucket = Bucket(bucket.bucket_id());
-                    if !bucket.sys_is_empty(api)? {
-                        return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
-                            RENodeId::Worktop,
-                        )));
-                    }
-
-                    api.current_frame
-                        .remove_node(&mut api.heap, RENodeId::Bucket(bucket.0))?;
-                }
-
-                return Ok(node);
-            }
-            RENodeId::Logger
+            RENodeId::Worktop
+            | RENodeId::Logger
             | RENodeId::TransactionRuntime
             | RENodeId::Bucket(..)
             | RENodeId::Clock(..)

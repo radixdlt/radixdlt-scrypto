@@ -5,6 +5,11 @@ use sbor::rust::collections::BTreeSet;
 
 pub const WORKTOP_BLUEPRINT: &str = "Worktop";
 
+pub const WORKTOP_DROP_IDENT: &str = "Worktop_drop";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct WorktopDropInput {}
+
 pub const WORKTOP_PUT_IDENT: &str = "Worktop_put";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]

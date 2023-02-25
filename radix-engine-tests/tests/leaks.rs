@@ -1,4 +1,5 @@
-use radix_engine::errors::{KernelError, RuntimeError};
+use radix_engine::blueprints::resource::BucketError;
+use radix_engine::errors::{ApplicationError, KernelError, RuntimeError};
 use radix_engine::kernel::actor::{ExecutionMode, ResolvedActor};
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
@@ -111,7 +112,7 @@ fn dangling_worktop_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::DropNodeFailure(RENodeId::Worktop))
+            RuntimeError::ApplicationError(ApplicationError::BucketError(BucketError::NotEmpty))
         )
     });
 }
