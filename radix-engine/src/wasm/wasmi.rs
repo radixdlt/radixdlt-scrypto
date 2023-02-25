@@ -322,14 +322,14 @@ fn lock_substate(
     node_id_len: u32,
     offset_ptr: u32,
     offset_len: u32,
-    mutable: u32,
+    flags: u32,
 ) -> Result<u32, InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
     let node_id = read_memory(caller.as_context_mut(), memory, node_id_ptr, node_id_len)?;
     let offset = read_memory(caller.as_context_mut(), memory, offset_ptr, offset_len)?;
 
-    runtime.lock_substate(node_id, offset, mutable != 0)
+    runtime.lock_substate(node_id, offset, flags)
 }
 
 fn read_substate(
@@ -747,12 +747,11 @@ impl From<Error> for InvokeError<WasmRuntimeError> {
         let e_str = format!("{:?}", err);
         match err {
             Error::Trap(trap) => {
-                let invoke_err = trap
-                    .downcast_ref::<InvokeError<WasmRuntimeError>>()
-                    .unwrap_or(&InvokeError::SelfError(
-                        WasmRuntimeError::InvalidWasmPointer,
-                    ));
-                invoke_err.clone()
+                if let Some(invoke_err) = trap.downcast_ref::<InvokeError<WasmRuntimeError>>() {
+                    invoke_err.clone()
+                } else {
+                    InvokeError::SelfError(WasmRuntimeError::Trap(format!("{:?}", trap)))
+                }
             }
             _ => InvokeError::SelfError(WasmRuntimeError::InterpreterError(e_str)),
         }

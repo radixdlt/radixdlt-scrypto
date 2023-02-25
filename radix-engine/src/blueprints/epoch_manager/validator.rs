@@ -1,6 +1,7 @@
+use crate::blueprints::epoch_manager::EpochManagerSubstate;
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
-use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, LockFlags};
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
@@ -11,8 +12,9 @@ use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
 };
 use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
+use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
@@ -52,27 +54,18 @@ impl ValidatorBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let _input: ValidatorRegisterInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
-        let handle = api.kernel_lock_substate(
-            receiver,
-            NodeModuleId::SELF,
-            offset.clone(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle = api.sys_lock_substate(receiver, offset.clone(), LockFlags::MUTABLE)?;
 
         // Update state
         {
-            let mut substate = api.kernel_get_substate_ref_mut(handle)?;
-            let validator = substate.validator();
+            let validator: &mut ValidatorSubstate = api.kernel_get_substate_ref_mut(handle)?;
 
             if validator.is_registered {
                 return Ok(IndexedScryptoValue::from_typed(&()));
@@ -83,13 +76,11 @@ impl ValidatorBlueprint {
 
         // Update EpochManager
         {
-            let substate = api.kernel_get_substate_ref(handle)?;
-            let validator = substate.validator();
+            let validator: &ValidatorSubstate = api.kernel_get_substate_ref(handle)?;
             let stake_vault = Vault(validator.stake_xrd_vault_id);
             let stake_amount = stake_vault.sys_amount(api)?;
             if stake_amount.is_positive() {
-                let substate = api.kernel_get_substate_ref(handle)?;
-                let validator = substate.validator();
+                let validator: &ValidatorSubstate = api.kernel_get_substate_ref(handle)?;
                 let key = validator.key;
                 let validator_address = validator.address;
                 let manager = validator.manager;
@@ -114,27 +105,18 @@ impl ValidatorBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let _input: ValidatorUnregisterInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
-        let handle = api.kernel_lock_substate(
-            receiver,
-            NodeModuleId::SELF,
-            offset.clone(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle = api.sys_lock_substate(receiver, offset.clone(), LockFlags::MUTABLE)?;
 
         // Update state
         {
-            let mut substate = api.kernel_get_substate_ref_mut(handle)?;
-            let validator = substate.validator();
+            let validator: &mut ValidatorSubstate = api.kernel_get_substate_ref_mut(handle)?;
             if !validator.is_registered {
                 return Ok(IndexedScryptoValue::from_typed(&()));
             }
@@ -143,8 +125,7 @@ impl ValidatorBlueprint {
 
         // Update EpochManager
         {
-            let mut substate = api.kernel_get_substate_ref_mut(handle)?;
-            let validator = substate.validator();
+            let validator: &mut ValidatorSubstate = api.kernel_get_substate_ref_mut(handle)?;
             let manager = validator.manager;
             let validator_address = validator.address;
             api.call_method(
@@ -167,26 +148,21 @@ impl ValidatorBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ValidatorStakeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Validator(ValidatorOffset::Validator),
             LockFlags::read_only(),
         )?;
 
         // Stake
         let lp_token_bucket = {
-            let substate = api.kernel_get_substate_ref(handle)?;
-            let validator = substate.validator();
+            let validator: &ValidatorSubstate = api.kernel_get_substate_ref(handle)?;
             let mut lp_token_resman = ResourceManager(validator.liquidity_token);
             let mut xrd_vault = Vault(validator.stake_xrd_vault_id);
 
@@ -207,8 +183,7 @@ impl ValidatorBlueprint {
 
         // Update EpochManager
         {
-            let substate = api.kernel_get_substate_ref(handle)?;
-            let validator = substate.validator();
+            let validator: &ValidatorSubstate = api.kernel_get_substate_ref(handle)?;
             if validator.is_registered {
                 let receiver = validator.manager;
                 let key = validator.key;
@@ -237,26 +212,21 @@ impl ValidatorBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ValidatorUnstakeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Validator(ValidatorOffset::Validator),
             LockFlags::read_only(),
         )?;
 
         // Unstake
         let unstake_bucket = {
-            let substate = api.kernel_get_substate_ref(handle)?;
-            let validator = substate.validator();
+            let validator: &ValidatorSubstate = api.kernel_get_substate_ref(handle)?;
 
             let manager = validator.manager;
             let mut stake_vault = Vault(validator.stake_xrd_vault_id);
@@ -276,17 +246,16 @@ impl ValidatorBlueprint {
 
             lp_token_resman.burn(lp_tokens, api)?;
 
-            let manager_handle = api.kernel_lock_substate(
+            let manager_handle = api.sys_lock_substate(
                 RENodeId::GlobalComponent(manager),
-                NodeModuleId::SELF,
                 SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
                 LockFlags::read_only(),
             )?;
-            let manager_substate = api.kernel_get_substate_ref(manager_handle)?;
-            let epoch_manager = manager_substate.epoch_manager();
+            let epoch_manager: &EpochManagerSubstate =
+                api.kernel_get_substate_ref(manager_handle)?;
             let current_epoch = epoch_manager.epoch;
             let epoch_unlocked = current_epoch + epoch_manager.num_unstake_epochs;
-            api.kernel_drop_lock(manager_handle)?;
+            api.sys_drop_lock(manager_handle)?;
 
             let data = UnstakeData {
                 epoch_unlocked,
@@ -300,13 +269,11 @@ impl ValidatorBlueprint {
 
         // Update Epoch Manager
         {
-            let substate = api.kernel_get_substate_ref(handle)?;
-            let validator = substate.validator();
+            let validator: &ValidatorSubstate = api.kernel_get_substate_ref(handle)?;
             let stake_vault = Vault(validator.stake_xrd_vault_id);
             if validator.is_registered {
                 let stake_amount = stake_vault.sys_amount(api)?;
-                let substate = api.kernel_get_substate_ref(handle)?;
-                let validator = substate.validator();
+                let validator: &ValidatorSubstate = api.kernel_get_substate_ref(handle)?;
                 let manager = validator.manager;
                 let validator_address = validator.address;
                 let update = if stake_amount.is_zero() {
@@ -336,23 +303,18 @@ impl ValidatorBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ValidatorClaimXrdInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Validator(ValidatorOffset::Validator),
             LockFlags::read_only(),
         )?;
-        let substate = api.kernel_get_substate_ref(handle)?;
-        let validator = substate.validator();
+        let validator: &ValidatorSubstate = api.kernel_get_substate_ref(handle)?;
         let mut nft_resman = ResourceManager(validator.unstake_nft);
         let resource_address = validator.unstake_nft;
         let manager = validator.manager;
@@ -367,21 +329,20 @@ impl ValidatorBlueprint {
         }
 
         let current_epoch = {
-            let mgr_handle = api.kernel_lock_substate(
+            let mgr_handle = api.sys_lock_substate(
                 RENodeId::GlobalComponent(manager),
-                NodeModuleId::SELF,
                 SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
                 LockFlags::read_only(),
             )?;
-            let mgr_substate = api.kernel_get_substate_ref(mgr_handle)?;
-            let epoch = mgr_substate.epoch_manager().epoch;
-            api.kernel_drop_lock(mgr_handle)?;
+            let mgr_substate: &EpochManagerSubstate = api.kernel_get_substate_ref(mgr_handle)?;
+            let epoch = mgr_substate.epoch;
+            api.sys_drop_lock(mgr_handle)?;
             epoch
         };
 
         let mut unstake_amount = Decimal::zero();
 
-        for id in bucket.sys_total_ids(api)? {
+        for id in bucket.sys_non_fungible_local_ids(api)? {
             let data: UnstakeData = nft_resman.get_non_fungible_mutable_data(id, api)?;
             if current_epoch < data.epoch_unlocked {
                 return Err(RuntimeError::ApplicationError(
@@ -403,23 +364,18 @@ impl ValidatorBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ValidatorUpdateKeyInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Validator(ValidatorOffset::Validator),
             LockFlags::MUTABLE,
         )?;
-        let mut substate = api.kernel_get_substate_ref_mut(handle)?;
-        let mut validator = substate.validator();
+        let validator: &mut ValidatorSubstate = api.kernel_get_substate_ref_mut(handle)?;
         validator.key = input.key;
         let key = validator.key;
         let manager = validator.manager;
@@ -454,10 +410,7 @@ impl ValidatorBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ValidatorUpdateAcceptDelegatedStakeInput =

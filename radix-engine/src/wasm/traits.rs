@@ -67,7 +67,7 @@ pub trait WasmRuntime {
         &mut self,
         node_id: Vec<u8>,
         offset: Vec<u8>,
-        mutable: bool,
+        flags: u32,
     ) -> Result<LockHandle, InvokeError<WasmRuntimeError>>;
 
     fn read_substate(

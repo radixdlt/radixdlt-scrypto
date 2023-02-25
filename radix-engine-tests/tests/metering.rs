@@ -1,5 +1,6 @@
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
+use radix_engine_constants::DEFAULT_MAX_INVOKE_INPUT_SIZE;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
@@ -66,19 +67,18 @@ fn test_basic_transfer() {
     // Or you can run just this test with the below:
     // (cd radix-engine && cargo test --test metering -- test_basic_transfer)
     assert_eq!(
-        15000 /* CreateNode */
-        + 65500 /* DropLock */
+        12500 /* CreateNode */
+        + 53000 /* DropLock */
         + 12500 /* DropNode */
-        + 0 /* InstantiateWasm */
-        + 6500 /* Invoke */
-        + 70500 /* LockSubstate */
-        + 46000 /* ReadSubstate */
-        + 62500 /* RunPrecompiled */
+        + 9300 /* Invoke */
+        + 54500 /* LockSubstate */
+        + 36000 /* ReadSubstate */
+        + 55000 /* RunPrecompiled */
         + 0 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1320 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 18500, /* WriteSubstate */
+        + 14000, /* WriteSubstate */
         receipt.execution.fee_summary.total_cost_units_consumed
     );
 }
@@ -199,18 +199,18 @@ fn test_radiswap() {
     // Or you can run just this test with the below:
     // (cd radix-engine && cargo test --test metering -- test_radiswap)
     assert_eq!(
-        25000 /* CreateNode */
-        + 188500 /* DropLock */
+        20000 /* CreateNode */
+        + 178500 /* DropLock */
         + 17500 /* DropNode */
-        + 19000 /* Invoke */
-        + 205500 /* LockSubstate */
-        + 139500 /* ReadSubstate */
-        + 162500 /* RunPrecompiled */
-        + 1639290 /* RunWasm */
+        + 26710 /* Invoke */
+        + 182000 /* LockSubstate */
+        + 126500 /* ReadSubstate */
+        + 147500 /* RunPrecompiled */
+        + 1631685 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1705 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 48000 /* WriteSubstate */
+        + 39500 /* WriteSubstate */
         + 2, /* royalty in cost units */
         receipt.execution.fee_summary.total_cost_units_consumed
     );
@@ -230,9 +230,9 @@ fn test_publish_large_package() {
                 (export "memory" (memory $0))
             )
         "#,
-        "i".repeat(4 * 1024 * 1024)
+        "i".repeat(DEFAULT_MAX_INVOKE_INPUT_SIZE - 138) // ensure we fit within limit
     ));
-    assert_eq!(4194343, code.len());
+    assert_eq!(DEFAULT_MAX_INVOKE_INPUT_SIZE - 99, code.len());
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 100.into())
         .publish_package(
@@ -250,8 +250,8 @@ fn test_publish_large_package() {
 
     // Assert
     assert!(
-        receipt.execution.fee_summary.total_cost_units_consumed > 20000000
-            && receipt.execution.fee_summary.total_cost_units_consumed < 30000000
+        receipt.execution.fee_summary.total_cost_units_consumed > 60000000
+            && receipt.execution.fee_summary.total_cost_units_consumed < 70000000
     );
 }
 

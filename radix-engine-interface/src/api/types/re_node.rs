@@ -97,7 +97,7 @@ impl fmt::Debug for RENodeId {
             Self::GlobalResourceManager(address) => {
                 f.debug_tuple("ResourceManager").field(&address).finish()
             }
-            Self::GlobalPackage(address) => f.debug_tuple("Package").field(&address).finish(),
+            Self::GlobalPackage(address) => f.debug_tuple("GlobalPackage").field(&address).finish(),
             Self::EpochManager(id) => f
                 .debug_tuple("EpochManager")
                 .field(&hex::encode(id))
@@ -299,7 +299,11 @@ pub enum NonFungibleStoreOffset {
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum VaultOffset {
-    Vault,
+    Info,
+    LiquidFungible,
+    LiquidNonFungible,
+    LockedFungible,
+    LockedNonFungible,
 }
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -316,12 +320,18 @@ pub enum ValidatorOffset {
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum BucketOffset {
-    Bucket,
+    Info,
+    LiquidFungible,
+    LiquidNonFungible,
+    LockedFungible,
+    LockedNonFungible,
 }
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ProofOffset {
-    Proof,
+    Info,
+    Fungible,
+    NonFungible,
 }
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]

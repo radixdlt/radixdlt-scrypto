@@ -1,16 +1,16 @@
 use crate::errors::{InterpreterError, RuntimeError};
-use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, LockFlags};
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE};
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use crate::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{ClockOffset, RENodeId, SubstateOffset};
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::blueprints::clock::ClockCreateInput;
 use radix_engine_interface::blueprints::clock::TimePrecision;
 use radix_engine_interface::blueprints::clock::*;
@@ -48,10 +48,7 @@ impl ClockNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         match export_name {
             CLOCK_CREATE_IDENT => {
@@ -148,10 +145,7 @@ impl ClockNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: ClockSetCurrentTimeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
@@ -160,16 +154,15 @@ impl ClockNativePackage {
         let current_time_rounded_to_minutes =
             (current_time_ms / MINUTES_TO_MS_FACTOR) * MINUTES_TO_MS_FACTOR;
 
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref = api.kernel_get_substate_ref_mut(handle)?;
-        substate_ref
-            .current_time_rounded_to_minutes()
-            .current_time_rounded_to_minutes_ms = current_time_rounded_to_minutes;
+        let current_time_rounded_to_minutes_substate: &mut CurrentTimeRoundedToMinutesSubstate =
+            api.kernel_get_substate_ref_mut(handle)?;
+        current_time_rounded_to_minutes_substate.current_time_rounded_to_minutes_ms =
+            current_time_rounded_to_minutes;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -180,24 +173,20 @@ impl ClockNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: ClockGetCurrentTimeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         match input.precision {
             TimePrecision::Minute => {
-                let handle = api.kernel_lock_substate(
+                let handle = api.sys_lock_substate(
                     receiver,
-                    NodeModuleId::SELF,
                     SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes),
                     LockFlags::read_only(),
                 )?;
-                let substate_ref = api.kernel_get_substate_ref(handle)?;
-                let substate = substate_ref.current_time_rounded_to_minutes();
+                let substate: &CurrentTimeRoundedToMinutesSubstate =
+                    api.kernel_get_substate_ref(handle)?;
                 let instant = Instant::new(
                     substate.current_time_rounded_to_minutes_ms / SECONDS_TO_MS_FACTOR,
                 );
@@ -212,24 +201,20 @@ impl ClockNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: ClockCompareCurrentTimeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         match input.precision {
             TimePrecision::Minute => {
-                let handle = api.kernel_lock_substate(
+                let handle = api.sys_lock_substate(
                     receiver,
-                    NodeModuleId::SELF,
                     SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes),
                     LockFlags::read_only(),
                 )?;
-                let substate_ref = api.kernel_get_substate_ref(handle)?;
-                let substate = substate_ref.current_time_rounded_to_minutes();
+                let substate: &CurrentTimeRoundedToMinutesSubstate =
+                    api.kernel_get_substate_ref(handle)?;
                 let current_time_instant = Instant::new(
                     substate.current_time_rounded_to_minutes_ms / SECONDS_TO_MS_FACTOR,
                 );

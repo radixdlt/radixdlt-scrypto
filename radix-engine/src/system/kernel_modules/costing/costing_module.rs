@@ -2,7 +2,7 @@ use super::*;
 use super::{CostingReason, FeeReserveError, FeeTable, SystemLoanFeeReserve};
 use crate::kernel::actor::ResolvedActor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::{KernelModuleApi, LockFlags};
+use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
 use crate::system::node::RENodeModuleInit;
 use crate::{
@@ -10,13 +10,21 @@ use crate::{
     system::node::RENodeInit,
     transaction::AbortReason,
 };
+use radix_engine_interface::api::component::{
+    ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
+};
+use radix_engine_interface::api::package::{
+    PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate,
+};
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
     ComponentAddress, InvocationIdentifier, LockHandle, MethodReceiver, NodeModuleId,
     RoyaltyOffset, SubstateOffset, VaultId, VaultOffset,
 };
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
-use radix_engine_interface::blueprints::resource::Resource;
+use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::constants::*;
+use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::{api::types::RENodeId, *};
 use sbor::rust::collections::BTreeMap;
 
@@ -115,6 +123,7 @@ impl KernelModule for CostingModule {
         api: &mut Y,
         callee: &Option<ResolvedActor>,
         _nodes_and_refs: &mut CallFrameUpdate,
+        _args: &ScryptoValue,
     ) -> Result<(), RuntimeError> {
         // Identify the function, and optional component address
         let (fn_identifier, optional_component) = match &callee {
@@ -170,30 +179,38 @@ impl KernelModule for CostingModule {
             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
             LockFlags::read_only(),
         )?;
-        let substate = api.kernel_get_substate_ref(handle)?;
-        let royalty_amount = substate
-            .package_royalty_config()
+        let package_royalty_config: &PackageRoyaltyConfigSubstate =
+            api.kernel_get_substate_ref(handle)?;
+        let royalty_amount = package_royalty_config
             .royalty_config
             .get(&fn_identifier.blueprint_name)
             .map(|x| x.get_rule(&fn_identifier.ident).clone())
             .unwrap_or(0);
         api.kernel_drop_lock(handle)?;
 
-        // TODO: refactor to defer substate loading to finalization.
+        // FIXME: refactor to defer substate loading to finalization.
         let handle = api.kernel_lock_substate(
             RENodeId::GlobalPackage(package_address),
             NodeModuleId::PackageRoyalty,
             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
-            LockFlags::MUTABLE,
+            LockFlags::read_only(),
         )?;
-        let substate = api.kernel_get_substate_ref(handle)?;
+        let package_royalty_accumulator: &PackageRoyaltyAccumulatorSubstate =
+            api.kernel_get_substate_ref(handle)?;
         {
-            let royalty_vault = substate.package_royalty_accumulator().royalty.clone();
+            let royalty_vault = package_royalty_accumulator.royalty.clone();
             let vault_node_id = RENodeId::Vault(royalty_vault.vault_id());
             let vault_handle = api.kernel_lock_substate(
                 vault_node_id,
                 NodeModuleId::SELF,
-                SubstateOffset::Vault(VaultOffset::Vault),
+                SubstateOffset::Vault(VaultOffset::Info),
+                LockFlags::read_only(),
+            )?;
+            api.kernel_drop_lock(vault_handle)?;
+            let vault_handle = api.kernel_lock_substate(
+                vault_node_id,
+                NodeModuleId::SELF,
+                SubstateOffset::Vault(VaultOffset::LiquidFungible),
                 LockFlags::MUTABLE,
             )?;
             api.kernel_drop_lock(vault_handle)?;
@@ -216,29 +233,37 @@ impl KernelModule for CostingModule {
                 SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
                 LockFlags::read_only(),
             )?;
-            let substate = api.kernel_get_substate_ref(handle)?;
-            let royalty_amount = substate
-                .component_royalty_config()
+            let component_royalty_config: &ComponentRoyaltyConfigSubstate =
+                api.kernel_get_substate_ref(handle)?;
+            let royalty_amount = component_royalty_config
                 .royalty_config
                 .get_rule(&fn_identifier.ident)
                 .clone();
             api.kernel_drop_lock(handle)?;
 
-            // TODO: refactor to defer substate loading to finalization.
+            // FIXME: refactor to defer substate loading to finalization.
             let handle = api.kernel_lock_substate(
                 *component_node_id,
                 NodeModuleId::ComponentRoyalty,
                 SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
-                LockFlags::MUTABLE,
+                LockFlags::read_only(),
             )?;
-            let substate = api.kernel_get_substate_ref(handle)?;
             {
-                let royalty_vault = substate.component_royalty_accumulator().royalty.clone();
+                let royalty_accumulator: &ComponentRoyaltyAccumulatorSubstate =
+                    api.kernel_get_substate_ref(handle)?;
+                let royalty_vault = royalty_accumulator.royalty.clone();
                 let vault_node_id = RENodeId::Vault(royalty_vault.vault_id());
                 let vault_handle = api.kernel_lock_substate(
                     vault_node_id,
                     NodeModuleId::SELF,
-                    SubstateOffset::Vault(VaultOffset::Vault),
+                    SubstateOffset::Vault(VaultOffset::Info),
+                    LockFlags::read_only(),
+                )?;
+                api.kernel_drop_lock(vault_handle)?;
+                let vault_handle = api.kernel_lock_substate(
+                    vault_node_id,
+                    NodeModuleId::SELF,
+                    SubstateOffset::Vault(VaultOffset::LiquidFungible),
                     LockFlags::MUTABLE,
                 )?;
                 api.kernel_drop_lock(vault_handle)?;
@@ -363,9 +388,9 @@ impl KernelModule for CostingModule {
     fn on_credit_cost_units<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         vault_id: VaultId,
-        fee: Resource,
+        fee: LiquidFungibleResource,
         contingent: bool,
-    ) -> Result<Resource, RuntimeError> {
+    ) -> Result<LiquidFungibleResource, RuntimeError> {
         let changes = api
             .kernel_get_module_state()
             .costing

@@ -77,7 +77,7 @@ impl Publish {
 
             let validated_package = PackageCodeSubstate { code };
             let output_value = OutputValue {
-                substate: PersistedSubstate::WasmCode(validated_package),
+                substate: PersistedSubstate::PackageCode(validated_package),
                 version: previous_version.unwrap_or(0),
             };
 

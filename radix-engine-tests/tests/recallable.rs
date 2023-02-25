@@ -1,6 +1,5 @@
 use radix_engine::errors::{KernelError, ModuleError, RejectionError, RuntimeError};
 use radix_engine::system::kernel_modules::auth::AuthError;
-use radix_engine::system::kernel_modules::auth::MethodAuthorizationError;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
 use scrypto_unit::*;
@@ -64,10 +63,7 @@ fn cannot_take_on_non_recallable_vault() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized {
-                error: MethodAuthorizationError::NotAuthorized,
-                ..
-            },))
+            RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized { .. },))
         )
     });
 }

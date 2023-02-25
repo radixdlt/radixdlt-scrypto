@@ -8,6 +8,7 @@ use crate::{
 };
 use radix_engine_interface::api::types::{RENodeId, RENodeType};
 use radix_engine_interface::crypto::Hash;
+use radix_engine_interface::data::ScryptoValue;
 use sbor::rust::collections::BTreeMap;
 
 #[derive(Debug, Clone)]
@@ -45,6 +46,7 @@ impl KernelModule for TransactionRuntimeModule {
         _api: &mut Y,
         _actor: &Option<ResolvedActor>,
         call_frame_update: &mut CallFrameUpdate,
+        _args: &ScryptoValue,
     ) -> Result<(), RuntimeError> {
         call_frame_update
             .node_refs_to_copy

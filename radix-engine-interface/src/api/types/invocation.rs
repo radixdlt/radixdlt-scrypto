@@ -34,6 +34,10 @@ impl FnIdentifier {
     pub fn blueprint_name(&self) -> &String {
         &self.blueprint_name
     }
+
+    pub fn size(&self) -> usize {
+        self.blueprint_name.len() + self.ident.len() + self.package_address.size()
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
