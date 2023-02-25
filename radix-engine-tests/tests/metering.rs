@@ -217,6 +217,115 @@ fn test_radiswap() {
 }
 
 #[test]
+fn test_flash_loan() {
+    let mut test_runner = TestRunner::builder().build();
+
+    // Scrypto developer
+    let (pk1, _, _) = test_runner.new_allocated_account();
+    // Flash loan operator
+    let (pk2, _, account2) = test_runner.new_allocated_account();
+    // Flash loan user
+    let (pk3, _, account3) = test_runner.new_allocated_account();
+
+    // Publish package
+    let package_address = test_runner.publish_package(
+        include_bytes!("../../assets/flash_loan.wasm").to_vec(),
+        scrypto_decode(include_bytes!("../../assets/flash_loan.abi")).unwrap(),
+        btreemap!(
+            "BasicFlashLoan".to_owned() => RoyaltyConfigBuilder::new()
+                .add_rule("instantiate_default", 5)
+                .add_rule("take_loan", 2)
+                .default(0),
+        ),
+        btreemap!(),
+        package_access_rules_from_owner_badge(&NonFungibleGlobalId::from_public_key(&pk1)),
+    );
+
+    // Instantiate flash_loan
+    let xrd_init_amount = Decimal::from(100);
+    let (component_address, promise_token_address) = test_runner
+        .execute_manifest(
+            ManifestBuilder::new()
+                .lock_fee(account2, 10u32.into())
+                .withdraw_from_account(account2, RADIX_TOKEN, xrd_init_amount)
+                .take_from_worktop(RADIX_TOKEN, |builder, bucket1| {
+                    builder.call_function(
+                        package_address,
+                        "BasicFlashLoan",
+                        "instantiate_default",
+                        manifest_args!(bucket1),
+                    )
+                })
+                .call_method(
+                    account2,
+                    "deposit_batch",
+                    manifest_args!(ManifestExpression::EntireWorktop),
+                )
+                .build(),
+            vec![NonFungibleGlobalId::from_public_key(&pk2)],
+        )
+        .output::<(ComponentAddress, ResourceAddress)>(3);
+
+    // Take loan
+    let loan_amount = Decimal::from(50);
+    let repay_amount = loan_amount * dec!("1.001");
+    let old_balance = test_runner.account_balance(account3, RADIX_TOKEN).unwrap();
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee(account3, 10u32.into())
+            .call_method(component_address, "take_loan", manifest_args!(loan_amount))
+            .withdraw_from_account(account3, RADIX_TOKEN, dec!(10))
+            .take_from_worktop_by_amount(repay_amount, RADIX_TOKEN, |builder, bucket1| {
+                builder.take_from_worktop(promise_token_address, |builder, bucket2| {
+                    builder.call_method(
+                        component_address,
+                        "repay_loan",
+                        manifest_args!(bucket1, bucket2),
+                    )
+                })
+            })
+            .call_method(
+                account3,
+                "deposit_batch",
+                manifest_args!(ManifestExpression::EntireWorktop),
+            )
+            .build(),
+        vec![NonFungibleGlobalId::from_public_key(&pk3)],
+    );
+    receipt.expect_commit_success();
+    let new_balance = test_runner.account_balance(account3, RADIX_TOKEN).unwrap();
+    assert!(test_runner
+        .account_balance(account3, promise_token_address)
+        .is_none());
+    assert_eq!(
+        old_balance - new_balance,
+        receipt.execution.fee_summary.total_execution_cost_xrd
+            + receipt.execution.fee_summary.total_royalty_cost_xrd
+            + (repay_amount - loan_amount)
+    );
+
+    // NOTE: If this test fails, it should print out the actual fee table in the error logs.
+    // Or you can run just this test with the below:
+    // (cd radix-engine && cargo test --test metering -- test_flash_loan)
+    assert_eq!(
+        20000 /* CreateNode */
+        + 179500 /* DropLock */
+        + 17500 /* DropNode */
+        + 26710 /* Invoke */
+        + 261000 /* LockSubstate */
+        + 205500 /* ReadSubstate */
+        + 147500 /* RunPrecompiled */
+        + 1638460 /* RunWasm */
+        + 50000 /* TxBaseCost */
+        + 1705 /* TxPayloadCost */
+        + 100000 /* TxSignatureVerification */
+        + 39500 /* WriteSubstate */
+        + 2, /* royalty in cost units */
+        receipt.execution.fee_summary.total_cost_units_consumed
+    );
+}
+
+#[test]
 fn test_publish_large_package() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();

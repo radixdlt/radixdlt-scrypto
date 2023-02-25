@@ -20,14 +20,16 @@ mod basic_flash_loan {
         /// Does NOT reward liquidity providers in any way or provide a way to remove liquidity from the pool.
         /// Minting LP tokens for rewards, and removing liquidity, is covered in other examples, such as:
         /// https://github.com/radixdlt/scrypto-examples/tree/main/defi/radiswap
-        pub fn instantiate_default(initial_liquidity: Bucket) -> ComponentAddress {
+        pub fn instantiate_default(
+            initial_liquidity: Bucket,
+        ) -> (ComponentAddress, ResourceAddress) {
             let auth_token = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
                 .metadata("name", "Admin authority for BasicFlashLoan")
                 .mint_initial_supply(1);
 
             // Define a "transient" resource which can never be deposited once created, only burned
-            let address = ResourceBuilder::new_uuid_non_fungible()
+            let transient_resource_address = ResourceBuilder::new_uuid_non_fungible()
                 .metadata(
                     "name",
                     "Promise token for BasicFlashLoan - must be returned to be burned!",
@@ -37,13 +39,15 @@ mod basic_flash_loan {
                 .restrict_deposit(rule!(deny_all), LOCKED)
                 .create_with_no_initial_supply();
 
-            Self {
+            let component_address = Self {
                 loan_vault: Vault::with_bucket(initial_liquidity),
                 auth_vault: Vault::with_bucket(auth_token),
-                transient_resource_address: address,
+                transient_resource_address,
             }
             .instantiate()
-            .globalize()
+            .globalize();
+
+            (component_address, transient_resource_address)
         }
 
         pub fn available_liquidity(&self) -> Decimal {
