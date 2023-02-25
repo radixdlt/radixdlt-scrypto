@@ -64,7 +64,6 @@ pub enum ResourceManagerError {
     NonFungibleIdTypeDoesNotMatch(NonFungibleIdType, NonFungibleIdType),
     ResourceTypeDoesNotMatch,
     InvalidNonFungibleIdType,
-    CantDropNotEmptyBucket,
 }
 
 fn build_non_fungible_resource_manager_substate_with_initial_supply<Y>(
