@@ -14,7 +14,7 @@ use crate::system::node_properties::VisibilityProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use native_sdk::resource::{SysBucket, SysProof};
+use native_sdk::resource::SysProof;
 use radix_engine_interface::api::component::TypeInfoSubstate;
 use radix_engine_interface::api::package::{PackageCodeSubstate, PACKAGE_LOADER_BLUEPRINT};
 use radix_engine_interface::api::substate_api::LockFlags;
@@ -37,7 +37,7 @@ use radix_engine_interface::blueprints::epoch_manager::{
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::logger::LOGGER_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::{
-    require, AccessRule, AccessRuleKey, AccessRules, Bucket, LiquidFungibleResource,
+    require, AccessRule, AccessRuleKey, AccessRules, LiquidFungibleResource,
     LiquidNonFungibleResource, ResourceType, BUCKET_BLUEPRINT, PROOF_BLUEPRINT,
     RESOURCE_MANAGER_BLUEPRINT, VAULT_BLUEPRINT, WORKTOP_BLUEPRINT,
 };
@@ -338,26 +338,17 @@ where
                 Ok(())
             }
             RENodeId::Worktop => {
-                // TODO: Once `ResourceManager::burn_empty()` is available, change to:
-                // for bucket in worktop.drain() { bucket.burn_empty(); }
-
                 let handle = api.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,
                     SubstateOffset::Worktop(WorktopOffset::Worktop),
                     LockFlags::read_only(),
                 )?;
-                let buckets: Vec<Own> = {
-                    let worktop: &WorktopSubstate = api.kernel_get_substate_ref(handle)?;
-                    worktop.resources.values().cloned().collect()
-                };
-                for bucket in buckets {
-                    let bucket = Bucket(bucket.bucket_id());
-                    if !bucket.sys_is_empty(api)? {
-                        return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
-                            RENodeId::Worktop,
-                        )));
-                    }
+                let worktop: &WorktopSubstate = api.kernel_get_substate_ref(handle)?;
+                if !worktop.resources.is_empty() {
+                    return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
+                        RENodeId::Worktop,
+                    )));
                 }
                 api.kernel_drop_lock(handle)?;
                 Ok(())
@@ -369,14 +360,11 @@ where
         })?;
 
         let node = self.current_frame.remove_node(&mut self.heap, node_id)?;
-        // TODO: remove condition; see notes above!
-        if !matches!(node_id, RENodeId::Worktop) {
-            for (_, substate) in &node.substates {
-                let (_, child_nodes) = substate.to_ref().references_and_owned_nodes();
-                for child_node in child_nodes {
-                    // Need to go through api so that visibility issues can be caught
-                    self.kernel_drop_node(child_node)?;
-                }
+        for (_, substate) in &node.substates {
+            let (_, child_nodes) = substate.to_ref().references_and_owned_nodes();
+            for child_node in child_nodes {
+                // Need to go through api so that visibility issues can be caught
+                self.kernel_drop_node(child_node)?;
             }
         }
         // TODO: REmove
