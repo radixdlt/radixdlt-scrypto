@@ -176,13 +176,10 @@ impl QueryableSubstateStore for RadixEngineDB {
         &self,
         kv_store_id: &KeyValueStoreId,
     ) -> HashMap<Vec<u8>, PersistedSubstate> {
-        let mut iter = self
-            .db
-            .iterator(IteratorMode::From(&[], Direction::Forward));
+        let mut iter = self.db.iterator(IteratorMode::Start);
         let mut items = HashMap::new();
         while let Some(kv) = iter.next() {
             let (key, value) = kv.unwrap();
-            let substate: OutputValue = scrypto_decode(&value.to_vec()).unwrap();
             let substate_id: SubstateId = scrypto_decode(&key).unwrap();
             if let SubstateId(
                 RENodeId::KeyValueStore(id),
@@ -190,14 +187,11 @@ impl QueryableSubstateStore for RadixEngineDB {
                 SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(entry_id)),
             ) = substate_id
             {
+                let substate: OutputValue = scrypto_decode(&value.to_vec()).unwrap();
                 if id == *kv_store_id {
-                    items.insert(entry_id, substate.substate)
-                } else {
-                    break;
+                    items.insert(entry_id, substate.substate);
                 }
-            } else {
-                break;
-            };
+            }
         }
         items
     }
