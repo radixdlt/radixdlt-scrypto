@@ -450,7 +450,7 @@ where
 
     api.kernel_create_node(
         global_node_id,
-        RENodeInit::ResourceManager(resource_manager_substate),
+        RENodeInit::GlobalResourceManager(resource_manager_substate),
         node_modules,
     )?;
 
@@ -562,7 +562,7 @@ impl ResourceManagerBlueprint {
 
         api.kernel_create_node(
             global_node_id,
-            RENodeInit::ResourceManager(resource_manager_substate),
+            RENodeInit::GlobalResourceManager(resource_manager_substate),
             node_modules,
         )?;
 
@@ -619,7 +619,7 @@ impl ResourceManagerBlueprint {
 
         api.kernel_create_node(
             global_node_id,
-            RENodeInit::ResourceManager(resource_manager_substate),
+            RENodeInit::GlobalResourceManager(resource_manager_substate),
             node_modules,
         )?;
 
@@ -692,7 +692,7 @@ impl ResourceManagerBlueprint {
 
         api.kernel_create_node(
             global_node_id,
-            RENodeInit::ResourceManager(resource_manager_substate),
+            RENodeInit::GlobalResourceManager(resource_manager_substate),
             node_modules,
         )?;
 
@@ -743,7 +743,7 @@ impl ResourceManagerBlueprint {
 
         api.kernel_create_node(
             global_node_id,
-            RENodeInit::ResourceManager(resource_manager_substate),
+            RENodeInit::GlobalResourceManager(resource_manager_substate),
             node_modules,
         )?;
 
@@ -1438,7 +1438,7 @@ where
 
     api.kernel_create_node(
         global_node_id,
-        RENodeInit::ResourceManager(resource_manager_substate),
+        RENodeInit::GlobalResourceManager(resource_manager_substate),
         node_modules,
     )?;
 

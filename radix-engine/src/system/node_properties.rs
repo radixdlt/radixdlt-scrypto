@@ -100,10 +100,10 @@ impl VisibilityProperties {
                         false
                     }
                 }
-                RENodeInit::Worktop(..) | RENodeInit::Package(..) => {
+                RENodeInit::Worktop(..) | RENodeInit::GlobalPackage(..) => {
                     package_address.eq(&PACKAGE_LOADER)
                 }
-                RENodeInit::ResourceManager(..)
+                RENodeInit::GlobalResourceManager(..)
                 | RENodeInit::FungibleVault(..)
                 | RENodeInit::NonFungibleVault(..)
                 | RENodeInit::FungibleBucket(..)

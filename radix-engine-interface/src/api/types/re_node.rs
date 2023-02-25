@@ -81,7 +81,9 @@ impl fmt::Debug for RENodeId {
             Self::Worktop => write!(f, "Worktop"),
             Self::Logger => write!(f, "Logger"),
             Self::TransactionRuntime => write!(f, "TransactionRuntime"),
-            Self::GlobalComponent(address) => f.debug_tuple("Global").field(address).finish(),
+            Self::GlobalComponent(address) => {
+                f.debug_tuple("GlobalComponent").field(address).finish()
+            }
             Self::KeyValueStore(id) => f
                 .debug_tuple("KeyValueStore")
                 .field(&hex::encode(id))
@@ -95,7 +97,7 @@ impl fmt::Debug for RENodeId {
             Self::GlobalResourceManager(address) => {
                 f.debug_tuple("ResourceManager").field(&address).finish()
             }
-            Self::GlobalPackage(address) => f.debug_tuple("Package").field(&address).finish(),
+            Self::GlobalPackage(address) => f.debug_tuple("GlobalPackage").field(&address).finish(),
             Self::EpochManager(id) => f
                 .debug_tuple("EpochManager")
                 .field(&hex::encode(id))

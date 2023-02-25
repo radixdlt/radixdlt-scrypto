@@ -853,7 +853,7 @@ where
                     }),
                 );
             }
-            (RENodeId::GlobalPackage(..), RENodeInit::Package(..)) => {
+            (RENodeId::GlobalPackage(..), RENodeInit::GlobalPackage(..)) => {
                 module_init.insert(
                     NodeModuleId::TypeInfo,
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
@@ -862,7 +862,7 @@ where
                     }),
                 );
             }
-            (RENodeId::GlobalResourceManager(..), RENodeInit::ResourceManager(..)) => {
+            (RENodeId::GlobalResourceManager(..), RENodeInit::GlobalResourceManager(..)) => {
                 module_init.insert(
                     NodeModuleId::TypeInfo,
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
@@ -932,8 +932,8 @@ where
 
         let push_to_store = match re_node {
             RENodeInit::GlobalComponent(..)
-            | RENodeInit::Package(..)
-            | RENodeInit::ResourceManager(..) => true,
+            | RENodeInit::GlobalPackage(..)
+            | RENodeInit::GlobalResourceManager(..) => true,
             _ => false,
         };
 

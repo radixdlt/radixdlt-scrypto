@@ -100,12 +100,12 @@ impl RENodeModuleInit {
 #[derive(Debug)]
 pub enum RENodeInit {
     GlobalComponent(GlobalSubstate),
-    Package(
+    GlobalPackage(
         PackageInfoSubstate,
         PackageCodeTypeSubstate,
         PackageCodeSubstate,
     ),
-    ResourceManager(ResourceManagerSubstate),
+    GlobalResourceManager(ResourceManagerSubstate),
     FungibleVault(VaultInfoSubstate, LiquidFungibleResource),
     NonFungibleVault(VaultInfoSubstate, LiquidNonFungibleResource),
     FungibleBucket(BucketInfoSubstate, LiquidFungibleResource),
@@ -243,7 +243,7 @@ impl RENodeInit {
                     RuntimeSubstate::Logger(logger),
                 );
             }
-            RENodeInit::Package(package_info, code_type, code) => {
+            RENodeInit::GlobalPackage(package_info, code_type, code) => {
                 substates.insert(
                     SubstateOffset::Package(PackageOffset::Info),
                     package_info.into(),
@@ -254,7 +254,7 @@ impl RENodeInit {
                 );
                 substates.insert(SubstateOffset::Package(PackageOffset::Code), code.into());
             }
-            RENodeInit::ResourceManager(resource_manager) => {
+            RENodeInit::GlobalResourceManager(resource_manager) => {
                 substates.insert(
                     SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
                     resource_manager.into(),
