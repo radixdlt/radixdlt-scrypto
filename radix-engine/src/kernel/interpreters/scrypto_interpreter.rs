@@ -22,7 +22,9 @@ use crate::system::type_info::PackageCodeTypeSubstate;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
 use radix_engine_interface::api::component::TypeInfoSubstate;
-use radix_engine_interface::api::node_modules::auth::{ACCESS_RULES_BLUEPRINT, FUNCTION_ACCESS_RULES_BLUEPRINT};
+use radix_engine_interface::api::node_modules::auth::{
+    ACCESS_RULES_BLUEPRINT, FUNCTION_ACCESS_RULES_BLUEPRINT,
+};
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
 use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_BLUEPRINT, PACKAGE_ROYALTY_BLUEPRINT,
@@ -83,7 +85,10 @@ impl ExecutableInvocation for MethodInvocation {
             }
             NodeModuleId::FunctionAccessRules => {
                 // TODO: Check if type has function access rules
-                (ACCESS_RULES_PACKAGE, FUNCTION_ACCESS_RULES_BLUEPRINT.to_string())
+                (
+                    ACCESS_RULES_PACKAGE,
+                    FUNCTION_ACCESS_RULES_BLUEPRINT.to_string(),
+                )
             }
             _ => todo!(),
         };
@@ -117,7 +122,8 @@ impl ExecutableInvocation for MethodInvocation {
                         node_refs_to_copy.insert(RENodeId::GlobalResourceManager(PACKAGE_TOKEN));
                         node_refs_to_copy
                             .insert(RENodeId::GlobalResourceManager(ECDSA_SECP256K1_TOKEN));
-                        node_refs_to_copy.insert(RENodeId::GlobalResourceManager(EDDSA_ED25519_TOKEN));
+                        node_refs_to_copy
+                            .insert(RENodeId::GlobalResourceManager(EDDSA_ED25519_TOKEN));
                     }
                     _ => {}
                 }
@@ -187,7 +193,8 @@ impl ExecutableInvocation for FunctionInvocation {
                         node_refs_to_copy.insert(RENodeId::GlobalResourceManager(PACKAGE_TOKEN));
                         node_refs_to_copy
                             .insert(RENodeId::GlobalResourceManager(ECDSA_SECP256K1_TOKEN));
-                        node_refs_to_copy.insert(RENodeId::GlobalResourceManager(EDDSA_ED25519_TOKEN));
+                        node_refs_to_copy
+                            .insert(RENodeId::GlobalResourceManager(EDDSA_ED25519_TOKEN));
                     }
                     _ => {}
                 }
@@ -241,7 +248,10 @@ impl Executor for ScryptoExecutor {
             let code_type = if self.fn_identifier.package_address.eq(&PACKAGE_LOADER) {
                 PackageCodeTypeSubstate::Native
             } else {
-                Package::get_code_type(RENodeId::GlobalPackage(self.fn_identifier.package_address), api)?
+                Package::get_code_type(
+                    RENodeId::GlobalPackage(self.fn_identifier.package_address),
+                    api,
+                )?
             };
 
             match code_type {
@@ -256,7 +266,7 @@ impl Executor for ScryptoExecutor {
                         PackageGetFnAbiInput {
                             fn_key: self.fn_identifier.fn_key(),
                         },
-                        api
+                        api,
                     )?;
 
                     if fn_abi.mutability.is_some() != self.receiver.is_some() {
@@ -354,8 +364,10 @@ impl Executor for ScryptoExecutor {
                             SubstateOffset::Package(PackageOffset::Code),
                             LockFlags::read_only(),
                         )?;
-                        let wasm_instance =
-                            api.kernel_create_wasm_instance(self.fn_identifier.package_address, handle)?;
+                        let wasm_instance = api.kernel_create_wasm_instance(
+                            self.fn_identifier.package_address,
+                            handle,
+                        )?;
                         api.kernel_drop_lock(handle)?;
 
                         wasm_instance

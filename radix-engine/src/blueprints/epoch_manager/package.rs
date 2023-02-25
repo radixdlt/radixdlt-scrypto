@@ -18,8 +18,10 @@ impl EpochManagerNativePackage {
     pub fn package_access_rules() -> BTreeMap<FnKey, AccessRule> {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(
-            FnKey::new(EPOCH_MANAGER_BLUEPRINT.to_string(),
-                       EPOCH_MANAGER_CREATE_IDENT.to_string()),
+            FnKey::new(
+                EPOCH_MANAGER_BLUEPRINT.to_string(),
+                EPOCH_MANAGER_CREATE_IDENT.to_string(),
+            ),
             rule!(require(AuthAddresses::system_role())),
         );
         access_rules

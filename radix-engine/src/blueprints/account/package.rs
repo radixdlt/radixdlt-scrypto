@@ -238,7 +238,7 @@ impl AccountNativePackage {
             node_id
         };
 
-        let address = api.globalize(node_id)?;
+        let address = api.globalize(node_id, AccessRules::new())?;
 
         Ok(IndexedScryptoValue::from_typed(&address))
     }

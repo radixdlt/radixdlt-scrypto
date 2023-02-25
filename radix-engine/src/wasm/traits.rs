@@ -52,6 +52,7 @@ pub trait WasmRuntime {
     fn globalize_component(
         &mut self,
         component_id: Vec<u8>,
+        access_rules: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn new_key_value_store(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;

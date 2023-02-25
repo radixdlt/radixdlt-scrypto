@@ -51,12 +51,11 @@ pub struct PackageLoaderPublishNativeInput {
 pub const PACKAGE_GET_FN_ABI_IDENT: &str = "get_fn_abi";
 
 #[derive(
-Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
+    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
 )]
 pub struct PackageGetFnAbiInput {
     pub fn_key: FnKey,
 }
-
 
 pub const TRANSACTION_PROCESSOR_BLUEPRINT: &str = "TransactionProcessor";
 

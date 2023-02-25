@@ -1,5 +1,5 @@
 use crate::errors::*;
-use crate::kernel::actor::{ActorIdentifier, Actor};
+use crate::kernel::actor::{Actor, ActorIdentifier};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::event::TrackedEvent;
 use crate::kernel::kernel_api::KernelModuleApi;
@@ -366,11 +366,7 @@ impl ExecutionTraceModule {
         self.current_kernel_call_depth += 1;
     }
 
-    fn handle_after_drop_node(
-        &mut self,
-        current_actor: Option<Actor>,
-        current_depth: usize,
-    ) {
+    fn handle_after_drop_node(&mut self, current_actor: Option<Actor>, current_depth: usize) {
         // Important to always update the counter (even if we're over the depth limit).
         self.current_kernel_call_depth -= 1;
 
@@ -570,11 +566,7 @@ impl ExecutionTraceModule {
         }
     }
 
-    fn handle_vault_lock_fee_input<'s>(
-        &mut self,
-        caller: &Option<Actor>,
-        vault_id: &VaultId,
-    ) {
+    fn handle_vault_lock_fee_input<'s>(&mut self, caller: &Option<Actor>, vault_id: &VaultId) {
         let actor = caller
             .clone()
             .map(|a| TraceActor::Actor(a))

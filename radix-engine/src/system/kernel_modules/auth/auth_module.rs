@@ -1,19 +1,22 @@
-use radix_engine_interface::api::component::{ComponentStateSubstate, TypeInfoSubstate};
 use crate::blueprints::resource::VaultInfoSubstate;
 use crate::errors::*;
-use crate::kernel::actor::{ActorIdentifier, Actor};
+use crate::kernel::actor::{Actor, ActorIdentifier};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::call_frame::RENodeVisibilityOrigin;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
+use crate::system::kernel_modules::auth::convert;
 use crate::system::node::RENodeInit;
 use crate::system::node_modules::access_rules::{
-    AccessRulesNativePackage, AuthZoneStackSubstate, MethodAccessRulesChainSubstate,
-    FunctionAccessRulesSubstate,
+    AccessRulesNativePackage, AuthZoneStackSubstate, FunctionAccessRulesSubstate,
+    MethodAccessRulesChainSubstate,
 };
 use crate::types::*;
+use radix_engine_interface::api::component::{ComponentStateSubstate, TypeInfoSubstate};
 use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::package::{PACKAGE_LOADER_BLUEPRINT, PACKAGE_LOADER_PUBLISH_NATIVE_IDENT, PackageInfoSubstate};
+use radix_engine_interface::api::package::{
+    PackageInfoSubstate, PACKAGE_LOADER_BLUEPRINT, PACKAGE_LOADER_PUBLISH_NATIVE_IDENT,
+};
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, RENodeId, SubstateOffset, VaultOffset,
@@ -21,7 +24,6 @@ use radix_engine_interface::api::types::{
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
 use transaction::model::AuthZoneParams;
-use crate::system::kernel_modules::auth::convert;
 
 use super::auth_converter::convert_contextless;
 use super::method_authorization::MethodAuthorization;
@@ -60,9 +62,7 @@ impl AuthModule {
     ) -> Result<Vec<MethodAuthorization>, RuntimeError> {
         let auth = if identifier.package_address.eq(&PACKAGE_LOADER) {
             if identifier.blueprint_name.eq(PACKAGE_LOADER_BLUEPRINT)
-                && identifier
-                    .ident
-                    .eq(PACKAGE_LOADER_PUBLISH_NATIVE_IDENT)
+                && identifier.ident.eq(PACKAGE_LOADER_PUBLISH_NATIVE_IDENT)
             {
                 vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
                     HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
@@ -81,7 +81,10 @@ impl AuthModule {
             )?;
             let package_access_rules: &FunctionAccessRulesSubstate =
                 api.kernel_get_substate_ref(handle)?;
-            let function_key = FnKey::new(identifier.blueprint_name.to_string(), identifier.ident.to_string());
+            let function_key = FnKey::new(
+                identifier.blueprint_name.to_string(),
+                identifier.ident.to_string(),
+            );
             let access_rule = package_access_rules
                 .access_rules
                 .get(&function_key)
@@ -160,14 +163,12 @@ impl AuthModule {
                 // TODO: Revisit what the correct abstraction is for visibility in the auth module
                 let method_key = identifier.method_key();
                 let auth = match visibility {
-                    RENodeVisibilityOrigin::Normal => {
-                        Self::method_authorization_contextless(
-                            RENodeId::GlobalResourceManager(resource_address),
-                            NodeModuleId::AccessRules1,
-                            method_key,
-                            api,
-                        )?
-                    }
+                    RENodeVisibilityOrigin::Normal => Self::method_authorization_contextless(
+                        RENodeId::GlobalResourceManager(resource_address),
+                        NodeModuleId::AccessRules1,
+                        method_key,
+                        api,
+                    )?,
                     RENodeVisibilityOrigin::DirectAccess => {
                         let handle = api.kernel_lock_substate(
                             RENodeId::GlobalResourceManager(resource_address),
@@ -210,7 +211,8 @@ impl AuthModule {
                 // TODO: Clean this up
                 if matches!(
                     node_id,
-                    RENodeId::Component(..) | RENodeId::GlobalComponent(ComponentAddress::Normal(..))
+                    RENodeId::Component(..)
+                        | RENodeId::GlobalComponent(ComponentAddress::Normal(..))
                 ) && module_id.eq(&NodeModuleId::SELF)
                 {
                     Self::normal_component_method_authorization(

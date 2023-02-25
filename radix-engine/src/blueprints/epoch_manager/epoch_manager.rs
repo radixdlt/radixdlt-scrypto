@@ -205,7 +205,7 @@ impl EpochManagerBlueprint {
             node_modules,
         )?;
 
-        api.globalize_with_address(underlying_node_id, address.into())?;
+        api.globalize_with_address(underlying_node_id, AccessRules::new(), address.into())?;
 
         Ok(IndexedScryptoValue::from_typed(&address))
     }

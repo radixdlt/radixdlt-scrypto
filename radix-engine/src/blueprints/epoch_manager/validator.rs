@@ -645,7 +645,7 @@ impl ValidatorCreator {
         });
 
         api.kernel_create_node(node_id, node, node_modules)?;
-        let address = api.globalize_with_address(node_id, address.into())?;
+        let address = api.globalize_with_address(node_id, AccessRules::new(), address.into())?;
         Ok((address, liquidity_bucket))
     }
 
@@ -693,7 +693,7 @@ impl ValidatorCreator {
 
         api.kernel_create_node(node_id, node, node_modules)?;
 
-        let address = api.globalize_with_address(node_id, address.into())?;
+        let address = api.globalize_with_address(node_id, AccessRules::new(), address.into())?;
         Ok(address)
     }
 }

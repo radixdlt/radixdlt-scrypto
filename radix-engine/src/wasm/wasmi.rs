@@ -274,16 +274,26 @@ fn globalize_component(
     mut caller: Caller<'_, HostState>,
     component_id_ptr: u32,
     component_id_len: u32,
+    access_rules_ptr: u32,
+    access_rules_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
     runtime
-        .globalize_component(read_memory(
-            caller.as_context_mut(),
-            memory,
-            component_id_ptr,
-            component_id_len,
-        )?)
+        .globalize_component(
+            read_memory(
+                caller.as_context_mut(),
+                memory,
+                component_id_ptr,
+                component_id_len,
+            )?,
+            read_memory(
+                caller.as_context_mut(),
+                memory,
+                access_rules_ptr,
+                access_rules_len,
+            )?,
+        )
         .map(|buffer| buffer.0)
 }
 
@@ -543,10 +553,18 @@ impl WasmiModule {
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
              component_id_ptr: u32,
-             component_id_len: u32|
+             component_id_len: u32,
+             access_rules_ptr: u32,
+             access_rules_len: u32|
              -> Result<u64, Trap> {
-                globalize_component(caller, component_id_ptr, component_id_len)
-                    .map_err(|e| e.into())
+                globalize_component(
+                    caller,
+                    component_id_ptr,
+                    component_id_len,
+                    access_rules_ptr,
+                    access_rules_len,
+                )
+                .map_err(|e| e.into())
             },
         );
 

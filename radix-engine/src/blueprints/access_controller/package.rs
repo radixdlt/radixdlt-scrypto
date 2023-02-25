@@ -277,7 +277,7 @@ impl AccessControllerNativePackage {
         api.kernel_create_node(node_id, access_controller, node_modules)?;
 
         // Creating a global component address for the access controller RENode
-        let address = api.globalize(node_id)?;
+        let address = api.globalize(node_id, AccessRules::new())?;
         Ok(IndexedScryptoValue::from_typed(&address))
     }
 

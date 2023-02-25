@@ -185,11 +185,14 @@ where
     fn globalize_component(
         &mut self,
         component_id: Vec<u8>,
+        access_rules: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let component_id = scrypto_decode::<RENodeId>(&component_id)
             .map_err(WasmRuntimeError::InvalidComponentId)?;
+        let access_rules =
+            scrypto_decode::<AccessRules>(&access_rules).map_err(WasmRuntimeError::InvalidValue)?;
 
-        let component_address = self.api.globalize(component_id)?;
+        let component_address = self.api.globalize(component_id, access_rules)?;
         let component_address_encoded =
             scrypto_encode(&component_address).expect("Failed to encode component id");
 
@@ -362,6 +365,7 @@ impl WasmRuntime for NopWasmRuntime {
     fn globalize_component(
         &mut self,
         component_id: Vec<u8>,
+        access_rules: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }

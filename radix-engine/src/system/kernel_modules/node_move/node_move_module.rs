@@ -1,6 +1,6 @@
 use crate::blueprints::resource::ProofInfoSubstate;
 use crate::errors::{ModuleError, RuntimeError};
-use crate::kernel::actor::{ActorIdentifier, Actor};
+use crate::kernel::actor::{Actor, ActorIdentifier};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;

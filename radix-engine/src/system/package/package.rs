@@ -4,7 +4,7 @@ use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_MEDIUM_FEE};
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::{
-    MethodAccessRulesChainSubstate, FunctionAccessRulesSubstate,
+    FunctionAccessRulesSubstate, MethodAccessRulesChainSubstate,
 };
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::type_info::PackageCodeTypeSubstate;
@@ -72,7 +72,9 @@ impl Package {
                 ))?;
 
                 let input: PackageGetFnAbiInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-                    .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+                    .map_err(|_| {
+                        RuntimeError::InterpreterError(InterpreterError::InvalidInvocation)
+                    })?;
 
                 Self::get_fn_abi(receiver, input, api).map(|r| IndexedScryptoValue::from_typed(&r))
             }
@@ -238,8 +240,8 @@ impl Package {
         receiver: RENodeId,
         api: &mut Y,
     ) -> Result<PackageCodeTypeSubstate, RuntimeError>
-        where
-            Y: KernelSubstateApi,
+    where
+        Y: KernelSubstateApi,
     {
         let handle = api.kernel_lock_substate(
             receiver,
@@ -258,10 +260,9 @@ impl Package {
         input: PackageGetFnAbiInput,
         api: &mut Y,
     ) -> Result<Fn, RuntimeError>
-        where
-            Y: KernelSubstateApi,
+    where
+        Y: KernelSubstateApi,
     {
-
         let handle = api.kernel_lock_substate(
             receiver,
             NodeModuleId::SELF,
@@ -271,18 +272,30 @@ impl Package {
         let info: &PackageInfoSubstate = api.kernel_get_substate_ref(handle)?;
 
         // Find the abi
-        let abi = info.blueprint_abi(&input.fn_key.blueprint).ok_or(
-            RuntimeError::InterpreterError(InterpreterError::InvalidScryptoInvocation(
-                FnIdentifier::new(receiver.into(), input.fn_key.blueprint.clone(), input.fn_key.ident.clone()),
-                ScryptoFnResolvingError::BlueprintNotFound,
-            )),
-        )?;
-        let fn_abi = abi.get_fn_abi(&input.fn_key.ident).ok_or(
-            RuntimeError::InterpreterError(InterpreterError::InvalidScryptoInvocation(
-                FnIdentifier::new(receiver.into(), input.fn_key.blueprint.clone(), input.fn_key.ident.clone()),
-                ScryptoFnResolvingError::MethodNotFound,
-            )),
-        )?;
+        let abi =
+            info.blueprint_abi(&input.fn_key.blueprint)
+                .ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::InvalidScryptoInvocation(
+                        FnIdentifier::new(
+                            receiver.into(),
+                            input.fn_key.blueprint.clone(),
+                            input.fn_key.ident.clone(),
+                        ),
+                        ScryptoFnResolvingError::BlueprintNotFound,
+                    ),
+                ))?;
+        let fn_abi = abi
+            .get_fn_abi(&input.fn_key.ident)
+            .ok_or(RuntimeError::InterpreterError(
+                InterpreterError::InvalidScryptoInvocation(
+                    FnIdentifier::new(
+                        receiver.into(),
+                        input.fn_key.blueprint.clone(),
+                        input.fn_key.ident.clone(),
+                    ),
+                    ScryptoFnResolvingError::MethodNotFound,
+                ),
+            ))?;
 
         Ok(fn_abi.clone())
     }

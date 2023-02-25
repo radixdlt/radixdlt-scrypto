@@ -16,11 +16,16 @@ pub trait ClientComponentApi<E> {
 
     fn new_key_value_store(&mut self) -> Result<KeyValueStoreId, E>;
 
-    fn globalize(&mut self, node_id: RENodeId) -> Result<ComponentAddress, E>;
+    fn globalize(
+        &mut self,
+        node_id: RENodeId,
+        access_rules: AccessRules,
+    ) -> Result<ComponentAddress, E>;
 
     fn globalize_with_address(
         &mut self,
         node_id: RENodeId,
+        access_rules: AccessRules,
         address: Address,
     ) -> Result<ComponentAddress, E>;
 

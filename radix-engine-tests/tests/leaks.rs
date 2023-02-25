@@ -1,5 +1,5 @@
 use radix_engine::errors::{KernelError, RuntimeError};
-use radix_engine::kernel::actor::{ActorIdentifier, ExecutionMode, Actor};
+use radix_engine::kernel::actor::{Actor, ActorIdentifier, ExecutionMode};
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
 use scrypto_unit::*;

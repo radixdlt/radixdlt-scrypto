@@ -26,8 +26,6 @@ impl FnIdentifier {
     }
 }
 
-
-
 #[derive(Debug, Clone, Copy, Eq, PartialEq, ScryptoSbor)]
 pub struct MethodReceiver(pub RENodeId, pub NodeModuleId);
 

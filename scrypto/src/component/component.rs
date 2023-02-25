@@ -184,7 +184,9 @@ impl Component for OwnedComponent {
 
 impl LocalComponent for OwnedComponent {
     fn globalize(self) -> ComponentAddress {
-        ScryptoEnv.globalize(RENodeId::Component(self.0)).unwrap()
+        ScryptoEnv
+            .globalize(RENodeId::Component(self.0), AccessRules::new())
+            .unwrap()
     }
 }
 

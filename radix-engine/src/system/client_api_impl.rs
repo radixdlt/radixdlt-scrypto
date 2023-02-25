@@ -265,7 +265,11 @@ where
         Ok(node_id.into())
     }
 
-    fn globalize(&mut self, node_id: RENodeId) -> Result<ComponentAddress, RuntimeError> {
+    fn globalize(
+        &mut self,
+        node_id: RENodeId,
+        access_rules: AccessRules,
+    ) -> Result<ComponentAddress, RuntimeError> {
         let node_type = match node_id {
             RENodeId::Component(..) => RENodeType::GlobalComponent,
             RENodeId::Identity(..) => RENodeType::GlobalIdentity,
@@ -278,12 +282,13 @@ where
         };
 
         let global_node_id = self.kernel_allocate_node_id(node_type)?;
-        self.globalize_with_address(node_id, global_node_id.into())
+        self.globalize_with_address(node_id, access_rules, global_node_id.into())
     }
 
     fn globalize_with_address(
         &mut self,
         node_id: RENodeId,
+        _access_rules: AccessRules,
         address: Address,
     ) -> Result<ComponentAddress, RuntimeError> {
         let node = self.kernel_drop_node(node_id)?;

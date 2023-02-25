@@ -6,7 +6,7 @@ use crate::blueprints::resource::{
 };
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::blueprints::transaction_runtime::TransactionRuntimeError;
-use crate::kernel::actor::{ExecutionMode, Actor};
+use crate::kernel::actor::{Actor, ExecutionMode};
 use crate::kernel::track::TrackError;
 use crate::system::kernel_modules::auth::AuthError;
 use crate::system::kernel_modules::costing::CostingError;

@@ -14,9 +14,9 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::clock::ClockCreateInput;
 use radix_engine_interface::blueprints::clock::TimePrecision;
 use radix_engine_interface::blueprints::clock::*;
-use radix_engine_interface::blueprints::resource::{AccessRules, FnKey};
 use radix_engine_interface::blueprints::resource::MethodKey;
 use radix_engine_interface::blueprints::resource::{require, AccessRule};
+use radix_engine_interface::blueprints::resource::{AccessRules, FnKey};
 use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::rule;
 use radix_engine_interface::time::*;
@@ -135,7 +135,7 @@ impl ClockNativePackage {
         )?;
 
         let address = ComponentAddress::Clock(input.component_address);
-        api.globalize_with_address(underlying_node_id, address.into())?;
+        api.globalize_with_address(underlying_node_id, AccessRules::new(), address.into())?;
         Ok(IndexedScryptoValue::from_typed(&address))
     }
 

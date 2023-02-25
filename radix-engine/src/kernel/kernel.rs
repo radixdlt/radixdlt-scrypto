@@ -45,7 +45,7 @@ use radix_engine_interface::blueprints::transaction_runtime::TRANSACTION_RUNTIME
 use radix_engine_interface::rule;
 use sbor::rust::mem;
 
-use super::actor::{ExecutionMode, Actor};
+use super::actor::{Actor, ExecutionMode};
 use super::call_frame::{CallFrame, RENodeVisibilityOrigin};
 use super::heap::{Heap, HeapRENode};
 use super::id_allocator::IdAllocator;
@@ -196,7 +196,7 @@ where
             node_id
         };
 
-        self.globalize_with_address(component_id, global_node_id.into())?;
+        self.globalize_with_address(component_id, AccessRules::new(), global_node_id.into())?;
 
         Ok(())
     }
@@ -209,7 +209,7 @@ where
         let access_rule = rule!(require(non_fungible_global_id));
         let local_id = Identity::create(access_rule, self)?;
 
-        self.globalize_with_address(local_id, global_node_id.into())?;
+        self.globalize_with_address(local_id, AccessRules::new(), global_node_id.into())?;
 
         Ok(())
     }
