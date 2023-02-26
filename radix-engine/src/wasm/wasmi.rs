@@ -222,8 +222,6 @@ fn new_component(
     blueprint_ident_len: u32,
     app_states_ptr: u32,
     app_states_len: u32,
-    royalty_config_ptr: u32,
-    royalty_config_len: u32,
     metadata_ptr: u32,
     metadata_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
@@ -242,12 +240,6 @@ fn new_component(
                 memory,
                 app_states_ptr,
                 app_states_len,
-            )?,
-            read_memory(
-                caller.as_context_mut(),
-                memory,
-                royalty_config_ptr,
-                royalty_config_len,
             )?,
             read_memory(caller.as_context_mut(), memory, metadata_ptr, metadata_len)?,
         )
@@ -510,8 +502,6 @@ impl WasmiModule {
              blueprint_ident_len: u32,
              app_states_ptr: u32,
              app_states_len: u32,
-             royalty_config_ptr: u32,
-             royalty_config_len: u32,
              metadata_ptr: u32,
              metadata_len: u32|
              -> Result<u64, Trap> {
@@ -521,8 +511,6 @@ impl WasmiModule {
                     blueprint_ident_len,
                     app_states_ptr,
                     app_states_len,
-                    royalty_config_ptr,
-                    royalty_config_len,
                     metadata_ptr,
                     metadata_len,
                 )

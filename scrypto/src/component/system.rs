@@ -54,7 +54,6 @@ impl ComponentSystem {
                 btreemap!(
                     0 => scrypto_encode(&state).unwrap()
                 ),
-                RoyaltyConfigBuilder::new().default(0),
                 BTreeMap::new(),
             )
             .unwrap();

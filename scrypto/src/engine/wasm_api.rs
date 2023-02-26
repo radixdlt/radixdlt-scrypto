@@ -61,8 +61,6 @@ extern "C" {
         blueprint_ident: usize,
         app_states_ptr: *const u8,
         app_states_len: usize,
-        royalty_config_ptr: *const u8,
-        royalty_config_len: usize,
         metadata_ptr: *const u8,
         metadata_len: usize,
     ) -> Buffer;
@@ -72,15 +70,15 @@ extern "C" {
     pub fn globalize_component(
         component_id_ptr: *const u8,
         component_id_len: usize,
-        access_rules_ptr: *const u8,
-        access_rules_len: usize,
+        modules_ptr: *const u8,
+        modules_len: usize,
     ) -> Buffer;
 
     pub fn globalize_with_address(
         _node_id_ptr: *const u8,
         _node_id_len: usize,
-        _access_rules_ptr: *const u8,
-        _access_rules_len: usize,
+        _modules_ptr: *const u8,
+        _modules_len: usize,
         _address_ptr: *const u8,
         _address_len: usize,
     ) -> Buffer;
@@ -199,8 +197,6 @@ pub unsafe fn new_component(
     _blueprint_ident: usize,
     _app_states_ptr: *const u8,
     _app_states: usize,
-    _royalty_config_ptr: *const u8,
-    _royalty_config: usize,
     _metadata_ptr: *const u8,
     _metadata_len: usize,
 ) -> Buffer {

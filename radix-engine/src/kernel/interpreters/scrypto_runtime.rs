@@ -154,22 +154,18 @@ where
         &mut self,
         blueprint_ident: Vec<u8>,
         app_states: Vec<u8>,
-        royalty_config: Vec<u8>,
         metadata: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let blueprint_ident =
             String::from_utf8(blueprint_ident).map_err(|_| WasmRuntimeError::InvalidIdent)?;
         let app_states = scrypto_decode::<BTreeMap<u8, Vec<u8>>>(&app_states)
             .map_err(WasmRuntimeError::InvalidAppStates)?;
-        let royalty_config = scrypto_decode::<RoyaltyConfig>(&royalty_config)
-            .map_err(WasmRuntimeError::InvalidRoyaltyConfig)?;
         let metadata = scrypto_decode::<BTreeMap<String, String>>(&metadata)
             .map_err(WasmRuntimeError::InvalidMetadata)?;
 
         let component_id = self.api.new_component(
             blueprint_ident.as_ref(),
             app_states,
-            royalty_config,
             metadata,
         )?;
         let component_id_encoded =
@@ -354,7 +350,6 @@ impl WasmRuntime for NopWasmRuntime {
         &mut self,
         blueprint_ident: Vec<u8>,
         app_states: Vec<u8>,
-        royalty_config: Vec<u8>,
         metadata: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))

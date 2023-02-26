@@ -400,8 +400,6 @@ impl WasmModule {
                                         ValueType::I32,
                                         ValueType::I32,
                                         ValueType::I32,
-                                        ValueType::I32,
-                                        ValueType::I32,
                                     ],
                                     vec![ValueType::I64],
                                 ) {
