@@ -4,6 +4,7 @@ use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
 use crate::system::events::EventStoreSubstate;
 use crate::{errors::RuntimeError, system::node::RENodeInit};
+use radix_engine_interface::api::types::Vec;
 use radix_engine_interface::api::types::{
     EventStoreOffset, NodeModuleId, RENodeId, RENodeType, SubstateOffset,
 };
@@ -11,8 +12,14 @@ use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::events::EventTypeIdentifier;
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct EventsModule(pub Vec<(EventTypeIdentifier, Vec<u8>)>);
+
+impl Default for EventsModule {
+    fn default() -> Self {
+        Self(Default::default())
+    }
+}
 
 impl KernelModule for EventsModule {
     fn on_init<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {

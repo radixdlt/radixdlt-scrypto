@@ -10,10 +10,17 @@ use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::data::ScryptoValue;
 use sbor::rust::collections::BTreeMap;
+use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct LoggerModule(pub Vec<(Level, String)>);
+
+impl Default for LoggerModule {
+    fn default() -> Self {
+        Self(Default::default())
+    }
+}
 
 impl KernelModule for LoggerModule {
     fn on_init<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {

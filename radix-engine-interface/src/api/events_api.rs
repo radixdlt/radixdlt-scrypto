@@ -1,5 +1,6 @@
 use crate::abi::LegacyDescribe;
 use crate::data::ScryptoEncode;
+use crate::sbor::rust::vec::Vec;
 
 use super::types::Hash;
 
