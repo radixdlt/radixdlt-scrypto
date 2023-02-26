@@ -8,10 +8,14 @@ use crate::system::node::RENodeInit;
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{RENodeId, SubstateOffset, VaultOffset};
-use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::{types::*, ClientSubstateApi};
+use radix_engine_interface::api::{ClientApi, ClientEventsApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
+
+use super::events::vault::{
+    DepositResourceEvent, LockFeeEvent, RecallResourceEvent, WithdrawResourceEvent,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum VaultError {
@@ -97,7 +101,10 @@ impl FungibleVault {
         api: &mut Y,
     ) -> Result<LiquidFungibleResource, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientEventsApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
             node_id,
@@ -111,6 +118,9 @@ impl FungibleVault {
             )))
         })?;
         api.sys_drop_lock(handle)?;
+
+        api.emit_event(WithdrawResourceEvent::Amount(amount))?;
+
         Ok(taken)
     }
 
@@ -120,11 +130,16 @@ impl FungibleVault {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientEventsApi<RuntimeError>,
     {
         if resource.is_empty() {
             return Ok(());
         }
+
+        let event = DepositResourceEvent::Amount(resource.amount());
 
         let handle = api.sys_lock_substate(
             node_id,
@@ -138,6 +153,9 @@ impl FungibleVault {
             )))
         })?;
         api.sys_drop_lock(handle)?;
+
+        api.emit_event(event)?;
+
         Ok(())
     }
 
@@ -148,7 +166,10 @@ impl FungibleVault {
         api: &mut Y,
     ) -> Result<FungibleProof, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientEventsApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
             node_id,
@@ -187,7 +208,10 @@ impl FungibleVault {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientEventsApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
             node_id,
@@ -292,7 +316,10 @@ impl NonFungibleVault {
         api: &mut Y,
     ) -> Result<LiquidNonFungibleResource, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientEventsApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
             node_id,
@@ -307,6 +334,9 @@ impl NonFungibleVault {
             )))
         })?;
         api.sys_drop_lock(handle)?;
+
+        api.emit_event(WithdrawResourceEvent::Amount(amount))?;
+
         Ok(taken)
     }
 
@@ -316,7 +346,10 @@ impl NonFungibleVault {
         api: &mut Y,
     ) -> Result<LiquidNonFungibleResource, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientEventsApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
             node_id,
@@ -330,6 +363,9 @@ impl NonFungibleVault {
             .map_err(VaultError::ResourceError)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::VaultError(e)))?;
         api.sys_drop_lock(handle)?;
+
+        api.emit_event(WithdrawResourceEvent::Ids(ids.clone()))?;
+
         Ok(taken)
     }
 
@@ -339,11 +375,16 @@ impl NonFungibleVault {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientEventsApi<RuntimeError>,
     {
         if resource.is_empty() {
             return Ok(());
         }
+
+        let event = DepositResourceEvent::Ids(resource.ids().clone());
 
         let handle = api.sys_lock_substate(
             node_id,
@@ -358,6 +399,9 @@ impl NonFungibleVault {
             )))
         })?;
         api.sys_drop_lock(handle)?;
+
+        api.emit_event(event)?;
+
         Ok(())
     }
 
@@ -368,7 +412,10 @@ impl NonFungibleVault {
         api: &mut Y,
     ) -> Result<NonFungibleProof, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientEventsApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
             node_id,
@@ -419,7 +466,10 @@ impl NonFungibleVault {
         api: &mut Y,
     ) -> Result<NonFungibleProof, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientEventsApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
             node_id,
@@ -461,7 +511,10 @@ impl NonFungibleVault {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientSubstateApi<RuntimeError>
+            + ClientEventsApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
             node_id,
@@ -774,6 +827,11 @@ impl VaultBlueprint {
             vault.put(changes).expect("Failed to put fee changes");
         }
 
+        // Emitting an event once the fee has been locked
+        api.emit_event(LockFeeEvent {
+            amount: input.amount,
+        })?;
+
         Ok(IndexedScryptoValue::from_typed(&()))
     }
 
@@ -831,6 +889,8 @@ impl VaultBlueprint {
         };
         let bucket_id = node_id.into();
 
+        api.emit_event(RecallResourceEvent::Amount(input.amount))?;
+
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
 
@@ -870,6 +930,8 @@ impl VaultBlueprint {
                 BTreeMap::new(),
             )?;
             let bucket_id = node_id.into();
+
+            api.emit_event(RecallResourceEvent::Ids(input.non_fungible_local_ids))?;
 
             Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
         }

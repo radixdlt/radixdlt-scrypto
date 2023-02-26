@@ -21,6 +21,11 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::rule;
 
+use super::{
+    ClaimXrdEvent, RegisterValidatorEvent, StakeEvent, UnregisterValidatorEvent, UnstakeEvent,
+    UpdateAcceptingStakeDelegationStateEvent,
+};
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ValidatorSubstate {
     pub manager: ComponentAddress,
@@ -97,6 +102,8 @@ impl ValidatorBlueprint {
             }
         }
 
+        api.emit_event(RegisterValidatorEvent)?;
+
         return Ok(IndexedScryptoValue::from_typed(&()));
     }
 
@@ -140,6 +147,8 @@ impl ValidatorBlueprint {
             )?;
         }
 
+        api.emit_event(UnregisterValidatorEvent)?;
+
         return Ok(IndexedScryptoValue::from_typed(&()));
     }
 
@@ -154,6 +163,12 @@ impl ValidatorBlueprint {
         // TODO: Remove decode/encode mess
         let input: ValidatorStakeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        // Prepare the event and emit it once the operations succeed
+        let event = {
+            let amount = input.stake.sys_amount(api)?;
+            StakeEvent { xrd_staked: amount }
+        };
 
         let handle = api.sys_lock_substate(
             receiver,
@@ -204,6 +219,8 @@ impl ValidatorBlueprint {
             }
         }
 
+        api.emit_event(event)?;
+
         Ok(IndexedScryptoValue::from_typed(&lp_token_bucket))
     }
 
@@ -218,6 +235,14 @@ impl ValidatorBlueprint {
         // TODO: Remove decode/encode mess
         let input: ValidatorUnstakeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        // Prepare event and emit it once operations finish
+        let event = {
+            let amount = input.lp_tokens.sys_amount(api)?;
+            UnstakeEvent {
+                stake_units: amount,
+            }
+        };
 
         let handle = api.sys_lock_substate(
             receiver,
@@ -295,6 +320,8 @@ impl ValidatorBlueprint {
             }
         };
 
+        api.emit_event(event)?;
+
         Ok(IndexedScryptoValue::from_typed(&unstake_bucket))
     }
 
@@ -355,6 +382,11 @@ impl ValidatorBlueprint {
         nft_resman.burn(bucket, api)?;
 
         let claimed_bucket = unstake_vault.sys_take(unstake_amount, api)?;
+
+        let amount = claimed_bucket.sys_amount(api)?;
+        api.emit_event(ClaimXrdEvent {
+            claimed_xrd: amount,
+        })?;
 
         Ok(IndexedScryptoValue::from_typed(&claimed_bucket))
     }
@@ -435,6 +467,10 @@ impl ValidatorBlueprint {
             })
             .unwrap(),
         )?;
+
+        api.emit_event(UpdateAcceptingStakeDelegationStateEvent {
+            accepts_delegation: input.accept_delegated_stake,
+        })?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }

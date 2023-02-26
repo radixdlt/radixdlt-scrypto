@@ -1,4 +1,5 @@
 mod bucket;
+mod events;
 mod executables;
 mod package;
 mod proof;

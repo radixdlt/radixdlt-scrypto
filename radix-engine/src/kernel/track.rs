@@ -1,3 +1,4 @@
+use crate::blueprints::epoch_manager::EpochChangeEvent;
 use crate::blueprints::resource::NonFungibleSubstate;
 use crate::blueprints::transaction_processor::{InstructionOutput, TransactionProcessorError};
 use crate::errors::*;
@@ -17,6 +18,7 @@ use crate::transaction::TransactionOutcome;
 use crate::transaction::TransactionResult;
 use crate::transaction::{AbortReason, AbortResult, CommitResult};
 use crate::types::*;
+use radix_engine_interface::abi::LegacyDescribe;
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
@@ -594,37 +596,31 @@ impl<'s> FinalizingTrack<'s> {
 
         // Commit/rollback application state changes
         let mut to_persist = HashMap::new();
-        let mut next_epoch = None;
+        let next_epoch = {
+            let expected_schema_hash =
+                hash(scrypto_encode(&EpochChangeEvent::describe()).expect("Impossible Case!"));
+            application_events
+                .iter()
+                .find(|(identifier, _)| match identifier {
+                    EventTypeIdentifier(
+                        RENodeId::EpochManager(..),
+                        NodeModuleId::SELF,
+                        schema_hash,
+                    ) if *schema_hash == expected_schema_hash => true,
+                    _ => false,
+                })
+                .map(|(_, data)| {
+                    scrypto_decode::<EpochChangeEvent>(data).expect("Impossible Case!")
+                })
+                .map(|event| (event.validators, event.epoch))
+        };
         let new_global_addresses = if is_success {
             for (id, loaded) in self.loaded_substates {
                 let old_version = match &loaded.metastate {
                     SubstateMetaState::New => None,
                     SubstateMetaState::Existing { old_version, .. } => Some(*old_version),
                 };
-
-                match id.2 {
-                    SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet) => {
-                        // TODO: Use application layer events rather than state updates to get this info
-                        match &loaded.metastate {
-                            SubstateMetaState::New
-                            | SubstateMetaState::Existing {
-                                state: ExistingMetaState::Updated(..),
-                                ..
-                            } => {
-                                let validator_set = loaded.substate.validator_set();
-                                let epoch = validator_set.epoch;
-                                let validator_set = validator_set.validator_set.clone();
-                                next_epoch = Some((validator_set, epoch));
-                            }
-                            _ => {}
-                        }
-
-                        to_persist.insert(id, (loaded.substate.to_persisted(), old_version));
-                    }
-                    _ => {
-                        to_persist.insert(id, (loaded.substate.to_persisted(), old_version));
-                    }
-                }
+                to_persist.insert(id, (loaded.substate.to_persisted(), old_version));
             }
 
             self.new_global_addresses

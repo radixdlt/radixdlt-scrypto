@@ -50,6 +50,7 @@ pub enum RENodeType {
     ManifestCategorize,
     ManifestEncode,
     ManifestDecode,
+    LegacyDescribe,
 )]
 pub enum RENodeId {
     Bucket(BucketId),

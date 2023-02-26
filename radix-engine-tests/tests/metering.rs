@@ -68,17 +68,17 @@ fn test_basic_transfer() {
     // (cd radix-engine && cargo test --test metering -- test_basic_transfer)
     assert_eq!(
         15000 /* CreateNode */
-        + 61000 /* DropLock */
+        + 62500 /* DropLock */
         + 15000 /* DropNode */
         + 10000 /* Invoke */
-        + 64500 /* LockSubstate */
+        + 66000 /* LockSubstate */
         + 44500 /* ReadSubstate */
-        + 57500 /* RunPrecompiled */
+        + 65000 /* RunPrecompiled */
         + 0 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1320 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 15000, /* WriteSubstate */
+        + 16500, /* WriteSubstate */
         receipt.execution.fee_summary.total_cost_units_consumed
     );
 }
@@ -200,17 +200,17 @@ fn test_radiswap() {
     // (cd radix-engine && cargo test --test metering -- test_radiswap)
     assert_eq!(
         20000 /* CreateNode */
-        + 172000 /* DropLock */
+        + 175000 /* DropLock */
         + 17500 /* DropNode */
         + 24330 /* Invoke */
-        + 177500 /* LockSubstate */
+        + 180500 /* LockSubstate */
         + 125000 /* ReadSubstate */
-        + 132500 /* RunPrecompiled */
+        + 147500 /* RunPrecompiled */
         + 1644050 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1705 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 37000 /* WriteSubstate */
+        + 40000 /* WriteSubstate */
         + 2, /* royalty in cost units */
         receipt.execution.fee_summary.total_cost_units_consumed
     );
@@ -309,17 +309,17 @@ fn test_flash_loan() {
     // (cd radix-engine && cargo test --test metering -- test_flash_loan)
     assert_eq!(
         27500 /* CreateNode */
-        + 253000 /* DropLock */
+        + 258500 /* DropLock */
         + 27500 /* DropNode */
         + 42570 /* Invoke */
-        + 264500 /* LockSubstate */
+        + 270000 /* LockSubstate */
         + 176500 /* ReadSubstate */
-        + 207500 /* RunPrecompiled */
+        + 235000 /* RunPrecompiled */
         + 1400080 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2475 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 63500 /* WriteSubstate */
+        + 69000 /* WriteSubstate */
         + 2, /* royalty in cost units */
         receipt.execution.fee_summary.total_cost_units_consumed
     );
