@@ -7,11 +7,10 @@ mod deep_auth_rules_on_create {
     impl DeepAuthRulesOnCreate {
         pub fn new(resource_address: ResourceAddress, access_rules_depth: u8) -> ComponentAddress {
             let component = Self {}.instantiate();
-            component.add_access_check(generate_deep_access_rules(
+            component.globalize_with_access_rules(generate_deep_access_rules(
                 resource_address,
                 access_rules_depth,
-            ));
-            component.globalize()
+            ))
         }
     }
 }

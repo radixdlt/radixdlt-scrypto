@@ -230,7 +230,7 @@ where
         let metadata_substate = MetadataSubstate { metadata };
 
         // Create auth substates
-        let auth_substate = MethodAccessRulesChainSubstate { access_rules_chain };
+        let _auth_substate = MethodAccessRulesChainSubstate { access_rules_chain };
 
         // Create component RENode
         // FIXME: support native blueprints
@@ -258,7 +258,7 @@ where
                     royalty_accumulator_substate
                 ),
                 NodeModuleId::Metadata => RENodeModuleInit::Metadata(metadata_substate),
-                NodeModuleId::AccessRules => RENodeModuleInit::ObjectAccessRulesChain(auth_substate),
+                //NodeModuleId::AccessRules => RENodeModuleInit::ObjectAccessRulesChain(auth_substate),
             ),
         )?;
 
@@ -288,7 +288,7 @@ where
     fn globalize_with_address(
         &mut self,
         node_id: RENodeId,
-        _access_rules: AccessRules,
+        access_rules: AccessRules,
         address: Address,
     ) -> Result<ComponentAddress, RuntimeError> {
         let node = self.kernel_drop_node(node_id)?;
@@ -316,16 +316,22 @@ where
             RENodeModuleInit::TypeInfo(type_info_substate),
         );
 
-        if let Some(access_rules) = module_substates.remove(&(
+
+
+        if let Some(_access_rules) = module_substates.remove(&(
             NodeModuleId::AccessRules,
             SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
         )) {
-            let access_rules_substate: MethodAccessRulesChainSubstate = access_rules.into();
-            module_init.insert(
-                NodeModuleId::AccessRules,
-                RENodeModuleInit::ObjectAccessRulesChain(access_rules_substate),
-            );
+            panic!("Got you");
         }
+
+        module_init.insert(
+            NodeModuleId::AccessRules,
+            RENodeModuleInit::ObjectAccessRulesChain(MethodAccessRulesChainSubstate {
+                access_rules_chain: vec![access_rules],
+            }),
+        );
+
         if let Some(royalty_config) = module_substates.remove(&(
             NodeModuleId::ComponentRoyalty,
             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),

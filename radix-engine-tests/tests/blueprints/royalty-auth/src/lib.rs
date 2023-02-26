@@ -42,8 +42,7 @@ mod royalty_test {
                     .add_rule("paid_method_panic", 1)
                     .default(0),
             );
-            local_component.with_owner_badge(badge);
-            local_component.globalize()
+            local_component.globalize_with_owner_badge(badge)
         }
 
         pub fn disable_package_royalty(address: PackageAddress, proof: Proof) {

@@ -13,12 +13,11 @@ mod abi_component {
 
         pub fn create_invalid_abi_component() -> ComponentAddress {
             let component = Self {}.instantiate();
-            component.add_access_check(
+            component.globalize_with_access_rules(
                 AccessRules::new()
                     .method("no_method", rule!(require("something")), rule!(deny_all))
-                    .default(rule!(allow_all), AccessRule::DenyAll),
-            );
-            component.globalize()
+                    .default(rule!(allow_all), AccessRule::DenyAll)
+            )
         }
     }
 }

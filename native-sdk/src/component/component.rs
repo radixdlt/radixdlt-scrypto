@@ -1,6 +1,3 @@
-use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesAddAccessCheckInput, ACCESS_RULES_ADD_ACCESS_CHECK_IDENT,
-};
 use radix_engine_interface::api::node_modules::royalty::{
     ComponentSetRoyaltyConfigInput, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
@@ -14,24 +11,6 @@ use sbor::rust::fmt::Debug;
 pub struct Component(pub ComponentId);
 
 impl Component {
-    pub fn sys_add_access_check<Y, E: Debug + ScryptoDecode>(
-        &mut self,
-        access_rules: AccessRules,
-        api: &mut Y,
-    ) -> Result<&mut Self, E>
-    where
-        Y: ClientApi<E>,
-    {
-        api.call_module_method(
-            RENodeId::Component(self.0),
-            NodeModuleId::AccessRules,
-            ACCESS_RULES_ADD_ACCESS_CHECK_IDENT,
-            scrypto_encode(&AccessRulesAddAccessCheckInput { access_rules }).unwrap(),
-        )?;
-
-        Ok(self)
-    }
-
     pub fn sys_set_royalty_config<Y, E: Debug + ScryptoDecode>(
         &mut self,
         royalty_config: RoyaltyConfig,

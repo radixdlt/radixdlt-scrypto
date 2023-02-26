@@ -626,12 +626,6 @@ impl ValidatorCreator {
                 metadata: BTreeMap::new(),
             }),
         );
-        node_modules.insert(
-            NodeModuleId::AccessRules,
-            RENodeModuleInit::ObjectAccessRulesChain(MethodAccessRulesChainSubstate {
-                access_rules_chain: vec![Self::build_access_rules(owner_access_rule)],
-            }),
-        );
 
         let node = RENodeInit::Validator(ValidatorSubstate {
             manager,
@@ -645,7 +639,11 @@ impl ValidatorCreator {
         });
 
         api.kernel_create_node(node_id, node, node_modules)?;
-        let address = api.globalize_with_address(node_id, AccessRules::new(), address.into())?;
+        let address = api.globalize_with_address(
+            node_id,
+            Self::build_access_rules(owner_access_rule),
+            address.into(),
+        )?;
         Ok((address, liquidity_bucket))
     }
 
@@ -673,12 +671,14 @@ impl ValidatorCreator {
                 metadata: BTreeMap::new(),
             }),
         );
+        /*
         node_modules.insert(
             NodeModuleId::AccessRules,
             RENodeModuleInit::ObjectAccessRulesChain(MethodAccessRulesChainSubstate {
-                access_rules_chain: vec![Self::build_access_rules(owner_access_rule)],
+                access_rules_chain: vec![],
             }),
         );
+         */
 
         let node = RENodeInit::Validator(ValidatorSubstate {
             manager,
@@ -693,7 +693,7 @@ impl ValidatorCreator {
 
         api.kernel_create_node(node_id, node, node_modules)?;
 
-        let address = api.globalize_with_address(node_id, AccessRules::new(), address.into())?;
+        let address = api.globalize_with_address(node_id, Self::build_access_rules(owner_access_rule), address.into())?;
         Ok(address)
     }
 }

@@ -154,20 +154,7 @@ where
                 node_id
             };
 
-            let access_rules = {
-                let mut access_rules = AccessRules::new();
-                access_rules.set_access_rule_and_mutability(
-                    MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_IDENT.to_string()),
-                    AccessRule::AllowAll,
-                    AccessRule::DenyAll,
-                );
-                access_rules.set_access_rule_and_mutability(
-                    MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_BATCH_IDENT.to_string()),
-                    AccessRule::AllowAll,
-                    AccessRule::DenyAll,
-                );
-                access_rules.default(access_rule.clone(), access_rule)
-            };
+
 
             let node_id = {
                 let mut node_modules = BTreeMap::new();
@@ -176,13 +163,6 @@ where
                     RENodeModuleInit::Metadata(MetadataSubstate {
                         metadata: BTreeMap::new(),
                     }),
-                );
-                let access_rules_substate = MethodAccessRulesChainSubstate {
-                    access_rules_chain: vec![access_rules],
-                };
-                node_modules.insert(
-                    NodeModuleId::AccessRules,
-                    RENodeModuleInit::ObjectAccessRulesChain(access_rules_substate),
                 );
                 let account_substate = AccountSubstate {
                     vaults: Own::KeyValueStore(kv_store_id.into()),
@@ -196,7 +176,22 @@ where
             node_id
         };
 
-        self.globalize_with_address(component_id, AccessRules::new(), global_node_id.into())?;
+        let access_rules = {
+            let mut access_rules = AccessRules::new();
+            access_rules.set_access_rule_and_mutability(
+                MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_IDENT.to_string()),
+                AccessRule::AllowAll,
+                AccessRule::DenyAll,
+            );
+            access_rules.set_access_rule_and_mutability(
+                MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_BATCH_IDENT.to_string()),
+                AccessRule::AllowAll,
+                AccessRule::DenyAll,
+            );
+            access_rules.default(access_rule.clone(), access_rule)
+        };
+
+        self.globalize_with_address(component_id, access_rules, global_node_id.into())?;
 
         Ok(())
     }
@@ -207,9 +202,9 @@ where
         non_fungible_global_id: NonFungibleGlobalId,
     ) -> Result<(), RuntimeError> {
         let access_rule = rule!(require(non_fungible_global_id));
-        let local_id = Identity::create(access_rule, self)?;
+        let (local_id, access_rules) = Identity::create(access_rule, self)?;
 
-        self.globalize_with_address(local_id, AccessRules::new(), global_node_id.into())?;
+        self.globalize_with_address(local_id, access_rules, global_node_id.into())?;
 
         Ok(())
     }

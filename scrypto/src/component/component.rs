@@ -3,7 +3,7 @@ use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::*;
 use crate::*;
 use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesAddAccessCheckInput, AccessRulesGetLengthInput, ACCESS_RULES_ADD_ACCESS_CHECK_IDENT,
+    AccessRulesGetLengthInput,
     ACCESS_RULES_GET_LENGTH_IDENT,
 };
 use radix_engine_interface::api::node_modules::metadata::{
@@ -42,7 +42,7 @@ pub trait Component {
     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T;
 
     fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V);
-    fn add_access_check(&self, access_rules: AccessRules);
+    //fn add_access_check(&self, access_rules: AccessRules);
     fn set_royalty_config(&self, royalty_config: RoyaltyConfig);
     fn claim_royalty(&self) -> Bucket;
 
@@ -51,8 +51,22 @@ pub trait Component {
     fn access_rules_chain(&self) -> Vec<ComponentAccessRules>;
     // TODO: fn metadata<K: AsRef<str>>(&self, name: K) -> Option<String>;
 
+    /*
     /// Protects this component with owner badge
-    fn with_owner_badge(&self, owner_badge: NonFungibleGlobalId) {
+    fn with_owner_badge(&self, ) {
+
+
+        self.add_access_check(access_rules);
+    }
+     */
+}
+
+pub trait LocalComponent: Sized {
+    fn globalize(self) -> ComponentAddress;
+
+    fn globalize_with_access_rules(self, access_rules: AccessRules) -> ComponentAddress;
+
+    fn globalize_with_owner_badge(self, owner_badge: NonFungibleGlobalId) -> ComponentAddress {
         let mut access_rules =
             AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll);
         access_rules.set_access_rule_and_mutability(
@@ -82,12 +96,8 @@ pub trait Component {
             rule!(require(owner_badge.clone())),
         );
 
-        self.add_access_check(access_rules);
+        self.globalize_with_access_rules(access_rules)
     }
-}
-
-pub trait LocalComponent {
-    fn globalize(self) -> ComponentAddress;
 }
 
 #[derive(PartialEq, Eq, Hash, Clone)]
@@ -112,17 +122,6 @@ impl Component for OwnedComponent {
                     value: value.as_ref().to_owned(),
                 })
                 .unwrap(),
-            )
-            .unwrap();
-    }
-
-    fn add_access_check(&self, access_rules: AccessRules) {
-        ScryptoEnv
-            .call_module_method(
-                RENodeId::Component(self.0),
-                NodeModuleId::AccessRules,
-                ACCESS_RULES_ADD_ACCESS_CHECK_IDENT,
-                scrypto_encode(&AccessRulesAddAccessCheckInput { access_rules }).unwrap(),
             )
             .unwrap();
     }
@@ -185,7 +184,17 @@ impl Component for OwnedComponent {
 impl LocalComponent for OwnedComponent {
     fn globalize(self) -> ComponentAddress {
         ScryptoEnv
-            .globalize(RENodeId::Component(self.0), AccessRules::new())
+            .globalize(
+                RENodeId::Component(self.0),
+                AccessRules::new()
+                    .default(AccessRule::AllowAll, AccessRule::DenyAll)
+            )
+            .unwrap()
+    }
+
+    fn globalize_with_access_rules(self, access_rules: AccessRules) -> ComponentAddress {
+        ScryptoEnv
+            .globalize(RENodeId::Component(self.0), access_rules)
             .unwrap()
     }
 }
@@ -212,17 +221,6 @@ impl Component for GlobalComponentRef {
                     value: value.as_ref().to_owned(),
                 })
                 .unwrap(),
-            )
-            .unwrap();
-    }
-
-    fn add_access_check(&self, access_rules: AccessRules) {
-        ScryptoEnv
-            .call_module_method(
-                RENodeId::GlobalComponent(self.0),
-                NodeModuleId::AccessRules,
-                ACCESS_RULES_ADD_ACCESS_CHECK_IDENT,
-                scrypto_encode(&AccessRulesAddAccessCheckInput { access_rules }).unwrap(),
             )
             .unwrap();
     }

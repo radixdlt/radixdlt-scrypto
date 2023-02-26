@@ -18,80 +18,16 @@ use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::TransactionManifest;
 
 #[test]
-fn scrypto_methods_and_functions_should_be_able_to_return_access_rules_pointers() {
-    // Arrange
-    let access_rules = vec![
-        AccessRules::new()
-            .method(
-                "deposit_funds",
-                rule!(require(RADIX_TOKEN)),
-                rule!(deny_all),
-            )
-            .default(rule!(allow_all), rule!(deny_all)),
-        AccessRules::new()
-            .method(
-                "deposit_funds",
-                rule!(require(ECDSA_SECP256K1_TOKEN)),
-                rule!(deny_all),
-            )
-            .default(rule!(allow_all), rule!(deny_all)),
-    ];
-    for call in [/*Call::Method, */ Call::Function] {
-        let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
-
-        // Act
-        let read_access_rules = test_runner.access_rules_chain(call);
-
-        // Assert
-        assert_eq!(access_rules.len(), read_access_rules.len(),)
-    }
-}
-
-#[test]
-#[ignore] // Unignore once self auth supported in scrypto layer
-fn component_access_rules_may_be_changed_within_a_scrypto_method() {
-    // Arrange
-    let access_rules = vec![AccessRules::new()
-        .method(
-            "deposit_funds",
-            rule!(require(RADIX_TOKEN)),
-            rule!(allow_all),
-        )
-        .default(rule!(allow_all), rule!(deny_all))];
-    let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
-
-    // Act
-    let receipt = test_runner.deposit_funds();
-
-    // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
-    });
-
-    // Act
-    let receipt = test_runner.set_method_auth(1, "deposit_funds", rule!(allow_all));
-
-    // Assert
-    receipt.expect_commit_success();
-
-    // Act
-    let receipt = test_runner.deposit_funds();
-
-    // Assert
-    receipt.expect_commit_success();
-}
-
-#[test]
 #[ignore] // Unignore once self auth supported in scrypto layer
 fn access_rules_method_auth_can_not_be_mutated_when_locked() {
     // Arrange
-    let access_rules = vec![AccessRules::new()
+    let access_rules = AccessRules::new()
         .method(
             "deposit_funds",
             rule!(require(RADIX_TOKEN)),
             rule!(deny_all),
         )
-        .default(rule!(allow_all), rule!(deny_all))];
+        .default(rule!(allow_all), rule!(deny_all));
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
 
     // Act
@@ -111,13 +47,13 @@ fn access_rules_method_auth_cant_be_mutated_when_required_proofs_are_not_present
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
-    let access_rules = vec![AccessRules::new()
+    let access_rules = AccessRules::new()
         .method(
             "deposit_funds",
             rule!(require(RADIX_TOKEN)),
             rule!(require(virtual_badge_non_fungible_global_id.clone())),
         )
-        .default(rule!(allow_all), rule!(deny_all))];
+        .default(rule!(allow_all), rule!(deny_all));
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
 
     // Act
@@ -137,13 +73,13 @@ fn access_rules_method_auth_cant_be_locked_when_required_proofs_are_not_present(
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
-    let access_rules = vec![AccessRules::new()
+    let access_rules = AccessRules::new()
         .method(
             "deposit_funds",
             rule!(require(RADIX_TOKEN)),
             rule!(require(virtual_badge_non_fungible_global_id.clone())),
         )
-        .default(rule!(allow_all), rule!(deny_all))];
+        .default(rule!(allow_all), rule!(deny_all));
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
 
     // Act
@@ -163,13 +99,13 @@ fn access_rules_method_auth_can_be_mutated_when_required_proofs_are_present() {
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
-    let access_rules = vec![AccessRules::new()
+    let access_rules = AccessRules::new()
         .method(
             "deposit_funds",
             rule!(require(RADIX_TOKEN)),
             rule!(require(virtual_badge_non_fungible_global_id.clone())),
         )
-        .default(rule!(allow_all), rule!(deny_all))];
+        .default(rule!(allow_all), rule!(deny_all));
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
     test_runner.add_initial_proof(virtual_badge_non_fungible_global_id);
 
@@ -188,13 +124,13 @@ fn access_rules_method_auth_can_be_locked_when_required_proofs_are_present() {
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
-    let access_rules = vec![AccessRules::new()
+    let access_rules = AccessRules::new()
         .method(
             "deposit_funds",
             rule!(require(RADIX_TOKEN)),
             rule!(require(virtual_badge_non_fungible_global_id.clone())),
         )
-        .default(rule!(allow_all), rule!(deny_all))];
+        .default(rule!(allow_all), rule!(deny_all));
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
     test_runner.add_initial_proof(virtual_badge_non_fungible_global_id);
 
@@ -221,13 +157,13 @@ fn method_that_falls_within_default_cant_have_its_auth_mutated() {
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
-    let access_rules = vec![AccessRules::new()
+    let access_rules = AccessRules::new()
         .method(
             "deposit_funds",
             rule!(require(RADIX_TOKEN)),
             rule!(require(virtual_badge_non_fungible_global_id.clone())),
         )
-        .default(rule!(allow_all), rule!(deny_all))];
+        .default(rule!(allow_all), rule!(deny_all));
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
     test_runner.add_initial_proof(virtual_badge_non_fungible_global_id.clone());
 
@@ -249,7 +185,7 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
-    let access_rules = vec![AccessRules::new()
+    let access_rules = AccessRules::new()
         .method(
             "deposit_funds",
             rule!(require(RADIX_TOKEN)),
@@ -260,7 +196,7 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
             rule!(require(RADIX_TOKEN)),
             rule!(require(virtual_badge_non_fungible_global_id.clone())),
         )
-        .default(rule!(allow_all), rule!(deny_all))];
+        .default(rule!(allow_all), rule!(deny_all));
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
     test_runner.add_initial_proof(virtual_badge_non_fungible_global_id.clone());
 
@@ -314,7 +250,7 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
         let virtual_badge_non_fungible_global_id =
             NonFungibleGlobalId::from_public_key(&public_key);
 
-        let access_rules = vec![manifest_decode::<AccessRules>(&manifest_args!(
+        let access_rules = manifest_decode::<AccessRules>(&manifest_args!(
             HashMap::<MethodKey, AccessRuleEntry>::new(),
             HashMap::<String, AccessRule>::new(),
             AccessRule::AllowAll,
@@ -322,7 +258,7 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
             HashMap::<String, AccessRule>::new(),
             AccessRule::AllowAll
         ))
-        .unwrap()];
+        .unwrap();
 
         let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
         test_runner.add_initial_proof(virtual_badge_non_fungible_global_id.clone());
@@ -508,7 +444,7 @@ struct MutableAccessRulesTestRunner {
 impl MutableAccessRulesTestRunner {
     const BLUEPRINT_NAME: &'static str = "MutableAccessRulesComponent";
 
-    pub fn new(access_rules: Vec<AccessRules>) -> Self {
+    pub fn new(access_rules: AccessRules) -> Self {
         let mut test_runner = TestRunner::builder().build();
         let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
 

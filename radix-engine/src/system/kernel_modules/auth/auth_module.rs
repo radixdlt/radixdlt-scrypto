@@ -135,6 +135,7 @@ impl AuthModule {
             MethodIdentifier(
                 RENodeId::Proof(..)
                 | RENodeId::Bucket(..)
+                | RENodeId::Component(..)
                 | RENodeId::Worktop
                 | RENodeId::Logger
                 | RENodeId::TransactionRuntime
@@ -211,8 +212,7 @@ impl AuthModule {
                 // TODO: Clean this up
                 if matches!(
                     node_id,
-                    RENodeId::Component(..)
-                        | RENodeId::GlobalComponent(ComponentAddress::Normal(..))
+                    RENodeId::GlobalComponent(ComponentAddress::Normal(..))
                 ) && module_id.eq(&NodeModuleId::SELF)
                 {
                     Self::normal_component_method_authorization(

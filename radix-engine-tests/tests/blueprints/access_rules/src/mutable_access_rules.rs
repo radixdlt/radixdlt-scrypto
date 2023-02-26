@@ -5,12 +5,9 @@ mod mutable_access_rules_component {
     struct MutableAccessRulesComponent {}
 
     impl MutableAccessRulesComponent {
-        pub fn new(access_rules: Vec<AccessRules>) -> ComponentAddress {
+        pub fn new(access_rules: AccessRules) -> ComponentAddress {
             let component = Self {}.instantiate();
-            for access_rule in access_rules {
-                component.add_access_check(access_rule);
-            }
-            component.globalize()
+            component.globalize_with_access_rules(access_rules)
         }
 
         pub fn access_rules_function(

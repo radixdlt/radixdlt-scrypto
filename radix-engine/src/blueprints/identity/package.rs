@@ -52,8 +52,8 @@ impl IdentityNativePackage {
         let input: IdentityCreateInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let node_id = Identity::create(input.access_rule, api)?;
-        let address = api.globalize(node_id, AccessRules::new())?;
+        let (node_id, access_rules) = Identity::create(input.access_rule, api)?;
+        let address = api.globalize(node_id, access_rules)?;
         Ok(IndexedScryptoValue::from_typed(&address))
     }
 }
@@ -61,7 +61,7 @@ impl IdentityNativePackage {
 pub struct Identity;
 
 impl Identity {
-    pub fn create<Y>(access_rule: AccessRule, api: &mut Y) -> Result<RENodeId, RuntimeError>
+    pub fn create<Y>(access_rule: AccessRule, api: &mut Y) -> Result<(RENodeId, AccessRules), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
@@ -86,15 +86,17 @@ impl Identity {
                 metadata: BTreeMap::new(),
             }),
         );
+        /*
         node_modules.insert(
             NodeModuleId::AccessRules,
             RENodeModuleInit::ObjectAccessRulesChain(MethodAccessRulesChainSubstate {
                 access_rules_chain: vec![access_rules],
             }),
         );
+         */
 
         api.kernel_create_node(underlying_node_id, RENodeInit::Identity(), node_modules)?;
 
-        Ok(underlying_node_id)
+        Ok((underlying_node_id, access_rules))
     }
 }

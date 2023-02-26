@@ -220,6 +220,7 @@ impl AccountNativePackage {
                     metadata: BTreeMap::new(),
                 }),
             );
+            /*
             let access_rules_substate = MethodAccessRulesChainSubstate {
                 access_rules_chain: [access_rules].into(),
             };
@@ -227,6 +228,7 @@ impl AccountNativePackage {
                 NodeModuleId::AccessRules,
                 RENodeModuleInit::ObjectAccessRulesChain(access_rules_substate),
             );
+             */
 
             let account_substate = AccountSubstate {
                 vaults: Own::KeyValueStore(kv_store_id.into()),
@@ -238,7 +240,7 @@ impl AccountNativePackage {
             node_id
         };
 
-        let address = api.globalize(node_id, AccessRules::new())?;
+        let address = api.globalize(node_id, access_rules)?;
 
         Ok(IndexedScryptoValue::from_typed(&address))
     }

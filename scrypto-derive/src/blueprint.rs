@@ -516,9 +516,6 @@ fn generate_stubs(
             fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
                 self.component.set_metadata(name, value);
             }
-            fn add_access_check(&self, access_rules: ::scrypto::model::AccessRules) {
-                self.component.add_access_check(access_rules);
-            }
             fn set_royalty_config(&self, royalty_config: ::scrypto::model::RoyaltyConfig) {
                 self.component.set_royalty_config(royalty_config);
             }
@@ -541,6 +538,10 @@ fn generate_stubs(
         impl ::scrypto::component::LocalComponent for #component_ident {
             fn globalize(self) -> ComponentAddress {
                 self.component.globalize()
+            }
+
+            fn globalize_with_access_rules(self, access_rules: AccessRules) -> ComponentAddress {
+                self.component.globalize_with_access_rules(access_rules)
             }
         }
 
@@ -569,9 +570,6 @@ fn generate_stubs(
             }
             fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
                 self.component.set_metadata(name, value);
-            }
-            fn add_access_check(&self, access_rules: ::scrypto::model::AccessRules) {
-                self.component.add_access_check(access_rules);
             }
             fn set_royalty_config(&self, royalty_config: ::scrypto::model::RoyaltyConfig) {
                 self.component.set_royalty_config(royalty_config);
@@ -768,9 +766,6 @@ mod tests {
                     fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
                         self.component.set_metadata(name, value);
                     }
-                    fn add_access_check(&self, access_rules: ::scrypto::model::AccessRules) {
-                        self.component.add_access_check(access_rules);
-                    }
                     fn set_royalty_config(&self, royalty_config: ::scrypto::model::RoyaltyConfig) {
                         self.component.set_royalty_config(royalty_config);
                     }
@@ -792,6 +787,10 @@ mod tests {
                 impl ::scrypto::component::LocalComponent for TestComponent {
                     fn globalize(self) -> ComponentAddress {
                         self.component.globalize()
+                    }
+
+                   fn globalize_with_access_rules(self, access_rules: AccessRules) -> ComponentAddress {
+                        self.component.globalize_with_access_rules(access_rules)
                     }
                 }
 
@@ -824,9 +823,6 @@ mod tests {
                     }
                     fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
                         self.component.set_metadata(name, value);
-                    }
-                    fn add_access_check(&self, access_rules: ::scrypto::model::AccessRules) {
-                        self.component.add_access_check(access_rules);
                     }
                     fn set_royalty_config(&self, royalty_config: ::scrypto::model::RoyaltyConfig) {
                         self.component.set_royalty_config(royalty_config);
@@ -919,9 +915,6 @@ mod tests {
                     fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
                         self.component.set_metadata(name, value);
                     }
-                    fn add_access_check(&self, access_rules: ::scrypto::model::AccessRules) {
-                        self.component.add_access_check(access_rules);
-                    }
                     fn set_royalty_config(&self, royalty_config: ::scrypto::model::RoyaltyConfig) {
                         self.component.set_royalty_config(royalty_config);
                     }
@@ -943,6 +936,10 @@ mod tests {
                 impl ::scrypto::component::LocalComponent for TestComponent {
                     fn globalize(self) -> ComponentAddress {
                         self.component.globalize()
+                    }
+
+                    fn globalize_with_access_rules(self, access_rules: AccessRules) -> ComponentAddress {
+                        self.component.globalize_with_access_rules(access_rules)
                     }
                 }
 
@@ -968,9 +965,6 @@ mod tests {
                     }
                     fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
                         self.component.set_metadata(name, value);
-                    }
-                    fn add_access_check(&self, access_rules: ::scrypto::model::AccessRules) {
-                        self.component.add_access_check(access_rules);
                     }
                     fn set_royalty_config(&self, royalty_config: ::scrypto::model::RoyaltyConfig) {
                         self.component.set_royalty_config(royalty_config);
@@ -1064,9 +1058,6 @@ mod tests {
                     fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
                         self.component.set_metadata(name, value);
                     }
-                    fn add_access_check(&self, access_rules: ::scrypto::model::AccessRules) {
-                        self.component.add_access_check(access_rules);
-                    }
                     fn set_royalty_config(&self, royalty_config: ::scrypto::model::RoyaltyConfig) {
                         self.component.set_royalty_config(royalty_config);
                     }
@@ -1088,6 +1079,10 @@ mod tests {
                 impl ::scrypto::component::LocalComponent for TestComponent {
                     fn globalize(self) -> ComponentAddress {
                         self.component.globalize()
+                    }
+
+                    fn globalize_with_access_rules(self, access_rules: AccessRules) -> ComponentAddress {
+                        self.component.globalize_with_access_rules(access_rules)
                     }
                 }
 
@@ -1113,9 +1108,6 @@ mod tests {
                     }
                     fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
                         self.component.set_metadata(name, value);
-                    }
-                    fn add_access_check(&self, access_rules: ::scrypto::model::AccessRules) {
-                        self.component.add_access_check(access_rules);
                     }
                     fn set_royalty_config(&self, royalty_config: ::scrypto::model::RoyaltyConfig) {
                         self.component.set_royalty_config(royalty_config);

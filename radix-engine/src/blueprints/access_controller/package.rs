@@ -258,13 +258,15 @@ impl AccessControllerNativePackage {
             vault
         };
 
+        /*
         let mut node_modules = BTreeMap::new();
         node_modules.insert(
             NodeModuleId::AccessRules,
             RENodeModuleInit::ObjectAccessRulesChain(MethodAccessRulesChainSubstate {
-                access_rules_chain: [access_rules_from_rule_set(input.rule_set)].into(),
+                access_rules_chain: [].into(),
             }),
         );
+         */
 
         // Constructing the Access Controller RENode and Substates
         let access_controller = RENodeInit::AccessController(AccessControllerSubstate::new(
@@ -274,10 +276,10 @@ impl AccessControllerNativePackage {
 
         // Allocating an RENodeId and creating the access controller RENode
         let node_id = api.kernel_allocate_node_id(RENodeType::AccessController)?;
-        api.kernel_create_node(node_id, access_controller, node_modules)?;
+        api.kernel_create_node(node_id, access_controller, BTreeMap::new())?;
 
         // Creating a global component address for the access controller RENode
-        let address = api.globalize(node_id, AccessRules::new())?;
+        let address = api.globalize(node_id, access_rules_from_rule_set(input.rule_set))?;
         Ok(IndexedScryptoValue::from_typed(&address))
     }
 

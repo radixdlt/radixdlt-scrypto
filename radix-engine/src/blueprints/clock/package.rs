@@ -118,6 +118,7 @@ impl ClockNativePackage {
             rule!(allow_all),
         );
 
+        /*
         let mut node_modules = BTreeMap::new();
         node_modules.insert(
             NodeModuleId::AccessRules,
@@ -125,17 +126,18 @@ impl ClockNativePackage {
                 access_rules_chain: vec![access_rules],
             }),
         );
+         */
 
         api.kernel_create_node(
             underlying_node_id,
             RENodeInit::Clock(CurrentTimeRoundedToMinutesSubstate {
                 current_time_rounded_to_minutes_ms: 0,
             }),
-            node_modules,
+            BTreeMap::new(),
         )?;
 
         let address = ComponentAddress::Clock(input.component_address);
-        api.globalize_with_address(underlying_node_id, AccessRules::new(), address.into())?;
+        api.globalize_with_address(underlying_node_id, access_rules, address.into())?;
         Ok(IndexedScryptoValue::from_typed(&address))
     }
 

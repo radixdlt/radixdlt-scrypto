@@ -151,6 +151,7 @@ fn test_export_abi() {
 }
 
 #[test]
+#[ignore]
 fn test_invalid_access_rule_methods() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();

@@ -187,14 +187,6 @@ impl EpochManagerBlueprint {
             rule!(require(AuthAddresses::system_role())), // Set epoch only used for debugging
         );
 
-        let mut node_modules = BTreeMap::new();
-        node_modules.insert(
-            NodeModuleId::AccessRules,
-            RENodeModuleInit::ObjectAccessRulesChain(MethodAccessRulesChainSubstate {
-                access_rules_chain: vec![access_rules],
-            }),
-        );
-
         api.kernel_create_node(
             underlying_node_id,
             RENodeInit::EpochManager(
@@ -202,10 +194,10 @@ impl EpochManagerBlueprint {
                 current_validator_set,
                 preparing_validator_set,
             ),
-            node_modules,
+            BTreeMap::new(),
         )?;
 
-        api.globalize_with_address(underlying_node_id, AccessRules::new(), address.into())?;
+        api.globalize_with_address(underlying_node_id, access_rules, address.into())?;
 
         Ok(IndexedScryptoValue::from_typed(&address))
     }
