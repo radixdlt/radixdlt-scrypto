@@ -1916,3 +1916,12 @@ impl<'a> From<SubstateRefMut<'a>> for &'a mut BucketInfoSubstate {
         }
     }
 }
+
+impl<'a> From<SubstateRefMut<'a>> for &'a mut EventStoreSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::EventStore(value) => value,
+            _ => panic!("Not a EventStore"),
+        }
+    }
+}

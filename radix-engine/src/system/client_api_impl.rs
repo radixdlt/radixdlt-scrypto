@@ -1,6 +1,7 @@
 use crate::blueprints::resource::NonFungibleSubstate;
-use crate::errors::RuntimeError;
+use crate::errors::{ApplicationError, RuntimeError};
 use crate::errors::{KernelError, SystemError};
+use crate::kernel::actor::{ResolvedActor, ResolvedReceiver};
 use crate::kernel::kernel::Kernel;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
@@ -20,10 +21,10 @@ use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate,
     KeyValueStoreEntrySubstate, TypeInfoSubstate,
 };
-use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
+use radix_engine_interface::api::{package::*, ClientEventsApi};
 use radix_engine_interface::api::{
     ClientActorApi, ClientApi, ClientComponentApi, ClientNodeApi, ClientPackageApi,
     ClientSubstateApi, ClientUnsafeApi,
@@ -32,8 +33,12 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RADIX_TOKEN;
 use radix_engine_interface::data::model::Own;
 use radix_engine_interface::data::*;
+use radix_engine_interface::events::EventTypeIdentifier;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+
+use super::events::{EventError, EventStoreSubstate};
+use super::kernel_modules::costing::FIXED_LOW_FEE;
 
 impl<'g, 's, W> ClientNodeApi<RuntimeError> for Kernel<'g, 's, W>
 where
@@ -372,6 +377,72 @@ where
 
     fn update_wasm_memory_usage(&mut self, size: usize) -> Result<(), RuntimeError> {
         KernelModuleMixer::on_update_wasm_memory_usage(self, size)
+    }
+}
+
+impl<'g, 's, W> ClientEventsApi<RuntimeError> for Kernel<'g, 's, W>
+where
+    W: WasmEngine,
+{
+    fn emit_event<T: ScryptoEncode + abi::LegacyDescribe>(
+        &mut self,
+        event: T,
+    ) -> Result<(), RuntimeError> {
+        // Costing event emission.
+        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
+        if let Some(ResolvedActor {
+            receiver:
+                Some(ResolvedReceiver {
+                    receiver: MethodReceiver(node_id, node_module_id),
+                    ..
+                }),
+            ..
+        }) = self.kernel_get_current_actor()
+        {
+            let event_type_identifier = {
+                let schema_hash = scrypto_encode(&T::describe())
+                    .map_err(|_| {
+                        RuntimeError::ApplicationError(ApplicationError::EventError(
+                            EventError::FailedToSborEncodeEventSchema,
+                        ))
+                    })
+                    .map(|encoded| hash(encoded))?;
+                EventTypeIdentifier(node_id, node_module_id, schema_hash)
+            };
+            let event_data = scrypto_encode(&event).map_err(|_| {
+                RuntimeError::ApplicationError(ApplicationError::EventError(
+                    EventError::FailedToSborEncodeEvent,
+                ))
+            })?;
+
+            // TODO: Validate that the event schema matches that given by the event schema hash.
+            // Need to wait for David's PR for schema validation and move away from LegacyDescribe
+            // over to new Describe.
+
+            // NOTE: We need to ensure that the event being emitted is an SBOR struct or an enum,
+            // this is not done here, this should be done at event registration time. Thus, if the
+            // event has been successfully registered, it can be emitted (from a schema POV).
+
+            // Adding the event to the event store
+            {
+                let handle = self.kernel_lock_substate(
+                    RENodeId::EventStore,
+                    NodeModuleId::SELF,
+                    SubstateOffset::EventStore(EventStoreOffset::EventStore),
+                    LockFlags::MUTABLE,
+                )?;
+                let event_store = self.kernel_get_substate_ref_mut::<EventStoreSubstate>(handle)?;
+                event_store.0.push((event_type_identifier, event_data));
+                self.kernel_drop_lock(handle)?;
+            }
+
+            Ok(())
+        } else {
+            Err(RuntimeError::ApplicationError(
+                ApplicationError::EventError(EventError::InvalidActor),
+            ))
+        }
     }
 }
 
