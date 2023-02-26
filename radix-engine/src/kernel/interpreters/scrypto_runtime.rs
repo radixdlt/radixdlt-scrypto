@@ -154,20 +154,15 @@ where
         &mut self,
         blueprint_ident: Vec<u8>,
         app_states: Vec<u8>,
-        metadata: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let blueprint_ident =
             String::from_utf8(blueprint_ident).map_err(|_| WasmRuntimeError::InvalidIdent)?;
         let app_states = scrypto_decode::<BTreeMap<u8, Vec<u8>>>(&app_states)
             .map_err(WasmRuntimeError::InvalidAppStates)?;
-        let metadata = scrypto_decode::<BTreeMap<String, String>>(&metadata)
-            .map_err(WasmRuntimeError::InvalidMetadata)?;
 
-        let component_id = self.api.new_component(
-            blueprint_ident.as_ref(),
-            app_states,
-            metadata,
-        )?;
+        let component_id = self
+            .api
+            .new_component(blueprint_ident.as_ref(), app_states)?;
         let component_id_encoded =
             scrypto_encode(&component_id).expect("Failed to encode component id");
 
@@ -182,12 +177,12 @@ where
         let component_id = scrypto_decode::<RENodeId>(&component_id)
             .map_err(WasmRuntimeError::InvalidComponentId)?;
         let modules =
-            scrypto_decode::<(AccessRules, BTreeMap<String, String>, Option<RoyaltyConfig>)>(&modules).map_err(WasmRuntimeError::InvalidValue)?;
+            scrypto_decode::<(AccessRules, BTreeMap<String, String>, Option<RoyaltyConfig>)>(
+                &modules,
+            )
+            .map_err(WasmRuntimeError::InvalidValue)?;
 
-        let component_address = self.api.globalize(
-            component_id,
-            modules,
-        )?;
+        let component_address = self.api.globalize(component_id, modules)?;
         let component_address_encoded =
             scrypto_encode(&component_address).expect("Failed to encode component id");
 
@@ -350,7 +345,6 @@ impl WasmRuntime for NopWasmRuntime {
         &mut self,
         blueprint_ident: Vec<u8>,
         app_states: Vec<u8>,
-        metadata: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }

@@ -23,10 +23,8 @@ impl ClientComponentApi<ClientApiError> for ScryptoEnv {
         &mut self,
         blueprint_ident: &str,
         app_states: BTreeMap<u8, Vec<u8>>,
-        metadata: BTreeMap<String, String>,
     ) -> Result<ComponentId, ClientApiError> {
         let app_states = scrypto_encode(&app_states).unwrap();
-        let metadata = scrypto_encode(&metadata).unwrap();
 
         let bytes = copy_buffer(unsafe {
             new_component(
@@ -34,8 +32,6 @@ impl ClientComponentApi<ClientApiError> for ScryptoEnv {
                 blueprint_ident.len(),
                 app_states.as_ptr(),
                 app_states.len(),
-                metadata.as_ptr(),
-                metadata.len(),
             )
         });
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)

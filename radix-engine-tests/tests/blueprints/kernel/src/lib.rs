@@ -40,7 +40,6 @@ mod node_create {
                     btreemap!(
                         0 => scrypto_encode(&NodeCreate {}).unwrap()
                     ),
-                    BTreeMap::default(),
                 )
                 .unwrap();
         }

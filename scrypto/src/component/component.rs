@@ -1,4 +1,3 @@
-use std::collections::BTreeMap;
 use crate::abi::*;
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::*;
@@ -20,6 +19,7 @@ use radix_engine_interface::data::{
 };
 use radix_engine_interface::rule;
 use sbor::rust::borrow::ToOwned;
+use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 
@@ -37,26 +37,24 @@ pub trait ComponentState<T: Component + LocalComponent>: ScryptoEncode + Scrypto
 
 pub trait Component {
     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T;
-
-    //fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V);
-    //fn add_access_check(&self, access_rules: AccessRules);
-    //fn set_royalty_config(&self, royalty_config: RoyaltyConfig);
-    //fn claim_royalty(&self) -> Bucket;
-
     fn package_address(&self) -> PackageAddress;
     fn blueprint_name(&self) -> String;
     // TODO: fn metadata<K: AsRef<str>>(&self, name: K) -> Option<String>;
 }
 
 pub trait LocalComponent: Sized {
-
-    fn globalize_with_modules(self, access_rules: AccessRules, metadata: BTreeMap<String, String>, config: RoyaltyConfig) -> ComponentAddress;
+    fn globalize_with_modules(
+        self,
+        access_rules: AccessRules,
+        metadata: BTreeMap<String, String>,
+        config: RoyaltyConfig,
+    ) -> ComponentAddress;
 
     fn globalize(self) -> ComponentAddress {
         self.globalize_with_modules(
             AccessRules::new().default(AccessRule::AllowAll, AccessRule::DenyAll),
             BTreeMap::new(),
-            RoyaltyConfig::default()
+            RoyaltyConfig::default(),
         )
     }
 
@@ -69,14 +67,14 @@ pub trait LocalComponent: Sized {
     }
 
     fn globalize_with_access_rules(self, access_rules: AccessRules) -> ComponentAddress {
-        self.globalize_with_modules(
-            access_rules,
-            BTreeMap::new(),
-            RoyaltyConfig::default(),
-        )
+        self.globalize_with_modules(access_rules, BTreeMap::new(), RoyaltyConfig::default())
     }
 
-    fn globalize_with_owner_badge(self, owner_badge: NonFungibleGlobalId, royalty_config: RoyaltyConfig) -> ComponentAddress {
+    fn globalize_with_owner_badge(
+        self,
+        owner_badge: NonFungibleGlobalId,
+        royalty_config: RoyaltyConfig,
+    ) -> ComponentAddress {
         let mut access_rules =
             AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll);
         access_rules.set_access_rule_and_mutability(
@@ -137,9 +135,17 @@ impl Component for OwnedComponent {
 }
 
 impl LocalComponent for OwnedComponent {
-    fn globalize_with_modules(self, access_rules: AccessRules, metadata: BTreeMap<String, String>, config: RoyaltyConfig) -> ComponentAddress {
+    fn globalize_with_modules(
+        self,
+        access_rules: AccessRules,
+        metadata: BTreeMap<String, String>,
+        config: RoyaltyConfig,
+    ) -> ComponentAddress {
         ScryptoEnv
-            .globalize(RENodeId::Component(self.0), (access_rules, metadata, Some(config)))
+            .globalize(
+                RENodeId::Component(self.0),
+                (access_rules, metadata, Some(config)),
+            )
             .unwrap()
     }
 }
@@ -185,7 +191,7 @@ impl GlobalComponentRef {
                     key: name.as_ref().to_owned(),
                     value: value.as_ref().to_owned(),
                 })
-                    .unwrap(),
+                .unwrap(),
             )
             .unwrap();
     }

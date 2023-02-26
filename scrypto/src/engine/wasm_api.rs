@@ -40,8 +40,6 @@ extern "C" {
         blueprint_ident: usize,
         app_states_ptr: *const u8,
         app_states_len: usize,
-        metadata_ptr: *const u8,
-        metadata_len: usize,
     ) -> Buffer;
 
     pub fn new_key_value_store() -> Buffer;
@@ -155,8 +153,6 @@ pub unsafe fn new_component(
     _blueprint_ident: usize,
     _app_states_ptr: *const u8,
     _app_states: usize,
-    _metadata_ptr: *const u8,
-    _metadata_len: usize,
 ) -> Buffer {
     todo!()
 }

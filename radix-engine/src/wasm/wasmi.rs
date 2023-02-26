@@ -222,8 +222,6 @@ fn new_component(
     blueprint_ident_len: u32,
     app_states_ptr: u32,
     app_states_len: u32,
-    metadata_ptr: u32,
-    metadata_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
@@ -241,7 +239,6 @@ fn new_component(
                 app_states_ptr,
                 app_states_len,
             )?,
-            read_memory(caller.as_context_mut(), memory, metadata_ptr, metadata_len)?,
         )
         .map(|buffer| buffer.0)
 }
@@ -501,9 +498,7 @@ impl WasmiModule {
              blueprint_ident_ptr: u32,
              blueprint_ident_len: u32,
              app_states_ptr: u32,
-             app_states_len: u32,
-             metadata_ptr: u32,
-             metadata_len: u32|
+             app_states_len: u32|
              -> Result<u64, Trap> {
                 new_component(
                     caller,
@@ -511,8 +506,6 @@ impl WasmiModule {
                     blueprint_ident_len,
                     app_states_ptr,
                     app_states_len,
-                    metadata_ptr,
-                    metadata_len,
                 )
                 .map_err(|e| e.into())
             },

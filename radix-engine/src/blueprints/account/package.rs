@@ -240,10 +240,7 @@ impl AccountNativePackage {
             node_id
         };
 
-        let address = api.globalize(
-            node_id,
-            (access_rules, BTreeMap::new(), None),
-        )?;
+        let address = api.globalize(node_id, (access_rules, BTreeMap::new(), None))?;
 
         Ok(IndexedScryptoValue::from_typed(&address))
     }

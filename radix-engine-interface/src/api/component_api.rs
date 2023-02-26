@@ -9,7 +9,6 @@ pub trait ClientComponentApi<E> {
         &mut self,
         blueprint_ident: &str,
         app_states: BTreeMap<u8, Vec<u8>>,
-        metadata: BTreeMap<String, String>,
     ) -> Result<ComponentId, E>;
 
     fn new_key_value_store(&mut self) -> Result<KeyValueStoreId, E>;

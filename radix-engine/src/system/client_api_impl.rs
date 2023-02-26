@@ -210,24 +210,9 @@ where
         &mut self,
         blueprint_ident: &str,
         app_states: BTreeMap<u8, Vec<u8>>,
-        metadata: BTreeMap<String, String>,
     ) -> Result<ComponentId, RuntimeError> {
         // Allocate node id
         let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
-
-        /*
-        // Create a royalty vault
-        let royalty_vault_id = ResourceManager(RADIX_TOKEN).new_vault(self)?.vault_id();
-
-        // Create royalty substates
-        let royalty_config_substate = ComponentRoyaltyConfigSubstate { royalty_config };
-        let royalty_accumulator_substate = ComponentRoyaltyAccumulatorSubstate {
-            royalty: Own::Vault(royalty_vault_id.into()),
-        };
-         */
-
-        // Create metadata substates
-        let metadata_substate = MetadataSubstate { metadata };
 
         // Create component RENode
         // FIXME: support native blueprints
@@ -243,6 +228,8 @@ where
         // FIXME: support native blueprints
         let abi_enforced_app_substate = app_states.into_iter().next().unwrap().1;
 
+        // TODO: Check that blueprint exists here rather than in kernel
+
         self.kernel_create_node(
             node_id,
             RENodeInit::Component(ComponentStateSubstate::new(abi_enforced_app_substate)),
@@ -250,14 +237,6 @@ where
                 NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(
                     TypeInfoSubstate::new(package_address, blueprint_ident.to_string())
                 ),
-                /*
-                NodeModuleId::ComponentRoyalty => RENodeModuleInit::ComponentRoyalty(
-                    royalty_config_substate,
-                    royalty_accumulator_substate
-                ),
-                 */
-                //NodeModuleId::Metadata => RENodeModuleInit::Metadata(metadata_substate),
-                //NodeModuleId::AccessRules => RENodeModuleInit::ObjectAccessRulesChain(auth_substate),
             ),
         )?;
 
@@ -287,7 +266,11 @@ where
     fn globalize_with_address(
         &mut self,
         node_id: RENodeId,
-        (access_rules, metadata, royalty_config): (AccessRules, BTreeMap<String, String>, Option<RoyaltyConfig>),
+        (access_rules, metadata, royalty_config): (
+            AccessRules,
+            BTreeMap<String, String>,
+            Option<RoyaltyConfig>,
+        ),
         address: Address,
     ) -> Result<ComponentAddress, RuntimeError> {
         let node = self.kernel_drop_node(node_id)?;
@@ -315,7 +298,6 @@ where
             RENodeModuleInit::TypeInfo(type_info_substate),
         );
 
-
         module_init.insert(
             NodeModuleId::AccessRules,
             RENodeModuleInit::ObjectAccessRulesChain(MethodAccessRulesSubstate { access_rules }),
@@ -323,7 +305,7 @@ where
 
         module_init.insert(
             NodeModuleId::Metadata,
-            RENodeModuleInit::Metadata(MetadataSubstate { metadata })
+            RENodeModuleInit::Metadata(MetadataSubstate { metadata }),
         );
 
         if let Some(royalty_config) = royalty_config {
@@ -343,15 +325,6 @@ where
                 ),
             );
         }
-
-        /*
-        if let Some(metadata) = module_substates.remove(&(
-            NodeModuleId::Metadata,
-            SubstateOffset::Metadata(MetadataOffset::Metadata),
-        )) {
-            panic!("Got you");
-        }
-         */
 
         self.kernel_create_node(
             address.into(),

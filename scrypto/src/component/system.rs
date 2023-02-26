@@ -54,7 +54,6 @@ impl ComponentSystem {
                 btreemap!(
                     0 => scrypto_encode(&state).unwrap()
                 ),
-                BTreeMap::new(),
             )
             .unwrap();
         OwnedComponent(node_id.into())

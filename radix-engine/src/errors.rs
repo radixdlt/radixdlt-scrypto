@@ -175,7 +175,8 @@ pub enum KernelError {
 
 impl CanBeAbortion for KernelError {
     fn abortion(&self) -> Option<&AbortReason> {
-        match self { KernelError::WasmRuntimeError(err) => err.abortion(),
+        match self {
+            KernelError::WasmRuntimeError(err) => err.abortion(),
             _ => None,
         }
     }
