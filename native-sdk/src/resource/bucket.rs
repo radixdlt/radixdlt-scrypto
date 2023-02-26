@@ -48,7 +48,7 @@ pub trait SysBucket {
         Y: ClientApi<E>;
 
     fn sys_take_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        &mut self,
+        &self,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Bucket, E>
@@ -191,7 +191,7 @@ impl SysBucket for Bucket {
     }
 
     fn sys_take_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        &mut self,
+        &self,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Bucket, E>
@@ -211,11 +211,11 @@ impl SysBucket for Bucket {
     where
         Y: ClientApi<E>,
     {
-        let receiver = self.sys_resource_address(api)?;
-        let rtn = api.call_method(
-            RENodeId::GlobalResourceManager(receiver),
-            RESOURCE_MANAGER_BURN_IDENT,
-            scrypto_encode(&ResourceManagerBurnInput {
+        let rtn = api.call_function(
+            RESOURCE_MANAGER_PACKAGE,
+            RESOURCE_MANAGER_BLUEPRINT,
+            RESOURCE_MANAGER_BURN_BUCKET_IDENT,
+            scrypto_encode(&ResourceManagerBurnBucketInput {
                 bucket: Bucket(self.0),
             })
             .unwrap(),

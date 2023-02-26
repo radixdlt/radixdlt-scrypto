@@ -32,4 +32,15 @@ cp \
   ./target/wasm32-unknown-unknown/release/radiswap.abi \
   ../radiswap.abi
 
+echo "Building flash_loan..."
+(cd flash_loan; $scrypto build)
+npx wasm-opt@1.3 \
+  -Os -g \
+  --strip-debug --strip-dwarf --strip-producers \
+  -o ../flash_loan.wasm \
+  ./target/wasm32-unknown-unknown/release/flash_loan.wasm
+cp \
+  ./target/wasm32-unknown-unknown/release/flash_loan.abi \
+  ../flash_loan.abi
+
 echo "Done!"
