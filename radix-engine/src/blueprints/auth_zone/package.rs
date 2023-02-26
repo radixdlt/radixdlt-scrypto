@@ -345,7 +345,7 @@ impl AuthZoneBlueprint {
         let authorization = convert_contextless(&input.access_rule);
 
         // Authorization check
-        if !auth_zone_stack.check_auth(false, &[authorization], api)? {
+        if !auth_zone_stack.check_auth(false, &authorization, api)? {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::AuthZoneError(AuthZoneError::AssertAccessRuleFailed),
             ));
