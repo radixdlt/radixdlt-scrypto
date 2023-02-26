@@ -270,8 +270,6 @@ impl WasmerModule {
             blueprint_ident_len: u32,
             app_states_ptr: u32,
             app_states_len: u32,
-            access_rules_ptr: u32,
-            access_rules_len: u32,
             royalty_config_ptr: u32,
             royalty_config_len: u32,
             metadata_ptr: u32,
@@ -283,7 +281,6 @@ impl WasmerModule {
                 .new_component(
                     read_memory(&instance, blueprint_ident_ptr, blueprint_ident_len)?,
                     read_memory(&instance, app_states_ptr, app_states_len)?,
-                    read_memory(&instance, access_rules_ptr, access_rules_len)?,
                     read_memory(&instance, royalty_config_ptr, royalty_config_len)?,
                     read_memory(&instance, metadata_ptr, metadata_len)?,
                 )

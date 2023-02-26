@@ -39,7 +39,7 @@ pub trait Component {
 
     fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V);
     //fn add_access_check(&self, access_rules: AccessRules);
-    fn set_royalty_config(&self, royalty_config: RoyaltyConfig);
+    //fn set_royalty_config(&self, royalty_config: RoyaltyConfig);
     fn claim_royalty(&self) -> Bucket;
 
     fn package_address(&self) -> PackageAddress;
@@ -48,11 +48,31 @@ pub trait Component {
 }
 
 pub trait LocalComponent: Sized {
-    fn globalize(self) -> ComponentAddress;
 
-    fn globalize_with_access_rules(self, access_rules: AccessRules) -> ComponentAddress;
+    fn globalize_with_modules(self, access_rules: AccessRules, config: RoyaltyConfig) -> ComponentAddress;
 
-    fn globalize_with_owner_badge(self, owner_badge: NonFungibleGlobalId) -> ComponentAddress {
+    fn globalize(self) -> ComponentAddress {
+        self.globalize_with_modules(
+            AccessRules::new().default(AccessRule::AllowAll, AccessRule::DenyAll),
+            RoyaltyConfig::default()
+        )
+    }
+
+    fn globalize_with_royalty_config(self, config: RoyaltyConfig) -> ComponentAddress {
+        self.globalize_with_modules(
+            AccessRules::new().default(AccessRule::AllowAll, AccessRule::DenyAll),
+            config,
+        )
+    }
+
+    fn globalize_with_access_rules(self, access_rules: AccessRules) -> ComponentAddress {
+        self.globalize_with_modules(
+            access_rules,
+            RoyaltyConfig::default(),
+        )
+    }
+
+    fn globalize_with_owner_badge(self, owner_badge: NonFungibleGlobalId, royalty_config: RoyaltyConfig) -> ComponentAddress {
         let mut access_rules =
             AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll);
         access_rules.set_access_rule_and_mutability(
@@ -82,7 +102,7 @@ pub trait LocalComponent: Sized {
             rule!(require(owner_badge.clone())),
         );
 
-        self.globalize_with_access_rules(access_rules)
+        self.globalize_with_modules(access_rules, royalty_config)
     }
 }
 
@@ -108,17 +128,6 @@ impl Component for OwnedComponent {
                     value: value.as_ref().to_owned(),
                 })
                 .unwrap(),
-            )
-            .unwrap();
-    }
-
-    fn set_royalty_config(&self, royalty_config: RoyaltyConfig) {
-        ScryptoEnv
-            .call_module_method(
-                RENodeId::Component(self.0),
-                NodeModuleId::ComponentRoyalty,
-                COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
-                scrypto_encode(&ComponentSetRoyaltyConfigInput { royalty_config }).unwrap(),
             )
             .unwrap();
     }
@@ -151,19 +160,9 @@ impl Component for OwnedComponent {
 }
 
 impl LocalComponent for OwnedComponent {
-    fn globalize(self) -> ComponentAddress {
-        let access_rules = AccessRules::new().default(AccessRule::AllowAll, AccessRule::DenyAll);
+    fn globalize_with_modules(self, access_rules: AccessRules, config: RoyaltyConfig) -> ComponentAddress {
         ScryptoEnv
-            .globalize(
-                RENodeId::Component(self.0),
-                (access_rules, Some(RoyaltyConfig::default())),
-            )
-            .unwrap()
-    }
-
-    fn globalize_with_access_rules(self, access_rules: AccessRules) -> ComponentAddress {
-        ScryptoEnv
-            .globalize(RENodeId::Component(self.0), (access_rules, Some(RoyaltyConfig::default())))
+            .globalize(RENodeId::Component(self.0), (access_rules, Some(config)))
             .unwrap()
     }
 }
@@ -174,6 +173,17 @@ pub struct GlobalComponentRef(pub ComponentAddress);
 impl GlobalComponentRef {
     pub fn access_rules(&self) -> ComponentAccessRules {
         ComponentAccessRules::new(self.0)
+    }
+
+    pub fn set_royalty_config(&self, royalty_config: RoyaltyConfig) {
+        ScryptoEnv
+            .call_module_method(
+                RENodeId::GlobalComponent(self.0),
+                NodeModuleId::ComponentRoyalty,
+                COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+                scrypto_encode(&ComponentSetRoyaltyConfigInput { royalty_config }).unwrap(),
+            )
+            .unwrap();
     }
 }
 
@@ -196,17 +206,6 @@ impl Component for GlobalComponentRef {
                     value: value.as_ref().to_owned(),
                 })
                 .unwrap(),
-            )
-            .unwrap();
-    }
-
-    fn set_royalty_config(&self, royalty_config: RoyaltyConfig) {
-        ScryptoEnv
-            .call_module_method(
-                RENodeId::GlobalComponent(self.0),
-                NodeModuleId::ComponentRoyalty,
-                COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
-                scrypto_encode(&ComponentSetRoyaltyConfigInput { royalty_config }).unwrap(),
             )
             .unwrap();
     }
