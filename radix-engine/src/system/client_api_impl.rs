@@ -312,8 +312,6 @@ where
             RENodeModuleInit::TypeInfo(type_info_substate),
         );
 
-
-
         if let Some(_access_rules) = module_substates.remove(&(
             NodeModuleId::AccessRules,
             SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
@@ -323,9 +321,7 @@ where
 
         module_init.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::ObjectAccessRulesChain(MethodAccessRulesSubstate {
-                access_rules,
-            }),
+            RENodeModuleInit::ObjectAccessRulesChain(MethodAccessRulesSubstate { access_rules }),
         );
 
         if let Some(royalty_config) = module_substates.remove(&(

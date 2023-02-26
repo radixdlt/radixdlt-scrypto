@@ -529,9 +529,6 @@ fn generate_stubs(
             fn blueprint_name(&self) -> String {
                 self.component.blueprint_name()
             }
-            fn access_rules(&self) -> ComponentAccessRules {
-                self.component.access_rules()
-            }
         }
 
 
@@ -584,12 +581,13 @@ fn generate_stubs(
             fn blueprint_name(&self) -> String {
                 self.component.blueprint_name()
             }
-            fn access_rules(&self) -> ComponentAccessRules {
-                self.component.access_rules()
-            }
         }
 
         impl #component_ref_ident {
+            pub fn access_rules(&self) -> ComponentAccessRules {
+                self.component.access_rules()
+            }
+
             #(#methods)*
         }
     };
@@ -779,9 +777,6 @@ mod tests {
                     fn blueprint_name(&self) -> String {
                         self.component.blueprint_name()
                     }
-                    fn access_rules(&self) -> ComponentAccessRules {
-                        self.component.access_rules()
-                    }
                 }
 
                 impl ::scrypto::component::LocalComponent for TestComponent {
@@ -837,12 +832,13 @@ mod tests {
                     fn blueprint_name(&self) -> String {
                         self.component.blueprint_name()
                     }
-                    fn access_rules(&self) -> ComponentAccessRules {
-                        self.component.access_rules()
-                    }
                 }
 
                 impl TestGlobalComponentRef {
+                    pub fn access_rules(&self) -> ComponentAccessRules {
+                        self.component.access_rules()
+                    }
+
                     pub fn x(&self, arg0: u32) -> u32 {
                         self.component.call("x", scrypto_args!(arg0))
                     }
@@ -928,9 +924,6 @@ mod tests {
                     fn blueprint_name(&self) -> String {
                         self.component.blueprint_name()
                     }
-                    fn access_rules(&self) -> ComponentAccessRules {
-                        self.component.access_rules()
-                    }
                 }
 
                 impl ::scrypto::component::LocalComponent for TestComponent {
@@ -979,12 +972,12 @@ mod tests {
                     fn blueprint_name(&self) -> String {
                         self.component.blueprint_name()
                     }
-                    fn access_rules(&self) -> ComponentAccessRules {
-                        self.component.access_rules()
-                    }
                 }
 
                 impl TestGlobalComponentRef {
+                    pub fn access_rules(&self) -> ComponentAccessRules {
+                        self.component.access_rules()
+                    }
                 }
             },
         );
@@ -1071,9 +1064,6 @@ mod tests {
                     fn blueprint_name(&self) -> String {
                         self.component.blueprint_name()
                     }
-                    fn access_rules(&self) -> ComponentAccessRules {
-                        self.component.access_rules()
-                    }
                 }
 
                 impl ::scrypto::component::LocalComponent for TestComponent {
@@ -1122,12 +1112,12 @@ mod tests {
                     fn blueprint_name(&self) -> String {
                         self.component.blueprint_name()
                     }
-                    fn access_rules(&self) -> ComponentAccessRules {
-                        self.component.access_rules()
-                    }
                 }
 
                 impl TestGlobalComponentRef {
+                    pub fn access_rules(&self) -> ComponentAccessRules {
+                        self.component.access_rules()
+                    }
                 }
             },
         );

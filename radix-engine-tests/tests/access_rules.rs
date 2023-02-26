@@ -3,14 +3,12 @@ use radix_engine::system::node_modules::access_rules::AuthZoneError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::{
-    ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
-    ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
-    ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
+    ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT, ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
+    ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT, ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
 };
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
-use scrypto::component::ComponentAccessRules;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::data::{manifest_args, *};
@@ -430,7 +428,6 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
 
 struct MutableAccessRulesTestRunner {
     test_runner: TestRunner,
-    package_address: PackageAddress,
     component_address: ComponentAddress,
     initial_proofs: Vec<NonFungibleGlobalId>,
 }
@@ -456,7 +453,6 @@ impl MutableAccessRulesTestRunner {
 
         Self {
             test_runner,
-            package_address,
             component_address,
             initial_proofs: Vec::new(),
         }
@@ -522,9 +518,4 @@ impl MutableAccessRulesTestRunner {
         self.test_runner
             .execute_manifest_ignoring_fee(manifest, self.initial_proofs.clone())
     }
-}
-
-enum Call {
-    //Method,
-    Function,
 }

@@ -64,11 +64,9 @@ impl AuthModule {
             if identifier.blueprint_name.eq(PACKAGE_LOADER_BLUEPRINT)
                 && identifier.ident.eq(PACKAGE_LOADER_PUBLISH_NATIVE_IDENT)
             {
-                MethodAuthorization::Protected(HardAuthRule::ProofRule(
-                    HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
-                        AuthAddresses::system_role(),
-                    )),
-                ))
+                MethodAuthorization::Protected(HardAuthRule::ProofRule(HardProofRule::Require(
+                    HardResourceOrNonFungible::NonFungible(AuthAddresses::system_role()),
+                )))
             } else {
                 MethodAuthorization::AllowAll
             }

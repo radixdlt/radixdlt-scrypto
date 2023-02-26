@@ -44,7 +44,6 @@ pub trait Component {
 
     fn package_address(&self) -> PackageAddress;
     fn blueprint_name(&self) -> String;
-    fn access_rules(&self) -> ComponentAccessRules;
     // TODO: fn metadata<K: AsRef<str>>(&self, name: K) -> Option<String>;
 }
 
@@ -149,10 +148,6 @@ impl Component for OwnedComponent {
             .unwrap()
             .1
     }
-
-    fn access_rules(&self) -> ComponentAccessRules {
-        ComponentAccessRules::new(self.0)
-    }
 }
 
 impl LocalComponent for OwnedComponent {
@@ -160,8 +155,7 @@ impl LocalComponent for OwnedComponent {
         ScryptoEnv
             .globalize(
                 RENodeId::Component(self.0),
-                AccessRules::new()
-                    .default(AccessRule::AllowAll, AccessRule::DenyAll)
+                AccessRules::new().default(AccessRule::AllowAll, AccessRule::DenyAll),
             )
             .unwrap()
     }
@@ -175,6 +169,12 @@ impl LocalComponent for OwnedComponent {
 
 #[derive(PartialEq, Eq, Hash, Clone)]
 pub struct GlobalComponentRef(pub ComponentAddress);
+
+impl GlobalComponentRef {
+    pub fn access_rules(&self) -> ComponentAccessRules {
+        ComponentAccessRules::new(self.0)
+    }
+}
 
 impl Component for GlobalComponentRef {
     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
@@ -234,10 +234,6 @@ impl Component for GlobalComponentRef {
             .get_component_type_info(RENodeId::GlobalComponent(self.0))
             .unwrap()
             .1
-    }
-
-    fn access_rules(&self) -> ComponentAccessRules {
-        ComponentAccessRules::new(self.0)
     }
 }
 

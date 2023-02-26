@@ -4,7 +4,6 @@ use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::access_rules::MethodAccessRulesSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use native_sdk::resource::{ResourceManager, SysBucket, Vault};
@@ -692,7 +691,11 @@ impl ValidatorCreator {
 
         api.kernel_create_node(node_id, node, node_modules)?;
 
-        let address = api.globalize_with_address(node_id, Self::build_access_rules(owner_access_rule), address.into())?;
+        let address = api.globalize_with_address(
+            node_id,
+            Self::build_access_rules(owner_access_rule),
+            address.into(),
+        )?;
         Ok(address)
     }
 }

@@ -64,7 +64,7 @@ struct ComponentStateDump {
     pub owned_vaults: Option<HashSet<VaultId>>,
     pub package_address: Option<PackageAddress>, // Native components have no package address.
     pub blueprint_name: String,                  // All components have a blueprint, native or not.
-    pub access_rules: Option<AccessRules>,  // Virtual Components don't have access rules.
+    pub access_rules: Option<AccessRules>,       // Virtual Components don't have access rules.
     pub metadata: Option<BTreeMap<String, String>>,
 }
 

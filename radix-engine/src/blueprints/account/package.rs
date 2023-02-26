@@ -280,9 +280,7 @@ impl AccountNativePackage {
                     metadata: BTreeMap::new(),
                 }),
             );
-            let access_rules_substate = MethodAccessRulesSubstate {
-                access_rules,
-            };
+            let access_rules_substate = MethodAccessRulesSubstate { access_rules };
             node_modules.insert(
                 NodeModuleId::AccessRules,
                 RENodeModuleInit::ObjectAccessRulesChain(access_rules_substate),

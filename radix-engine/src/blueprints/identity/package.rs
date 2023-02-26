@@ -5,7 +5,6 @@ use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::access_rules::MethodAccessRulesSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
@@ -61,7 +60,10 @@ impl IdentityNativePackage {
 pub struct Identity;
 
 impl Identity {
-    pub fn create<Y>(access_rule: AccessRule, api: &mut Y) -> Result<(RENodeId, AccessRules), RuntimeError>
+    pub fn create<Y>(
+        access_rule: AccessRule,
+        api: &mut Y,
+    ) -> Result<(RENodeId, AccessRules), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
