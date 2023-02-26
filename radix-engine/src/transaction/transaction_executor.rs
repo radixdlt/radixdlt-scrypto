@@ -267,9 +267,18 @@ where
             let (modules, invoke_result) = kernel.teardown(invoke_result);
             let fee_reserve = modules.costing.take_fee_reserve();
             let (vault_ops, events) = modules.execution_trace.collect_events();
+            let application_events = modules.events.0;
+            let application_logs = modules.logger.0;
 
             // Finalize track
-            track.finalize(invoke_result, fee_reserve, vault_ops, events)
+            track.finalize(
+                invoke_result,
+                fee_reserve,
+                vault_ops,
+                events,
+                application_events,
+                application_logs,
+            )
         };
 
         // Finish resources usage measurement and get results

@@ -1,4 +1,3 @@
-use crate::blueprints::logger::LoggerSubstate;
 use crate::blueprints::resource::NonFungibleSubstate;
 use crate::blueprints::transaction_processor::{InstructionOutput, TransactionProcessorError};
 use crate::errors::*;
@@ -21,8 +20,10 @@ use crate::types::*;
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::crypto::hash;
+use radix_engine_interface::events::EventTypeIdentifier;
 use sbor::rust::collections::*;
 
 use super::event::TrackedEvent;
@@ -460,6 +461,8 @@ impl<'s> Track<'s> {
         mut fee_reserve: SystemLoanFeeReserve,
         vault_ops: Vec<(TraceActor, VaultId, VaultOp)>,
         events: Vec<TrackedEvent>,
+        application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
+        application_logs: Vec<(Level, String)>,
     ) -> TrackReceipt {
         // A `SuccessButFeeLoanNotRepaid` error is issued if a transaction finishes before SYSTEM_LOAN_AMOUNT is reached
         // and despite enough fee has been locked.
@@ -485,7 +488,13 @@ impl<'s> Track<'s> {
                     new_global_addresses: self.new_global_addresses,
                     loaded_substates: self.loaded_substates.into_iter().collect(),
                 };
-                finalizing_track.calculate_commit_result(invoke_result, &mut fee_summary, vault_ops)
+                finalizing_track.calculate_commit_result(
+                    invoke_result,
+                    &mut fee_summary,
+                    vault_ops,
+                    application_events,
+                    application_logs,
+                )
             }
             TransactionResultType::Reject(rejection_error) => {
                 TransactionResult::Reject(RejectResult {
@@ -578,12 +587,13 @@ impl<'s> FinalizingTrack<'s> {
         invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
         fee_summary: &mut FeeSummary,
         vault_ops: Vec<(TraceActor, VaultId, VaultOp)>,
+        application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
+        application_logs: Vec<(Level, String)>,
     ) -> TransactionResult {
         let is_success = invoke_result.is_ok();
 
         // Commit/rollback application state changes
         let mut to_persist = HashMap::new();
-        let mut application_logs = Vec::new();
         let mut next_epoch = None;
         let new_global_addresses = if is_success {
             for (id, loaded) in self.loaded_substates {
@@ -593,10 +603,6 @@ impl<'s> FinalizingTrack<'s> {
                 };
 
                 match id.2 {
-                    SubstateOffset::Logger(LoggerOffset::Logger) => {
-                        let logger: LoggerSubstate = loaded.substate.into();
-                        application_logs.extend(logger.logs);
-                    }
                     SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet) => {
                         // TODO: Use application layer events rather than state updates to get this info
                         match &loaded.metastate {
@@ -761,6 +767,7 @@ impl<'s> FinalizingTrack<'s> {
             entity_changes: EntityChanges::new(new_global_addresses),
             resource_changes: execution_trace_receipt.resource_changes,
             application_logs,
+            application_events,
             next_epoch,
         })
     }
