@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use crate::abi::*;
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::*;
@@ -49,11 +50,12 @@ pub trait Component {
 
 pub trait LocalComponent: Sized {
 
-    fn globalize_with_modules(self, access_rules: AccessRules, config: RoyaltyConfig) -> ComponentAddress;
+    fn globalize_with_modules(self, access_rules: AccessRules, metadata: BTreeMap<String, String>, config: RoyaltyConfig) -> ComponentAddress;
 
     fn globalize(self) -> ComponentAddress {
         self.globalize_with_modules(
             AccessRules::new().default(AccessRule::AllowAll, AccessRule::DenyAll),
+            BTreeMap::new(),
             RoyaltyConfig::default()
         )
     }
@@ -61,6 +63,7 @@ pub trait LocalComponent: Sized {
     fn globalize_with_royalty_config(self, config: RoyaltyConfig) -> ComponentAddress {
         self.globalize_with_modules(
             AccessRules::new().default(AccessRule::AllowAll, AccessRule::DenyAll),
+            BTreeMap::new(),
             config,
         )
     }
@@ -68,6 +71,7 @@ pub trait LocalComponent: Sized {
     fn globalize_with_access_rules(self, access_rules: AccessRules) -> ComponentAddress {
         self.globalize_with_modules(
             access_rules,
+            BTreeMap::new(),
             RoyaltyConfig::default(),
         )
     }
@@ -102,7 +106,7 @@ pub trait LocalComponent: Sized {
             rule!(require(owner_badge.clone())),
         );
 
-        self.globalize_with_modules(access_rules, royalty_config)
+        self.globalize_with_modules(access_rules, BTreeMap::new(), royalty_config)
     }
 }
 
@@ -160,9 +164,9 @@ impl Component for OwnedComponent {
 }
 
 impl LocalComponent for OwnedComponent {
-    fn globalize_with_modules(self, access_rules: AccessRules, config: RoyaltyConfig) -> ComponentAddress {
+    fn globalize_with_modules(self, access_rules: AccessRules, metadata: BTreeMap<String, String>, config: RoyaltyConfig) -> ComponentAddress {
         ScryptoEnv
-            .globalize(RENodeId::Component(self.0), (access_rules, Some(config)))
+            .globalize(RENodeId::Component(self.0), (access_rules, metadata, Some(config)))
             .unwrap()
     }
 }

@@ -182,7 +182,7 @@ where
         let component_id = scrypto_decode::<RENodeId>(&component_id)
             .map_err(WasmRuntimeError::InvalidComponentId)?;
         let modules =
-            scrypto_decode::<(AccessRules, Option<RoyaltyConfig>)>(&modules).map_err(WasmRuntimeError::InvalidValue)?;
+            scrypto_decode::<(AccessRules, BTreeMap<String, String>, Option<RoyaltyConfig>)>(&modules).map_err(WasmRuntimeError::InvalidValue)?;
 
         let component_address = self.api.globalize(
             component_id,

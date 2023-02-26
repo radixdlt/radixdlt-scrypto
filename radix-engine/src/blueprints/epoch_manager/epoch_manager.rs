@@ -197,7 +197,7 @@ impl EpochManagerBlueprint {
 
         api.globalize_with_address(
             underlying_node_id,
-            (access_rules, None),
+            (access_rules, BTreeMap::new(), None),
             address.into()
         )?;
 

@@ -17,13 +17,13 @@ pub trait ClientComponentApi<E> {
     fn globalize(
         &mut self,
         node_id: RENodeId,
-        modules: (AccessRules, Option<RoyaltyConfig>),
+        modules: (AccessRules, BTreeMap<String, String>, Option<RoyaltyConfig>),
     ) -> Result<ComponentAddress, E>;
 
     fn globalize_with_address(
         &mut self,
         node_id: RENodeId,
-        modules: (AccessRules, Option<RoyaltyConfig>),
+        modules: (AccessRules, BTreeMap<String, String>, Option<RoyaltyConfig>),
         address: Address,
     ) -> Result<ComponentAddress, E>;
 

@@ -190,7 +190,7 @@ where
 
         self.globalize_with_address(
             component_id,
-            (access_rules, None),
+            (access_rules, BTreeMap::new(), None),
             global_node_id.into(),
         )?;
 
@@ -207,7 +207,7 @@ where
 
         self.globalize_with_address(
             local_id,
-            (access_rules, None),
+            (access_rules, BTreeMap::new(), None),
             global_node_id.into(),
         )?;
 

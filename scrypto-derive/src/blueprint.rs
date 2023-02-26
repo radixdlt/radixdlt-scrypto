@@ -530,8 +530,13 @@ fn generate_stubs(
 
 
         impl ::scrypto::component::LocalComponent for #component_ident {
-            fn globalize_with_modules(self, access_rules: AccessRules, royalty_config: RoyaltyConfig) -> ComponentAddress {
-                self.component.globalize_with_modules(access_rules, royalty_config)
+            fn globalize_with_modules(
+                self,
+                access_rules: AccessRules,
+                metadata: BTreeMap<String, String>,
+                royalty_config: RoyaltyConfig,
+            ) -> ComponentAddress {
+                self.component.globalize_with_modules(access_rules, metadata, royalty_config)
             }
         }
 
@@ -767,8 +772,13 @@ mod tests {
                 }
 
                 impl ::scrypto::component::LocalComponent for TestComponent {
-                    fn globalize_with_modules(self, access_rules: AccessRules, royalty_config: RoyaltyConfig) -> ComponentAddress {
-                        self.component.globalize_with_modules(access_rules, royalty_config)
+                    fn globalize_with_modules(
+                        self,
+                        access_rules: AccessRules,
+                        metadata: BTreeMap<String, String>,
+                        royalty_config: RoyaltyConfig,
+                    ) -> ComponentAddress {
+                        self.component.globalize_with_modules(access_rules, metadata, royalty_config)
                     }
                 }
 
@@ -904,8 +914,13 @@ mod tests {
                 }
 
                 impl ::scrypto::component::LocalComponent for TestComponent {
-                    fn globalize_with_modules(self, access_rules: AccessRules, royalty_config: RoyaltyConfig) -> ComponentAddress {
-                        self.component.globalize_with_modules(access_rules, royalty_config)
+                    fn globalize_with_modules(
+                        self,
+                        access_rules: AccessRules,
+                        metadata: BTreeMap<String, String>,
+                        royalty_config: RoyaltyConfig,
+                    ) -> ComponentAddress {
+                        self.component.globalize_with_modules(access_rules, metadata, royalty_config)
                     }
                 }
 
@@ -1034,8 +1049,13 @@ mod tests {
                 }
 
                 impl ::scrypto::component::LocalComponent for TestComponent {
-                    fn globalize_with_modules(self, access_rules: AccessRules, royalty_config: RoyaltyConfig) -> ComponentAddress {
-                        self.component.globalize_with_modules(access_rules, royalty_config)
+                    fn globalize_with_modules(
+                        self,
+                        access_rules: AccessRules,
+                        metadata: BTreeMap<String, String>,
+                        royalty_config: RoyaltyConfig,
+                    ) -> ComponentAddress {
+                        self.component.globalize_with_modules(access_rules, metadata, royalty_config)
                     }
                 }
 

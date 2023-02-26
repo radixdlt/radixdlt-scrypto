@@ -617,6 +617,7 @@ impl ValidatorCreator {
         let (liquidity_token, liquidity_bucket) =
             Self::create_liquidity_token_with_initial_amount(initial_liquidity_amount, api)?;
 
+        /*
         let mut node_modules = BTreeMap::new();
         node_modules.insert(
             NodeModuleId::Metadata,
@@ -624,6 +625,7 @@ impl ValidatorCreator {
                 metadata: BTreeMap::new(),
             }),
         );
+         */
 
         let node = RENodeInit::Validator(ValidatorSubstate {
             manager,
@@ -636,10 +638,10 @@ impl ValidatorCreator {
             is_registered,
         });
 
-        api.kernel_create_node(node_id, node, node_modules)?;
+        api.kernel_create_node(node_id, node, BTreeMap::new())?;
         let address = api.globalize_with_address(
             node_id,
-            (Self::build_access_rules(owner_access_rule), None),
+            (Self::build_access_rules(owner_access_rule), BTreeMap::new(), None),
             address.into(),
         )?;
         Ok((address, liquidity_bucket))
@@ -663,13 +665,13 @@ impl ValidatorCreator {
         let unstake_nft = Self::create_unstake_nft(api)?;
         let liquidity_token = Self::create_liquidity_token(api)?;
         let mut node_modules = BTreeMap::new();
+        /*
         node_modules.insert(
             NodeModuleId::Metadata,
             RENodeModuleInit::Metadata(MetadataSubstate {
                 metadata: BTreeMap::new(),
             }),
         );
-        /*
         node_modules.insert(
             NodeModuleId::AccessRules,
             RENodeModuleInit::ObjectAccessRulesChain(MethodAccessRulesChainSubstate {
@@ -693,7 +695,7 @@ impl ValidatorCreator {
 
         let address = api.globalize_with_address(
             node_id,
-            (Self::build_access_rules(owner_access_rule), None),
+            (Self::build_access_rules(owner_access_rule), BTreeMap::new(), None),
             address.into(),
         )?;
         Ok(address)

@@ -256,7 +256,7 @@ where
                     royalty_accumulator_substate
                 ),
                  */
-                NodeModuleId::Metadata => RENodeModuleInit::Metadata(metadata_substate),
+                //NodeModuleId::Metadata => RENodeModuleInit::Metadata(metadata_substate),
                 //NodeModuleId::AccessRules => RENodeModuleInit::ObjectAccessRulesChain(auth_substate),
             ),
         )?;
@@ -267,7 +267,7 @@ where
     fn globalize(
         &mut self,
         node_id: RENodeId,
-        modules: (AccessRules, Option<RoyaltyConfig>),
+        modules: (AccessRules, BTreeMap<String, String>, Option<RoyaltyConfig>),
     ) -> Result<ComponentAddress, RuntimeError> {
         let node_type = match node_id {
             RENodeId::Component(..) => RENodeType::GlobalComponent,
@@ -287,7 +287,7 @@ where
     fn globalize_with_address(
         &mut self,
         node_id: RENodeId,
-        (access_rules, royalty_config): (AccessRules, Option<RoyaltyConfig>),
+        (access_rules, metadata, royalty_config): (AccessRules, BTreeMap<String, String>, Option<RoyaltyConfig>),
         address: Address,
     ) -> Result<ComponentAddress, RuntimeError> {
         let node = self.kernel_drop_node(node_id)?;
@@ -315,9 +315,15 @@ where
             RENodeModuleInit::TypeInfo(type_info_substate),
         );
 
+
         module_init.insert(
             NodeModuleId::AccessRules,
             RENodeModuleInit::ObjectAccessRulesChain(MethodAccessRulesSubstate { access_rules }),
+        );
+
+        module_init.insert(
+            NodeModuleId::Metadata,
+            RENodeModuleInit::Metadata(MetadataSubstate { metadata })
         );
 
         if let Some(royalty_config) = royalty_config {
@@ -338,16 +344,14 @@ where
             );
         }
 
+        /*
         if let Some(metadata) = module_substates.remove(&(
             NodeModuleId::Metadata,
             SubstateOffset::Metadata(MetadataOffset::Metadata),
         )) {
-            let metadata_substate: MetadataSubstate = metadata.into();
-            module_init.insert(
-                NodeModuleId::Metadata,
-                RENodeModuleInit::Metadata(metadata_substate),
-            );
+            panic!("Got you");
         }
+         */
 
         self.kernel_create_node(
             address.into(),
