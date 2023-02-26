@@ -21,7 +21,6 @@ use crate::types::*;
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::crypto::hash;
 use sbor::rust::collections::*;
@@ -64,7 +63,6 @@ pub struct LoadedSubstate {
 
 /// Transaction-wide states and side effects
 pub struct Track<'s> {
-    application_logs: Vec<(Level, String)>,
     substate_store: &'s dyn ReadableSubstateStore,
     loaded_substates: HashMap<SubstateId, LoadedSubstate>,
     new_global_addresses: Vec<Address>,
@@ -80,7 +78,6 @@ pub enum TrackError {
 
 pub struct TrackReceipt {
     pub fee_summary: FeeSummary,
-    //pub application_logs: Vec<(Level, String)>,
     pub result: TransactionResult,
     pub events: Vec<TrackedEvent>,
 }
@@ -93,16 +90,10 @@ pub struct PreExecutionError {
 impl<'s> Track<'s> {
     pub fn new(substate_store: &'s dyn ReadableSubstateStore) -> Self {
         Self {
-            application_logs: Vec::new(),
             substate_store,
             loaded_substates: HashMap::new(),
             new_global_addresses: Vec::new(),
         }
-    }
-
-    /// Adds a log message.
-    pub fn add_log(&mut self, level: Level, message: String) {
-        self.application_logs.push((level, message));
     }
 
     /// Returns a copy of the substate associated with the given address, if exists
