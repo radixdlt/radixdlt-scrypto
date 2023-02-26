@@ -1,6 +1,6 @@
 use super::node::{RENodeInit, RENodeModuleInit};
 use crate::errors::{KernelError, RuntimeError};
-use crate::kernel::actor::{ActorIdentifier, ExecutionMode, Actor};
+use crate::kernel::actor::{Actor, ActorIdentifier, ExecutionMode};
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;

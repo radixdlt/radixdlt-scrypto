@@ -45,7 +45,7 @@ use radix_engine_interface::blueprints::transaction_runtime::TRANSACTION_RUNTIME
 use radix_engine_interface::rule;
 use sbor::rust::mem;
 
-use super::actor::{ExecutionMode, Actor};
+use super::actor::{Actor, ExecutionMode};
 use super::call_frame::{CallFrame, RENodeVisibilityOrigin};
 use super::heap::{Heap, HeapRENode};
 use super::id_allocator::IdAllocator;
@@ -318,9 +318,6 @@ where
                 api.current_frame.remove_node(&mut api.heap, node_id)
             }
             RENodeId::Worktop => {
-                // TODO: Once `ResourceManager::burn_empty()` is available, change to:
-                // for bucket in worktop.drain() { bucket.burn_empty(); }
-
                 let mut node = api.current_frame.remove_node(&mut api.heap, node_id)?;
 
                 let substate = node

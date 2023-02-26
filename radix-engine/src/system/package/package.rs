@@ -4,7 +4,7 @@ use crate::system::kernel_modules::costing::FIXED_HIGH_FEE;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::{
-    MethodAccessRulesChainSubstate, FunctionAccessRulesSubstate,
+    FunctionAccessRulesSubstate, MethodAccessRulesChainSubstate,
 };
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::type_info::PackageCodeTypeSubstate;

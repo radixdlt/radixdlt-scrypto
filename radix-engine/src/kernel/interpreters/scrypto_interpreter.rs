@@ -22,7 +22,9 @@ use crate::system::type_info::PackageCodeTypeSubstate;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
 use radix_engine_interface::api::component::TypeInfoSubstate;
-use radix_engine_interface::api::node_modules::auth::{ACCESS_RULES_BLUEPRINT, FUNCTION_ACCESS_RULES_BLUEPRINT};
+use radix_engine_interface::api::node_modules::auth::{
+    ACCESS_RULES_BLUEPRINT, FUNCTION_ACCESS_RULES_BLUEPRINT,
+};
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
 use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_BLUEPRINT, PACKAGE_ROYALTY_BLUEPRINT,
@@ -83,7 +85,10 @@ impl ExecutableInvocation for MethodInvocation {
             }
             NodeModuleId::FunctionAccessRules => {
                 // TODO: Check if type has function access rules
-                (ACCESS_RULES_PACKAGE, FUNCTION_ACCESS_RULES_BLUEPRINT.to_string())
+                (
+                    ACCESS_RULES_PACKAGE,
+                    FUNCTION_ACCESS_RULES_BLUEPRINT.to_string(),
+                )
             }
             _ => todo!(),
         };

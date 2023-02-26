@@ -13,18 +13,18 @@ use transaction_data::*;
 use super::AccessRule;
 
 #[derive(
-Debug,
-Clone,
-PartialEq,
-Eq,
-Hash,
-Ord,
-PartialOrd,
-ScryptoSbor,
-ManifestCategorize,
-ManifestEncode,
-ManifestDecode,
-LegacyDescribe,
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    Ord,
+    PartialOrd,
+    ScryptoSbor,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
+    LegacyDescribe,
 )]
 pub struct FunctionKey {
     pub blueprint: String,
@@ -33,10 +33,7 @@ pub struct FunctionKey {
 
 impl FunctionKey {
     pub fn new(blueprint: String, ident: String) -> Self {
-        Self {
-            blueprint,
-            ident,
-        }
+        Self { blueprint, ident }
     }
 }
 
