@@ -94,7 +94,7 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
 
                             radix_engine_interface::abi::Type::Struct {
                                 name: #ident_str.to_owned(),
-                                fields: Fields::Unit,
+                                fields: radix_engine_interface::abi::Fields::Unit,
                             }
                         }
                     }
