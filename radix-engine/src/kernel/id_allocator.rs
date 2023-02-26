@@ -111,6 +111,7 @@ impl IdAllocator {
             RENodeType::GlobalAccessController => self
                 .new_access_controller_address()
                 .map(|address| RENodeId::GlobalComponent(address)),
+            RENodeType::EventStore => Ok(RENodeId::EventStore),
         }
         .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
 

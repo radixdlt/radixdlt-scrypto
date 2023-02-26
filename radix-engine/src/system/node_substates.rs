@@ -1,3 +1,4 @@
+use super::events::EventStoreSubstate;
 use super::global::GlobalSubstate;
 use super::node_modules::access_rules::AuthZoneStackSubstate;
 use super::node_modules::access_rules::ObjectAccessRulesChainSubstate;
@@ -248,6 +249,7 @@ pub enum RuntimeSubstate {
     TransactionRuntime(TransactionRuntimeSubstate),
     Account(AccountSubstate),
     AccessController(AccessControllerSubstate),
+    EventStore(EventStoreSubstate),
 
     // TODO: we may want to move some of the static info into `TypeInfo`
     // And split the "Blueprint" into fungible and non-fungible.
@@ -360,7 +362,8 @@ impl RuntimeSubstate {
             | RuntimeSubstate::NonFungibleProof(..)
             | RuntimeSubstate::Worktop(..)
             | RuntimeSubstate::Logger(..)
-            | RuntimeSubstate::TransactionRuntime(..) => {
+            | RuntimeSubstate::TransactionRuntime(..)
+            | RuntimeSubstate::EventStore(..) => {
                 panic!("Should not get here");
             }
         }
@@ -431,7 +434,8 @@ impl RuntimeSubstate {
             | RuntimeSubstate::NonFungibleProof(..)
             | RuntimeSubstate::Worktop(..)
             | RuntimeSubstate::Logger(..)
-            | RuntimeSubstate::TransactionRuntime(..) => {
+            | RuntimeSubstate::TransactionRuntime(..)
+            | RuntimeSubstate::EventStore(..) => {
                 panic!("Should not get here");
             }
         }
@@ -534,6 +538,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::TransactionRuntime(value) => SubstateRefMut::TransactionRuntime(value),
             RuntimeSubstate::Account(value) => SubstateRefMut::Account(value),
             RuntimeSubstate::AccessController(value) => SubstateRefMut::AccessController(value),
+            RuntimeSubstate::EventStore(value) => SubstateRefMut::EventStore(value),
         }
     }
 
@@ -600,6 +605,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::TransactionRuntime(value) => SubstateRef::TransactionRuntime(value),
             RuntimeSubstate::Account(value) => SubstateRef::Account(value),
             RuntimeSubstate::AccessController(value) => SubstateRef::AccessController(value),
+            RuntimeSubstate::EventStore(value) => SubstateRef::EventStore(value),
         }
     }
 
@@ -818,6 +824,12 @@ impl Into<RuntimeSubstate> for AccountSubstate {
 impl Into<RuntimeSubstate> for AccessControllerSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::AccessController(self)
+    }
+}
+
+impl Into<RuntimeSubstate> for EventStoreSubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::EventStore(self)
     }
 }
 
@@ -1065,6 +1077,16 @@ impl Into<TransactionRuntimeSubstate> for RuntimeSubstate {
     }
 }
 
+impl Into<EventStoreSubstate> for RuntimeSubstate {
+    fn into(self) -> EventStoreSubstate {
+        if let RuntimeSubstate::EventStore(substate) = self {
+            substate
+        } else {
+            panic!("Not an event store");
+        }
+    }
+}
+
 pub enum SubstateRef<'a> {
     TypeInfo(&'a TypeInfoSubstate),
     AuthZoneStack(&'a AuthZoneStackSubstate),
@@ -1106,6 +1128,7 @@ pub enum SubstateRef<'a> {
     TransactionRuntime(&'a TransactionRuntimeSubstate),
     Account(&'a AccountSubstate),
     AccessController(&'a AccessControllerSubstate),
+    EventStore(&'a EventStoreSubstate),
 }
 
 impl<'a> From<SubstateRef<'a>> for &'a VaultInfoSubstate {
@@ -1635,6 +1658,7 @@ pub enum SubstateRefMut<'a> {
     AuthZone(&'a mut AuthZoneStackSubstate),
     Account(&'a mut AccountSubstate),
     AccessController(&'a mut AccessControllerSubstate),
+    EventStore(&'a mut EventStoreSubstate),
 }
 
 impl<'a> From<SubstateRefMut<'a>> for &'a mut AuthZoneStackSubstate {

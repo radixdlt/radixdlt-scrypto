@@ -35,6 +35,7 @@ pub enum RENodeType {
     Logger,
     Account,
     AccessController,
+    EventStore,
 }
 
 #[derive(
@@ -70,6 +71,7 @@ pub enum RENodeId {
     Validator(ValidatorId),
     Account(AccountId),
     AccessController(AccessControllerId),
+    EventStore,
 }
 
 impl fmt::Debug for RENodeId {
@@ -110,6 +112,7 @@ impl fmt::Debug for RENodeId {
                 .debug_tuple("AccessController")
                 .field(&hex::encode(id))
                 .finish(),
+            Self::EventStore => write!(f, "EventStore"),
         }
     }
 }
@@ -358,6 +361,11 @@ pub enum AccessControllerOffset {
     AccessController,
 }
 
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum EventStoreOffset {
+    EventStore,
+}
+
 /// Specifies a specific Substate into a given RENode
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
 pub enum SubstateOffset {
@@ -379,6 +387,7 @@ pub enum SubstateOffset {
     TransactionRuntime(TransactionRuntimeOffset),
     Account(AccountOffset),
     AccessController(AccessControllerOffset),
+    EventStore(EventStoreOffset),
 
     // Node modules
     // TODO: align with module ID allocation?

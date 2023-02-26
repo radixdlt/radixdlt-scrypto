@@ -76,9 +76,10 @@ impl NodeMoveModule {
             | RENodeId::Clock(..)
             | RENodeId::GlobalComponent(..)
             | RENodeId::Account(..)
-            | RENodeId::AccessController(..) => Err(RuntimeError::ModuleError(
-                ModuleError::NodeMoveError(NodeMoveError::CantMoveDownstream(node_id)),
-            )),
+            | RENodeId::AccessController(..)
+            | RENodeId::EventStore => Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
+                NodeMoveError::CantMoveDownstream(node_id),
+            ))),
         }
     }
 
@@ -106,9 +107,10 @@ impl NodeMoveModule {
             | RENodeId::Validator(..)
             | RENodeId::Clock(..)
             | RENodeId::GlobalComponent(..)
-            | RENodeId::AccessController(..) => Err(RuntimeError::ModuleError(
-                ModuleError::NodeMoveError(NodeMoveError::CantMoveUpstream(node_id)),
-            )),
+            | RENodeId::AccessController(..)
+            | RENodeId::EventStore => Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
+                NodeMoveError::CantMoveUpstream(node_id),
+            ))),
         }
     }
 }
