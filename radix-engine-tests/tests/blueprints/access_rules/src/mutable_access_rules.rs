@@ -12,9 +12,9 @@ mod mutable_access_rules_component {
 
         pub fn access_rules_function(
             component_address: ComponentAddress,
-        ) -> Vec<ComponentAccessRules> {
+        ) -> ComponentAccessRules {
             let component = borrow_component!(component_address);
-            component.access_rules_chain()
+            component.access_rules()
         }
 
         pub fn access_rules_method(&self) -> Vec<ComponentAccessRules> {

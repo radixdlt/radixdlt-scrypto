@@ -2,10 +2,6 @@ use crate::abi::*;
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::*;
 use crate::*;
-use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesGetLengthInput,
-    ACCESS_RULES_GET_LENGTH_IDENT,
-};
 use radix_engine_interface::api::node_modules::metadata::{
     MetadataSetInput, METADATA_GET_IDENT, METADATA_SET_IDENT,
 };
@@ -48,17 +44,8 @@ pub trait Component {
 
     fn package_address(&self) -> PackageAddress;
     fn blueprint_name(&self) -> String;
-    fn access_rules_chain(&self) -> Vec<ComponentAccessRules>;
+    fn access_rules(&self) -> ComponentAccessRules;
     // TODO: fn metadata<K: AsRef<str>>(&self, name: K) -> Option<String>;
-
-    /*
-    /// Protects this component with owner badge
-    fn with_owner_badge(&self, ) {
-
-
-        self.add_access_check(access_rules);
-    }
-     */
 }
 
 pub trait LocalComponent: Sized {
@@ -163,21 +150,8 @@ impl Component for OwnedComponent {
             .1
     }
 
-    fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
-        let rtn = ScryptoEnv
-            .call_module_method(
-                RENodeId::Component(self.0),
-                NodeModuleId::AccessRules,
-                ACCESS_RULES_GET_LENGTH_IDENT,
-                scrypto_encode(&AccessRulesGetLengthInput {}).unwrap(),
-            )
-            .unwrap();
-
-        let length: u32 = scrypto_decode(&rtn).unwrap();
-        (0..length)
-            .into_iter()
-            .map(|id| ComponentAccessRules::new(self.0))
-            .collect()
+    fn access_rules(&self) -> ComponentAccessRules {
+        ComponentAccessRules::new(self.0)
     }
 }
 
@@ -262,20 +236,8 @@ impl Component for GlobalComponentRef {
             .1
     }
 
-    fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
-        let rtn = ScryptoEnv
-            .call_module_method(
-                RENodeId::GlobalComponent(self.0),
-                NodeModuleId::AccessRules,
-                ACCESS_RULES_GET_LENGTH_IDENT,
-                scrypto_encode(&AccessRulesGetLengthInput {}).unwrap(),
-            )
-            .unwrap();
-        let length: u32 = scrypto_decode(&rtn).unwrap();
-        (0..length)
-            .into_iter()
-            .map(|id| ComponentAccessRules::new(self.0))
-            .collect()
+    fn access_rules(&self) -> ComponentAccessRules {
+        ComponentAccessRules::new(self.0)
     }
 }
 

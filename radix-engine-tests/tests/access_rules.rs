@@ -3,7 +3,7 @@ use radix_engine::system::node_modules::access_rules::AuthZoneError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::{
-    ACCESS_RULES_GET_LENGTH_IDENT, ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
+    ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
     ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
     ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
 };
@@ -223,10 +223,6 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
 fn user_can_not_mutate_auth_on_methods_that_control_auth() {
     // Arrange
     for access_rule_key in [
-        MethodKey::new(
-            NodeModuleId::AccessRules,
-            ACCESS_RULES_GET_LENGTH_IDENT.to_string(),
-        ),
         MethodKey::new(
             NodeModuleId::AccessRules,
             ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT.to_string(),
@@ -470,26 +466,6 @@ impl MutableAccessRulesTestRunner {
         self.initial_proofs.push(initial_proof);
     }
 
-    pub fn access_rules_chain(&mut self, call: Call) -> Vec<ComponentAccessRules> {
-        let manifest = match call {
-            /*
-            Call::Method => Self::manifest_builder()
-                .call_method(self.component_address, "access_rules_method", manifest_args!())
-                .build(),
-             */
-            Call::Function => Self::manifest_builder()
-                .call_function(
-                    self.package_address,
-                    Self::BLUEPRINT_NAME,
-                    "access_rules_function",
-                    manifest_args!(self.component_address),
-                )
-                .build(),
-        };
-
-        self.execute_manifest(manifest).output(1)
-    }
-
     pub fn set_method_auth(
         &mut self,
         index: usize,
@@ -527,13 +503,6 @@ impl MutableAccessRulesTestRunner {
         let args = manifest_args!(index);
         let manifest = Self::manifest_builder()
             .call_method(self.component_address, "lock_default_auth", args)
-            .build();
-        self.execute_manifest(manifest)
-    }
-
-    pub fn deposit_funds(&mut self) -> TransactionReceipt {
-        let manifest = Self::manifest_builder()
-            .call_method(self.component_address, "deposit_funds", manifest_args!())
             .build();
         self.execute_manifest(manifest)
     }

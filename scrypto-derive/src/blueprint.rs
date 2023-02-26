@@ -529,8 +529,8 @@ fn generate_stubs(
             fn blueprint_name(&self) -> String {
                 self.component.blueprint_name()
             }
-            fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
-                self.component.access_rules_chain()
+            fn access_rules(&self) -> ComponentAccessRules {
+                self.component.access_rules()
             }
         }
 
@@ -584,8 +584,8 @@ fn generate_stubs(
             fn blueprint_name(&self) -> String {
                 self.component.blueprint_name()
             }
-            fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
-                self.component.access_rules_chain()
+            fn access_rules(&self) -> ComponentAccessRules {
+                self.component.access_rules()
             }
         }
 
@@ -779,8 +779,8 @@ mod tests {
                     fn blueprint_name(&self) -> String {
                         self.component.blueprint_name()
                     }
-                    fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
-                        self.component.access_rules_chain()
+                    fn access_rules(&self) -> ComponentAccessRules {
+                        self.component.access_rules()
                     }
                 }
 
@@ -837,8 +837,8 @@ mod tests {
                     fn blueprint_name(&self) -> String {
                         self.component.blueprint_name()
                     }
-                    fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
-                        self.component.access_rules_chain()
+                    fn access_rules(&self) -> ComponentAccessRules {
+                        self.component.access_rules()
                     }
                 }
 
@@ -928,8 +928,8 @@ mod tests {
                     fn blueprint_name(&self) -> String {
                         self.component.blueprint_name()
                     }
-                    fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
-                        self.component.access_rules_chain()
+                    fn access_rules(&self) -> ComponentAccessRules {
+                        self.component.access_rules()
                     }
                 }
 
@@ -979,8 +979,8 @@ mod tests {
                     fn blueprint_name(&self) -> String {
                         self.component.blueprint_name()
                     }
-                    fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
-                        self.component.access_rules_chain()
+                    fn access_rules(&self) -> ComponentAccessRules {
+                        self.component.access_rules()
                     }
                 }
 
@@ -1071,8 +1071,8 @@ mod tests {
                     fn blueprint_name(&self) -> String {
                         self.component.blueprint_name()
                     }
-                    fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
-                        self.component.access_rules_chain()
+                    fn access_rules(&self) -> ComponentAccessRules {
+                        self.component.access_rules()
                     }
                 }
 
@@ -1122,8 +1122,8 @@ mod tests {
                     fn blueprint_name(&self) -> String {
                         self.component.blueprint_name()
                     }
-                    fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
-                        self.component.access_rules_chain()
+                    fn access_rules(&self) -> ComponentAccessRules {
+                        self.component.access_rules()
                     }
                 }
 
