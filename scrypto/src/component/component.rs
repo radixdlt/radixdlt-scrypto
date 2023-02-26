@@ -38,10 +38,10 @@ pub trait ComponentState<T: Component + LocalComponent>: ScryptoEncode + Scrypto
 pub trait Component {
     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T;
 
-    fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V);
+    //fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V);
     //fn add_access_check(&self, access_rules: AccessRules);
     //fn set_royalty_config(&self, royalty_config: RoyaltyConfig);
-    fn claim_royalty(&self) -> Bucket;
+    //fn claim_royalty(&self) -> Bucket;
 
     fn package_address(&self) -> PackageAddress;
     fn blueprint_name(&self) -> String;
@@ -121,33 +121,6 @@ impl Component for OwnedComponent {
         scrypto_decode(&output).unwrap()
     }
 
-    fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
-        ScryptoEnv
-            .call_module_method(
-                RENodeId::Component(self.0),
-                NodeModuleId::Metadata,
-                METADATA_SET_IDENT,
-                scrypto_encode(&MetadataSetInput {
-                    key: name.as_ref().to_owned(),
-                    value: value.as_ref().to_owned(),
-                })
-                .unwrap(),
-            )
-            .unwrap();
-    }
-
-    fn claim_royalty(&self) -> Bucket {
-        let rtn = ScryptoEnv
-            .call_module_method(
-                RENodeId::Component(self.0),
-                NodeModuleId::ComponentRoyalty,
-                COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
-                scrypto_encode(&ComponentClaimRoyaltyInput {}).unwrap(),
-            )
-            .unwrap();
-        scrypto_decode(&rtn).unwrap()
-    }
-
     fn package_address(&self) -> PackageAddress {
         ScryptoEnv
             .get_component_type_info(RENodeId::Component(self.0))
@@ -189,32 +162,8 @@ impl GlobalComponentRef {
             )
             .unwrap();
     }
-}
 
-impl Component for GlobalComponentRef {
-    fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
-        let output = ScryptoEnv
-            .call_method(RENodeId::GlobalComponent(self.0.into()), method, args)
-            .unwrap();
-        scrypto_decode(&output).unwrap()
-    }
-
-    fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
-        ScryptoEnv
-            .call_module_method(
-                RENodeId::GlobalComponent(self.0),
-                NodeModuleId::Metadata,
-                METADATA_SET_IDENT,
-                scrypto_encode(&MetadataSetInput {
-                    key: name.as_ref().to_owned(),
-                    value: value.as_ref().to_owned(),
-                })
-                .unwrap(),
-            )
-            .unwrap();
-    }
-
-    fn claim_royalty(&self) -> Bucket {
+    pub fn claim_royalty(&self) -> Bucket {
         let rtn = ScryptoEnv
             .call_module_method(
                 RENodeId::GlobalComponent(self.0),
@@ -224,6 +173,30 @@ impl Component for GlobalComponentRef {
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()
+    }
+
+    pub fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
+        ScryptoEnv
+            .call_module_method(
+                RENodeId::GlobalComponent(self.0),
+                NodeModuleId::Metadata,
+                METADATA_SET_IDENT,
+                scrypto_encode(&MetadataSetInput {
+                    key: name.as_ref().to_owned(),
+                    value: value.as_ref().to_owned(),
+                })
+                    .unwrap(),
+            )
+            .unwrap();
+    }
+}
+
+impl Component for GlobalComponentRef {
+    fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
+        let output = ScryptoEnv
+            .call_method(RENodeId::GlobalComponent(self.0.into()), method, args)
+            .unwrap();
+        scrypto_decode(&output).unwrap()
     }
 
     fn package_address(&self) -> PackageAddress {

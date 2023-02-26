@@ -513,13 +513,6 @@ fn generate_stubs(
             fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
                 self.component.call(method, args)
             }
-            fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
-                self.component.set_metadata(name, value);
-            }
-            fn claim_royalty(&self) -> Bucket {
-                self.component.claim_royalty()
-            }
-
             fn package_address(&self) -> ::scrypto::model::PackageAddress {
                 self.component.package_address()
             }
@@ -563,13 +556,6 @@ fn generate_stubs(
             fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
                 self.component.call(method, args)
             }
-            fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
-                self.component.set_metadata(name, value);
-            }
-            fn claim_royalty(&self) -> Bucket {
-                self.component.claim_royalty()
-            }
-
             fn package_address(&self) -> ::scrypto::model::PackageAddress {
                 self.component.package_address()
             }
@@ -581,6 +567,14 @@ fn generate_stubs(
         impl #component_ref_ident {
             pub fn access_rules(&self) -> ComponentAccessRules {
                 self.component.access_rules()
+            }
+
+            pub fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
+                self.component.set_metadata(name, value);
+            }
+
+            pub fn claim_royalty(&self) -> Bucket {
+                self.component.claim_royalty()
             }
 
             #(#methods)*
@@ -756,13 +750,6 @@ mod tests {
                     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
                         self.component.call(method, args)
                     }
-                    fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
-                        self.component.set_metadata(name, value);
-                    }
-                    fn claim_royalty(&self) -> Bucket {
-                        self.component.claim_royalty()
-                    }
-
                     fn package_address(&self) -> ::scrypto::model::PackageAddress {
                         self.component.package_address()
                     }
@@ -809,13 +796,6 @@ mod tests {
                     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
                         self.component.call(method, args)
                     }
-                    fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
-                        self.component.set_metadata(name, value);
-                    }
-                    fn claim_royalty(&self) -> Bucket {
-                        self.component.claim_royalty()
-                    }
-
                     fn package_address(&self) -> ::scrypto::model::PackageAddress {
                         self.component.package_address()
                     }
@@ -827,6 +807,14 @@ mod tests {
                 impl TestGlobalComponentRef {
                     pub fn access_rules(&self) -> ComponentAccessRules {
                         self.component.access_rules()
+                    }
+
+                    pub fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
+                        self.component.set_metadata(name, value);
+                    }
+
+                    pub fn claim_royalty(&self) -> Bucket {
+                        self.component.claim_royalty()
                     }
 
                     pub fn x(&self, arg0: u32) -> u32 {
@@ -898,13 +886,6 @@ mod tests {
                     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
                         self.component.call(method, args)
                     }
-                    fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
-                        self.component.set_metadata(name, value);
-                    }
-                    fn claim_royalty(&self) -> Bucket {
-                        self.component.claim_royalty()
-                    }
-
                     fn package_address(&self) -> ::scrypto::model::PackageAddress {
                         self.component.package_address()
                     }
@@ -944,13 +925,6 @@ mod tests {
                     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
                         self.component.call(method, args)
                     }
-                    fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
-                        self.component.set_metadata(name, value);
-                    }
-                    fn claim_royalty(&self) -> Bucket {
-                        self.component.claim_royalty()
-                    }
-
                     fn package_address(&self) -> ::scrypto::model::PackageAddress {
                         self.component.package_address()
                     }
@@ -962,6 +936,14 @@ mod tests {
                 impl TestGlobalComponentRef {
                     pub fn access_rules(&self) -> ComponentAccessRules {
                         self.component.access_rules()
+                    }
+
+                    pub fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
+                        self.component.set_metadata(name, value);
+                    }
+
+                    pub fn claim_royalty(&self) -> Bucket {
+                        self.component.claim_royalty()
                     }
                 }
             },
@@ -1033,13 +1015,6 @@ mod tests {
                     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
                         self.component.call(method, args)
                     }
-                    fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
-                        self.component.set_metadata(name, value);
-                    }
-                    fn claim_royalty(&self) -> Bucket {
-                        self.component.claim_royalty()
-                    }
-
                     fn package_address(&self) -> ::scrypto::model::PackageAddress {
                         self.component.package_address()
                     }
@@ -1079,12 +1054,6 @@ mod tests {
                     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
                         self.component.call(method, args)
                     }
-                    fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
-                        self.component.set_metadata(name, value);
-                    }
-                    fn claim_royalty(&self) -> Bucket {
-                        self.component.claim_royalty()
-                    }
 
                     fn package_address(&self) -> ::scrypto::model::PackageAddress {
                         self.component.package_address()
@@ -1097,6 +1066,14 @@ mod tests {
                 impl TestGlobalComponentRef {
                     pub fn access_rules(&self) -> ComponentAccessRules {
                         self.component.access_rules()
+                    }
+
+                    pub fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
+                        self.component.set_metadata(name, value);
+                    }
+
+                    pub fn claim_royalty(&self) -> Bucket {
+                        self.component.claim_royalty()
                     }
                 }
             },
