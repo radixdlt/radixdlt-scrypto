@@ -2,8 +2,8 @@ use crate::ledger::*;
 use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use radix_engine_interface::abi;
-use radix_engine_interface::api::component::TypeInfoSubstate;
 use radix_engine_interface::api::types::{PackageOffset, RENodeId, SubstateId, SubstateOffset};
+use crate::system::node_modules::type_info::TypeInfoSubstate;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ExportError {

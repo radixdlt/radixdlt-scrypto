@@ -21,7 +21,6 @@ use crate::system::package::Package;
 use crate::system::type_info::PackageCodeTypeSubstate;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
-use radix_engine_interface::api::component::TypeInfoSubstate;
 use radix_engine_interface::api::node_modules::auth::{
     ACCESS_RULES_BLUEPRINT, FUNCTION_ACCESS_RULES_BLUEPRINT,
 };
@@ -36,6 +35,7 @@ use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::data::*;
 use radix_engine_interface::data::{match_schema_with_value, ScryptoValue};
+use crate::system::node_modules::type_info::TypeInfoBlueprint;
 
 use super::ScryptoRuntime;
 
@@ -55,17 +55,7 @@ impl ExecutableInvocation for MethodInvocation {
 
         let (package_address, blueprint_name) = match self.identifier.1 {
             NodeModuleId::SELF => {
-                let handle = api.kernel_lock_substate(
-                    self.identifier.0,
-                    NodeModuleId::TypeInfo,
-                    SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-                    LockFlags::read_only(),
-                )?;
-                let type_info: &TypeInfoSubstate = api.kernel_get_substate_ref(handle)?;
-                let object_info = (type_info.package_address, type_info.blueprint_name.clone());
-                api.kernel_drop_lock(handle)?;
-
-                object_info
+                TypeInfoBlueprint::get_type(self.identifier.0, api)?
             }
             NodeModuleId::Metadata => {
                 // TODO: Check if type has metadata

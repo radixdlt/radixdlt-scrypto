@@ -14,7 +14,6 @@ use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{SysBucket, SysProof};
-use radix_engine_interface::api::component::TypeInfoSubstate;
 use radix_engine_interface::api::package::{PackageCodeSubstate, PACKAGE_LOADER_BLUEPRINT};
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientComponentApi;
@@ -43,6 +42,7 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::blueprints::transaction_runtime::TRANSACTION_RUNTIME_BLUEPRINT;
 use radix_engine_interface::rule;
 use sbor::rust::mem;
+use crate::system::node_modules::type_info::TypeInfoSubstate;
 
 use super::actor::{Actor, ExecutionMode};
 use super::call_frame::{CallFrame, RENodeVisibilityOrigin};
@@ -739,6 +739,7 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: AUTH_ZONE_PACKAGE,
                         blueprint_name: AUTH_ZONE_BLUEPRINT.to_string(),
+                        global: false,
                     }),
                 );
             }
@@ -748,6 +749,7 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: TRANSACTION_RUNTIME_PACKAGE,
                         blueprint_name: TRANSACTION_RUNTIME_BLUEPRINT.to_string(),
+                        global: false,
                     }),
                 );
             }
@@ -757,6 +759,7 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: LOGGER_PACKAGE,
                         blueprint_name: LOGGER_BLUEPRINT.to_string(),
+                        global: false,
                     }),
                 );
             }
@@ -766,6 +769,7 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: RESOURCE_MANAGER_PACKAGE,
                         blueprint_name: WORKTOP_BLUEPRINT.to_string(),
+                        global: false,
                     }),
                 );
             }
@@ -776,6 +780,7 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: RESOURCE_MANAGER_PACKAGE,
                         blueprint_name: BUCKET_BLUEPRINT.to_string(),
+                        global: false,
                     }),
                 );
             }
@@ -786,6 +791,7 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: RESOURCE_MANAGER_PACKAGE,
                         blueprint_name: PROOF_BLUEPRINT.to_string(),
+                        global: false,
                     }),
                 );
             }
@@ -796,6 +802,7 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: RESOURCE_MANAGER_PACKAGE,
                         blueprint_name: VAULT_BLUEPRINT.to_string(),
+                        global: false,
                     }),
                 );
             }
@@ -805,6 +812,7 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: PACKAGE_LOADER,
                         blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+                        global: true,
                     }),
                 );
             }
@@ -814,6 +822,7 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: RESOURCE_MANAGER_PACKAGE,
                         blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                        global: true,
                     }),
                 );
             }
@@ -823,6 +832,7 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: EPOCH_MANAGER_PACKAGE,
                         blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
+                        global: false,
                     }),
                 );
             }
@@ -832,6 +842,7 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: EPOCH_MANAGER_PACKAGE,
                         blueprint_name: VALIDATOR_BLUEPRINT.to_string(),
+                        global: false,
                     }),
                 );
             }
@@ -841,6 +852,7 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: CLOCK_PACKAGE,
                         blueprint_name: CLOCK_BLUEPRINT.to_string(),
+                        global: false,
                     }),
                 );
             }
@@ -850,6 +862,7 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: IDENTITY_PACKAGE,
                         blueprint_name: IDENTITY_BLUEPRINT.to_string(),
+                        global: false,
                     }),
                 );
             }
@@ -859,6 +872,7 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: ACCESS_CONTROLLER_PACKAGE,
                         blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
+                        global: false,
                     }),
                 );
             }
@@ -868,6 +882,7 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: ACCOUNT_PACKAGE,
                         blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
+                        global: false,
                     }),
                 );
             }

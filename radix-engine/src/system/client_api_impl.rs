@@ -18,7 +18,7 @@ use crate::wasm::WasmEngine;
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate,
-    KeyValueStoreEntrySubstate, TypeInfoSubstate,
+    KeyValueStoreEntrySubstate,
 };
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::substate_api::LockFlags;
@@ -34,6 +34,7 @@ use radix_engine_interface::data::model::Own;
 use radix_engine_interface::data::*;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 
 impl<'g, 's, W> ClientNodeApi<RuntimeError> for Kernel<'g, 's, W>
 where
@@ -235,7 +236,7 @@ where
             RENodeInit::Component(ComponentStateSubstate::new(abi_enforced_app_substate)),
             btreemap!(
                 NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(
-                    TypeInfoSubstate::new(package_address, blueprint_ident.to_string())
+                    TypeInfoSubstate::new(package_address, blueprint_ident.to_string(), false)
                 ),
             ),
         )?;
@@ -292,7 +293,8 @@ where
                 SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
             ))
             .unwrap();
-        let type_info_substate: TypeInfoSubstate = type_info.into();
+        let mut type_info_substate: TypeInfoSubstate = type_info.into();
+        type_info_substate.global = true;
         module_init.insert(
             NodeModuleId::TypeInfo,
             RENodeModuleInit::TypeInfo(type_info_substate),
@@ -364,18 +366,7 @@ where
         &mut self,
         node_id: RENodeId,
     ) -> Result<(PackageAddress, String), RuntimeError> {
-        // TODO: Use Node Module method instead of direct access
-        let handle = self.kernel_lock_substate(
-            node_id,
-            NodeModuleId::TypeInfo,
-            SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-            LockFlags::read_only(),
-        )?;
-        let info: &TypeInfoSubstate = self.kernel_get_substate_ref(handle)?;
-        let package_address = info.package_address;
-        let blueprint_ident = info.blueprint_name.clone();
-        self.kernel_drop_lock(handle)?;
-        Ok((package_address, blueprint_ident))
+        TypeInfoBlueprint::get_type(node_id, self)
     }
 
     fn new_key_value_store(&mut self) -> Result<KeyValueStoreId, RuntimeError> {

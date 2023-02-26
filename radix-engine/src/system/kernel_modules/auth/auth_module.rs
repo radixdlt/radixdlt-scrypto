@@ -12,7 +12,7 @@ use crate::system::node_modules::access_rules::{
     MethodAccessRulesSubstate,
 };
 use crate::types::*;
-use radix_engine_interface::api::component::{ComponentStateSubstate, TypeInfoSubstate};
+use radix_engine_interface::api::component::{ComponentStateSubstate};
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::package::{
     PackageInfoSubstate, PACKAGE_LOADER_BLUEPRINT, PACKAGE_LOADER_PUBLISH_NATIVE_IDENT,
@@ -24,6 +24,7 @@ use radix_engine_interface::api::types::{
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
 use transaction::model::AuthZoneParams;
+use crate::system::node_modules::type_info::TypeInfoBlueprint;
 
 use super::auth_converter::convert_contextless;
 use super::method_authorization::MethodAuthorization;
@@ -241,17 +242,8 @@ impl AuthModule {
         api: &mut Y,
     ) -> Result<MethodAuthorization, RuntimeError> {
         let schema = {
-            let handle = api.kernel_lock_substate(
-                receiver,
-                NodeModuleId::TypeInfo,
-                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-                LockFlags::read_only(),
-            )?;
-            let info: &TypeInfoSubstate = api.kernel_get_substate_ref(handle)?;
-            let package_address = info.package_address.clone();
-            let blueprint_ident = info.blueprint_name.clone();
+            let (package_address, blueprint_ident) = TypeInfoBlueprint::get_type(receiver, api)?;
 
-            api.kernel_drop_lock(handle)?;
             let handle = api.kernel_lock_substate(
                 RENodeId::GlobalPackage(package_address),
                 NodeModuleId::SELF,

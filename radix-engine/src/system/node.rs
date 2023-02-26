@@ -20,6 +20,7 @@ use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::resource::LiquidNonFungibleResource;
 use radix_engine_interface::blueprints::resource::LockedFungibleResource;
 use radix_engine_interface::blueprints::resource::LockedNonFungibleResource;
+use crate::system::node_modules::type_info::TypeInfoSubstate;
 
 #[derive(Debug)]
 pub enum RENodeModuleInit {
