@@ -205,7 +205,6 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
         MutableAccessRulesTestRunner::manifest_builder()
             .set_method_access_rule(
                 Address::Component(test_runner.component_address),
-                0,
                 MethodKey::new(NodeModuleId::SELF, "borrow_funds".to_string()),
                 rule!(deny_all),
             )
@@ -268,7 +267,6 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
             MutableAccessRulesTestRunner::manifest_builder()
                 .set_method_access_rule(
                     Address::Component(test_runner.component_address),
-                    1,
                     access_rule_key,
                     rule!(deny_all),
                 )

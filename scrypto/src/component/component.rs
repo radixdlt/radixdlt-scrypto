@@ -176,7 +176,7 @@ impl Component for OwnedComponent {
         let length: u32 = scrypto_decode(&rtn).unwrap();
         (0..length)
             .into_iter()
-            .map(|id| ComponentAccessRules::new(self.0, id))
+            .map(|id| ComponentAccessRules::new(self.0))
             .collect()
     }
 }
@@ -274,7 +274,7 @@ impl Component for GlobalComponentRef {
         let length: u32 = scrypto_decode(&rtn).unwrap();
         (0..length)
             .into_iter()
-            .map(|id| ComponentAccessRules::new(self.0, id))
+            .map(|id| ComponentAccessRules::new(self.0))
             .collect()
     }
 }

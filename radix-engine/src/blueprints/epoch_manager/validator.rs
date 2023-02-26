@@ -428,7 +428,6 @@ impl ValidatorBlueprint {
             NodeModuleId::AccessRules,
             ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
             scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                index: 0u32,
                 key: MethodKey::new(NodeModuleId::SELF, VALIDATOR_STAKE_IDENT.to_string()),
                 rule,
             })

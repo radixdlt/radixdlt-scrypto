@@ -517,13 +517,11 @@ impl ManifestBuilder {
     pub fn set_method_access_rule(
         &mut self,
         entity_address: Address,
-        index: u32,
         key: MethodKey,
         rule: AccessRule,
     ) -> &mut Self {
         self.add_instruction(Instruction::SetMethodAccessRule {
             entity_address: from_address(entity_address),
-            index,
             key,
             rule,
         })

@@ -756,7 +756,6 @@ where
             NodeModuleId::AccessRules,
             ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
             scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
-                index: 0,
                 name: group_name.into(),
                 rule: access_rule.clone(),
             })
@@ -771,7 +770,6 @@ where
                     NodeModuleId::AccessRules,
                     ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                     scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                        index: 0,
                         key: method_key.clone(),
                         rule: AccessRuleEntry::AccessRule(access_rule.clone()),
                     })

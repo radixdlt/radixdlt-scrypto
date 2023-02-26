@@ -708,7 +708,6 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 }
                 Instruction::SetMethodAccessRule {
                     entity_address,
-                    index,
                     key,
                     rule,
                 } => {
@@ -719,7 +718,6 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         NodeModuleId::AccessRules,
                         ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                         scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                            index: index.clone(),
                             key: key.clone(),
                             rule: AccessRuleEntry::AccessRule(rule.clone()),
                         })
