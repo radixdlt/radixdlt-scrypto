@@ -96,6 +96,12 @@ pub trait WasmRuntime {
         &mut self,
         size: usize,
     ) -> Result<(), InvokeError<WasmRuntimeError>>;
+
+    fn emit_event(
+        &mut self,
+        schema_hash: Vec<u8>,
+        event: Vec<u8>,
+    ) -> Result<(), InvokeError<WasmRuntimeError>>;
 }
 
 /// Represents an instantiated, invokable Scrypto module.

@@ -6,12 +6,14 @@ use crate::wasm::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
+use radix_engine_interface::api::ClientEventsApi;
 use radix_engine_interface::api::{
     ClientActorApi, ClientComponentApi, ClientNodeApi, ClientPackageApi, ClientSubstateApi,
     ClientUnsafeApi,
 };
 use radix_engine_interface::blueprints::resource::AccessRules;
 use sbor::rust::vec::Vec;
+use utils::copy_u8_array;
 
 /// A shim between ClientApi and WASM, with buffer capability.
 pub struct ScryptoRuntime<'y, Y>
@@ -53,7 +55,8 @@ where
         + ClientSubstateApi<RuntimeError>
         + ClientPackageApi<RuntimeError>
         + ClientComponentApi<RuntimeError>
-        + ClientActorApi<RuntimeError>,
+        + ClientActorApi<RuntimeError>
+        + ClientEventsApi<RuntimeError>,
 {
     fn allocate_buffer(
         &mut self,
@@ -300,6 +303,16 @@ where
             .update_wasm_memory_usage(size)
             .map_err(InvokeError::downstream)
     }
+
+    fn emit_event(
+        &mut self,
+        schema_hash: Vec<u8>,
+        event: Vec<u8>,
+    ) -> Result<(), InvokeError<WasmRuntimeError>> {
+        self.api
+            .emit_raw_event(Hash(copy_u8_array(&schema_hash)), event)?;
+        Ok(())
+    }
 }
 
 /// A `Nop` runtime accepts any external function calls by doing nothing and returning void.
@@ -438,6 +451,14 @@ impl WasmRuntime for NopWasmRuntime {
     fn update_wasm_memory_usage(
         &mut self,
         size: usize,
+    ) -> Result<(), InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn emit_event(
+        &mut self,
+        schema_hash: Vec<u8>,
+        event: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }

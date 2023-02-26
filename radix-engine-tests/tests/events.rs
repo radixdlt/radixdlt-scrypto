@@ -65,3 +65,25 @@ fn locking_event_store_immutably_from_scrypto_fails() {
         )
     });
 }
+
+#[test]
+fn can_emit_basic_event_from_scrypto() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().without_trace().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/events");
+
+    let manifest = ManifestBuilder::new()
+        .call_function(
+            package_address,
+            "EventStoreVisibility",
+            "emit_event",
+            manifest_args!(12u64),
+        )
+        .build();
+
+    // Act
+    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+
+    // Assert
+    println!("{:?}", receipt);
+}

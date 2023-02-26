@@ -388,61 +388,76 @@ where
         &mut self,
         event: T,
     ) -> Result<(), RuntimeError> {
+        let schema_hash = scrypto_encode(&T::describe())
+            .map_err(|_| {
+                RuntimeError::ApplicationError(ApplicationError::EventError(
+                    EventError::FailedToSborEncodeEventSchema,
+                ))
+            })
+            .map(|encoded| hash(encoded))?;
+        let event_data = scrypto_encode(&event).map_err(|_| {
+            RuntimeError::ApplicationError(ApplicationError::EventError(
+                EventError::FailedToSborEncodeEvent,
+            ))
+        })?;
+
+        self.emit_raw_event(schema_hash, event_data)
+    }
+
+    fn emit_raw_event(
+        &mut self,
+        schema_hash: Hash,
+        event_data: Vec<u8>,
+    ) -> Result<(), RuntimeError> {
         // Costing event emission.
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
 
-        if let Some(ResolvedActor {
-            receiver:
-                Some(ResolvedReceiver {
-                    receiver: MethodReceiver(node_id, node_module_id),
-                    ..
-                }),
-            ..
-        }) = self.kernel_get_current_actor()
-        {
-            let event_type_identifier = {
-                let schema_hash = scrypto_encode(&T::describe())
-                    .map_err(|_| {
-                        RuntimeError::ApplicationError(ApplicationError::EventError(
-                            EventError::FailedToSborEncodeEventSchema,
-                        ))
-                    })
-                    .map(|encoded| hash(encoded))?;
-                EventTypeIdentifier(node_id, node_module_id, schema_hash)
-            };
-            let event_data = scrypto_encode(&event).map_err(|_| {
-                RuntimeError::ApplicationError(ApplicationError::EventError(
-                    EventError::FailedToSborEncodeEvent,
-                ))
-            })?;
-
-            // TODO: Validate that the event schema matches that given by the event schema hash.
-            // Need to wait for David's PR for schema validation and move away from LegacyDescribe
-            // over to new Describe.
-
-            // NOTE: We need to ensure that the event being emitted is an SBOR struct or an enum,
-            // this is not done here, this should be done at event registration time. Thus, if the
-            // event has been successfully registered, it can be emitted (from a schema POV).
-
-            // Adding the event to the event store
-            {
-                let handle = self.kernel_lock_substate(
-                    RENodeId::EventStore,
-                    NodeModuleId::SELF,
-                    SubstateOffset::EventStore(EventStoreOffset::EventStore),
-                    LockFlags::MUTABLE,
-                )?;
-                let event_store = self.kernel_get_substate_ref_mut::<EventStoreSubstate>(handle)?;
-                event_store.0.push((event_type_identifier, event_data));
-                self.kernel_drop_lock(handle)?;
-            }
-
-            Ok(())
-        } else {
-            Err(RuntimeError::ApplicationError(
+        let event_type_id = match self.kernel_get_current_actor() {
+            Some(ResolvedActor {
+                receiver:
+                    Some(ResolvedReceiver {
+                        receiver: MethodReceiver(node_id, node_module_id),
+                        ..
+                    }),
+                ..
+            }) => Ok(EventTypeIdentifier(node_id, node_module_id, schema_hash)),
+            Some(ResolvedActor {
+                identifier: FnIdentifier {
+                    package_address, ..
+                },
+                ..
+            }) => Ok(EventTypeIdentifier(
+                RENodeId::GlobalPackage(package_address),
+                NodeModuleId::SELF,
+                schema_hash,
+            )),
+            _ => Err(RuntimeError::ApplicationError(
                 ApplicationError::EventError(EventError::InvalidActor),
-            ))
-        }
+            )),
+        }?;
+
+        // TODO: Validate that the event schema matches that given by the event schema hash.
+        // Need to wait for David's PR for schema validation and move away from LegacyDescribe
+        // over to new Describe.
+
+        // NOTE: We need to ensure that the event being emitted is an SBOR struct or an enum,
+        // this is not done here, this should be done at event registration time. Thus, if the
+        // event has been successfully registered, it can be emitted (from a schema POV).
+
+        // Adding the event to the event store
+        {
+            let handle = self.kernel_lock_substate(
+                RENodeId::EventStore,
+                NodeModuleId::SELF,
+                SubstateOffset::EventStore(EventStoreOffset::EventStore),
+                LockFlags::MUTABLE,
+            )?;
+            let event_store = self.kernel_get_substate_ref_mut::<EventStoreSubstate>(handle)?;
+            event_store.0.push((event_type_id, event_data));
+            self.kernel_drop_lock(handle)?;
+        };
+
+        Ok(())
     }
 }
 
