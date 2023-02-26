@@ -64,7 +64,7 @@ struct ComponentStateDump {
     pub owned_vaults: Option<HashSet<VaultId>>,
     pub package_address: Option<PackageAddress>, // Native components have no package address.
     pub blueprint_name: String,                  // All components have a blueprint, native or not.
-    pub access_rules: Option<Vec<AccessRules>>,  // Virtual Components don't have access rules.
+    pub access_rules: Option<AccessRules>,  // Virtual Components don't have access rules.
     pub metadata: Option<BTreeMap<String, String>>,
 }
 
@@ -120,7 +120,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
             let raw_state = IndexedScryptoValue::from_slice(&state.raw).unwrap();
             let package_address = component_info_substate.package_address;
             let blueprint_name = component_info_substate.blueprint_name;
-            let access_rules = access_rules_chain_substate.access_rules_chain;
+            let access_rules = access_rules_chain_substate.access_rules;
             let metadata = metadata_substate.metadata;
 
             // Find all vaults owned by the component, assuming a tree structure.
@@ -207,7 +207,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 owned_vaults: Some(vaults),
                 package_address: None, // No package address for native components (yet).
                 blueprint_name: "Account".into(),
-                access_rules: Some(access_rules_chain_substate.access_rules_chain),
+                access_rules: Some(access_rules_chain_substate.access_rules),
                 metadata: None,
             }
         }
@@ -247,7 +247,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 owned_vaults: None,
                 package_address: None, // No package address for native components (yet).
                 blueprint_name: "Identity".into(),
-                access_rules: Some(access_rules_chain_substate.access_rules_chain),
+                access_rules: Some(access_rules_chain_substate.access_rules),
                 metadata: Some(metadata_substate.metadata),
             }
         }
@@ -276,7 +276,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 owned_vaults: Some([access_controller_substate.controlled_asset].into()),
                 package_address: None, // No package address for native components (yet).
                 blueprint_name: "AccessController".into(),
-                access_rules: Some(access_rules_chain_substate.access_rules_chain),
+                access_rules: Some(access_rules_chain_substate.access_rules),
                 metadata: None,
             }
         }
@@ -311,12 +311,10 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
 
     if let Some(access_rules) = component_state_dump.access_rules {
         writeln!(output, "{}", "Access Rules".green().bold());
-        for (_, auth) in access_rules.iter().identify_last() {
-            for (last, (k, v)) in auth.get_all_method_auth().iter().identify_last() {
-                writeln!(output, "{} {:?} => {:?}", list_item_prefix(last), k, v);
-            }
-            writeln!(output, "Default: {:?}", auth.get_default());
+        for (last, (k, v)) in access_rules.get_all_method_auth().iter().identify_last() {
+            writeln!(output, "{} {:?} => {:?}", list_item_prefix(last), k, v);
         }
+        writeln!(output, "Default: {:?}", access_rules.get_default());
     }
 
     if let Some(raw_state) = component_state_dump.raw_state {

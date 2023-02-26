@@ -10,7 +10,7 @@ use crate::kernel::module::KernelModule;
 use crate::kernel::module_mixer::KernelModuleMixer;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::access_rules::MethodAccessRulesChainSubstate;
+use crate::system::node_modules::access_rules::MethodAccessRulesSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
@@ -210,7 +210,6 @@ where
         &mut self,
         blueprint_ident: &str,
         app_states: BTreeMap<u8, Vec<u8>>,
-        access_rules_chain: Vec<AccessRules>,
         royalty_config: RoyaltyConfig,
         metadata: BTreeMap<String, String>,
     ) -> Result<ComponentId, RuntimeError> {
@@ -228,9 +227,6 @@ where
 
         // Create metadata substates
         let metadata_substate = MetadataSubstate { metadata };
-
-        // Create auth substates
-        let _auth_substate = MethodAccessRulesChainSubstate { access_rules_chain };
 
         // Create component RENode
         // FIXME: support native blueprints
@@ -327,8 +323,8 @@ where
 
         module_init.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::ObjectAccessRulesChain(MethodAccessRulesChainSubstate {
-                access_rules_chain: vec![access_rules],
+            RENodeModuleInit::ObjectAccessRulesChain(MethodAccessRulesSubstate {
+                access_rules,
             }),
         );
 

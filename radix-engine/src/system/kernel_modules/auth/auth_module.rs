@@ -9,7 +9,7 @@ use crate::system::kernel_modules::auth::convert;
 use crate::system::node::RENodeInit;
 use crate::system::node_modules::access_rules::{
     AccessRulesNativePackage, AuthZoneStackSubstate, FunctionAccessRulesSubstate,
-    MethodAccessRulesChainSubstate,
+    MethodAccessRulesSubstate,
 };
 use crate::types::*;
 use radix_engine_interface::api::component::{ComponentStateSubstate, TypeInfoSubstate};
@@ -180,7 +180,7 @@ impl AuthModule {
                             LockFlags::read_only(),
                         )?;
 
-                        let substate: &MethodAccessRulesChainSubstate =
+                        let substate: &MethodAccessRulesSubstate =
                             api.kernel_get_substate_ref(handle)?;
 
                         // TODO: Do we want to allow recaller to be able to withdraw from
@@ -189,7 +189,7 @@ impl AuthModule {
                             && (method_key.ident.eq(VAULT_RECALL_IDENT)
                                 || method_key.ident.eq(VAULT_RECALL_NON_FUNGIBLES_IDENT))
                         {
-                            let access_rule = substate.access_rules_chain[0].get_group("recall");
+                            let access_rule = substate.access_rules.get_group("recall");
                             let authorization = convert_contextless(access_rule);
                             vec![authorization]
                         } else {
@@ -293,13 +293,11 @@ impl AuthModule {
             SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
             LockFlags::read_only(),
         )?;
-        let access_rules: &MethodAccessRulesChainSubstate = api.kernel_get_substate_ref(handle)?;
+        let access_rules: &MethodAccessRulesSubstate = api.kernel_get_substate_ref(handle)?;
 
-        for auth in &access_rules.access_rules_chain {
-            let method_auth = auth.get(&key);
-            let authorization = convert(&schema, &state, method_auth);
-            authorizations.push(authorization);
-        }
+        let method_auth = access_rules.access_rules.get(&key);
+        let authorization = convert(&schema, &state, method_auth);
+        authorizations.push(authorization);
 
         api.kernel_drop_lock(handle)?;
 
@@ -318,16 +316,14 @@ impl AuthModule {
             SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
             LockFlags::read_only(),
         )?;
-        let access_rules: &MethodAccessRulesChainSubstate = api.kernel_get_substate_ref(handle)?;
+        let access_rules: &MethodAccessRulesSubstate = api.kernel_get_substate_ref(handle)?;
 
         let mut authorizations = Vec::new();
-        for auth in &access_rules.access_rules_chain {
-            let method_auth = auth.get(&key);
+        let method_auth = access_rules.access_rules.get(&key);
 
-            // TODO: Remove
-            let authorization = convert_contextless(method_auth);
-            authorizations.push(authorization);
-        }
+        // TODO: Remove
+        let authorization = convert_contextless(method_auth);
+        authorizations.push(authorization);
 
         api.kernel_drop_lock(handle)?;
 

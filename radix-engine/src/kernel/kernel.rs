@@ -20,7 +20,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientComponentApi;
 // TODO: clean this up!
 use crate::kernel::kernel_api::TemporaryResolvedInvocation;
-use crate::system::node_modules::access_rules::MethodAccessRulesChainSubstate;
+use crate::system::node_modules::access_rules::MethodAccessRulesSubstate;
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, LockHandle, ProofOffset, RENodeId, SubstateId, SubstateOffset,
     WorktopOffset,

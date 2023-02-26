@@ -23,12 +23,10 @@ impl ClientComponentApi<ClientApiError> for ScryptoEnv {
         &mut self,
         blueprint_ident: &str,
         app_states: BTreeMap<u8, Vec<u8>>,
-        access_rules_chain: Vec<AccessRules>,
         royalty_config: RoyaltyConfig,
         metadata: BTreeMap<String, String>,
     ) -> Result<ComponentId, ClientApiError> {
         let app_states = scrypto_encode(&app_states).unwrap();
-        let access_rules_chain = scrypto_encode(&access_rules_chain).unwrap();
         let royalty_config = scrypto_encode(&royalty_config).unwrap();
         let metadata = scrypto_encode(&metadata).unwrap();
 
@@ -38,8 +36,6 @@ impl ClientComponentApi<ClientApiError> for ScryptoEnv {
                 blueprint_ident.len(),
                 app_states.as_ptr(),
                 app_states.len(),
-                access_rules_chain.as_ptr(),
-                access_rules_chain.len(),
                 royalty_config.as_ptr(),
                 royalty_config.len(),
                 metadata.as_ptr(),

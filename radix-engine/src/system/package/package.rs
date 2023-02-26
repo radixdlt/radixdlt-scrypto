@@ -4,7 +4,7 @@ use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_MEDIUM_FEE};
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::{
-    FunctionAccessRulesSubstate, MethodAccessRulesChainSubstate,
+    FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::type_info::PackageCodeTypeSubstate;
@@ -98,8 +98,8 @@ impl Package {
         let metadata_substate = MetadataSubstate {
             metadata: input.metadata,
         };
-        let access_rules = MethodAccessRulesChainSubstate {
-            access_rules_chain: vec![input.access_rules],
+        let access_rules = MethodAccessRulesSubstate {
+            access_rules: input.access_rules,
         };
 
         let mut node_modules = BTreeMap::new();
@@ -183,8 +183,8 @@ impl Package {
         let metadata_substate = MetadataSubstate {
             metadata: input.metadata,
         };
-        let access_rules = MethodAccessRulesChainSubstate {
-            access_rules_chain: vec![input.access_rules],
+        let access_rules = MethodAccessRulesSubstate {
+            access_rules: input.access_rules,
         };
 
         // TODO: Can we trust developers enough to add protection for

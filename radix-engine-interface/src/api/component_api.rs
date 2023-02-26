@@ -9,7 +9,6 @@ pub trait ClientComponentApi<E> {
         &mut self,
         blueprint_ident: &str,
         app_states: BTreeMap<u8, Vec<u8>>,
-        access_rules_chain: Vec<AccessRules>,
         royalty_config: RoyaltyConfig,
         metadata: BTreeMap<String, String>,
     ) -> Result<ComponentId, E>;

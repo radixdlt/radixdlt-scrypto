@@ -44,7 +44,6 @@ pub trait WasmRuntime {
         &mut self,
         blueprint_ident: Vec<u8>,
         app_states: Vec<u8>,
-        access_rules_chain: Vec<u8>,
         royalty_config: Vec<u8>,
         metadata: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
