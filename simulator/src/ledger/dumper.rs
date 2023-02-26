@@ -5,6 +5,7 @@ use radix_engine::blueprints::resource::{NonFungibleSubstate, ResourceManagerSub
 use radix_engine::ledger::*;
 use radix_engine::system::node_modules::metadata::MetadataSubstate;
 use radix_engine::types::*;
+use radix_engine_interface::address::AddressDisplayContext;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::package::PackageCodeSubstate;
 use radix_engine_interface::api::types::RENodeId;
@@ -142,6 +143,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                     _ => None,
                 })
                 .collect();
+
             while !queue.is_empty() {
                 let kv_store_id = queue.pop_front().unwrap();
                 let (maps, vaults) =
@@ -362,10 +364,10 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
     let map = substate_store.get_kv_store_entries(kv_store_id);
     writeln!(
         output,
-        "{}: {:?}{:?}",
+        "{}: {}, {}",
         "Key Value Store".green().bold(),
-        component_address,
-        kv_store_id
+        component_address.to_string(AddressDisplayContext::with_encoder(&bech32_encoder)),
+        hex::encode(kv_store_id)
     );
     for (last, (_hash, substate)) in map.iter().identify_last() {
         let substate = substate.clone().to_runtime();
@@ -436,8 +438,8 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             .map(|s| s.to_runtime().into());
         let metadata = metadata.ok_or(DisplayError::ResourceManagerNotFound)?;
 
-        //  Dump liquid resource
-        if vault_info.resource_type.is_fungible() {
+        // DUMP resource
+        let amount = if vault_info.resource_type.is_fungible() {
             let vault: LiquidFungibleResource = substate_store
                 .get_substate(&SubstateId(
                     RENodeId::Vault(*vault_id),
@@ -447,26 +449,39 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                 .map(|s| s.substate)
                 .map(|s| s.into())
                 .unwrap();
-
-            let amount = vault.amount();
-            writeln!(
-                output,
-                "{} {{ amount: {}, resource address: {}{}{} }}",
-                list_item_prefix(last),
-                amount,
-                resource_address.display(&bech32_encoder),
-                metadata
-                    .metadata
-                    .get("name")
-                    .map(|name| format!(", name: \"{}\"", name))
-                    .unwrap_or(String::new()),
-                metadata
-                    .metadata
-                    .get("symbol")
-                    .map(|symbol| format!(", symbol: \"{}\"", symbol))
-                    .unwrap_or(String::new()),
-            );
+            vault.amount()
         } else {
+            let vault: LiquidNonFungibleResource = substate_store
+                .get_substate(&SubstateId(
+                    RENodeId::Vault(*vault_id),
+                    NodeModuleId::SELF,
+                    SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
+                ))
+                .map(|s| s.substate)
+                .map(|s| s.into())
+                .unwrap();
+            vault.amount()
+        };
+        writeln!(
+            output,
+            "{} {{ amount: {}, resource address: {}{}{} }}",
+            list_item_prefix(last),
+            amount,
+            resource_address.display(&bech32_encoder),
+            metadata
+                .metadata
+                .get("name")
+                .map(|name| format!(", name: \"{}\"", name))
+                .unwrap_or(String::new()),
+            metadata
+                .metadata
+                .get("symbol")
+                .map(|symbol| format!(", symbol: \"{}\"", symbol))
+                .unwrap_or(String::new()),
+        );
+
+        // DUMP non-fungibles
+        if !vault_info.resource_type.is_fungible() {
             let vault: LiquidNonFungibleResource = substate_store
                 .get_substate(&SubstateId(
                     RENodeId::Vault(*vault_id),

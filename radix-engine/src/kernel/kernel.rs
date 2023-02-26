@@ -310,9 +310,6 @@ where
                 api.current_frame.remove_node(&mut api.heap, node_id)
             }
             RENodeId::Worktop => {
-                // TODO: Once `ResourceManager::burn_empty()` is available, change to:
-                // for bucket in worktop.drain() { bucket.burn_empty(); }
-
                 let mut node = api.current_frame.remove_node(&mut api.heap, node_id)?;
 
                 let substate = node

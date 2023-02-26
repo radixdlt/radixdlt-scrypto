@@ -782,7 +782,12 @@ impl ResourceManagerBlueprint {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        input.bucket.sys_burn(api)?;
+        if input.bucket.sys_amount(api)?.is_zero() {
+            api.kernel_drop_node(RENodeId::Bucket(input.bucket.0))?;
+        } else {
+            let resource_address = input.bucket.sys_resource_address(api)?;
+            native_sdk::resource::ResourceManager(resource_address).burn(input.bucket, api)?;
+        }
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
