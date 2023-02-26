@@ -52,7 +52,7 @@ impl IdentityNativePackage {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let (node_id, access_rules) = Identity::create(input.access_rule, api)?;
-        let address = api.globalize(node_id, access_rules)?;
+        let address = api.globalize(node_id, (access_rules, None))?;
         Ok(IndexedScryptoValue::from_typed(&address))
     }
 }

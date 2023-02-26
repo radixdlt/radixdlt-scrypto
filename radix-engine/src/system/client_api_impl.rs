@@ -216,6 +216,7 @@ where
         // Allocate node id
         let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
 
+        /*
         // Create a royalty vault
         let royalty_vault_id = ResourceManager(RADIX_TOKEN).new_vault(self)?.vault_id();
 
@@ -224,6 +225,7 @@ where
         let royalty_accumulator_substate = ComponentRoyaltyAccumulatorSubstate {
             royalty: Own::Vault(royalty_vault_id.into()),
         };
+         */
 
         // Create metadata substates
         let metadata_substate = MetadataSubstate { metadata };
@@ -249,10 +251,12 @@ where
                 NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(
                     TypeInfoSubstate::new(package_address, blueprint_ident.to_string())
                 ),
+                /*
                 NodeModuleId::ComponentRoyalty => RENodeModuleInit::ComponentRoyalty(
                     royalty_config_substate,
                     royalty_accumulator_substate
                 ),
+                 */
                 NodeModuleId::Metadata => RENodeModuleInit::Metadata(metadata_substate),
                 //NodeModuleId::AccessRules => RENodeModuleInit::ObjectAccessRulesChain(auth_substate),
             ),
@@ -264,7 +268,7 @@ where
     fn globalize(
         &mut self,
         node_id: RENodeId,
-        access_rules: AccessRules,
+        modules: (AccessRules, Option<RoyaltyConfig>),
     ) -> Result<ComponentAddress, RuntimeError> {
         let node_type = match node_id {
             RENodeId::Component(..) => RENodeType::GlobalComponent,
@@ -278,13 +282,13 @@ where
         };
 
         let global_node_id = self.kernel_allocate_node_id(node_type)?;
-        self.globalize_with_address(node_id, access_rules, global_node_id.into())
+        self.globalize_with_address(node_id, modules, global_node_id.into())
     }
 
     fn globalize_with_address(
         &mut self,
         node_id: RENodeId,
-        access_rules: AccessRules,
+        (access_rules, royalty_config): (AccessRules, Option<RoyaltyConfig>),
         address: Address,
     ) -> Result<ComponentAddress, RuntimeError> {
         let node = self.kernel_drop_node(node_id)?;
@@ -312,31 +316,20 @@ where
             RENodeModuleInit::TypeInfo(type_info_substate),
         );
 
-        if let Some(_access_rules) = module_substates.remove(&(
-            NodeModuleId::AccessRules,
-            SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
-        )) {
-            panic!("Got you");
-        }
-
         module_init.insert(
             NodeModuleId::AccessRules,
             RENodeModuleInit::ObjectAccessRulesChain(MethodAccessRulesSubstate { access_rules }),
         );
 
-        if let Some(royalty_config) = module_substates.remove(&(
-            NodeModuleId::ComponentRoyalty,
-            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
-        )) {
-            let royalty_config_substate: ComponentRoyaltyConfigSubstate = royalty_config.into();
-            let royalty_accumulator = module_substates
-                .remove(&(
-                    NodeModuleId::ComponentRoyalty,
-                    SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
-                ))
-                .unwrap();
-            let royalty_accumulator_substate: ComponentRoyaltyAccumulatorSubstate =
-                royalty_accumulator.into();
+        if let Some(royalty_config) = royalty_config {
+            // Create a royalty vault
+            let royalty_vault_id = ResourceManager(RADIX_TOKEN).new_vault(self)?.vault_id();
+
+            // Create royalty substates
+            let royalty_config_substate = ComponentRoyaltyConfigSubstate { royalty_config };
+            let royalty_accumulator_substate = ComponentRoyaltyAccumulatorSubstate {
+                royalty: Own::Vault(royalty_vault_id.into()),
+            };
             module_init.insert(
                 NodeModuleId::ComponentRoyalty,
                 RENodeModuleInit::ComponentRoyalty(

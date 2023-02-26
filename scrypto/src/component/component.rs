@@ -152,17 +152,18 @@ impl Component for OwnedComponent {
 
 impl LocalComponent for OwnedComponent {
     fn globalize(self) -> ComponentAddress {
+        let access_rules = AccessRules::new().default(AccessRule::AllowAll, AccessRule::DenyAll);
         ScryptoEnv
             .globalize(
                 RENodeId::Component(self.0),
-                AccessRules::new().default(AccessRule::AllowAll, AccessRule::DenyAll),
+                (access_rules, Some(RoyaltyConfig::default())),
             )
             .unwrap()
     }
 
     fn globalize_with_access_rules(self, access_rules: AccessRules) -> ComponentAddress {
         ScryptoEnv
-            .globalize(RENodeId::Component(self.0), access_rules)
+            .globalize(RENodeId::Component(self.0), (access_rules, Some(RoyaltyConfig::default())))
             .unwrap()
     }
 }

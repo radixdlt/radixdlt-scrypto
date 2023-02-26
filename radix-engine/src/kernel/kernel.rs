@@ -188,7 +188,11 @@ where
             access_rules.default(access_rule.clone(), access_rule)
         };
 
-        self.globalize_with_address(component_id, access_rules, global_node_id.into())?;
+        self.globalize_with_address(
+            component_id,
+            (access_rules, None),
+            global_node_id.into(),
+        )?;
 
         Ok(())
     }
@@ -201,7 +205,11 @@ where
         let access_rule = rule!(require(non_fungible_global_id));
         let (local_id, access_rules) = Identity::create(access_rule, self)?;
 
-        self.globalize_with_address(local_id, access_rules, global_node_id.into())?;
+        self.globalize_with_address(
+            local_id,
+            (access_rules, None),
+            global_node_id.into(),
+        )?;
 
         Ok(())
     }

@@ -48,17 +48,17 @@ impl ClientComponentApi<ClientApiError> for ScryptoEnv {
     fn globalize(
         &mut self,
         node_id: RENodeId,
-        access_rules: AccessRules,
+        modules: (AccessRules, Option<RoyaltyConfig>),
     ) -> Result<ComponentAddress, ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
-        let access_rules = scrypto_encode(&access_rules).unwrap();
+        let modules = scrypto_encode(&modules).unwrap();
 
         let bytes = copy_buffer(unsafe {
             globalize_component(
                 node_id.as_ptr(),
                 node_id.len(),
-                access_rules.as_ptr(),
-                access_rules.len(),
+                modules.as_ptr(),
+                modules.len(),
             )
         });
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
@@ -67,19 +67,19 @@ impl ClientComponentApi<ClientApiError> for ScryptoEnv {
     fn globalize_with_address(
         &mut self,
         node_id: RENodeId,
-        access_rules: AccessRules,
+        modules: (AccessRules, Option<RoyaltyConfig>),
         address: Address,
     ) -> Result<ComponentAddress, ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
-        let access_rules = scrypto_encode(&access_rules).unwrap();
+        let modules = scrypto_encode(&modules).unwrap();
         let address = scrypto_encode(&address).unwrap();
 
         let bytes = copy_buffer(unsafe {
             globalize_with_address(
                 node_id.as_ptr(),
                 node_id.len(),
-                access_rules.as_ptr(),
-                access_rules.len(),
+                modules.as_ptr(),
+                modules.len(),
                 address.as_ptr(),
                 address.len(),
             )

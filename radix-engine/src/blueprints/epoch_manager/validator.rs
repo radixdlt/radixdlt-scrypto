@@ -639,7 +639,7 @@ impl ValidatorCreator {
         api.kernel_create_node(node_id, node, node_modules)?;
         let address = api.globalize_with_address(
             node_id,
-            Self::build_access_rules(owner_access_rule),
+            (Self::build_access_rules(owner_access_rule), None),
             address.into(),
         )?;
         Ok((address, liquidity_bucket))
@@ -693,7 +693,7 @@ impl ValidatorCreator {
 
         let address = api.globalize_with_address(
             node_id,
-            Self::build_access_rules(owner_access_rule),
+            (Self::build_access_rules(owner_access_rule), None),
             address.into(),
         )?;
         Ok(address)

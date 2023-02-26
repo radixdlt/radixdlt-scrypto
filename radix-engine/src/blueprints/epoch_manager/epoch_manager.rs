@@ -195,7 +195,11 @@ impl EpochManagerBlueprint {
             BTreeMap::new(),
         )?;
 
-        api.globalize_with_address(underlying_node_id, access_rules, address.into())?;
+        api.globalize_with_address(
+            underlying_node_id,
+            (access_rules, None),
+            address.into()
+        )?;
 
         Ok(IndexedScryptoValue::from_typed(&address))
     }

@@ -216,8 +216,8 @@ pub unsafe fn new_key_value_store() -> Buffer {
 pub unsafe fn globalize_component(
     _node_id_ptr: *const u8,
     _node_id_len: usize,
-    _access_rules_ptr: *const u8,
-    _access_rules_len: usize,
+    _modules_ptr: *const u8,
+    _modules_len: usize,
 ) -> Buffer {
     todo!()
 }
@@ -226,8 +226,8 @@ pub unsafe fn globalize_component(
 pub unsafe fn globalize_with_address(
     _node_id_ptr: *const u8,
     _node_id_len: usize,
-    _access_rules_ptr: *const u8,
-    _access_rules_len: usize,
+    _modules_ptr: *const u8,
+    _modules_len: usize,
     _address_ptr: *const u8,
     _address_len: usize,
 ) -> Buffer {

@@ -240,7 +240,10 @@ impl AccountNativePackage {
             node_id
         };
 
-        let address = api.globalize(node_id, access_rules)?;
+        let address = api.globalize(
+            node_id,
+            (access_rules, None),
+        )?;
 
         Ok(IndexedScryptoValue::from_typed(&address))
     }
