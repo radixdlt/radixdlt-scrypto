@@ -1,5 +1,5 @@
 use radix_engine::errors::{KernelError, RuntimeError};
-use radix_engine::transaction::TransactionReceipt;
+use radix_engine::transaction::{TransactionReceipt, TransactionResult};
 use radix_engine::types::*;
 use radix_engine_interface::api::LockFlags;
 use scrypto_unit::*;
@@ -67,6 +67,7 @@ fn locking_event_store_immutably_from_scrypto_fails() {
 }
 
 #[test]
+#[ignore = "We need the EventStore RENode to only be visible to the ClientAPI `emit_event` method but not to Scrypto. Still need to figure this out."]
 fn can_emit_basic_event_from_scrypto() {
     // Arrange
     let mut test_runner = TestRunner::builder().without_trace().build();
@@ -85,5 +86,7 @@ fn can_emit_basic_event_from_scrypto() {
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
 
     // Assert
-    println!("{:?}", receipt);
+    // TODO: Assert for correct event emission.
+    receipt.expect_commit_success();
+    assert_eq!(receipt.expect_commit().application_events.len(), 1);
 }
