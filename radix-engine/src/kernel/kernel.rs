@@ -1,5 +1,4 @@
 use crate::blueprints::account::AccountSubstate;
-use crate::blueprints::auth_zone::AuthZoneStackSubstate;
 use crate::blueprints::identity::Identity;
 use crate::blueprints::resource::{
     BucketInfoSubstate, FungibleProof, NonFungibleProof, ProofInfoSubstate,
@@ -13,7 +12,6 @@ use crate::system::node_properties::VisibilityProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use native_sdk::resource::SysProof;
 use radix_engine_interface::api::component::TypeInfoSubstate;
 use radix_engine_interface::api::package::{PackageCodeSubstate, PACKAGE_LOADER_BLUEPRINT};
 use radix_engine_interface::api::substate_api::LockFlags;
@@ -22,7 +20,7 @@ use radix_engine_interface::api::ClientComponentApi;
 use crate::kernel::kernel_api::TemporaryResolvedInvocation;
 use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use radix_engine_interface::api::types::{
-    AuthZoneStackOffset, LockHandle, ProofOffset, RENodeId, SubstateId, SubstateOffset,
+    LockHandle, ProofOffset, RENodeId, SubstateId, SubstateOffset,
 };
 use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLUEPRINT;
 use radix_engine_interface::blueprints::account::{
@@ -267,27 +265,6 @@ where
 
     fn drop_node_internal(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError> {
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::DropNode, |api| match node_id {
-            RENodeId::AuthZoneStack => {
-                let handle = api.kernel_lock_substate(
-                    node_id,
-                    NodeModuleId::SELF,
-                    SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
-                    LockFlags::MUTABLE,
-                )?;
-                let substate_ref: &AuthZoneStackSubstate = api.kernel_get_substate_ref(handle)?;
-                let mut auth_zone_stack = substate_ref.clone();
-                loop {
-                    if let Some(mut auth_zone) = auth_zone_stack.pop_auth_zone() {
-                        for p in auth_zone.drain() {
-                            p.sys_drop(api)?;
-                        }
-                    } else {
-                        break;
-                    }
-                }
-                api.kernel_drop_lock(handle)?;
-                api.current_frame.remove_node(&mut api.heap, node_id)
-            }
             RENodeId::Proof(..) => {
                 let proof_info = ProofInfoSubstate::of(node_id, api)?;
                 if proof_info.resource_type.is_fungible() {
@@ -316,7 +293,8 @@ where
 
                 api.current_frame.remove_node(&mut api.heap, node_id)
             }
-            RENodeId::Worktop
+            RENodeId::AuthZoneStack
+            | RENodeId::Worktop
             | RENodeId::Logger
             | RENodeId::TransactionRuntime
             | RENodeId::Bucket(..)
@@ -345,21 +323,11 @@ where
         Ok(())
     }
 
-    fn drop_nodes_in_frame(&mut self) -> Result<(), RuntimeError> {
-        let mut worktops = Vec::new();
+    fn auto_drop_nodes_in_frame(&mut self) -> Result<(), RuntimeError> {
         let owned_nodes = self.current_frame.owned_nodes();
-
-        // Need to go through api so that access rules can be caught
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AutoDrop, |api| {
             for node_id in owned_nodes {
-                if let RENodeId::Worktop = node_id {
-                    worktops.push(node_id);
-                } else {
-                    api.kernel_drop_node_recursively(node_id)?;
-                }
-            }
-            for worktop_id in worktops {
-                api.kernel_drop_node_recursively(worktop_id)?;
+               api.kernel_drop_node_recursively(node_id)?;
             }
 
             Ok(())
@@ -439,7 +407,7 @@ where
             CallFrame::update_upstream(&mut self.current_frame, &mut parent, update)?;
 
             // drop proofs and check resource leak
-            self.drop_nodes_in_frame()?;
+            self.auto_drop_nodes_in_frame()?;
 
             // Restore previous frame
             self.current_frame = parent;
