@@ -15,7 +15,7 @@ use crate::wasm::WasmEngine;
 use radix_engine_interface::api::component::TypeInfoSubstate;
 use radix_engine_interface::api::package::{PackageCodeSubstate, PACKAGE_LOADER_BLUEPRINT};
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::ClientComponentApi;
+use radix_engine_interface::api::{ClientComponentApi, ClientPackageApi};
 // TODO: clean this up!
 use crate::kernel::kernel_api::TemporaryResolvedInvocation;
 use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
@@ -35,8 +35,9 @@ use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::logger::LOGGER_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRuleKey, AccessRules, LiquidFungibleResource,
-    LiquidNonFungibleResource, ResourceType, BUCKET_BLUEPRINT, PROOF_BLUEPRINT,
-    RESOURCE_MANAGER_BLUEPRINT, VAULT_BLUEPRINT, WORKTOP_BLUEPRINT,
+    LiquidNonFungibleResource, Proof, ProofDropInput, ResourceType, BUCKET_BLUEPRINT,
+    PROOF_BLUEPRINT, PROOF_DROP_IDENT, RESOURCE_MANAGER_BLUEPRINT, VAULT_BLUEPRINT,
+    WORKTOP_BLUEPRINT,
 };
 use radix_engine_interface::blueprints::transaction_runtime::TRANSACTION_RUNTIME_BLUEPRINT;
 use radix_engine_interface::rule;
@@ -265,35 +266,8 @@ where
 
     fn drop_node_internal(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError> {
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::DropNode, |api| match node_id {
-            RENodeId::Proof(..) => {
-                let proof_info = ProofInfoSubstate::of(node_id, api)?;
-                if proof_info.resource_type.is_fungible() {
-                    let handle = api.kernel_lock_substate(
-                        node_id,
-                        NodeModuleId::SELF,
-                        SubstateOffset::Proof(ProofOffset::Fungible),
-                        LockFlags::read_only(),
-                    )?;
-                    let proof: &FungibleProof = api.kernel_get_substate_ref(handle)?;
-                    let proof = proof.clone();
-                    proof.drop_proof(api)?;
-                    api.kernel_drop_lock(handle)?;
-                } else {
-                    let handle = api.kernel_lock_substate(
-                        node_id,
-                        NodeModuleId::SELF,
-                        SubstateOffset::Proof(ProofOffset::NonFungible),
-                        LockFlags::read_only(),
-                    )?;
-                    let proof: &NonFungibleProof = api.kernel_get_substate_ref(handle)?;
-                    let proof = proof.clone();
-                    proof.drop_proof(api)?;
-                    api.kernel_drop_lock(handle)?;
-                }
-
-                api.current_frame.remove_node(&mut api.heap, node_id)
-            }
-            RENodeId::AuthZoneStack
+            RENodeId::Proof(..)
+            | RENodeId::AuthZoneStack
             | RENodeId::Worktop
             | RENodeId::Logger
             | RENodeId::TransactionRuntime
@@ -311,27 +285,39 @@ where
         })
     }
 
-    fn kernel_drop_node_recursively(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
-        let node = self.kernel_drop_node(node_id)?;
-        for (_, substate) in &node.substates {
-            let (_, child_nodes) = substate.to_ref().references_and_owned_nodes();
-            for child_node in child_nodes {
-                self.kernel_drop_node_recursively(child_node)?;
-            }
-        }
-
-        Ok(())
-    }
-
     fn auto_drop_nodes_in_frame(&mut self) -> Result<(), RuntimeError> {
         let owned_nodes = self.current_frame.owned_nodes();
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AutoDrop, |api| {
             for node_id in owned_nodes {
-               api.kernel_drop_node_recursively(node_id)?;
+                match node_id {
+                    RENodeId::Proof(proof_id) => {
+                        api.call_function(
+                            RESOURCE_MANAGER_PACKAGE,
+                            PROOF_BLUEPRINT,
+                            PROOF_DROP_IDENT,
+                            scrypto_encode(&ProofDropInput {
+                                proof: Proof(proof_id),
+                            })
+                            .unwrap(),
+                        )?;
+                    }
+                    _ => {
+                        return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
+                            node_id,
+                        )))
+                    }
+                }
             }
 
             Ok(())
         })?;
+
+        // Last check
+        if let Some(node_id) = self.current_frame.owned_nodes().into_iter().next() {
+            return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
+                node_id,
+            )));
+        }
 
         Ok(())
     }
