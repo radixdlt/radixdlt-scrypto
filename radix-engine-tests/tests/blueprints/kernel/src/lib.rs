@@ -1,3 +1,4 @@
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::*;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
@@ -6,8 +7,6 @@ use scrypto::prelude::*;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum GlobalSubstate {
     Component(ComponentId),
-    Resource(ResourceManagerId),
-    Package(PackageId),
     EpochManager(EpochManagerId),
     Clock(ClockId),
 }
@@ -20,9 +19,9 @@ mod read {
         pub fn read_global_substate(component_address: ComponentAddress) {
             ScryptoEnv
                 .sys_lock_substate(
-                    RENodeId::Global(Address::Component(component_address)),
+                    RENodeId::GlobalComponent(component_address),
                     SubstateOffset::Global(GlobalOffset::Global),
-                    false,
+                    LockFlags::read_only(),
                 )
                 .unwrap();
         }

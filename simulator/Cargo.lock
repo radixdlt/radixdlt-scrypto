@@ -1078,6 +1078,7 @@ name = "radix-engine-interface"
 version = "0.9.0"
 dependencies = [
  "bech32",
+ "bitflags",
  "blake2",
  "bnum",
  "hex",

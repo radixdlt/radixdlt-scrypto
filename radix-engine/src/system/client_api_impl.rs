@@ -1,9 +1,9 @@
-use crate::errors::KernelError;
+use crate::blueprints::resource::NonFungibleSubstate;
 use crate::errors::RuntimeError;
+use crate::errors::{KernelError, SystemError};
 use crate::kernel::kernel::Kernel;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::kernel_api::{Invokable, KernelInternalApi};
 use crate::kernel::module::KernelModule;
 use crate::kernel::module_mixer::KernelModuleMixer;
@@ -18,9 +18,10 @@ use crate::wasm::WasmEngine;
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate,
-    TypeInfoSubstate,
+    KeyValueStoreEntrySubstate, TypeInfoSubstate,
 };
 use radix_engine_interface::api::package::*;
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::{
@@ -52,21 +53,25 @@ where
         &mut self,
         node_id: RENodeId,
         offset: SubstateOffset,
-        mutable: bool,
+        flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
-        let flags = if mutable {
-            LockFlags::MUTABLE
+        if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
+            if !matches!(node_id, RENodeId::Vault(_)) {
+                return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
+            }
+        }
+
+        let module_id = if let Some(receiver) = self.kernel_get_current_actor().unwrap().receiver {
+            receiver.receiver.1
         } else {
-            // TODO: Do we want to expose full flag functionality to Scrypto?
-            LockFlags::read_only()
+            NodeModuleId::SELF
         };
 
-        self.kernel_lock_substate(node_id, NodeModuleId::SELF, offset, flags)
+        self.kernel_lock_substate(node_id, module_id, offset, flags)
     }
 
     fn sys_read_substate(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, RuntimeError> {
-        self.kernel_get_substate_ref(lock_handle)
-            .map(|substate_ref| substate_ref.to_scrypto_value().into())
+        self.kernel_read_substate(lock_handle).map(|v| v.into())
     }
 
     fn sys_write_substate(
@@ -76,15 +81,22 @@ where
     ) -> Result<(), RuntimeError> {
         let offset = self.kernel_get_lock_info(lock_handle)?.offset;
         let substate = RuntimeSubstate::decode_from_buffer(&offset, &buffer)?;
-        let mut substate_mut = self.kernel_get_substate_ref_mut(lock_handle)?;
 
         match substate {
-            RuntimeSubstate::ComponentState(next) => *substate_mut.component_state() = next,
+            RuntimeSubstate::ComponentState(next) => {
+                let state: &mut ComponentStateSubstate =
+                    self.kernel_get_substate_ref_mut(lock_handle)?;
+                *state = next
+            }
             RuntimeSubstate::KeyValueStoreEntry(next) => {
-                *substate_mut.kv_store_entry() = next;
+                let entry: &mut KeyValueStoreEntrySubstate =
+                    self.kernel_get_substate_ref_mut(lock_handle)?;
+                *entry = next;
             }
             RuntimeSubstate::NonFungible(next) => {
-                *substate_mut.non_fungible() = next;
+                let non_fungible: &mut NonFungibleSubstate =
+                    self.kernel_get_substate_ref_mut(lock_handle)?;
+                *non_fungible = next;
             }
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidOverwrite)),
         }
@@ -158,15 +170,13 @@ where
     }
 
     fn get_code(&mut self, package_address: PackageAddress) -> Result<PackageCode, RuntimeError> {
-        let package_global = RENodeId::Global(Address::Package(package_address));
         let handle = self.kernel_lock_substate(
-            package_global,
+            RENodeId::GlobalPackage(package_address),
             NodeModuleId::SELF,
             SubstateOffset::Package(PackageOffset::Code),
             LockFlags::read_only(),
         )?;
-        let substate_ref = self.kernel_get_substate_ref(handle)?;
-        let package = substate_ref.code();
+        let package: &PackageCodeSubstate = self.kernel_get_substate_ref(handle)?;
         let code = package.code().to_vec();
         self.kernel_drop_lock(handle)?;
         Ok(PackageCode::Wasm(code))
@@ -176,15 +186,13 @@ where
         &mut self,
         package_address: PackageAddress,
     ) -> Result<BTreeMap<String, BlueprintAbi>, RuntimeError> {
-        let package_global = RENodeId::Global(Address::Package(package_address));
         let handle = self.kernel_lock_substate(
-            package_global,
+            RENodeId::GlobalPackage(package_address),
             NodeModuleId::SELF,
             SubstateOffset::Package(PackageOffset::Info),
             LockFlags::read_only(),
         )?;
-        let substate_ref = self.kernel_get_substate_ref(handle)?;
-        let package = substate_ref.package_info();
+        let package: &PackageInfoSubstate = self.kernel_get_substate_ref(handle)?;
         let abi = package.blueprint_abis.clone();
         self.kernel_drop_lock(handle)?;
         Ok(abi)
@@ -201,13 +209,13 @@ where
     ) -> Result<ComponentId, RuntimeError> {
         let offset = SubstateOffset::Global(GlobalOffset::Global);
         let handle = self.kernel_lock_substate(
-            RENodeId::Global(Address::Component(component_address)),
+            RENodeId::GlobalComponent(component_address),
             NodeModuleId::SELF,
             offset,
             LockFlags::empty(),
         )?;
-        let substate_ref = self.kernel_get_substate_ref(handle)?;
-        Ok(substate_ref.global_address().node_deref().into())
+        let global: &GlobalSubstate = self.kernel_get_substate_ref(handle)?;
+        Ok(global.node_deref().into())
     }
 
     fn new_component(
@@ -277,7 +285,7 @@ where
 
         self.kernel_create_node(
             node_id,
-            RENodeInit::Global(GlobalSubstate::Component(component_id)),
+            RENodeInit::GlobalComponent(GlobalSubstate::Component(component_id)),
             btreemap!(),
         )?;
 
@@ -321,9 +329,8 @@ where
             SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
             LockFlags::read_only(),
         )?;
-        let substate_ref = self.kernel_get_substate_ref(handle)?;
-        let info = substate_ref.component_info();
-        let package_address = info.package_address.clone();
+        let info: &TypeInfoSubstate = self.kernel_get_substate_ref(handle)?;
+        let package_address = info.package_address;
         let blueprint_ident = info.blueprint_name.clone();
         self.kernel_drop_lock(handle)?;
         Ok((package_address, blueprint_ident))
@@ -353,9 +360,9 @@ where
     fn credit_cost_units(
         &mut self,
         vault_id: VaultId,
-        locked_fee: Resource,
+        locked_fee: LiquidFungibleResource,
         contingent: bool,
-    ) -> Result<Resource, RuntimeError> {
+    ) -> Result<LiquidFungibleResource, RuntimeError> {
         KernelModuleMixer::on_credit_cost_units(self, vault_id, locked_fee, contingent)
     }
 

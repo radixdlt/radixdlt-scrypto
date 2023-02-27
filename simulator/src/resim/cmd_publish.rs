@@ -68,7 +68,7 @@ impl Publish {
 
             let global: GlobalSubstate = substate_store
                 .get_substate(&SubstateId(
-                    RENodeId::Global(Address::Package(package_address.0)),
+                    RENodeId::GlobalPackage(package_address.0),
                     NodeModuleId::SELF,
                     SubstateOffset::Global(GlobalOffset::Global),
                 ))
@@ -87,7 +87,7 @@ impl Publish {
 
             let validated_package = PackageCodeSubstate { code };
             let output_value = OutputValue {
-                substate: PersistedSubstate::WasmCode(validated_package),
+                substate: PersistedSubstate::PackageCode(validated_package),
                 version: previous_version.unwrap_or(0),
             };
 

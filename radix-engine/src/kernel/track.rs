@@ -2,7 +2,6 @@ use crate::blueprints::logger::LoggerSubstate;
 use crate::blueprints::resource::NonFungibleSubstate;
 use crate::blueprints::transaction_processor::{InstructionOutput, TransactionProcessorError};
 use crate::errors::*;
-use crate::kernel::kernel_api::LockFlags;
 use crate::ledger::*;
 use crate::state_manager::StateDiff;
 use crate::system::kernel_modules::costing::FinalizingFeeReserve;
@@ -20,9 +19,10 @@ use crate::transaction::TransactionResult;
 use crate::transaction::{AbortReason, AbortResult, CommitResult};
 use crate::types::*;
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::logger::Level;
-use radix_engine_interface::blueprints::resource::{Resource, ResourceType};
+use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::crypto::hash;
 use sbor::rust::collections::*;
 
@@ -296,11 +296,24 @@ impl<'s> Track<'s> {
 
         match &substate_id {
             SubstateId(
-                RENodeId::Global(global_address),
+                RENodeId::GlobalComponent(component_address),
                 NodeModuleId::SELF,
                 SubstateOffset::Global(GlobalOffset::Global),
             ) => {
-                self.new_global_addresses.push(*global_address);
+                self.new_global_addresses
+                    .push(Address::Component(*component_address));
+            }
+            SubstateId(
+                RENodeId::GlobalResourceManager(resource_address),
+                NodeModuleId::TypeInfo,
+                ..,
+            ) => {
+                self.new_global_addresses
+                    .push(Address::Resource(*resource_address));
+            }
+            SubstateId(RENodeId::GlobalPackage(package_address), NodeModuleId::TypeInfo, ..) => {
+                self.new_global_addresses
+                    .push(Address::Package(*package_address));
             }
             _ => {}
         }
@@ -644,8 +657,7 @@ impl<'s> FinalizingTrack<'s> {
         let mut required = fee_summary.total_execution_cost_xrd
             + fee_summary.total_royalty_cost_xrd
             - fee_summary.bad_debt_xrd;
-        let mut fees: Resource =
-            Resource::new_empty(RADIX_TOKEN, ResourceType::Fungible { divisibility: 18 });
+        let mut fees: LiquidFungibleResource = LiquidFungibleResource::new_empty();
         for (vault_id, mut locked, contingent) in fee_summary.vault_locks.iter().cloned().rev() {
             let amount = if contingent {
                 if is_success {
@@ -667,18 +679,12 @@ impl<'s> FinalizingTrack<'s> {
             let substate_id = SubstateId(
                 RENodeId::Vault(vault_id),
                 NodeModuleId::SELF,
-                SubstateOffset::Vault(VaultOffset::Vault),
+                SubstateOffset::Vault(VaultOffset::LiquidFungible),
             );
 
             // Update substate
-            let (substate, old_version) = to_persist.remove(&substate_id).unwrap();
-            let mut runtime_substate = substate.to_runtime();
-            runtime_substate
-                .vault_mut()
-                .borrow_resource_mut()
-                .put(locked)
-                .unwrap();
-            to_persist.insert(substate_id, (runtime_substate.to_persisted(), old_version));
+            let (substate, _) = to_persist.get_mut(&substate_id).unwrap();
+            substate.vault_liquid_fungible_mut().put(locked).unwrap();
 
             // Record final payments
             *actual_fee_payments.entry(vault_id).or_default() += amount;
@@ -690,9 +696,9 @@ impl<'s> FinalizingTrack<'s> {
 
         for (receiver, amount) in &fee_summary.royalty_cost_unit_breakdown {
             match receiver {
-                RoyaltyReceiver::Package(_, package_id) => {
+                RoyaltyReceiver::Package(package_address) => {
                     let substate_id = SubstateId(
-                        RENodeId::Package(*package_id),
+                        RENodeId::GlobalPackage(*package_address),
                         NodeModuleId::PackageRoyalty,
                         SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                     );
@@ -706,13 +712,12 @@ impl<'s> FinalizingTrack<'s> {
                         .get_mut(&SubstateId(
                             RENodeId::Vault(royalty_vault_id),
                             NodeModuleId::SELF,
-                            SubstateOffset::Vault(VaultOffset::Vault),
+                            SubstateOffset::Vault(VaultOffset::LiquidFungible),
                         ))
                         .unwrap();
                     royalty_vault_substate
                         .0
-                        .vault_mut()
-                        .0
+                        .vault_liquid_fungible_mut()
                         .put(
                             fees.take_by_amount(fee_summary.cost_unit_price * amount.clone())
                                 .unwrap(),
@@ -735,13 +740,12 @@ impl<'s> FinalizingTrack<'s> {
                         .get_mut(&SubstateId(
                             RENodeId::Vault(royalty_vault_id),
                             NodeModuleId::SELF,
-                            SubstateOffset::Vault(VaultOffset::Vault),
+                            SubstateOffset::Vault(VaultOffset::LiquidFungible),
                         ))
                         .unwrap();
                     royalty_vault_substate
                         .0
-                        .vault_mut()
-                        .0
+                        .vault_liquid_fungible_mut()
                         .put(
                             fees.take_by_amount(fee_summary.cost_unit_price * amount.clone())
                                 .unwrap(),
@@ -755,7 +759,6 @@ impl<'s> FinalizingTrack<'s> {
         let execution_trace_receipt = ExecutionTraceReceipt::new(
             vault_ops,
             fee_summary.vault_payments_xrd.as_ref().unwrap(),
-            &mut to_persist,
             invoke_result.is_ok(),
         );
         TransactionResult::Commit(CommitResult {

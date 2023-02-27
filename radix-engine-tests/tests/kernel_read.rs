@@ -30,7 +30,7 @@ fn should_not_be_able_to_read_global_substate() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::InvalidSubstateAccess {
-                node_id: RENodeId::Global(Address::Component(..)),
+                node_id: RENodeId::GlobalComponent(..),
                 offset: SubstateOffset::Global(GlobalOffset::Global),
                 ..
             })
