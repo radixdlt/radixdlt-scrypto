@@ -278,9 +278,16 @@ impl AccessControllerNativePackage {
         api.kernel_create_node(node_id, access_controller, BTreeMap::new())?;
 
         let access_rules = access_rules_from_rule_set(input.rule_set);
+        let metadata: BTreeMap<String, String> = BTreeMap::new();
 
         // Creating a global component address for the access controller RENode
-        let address = api.globalize(node_id, (access_rules, BTreeMap::new(), None))?;
+        let address = api.globalize(
+            node_id,
+            btreemap!(
+                NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
+                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
+            ),
+        )?;
 
         Ok(IndexedScryptoValue::from_typed(&address))
     }

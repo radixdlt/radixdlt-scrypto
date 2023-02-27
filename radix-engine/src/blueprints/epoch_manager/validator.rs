@@ -627,12 +627,15 @@ impl ValidatorCreator {
         });
 
         api.kernel_create_node(node_id, node, BTreeMap::new())?;
+
+        let access_rules = Self::build_access_rules(owner_access_rule);
+        let metadata: BTreeMap<String, String> = BTreeMap::new();
+
         let address = api.globalize_with_address(
             node_id,
-            (
-                Self::build_access_rules(owner_access_rule),
-                BTreeMap::new(),
-                None,
+            btreemap!(
+                NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
+                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
             ),
             address.into(),
         )?;
@@ -670,12 +673,14 @@ impl ValidatorCreator {
 
         api.kernel_create_node(node_id, node, BTreeMap::new())?;
 
+        let access_rules = Self::build_access_rules(owner_access_rule);
+        let metadata: BTreeMap<String, String> = BTreeMap::new();
+
         let address = api.globalize_with_address(
             node_id,
-            (
-                Self::build_access_rules(owner_access_rule),
-                BTreeMap::new(),
-                None,
+            btreemap!(
+                NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
+                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
             ),
             address.into(),
         )?;

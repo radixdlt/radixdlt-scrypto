@@ -20,6 +20,7 @@ use crate::blueprints::resource::WorktopSubstate;
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::errors::*;
 use crate::system::node_modules::access_rules::FunctionAccessRulesSubstate;
+use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::package::*;
@@ -31,7 +32,6 @@ use radix_engine_interface::blueprints::resource::LiquidNonFungibleResource;
 use radix_engine_interface::blueprints::resource::LockedFungibleResource;
 use radix_engine_interface::blueprints::resource::LockedNonFungibleResource;
 use radix_engine_interface::data::IndexedScryptoValue;
-use crate::system::node_modules::type_info::TypeInfoSubstate;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PersistedSubstate {

@@ -7,6 +7,7 @@ use crate::blueprints::resource::*;
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::system::node_modules::access_rules::*;
 use crate::system::node_modules::metadata::MetadataSubstate;
+use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::*;
 use crate::system::type_info::PackageCodeTypeSubstate;
 use crate::types::*;
@@ -20,7 +21,6 @@ use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::resource::LiquidNonFungibleResource;
 use radix_engine_interface::blueprints::resource::LockedFungibleResource;
 use radix_engine_interface::blueprints::resource::LockedNonFungibleResource;
-use crate::system::node_modules::type_info::TypeInfoSubstate;
 
 #[derive(Debug)]
 pub enum RENodeModuleInit {

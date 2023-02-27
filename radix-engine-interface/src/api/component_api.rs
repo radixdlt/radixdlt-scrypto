@@ -1,5 +1,4 @@
 use crate::api::types::*;
-use crate::blueprints::resource::AccessRules;
 use sbor::rust::collections::*;
 use sbor::rust::vec::Vec;
 
@@ -16,13 +15,13 @@ pub trait ClientComponentApi<E> {
     fn globalize(
         &mut self,
         node_id: RENodeId,
-        modules: (AccessRules, BTreeMap<String, String>, Option<RoyaltyConfig>),
+        modules: BTreeMap<NodeModuleId, Vec<u8>>,
     ) -> Result<ComponentAddress, E>;
 
     fn globalize_with_address(
         &mut self,
         node_id: RENodeId,
-        modules: (AccessRules, BTreeMap<String, String>, Option<RoyaltyConfig>),
+        modules: BTreeMap<NodeModuleId, Vec<u8>>,
         address: Address,
     ) -> Result<ComponentAddress, E>;
 

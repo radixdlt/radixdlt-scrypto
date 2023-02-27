@@ -11,8 +11,9 @@ use crate::system::node_modules::access_rules::{
     AccessRulesNativePackage, AuthZoneStackSubstate, FunctionAccessRulesSubstate,
     MethodAccessRulesSubstate,
 };
+use crate::system::node_modules::type_info::TypeInfoBlueprint;
 use crate::types::*;
-use radix_engine_interface::api::component::{ComponentStateSubstate};
+use radix_engine_interface::api::component::ComponentStateSubstate;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::package::{
     PackageInfoSubstate, PACKAGE_LOADER_BLUEPRINT, PACKAGE_LOADER_PUBLISH_NATIVE_IDENT,
@@ -24,7 +25,6 @@ use radix_engine_interface::api::types::{
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
 use transaction::model::AuthZoneParams;
-use crate::system::node_modules::type_info::TypeInfoBlueprint;
 
 use super::auth_converter::convert_contextless;
 use super::method_authorization::MethodAuthorization;

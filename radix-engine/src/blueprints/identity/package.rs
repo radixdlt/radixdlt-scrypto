@@ -52,7 +52,14 @@ impl IdentityNativePackage {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let (node_id, access_rules) = Identity::create(input.access_rule, api)?;
-        let address = api.globalize(node_id, (access_rules, BTreeMap::new(), None))?;
+        let metadata: BTreeMap<String, String> = BTreeMap::new();
+        let address = api.globalize(
+            node_id,
+            btreemap!(
+                NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
+                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
+            ),
+        )?;
         Ok(IndexedScryptoValue::from_typed(&address))
     }
 }

@@ -12,6 +12,7 @@ use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::MethodAccessRulesSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
+use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -34,7 +35,6 @@ use radix_engine_interface::data::model::Own;
 use radix_engine_interface::data::*;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
-use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 
 impl<'g, 's, W> ClientNodeApi<RuntimeError> for Kernel<'g, 's, W>
 where
@@ -247,7 +247,7 @@ where
     fn globalize(
         &mut self,
         node_id: RENodeId,
-        modules: (AccessRules, BTreeMap<String, String>, Option<RoyaltyConfig>),
+        modules: BTreeMap<NodeModuleId, Vec<u8>>,
     ) -> Result<ComponentAddress, RuntimeError> {
         let node_type = match node_id {
             RENodeId::Component(..) => RENodeType::GlobalComponent,
@@ -267,11 +267,7 @@ where
     fn globalize_with_address(
         &mut self,
         node_id: RENodeId,
-        (access_rules, metadata, royalty_config): (
-            AccessRules,
-            BTreeMap<String, String>,
-            Option<RoyaltyConfig>,
-        ),
+        modules: BTreeMap<NodeModuleId, Vec<u8>>,
         address: Address,
     ) -> Result<ComponentAddress, RuntimeError> {
         let node = self.kernel_drop_node(node_id)?;
@@ -300,32 +296,59 @@ where
             RENodeModuleInit::TypeInfo(type_info_substate),
         );
 
-        module_init.insert(
-            NodeModuleId::AccessRules,
-            RENodeModuleInit::ObjectAccessRulesChain(MethodAccessRulesSubstate { access_rules }),
-        );
+        // TODO: Check node type matches modules provided
 
-        module_init.insert(
-            NodeModuleId::Metadata,
-            RENodeModuleInit::Metadata(MetadataSubstate { metadata }),
-        );
+        for (module_id, init) in modules {
+            match module_id {
+                NodeModuleId::SELF
+                | NodeModuleId::TypeInfo
+                | NodeModuleId::AccessRules1
+                | NodeModuleId::PackageRoyalty
+                | NodeModuleId::FunctionAccessRules => {
+                    return Err(RuntimeError::SystemError(SystemError::InvalidModule))
+                }
+                NodeModuleId::AccessRules => {
+                    let access_rules: AccessRules = scrypto_decode(&init).map_err(|e| {
+                        RuntimeError::SystemError(SystemError::InvalidAccessRules(e))
+                    })?;
+                    module_init.insert(
+                        NodeModuleId::AccessRules,
+                        RENodeModuleInit::ObjectAccessRulesChain(MethodAccessRulesSubstate {
+                            access_rules,
+                        }),
+                    );
+                }
+                NodeModuleId::Metadata => {
+                    let metadata: BTreeMap<String, String> = scrypto_decode(&init)
+                        .map_err(|e| RuntimeError::SystemError(SystemError::InvalidMetadata(e)))?;
 
-        if let Some(royalty_config) = royalty_config {
-            // Create a royalty vault
-            let royalty_vault_id = ResourceManager(RADIX_TOKEN).new_vault(self)?.vault_id();
+                    module_init.insert(
+                        NodeModuleId::Metadata,
+                        RENodeModuleInit::Metadata(MetadataSubstate { metadata }),
+                    );
+                }
+                NodeModuleId::ComponentRoyalty => {
+                    let royalty_config: RoyaltyConfig = scrypto_decode(&init).map_err(|e| {
+                        RuntimeError::SystemError(SystemError::InvalidRoyaltyConfig(e))
+                    })?;
 
-            // Create royalty substates
-            let royalty_config_substate = ComponentRoyaltyConfigSubstate { royalty_config };
-            let royalty_accumulator_substate = ComponentRoyaltyAccumulatorSubstate {
-                royalty: Own::Vault(royalty_vault_id.into()),
-            };
-            module_init.insert(
-                NodeModuleId::ComponentRoyalty,
-                RENodeModuleInit::ComponentRoyalty(
-                    royalty_config_substate,
-                    royalty_accumulator_substate,
-                ),
-            );
+                    // Create a royalty vault
+                    let royalty_vault_id = ResourceManager(RADIX_TOKEN).new_vault(self)?.vault_id();
+
+                    // Create royalty substates
+                    let royalty_config_substate = ComponentRoyaltyConfigSubstate { royalty_config };
+                    let royalty_accumulator_substate = ComponentRoyaltyAccumulatorSubstate {
+                        royalty: Own::Vault(royalty_vault_id.into()),
+                    };
+                    module_init.insert(
+                        NodeModuleId::ComponentRoyalty,
+                        RENodeModuleInit::ComponentRoyalty(
+                            royalty_config_substate,
+                            royalty_accumulator_substate,
+                        ),
+                    );
+                }
+            }
         }
 
         self.kernel_create_node(

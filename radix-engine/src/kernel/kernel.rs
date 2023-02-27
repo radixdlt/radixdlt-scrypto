@@ -19,6 +19,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientComponentApi;
 // TODO: clean this up!
 use crate::kernel::kernel_api::TemporaryResolvedInvocation;
+use crate::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, LockHandle, ProofOffset, RENodeId, SubstateId, SubstateOffset,
     WorktopOffset,
@@ -35,14 +36,13 @@ use radix_engine_interface::blueprints::epoch_manager::{
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::logger::LOGGER_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::{
-    require, AccessRule, AccessRules, LiquidFungibleResource, LiquidNonFungibleResource,
-    MethodKey, ResourceType, BUCKET_BLUEPRINT, PROOF_BLUEPRINT, RESOURCE_MANAGER_BLUEPRINT,
-    VAULT_BLUEPRINT, WORKTOP_BLUEPRINT,
+    require, AccessRule, AccessRules, LiquidFungibleResource, LiquidNonFungibleResource, MethodKey,
+    ResourceType, BUCKET_BLUEPRINT, PROOF_BLUEPRINT, RESOURCE_MANAGER_BLUEPRINT, VAULT_BLUEPRINT,
+    WORKTOP_BLUEPRINT,
 };
 use radix_engine_interface::blueprints::transaction_runtime::TRANSACTION_RUNTIME_BLUEPRINT;
 use radix_engine_interface::rule;
 use sbor::rust::mem;
-use crate::system::node_modules::type_info::TypeInfoSubstate;
 
 use super::actor::{Actor, ExecutionMode};
 use super::call_frame::{CallFrame, RENodeVisibilityOrigin};
@@ -188,9 +188,14 @@ where
             access_rules.default(access_rule.clone(), access_rule)
         };
 
+        let metadata: BTreeMap<String, String> = BTreeMap::new();
+
         self.globalize_with_address(
             component_id,
-            (access_rules, BTreeMap::new(), None),
+            btreemap!(
+                NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
+                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
+            ),
             global_node_id.into(),
         )?;
 
@@ -204,10 +209,14 @@ where
     ) -> Result<(), RuntimeError> {
         let access_rule = rule!(require(non_fungible_global_id));
         let (local_id, access_rules) = Identity::create(access_rule, self)?;
+        let metadata: BTreeMap<String, String> = BTreeMap::new();
 
         self.globalize_with_address(
             local_id,
-            (access_rules, BTreeMap::new(), None),
+            btreemap!(
+                NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
+                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
+            ),
             global_node_id.into(),
         )?;
 

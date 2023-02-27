@@ -195,9 +195,14 @@ impl EpochManagerBlueprint {
             BTreeMap::new(),
         )?;
 
+        let metadata: BTreeMap<String, String> = BTreeMap::new();
+
         api.globalize_with_address(
             underlying_node_id,
-            (access_rules, BTreeMap::new(), None),
+            btreemap!(
+                NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
+                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
+            ),
             address.into(),
         )?;
 

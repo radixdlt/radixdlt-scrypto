@@ -4,6 +4,7 @@ use radix_engine::blueprints::resource::VaultInfoSubstate;
 use radix_engine::blueprints::resource::{NonFungibleSubstate, ResourceManagerSubstate};
 use radix_engine::ledger::*;
 use radix_engine::system::node_modules::metadata::MetadataSubstate;
+use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::types::*;
 use radix_engine_interface::address::AddressDisplayContext;
 use radix_engine_interface::api::component::*;
@@ -15,7 +16,6 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::data::{IndexedScryptoValue, ScryptoValueDisplayContext};
 use radix_engine_interface::network::NetworkDefinition;
 use std::collections::VecDeque;
-use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use utils::ContextualDisplay;
 
 use crate::utils::*;

@@ -13,7 +13,6 @@ impl ComponentStateSubstate {
     }
 }
 
-
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ComponentRoyaltyConfigSubstate {
     pub royalty_config: RoyaltyConfig,

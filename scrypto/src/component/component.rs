@@ -144,7 +144,11 @@ impl LocalComponent for OwnedComponent {
         ScryptoEnv
             .globalize(
                 RENodeId::Component(self.0),
-                (access_rules, metadata, Some(config)),
+                btreemap!(
+                    NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
+                    NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
+                    NodeModuleId::ComponentRoyalty => scrypto_encode(&config).unwrap()
+                ),
             )
             .unwrap()
     }

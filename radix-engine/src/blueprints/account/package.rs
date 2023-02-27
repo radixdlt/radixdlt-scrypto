@@ -240,7 +240,15 @@ impl AccountNativePackage {
             node_id
         };
 
-        let address = api.globalize(node_id, (access_rules, BTreeMap::new(), None))?;
+        let metadata: BTreeMap<String, String> = BTreeMap::new();
+
+        let address = api.globalize(
+            node_id,
+            btreemap!(
+                NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
+                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
+            ),
+        )?;
 
         Ok(IndexedScryptoValue::from_typed(&address))
     }
