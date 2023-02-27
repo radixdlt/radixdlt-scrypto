@@ -1,5 +1,5 @@
 use crate::errors::*;
-use crate::kernel::actor::{ResolvedActor, ResolvedReceiver};
+use crate::kernel::actor::ResolvedActor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::event::TrackedEvent;
 use crate::kernel::kernel_api::KernelModuleApi;
@@ -43,7 +43,7 @@ pub struct ExecutionTraceModule {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ResourceChange {
-    pub component_id: ComponentId, // TODO: support non component actor
+    pub node_id: RENodeId,
     pub vault_id: VaultId,
     pub amount: Decimal,
 }
@@ -428,11 +428,7 @@ impl ExecutionTraceModule {
                         blueprint_name,
                         ident,
                     },
-                receiver:
-                    Some(ResolvedReceiver {
-                        receiver: MethodReceiver(RENodeId::Vault(vault_id), ..),
-                        ..
-                    }),
+                receiver: Some(MethodReceiver(RENodeId::Vault(vault_id), ..)),
             }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_PUT_IDENT) =>
@@ -446,11 +442,7 @@ impl ExecutionTraceModule {
                         blueprint_name,
                         ident,
                     },
-                receiver:
-                    Some(ResolvedReceiver {
-                        receiver: MethodReceiver(RENodeId::Vault(vault_id), ..),
-                        ..
-                    }),
+                receiver: Some(MethodReceiver(RENodeId::Vault(vault_id), ..)),
             }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_LOCK_FEE_IDENT) =>
@@ -476,11 +468,7 @@ impl ExecutionTraceModule {
                         blueprint_name,
                         ident,
                     },
-                receiver:
-                    Some(ResolvedReceiver {
-                        receiver: MethodReceiver(RENodeId::Vault(vault_id), ..),
-                        ..
-                    }),
+                receiver: Some(MethodReceiver(RENodeId::Vault(vault_id), ..)),
             }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_TAKE_IDENT) =>
@@ -625,54 +613,49 @@ impl ExecutionTraceReceipt {
     ) -> Self {
         // TODO: Might want to change the key from being a ComponentId to being an enum to
         //       accommodate for accounts
-        let mut vault_changes = HashMap::<ComponentId, HashMap<VaultId, Decimal>>::new();
-        let mut vault_locked_by = HashMap::<VaultId, ComponentId>::new();
+        let mut vault_changes = HashMap::<RENodeId, HashMap<VaultId, Decimal>>::new();
+        let mut vault_locked_by = HashMap::<VaultId, RENodeId>::new();
         for (actor, vault_id, vault_op) in ops {
             if let TraceActor::Actor(ResolvedActor {
-                receiver: Some(resolved_receiver),
+                receiver: Some(receiver),
                 ..
             }) = actor
             {
-                match resolved_receiver.receiver.0 {
-                    RENodeId::Component(component_id) | RENodeId::Account(component_id) => {
-                        match vault_op {
-                            VaultOp::Create(_) => todo!("Not supported yet!"),
-                            VaultOp::Put(amount) => {
-                                *vault_changes
-                                    .entry(component_id)
-                                    .or_default()
-                                    .entry(vault_id)
-                                    .or_default() += amount;
-                            }
-                            VaultOp::Take(amount) => {
-                                *vault_changes
-                                    .entry(component_id)
-                                    .or_default()
-                                    .entry(vault_id)
-                                    .or_default() -= amount;
-                            }
-                            VaultOp::LockFee => {
-                                *vault_changes
-                                    .entry(component_id)
-                                    .or_default()
-                                    .entry(vault_id)
-                                    .or_default() -= 0;
+                match vault_op {
+                    VaultOp::Create(_) => todo!("Not supported yet!"),
+                    VaultOp::Put(amount) => {
+                        *vault_changes
+                            .entry(receiver.0)
+                            .or_default()
+                            .entry(vault_id)
+                            .or_default() += amount;
+                    }
+                    VaultOp::Take(amount) => {
+                        *vault_changes
+                            .entry(receiver.0)
+                            .or_default()
+                            .entry(vault_id)
+                            .or_default() -= amount;
+                    }
+                    VaultOp::LockFee => {
+                        *vault_changes
+                            .entry(receiver.0)
+                            .or_default()
+                            .entry(vault_id)
+                            .or_default() -= 0;
 
-                                // Hack: Additional check to avoid second `lock_fee` attempts (runtime failure) from
-                                // polluting the `vault_locked_by` index.
-                                if !vault_locked_by.contains_key(&vault_id) {
-                                    vault_locked_by.insert(vault_id, component_id);
-                                }
-                            }
+                        // Hack: Additional check to avoid second `lock_fee` attempts (runtime failure) from
+                        // polluting the `vault_locked_by` index.
+                        if !vault_locked_by.contains_key(&vault_id) {
+                            vault_locked_by.insert(vault_id, receiver.0);
                         }
                     }
-                    _ => {}
                 }
             }
         }
 
         let mut resource_changes = Vec::<ResourceChange>::new();
-        for (component_id, map) in vault_changes {
+        for (node_id, map) in vault_changes {
             for (vault_id, delta) in map {
                 // Amount = put/take amount - fee_amount
                 let fee_amount = actual_fee_payments
@@ -688,7 +671,7 @@ impl ExecutionTraceReceipt {
                 // Add a resource change log if non-zero
                 if !amount.is_zero() {
                     resource_changes.push(ResourceChange {
-                        component_id,
+                        node_id,
                         vault_id,
                         amount,
                     });

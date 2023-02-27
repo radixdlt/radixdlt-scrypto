@@ -25,7 +25,7 @@ use crate::wasm::WasmRuntimeError;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum IdAllocationError {
     RENodeIdWasNotAllocated(RENodeId),
-    AllocatedIDsNotEmpty,
+    AllocatedIDsNotEmpty(BTreeSet<RENodeId>),
     OutOfID,
 }
 
@@ -200,6 +200,7 @@ pub enum ScryptoFnResolvingError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemError {
     InvalidLockFlags,
+    CannotGlobalize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
