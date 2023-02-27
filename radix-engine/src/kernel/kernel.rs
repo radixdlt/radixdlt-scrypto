@@ -13,7 +13,7 @@ use crate::system::node_properties::VisibilityProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use native_sdk::resource::{SysBucket, SysProof};
+use native_sdk::resource::SysProof;
 use radix_engine_interface::api::component::TypeInfoSubstate;
 use radix_engine_interface::api::package::{PackageCodeSubstate, PACKAGE_LOADER_BLUEPRINT};
 use radix_engine_interface::api::substate_api::LockFlags;
@@ -37,7 +37,7 @@ use radix_engine_interface::blueprints::epoch_manager::{
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::logger::LOGGER_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::{
-    require, AccessRule, AccessRules, Bucket, LiquidFungibleResource, LiquidNonFungibleResource,
+    require, AccessRule, AccessRules, LiquidFungibleResource, LiquidNonFungibleResource,
     MethodKey, ResourceType, BUCKET_BLUEPRINT, PROOF_BLUEPRINT, RESOURCE_MANAGER_BLUEPRINT,
     VAULT_BLUEPRINT, WORKTOP_BLUEPRINT,
 };
@@ -328,16 +328,10 @@ where
                     ))
                     .unwrap();
                 let worktop: WorktopSubstate = substate.into();
-                for (_, bucket) in worktop.resources {
-                    let bucket = Bucket(bucket.bucket_id());
-                    if !bucket.sys_is_empty(api)? {
-                        return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
-                            RENodeId::Worktop,
-                        )));
-                    }
-
-                    api.current_frame
-                        .remove_node(&mut api.heap, RENodeId::Bucket(bucket.0))?;
+                if !worktop.resources.is_empty() {
+                    return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
+                        RENodeId::Worktop,
+                    )));
                 }
 
                 return Ok(node);
