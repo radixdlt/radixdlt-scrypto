@@ -261,15 +261,15 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
 
     fn child_value<'t>(&'t mut self) -> LocatedTraversalEvent<'t, 'de, T> {
         let start_offset = self.decoder.get_offset();
-        let current_child = self.container_stack.last_mut().unwrap();
-        let (relationship, value_kind) = current_child
+        let parent = self.container_stack.last_mut().unwrap();
+        let (relationship, value_kind) = parent
             .container_header
-            .get_implicit_child_value_kind(current_child.current_child_index);
+            .get_implicit_child_value_kind(parent.current_child_index);
         let value_kind = match value_kind {
             Some(value_kind) => value_kind,
             None => return_if_error!(self, relationship, self.decoder.read_value_kind()),
         };
-        current_child.current_child_index += 1;
+        parent.current_child_index += 1;
         self.next_value(start_offset, relationship, value_kind)
     }
 
@@ -319,7 +319,7 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
                     String,
                     relationship,
                     start_offset,
-                    self.decode_string_slice()
+                    self.decode_string_body()
                 )
             }
             ValueKind::Array => self.decode_array_header(start_offset, relationship),
@@ -370,8 +370,7 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
         self.decoder.get_offset()
     }
 
-    fn decode_string_slice(&mut self) -> Result<&'de str, DecodeError> {
-        self.decoder.read_and_check_value_kind(ValueKind::String)?;
+    fn decode_string_body(&mut self) -> Result<&'de str, DecodeError> {
         let size = self.decoder.read_size()?;
         let bytes_slices = self.decoder.read_slice_from_payload(size)?;
         sbor::rust::str::from_utf8(bytes_slices).map_err(|_| DecodeError::InvalidUtf8)

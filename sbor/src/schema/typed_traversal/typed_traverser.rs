@@ -161,6 +161,7 @@ impl<'de, 's, E: CustomTypeExtension> TypedTraverser<'de, 's, E> {
                 )
             }
         };
+
         TypedLocatedTraversalEvent {
             location: TypedLocation {
                 location,
