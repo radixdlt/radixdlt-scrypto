@@ -336,10 +336,27 @@ where
                     );
                 }
                 NodeModuleId::ComponentRoyalty => {
-                    let royalty_config: RoyaltyConfig = scrypto_decode(&init).map_err(|e| {
+                    let royalty: Own = scrypto_decode(&init).map_err(|e| {
                         RuntimeError::SystemError(SystemError::InvalidRoyaltyConfig(e))
                     })?;
 
+                    let component_id = royalty.component_id();
+                    let mut node = self.kernel_drop_node(RENodeId::Component(component_id))?;
+
+                    let config = node.substates.remove(&(NodeModuleId::SELF, SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig))).unwrap();
+                    let config: ComponentRoyaltyConfigSubstate = config.into();
+                    let accumulator = node.substates.remove(&(NodeModuleId::SELF, SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator))).unwrap();
+                    let accumulator: ComponentRoyaltyAccumulatorSubstate = accumulator.into();
+
+                    module_init.insert(
+                        NodeModuleId::ComponentRoyalty,
+                        RENodeModuleInit::ComponentRoyalty(
+                            config,
+                            accumulator,
+                        ),
+                    );
+
+                    /*
                     // Create a royalty vault
                     let royalty_vault_id = ResourceManager(RADIX_TOKEN).new_vault(self)?.vault_id();
 
@@ -348,13 +365,8 @@ where
                     let royalty_accumulator_substate = ComponentRoyaltyAccumulatorSubstate {
                         royalty: Own::Vault(royalty_vault_id.into()),
                     };
-                    module_init.insert(
-                        NodeModuleId::ComponentRoyalty,
-                        RENodeModuleInit::ComponentRoyalty(
-                            royalty_config_substate,
-                            royalty_accumulator_substate,
-                        ),
-                    );
+
+                     */
                 }
             }
         }

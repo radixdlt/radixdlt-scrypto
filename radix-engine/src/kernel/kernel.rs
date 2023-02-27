@@ -19,6 +19,7 @@ use radix_engine_interface::api::package::{PackageCodeSubstate, PACKAGE_LOADER_B
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientComponentApi;
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
+use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
 // TODO: clean this up!
 use crate::kernel::kernel_api::TemporaryResolvedInvocation;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
@@ -744,6 +745,16 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: METADATA_PACKAGE,
                         blueprint_name: METADATA_BLUEPRINT.to_string(),
+                        global: false,
+                    }),
+                );
+            }
+            (RENodeId::Component(..), RENodeInit::ComponentRoyalty(..)) => {
+                module_init.insert(
+                    NodeModuleId::TypeInfo,
+                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                        package_address: ROYALTY_PACKAGE,
+                        blueprint_name: COMPONENT_ROYALTY_BLUEPRINT.to_string(),
                         global: false,
                     }),
                 );

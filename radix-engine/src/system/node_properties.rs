@@ -1,4 +1,5 @@
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
+use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
 use super::node::{RENodeInit, RENodeModuleInit};
 use crate::errors::{KernelError, RuntimeError};
 use crate::kernel::actor::{Actor, ActorIdentifier, ExecutionMode};
@@ -154,6 +155,10 @@ impl VisibilityProperties {
                 RENodeInit::Metadata(..) => {
                     package_address.eq(&METADATA_PACKAGE)
                     && blueprint_name.eq(METADATA_BLUEPRINT)
+                }
+                RENodeInit::ComponentRoyalty(..) => {
+                    package_address.eq(&ROYALTY_PACKAGE)
+                        && blueprint_name.eq(COMPONENT_ROYALTY_BLUEPRINT)
                 }
                 RENodeInit::KeyValueStore => true,
                 RENodeInit::GlobalComponent(..) => true,

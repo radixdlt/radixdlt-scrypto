@@ -34,6 +34,7 @@ use transaction::data::{manifest_args, manifest_encode};
 use transaction::model::{Instruction, SystemTransaction};
 use transaction::validation::ManifestIdAllocator;
 use crate::system::node_modules::metadata::MetadataNativePackage;
+use crate::system::node_modules::royalty::RoyaltyNativePackage;
 
 const XRD_SYMBOL: &str = "XRD";
 const XRD_NAME: &str = "Radix";
@@ -95,11 +96,11 @@ pub fn create_genesis(
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: ROYALTY_CODE_ID,
                 abi: RoyaltyAbi::blueprint_abis(),
-                dependent_resources: vec![],
+                dependent_resources: vec![RADIX_TOKEN],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
-                package_access_rules: BTreeMap::new(),
+                package_access_rules: RoyaltyNativePackage::function_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
             })
             .unwrap(),

@@ -3,16 +3,13 @@ use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::*;
 use crate::*;
 use radix_engine_interface::api::node_modules::metadata::{MetadataSetInput, METADATA_GET_IDENT, METADATA_SET_IDENT, METADATA_BLUEPRINT, METADATA_CREATE_IDENT, MetadataCreateInput};
-use radix_engine_interface::api::node_modules::royalty::{
-    ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput,
-    COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
-};
+use radix_engine_interface::api::node_modules::royalty::{ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT, COMPONENT_ROYALTY_BLUEPRINT, COMPONENT_ROYALTY_CREATE_IDENT, ComponentRoyaltyCreateInput};
 use radix_engine_interface::api::types::{ComponentId, RENodeId};
 use radix_engine_interface::api::{types::*, ClientComponentApi, ClientPackageApi};
 use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRules, Bucket, MethodKey,
 };
-use radix_engine_interface::constants::METADATA_PACKAGE;
+use radix_engine_interface::constants::{METADATA_PACKAGE, ROYALTY_PACKAGE};
 use radix_engine_interface::data::{
     scrypto_decode, scrypto_encode, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
 };
@@ -148,13 +145,23 @@ impl LocalComponent for OwnedComponent {
         ).unwrap();
         let metadata: Own = scrypto_decode(&rtn).unwrap();
 
+        let rtn = ScryptoEnv.call_function(
+            ROYALTY_PACKAGE,
+            COMPONENT_ROYALTY_BLUEPRINT,
+            COMPONENT_ROYALTY_CREATE_IDENT,
+            scrypto_encode(&ComponentRoyaltyCreateInput {
+                royalty_config: config
+            }).unwrap(),
+        ).unwrap();
+        let royalty: Own = scrypto_decode(&rtn).unwrap();
+
         ScryptoEnv
             .globalize(
                 RENodeId::Component(self.0),
                 btreemap!(
                     NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
                     NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
-                    NodeModuleId::ComponentRoyalty => scrypto_encode(&config).unwrap()
+                    NodeModuleId::ComponentRoyalty => scrypto_encode(&royalty).unwrap()
                 ),
             )
             .unwrap()

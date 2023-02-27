@@ -129,6 +129,7 @@ pub enum RENodeInit {
     AccessController(AccessControllerSubstate),
     Account(AccountSubstate),
     Metadata(MetadataSubstate),
+    ComponentRoyalty(ComponentRoyaltyConfigSubstate, ComponentRoyaltyAccumulatorSubstate),
 }
 
 impl RENodeInit {
@@ -319,6 +320,16 @@ impl RENodeInit {
                 substates.insert(
                     SubstateOffset::Metadata(MetadataOffset::Metadata),
                     metadata.into(),
+                );
+            }
+            RENodeInit::ComponentRoyalty(config, accumulator) => {
+                substates.insert(
+                    SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
+                    config.into(),
+                );
+                substates.insert(
+                    SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
+                    accumulator.into(),
                 );
             }
         };
