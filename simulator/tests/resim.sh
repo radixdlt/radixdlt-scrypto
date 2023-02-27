@@ -27,6 +27,17 @@ if [[ ${ledger_state} != *"2023-01-27T13:01:00Z"* ]];then
     exit 1
 fi
 
+# Test - show account
+account_dump=`$resim show $account`
+if [[ ${account_dump} != *"XRD"* ]];then
+    echo "XRD not present!"
+    exit 1
+fi
+if [[ ${account_dump} != *"Owner badge"* ]];then
+    echo "Owner badge not present!"
+    exit 1
+fi
+
 # Test - create fixed supply badge
 minter_badge=`$resim new-badge-fixed 1 --name 'MinterBadge' | awk '/Resource:/ {print $NF}'`
 

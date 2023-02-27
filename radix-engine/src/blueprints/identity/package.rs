@@ -26,10 +26,7 @@ impl IdentityNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         match export_name {
             IDENTITY_CREATE_IDENT => {
@@ -60,7 +57,7 @@ impl IdentityNativePackage {
         let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalIdentity)?;
         api.kernel_create_node(
             global_node_id,
-            RENodeInit::Global(GlobalSubstate::Identity(node_id.into())),
+            RENodeInit::GlobalComponent(GlobalSubstate::Identity(node_id.into())),
             BTreeMap::new(),
         )?;
         let identity_address: ComponentAddress = global_node_id.into();

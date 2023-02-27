@@ -47,6 +47,7 @@ pub struct ExecutionConfig {
     pub max_substate_writes_per_transaction: usize,
     pub max_substate_read_size: usize,
     pub max_substate_write_size: usize,
+    pub max_invoke_input_size: usize,
 }
 
 impl Default for ExecutionConfig {
@@ -68,6 +69,7 @@ impl ExecutionConfig {
             max_substate_writes_per_transaction: DEFAULT_MAX_SUBSTATE_WRITES_PER_TRANSACTION,
             max_substate_read_size: DEFAULT_MAX_SUBSTATE_READ_SIZE,
             max_substate_write_size: DEFAULT_MAX_SUBSTATE_WRITE_SIZE,
+            max_invoke_input_size: DEFAULT_MAX_INVOKE_INPUT_SIZE,
         }
     }
 
@@ -245,14 +247,7 @@ where
                 executable.auth_zone_params().clone(),
                 fee_reserve,
                 fee_table,
-                execution_config.max_call_depth,
-                execution_config.max_kernel_call_depth_traced,
-                execution_config.max_wasm_mem_per_transaction,
-                execution_config.max_wasm_mem_per_call_frame,
-                execution_config.max_substate_reads_per_transaction,
-                execution_config.max_substate_writes_per_transaction,
-                execution_config.max_substate_read_size,
-                execution_config.max_substate_write_size,
+                execution_config,
             );
             let mut kernel = Kernel::new(
                 &mut id_allocator,

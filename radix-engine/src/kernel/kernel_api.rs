@@ -1,41 +1,22 @@
-use crate::errors::*;
-use crate::system::kernel_modules::execution_trace::ProofSnapshot;
-use crate::system::node::RENodeInit;
-use crate::system::node::RENodeModuleInit;
-use crate::system::node_substates::{SubstateRef, SubstateRefMut};
-use crate::types::*;
-use crate::wasm::WasmEngine;
-use bitflags::bitflags;
-use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::resource::*;
-
 use super::actor::ResolvedActor;
 use super::call_frame::CallFrameUpdate;
 use super::call_frame::RENodeVisibilityOrigin;
 use super::heap::HeapRENode;
 use super::module_mixer::KernelModuleMixer;
-
-bitflags! {
-    #[derive(Sbor)]
-    pub struct LockFlags: u32 {
-        /// Allows the locked substate to be mutated
-        const MUTABLE = 0b00000001;
-        /// Checks that the substate locked is unmodified from the beginning of
-        /// the transaction. This is used mainly for locking fees in vaults which
-        /// requires this in order to be able to support rollbacks
-        const UNMODIFIED_BASE = 0b00000010;
-        /// Forces a write of a substate even on a transaction failure
-        /// Currently used for vault fees.
-        const FORCE_WRITE = 0b00000100;
-    }
-}
-
-impl LockFlags {
-    pub fn read_only() -> Self {
-        LockFlags::empty()
-    }
-}
+use crate::errors::*;
+use crate::system::kernel_modules::execution_trace::BucketSnapshot;
+use crate::system::kernel_modules::execution_trace::ProofSnapshot;
+use crate::system::node::RENodeInit;
+use crate::system::node::RENodeModuleInit;
+use crate::system::node_substates::SubstateRef;
+use crate::system::node_substates::SubstateRefMut;
+use crate::types::*;
+use crate::wasm::WasmEngine;
+use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::api::types::*;
+use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::ClientComponentApi;
+use radix_engine_interface::data::ScryptoValue;
 
 pub struct LockInfo {
     pub offset: SubstateOffset,
@@ -77,16 +58,26 @@ pub trait KernelSubstateApi {
     fn kernel_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError>;
 
     /// Get a non-mutable reference to a locked substate
-    fn kernel_get_substate_ref(
+    fn kernel_read_substate(
         &mut self,
         lock_handle: LockHandle,
-    ) -> Result<SubstateRef, RuntimeError>;
+    ) -> Result<IndexedScryptoValue, RuntimeError>;
 
-    /// Get a mutable reference to a locked substate
-    fn kernel_get_substate_ref_mut(
-        &mut self,
+    fn kernel_get_substate_ref<'a, 'b, S>(
+        &'b mut self,
         lock_handle: LockHandle,
-    ) -> Result<SubstateRefMut, RuntimeError>;
+    ) -> Result<&'a S, RuntimeError>
+    where
+        &'a S: From<SubstateRef<'a>>,
+        'b: 'a;
+
+    fn kernel_get_substate_ref_mut<'a, 'b, S>(
+        &'b mut self,
+        lock_handle: LockHandle,
+    ) -> Result<&'a mut S, RuntimeError>
+    where
+        &'a mut S: From<SubstateRefMut<'a>>,
+        'b: 'a;
 }
 
 pub trait KernelWasmApi<W: WasmEngine> {
@@ -104,10 +95,23 @@ pub trait Invokable<I: Invocation, E> {
 pub trait Executor {
     type Output: Debug;
 
-    fn execute<Y, W>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W>(
+        self,
+        arg: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + ClientApi<RuntimeError>,
         W: WasmEngine;
+}
+
+pub struct TemporaryResolvedInvocation<E: Executor> {
+    pub executor: E,
+    pub update: CallFrameUpdate,
+
+    // TODO: Make these two RENodes / Substates
+    pub resolved_actor: ResolvedActor,
+    pub args: ScryptoValue,
 }
 
 pub trait ExecutableInvocation: Invocation {
@@ -116,7 +120,9 @@ pub trait ExecutableInvocation: Invocation {
     fn resolve<Y: KernelSubstateApi>(
         self,
         api: &mut Y,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>;
+    ) -> Result<TemporaryResolvedInvocation<Self::Exec>, RuntimeError>;
+
+    fn payload_size(&self) -> usize;
 }
 
 /// Interface of the Kernel, for Kernel modules.
@@ -139,8 +145,11 @@ pub trait KernelInternalApi {
     fn kernel_get_current_actor(&self) -> Option<ResolvedActor>;
 
     /* Super unstable interface, specifically for `ExecutionTrace` kernel module */
-    fn kernel_read_bucket(&mut self, bucket_id: BucketId) -> Option<Resource>;
+    fn kernel_read_bucket(&mut self, bucket_id: BucketId) -> Option<BucketSnapshot>;
     fn kernel_read_proof(&mut self, proof_id: BucketId) -> Option<ProofSnapshot>;
 }
 
-pub trait KernelModuleApi<E>: KernelNodeApi + KernelSubstateApi + KernelInternalApi {}
+pub trait KernelModuleApi<E>:
+    KernelNodeApi + KernelSubstateApi + KernelInternalApi + ClientComponentApi<E>
+{
+}

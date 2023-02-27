@@ -108,7 +108,7 @@ fn transaction_limit_exceeded_substate_reads_should_fail() {
             package_address,
             "TransactionLimitTest",
             "read_kv_stores",
-            manifest_args!(100 as u32),
+            manifest_args!(200 as u32),
         )
         .build();
 
@@ -167,4 +167,74 @@ fn transaction_limit_exceeded_substate_writes_should_fail() {
             ))
         )
     });
+}
+
+#[test]
+fn transaction_limit_exceeded_invoke_input_size_should_fail() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+
+    // Act
+    let code = wat2wasm(&format!(
+        r#"
+            (module
+                (data (i32.const 0) "{}")
+                (memory $0 64)
+                (export "memory" (memory $0))
+            )
+        "#,
+        "i".repeat(DEFAULT_MAX_INVOKE_INPUT_SIZE)
+    ));
+    assert!(code.len() > DEFAULT_MAX_INVOKE_INPUT_SIZE);
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 100.into())
+        .publish_package(
+            code,
+            BTreeMap::new(),
+            BTreeMap::new(),
+            BTreeMap::new(),
+            AccessRules::new(),
+        )
+        .build();
+
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
+            TransactionLimitsError::MaxInvokePayloadSizeExceeded(x),
+        )) => *x == DEFAULT_MAX_INVOKE_INPUT_SIZE + 138,
+        _ => false,
+    })
+}
+
+#[test]
+fn transaction_limit_exceeded_direct_invoke_input_size_should_fail() {
+    // Arrange
+    let data: Vec<u8> = (0..DEFAULT_MAX_INVOKE_INPUT_SIZE).map(|_| 0).collect();
+    let blueprint_name = "test_blueprint";
+    let function_name = "test_fn";
+    let package_address = PACKAGE_LOADER;
+
+    // Act
+    let ret =
+        TestRunner::kernel_invoke_function(package_address, blueprint_name, function_name, &data);
+
+    // Assert
+    let err = ret.expect_err("Expected failure but was success");
+
+    let size = scrypto_args!(data).len()
+        + blueprint_name.len()
+        + function_name.len()
+        + package_address.size();
+
+    match err {
+        RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
+            TransactionLimitsError::MaxInvokePayloadSizeExceeded(x),
+        )) => assert_eq!(x, size),
+        x => panic!(
+            "Expected specific failure but was different error:\n{:?}",
+            x
+        ),
+    }
 }

@@ -4,7 +4,7 @@ use radix_engine_constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_SYSTEM_LOAN,
 };
 use radix_engine_interface::api::types::VaultId;
-use radix_engine_interface::blueprints::resource::Resource;
+use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use strum::EnumCount;
 
 // Note: for performance reason, `u128` is used to represent decimal in this file.
@@ -15,7 +15,6 @@ pub enum FeeReserveError {
     Overflow,
     LimitExceeded,
     LoanRepaymentFailed,
-    NotXrd,
     Abort(AbortReason),
 }
 
@@ -62,9 +61,9 @@ pub trait ExecutionFeeReserve {
     fn lock_fee(
         &mut self,
         vault_id: VaultId,
-        fee: Resource,
+        fee: LiquidFungibleResource,
         contingent: bool,
-    ) -> Result<Resource, FeeReserveError>;
+    ) -> Result<LiquidFungibleResource, FeeReserveError>;
 }
 
 pub trait FinalizingFeeReserve {
@@ -75,7 +74,7 @@ pub trait FeeReserve: PreExecutionFeeReserve + ExecutionFeeReserve + FinalizingF
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, ScryptoSbor)]
 pub enum RoyaltyReceiver {
-    Package(PackageAddress, PackageId),
+    Package(PackageAddress),
     Component(ComponentAddress, ComponentId),
 }
 
@@ -105,7 +104,6 @@ pub enum CostingReason {
     ReadSubstate,
     WriteSubstate,
     DropLock,
-    InstantiateWasm,
     RunWasm,
     RunPrecompiled,
 }
@@ -118,7 +116,7 @@ pub struct SystemLoanFeeReserve {
     tip_percentage: u16,
 
     /// Payments made during the execution of a transaction.
-    payments: Vec<(VaultId, Resource, bool)>,
+    payments: Vec<(VaultId, LiquidFungibleResource, bool)>,
 
     /// The cost unit balance (from system loan)
     remaining_loan_balance: u32,
@@ -378,13 +376,9 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
     fn lock_fee(
         &mut self,
         vault_id: VaultId,
-        mut fee: Resource,
+        mut fee: LiquidFungibleResource,
         contingent: bool,
-    ) -> Result<Resource, FeeReserveError> {
-        if fee.resource_address() != RADIX_TOKEN {
-            return Err(FeeReserveError::NotXrd);
-        }
-
+    ) -> Result<LiquidFungibleResource, FeeReserveError> {
         // Update balance
         if !contingent {
             // Assumption: no overflow due to limited XRD supply
@@ -442,12 +436,11 @@ impl Default for SystemLoanFeeReserve {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use radix_engine_interface::constants::RADIX_TOKEN;
 
     const TEST_VAULT_ID: VaultId = [0u8; 36];
 
-    fn xrd<T: Into<Decimal>>(amount: T) -> Resource {
-        Resource::new_fungible(RADIX_TOKEN, 18, amount.into())
+    fn xrd<T: Into<Decimal>>(amount: T) -> LiquidFungibleResource {
+        LiquidFungibleResource::new(amount.into())
     }
 
     #[test]
@@ -536,7 +529,7 @@ mod tests {
             .consume_multiplied_execution(2, 1, CostingReason::Invoke)
             .unwrap();
         fee_reserve
-            .consume_royalty(RoyaltyReceiver::Package(FAUCET_PACKAGE, [0u8; 36]), 2)
+            .consume_royalty(RoyaltyReceiver::Package(FAUCET_PACKAGE), 2)
             .unwrap();
         fee_reserve
             .lock_fee(TEST_VAULT_ID, xrd(100), false)

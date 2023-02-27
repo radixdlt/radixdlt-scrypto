@@ -1,8 +1,9 @@
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
-use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, LockFlags};
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
@@ -68,14 +69,13 @@ impl TransactionRuntimeNativePackage {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime),
             LockFlags::read_only(),
         )?;
-        let substate = api.kernel_get_substate_ref(handle)?;
-        let transaction_runtime_substate = substate.transaction_runtime();
+        let transaction_runtime_substate: &TransactionRuntimeSubstate =
+            api.kernel_get_substate_ref(handle)?;
         Ok(IndexedScryptoValue::from_typed(
             &transaction_runtime_substate.hash,
         ))
@@ -93,14 +93,13 @@ impl TransactionRuntimeNativePackage {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle = api.kernel_lock_substate(
+        let handle = api.sys_lock_substate(
             receiver,
-            NodeModuleId::SELF,
             SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_mut = api.kernel_get_substate_ref_mut(handle)?;
-        let tx_hash_substate = substate_mut.transaction_runtime();
+        let tx_hash_substate: &mut TransactionRuntimeSubstate =
+            api.kernel_get_substate_ref_mut(handle)?;
 
         if tx_hash_substate.next_id == u32::MAX {
             return Err(RuntimeError::ApplicationError(

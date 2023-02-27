@@ -60,3 +60,6 @@ pub const DEFAULT_MAX_SUBSTATE_READ_SIZE: usize = 1024 * 1024;
 
 /// The default maximum substates write size.
 pub const DEFAULT_MAX_SUBSTATE_WRITE_SIZE: usize = 1024 * 1024;
+
+/// The default maximum invoke input args size.
+pub const DEFAULT_MAX_INVOKE_INPUT_SIZE: usize = 4 * 1024 * 1024;

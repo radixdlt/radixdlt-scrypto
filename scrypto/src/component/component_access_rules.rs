@@ -6,7 +6,7 @@ use radix_engine_interface::api::node_modules::auth::{
     ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT, ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
 };
 use radix_engine_interface::api::types::{
-    Address, ComponentAddress, ComponentId, NodeModuleId, RENodeId, ToString,
+    ComponentAddress, ComponentId, NodeModuleId, RENodeId, ToString,
 };
 use radix_engine_interface::api::ClientComponentApi;
 use radix_engine_interface::blueprints::resource::{AccessRule, AccessRuleEntry, AccessRuleKey};
@@ -94,7 +94,7 @@ impl From<ComponentIdentifier> for RENodeId {
         match value {
             ComponentIdentifier::RENodeId(node_id) => RENodeId::Component(node_id),
             ComponentIdentifier::Address(component_address) => {
-                RENodeId::Global(Address::Component(component_address))
+                RENodeId::GlobalComponent(component_address)
             }
         }
     }

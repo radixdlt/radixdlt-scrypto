@@ -13,7 +13,7 @@ use radix_engine_interface::api::node_modules::royalty::{
     ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput,
     COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
-use radix_engine_interface::api::types::{Address, ComponentId, RENodeId};
+use radix_engine_interface::api::types::{ComponentId, RENodeId};
 use radix_engine_interface::api::{types::*, ClientComponentApi};
 use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRuleKey, AccessRules, Bucket,
@@ -188,7 +188,7 @@ pub struct GlobalComponentRef(pub ComponentAddress);
 impl Component for GlobalComponentRef {
     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
         let output = ScryptoEnv
-            .call_method(RENodeId::Global(self.0.into()), method, args)
+            .call_method(RENodeId::GlobalComponent(self.0.into()), method, args)
             .unwrap();
         scrypto_decode(&output).unwrap()
     }
@@ -196,7 +196,7 @@ impl Component for GlobalComponentRef {
     fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
         ScryptoEnv
             .call_module_method(
-                RENodeId::Global(Address::Component(self.0)),
+                RENodeId::GlobalComponent(self.0),
                 NodeModuleId::Metadata,
                 METADATA_SET_IDENT,
                 scrypto_encode(&MetadataSetInput {
@@ -211,7 +211,7 @@ impl Component for GlobalComponentRef {
     fn add_access_check(&self, access_rules: AccessRules) {
         ScryptoEnv
             .call_module_method(
-                RENodeId::Global(self.0.into()),
+                RENodeId::GlobalComponent(self.0),
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_ADD_ACCESS_CHECK_IDENT,
                 scrypto_encode(&AccessRulesAddAccessCheckInput { access_rules }).unwrap(),
@@ -222,7 +222,7 @@ impl Component for GlobalComponentRef {
     fn set_royalty_config(&self, royalty_config: RoyaltyConfig) {
         ScryptoEnv
             .call_module_method(
-                RENodeId::Global(self.0.into()),
+                RENodeId::GlobalComponent(self.0),
                 NodeModuleId::ComponentRoyalty,
                 COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
                 scrypto_encode(&ComponentSetRoyaltyConfigInput { royalty_config }).unwrap(),
@@ -233,7 +233,7 @@ impl Component for GlobalComponentRef {
     fn claim_royalty(&self) -> Bucket {
         let rtn = ScryptoEnv
             .call_module_method(
-                RENodeId::Global(self.0.into()),
+                RENodeId::GlobalComponent(self.0),
                 NodeModuleId::ComponentRoyalty,
                 COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
                 scrypto_encode(&ComponentClaimRoyaltyInput {}).unwrap(),
@@ -253,7 +253,7 @@ impl Component for GlobalComponentRef {
     fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
         let rtn = ScryptoEnv
             .call_module_method(
-                RENodeId::Global(self.0.into()),
+                RENodeId::GlobalComponent(self.0),
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_GET_LENGTH_IDENT,
                 scrypto_encode(&AccessRulesGetLengthInput {}).unwrap(),

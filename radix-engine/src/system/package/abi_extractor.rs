@@ -2,8 +2,9 @@ use crate::ledger::*;
 use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use radix_engine_interface::abi;
+use radix_engine_interface::api::component::TypeInfoSubstate;
 use radix_engine_interface::api::types::{
-    Address, GlobalOffset, PackageOffset, RENodeId, SubstateId, SubstateOffset,
+    GlobalOffset, PackageOffset, RENodeId, SubstateId, SubstateOffset,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -18,18 +19,9 @@ pub fn export_abi<S: ReadableSubstateStore>(
     package_address: PackageAddress,
     blueprint_name: &str,
 ) -> Result<abi::BlueprintAbi, ExportError> {
-    let global_substate: RuntimeSubstate = substate_store
-        .get_substate(&SubstateId(
-            RENodeId::Global(Address::Package(package_address)),
-            NodeModuleId::SELF,
-            SubstateOffset::Global(GlobalOffset::Global),
-        ))
-        .map(|s| s.substate.to_runtime())
-        .ok_or(ExportError::PackageNotFound(package_address))?;
-
     let package_value: RuntimeSubstate = substate_store
         .get_substate(&SubstateId(
-            global_substate.global().node_deref(),
+            RENodeId::GlobalPackage(package_address),
             NodeModuleId::SELF,
             SubstateOffset::Package(PackageOffset::Info),
         ))
@@ -52,7 +44,7 @@ pub fn export_abi_by_component<S: ReadableSubstateStore>(
     substate_store: &S,
     component_address: ComponentAddress,
 ) -> Result<abi::BlueprintAbi, ExportError> {
-    let node_id = RENodeId::Global(Address::Component(component_address));
+    let node_id = RENodeId::GlobalComponent(component_address);
     let global = substate_store
         .get_substate(&SubstateId(
             node_id,
@@ -73,10 +65,10 @@ pub fn export_abi_by_component<S: ReadableSubstateStore>(
         .ok_or(ExportError::ComponentNotFound(component_address))?;
 
     let component_ref = component_value.to_ref();
-    let component_info = component_ref.component_info();
+    let type_info: &TypeInfoSubstate = component_ref.into();
     export_abi(
         substate_store,
-        component_info.package_address,
-        &component_info.blueprint_name,
+        type_info.package_address,
+        &type_info.blueprint_name,
     )
 }

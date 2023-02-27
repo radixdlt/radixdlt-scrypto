@@ -21,7 +21,7 @@ impl BorrowedPackage {
         Y: ClientApi<E>,
     {
         api.call_module_method(
-            RENodeId::Global(self.0.into()),
+            RENodeId::GlobalPackage(self.0),
             NodeModuleId::PackageRoyalty,
             PACKAGE_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
             scrypto_encode(&PackageSetRoyaltyConfigInput { royalty_config }).unwrap(),

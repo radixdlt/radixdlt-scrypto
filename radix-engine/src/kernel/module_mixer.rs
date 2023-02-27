@@ -2,7 +2,6 @@ use super::actor::ResolvedActor;
 use super::kernel_api::KernelModuleApi;
 use crate::errors::*;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::LockFlags;
 use crate::kernel::module::KernelModule;
 use crate::system::kernel_modules::auth::AuthModule;
 use crate::system::kernel_modules::costing::CostingModule;
@@ -18,8 +17,10 @@ use crate::system::kernel_modules::transaction_limits::{
 use crate::system::kernel_modules::transaction_runtime::TransactionRuntimeModule;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
+use crate::transaction::ExecutionConfig;
 use crate::types::api::unsafe_api::ClientCostingReason;
 use bitflags::bitflags;
+use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::InvocationIdentifier;
 use radix_engine_interface::api::types::LockHandle;
 use radix_engine_interface::api::types::NodeModuleId;
@@ -27,8 +28,9 @@ use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::types::RENodeType;
 use radix_engine_interface::api::types::SubstateOffset;
 use radix_engine_interface::api::types::VaultId;
-use radix_engine_interface::blueprints::resource::Resource;
+use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::crypto::Hash;
+use radix_engine_interface::data::ScryptoValue;
 use sbor::rust::collections::BTreeMap;
 use transaction::model::AuthZoneParams;
 
@@ -67,14 +69,7 @@ impl KernelModuleMixer {
         auth_zone_params: AuthZoneParams,
         fee_reserve: SystemLoanFeeReserve,
         fee_table: FeeTable,
-        max_call_depth: usize,
-        max_kernel_call_depth_traced: Option<usize>,
-        max_wasm_memory: usize,
-        max_wasm_memory_per_call_frame: usize,
-        max_substate_reads: usize,
-        max_substate_writes: usize,
-        max_substate_read_size: usize,
-        max_substate_write_size: usize,
+        execution_config: &ExecutionConfig,
     ) -> Self {
         let mut modules = EnabledModules::empty();
         if debug {
@@ -85,7 +80,7 @@ impl KernelModuleMixer {
         modules |= EnabledModules::AUTH;
         modules |= EnabledModules::LOGGER;
         modules |= EnabledModules::TRANSACTION_RUNTIME;
-        if max_kernel_call_depth_traced.is_some() {
+        if execution_config.max_kernel_call_depth_traced.is_some() {
             modules |= EnabledModules::EXECUTION_TRACE;
         }
         modules |= EnabledModules::TRANSACTION_LIMITS;
@@ -96,7 +91,7 @@ impl KernelModuleMixer {
             costing: CostingModule {
                 fee_reserve,
                 fee_table,
-                max_call_depth,
+                max_call_depth: execution_config.max_call_depth,
             },
             node_move: NodeMoveModule {},
             auth: AuthModule {
@@ -105,14 +100,17 @@ impl KernelModuleMixer {
             logger: LoggerModule {},
             transaction_runtime: TransactionRuntimeModule { tx_hash },
             transaction_limits: TransactionLimitsModule::new(TransactionLimitsConfig {
-                max_wasm_memory,
-                max_wasm_memory_per_call_frame,
-                max_substate_reads_count: max_substate_reads,
-                max_substate_writes_count: max_substate_writes,
-                max_substate_read_size,
-                max_substate_write_size,
+                max_wasm_memory: execution_config.max_wasm_mem_per_transaction,
+                max_wasm_memory_per_call_frame: execution_config.max_wasm_mem_per_call_frame,
+                max_substate_reads_count: execution_config.max_substate_reads_per_transaction,
+                max_substate_writes_count: execution_config.max_substate_writes_per_transaction,
+                max_substate_read_size: execution_config.max_substate_read_size,
+                max_substate_write_size: execution_config.max_substate_write_size,
+                max_invoke_payload_size: execution_config.max_invoke_input_size,
             }),
-            execution_trace: ExecutionTraceModule::new(max_kernel_call_depth_traced.unwrap_or(0)),
+            execution_trace: ExecutionTraceModule::new(
+                execution_config.max_kernel_call_depth_traced.unwrap_or(0),
+            ),
         }
     }
 }
@@ -234,31 +232,32 @@ impl KernelModule for KernelModuleMixer {
         api: &mut Y,
         actor: &Option<ResolvedActor>,
         update: &mut CallFrameUpdate,
+        args: &ScryptoValue,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
-            KernelDebugModule::before_push_frame(api, actor, update)?;
+            KernelDebugModule::before_push_frame(api, actor, update, args)?;
         }
         if modules.contains(EnabledModules::COSTING) {
-            CostingModule::before_push_frame(api, actor, update)?;
+            CostingModule::before_push_frame(api, actor, update, args)?;
         }
         if modules.contains(EnabledModules::NODE_MOVE) {
-            NodeMoveModule::before_push_frame(api, actor, update)?;
+            NodeMoveModule::before_push_frame(api, actor, update, args)?;
         }
         if modules.contains(EnabledModules::AUTH) {
-            AuthModule::before_push_frame(api, actor, update)?;
+            AuthModule::before_push_frame(api, actor, update, args)?;
         }
         if modules.contains(EnabledModules::LOGGER) {
-            LoggerModule::before_push_frame(api, actor, update)?;
+            LoggerModule::before_push_frame(api, actor, update, args)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
-            TransactionRuntimeModule::before_push_frame(api, actor, update)?;
+            TransactionRuntimeModule::before_push_frame(api, actor, update, args)?;
         }
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
-            ExecutionTraceModule::before_push_frame(api, actor, update)?;
+            ExecutionTraceModule::before_push_frame(api, actor, update, args)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
-            TransactionLimitsModule::before_push_frame(api, actor, update)?;
+            TransactionLimitsModule::before_push_frame(api, actor, update, args)?;
         }
         Ok(())
     }
@@ -755,9 +754,9 @@ impl KernelModule for KernelModuleMixer {
     fn on_credit_cost_units<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         vault_id: VaultId,
-        mut fee: Resource,
+        mut fee: LiquidFungibleResource,
         contingent: bool,
-    ) -> Result<Resource, RuntimeError> {
+    ) -> Result<LiquidFungibleResource, RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             fee = KernelDebugModule::on_credit_cost_units(api, vault_id, fee, contingent)?;

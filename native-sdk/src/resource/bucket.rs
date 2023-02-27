@@ -1,6 +1,7 @@
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::{ClientApi, ClientComponentApi};
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 use radix_engine_interface::data::{
     scrypto_decode, scrypto_encode, ScryptoCategorize, ScryptoDecode,
 };
@@ -23,7 +24,7 @@ pub trait SysBucket {
     where
         Y: ClientApi<E>;
 
-    fn sys_total_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn sys_non_fungible_local_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, E>
@@ -47,7 +48,7 @@ pub trait SysBucket {
         Y: ClientApi<E>;
 
     fn sys_take_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        &mut self,
+        &self,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Bucket, E>
@@ -90,7 +91,7 @@ impl SysBucket for Bucket {
         Y: ClientComponentApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::Global(receiver.into()),
+            RENodeId::GlobalResourceManager(receiver),
             RESOURCE_MANAGER_CREATE_BUCKET_IDENT,
             scrypto_encode(&ResourceManagerCreateBucketInput {}).unwrap(),
         )?;
@@ -113,7 +114,7 @@ impl SysBucket for Bucket {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    fn sys_total_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn sys_non_fungible_local_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, E>
@@ -164,7 +165,7 @@ impl SysBucket for Bucket {
     }
 
     fn sys_take_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        &mut self,
+        &self,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Bucket, E>
@@ -184,11 +185,11 @@ impl SysBucket for Bucket {
     where
         Y: ClientApi<E>,
     {
-        let receiver = self.sys_resource_address(api)?;
-        let rtn = api.call_method(
-            RENodeId::Global(receiver.into()),
-            RESOURCE_MANAGER_BURN_IDENT,
-            scrypto_encode(&ResourceManagerBurnInput {
+        let rtn = api.call_function(
+            RESOURCE_MANAGER_PACKAGE,
+            RESOURCE_MANAGER_BLUEPRINT,
+            RESOURCE_MANAGER_BURN_BUCKET_IDENT,
+            scrypto_encode(&ResourceManagerBurnBucketInput {
                 bucket: Bucket(self.0),
             })
             .unwrap(),

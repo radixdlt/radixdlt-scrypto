@@ -1,16 +1,17 @@
 #![allow(unused_must_use)]
 use colored::*;
-use radix_engine::blueprints::resource::{
-    NonFungibleSubstate, ResourceManagerSubstate, VaultSubstate,
-};
+use radix_engine::blueprints::resource::VaultInfoSubstate;
+use radix_engine::blueprints::resource::{NonFungibleSubstate, ResourceManagerSubstate};
 use radix_engine::ledger::*;
-use radix_engine::system::global::GlobalSubstate;
 use radix_engine::system::node_modules::metadata::MetadataSubstate;
 use radix_engine::types::*;
+use radix_engine_interface::address::AddressDisplayContext;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::package::PackageCodeSubstate;
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::blueprints::resource::{AccessRules, ResourceType};
+use radix_engine_interface::blueprints::resource::{
+    AccessRules, LiquidFungibleResource, LiquidNonFungibleResource,
+};
 use radix_engine_interface::data::{IndexedScryptoValue, ScryptoValueDisplayContext};
 use radix_engine_interface::network::NetworkDefinition;
 use std::collections::VecDeque;
@@ -34,25 +35,14 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
     output: &mut O,
 ) -> Result<(), DisplayError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
-
-    let global: Option<GlobalSubstate> = substate_store
+    let package: Option<PackageCodeSubstate> = substate_store
         .get_substate(&SubstateId(
-            RENodeId::Global(Address::Package(package_address)),
+            RENodeId::GlobalPackage(package_address),
             NodeModuleId::SELF,
-            SubstateOffset::Global(GlobalOffset::Global),
+            SubstateOffset::Package(PackageOffset::Code),
         ))
         .map(|s| s.substate)
         .map(|s| s.to_runtime().into());
-    let package: Option<PackageCodeSubstate> = global.and_then(|global| {
-        substate_store
-            .get_substate(&SubstateId(
-                global.node_deref(),
-                NodeModuleId::SELF,
-                SubstateOffset::Package(PackageOffset::Code),
-            ))
-            .map(|s| s.substate)
-            .map(|s| s.to_runtime().into())
-    });
     let package = package.ok_or(DisplayError::PackageNotFound)?;
 
     writeln!(
@@ -89,7 +79,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
 
     // Dereference the global component address to get the component id
     let component_id = {
-        let node_id = RENodeId::Global(Address::Component(component_address));
+        let node_id = RENodeId::GlobalComponent(component_address);
         substate_store
             .get_substate(&SubstateId(
                 node_id,
@@ -102,7 +92,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
     };
 
     // Some branching logic is needed here to deal well with native components. Only `Normal`
-    // components have a `ComponentInfoSubstate`. Other components require some special handling.
+    // components have a `TypeInfoSubstate`. Other components require some special handling.
     let component_state_dump = match component_address {
         ComponentAddress::Normal(..) => {
             let component_info_substate: TypeInfoSubstate = substate_store
@@ -167,6 +157,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                     _ => None,
                 })
                 .collect();
+
             while !queue.is_empty() {
                 let kv_store_id = queue.pop_front().unwrap();
                 let (maps, vaults) =
@@ -337,10 +328,15 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
     if let Some(access_rules) = component_state_dump.access_rules {
         writeln!(output, "{}", "Access Rules".green().bold());
         for (_, auth) in access_rules.iter().identify_last() {
-            for (last, (k, v)) in auth.get_all_method_auth().iter().identify_last() {
-                writeln!(output, "{} {:?} => {:?}", list_item_prefix(last), k, v);
+            for (k, v) in auth.get_all_method_auth().iter() {
+                writeln!(output, "{} {:?} => {:?}", list_item_prefix(false), k, v);
             }
-            writeln!(output, "Default: {:?}", auth.get_default());
+            writeln!(
+                output,
+                "{} Default => {:?}",
+                list_item_prefix(true),
+                auth.get_default()
+            );
         }
     }
 
@@ -389,10 +385,10 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
     let map = substate_store.get_kv_store_entries(kv_store_id);
     writeln!(
         output,
-        "{}: {:?}{:?}",
+        "{}: {}, {}",
         "Key Value Store".green().bold(),
-        component_address,
-        kv_store_id
+        component_address.to_string(AddressDisplayContext::with_encoder(&bech32_encoder)),
+        hex::encode(kv_store_id)
     );
     for (last, (_hash, substate)) in map.iter().identify_last() {
         let substate = substate.clone().to_runtime();
@@ -431,48 +427,62 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
 
     writeln!(output, "{}:", "Resources".green().bold());
     for (last, vault_id) in vaults.iter().identify_last() {
-        let vault: VaultSubstate = substate_store
+        // READ vault info
+        let vault_info: VaultInfoSubstate = substate_store
             .get_substate(&SubstateId(
                 RENodeId::Vault(*vault_id),
                 NodeModuleId::SELF,
-                SubstateOffset::Vault(VaultOffset::Vault),
+                SubstateOffset::Vault(VaultOffset::Info),
             ))
             .map(|s| s.substate)
             .map(|s| s.into())
             .unwrap();
-        let amount = vault.0.amount();
-        let resource_address = vault.0.resource_address();
-        let global: Option<GlobalSubstate> = substate_store
+
+        // READ resource manager
+        let resource_address = vault_info.resource_address;
+        let resource_manager: Option<ResourceManagerSubstate> = substate_store
             .get_substate(&SubstateId(
-                RENodeId::Global(Address::Resource(resource_address)),
+                RENodeId::GlobalResourceManager(resource_address),
                 NodeModuleId::SELF,
-                SubstateOffset::Global(GlobalOffset::Global),
+                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             ))
             .map(|s| s.substate)
             .map(|s| s.to_runtime().into());
-        let resource_manager: Option<ResourceManagerSubstate> =
-            global.as_ref().and_then(|global| {
-                substate_store
-                    .get_substate(&SubstateId(
-                        global.node_deref(),
-                        NodeModuleId::SELF,
-                        SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
-                    ))
-                    .map(|s| s.substate)
-                    .map(|s| s.to_runtime().into())
-            });
         let resource_manager = resource_manager.ok_or(DisplayError::ResourceManagerNotFound)?;
-        let metadata: Option<MetadataSubstate> = global.and_then(|global| {
-            substate_store
+        let metadata: Option<MetadataSubstate> = substate_store
+            .get_substate(&SubstateId(
+                RENodeId::GlobalResourceManager(resource_address),
+                NodeModuleId::Metadata,
+                SubstateOffset::Metadata(MetadataOffset::Metadata),
+            ))
+            .map(|s| s.substate)
+            .map(|s| s.to_runtime().into());
+        let metadata = metadata.ok_or(DisplayError::ResourceManagerNotFound)?;
+
+        // DUMP resource
+        let amount = if vault_info.resource_type.is_fungible() {
+            let vault: LiquidFungibleResource = substate_store
                 .get_substate(&SubstateId(
-                    global.node_deref(),
-                    NodeModuleId::Metadata,
-                    SubstateOffset::Metadata(MetadataOffset::Metadata),
+                    RENodeId::Vault(*vault_id),
+                    NodeModuleId::SELF,
+                    SubstateOffset::Vault(VaultOffset::LiquidFungible),
                 ))
                 .map(|s| s.substate)
-                .map(|s| s.to_runtime().into())
-        });
-        let metadata = metadata.ok_or(DisplayError::ResourceManagerNotFound)?;
+                .map(|s| s.into())
+                .unwrap();
+            vault.amount()
+        } else {
+            let vault: LiquidNonFungibleResource = substate_store
+                .get_substate(&SubstateId(
+                    RENodeId::Vault(*vault_id),
+                    NodeModuleId::SELF,
+                    SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
+                ))
+                .map(|s| s.substate)
+                .map(|s| s.into())
+                .unwrap();
+            vault.amount()
+        };
         writeln!(
             output,
             "{} {{ amount: {}, resource address: {}{}{} }}",
@@ -490,11 +500,20 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                 .map(|symbol| format!(", symbol: \"{}\"", symbol))
                 .unwrap_or(String::new()),
         );
-        if matches!(
-            resource_manager.resource_type,
-            ResourceType::NonFungible { .. }
-        ) {
-            let ids = vault.0.ids();
+
+        // DUMP non-fungibles
+        if !vault_info.resource_type.is_fungible() {
+            let vault: LiquidNonFungibleResource = substate_store
+                .get_substate(&SubstateId(
+                    RENodeId::Vault(*vault_id),
+                    NodeModuleId::SELF,
+                    SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
+                ))
+                .map(|s| s.substate)
+                .map(|s| s.into())
+                .unwrap();
+
+            let ids = vault.ids();
             for (inner_last, id) in ids.iter().identify_last() {
                 let non_fungible: NonFungibleSubstate = substate_store
                     .get_substate(&SubstateId(
@@ -535,35 +554,23 @@ pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
     substate_store: &T,
     output: &mut O,
 ) -> Result<(), DisplayError> {
-    let global: Option<GlobalSubstate> = substate_store
+    let resource_manager: Option<ResourceManagerSubstate> = substate_store
         .get_substate(&SubstateId(
-            RENodeId::Global(Address::Resource(resource_address)),
+            RENodeId::GlobalResourceManager(resource_address),
             NodeModuleId::SELF,
-            SubstateOffset::Global(GlobalOffset::Global),
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
         ))
         .map(|s| s.substate)
         .map(|s| s.to_runtime().into());
-    let resource_manager: Option<ResourceManagerSubstate> = global.as_ref().and_then(|global| {
-        substate_store
-            .get_substate(&SubstateId(
-                global.node_deref(),
-                NodeModuleId::SELF,
-                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
-            ))
-            .map(|s| s.substate)
-            .map(|s| s.to_runtime().into())
-    });
     let resource_manager = resource_manager.ok_or(DisplayError::ResourceManagerNotFound)?;
-    let metadata: Option<MetadataSubstate> = global.and_then(|global| {
-        substate_store
-            .get_substate(&SubstateId(
-                global.node_deref(),
-                NodeModuleId::Metadata,
-                SubstateOffset::Metadata(MetadataOffset::Metadata),
-            ))
-            .map(|s| s.substate)
-            .map(|s| s.to_runtime().into())
-    });
+    let metadata: Option<MetadataSubstate> = substate_store
+        .get_substate(&SubstateId(
+            RENodeId::GlobalResourceManager(resource_address),
+            NodeModuleId::Metadata,
+            SubstateOffset::Metadata(MetadataOffset::Metadata),
+        ))
+        .map(|s| s.substate)
+        .map(|s| s.to_runtime().into());
     let metadata = metadata.ok_or(DisplayError::ResourceManagerNotFound)?;
 
     writeln!(

@@ -96,6 +96,8 @@ pub enum WasmRuntimeError {
     /// WASM function return is not a `u64` fat pointer which points to a valid memory range.
     InvalidWasmPointer,
 
+    Trap(String),
+
     //=============
     // SHIM ERRORS
     //=============
@@ -135,6 +137,7 @@ pub enum WasmRuntimeError {
     InvalidComponentId(DecodeError),
     /// Invalid component address
     InvalidComponentAddress(DecodeError),
+    InvalidLockFlags,
     /// Costing error
     FeeReserveError(FeeReserveError),
 }
