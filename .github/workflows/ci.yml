@@ -231,6 +231,9 @@ jobs:
     - name: Run bench
       run: cargo bench
       working-directory: radix-engine-tests
+    - name: Run bench
+      run: cargo bench
+      working-directory: radix-engine-interface
   transaction:
     name: Run transaction tests
     runs-on: ${{ matrix.os }}
