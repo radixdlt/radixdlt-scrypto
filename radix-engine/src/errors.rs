@@ -200,6 +200,7 @@ pub enum ScryptoFnResolvingError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemError {
     InvalidLockFlags,
+    CannotGlobalize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
