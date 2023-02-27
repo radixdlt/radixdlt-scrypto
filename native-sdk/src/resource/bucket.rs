@@ -1,5 +1,5 @@
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::api::{ClientApi, ClientComponentApi};
+use radix_engine_interface::api::{ClientApi, ClientObjectApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 use radix_engine_interface::data::{
@@ -88,7 +88,7 @@ impl SysBucket for Bucket {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientComponentApi<E>,
+        Y: ClientObjectApi<E>,
     {
         let rtn = api.call_method(
             RENodeId::GlobalResourceManager(receiver),

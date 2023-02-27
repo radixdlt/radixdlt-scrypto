@@ -255,6 +255,29 @@ impl Package {
         Ok(code_type)
     }
 
+    pub(crate) fn get_blueprint_abi<Y>(
+        receiver: RENodeId,
+        blueprint_name: String,
+        api: &mut Y,
+    ) -> Result<BlueprintAbi, RuntimeError>
+        where
+            Y: KernelSubstateApi,
+    {
+        let handle = api.kernel_lock_substate(
+            receiver,
+            NodeModuleId::SELF,
+            SubstateOffset::Package(PackageOffset::Info),
+            LockFlags::read_only(),
+        )?;
+        let info: &PackageInfoSubstate = api.kernel_get_substate_ref(handle)?;
+
+        // Find the abi
+        let abi =
+            info.blueprint_abi(&blueprint_name)
+                .ok_or(RuntimeError::ApplicationError(ApplicationError::PackageError(PackageError::BlueprintNotFound)))?;
+        Ok(abi.clone())
+    }
+
     pub(crate) fn get_fn_abi<Y>(
         receiver: RENodeId,
         input: PackageGetFnAbiInput,

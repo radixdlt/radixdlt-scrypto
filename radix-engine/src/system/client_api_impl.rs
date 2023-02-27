@@ -25,7 +25,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::{
-    ClientActorApi, ClientApi, ClientComponentApi, ClientNodeApi, ClientPackageApi,
+    ClientActorApi, ClientApi, ClientObjectApi, ClientNodeApi, ClientPackageApi,
     ClientSubstateApi, ClientUnsafeApi,
 };
 use radix_engine_interface::blueprints::resource::*;
@@ -33,6 +33,7 @@ use radix_engine_interface::data::model::Own;
 use radix_engine_interface::data::*;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+use crate::system::package::Package;
 
 impl<'g, 's, W> ClientNodeApi<RuntimeError> for Kernel<'g, 's, W>
 where
@@ -201,18 +202,15 @@ where
     }
 }
 
-impl<'g, 's, W> ClientComponentApi<RuntimeError> for Kernel<'g, 's, W>
+impl<'g, 's, W> ClientObjectApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    fn new_component(
+    fn new_object(
         &mut self,
         blueprint_ident: &str,
         app_states: BTreeMap<u8, Vec<u8>>,
     ) -> Result<ComponentId, RuntimeError> {
-        // Allocate node id
-        let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
-
         // Create component RENode
         // FIXME: support native blueprints
         let package_address = self
@@ -221,17 +219,29 @@ where
             .fn_identifier
             .package_address();
 
-        let blueprint_ident = blueprint_ident.to_string();
+        let abi = Package::get_blueprint_abi(
+            RENodeId::GlobalPackage(package_address),
+            blueprint_ident.to_string(),
+            self,
+        )?;
+
         // FIXME: generalize app substates;
         // FIXME: remove unwrap;
         // FIXME: support native blueprints
-        let abi_enforced_app_substate = app_states.into_iter().next().unwrap().1;
+        let substate_bytes = app_states.into_iter().next().unwrap().1;
+        let substate: ScryptoValue = scrypto_decode(&substate_bytes)
+            .map_err(|e| RuntimeError::SystemError(SystemError::InvalidScryptoValue(e)))?;
 
-        // TODO: Check that blueprint exists here rather than in kernel
+        if !match_schema_with_value(&abi.structure, &substate) {
+            return Err(RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema));
+        }
+
+        // Allocate node id
+        let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
 
         self.kernel_create_node(
             node_id,
-            RENodeInit::Component(ComponentStateSubstate::new(abi_enforced_app_substate)),
+            RENodeInit::Component(ComponentStateSubstate::new(substate_bytes)),
             btreemap!(
                 NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(
                     TypeInfoSubstate::new(package_address, blueprint_ident.to_string(), false)

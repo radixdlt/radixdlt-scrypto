@@ -1,6 +1,6 @@
 use radix_engine_interface::api::types::{RENodeId, VaultId};
 use radix_engine_interface::api::{
-    ClientApi, ClientComponentApi, ClientNodeApi, ClientSubstateApi,
+    ClientApi, ClientObjectApi, ClientNodeApi, ClientSubstateApi,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::model::Own;
@@ -17,7 +17,7 @@ impl Vault {
         api: &mut Y,
     ) -> Result<Self, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientComponentApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
             RENodeId::GlobalResourceManager(resource_address),
@@ -35,7 +35,7 @@ impl Vault {
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientComponentApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
             RENodeId::Vault(self.0),
@@ -52,7 +52,7 @@ impl Vault {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientComponentApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
             RENodeId::Vault(self.0),
@@ -65,7 +65,7 @@ impl Vault {
 
     pub fn sys_take_all<Y, E: Debug + ScryptoDecode>(&mut self, api: &mut Y) -> Result<Bucket, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientComponentApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         // TODO: Replace with actual take all blueprint method
         let amount = self.sys_amount(api)?;
@@ -84,7 +84,7 @@ impl Vault {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientComponentApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
             RENodeId::Vault(self.0),
@@ -100,7 +100,7 @@ impl Vault {
 
     pub fn sys_amount<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Decimal, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientComponentApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
             RENodeId::Vault(self.0),
@@ -114,7 +114,7 @@ impl Vault {
     pub fn sys_create_proof<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Proof, E>
     where
         E: Debug + ScryptoDecode,
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientComponentApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
             RENodeId::Vault(self.0),
@@ -165,7 +165,7 @@ impl Vault {
         amount: Decimal,
     ) -> Result<(), E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientComponentApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
             RENodeId::Vault(self.0),
@@ -185,7 +185,7 @@ impl Vault {
         amount: Decimal,
     ) -> Result<(), E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientComponentApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
             RENodeId::Vault(self.0),
@@ -204,7 +204,7 @@ impl Vault {
         api: &mut Y,
     ) -> Result<ResourceAddress, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientComponentApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
             RENodeId::Vault(self.0),

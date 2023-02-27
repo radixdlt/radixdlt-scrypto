@@ -7,7 +7,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::{
-    ClientActorApi, ClientComponentApi, ClientNodeApi, ClientPackageApi, ClientSubstateApi,
+    ClientActorApi, ClientObjectApi, ClientNodeApi, ClientPackageApi, ClientSubstateApi,
     ClientUnsafeApi,
 };
 use radix_engine_interface::blueprints::resource::AccessRules;
@@ -20,7 +20,7 @@ where
         + ClientNodeApi<RuntimeError>
         + ClientSubstateApi<RuntimeError>
         + ClientPackageApi<RuntimeError>
-        + ClientComponentApi<RuntimeError>
+        + ClientObjectApi<RuntimeError>
         + ClientActorApi<RuntimeError>,
 {
     api: &'y mut Y,
@@ -34,7 +34,7 @@ where
         + ClientNodeApi<RuntimeError>
         + ClientSubstateApi<RuntimeError>
         + ClientPackageApi<RuntimeError>
-        + ClientComponentApi<RuntimeError>
+        + ClientObjectApi<RuntimeError>
         + ClientActorApi<RuntimeError>,
 {
     pub fn new(api: &'y mut Y) -> Self {
@@ -52,7 +52,7 @@ where
         + ClientNodeApi<RuntimeError>
         + ClientSubstateApi<RuntimeError>
         + ClientPackageApi<RuntimeError>
-        + ClientComponentApi<RuntimeError>
+        + ClientObjectApi<RuntimeError>
         + ClientActorApi<RuntimeError>,
 {
     fn allocate_buffer(
@@ -162,7 +162,7 @@ where
 
         let component_id = self
             .api
-            .new_component(blueprint_ident.as_ref(), app_states)?;
+            .new_object(blueprint_ident.as_ref(), app_states)?;
         let component_id_encoded =
             scrypto_encode(&component_id).expect("Failed to encode component id");
 

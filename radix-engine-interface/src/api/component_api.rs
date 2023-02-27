@@ -2,9 +2,9 @@ use crate::api::types::*;
 use sbor::rust::collections::*;
 use sbor::rust::vec::Vec;
 
-pub trait ClientComponentApi<E> {
+pub trait ClientObjectApi<E> {
     // TODO: refine the interface
-    fn new_component(
+    fn new_object(
         &mut self,
         blueprint_ident: &str,
         app_states: BTreeMap<u8, Vec<u8>>,

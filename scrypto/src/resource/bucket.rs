@@ -1,6 +1,6 @@
 use crate::resource::{ComponentAuthZone, NonFungible, ScryptoProof};
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::api::{ClientComponentApi, ClientPackageApi};
+use radix_engine_interface::api::{ClientObjectApi, ClientPackageApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode};

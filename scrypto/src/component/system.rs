@@ -1,7 +1,7 @@
 use crate::component::*;
 use crate::engine::scrypto_env::ScryptoEnv;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::ClientComponentApi;
+use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::data::scrypto_encode;
 use sbor::rust::collections::*;
 
@@ -49,7 +49,7 @@ impl ComponentSystem {
     ) -> OwnedComponent {
         let mut env = ScryptoEnv;
         let node_id = env
-            .new_component(
+            .new_object(
                 blueprint_name,
                 btreemap!(
                     0 => scrypto_encode(&state).unwrap()

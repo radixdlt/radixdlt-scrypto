@@ -3,7 +3,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
     KeyValueStoreId, KeyValueStoreOffset, RENodeId, SubstateOffset,
 };
-use radix_engine_interface::api::{ClientComponentApi, ClientSubstateApi};
+use radix_engine_interface::api::{ClientObjectApi, ClientSubstateApi};
 use radix_engine_interface::data::model::Own;
 use radix_engine_interface::data::*;
 use sbor::rust::boxed::Box;

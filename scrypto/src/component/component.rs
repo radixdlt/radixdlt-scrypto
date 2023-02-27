@@ -15,7 +15,7 @@ use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_CREATE_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
 use radix_engine_interface::api::types::{ComponentId, RENodeId};
-use radix_engine_interface::api::{types::*, ClientComponentApi, ClientPackageApi};
+use radix_engine_interface::api::{types::*, ClientObjectApi, ClientPackageApi};
 use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRules, Bucket, MethodKey,
 };

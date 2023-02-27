@@ -202,6 +202,8 @@ pub enum SystemError {
     InvalidLockFlags,
     CannotGlobalize,
     InvalidModule,
+    ObjectDoesNotMatchSchema,
+    InvalidScryptoValue(DecodeError),
     InvalidAccessRules(DecodeError),
     InvalidMetadata(DecodeError),
     InvalidRoyaltyConfig(DecodeError),

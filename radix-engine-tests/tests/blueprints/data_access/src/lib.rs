@@ -1,7 +1,7 @@
 use radix_engine_interface::api::substate_api::LockFlags;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
-use scrypto::radix_engine_interface::api::ClientComponentApi;
+use scrypto::radix_engine_interface::api::ClientObjectApi;
 use scrypto::radix_engine_interface::api::ClientSubstateApi;
 
 #[blueprint]

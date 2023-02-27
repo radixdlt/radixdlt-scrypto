@@ -1,5 +1,5 @@
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::ClientComponentApi;
+use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::model::Own;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoCustomValueKind};

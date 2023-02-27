@@ -21,7 +21,7 @@ use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
 use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
 use radix_engine_interface::api::package::{PackageCodeSubstate, PACKAGE_LOADER_BLUEPRINT};
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::ClientComponentApi;
+use radix_engine_interface::api::ClientObjectApi;
 // TODO: clean this up!
 use crate::kernel::kernel_api::TemporaryResolvedInvocation;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
@@ -950,8 +950,6 @@ where
             }
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id))),
         }
-
-        // TODO: For Scrypto components, check state against blueprint schema
 
         let push_to_store = match re_node {
             RENodeInit::GlobalComponent(..)

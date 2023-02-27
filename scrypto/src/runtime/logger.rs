@@ -1,5 +1,5 @@
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::api::ClientComponentApi;
+use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::logger::{Level, LoggerLogInput, LOGGER_LOG_IDENT};
 use radix_engine_interface::data::scrypto_encode;
 use sbor::rust::string::String;

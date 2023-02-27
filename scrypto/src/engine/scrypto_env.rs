@@ -2,7 +2,7 @@ use crate::engine::wasm_api::*;
 use radix_engine_interface::api::package::{PackageCodeSubstate, PackageInfoSubstate};
 use radix_engine_interface::api::{types::*, LockFlags};
 use radix_engine_interface::api::{
-    ClientActorApi, ClientComponentApi, ClientNodeApi, ClientPackageApi, ClientSubstateApi,
+    ClientActorApi, ClientObjectApi, ClientNodeApi, ClientPackageApi, ClientSubstateApi,
 };
 use radix_engine_interface::blueprints::resource::AccessRules;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
@@ -18,8 +18,8 @@ pub enum ClientApiError {
 
 pub struct ScryptoEnv;
 
-impl ClientComponentApi<ClientApiError> for ScryptoEnv {
-    fn new_component(
+impl ClientObjectApi<ClientApiError> for ScryptoEnv {
+    fn new_object(
         &mut self,
         blueprint_ident: &str,
         app_states: BTreeMap<u8, Vec<u8>>,

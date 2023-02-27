@@ -11,7 +11,7 @@ pub mod unsafe_api;
 
 // Re-exports
 pub use actor_api::ClientActorApi;
-pub use component_api::ClientComponentApi;
+pub use component_api::ClientObjectApi;
 pub use node_api::ClientNodeApi;
 pub use package_api::ClientPackageApi;
 pub use substate_api::ClientSubstateApi;
@@ -23,7 +23,7 @@ pub use unsafe_api::ClientUnsafeApi;
 /// For WASM blueprints, only a subset of the API is exposed at the moment.
 pub trait ClientApi<E: sbor::rust::fmt::Debug>:
     ClientActorApi<E>
-    + ClientComponentApi<E>
+    + ClientObjectApi<E>
     + ClientPackageApi<E>
     + ClientNodeApi<E>
     + ClientSubstateApi<E>

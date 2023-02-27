@@ -35,7 +35,7 @@ mod node_create {
     impl NodeCreate {
         pub fn create_node_with_invalid_blueprint() {
             ScryptoEnv
-                .new_component(
+                .new_object(
                     "invalid_blueprint",
                     btreemap!(
                         0 => scrypto_encode(&NodeCreate {}).unwrap()

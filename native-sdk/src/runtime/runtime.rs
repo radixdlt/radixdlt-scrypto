@@ -1,5 +1,5 @@
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::api::{ClientApi, ClientComponentApi};
+use radix_engine_interface::api::{ClientApi, ClientObjectApi};
 use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::transaction_runtime::*;
@@ -16,7 +16,7 @@ pub struct Runtime {}
 impl Runtime {
     pub fn sys_current_epoch<Y, E>(api: &mut Y) -> Result<u64, E>
     where
-        Y: ClientComponentApi<E>,
+        Y: ClientObjectApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let rtn = api.call_method(
@@ -30,7 +30,7 @@ impl Runtime {
 
     pub fn sys_current_time<Y, E>(api: &mut Y, precision: TimePrecision) -> Result<Instant, E>
     where
-        Y: ClientComponentApi<E>,
+        Y: ClientObjectApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let rtn = api.call_method(
@@ -49,7 +49,7 @@ impl Runtime {
         operator: TimeComparisonOperator,
     ) -> Result<bool, E>
     where
-        Y: ClientComponentApi<E>,
+        Y: ClientObjectApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let rtn = api.call_method(

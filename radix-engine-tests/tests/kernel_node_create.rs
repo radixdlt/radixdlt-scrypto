@@ -1,5 +1,6 @@
-use radix_engine::errors::{KernelError, RuntimeError};
+use radix_engine::errors::{ApplicationError, KernelError, RuntimeError};
 use radix_engine::kernel::actor::Actor;
+use radix_engine::system::package::PackageError;
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -27,17 +28,7 @@ fn should_not_be_able_to_node_create_with_invalid_blueprint() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::InvalidCreateNodeAccess {
-                actor: Actor {
-                    fn_identifier: FnIdentifier {
-                        package_address: addr,
-                        blueprint_name: blueprint,
-                        ident
-                    },
-                    ..
-                },
-                ..
-            }) if addr.eq(&package_address) && blueprint.eq("NodeCreate") && ident.eq("create_node_with_invalid_blueprint")
+            RuntimeError::ApplicationError(ApplicationError::PackageError(PackageError::BlueprintNotFound))
         )
     });
 }

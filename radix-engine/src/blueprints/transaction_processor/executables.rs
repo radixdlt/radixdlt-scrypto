@@ -25,7 +25,7 @@ use radix_engine_interface::api::node_modules::royalty::{
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::api::ClientComponentApi;
+use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{IndexedScryptoValue, ScryptoValue};
 use sbor::rust::borrow::Cow;
@@ -875,7 +875,7 @@ impl<'blob> TransactionProcessor<'blob> {
         env: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: ClientComponentApi<RuntimeError>,
+        Y: ClientObjectApi<RuntimeError>,
     {
         let should_skip_assertion = request.skip_assertion;
         match &request.validation {

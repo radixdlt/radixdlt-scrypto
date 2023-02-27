@@ -8,7 +8,7 @@ use radix_engine_interface::api::node_modules::auth::{
 use radix_engine_interface::api::types::{
     ComponentAddress, ComponentId, NodeModuleId, RENodeId, ToString,
 };
-use radix_engine_interface::api::ClientComponentApi;
+use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::{AccessRule, AccessRuleEntry, MethodKey};
 use radix_engine_interface::data::scrypto_encode;
 
