@@ -574,33 +574,33 @@ mod tests {
 
     #[test]
     pub fn test_max_depth_array_decode_behaviour() {
-        let allowable_payload = encode_array_of_depth(DEFAULT_BASIC_MAX_DEPTH).unwrap();
+        let allowable_payload = encode_array_of_depth(BASIC_SBOR_V1_MAX_DEPTH).unwrap();
         let allowable_result = basic_decode::<BasicValue>(&allowable_payload);
         assert!(allowable_result.is_ok());
 
-        let forbidden_payload = encode_array_of_depth(DEFAULT_BASIC_MAX_DEPTH + 1).unwrap();
+        let forbidden_payload = encode_array_of_depth(BASIC_SBOR_V1_MAX_DEPTH + 1).unwrap();
         let forbidden_result = basic_decode::<BasicValue>(&forbidden_payload);
         assert!(forbidden_result.is_err());
     }
 
     #[test]
     pub fn test_max_depth_struct_decode_behaviour() {
-        let allowable_payload = encode_struct_of_depth(DEFAULT_BASIC_MAX_DEPTH).unwrap();
+        let allowable_payload = encode_struct_of_depth(BASIC_SBOR_V1_MAX_DEPTH).unwrap();
         let allowable_result = basic_decode::<BasicValue>(&allowable_payload);
         assert!(allowable_result.is_ok());
 
-        let forbidden_payload = encode_struct_of_depth(DEFAULT_BASIC_MAX_DEPTH + 1).unwrap();
+        let forbidden_payload = encode_struct_of_depth(BASIC_SBOR_V1_MAX_DEPTH + 1).unwrap();
         let forbidden_result = basic_decode::<BasicValue>(&forbidden_payload);
         assert!(forbidden_result.is_err());
     }
 
     #[test]
     pub fn test_max_depth_tuple_decode_behaviour() {
-        let allowable_payload = encode_tuple_of_depth(DEFAULT_BASIC_MAX_DEPTH).unwrap();
+        let allowable_payload = encode_tuple_of_depth(BASIC_SBOR_V1_MAX_DEPTH).unwrap();
         let allowable_result = basic_decode::<BasicValue>(&allowable_payload);
         assert!(allowable_result.is_ok());
 
-        let forbidden_payload = encode_tuple_of_depth(DEFAULT_BASIC_MAX_DEPTH + 1).unwrap();
+        let forbidden_payload = encode_tuple_of_depth(BASIC_SBOR_V1_MAX_DEPTH + 1).unwrap();
         let forbidden_result = basic_decode::<BasicValue>(&forbidden_payload);
         assert!(forbidden_result.is_err());
     }

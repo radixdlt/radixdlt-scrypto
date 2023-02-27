@@ -20,7 +20,6 @@ pub enum NoCustomValueKind {}
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NoCustomValue {}
 
-pub const DEFAULT_BASIC_MAX_DEPTH: u8 = 64;
 pub type BasicEncoder<'a> = VecEncoder<'a, NoCustomValueKind>;
 pub type BasicDecoder<'a> = VecDecoder<'a, NoCustomValueKind>;
 pub type BasicTraverser<'a> = VecTraverser<'a, NoCustomTraversal>;
@@ -29,6 +28,7 @@ pub type BasicValueKind = ValueKind<NoCustomValueKind>;
 
 // 5b for (basic) [5b]or - (90 in decimal)
 pub const BASIC_SBOR_V1_PAYLOAD_PREFIX: u8 = 0x5b;
+pub const BASIC_SBOR_V1_MAX_DEPTH: u8 = 64;
 
 // The following trait "aliases" are to be used in parameters.
 //
@@ -59,14 +59,14 @@ impl<T: BasicCategorize + BasicDecode + BasicEncode + BasicDescribe> BasicSbor f
 /// Encode a `T` into byte array.
 pub fn basic_encode<T: BasicEncode + ?Sized>(v: &T) -> Result<Vec<u8>, EncodeError> {
     let mut buf = Vec::with_capacity(512);
-    let encoder = BasicEncoder::new(&mut buf, DEFAULT_BASIC_MAX_DEPTH);
+    let encoder = BasicEncoder::new(&mut buf, BASIC_SBOR_V1_MAX_DEPTH);
     encoder.encode_payload(v, BASIC_SBOR_V1_PAYLOAD_PREFIX)?;
     Ok(buf)
 }
 
 /// Decode an instance of `T` from a slice.
 pub fn basic_decode<T: BasicDecode>(buf: &[u8]) -> Result<T, DecodeError> {
-    BasicDecoder::new(buf, DEFAULT_BASIC_MAX_DEPTH).decode_payload(BASIC_SBOR_V1_PAYLOAD_PREFIX)
+    BasicDecoder::new(buf, BASIC_SBOR_V1_MAX_DEPTH).decode_payload(BASIC_SBOR_V1_PAYLOAD_PREFIX)
 }
 
 impl CustomValueKind for NoCustomValueKind {
@@ -180,7 +180,7 @@ impl CustomValueTraverser for NoCustomTraverser {
 pub fn basic_payload_traverser<'b>(buf: &'b [u8]) -> BasicTraverser<'b> {
     BasicTraverser::new(
         buf,
-        DEFAULT_BASIC_MAX_DEPTH,
+        BASIC_SBOR_V1_MAX_DEPTH,
         Some(BASIC_SBOR_V1_PAYLOAD_PREFIX),
         true,
     )
@@ -211,7 +211,7 @@ mod schema {
     create_well_known_lookup!(WELL_KNOWN_LOOKUP, NoCustomTypeKind, []);
 
     impl CustomTypeExtension for NoCustomTypeExtension {
-        const MAX_DEPTH: u8 = DEFAULT_BASIC_MAX_DEPTH;
+        const MAX_DEPTH: u8 = BASIC_SBOR_V1_MAX_DEPTH;
         const PAYLOAD_PREFIX: u8 = BASIC_SBOR_V1_PAYLOAD_PREFIX;
         type CustomValueKind = NoCustomValueKind;
         type CustomTypeKind<L: SchemaTypeLink> = NoCustomTypeKind;
