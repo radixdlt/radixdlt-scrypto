@@ -1,5 +1,3 @@
-use native_sdk::access_rules::AccessRulesObject;
-use native_sdk::metadata::Metadata;
 use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::auth_zone::AuthZoneStackSubstate;
 use crate::blueprints::identity::Identity;
@@ -15,13 +13,15 @@ use crate::system::node_properties::VisibilityProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::WasmEngine;
+use native_sdk::access_rules::AccessRulesObject;
+use native_sdk::metadata::Metadata;
 use native_sdk::resource::SysProof;
-use radix_engine_interface::api::package::{PackageCodeSubstate, PACKAGE_LOADER_BLUEPRINT};
-use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::ClientComponentApi;
 use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
 use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
+use radix_engine_interface::api::package::{PackageCodeSubstate, PACKAGE_LOADER_BLUEPRINT};
+use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::api::ClientComponentApi;
 // TODO: clean this up!
 use crate::kernel::kernel_api::TemporaryResolvedInvocation;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
@@ -149,8 +149,14 @@ where
         non_fungible_global_id: NonFungibleGlobalId,
     ) -> Result<(), RuntimeError> {
         // TODO: This should move into the appropriate place once virtual manager is implemented
-        self.current_frame.add_ref(RENodeId::GlobalResourceManager(ECDSA_SECP256K1_TOKEN), RENodeVisibilityOrigin::Normal);
-        self.current_frame.add_ref(RENodeId::GlobalResourceManager(EDDSA_ED25519_TOKEN), RENodeVisibilityOrigin::Normal);
+        self.current_frame.add_ref(
+            RENodeId::GlobalResourceManager(ECDSA_SECP256K1_TOKEN),
+            RENodeVisibilityOrigin::Normal,
+        );
+        self.current_frame.add_ref(
+            RENodeId::GlobalResourceManager(EDDSA_ED25519_TOKEN),
+            RENodeVisibilityOrigin::Normal,
+        );
 
         // TODO: Replace with trusted IndexedScryptoValue
         let access_rule = rule!(require(non_fungible_global_id));
@@ -219,8 +225,14 @@ where
         non_fungible_global_id: NonFungibleGlobalId,
     ) -> Result<(), RuntimeError> {
         // TODO: This should move into the appropriate place once virtual manager is implemented
-        self.current_frame.add_ref(RENodeId::GlobalResourceManager(ECDSA_SECP256K1_TOKEN), RENodeVisibilityOrigin::Normal);
-        self.current_frame.add_ref(RENodeId::GlobalResourceManager(EDDSA_ED25519_TOKEN), RENodeVisibilityOrigin::Normal);
+        self.current_frame.add_ref(
+            RENodeId::GlobalResourceManager(ECDSA_SECP256K1_TOKEN),
+            RENodeVisibilityOrigin::Normal,
+        );
+        self.current_frame.add_ref(
+            RENodeId::GlobalResourceManager(EDDSA_ED25519_TOKEN),
+            RENodeVisibilityOrigin::Normal,
+        );
 
         let access_rule = rule!(require(non_fungible_global_id));
         let (local_id, access_rules) = Identity::create(access_rule, self)?;

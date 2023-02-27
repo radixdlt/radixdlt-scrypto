@@ -172,9 +172,7 @@ impl AuthModule {
                         let handle = api.kernel_lock_substate(
                             RENodeId::GlobalResourceManager(resource_address),
                             NodeModuleId::AccessRules1,
-                            SubstateOffset::AccessRules(
-                                AccessRulesOffset::AccessRules,
-                            ),
+                            SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
                             LockFlags::read_only(),
                         )?;
 

@@ -2,11 +2,20 @@ use crate::abi::*;
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::*;
 use crate::*;
-use radix_engine_interface::api::node_modules::metadata::{MetadataSetInput, METADATA_GET_IDENT, METADATA_SET_IDENT, METADATA_BLUEPRINT, METADATA_CREATE_IDENT, MetadataCreateInput};
-use radix_engine_interface::api::node_modules::royalty::{ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT, COMPONENT_ROYALTY_BLUEPRINT, COMPONENT_ROYALTY_CREATE_IDENT, ComponentRoyaltyCreateInput};
+use radix_engine_interface::api::node_modules::auth::{
+    AccessRulesCreateInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
+};
+use radix_engine_interface::api::node_modules::metadata::{
+    MetadataCreateInput, MetadataSetInput, METADATA_BLUEPRINT, METADATA_CREATE_IDENT,
+    METADATA_GET_IDENT, METADATA_SET_IDENT,
+};
+use radix_engine_interface::api::node_modules::royalty::{
+    ComponentClaimRoyaltyInput, ComponentRoyaltyCreateInput, ComponentSetRoyaltyConfigInput,
+    COMPONENT_ROYALTY_BLUEPRINT, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
+    COMPONENT_ROYALTY_CREATE_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+};
 use radix_engine_interface::api::types::{ComponentId, RENodeId};
 use radix_engine_interface::api::{types::*, ClientComponentApi, ClientPackageApi};
-use radix_engine_interface::api::node_modules::auth::{ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT, AccessRulesCreateInput};
 use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRules, Bucket, MethodKey,
 };
@@ -138,32 +147,37 @@ impl LocalComponent for OwnedComponent {
         _metadata: BTreeMap<String, String>,
         config: RoyaltyConfig,
     ) -> ComponentAddress {
-        let rtn = ScryptoEnv.call_function(
-            METADATA_PACKAGE,
-            METADATA_BLUEPRINT,
-            METADATA_CREATE_IDENT,
-            scrypto_encode(&MetadataCreateInput {}).unwrap(),
-        ).unwrap();
+        let rtn = ScryptoEnv
+            .call_function(
+                METADATA_PACKAGE,
+                METADATA_BLUEPRINT,
+                METADATA_CREATE_IDENT,
+                scrypto_encode(&MetadataCreateInput {}).unwrap(),
+            )
+            .unwrap();
         let metadata: Own = scrypto_decode(&rtn).unwrap();
 
-        let rtn = ScryptoEnv.call_function(
-            ROYALTY_PACKAGE,
-            COMPONENT_ROYALTY_BLUEPRINT,
-            COMPONENT_ROYALTY_CREATE_IDENT,
-            scrypto_encode(&ComponentRoyaltyCreateInput {
-                royalty_config: config
-            }).unwrap(),
-        ).unwrap();
+        let rtn = ScryptoEnv
+            .call_function(
+                ROYALTY_PACKAGE,
+                COMPONENT_ROYALTY_BLUEPRINT,
+                COMPONENT_ROYALTY_CREATE_IDENT,
+                scrypto_encode(&ComponentRoyaltyCreateInput {
+                    royalty_config: config,
+                })
+                .unwrap(),
+            )
+            .unwrap();
         let royalty: Own = scrypto_decode(&rtn).unwrap();
 
-        let rtn = ScryptoEnv.call_function(
-            ACCESS_RULES_PACKAGE,
-            ACCESS_RULES_BLUEPRINT,
-            ACCESS_RULES_CREATE_IDENT,
-            scrypto_encode(&AccessRulesCreateInput {
-                access_rules,
-            }).unwrap(),
-        ).unwrap();
+        let rtn = ScryptoEnv
+            .call_function(
+                ACCESS_RULES_PACKAGE,
+                ACCESS_RULES_BLUEPRINT,
+                ACCESS_RULES_CREATE_IDENT,
+                scrypto_encode(&AccessRulesCreateInput { access_rules }).unwrap(),
+            )
+            .unwrap();
         let access_rules: Own = scrypto_decode(&rtn).unwrap();
 
         ScryptoEnv

@@ -129,7 +129,10 @@ pub enum RENodeInit {
     AccessController(AccessControllerSubstate),
     Account(AccountSubstate),
     Metadata(MetadataSubstate),
-    ComponentRoyalty(ComponentRoyaltyConfigSubstate, ComponentRoyaltyAccumulatorSubstate),
+    ComponentRoyalty(
+        ComponentRoyaltyConfigSubstate,
+        ComponentRoyaltyAccumulatorSubstate,
+    ),
     AccessRules(MethodAccessRulesSubstate),
 }
 

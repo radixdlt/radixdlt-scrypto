@@ -1,12 +1,10 @@
-use native_sdk::access_rules::AccessRulesObject;
-use native_sdk::metadata::Metadata;
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node::RENodeInit;
-use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::access_rules::MethodAccessRulesSubstate;
 use crate::types::*;
+use native_sdk::access_rules::AccessRulesObject;
+use native_sdk::metadata::Metadata;
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
@@ -20,7 +18,6 @@ use radix_engine_interface::blueprints::resource::AccessRules;
 use radix_engine_interface::blueprints::resource::MethodKey;
 
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
-use crate::system::node_modules::metadata::MetadataSubstate;
 use native_sdk::resource::{SysBucket, Vault};
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::data::ScryptoValue;
@@ -209,7 +206,6 @@ impl AccountNativePackage {
             api.kernel_create_node(node_id, node, BTreeMap::new())?;
             node_id
         };
-
 
         // Creating the Account substates and RENode
         let node_id = {

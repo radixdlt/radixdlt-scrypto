@@ -16,7 +16,6 @@ use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate
 use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate,
     KeyValueStoreEntrySubstate,
@@ -30,7 +29,6 @@ use radix_engine_interface::api::{
     ClientSubstateApi, ClientUnsafeApi,
 };
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::constants::RADIX_TOKEN;
 use radix_engine_interface::data::model::Own;
 use radix_engine_interface::data::*;
 use sbor::rust::string::ToString;
@@ -315,7 +313,13 @@ where
                     let component_id = access_rules.component_id();
                     let mut node = self.kernel_drop_node(RENodeId::Component(component_id))?;
 
-                    let access_rules = node.substates.remove(&(NodeModuleId::SELF, SubstateOffset::AccessRules(AccessRulesOffset::AccessRules))).unwrap();
+                    let access_rules = node
+                        .substates
+                        .remove(&(
+                            NodeModuleId::SELF,
+                            SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+                        ))
+                        .unwrap();
                     let access_rules: MethodAccessRulesSubstate = access_rules.into();
 
                     module_init.insert(
@@ -325,20 +329,22 @@ where
                 }
                 NodeModuleId::Metadata => {
                     let metadata: Own = scrypto_decode(&init)
-                        .map_err(|e| {
-                            RuntimeError::SystemError(SystemError::InvalidMetadata(e))
-                        })?;
+                        .map_err(|e| RuntimeError::SystemError(SystemError::InvalidMetadata(e)))?;
 
                     let component_id = metadata.component_id();
                     let mut node = self.kernel_drop_node(RENodeId::Component(component_id))?;
 
-                    let metadata = node.substates.remove(&(NodeModuleId::SELF, SubstateOffset::Metadata(MetadataOffset::Metadata))).unwrap();
+                    let metadata = node
+                        .substates
+                        .remove(&(
+                            NodeModuleId::SELF,
+                            SubstateOffset::Metadata(MetadataOffset::Metadata),
+                        ))
+                        .unwrap();
                     let metadata: MetadataSubstate = metadata.into();
 
-                    module_init.insert(
-                        NodeModuleId::Metadata,
-                        RENodeModuleInit::Metadata(metadata),
-                    );
+                    module_init
+                        .insert(NodeModuleId::Metadata, RENodeModuleInit::Metadata(metadata));
                 }
                 NodeModuleId::ComponentRoyalty => {
                     let royalty: Own = scrypto_decode(&init).map_err(|e| {
@@ -348,17 +354,26 @@ where
                     let component_id = royalty.component_id();
                     let mut node = self.kernel_drop_node(RENodeId::Component(component_id))?;
 
-                    let config = node.substates.remove(&(NodeModuleId::SELF, SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig))).unwrap();
+                    let config = node
+                        .substates
+                        .remove(&(
+                            NodeModuleId::SELF,
+                            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
+                        ))
+                        .unwrap();
                     let config: ComponentRoyaltyConfigSubstate = config.into();
-                    let accumulator = node.substates.remove(&(NodeModuleId::SELF, SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator))).unwrap();
+                    let accumulator = node
+                        .substates
+                        .remove(&(
+                            NodeModuleId::SELF,
+                            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
+                        ))
+                        .unwrap();
                     let accumulator: ComponentRoyaltyAccumulatorSubstate = accumulator.into();
 
                     module_init.insert(
                         NodeModuleId::ComponentRoyalty,
-                        RENodeModuleInit::ComponentRoyalty(
-                            config,
-                            accumulator,
-                        ),
+                        RENodeModuleInit::ComponentRoyalty(config, accumulator),
                     );
 
                     /*

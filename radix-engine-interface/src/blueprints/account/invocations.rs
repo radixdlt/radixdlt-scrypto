@@ -182,8 +182,7 @@ pub const ACCOUNT_CREATE_LOCAL_IDENT: &str = "create_local";
     ManifestDecode,
     LegacyDescribe,
 )]
-pub struct AccountCreateLocalInput {
-}
+pub struct AccountCreateLocalInput {}
 
 pub type AccountCreateLocalOutput = Own;
 
