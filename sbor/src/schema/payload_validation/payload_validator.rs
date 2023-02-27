@@ -87,50 +87,42 @@ pub fn validate<E: CustomTypeExtension>(
     loop {
         let TypedLocatedTraversalEvent {
             event,
-            type_index,
             location: typed_location,
         } = traverser.next_event();
         if matches!(event, TypedTraversalEvent::End) {
             return Ok(());
         }
-        validate_event_with_type::<E>(&schema.type_validations, event, type_index).map_err(
-            |error| {
-                LocatedValidationError {
-                    error,
-                    location: ErrorLocation {
-                        start_offset: typed_location.location.start_offset,
-                        end_offset: typed_location.location.end_offset,
-                        sbor_depth: typed_location.location.get_sbor_depth(),
-                        // TODO - add context from (location + type_index) + type metadata
-                        // This enables a full path to be provided in the error message, which can have a debug such as:
-                        // TypeOne["hello"]->Enum::Variant[4]->TypeTwo[0]->Array[4]->Map[Key]->StructWhichErrored
-                    },
-                }
-            },
-        )?;
+        validate_event_with_type::<E>(&schema.type_validations, event).map_err(|error| {
+            LocatedValidationError {
+                error,
+                location: ErrorLocation {
+                    start_offset: typed_location.location.start_offset,
+                    end_offset: typed_location.location.end_offset,
+                    sbor_depth: typed_location.location.get_sbor_depth(),
+                    // TODO - add context from (location + type_index) + type metadata
+                    // This enables a full path to be provided in the error message, which can have a debug such as:
+                    // TypeOne["hello"]->Enum::Variant[4]->TypeTwo[0]->Array[4]->Map[Key]->StructWhichErrored
+                },
+            }
+        })?;
     }
 }
 
 fn validate_event_with_type<E: CustomTypeExtension>(
     type_validations: &[SchemaTypeValidation<E>],
     event: TypedTraversalEvent<E::CustomTraversal>,
-    type_index: Option<LocalTypeIndex>,
 ) -> Result<(), ValidationError<E>> {
     match event {
         TypedTraversalEvent::PayloadPrefix => Ok(()),
-        TypedTraversalEvent::ContainerStart(header) => {
-            validate_container::<E>(type_validations, header, type_index.unwrap())
+        TypedTraversalEvent::ContainerStart(type_index, header) => {
+            validate_container::<E>(type_validations, header, type_index)
         }
-        TypedTraversalEvent::ContainerEnd(_) => Ok(()), // Validation already handled at Container Start
-        TypedTraversalEvent::TerminalValue(value_ref) => {
-            validate_terminal_value::<E>(type_validations, value_ref, type_index.unwrap())
+        TypedTraversalEvent::ContainerEnd(_, _) => Ok(()), // Validation already handled at Container Start
+        TypedTraversalEvent::TerminalValue(type_index, value_ref) => {
+            validate_terminal_value::<E>(type_validations, value_ref, type_index)
         }
-        TypedTraversalEvent::TerminalValueBatch(value_batch_ref) => {
-            validate_terminal_value_batch::<E>(
-                type_validations,
-                value_batch_ref,
-                type_index.unwrap(),
-            )
+        TypedTraversalEvent::TerminalValueBatch(type_index, value_batch_ref) => {
+            validate_terminal_value_batch::<E>(type_validations, value_batch_ref, type_index)
         }
         TypedTraversalEvent::End => {
             unreachable!("End should already have been covered in the parent function")

@@ -5,17 +5,16 @@ use crate::*;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TypedLocatedTraversalEvent<'t, 's, 'de, C: CustomTraversal> {
     pub location: TypedLocation<'t, 's, C>,
-    pub type_index: Option<LocalTypeIndex>,
     pub event: TypedTraversalEvent<'de, C>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TypedTraversalEvent<'de, C: CustomTraversal> {
     PayloadPrefix,
-    ContainerStart(ContainerHeader<C>),
-    ContainerEnd(ContainerHeader<C>),
-    TerminalValue(TerminalValueRef<'de, C>),
-    TerminalValueBatch(TerminalValueBatchRef<'de, C>),
+    ContainerStart(LocalTypeIndex, ContainerHeader<C>),
+    ContainerEnd(LocalTypeIndex, ContainerHeader<C>),
+    TerminalValue(LocalTypeIndex, TerminalValueRef<'de, C>),
+    TerminalValueBatch(LocalTypeIndex, TerminalValueBatchRef<'de, C>),
     End,
     Error(TypedTraversalError<C::CustomValueKind>),
 }

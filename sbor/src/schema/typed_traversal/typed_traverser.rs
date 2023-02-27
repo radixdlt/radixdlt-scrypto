@@ -119,46 +119,32 @@ impl<'de, 's, E: CustomTypeExtension> TypedTraverser<'de, 's, E> {
         &'t mut self,
     ) -> TypedLocatedTraversalEvent<'t, 's, 'de, E::CustomTraversal> {
         let LocatedTraversalEvent { location, event } = self.traverser.next_event();
-        let (type_index, typed_event) = match event {
-            TraversalEvent::PayloadPrefix => (None, TypedTraversalEvent::PayloadPrefix),
+        let typed_event = match event {
+            TraversalEvent::PayloadPrefix => TypedTraversalEvent::PayloadPrefix,
             TraversalEvent::ContainerStart(header) => {
                 let type_index = self
                     .type_state
                     .get_type_index(&location.parent_relationship);
-                let event = self
-                    .type_state
-                    .map_container_start_event(type_index, header);
-                (Some(type_index), event)
+                self.type_state
+                    .map_container_start_event(type_index, header)
             }
             TraversalEvent::TerminalValue(value) => {
                 let type_index = self
                     .type_state
                     .get_type_index(&location.parent_relationship);
-                let event = self.type_state.map_terminal_value_event(type_index, value);
-                (Some(type_index), event)
+                self.type_state.map_terminal_value_event(type_index, value)
             }
             TraversalEvent::TerminalValueBatch(value_batch) => {
                 let type_index = self
                     .type_state
                     .get_type_index(&location.parent_relationship);
-                let event = self
-                    .type_state
-                    .map_terminal_value_batch_event(type_index, value_batch);
-                (Some(type_index), event)
+                self.type_state
+                    .map_terminal_value_batch_event(type_index, value_batch)
             }
-            TraversalEvent::ContainerEnd(header) => {
-                let (type_index, event) = self.type_state.map_container_end_event(header);
-                (Some(type_index), event)
-            }
-            TraversalEvent::End => (None, TypedTraversalEvent::End),
+            TraversalEvent::ContainerEnd(header) => self.type_state.map_container_end_event(header),
+            TraversalEvent::End => TypedTraversalEvent::End,
             TraversalEvent::DecodeError(decode_error) => {
-                let type_index = self
-                    .type_state
-                    .get_type_index(&location.parent_relationship);
-                (
-                    Some(type_index),
-                    TypedTraversalEvent::Error(TypedTraversalError::DecodeError(decode_error)),
-                )
+                TypedTraversalEvent::Error(TypedTraversalError::DecodeError(decode_error))
             }
         };
 
@@ -167,7 +153,6 @@ impl<'de, 's, E: CustomTypeExtension> TypedTraverser<'de, 's, E> {
                 location,
                 typed_ancestor_path: &self.type_state.container_stack,
             },
-            type_index,
             event: typed_event,
         }
     }
@@ -347,7 +332,7 @@ impl<'s, E: CustomTypeExtension> InternalTypeState<'s, E> {
             }
         }
 
-        TypedTraversalEvent::ContainerStart(header)
+        TypedTraversalEvent::ContainerStart(type_index, header)
     }
 
     fn map_terminal_value_event<'t, 'de>(
@@ -368,7 +353,7 @@ impl<'s, E: CustomTypeExtension> InternalTypeState<'s, E> {
             )
         }
 
-        TypedTraversalEvent::TerminalValue(value_ref)
+        TypedTraversalEvent::TerminalValue(type_index, value_ref)
     }
 
     fn map_terminal_value_batch_event<'t, 'de>(
@@ -389,19 +374,16 @@ impl<'s, E: CustomTypeExtension> InternalTypeState<'s, E> {
             )
         }
 
-        TypedTraversalEvent::TerminalValueBatch(value_batch_ref)
+        TypedTraversalEvent::TerminalValueBatch(type_index, value_batch_ref)
     }
 
     fn map_container_end_event<'t, 'de>(
         &'t mut self,
         header: ContainerHeader<E::CustomTraversal>,
-    ) -> (LocalTypeIndex, TypedTraversalEvent<'de, E::CustomTraversal>) {
+    ) -> TypedTraversalEvent<'de, E::CustomTraversal> {
         let container = self.container_stack.pop().unwrap();
 
-        (
-            container.own_type,
-            TypedTraversalEvent::ContainerEnd(header),
-        )
+        TypedTraversalEvent::ContainerEnd(container.own_type, header)
     }
 
     fn get_type_index(&self, parent_relationship: &ParentRelationship) -> LocalTypeIndex {
