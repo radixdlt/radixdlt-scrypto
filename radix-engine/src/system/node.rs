@@ -5,7 +5,6 @@ use crate::blueprints::epoch_manager::*;
 use crate::blueprints::logger::LoggerSubstate;
 use crate::blueprints::resource::*;
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
-use crate::system::global::GlobalSubstate;
 use crate::system::node_modules::access_rules::*;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_substates::*;
@@ -14,9 +13,8 @@ use crate::types::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::{
-    AuthZoneStackOffset, BucketOffset, ComponentOffset, EpochManagerOffset, GlobalOffset,
-    NonFungibleStoreOffset, PackageOffset, ProofOffset, ResourceManagerOffset, SubstateOffset,
-    VaultOffset, WorktopOffset,
+    AuthZoneStackOffset, BucketOffset, ComponentOffset, EpochManagerOffset, NonFungibleStoreOffset,
+    PackageOffset, ProofOffset, ResourceManagerOffset, SubstateOffset, VaultOffset, WorktopOffset,
 };
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::resource::LiquidNonFungibleResource;
@@ -99,7 +97,7 @@ impl RENodeModuleInit {
 
 #[derive(Debug)]
 pub enum RENodeInit {
-    GlobalComponent(GlobalSubstate),
+    GlobalComponent(BTreeMap<SubstateOffset, RuntimeSubstate>),
     GlobalPackage(
         PackageInfoSubstate,
         PackageCodeTypeSubstate,
@@ -217,11 +215,8 @@ impl RENodeInit {
                     RuntimeSubstate::AuthZoneStack(auth_zone),
                 );
             }
-            RENodeInit::GlobalComponent(global_node) => {
-                substates.insert(
-                    SubstateOffset::Global(GlobalOffset::Global),
-                    RuntimeSubstate::Global(global_node),
-                );
+            RENodeInit::GlobalComponent(component_substates) => {
+                substates.extend(component_substates);
             }
             RENodeInit::KeyValueStore => {}
             RENodeInit::Identity() => {}

@@ -1,7 +1,6 @@
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::global::GlobalSubstate;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
@@ -194,10 +193,7 @@ impl AccountNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientNodeApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: AccountCreateGlobalInput = scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -242,15 +238,8 @@ impl AccountNativePackage {
             node_id
         };
 
-        // Creating the account's global address
-        let global_node_id = {
-            let node = RENodeInit::GlobalComponent(GlobalSubstate::Account(node_id.into()));
-            let node_id = api.kernel_allocate_node_id(RENodeType::GlobalAccount)?;
-            api.kernel_create_node(node_id, node, BTreeMap::new())?;
-            node_id
-        };
+        let address = api.globalize(node_id)?;
 
-        let address: ComponentAddress = global_node_id.into();
         Ok(IndexedScryptoValue::from_typed(&address))
     }
 

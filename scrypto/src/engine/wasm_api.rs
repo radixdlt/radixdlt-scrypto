@@ -35,27 +35,6 @@ extern "C" {
     /// Consumes a buffer by copying the contents into the specified destination.
     pub fn consume_buffer(buffer_id: BufferId, destination_ptr: *mut u8);
 
-    //===============
-    // Invocation API
-    //===============
-
-    /// Invokes a native function or method.
-    pub fn call_native(
-        native_fn_identifier_ptr: *const u8,
-        native_fn_identifier_len: usize,
-        invocation_ptr: *const u8,
-        invocation_len: usize,
-    ) -> Buffer;
-
-    //===============
-    // Component API
-    //===============
-
-    pub fn lookup_global_component(
-        component_address_ptr: *const u8,
-        component_address_len: usize,
-    ) -> Buffer;
-
     pub fn new_component(
         blueprint_ident_ptr: *const u8,
         blueprint_ident: usize,
@@ -72,6 +51,13 @@ extern "C" {
     pub fn new_key_value_store() -> Buffer;
 
     pub fn globalize_component(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
+
+    pub fn globalize_with_address(
+        _node_id_ptr: *const u8,
+        _node_id_len: usize,
+        _address_ptr: *const u8,
+        _address_len: usize,
+    ) -> Buffer;
 
     pub fn get_component_type_info(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
 
@@ -122,9 +108,6 @@ extern "C" {
     /// Creates a node with the given initial data.
     pub fn create_node(node_ptr: *const u8, node_len: usize) -> Buffer;
 
-    /// Retrieves IDs of visible nodes.
-    pub fn get_visible_nodes() -> Buffer;
-
     /// Destroys a node.
     pub fn drop_node(node_id_ptr: *const u8, node_id_len: usize);
 
@@ -164,24 +147,6 @@ pub unsafe fn consume_buffer(_buffer_id: BufferId, _destination_ptr: *mut u8) {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn call_native(
-    _native_fn_identifier_ptr: *const u8,
-    _native_fn_identifier_len: usize,
-    _invocation_ptr: *const u8,
-    _invocation_len: usize,
-) -> Buffer {
-    todo!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn lookup_global_component(
-    _component_id_ptr: *const u8,
-    _component_id_len: usize,
-) -> Buffer {
-    todo!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn new_component(
     _blueprint_ident_ptr: *const u8,
     _blueprint_ident: usize,
@@ -203,9 +168,16 @@ pub unsafe fn new_key_value_store() -> Buffer {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn globalize_component(
-    _component_id_ptr: *const u8,
-    _component_id_len: usize,
+pub unsafe fn globalize_component(_node_id_ptr: *const u8, _node_id_len: usize) -> Buffer {
+    todo!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn globalize_with_address(
+    _node_id_ptr: *const u8,
+    _node_id_len: usize,
+    _address_ptr: *const u8,
+    _address_len: usize,
 ) -> Buffer {
     todo!()
 }
@@ -258,11 +230,6 @@ pub unsafe fn call_function(
     _args_ptr: *const u8,
     _args_len: usize,
 ) -> Buffer {
-    todo!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn get_visible_nodes() -> Buffer {
     todo!()
 }
 

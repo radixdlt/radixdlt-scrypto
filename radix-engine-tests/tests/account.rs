@@ -31,12 +31,11 @@ fn can_withdraw_from_my_account_internal(use_virtual: bool) {
         .account_balance(other_account, RADIX_TOKEN)
         .unwrap();
     let transfer_amount = other_account_balance - 10000 /* initial balance */;
-    let other_account_id: ComponentId = test_runner.deref_component(other_account).unwrap().into();
 
     assert_resource_changes_for_transfer(
         &receipt.expect_commit().resource_changes,
         RADIX_TOKEN,
-        other_account_id,
+        other_account,
         transfer_amount,
     );
 }
@@ -162,7 +161,7 @@ fn account_to_bucket_to_virtual_account() {
 fn assert_resource_changes_for_transfer(
     resource_changes: &Vec<ResourceChange>,
     _resource_address: ResourceAddress,
-    target_account: ComponentId,
+    target_account: ComponentAddress,
     transfer_amount: Decimal,
 ) {
     println!("transfer: {:?}", transfer_amount);
@@ -170,5 +169,6 @@ fn assert_resource_changes_for_transfer(
     assert_eq!(2, resource_changes.len()); // Two transfers (withdraw + fee, deposit)
     assert!(resource_changes
         .iter()
-        .any(|r| r.component_id == target_account && r.amount == Decimal::from(transfer_amount)));
+        .any(|r| r.node_id == RENodeId::GlobalComponent(target_account)
+            && r.amount == Decimal::from(transfer_amount)));
 }

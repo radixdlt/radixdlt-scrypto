@@ -8,13 +8,12 @@ use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_runtime::TransactionRuntimeNativePackage;
 use crate::errors::ScryptoFnResolvingError;
 use crate::errors::{InterpreterError, KernelError, RuntimeError};
-use crate::kernel::actor::{ResolvedActor, ResolvedReceiver};
+use crate::kernel::actor::ResolvedActor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{
     ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, KernelWasmApi,
     TemporaryResolvedInvocation,
 };
-use crate::system::global::GlobalSubstate;
 use crate::system::node_modules::access_rules::{AccessRulesNativePackage, AuthZoneNativePackage};
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
@@ -83,34 +82,15 @@ impl ExecutableInvocation for MethodInvocation {
             _ => todo!(),
         };
 
-        // Deref if global
-        let resolved_receiver = if let RENodeId::GlobalComponent(..) = self.receiver.0 {
-            let handle = api.kernel_lock_substate(
-                self.receiver.0,
-                NodeModuleId::SELF,
-                SubstateOffset::Global(GlobalOffset::Global),
-                LockFlags::empty(),
-            )?;
-            let derefed: &GlobalSubstate = api.kernel_get_substate_ref(handle)?;
-            let derefed = derefed.node_deref();
-            ResolvedReceiver::derefed(
-                MethodReceiver(derefed, self.receiver.1),
-                self.receiver.0,
-                handle,
-            )
-        } else {
-            ResolvedReceiver::new(self.receiver)
-        };
-
         // Pass the component ref
-        node_refs_to_copy.insert(resolved_receiver.receiver.0);
+        node_refs_to_copy.insert(self.receiver.0);
 
         let fn_identifier = FnIdentifier::new(
             package_address,
             blueprint_name.clone(),
             self.fn_name.clone(),
         );
-        let actor = ResolvedActor::method(fn_identifier.clone(), resolved_receiver);
+        let actor = ResolvedActor::method(fn_identifier.clone(), self.receiver);
 
         let code_type = if package_address.eq(&PACKAGE_LOADER) {
             // TODO: Remove this weirdness
@@ -198,7 +178,7 @@ impl ExecutableInvocation for MethodInvocation {
         let executor = ScryptoExecutor {
             package_address,
             export_name,
-            receiver: Some(resolved_receiver.receiver),
+            receiver: Some(self.receiver),
         };
 
         // TODO: remove? currently needed for `Runtime::package_address()` API.
@@ -448,12 +428,11 @@ impl Executor for ScryptoExecutor {
                         let mut runtime: Box<dyn WasmRuntime> = Box::new(ScryptoRuntime::new(api));
 
                         let mut input = Vec::new();
-                        if let Some(MethodReceiver(component_id, _)) = self.receiver {
-                            let component_id: ComponentId = component_id.into();
+                        if let Some(MethodReceiver(node_id, _)) = self.receiver {
                             input.push(
                                 runtime
                                     .allocate_buffer(
-                                        scrypto_encode(&component_id)
+                                        scrypto_encode(&node_id)
                                             .expect("Failed to encode component id"),
                                     )
                                     .expect("Failed to allocate buffer"),

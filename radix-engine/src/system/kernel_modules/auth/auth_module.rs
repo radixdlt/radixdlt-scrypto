@@ -1,7 +1,6 @@
 use crate::blueprints::resource::VaultInfoSubstate;
 use crate::errors::*;
 use crate::kernel::actor::ResolvedActor;
-use crate::kernel::actor::ResolvedReceiver;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::call_frame::RENodeVisibilityOrigin;
 use crate::kernel::kernel_api::KernelModuleApi;
@@ -47,10 +46,7 @@ impl AuthModule {
         matches!(
             actor,
             Some(ResolvedActor {
-                receiver: Some(ResolvedReceiver {
-                    derefed_from: Some((RENodeId::GlobalComponent(..), _)),
-                    ..
-                }),
+                receiver: Some(MethodReceiver(RENodeId::GlobalComponent(..), ..)),
                 ..
             })
         )
@@ -143,11 +139,7 @@ impl KernelModule for AuthModule {
 
                 // TODO: Cleanup
                 ResolvedActor {
-                    receiver:
-                        Some(ResolvedReceiver {
-                            receiver: MethodReceiver(node_id, module_id),
-                            ..
-                        }),
+                    receiver: Some(MethodReceiver(node_id, module_id)),
                     ..
                 } if module_id.eq(&NodeModuleId::AccessRules)
                     || module_id.eq(&NodeModuleId::AccessRules1) =>
@@ -180,29 +172,21 @@ impl KernelModule for AuthModule {
                 // TODO: Cleanup
                 ResolvedActor {
                     receiver:
-                        Some(ResolvedReceiver {
-                            receiver:
-                                MethodReceiver(
-                                    RENodeId::Proof(..)
-                                    | RENodeId::Bucket(..)
-                                    | RENodeId::Worktop
-                                    | RENodeId::Logger
-                                    | RENodeId::TransactionRuntime
-                                    | RENodeId::AuthZoneStack,
-                                    ..,
-                                ),
-                            ..
-                        }),
+                        Some(MethodReceiver(
+                            RENodeId::Proof(..)
+                            | RENodeId::Bucket(..)
+                            | RENodeId::Worktop
+                            | RENodeId::Logger
+                            | RENodeId::TransactionRuntime
+                            | RENodeId::AuthZoneStack,
+                            ..,
+                        )),
                     ..
                 } => vec![],
 
                 ResolvedActor {
                     identifier,
-                    receiver:
-                        Some(ResolvedReceiver {
-                            receiver: MethodReceiver(RENodeId::Vault(vault_id), module_id),
-                            ..
-                        }),
+                    receiver: Some(MethodReceiver(RENodeId::Vault(vault_id), module_id)),
                 } => {
                     let fn_ident = identifier.ident.as_str();
                     if fn_ident == VAULT_LOCK_AMOUNT_IDENT
@@ -276,12 +260,13 @@ impl KernelModule for AuthModule {
 
                 ResolvedActor {
                     identifier,
-                    receiver:
-                        Some(ResolvedReceiver {
-                            receiver: MethodReceiver(RENodeId::Component(component_id), module_id),
-                            ..
-                        }),
-                } => {
+                    receiver: Some(MethodReceiver(node_id, module_id)),
+                } if matches!(node_id, RENodeId::Component(..))
+                    || matches!(
+                        node_id,
+                        RENodeId::GlobalComponent(ComponentAddress::Normal(..))
+                    ) =>
+                {
                     let offset = SubstateOffset::Package(PackageOffset::Info);
                     let handle = api.kernel_lock_substate(
                         RENodeId::GlobalPackage(identifier.package_address),
@@ -304,7 +289,7 @@ impl KernelModule for AuthModule {
                         let state = {
                             let offset = SubstateOffset::Component(ComponentOffset::State0);
                             let handle = api.kernel_lock_substate(
-                                RENodeId::Component(*component_id),
+                                *node_id,
                                 NodeModuleId::SELF,
                                 offset,
                                 LockFlags::read_only(),
@@ -318,7 +303,7 @@ impl KernelModule for AuthModule {
 
                         {
                             let handle = api.kernel_lock_substate(
-                                RENodeId::Component(*component_id),
+                                *node_id,
                                 NodeModuleId::AccessRules,
                                 SubstateOffset::AccessRulesChain(
                                     AccessRulesChainOffset::AccessRulesChain,
@@ -338,7 +323,7 @@ impl KernelModule for AuthModule {
                         }
                     } else {
                         let handle = api.kernel_lock_substate(
-                            RENodeId::Component(*component_id),
+                            *node_id,
                             NodeModuleId::AccessRules,
                             SubstateOffset::AccessRulesChain(
                                 AccessRulesChainOffset::AccessRulesChain,
@@ -355,7 +340,7 @@ impl KernelModule for AuthModule {
                 }
                 ResolvedActor {
                     identifier,
-                    receiver: Some(ResolvedReceiver { receiver, .. }),
+                    receiver: Some(receiver),
                 } => {
                     let handle = api.kernel_lock_substate(
                         receiver.0,
