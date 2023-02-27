@@ -95,7 +95,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 .get_substate(&SubstateId(
                     RENodeId::GlobalComponent(component_address),
                     NodeModuleId::AccessRules,
-                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
                 ))
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().access_rules_chain().clone())
@@ -188,7 +188,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 .get_substate(&SubstateId(
                     RENodeId::GlobalComponent(component_address),
                     NodeModuleId::AccessRules,
-                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
                 ))
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().access_rules_chain().clone())
@@ -239,7 +239,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 .get_substate(&SubstateId(
                     RENodeId::GlobalComponent(component_address),
                     NodeModuleId::AccessRules,
-                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
                 ))
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().access_rules_chain().clone())
@@ -268,7 +268,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 .get_substate(&SubstateId(
                     RENodeId::GlobalComponent(component_address),
                     NodeModuleId::AccessRules,
-                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
                 ))
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().access_rules_chain().clone())

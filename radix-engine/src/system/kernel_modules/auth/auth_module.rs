@@ -172,8 +172,8 @@ impl AuthModule {
                         let handle = api.kernel_lock_substate(
                             RENodeId::GlobalResourceManager(resource_address),
                             NodeModuleId::AccessRules1,
-                            SubstateOffset::AccessRulesChain(
-                                AccessRulesChainOffset::AccessRulesChain,
+                            SubstateOffset::AccessRules(
+                                AccessRulesOffset::AccessRules,
                             ),
                             LockFlags::read_only(),
                         )?;
@@ -279,7 +279,7 @@ impl AuthModule {
         let handle = api.kernel_lock_substate(
             receiver,
             module_id,
-            SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+            SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
             LockFlags::read_only(),
         )?;
         let access_rules: &MethodAccessRulesSubstate = api.kernel_get_substate_ref(handle)?;
@@ -301,7 +301,7 @@ impl AuthModule {
         let handle = api.kernel_lock_substate(
             receiver,
             module_id,
-            SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+            SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
             LockFlags::read_only(),
         )?;
         let access_rules: &MethodAccessRulesSubstate = api.kernel_get_substate_ref(handle)?;

@@ -1,3 +1,4 @@
+use native_sdk::access_rules::AccessRulesObject;
 use native_sdk::metadata::Metadata;
 use super::state_machine::*;
 use crate::errors::{ApplicationError, InterpreterError, RuntimeError};
@@ -279,6 +280,7 @@ impl AccessControllerNativePackage {
         api.kernel_create_node(node_id, access_controller, BTreeMap::new())?;
 
         let access_rules = access_rules_from_rule_set(input.rule_set);
+        let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
         let metadata = Metadata::sys_new(api)?;
 
         // Creating a global component address for the access controller RENode

@@ -57,7 +57,7 @@ impl RENodeModuleInit {
             }
             RENodeModuleInit::ObjectAccessRulesChain(access_rules) => {
                 substates.insert(
-                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
                     access_rules.into(),
                 );
             }
@@ -130,6 +130,7 @@ pub enum RENodeInit {
     Account(AccountSubstate),
     Metadata(MetadataSubstate),
     ComponentRoyalty(ComponentRoyaltyConfigSubstate, ComponentRoyaltyAccumulatorSubstate),
+    AccessRules(MethodAccessRulesSubstate),
 }
 
 impl RENodeInit {
@@ -330,6 +331,12 @@ impl RENodeInit {
                 substates.insert(
                     SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                     accumulator.into(),
+                );
+            }
+            RENodeInit::AccessRules(access_rules) => {
+                substates.insert(
+                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+                    access_rules.into(),
                 );
             }
         };

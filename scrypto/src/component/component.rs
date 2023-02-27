@@ -6,10 +6,11 @@ use radix_engine_interface::api::node_modules::metadata::{MetadataSetInput, META
 use radix_engine_interface::api::node_modules::royalty::{ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT, COMPONENT_ROYALTY_BLUEPRINT, COMPONENT_ROYALTY_CREATE_IDENT, ComponentRoyaltyCreateInput};
 use radix_engine_interface::api::types::{ComponentId, RENodeId};
 use radix_engine_interface::api::{types::*, ClientComponentApi, ClientPackageApi};
+use radix_engine_interface::api::node_modules::auth::{ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT, AccessRulesCreateInput};
 use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRules, Bucket, MethodKey,
 };
-use radix_engine_interface::constants::{METADATA_PACKAGE, ROYALTY_PACKAGE};
+use radix_engine_interface::constants::{ACCESS_RULES_PACKAGE, METADATA_PACKAGE, ROYALTY_PACKAGE};
 use radix_engine_interface::data::{
     scrypto_decode, scrypto_encode, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
 };
@@ -154,6 +155,16 @@ impl LocalComponent for OwnedComponent {
             }).unwrap(),
         ).unwrap();
         let royalty: Own = scrypto_decode(&rtn).unwrap();
+
+        let rtn = ScryptoEnv.call_function(
+            ACCESS_RULES_PACKAGE,
+            ACCESS_RULES_BLUEPRINT,
+            ACCESS_RULES_CREATE_IDENT,
+            scrypto_encode(&AccessRulesCreateInput {
+                access_rules,
+            }).unwrap(),
+        ).unwrap();
+        let access_rules: Own = scrypto_decode(&rtn).unwrap();
 
         ScryptoEnv
             .globalize(

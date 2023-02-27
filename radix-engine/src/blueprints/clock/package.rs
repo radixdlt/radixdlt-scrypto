@@ -1,10 +1,11 @@
+use native_sdk::access_rules::AccessRulesObject;
 use native_sdk::metadata::Metadata;
 use crate::errors::{InterpreterError, RuntimeError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE};
 use crate::system::node::RENodeInit;
 use crate::types::*;
-use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_interface::api::node_modules::auth::{ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT, AccessRulesCreateInput, AuthAddresses};
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{ClockOffset, RENodeId, SubstateOffset};
@@ -98,7 +99,14 @@ impl ClockNativePackage {
         let input: ClockCreateInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let underlying_node_id = api.kernel_allocate_node_id(RENodeType::Clock)?;
+        let node_id = api.kernel_allocate_node_id(RENodeType::Clock)?;
+        api.kernel_create_node(
+            node_id,
+            RENodeInit::Clock(CurrentTimeRoundedToMinutesSubstate {
+                current_time_rounded_to_minutes_ms: 0,
+            }),
+            BTreeMap::new(),
+        )?;
 
         let mut access_rules = AccessRules::new();
         access_rules.set_method_access_rule(
@@ -117,29 +125,12 @@ impl ClockNativePackage {
             rule!(allow_all),
         );
 
-        /*
-        let mut node_modules = BTreeMap::new();
-        node_modules.insert(
-            NodeModuleId::AccessRules,
-            RENodeModuleInit::ObjectAccessRulesChain(MethodAccessRulesChainSubstate {
-                access_rules_chain: vec![access_rules],
-            }),
-        );
-         */
-
-        api.kernel_create_node(
-            underlying_node_id,
-            RENodeInit::Clock(CurrentTimeRoundedToMinutesSubstate {
-                current_time_rounded_to_minutes_ms: 0,
-            }),
-            BTreeMap::new(),
-        )?;
-
+        let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
         let metadata = Metadata::sys_new(api)?;
 
         let address = ComponentAddress::Clock(input.component_address);
         api.globalize_with_address(
-            underlying_node_id,
+            node_id,
             btreemap!(
                 NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
                 NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),

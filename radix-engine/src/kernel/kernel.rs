@@ -1,3 +1,4 @@
+use native_sdk::access_rules::AccessRulesObject;
 use native_sdk::metadata::Metadata;
 use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::auth_zone::AuthZoneStackSubstate;
@@ -18,6 +19,7 @@ use native_sdk::resource::SysProof;
 use radix_engine_interface::api::package::{PackageCodeSubstate, PACKAGE_LOADER_BLUEPRINT};
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientComponentApi;
+use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
 use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
 // TODO: clean this up!
@@ -146,6 +148,10 @@ where
         global_node_id: RENodeId,
         non_fungible_global_id: NonFungibleGlobalId,
     ) -> Result<(), RuntimeError> {
+        // TODO: This should move into the appropriate place once virtual manager is implemented
+        self.current_frame.add_ref(RENodeId::GlobalResourceManager(ECDSA_SECP256K1_TOKEN), RENodeVisibilityOrigin::Normal);
+        self.current_frame.add_ref(RENodeId::GlobalResourceManager(EDDSA_ED25519_TOKEN), RENodeVisibilityOrigin::Normal);
+
         // TODO: Replace with trusted IndexedScryptoValue
         let access_rule = rule!(require(non_fungible_global_id));
         let component_id = {
@@ -191,6 +197,8 @@ where
             access_rules.default(access_rule.clone(), access_rule)
         };
 
+        let access_rules = AccessRulesObject::sys_new(access_rules, self)?;
+
         let metadata = Metadata::sys_new(self)?;
 
         self.globalize_with_address(
@@ -210,8 +218,14 @@ where
         global_node_id: RENodeId,
         non_fungible_global_id: NonFungibleGlobalId,
     ) -> Result<(), RuntimeError> {
+        // TODO: This should move into the appropriate place once virtual manager is implemented
+        self.current_frame.add_ref(RENodeId::GlobalResourceManager(ECDSA_SECP256K1_TOKEN), RENodeVisibilityOrigin::Normal);
+        self.current_frame.add_ref(RENodeId::GlobalResourceManager(EDDSA_ED25519_TOKEN), RENodeVisibilityOrigin::Normal);
+
         let access_rule = rule!(require(non_fungible_global_id));
         let (local_id, access_rules) = Identity::create(access_rule, self)?;
+
+        let access_rules = AccessRulesObject::sys_new(access_rules, self)?;
         let metadata = Metadata::sys_new(self)?;
 
         self.globalize_with_address(
@@ -755,6 +769,16 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: ROYALTY_PACKAGE,
                         blueprint_name: COMPONENT_ROYALTY_BLUEPRINT.to_string(),
+                        global: false,
+                    }),
+                );
+            }
+            (RENodeId::Component(..), RENodeInit::AccessRules(..)) => {
+                module_init.insert(
+                    NodeModuleId::TypeInfo,
+                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                        package_address: ACCESS_RULES_PACKAGE,
+                        blueprint_name: ACCESS_RULES_BLUEPRINT.to_string(),
                         global: false,
                     }),
                 );

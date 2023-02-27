@@ -308,14 +308,19 @@ where
                     return Err(RuntimeError::SystemError(SystemError::InvalidModule))
                 }
                 NodeModuleId::AccessRules => {
-                    let access_rules: AccessRules = scrypto_decode(&init).map_err(|e| {
+                    let access_rules: Own = scrypto_decode(&init).map_err(|e| {
                         RuntimeError::SystemError(SystemError::InvalidAccessRules(e))
                     })?;
+
+                    let component_id = access_rules.component_id();
+                    let mut node = self.kernel_drop_node(RENodeId::Component(component_id))?;
+
+                    let access_rules = node.substates.remove(&(NodeModuleId::SELF, SubstateOffset::AccessRules(AccessRulesOffset::AccessRules))).unwrap();
+                    let access_rules: MethodAccessRulesSubstate = access_rules.into();
+
                     module_init.insert(
                         NodeModuleId::AccessRules,
-                        RENodeModuleInit::ObjectAccessRulesChain(MethodAccessRulesSubstate {
-                            access_rules,
-                        }),
+                        RENodeModuleInit::ObjectAccessRulesChain(access_rules),
                     );
                 }
                 NodeModuleId::Metadata => {

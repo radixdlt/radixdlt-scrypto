@@ -1,3 +1,4 @@
+use native_sdk::access_rules::AccessRulesObject;
 use native_sdk::metadata::Metadata;
 use super::ValidatorCreator;
 use crate::errors::RuntimeError;
@@ -146,6 +147,15 @@ impl EpochManagerBlueprint {
             epoch: input.initial_epoch + 1,
             validator_set,
         };
+        api.kernel_create_node(
+            underlying_node_id,
+            RENodeInit::EpochManager(
+                epoch_manager,
+                current_validator_set,
+                preparing_validator_set,
+            ),
+            BTreeMap::new(),
+        )?;
 
         let mut access_rules = AccessRules::new();
         access_rules.set_method_access_rule(
@@ -187,16 +197,7 @@ impl EpochManagerBlueprint {
             rule!(require(AuthAddresses::system_role())), // Set epoch only used for debugging
         );
 
-        api.kernel_create_node(
-            underlying_node_id,
-            RENodeInit::EpochManager(
-                epoch_manager,
-                current_validator_set,
-                preparing_validator_set,
-            ),
-            BTreeMap::new(),
-        )?;
-
+        let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
         let metadata = Metadata::sys_new(api)?;
 
         api.globalize_with_address(

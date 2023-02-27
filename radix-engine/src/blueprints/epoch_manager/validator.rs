@@ -1,3 +1,4 @@
+use native_sdk::access_rules::AccessRulesObject;
 use native_sdk::metadata::Metadata;
 use crate::blueprints::epoch_manager::EpochManagerSubstate;
 use crate::errors::RuntimeError;
@@ -630,6 +631,7 @@ impl ValidatorCreator {
         api.kernel_create_node(node_id, node, BTreeMap::new())?;
 
         let access_rules = Self::build_access_rules(owner_access_rule);
+        let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
         let metadata = Metadata::sys_new(api)?;
 
         let address = api.globalize_with_address(
@@ -675,6 +677,7 @@ impl ValidatorCreator {
         api.kernel_create_node(node_id, node, BTreeMap::new())?;
 
         let access_rules = Self::build_access_rules(owner_access_rule);
+        let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
         let metadata = Metadata::sys_new(api)?;
 
         let address = api.globalize_with_address(

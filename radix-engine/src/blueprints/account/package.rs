@@ -1,3 +1,4 @@
+use native_sdk::access_rules::AccessRulesObject;
 use native_sdk::metadata::Metadata;
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
@@ -224,6 +225,7 @@ impl AccountNativePackage {
 
         // Creating [`AccessRules`] from the passed withdraw access rule.
         let access_rules = access_rules_from_withdraw_rule(input.withdraw_rule);
+        let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
         let metadata = Metadata::sys_new(api)?;
 
         let address = api.globalize(
@@ -248,7 +250,7 @@ impl AccountNativePackage {
             + ClientNodeApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
-        let input: AccountCreateLocalInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+        let _input: AccountCreateLocalInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         // Creating the key-value-store where the vaults will be held. This is a KVStore of
@@ -260,30 +262,15 @@ impl AccountNativePackage {
             node_id
         };
 
-        // Creating [`AccessRules`] from the passed withdraw access rule.
-        let access_rules = access_rules_from_withdraw_rule(input.withdraw_rule);
-
         // Creating the Account substates and RENode
         let node_id = {
-            let mut node_modules = BTreeMap::new();
-            node_modules.insert(
-                NodeModuleId::Metadata,
-                RENodeModuleInit::Metadata(MetadataSubstate {
-                    metadata: BTreeMap::new(),
-                }),
-            );
-            let access_rules_substate = MethodAccessRulesSubstate { access_rules };
-            node_modules.insert(
-                NodeModuleId::AccessRules,
-                RENodeModuleInit::ObjectAccessRulesChain(access_rules_substate),
-            );
             let account_substate = AccountSubstate {
                 vaults: Own::KeyValueStore(kv_store_id.into()),
             };
 
             let node_id = api.kernel_allocate_node_id(RENodeType::Account)?;
             let node = RENodeInit::Account(account_substate);
-            api.kernel_create_node(node_id, node, node_modules)?;
+            api.kernel_create_node(node_id, node, BTreeMap::new())?;
             node_id
         };
 

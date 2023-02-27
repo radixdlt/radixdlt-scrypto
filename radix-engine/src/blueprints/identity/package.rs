@@ -1,3 +1,4 @@
+use native_sdk::access_rules::AccessRulesObject;
 use native_sdk::metadata::Metadata;
 use crate::errors::InterpreterError;
 use crate::errors::RuntimeError;
@@ -53,6 +54,7 @@ impl IdentityNativePackage {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let (node_id, access_rules) = Identity::create(input.access_rule, api)?;
+        let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
         let metadata = Metadata::sys_new(api)?;
         let address = api.globalize(
             node_id,
