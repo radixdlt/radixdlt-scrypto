@@ -259,7 +259,7 @@ fn generate_dispatcher(
                 if let Some(stmt) = get_state {
                     trace!("Generated stmt: {}", quote! { #stmt });
                     stmts.push(parse_quote! {
-                        let component_id: radix_engine_interface::api::types::ComponentId = ::scrypto::data::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(component_id)).unwrap();
+                        let component_id: radix_engine_interface::api::types::RENodeId = ::scrypto::data::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(component_id)).unwrap();
                     });
                     stmts.push(parse_quote! {
                         let mut component_data = ::scrypto::runtime::ComponentStatePointer::new(component_id);
@@ -701,7 +701,7 @@ mod tests {
                     ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
                     let input: Test_x_Input = ::scrypto::data::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(args)).unwrap();
-                    let component_id: radix_engine_interface::api::types::ComponentId = ::scrypto::data::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(component_id)).unwrap();
+                    let component_id: radix_engine_interface::api::types::RENodeId = ::scrypto::data::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(component_id)).unwrap();
                     let mut component_data = ::scrypto::runtime::ComponentStatePointer::new(component_id);
                     let state: DataRef<test::Test> = component_data.get();
                     let return_data = test::Test::x(state.deref(), input.arg0);

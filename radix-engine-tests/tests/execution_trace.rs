@@ -36,16 +36,6 @@ fn test_trace_resource_transfers() {
         ComponentAddress,
     ) = receipt.output(1);
 
-    let account_component_id: ComponentId = test_runner.deref_component(account).unwrap().into();
-    let source_component_id: ComponentId = test_runner
-        .deref_component(source_component)
-        .unwrap()
-        .into();
-    let target_component_id: ComponentId = test_runner
-        .deref_component(target_component)
-        .unwrap()
-        .into();
-
     /* There should be three resource changes: withdrawal from the source vault,
     deposit to the target vault and withdrawal for the fee */
     println!("{:?}", receipt.expect_commit().resource_changes);
@@ -61,7 +51,7 @@ fn test_trace_resource_transfers() {
         .expect_commit()
         .resource_changes
         .iter()
-        .any(|r| r.component_id == source_component_id
+        .any(|r| r.node_id == RENodeId::GlobalComponent(source_component)
             && r.amount == -Decimal::from(transfer_amount)));
 
     // Target vault deposit
@@ -69,16 +59,15 @@ fn test_trace_resource_transfers() {
         .expect_commit()
         .resource_changes
         .iter()
-        .any(
-            |r| r.component_id == target_component_id && r.amount == Decimal::from(transfer_amount)
-        ));
+        .any(|r| r.node_id == RENodeId::GlobalComponent(target_component)
+            && r.amount == Decimal::from(transfer_amount)));
 
     // Fee withdrawal
     assert!(receipt
         .expect_commit()
         .resource_changes
         .iter()
-        .any(|r| r.component_id == account_component_id
+        .any(|r| r.node_id == RENodeId::GlobalComponent(account)
             && r.amount == -Decimal::from(total_fee_paid)));
 }
 
@@ -109,11 +98,6 @@ fn test_trace_fee_payments() {
         .unwrap()
         .clone();
 
-    let funded_component_id: ComponentId = test_runner
-        .deref_component(funded_component)
-        .unwrap()
-        .into();
-
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
@@ -137,7 +121,8 @@ fn test_trace_fee_payments() {
     assert_eq!(1, resource_changes.len());
     assert!(resource_changes
         .iter()
-        .any(|r| r.component_id == funded_component_id && r.amount == -total_fee_paid));
+        .any(|r| r.node_id == RENodeId::GlobalComponent(funded_component)
+            && r.amount == -total_fee_paid));
 }
 
 #[test]

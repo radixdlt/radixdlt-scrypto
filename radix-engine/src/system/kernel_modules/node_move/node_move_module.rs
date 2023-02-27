@@ -1,6 +1,6 @@
 use crate::blueprints::resource::ProofInfoSubstate;
 use crate::errors::{ModuleError, RuntimeError};
-use crate::kernel::actor::{ResolvedActor, ResolvedReceiver};
+use crate::kernel::actor::ResolvedActor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
@@ -45,10 +45,7 @@ impl NodeMoveModule {
                 if !matches!(
                     actor,
                     Some(ResolvedActor {
-                        receiver: Some(ResolvedReceiver {
-                            receiver: MethodReceiver(RENodeId::AuthZoneStack, ..),
-                            ..
-                        }),
+                        receiver: Some(MethodReceiver(RENodeId::AuthZoneStack, ..)),
                         ..
                     })
                 ) {

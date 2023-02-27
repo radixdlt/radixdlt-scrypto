@@ -708,20 +708,11 @@ mod tests {
         let commit_result = transaction_receipt.result.expect_commit();
         commit_result.state_updates.commit(&mut substate_store);
 
-        let global_substate = substate_store
-            .get_substate(&SubstateId(
-                RENodeId::GlobalComponent(account_component_address),
-                NodeModuleId::SELF,
-                SubstateOffset::Global(GlobalOffset::Global),
-            ))
-            .map(|s| s.substate.to_runtime())
-            .unwrap();
-        let derefed_component_id: ComponentId = global_substate.global().node_deref().into();
-
         assert!(commit_result
             .resource_changes
             .iter()
-            .any(|rc| rc.amount == allocation_amount && rc.component_id == derefed_component_id));
+            .any(|rc| rc.amount == allocation_amount
+                && rc.node_id == RENodeId::GlobalComponent(account_component_address)));
     }
 
     #[test]

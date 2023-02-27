@@ -6,7 +6,6 @@ use crate::blueprints::resource::{
 };
 use crate::errors::RuntimeError;
 use crate::errors::*;
-use crate::system::global::GlobalSubstate;
 use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::metadata::MetadataSubstate;
@@ -18,12 +17,13 @@ use native_sdk::resource::SysProof;
 use radix_engine_interface::api::component::TypeInfoSubstate;
 use radix_engine_interface::api::package::{PackageCodeSubstate, PACKAGE_LOADER_BLUEPRINT};
 use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::api::ClientComponentApi;
 // TODO: clean this up!
 use crate::kernel::kernel_api::TemporaryResolvedInvocation;
 use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
 use radix_engine_interface::api::types::{
-    AuthZoneStackOffset, GlobalOffset, LockHandle, ProofOffset, RENodeId, SubstateId,
-    SubstateOffset,
+    AuthZoneStackOffset, LockHandle, ProofOffset, RENodeId, SubstateId, SubstateOffset,
+    WorktopOffset,
 };
 use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLUEPRINT;
 use radix_engine_interface::blueprints::account::{
@@ -45,7 +45,7 @@ use radix_engine_interface::blueprints::transaction_runtime::TRANSACTION_RUNTIME
 use radix_engine_interface::rule;
 use sbor::rust::mem;
 
-use super::actor::{ExecutionMode, ResolvedActor, ResolvedReceiver};
+use super::actor::{ExecutionMode, ResolvedActor};
 use super::call_frame::{CallFrame, RENodeVisibilityOrigin};
 use super::heap::{Heap, HeapRENode};
 use super::id_allocator::IdAllocator;
@@ -141,7 +141,7 @@ where
 
     fn create_virtual_account(
         &mut self,
-        node_id: RENodeId,
+        global_node_id: RENodeId,
         non_fungible_global_id: NonFungibleGlobalId,
     ) -> Result<(), RuntimeError> {
         // TODO: Replace with trusted IndexedScryptoValue
@@ -196,41 +196,20 @@ where
             node_id
         };
 
-        // TODO: Use api to globalize component when create_node is refactored
-        // TODO: to allow for address selection
-        let global_substate = GlobalSubstate::Account(component_id.into());
-
-        self.current_frame.create_node(
-            node_id,
-            RENodeInit::GlobalComponent(global_substate),
-            BTreeMap::new(),
-            &mut self.heap,
-            &mut self.track,
-            true,
-        )?;
+        self.globalize_with_address(component_id, global_node_id.into())?;
 
         Ok(())
     }
 
     fn create_virtual_identity(
         &mut self,
-        node_id: RENodeId,
+        global_node_id: RENodeId,
         non_fungible_global_id: NonFungibleGlobalId,
     ) -> Result<(), RuntimeError> {
         let access_rule = rule!(require(non_fungible_global_id));
-        let underlying_node_id = Identity::create(access_rule, self)?;
+        let local_id = Identity::create(access_rule, self)?;
 
-        // TODO: Use api to globalize component when create_node is refactored
-        // TODO: to allow for address selection
-        let global_substate = GlobalSubstate::Identity(underlying_node_id.into());
-        self.current_frame.create_node(
-            node_id,
-            RENodeInit::GlobalComponent(global_substate),
-            BTreeMap::new(),
-            &mut self.heap,
-            &mut self.track,
-            true,
-        )?;
+        self.globalize_with_address(local_id, global_node_id.into())?;
 
         Ok(())
     }
@@ -238,16 +217,16 @@ where
     fn try_virtualize(
         &mut self,
         node_id: RENodeId,
-        offset: &SubstateOffset,
+        _module_id: NodeModuleId,
+        _offset: &SubstateOffset,
     ) -> Result<bool, RuntimeError> {
-        match (node_id, offset) {
-            (
-                RENodeId::GlobalComponent(component_address),
-                SubstateOffset::Global(GlobalOffset::Global),
-            ) => {
+        match node_id {
+            // TODO: Need to have a schema check in place before this in order to not create virtual components when accessing illegal substates
+            RENodeId::GlobalComponent(component_address) => {
                 // Lazy create component if missing
                 match component_address {
                     ComponentAddress::EcdsaSecp256k1VirtualAccount(address) => {
+                        self.id_allocator.allocate_virtual_node_id(node_id);
                         let non_fungible_global_id = NonFungibleGlobalId::new(
                             ECDSA_SECP256K1_TOKEN,
                             NonFungibleLocalId::bytes(address.to_vec()).unwrap(),
@@ -255,6 +234,7 @@ where
                         self.create_virtual_account(node_id, non_fungible_global_id)?;
                     }
                     ComponentAddress::EddsaEd25519VirtualAccount(address) => {
+                        self.id_allocator.allocate_virtual_node_id(node_id);
                         let non_fungible_global_id = NonFungibleGlobalId::new(
                             EDDSA_ED25519_TOKEN,
                             NonFungibleLocalId::bytes(address.to_vec()).unwrap(),
@@ -262,6 +242,7 @@ where
                         self.create_virtual_account(node_id, non_fungible_global_id)?;
                     }
                     ComponentAddress::EcdsaSecp256k1VirtualIdentity(address) => {
+                        self.id_allocator.allocate_virtual_node_id(node_id);
                         let non_fungible_global_id = NonFungibleGlobalId::new(
                             ECDSA_SECP256K1_TOKEN,
                             NonFungibleLocalId::bytes(address.to_vec()).unwrap(),
@@ -269,6 +250,7 @@ where
                         self.create_virtual_identity(node_id, non_fungible_global_id)?;
                     }
                     ComponentAddress::EddsaEd25519VirtualIdentity(address) => {
+                        self.id_allocator.allocate_virtual_node_id(node_id);
                         let non_fungible_global_id = NonFungibleGlobalId::new(
                             EDDSA_ED25519_TOKEN,
                             NonFungibleLocalId::bytes(address.to_vec()).unwrap(),
@@ -286,8 +268,6 @@ where
 
     fn drop_node_internal(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError> {
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::DropNode, |api| match node_id {
-            RENodeId::Logger => Ok(()),
-            RENodeId::TransactionRuntime => Ok(()),
             RENodeId::AuthZoneStack => {
                 let handle = api.kernel_lock_substate(
                     node_id,
@@ -307,7 +287,7 @@ where
                     }
                 }
                 api.kernel_drop_lock(handle)?;
-                Ok(())
+                api.current_frame.remove_node(&mut api.heap, node_id)
             }
             RENodeId::Proof(..) => {
                 let proof_info = ProofInfoSubstate::of(node_id, api)?;
@@ -335,57 +315,70 @@ where
                     api.kernel_drop_lock(handle)?;
                 }
 
-                Ok(())
+                api.current_frame.remove_node(&mut api.heap, node_id)
             }
             RENodeId::Worktop => {
-                let handle = api.kernel_lock_substate(
-                    node_id,
-                    NodeModuleId::SELF,
-                    SubstateOffset::Worktop(WorktopOffset::Worktop),
-                    LockFlags::read_only(),
-                )?;
-                let worktop: &WorktopSubstate = api.kernel_get_substate_ref(handle)?;
+                let mut node = api.current_frame.remove_node(&mut api.heap, node_id)?;
+
+                let substate = node
+                    .substates
+                    .remove(&(
+                        NodeModuleId::SELF,
+                        SubstateOffset::Worktop(WorktopOffset::Worktop),
+                    ))
+                    .unwrap();
+                let worktop: WorktopSubstate = substate.into();
                 if !worktop.resources.is_empty() {
                     return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
                         RENodeId::Worktop,
                     )));
                 }
-                api.kernel_drop_lock(handle)?;
-                Ok(())
+
+                return Ok(node);
             }
-            RENodeId::Bucket(..) => Ok(()),
+            RENodeId::Logger
+            | RENodeId::TransactionRuntime
+            | RENodeId::Bucket(..)
+            | RENodeId::Clock(..)
+            | RENodeId::EpochManager(..)
+            | RENodeId::Account(..)
+            | RENodeId::Validator(..)
+            | RENodeId::Component(..)
+            | RENodeId::AccessController(..)
+            | RENodeId::Identity(..) => api.current_frame.remove_node(&mut api.heap, node_id),
             _ => Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
                 node_id,
             ))),
-        })?;
+        })
+    }
 
-        let node = self.current_frame.remove_node(&mut self.heap, node_id)?;
+    fn kernel_drop_node_recursively(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
+        let node = self.kernel_drop_node(node_id)?;
         for (_, substate) in &node.substates {
             let (_, child_nodes) = substate.to_ref().references_and_owned_nodes();
             for child_node in child_nodes {
-                // Need to go through api so that visibility issues can be caught
-                self.kernel_drop_node(child_node)?;
+                self.kernel_drop_node_recursively(child_node)?;
             }
         }
-        // TODO: REmove
-        Ok(node)
+
+        Ok(())
     }
 
     fn drop_nodes_in_frame(&mut self) -> Result<(), RuntimeError> {
         let mut worktops = Vec::new();
         let owned_nodes = self.current_frame.owned_nodes();
 
-        // Need to go through api so that visibility issues can be caught
-        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::Client, |api| {
+        // Need to go through api so that access rules can be caught
+        self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AutoDrop, |api| {
             for node_id in owned_nodes {
                 if let RENodeId::Worktop = node_id {
                     worktops.push(node_id);
                 } else {
-                    api.kernel_drop_node(node_id)?;
+                    api.kernel_drop_node_recursively(node_id)?;
                 }
             }
             for worktop_id in worktops {
-                api.kernel_drop_node(worktop_id)?;
+                api.kernel_drop_node_recursively(worktop_id)?;
             }
 
             Ok(())
@@ -403,15 +396,6 @@ where
         let args = resolved.args;
         let mut call_frame_update = resolved.update;
 
-        let derefed_lock = if let Some(ResolvedReceiver {
-            derefed_from: Some((_, derefed_lock)),
-            ..
-        }) = &actor.receiver
-        {
-            Some(*derefed_lock)
-        } else {
-            None
-        };
         let caller = self.current_frame.actor.clone();
 
         // Before push call frame
@@ -487,11 +471,6 @@ where
             self.execute_in_mode(ExecutionMode::KernelModule, |api| {
                 KernelModuleMixer::after_pop_frame(api)
             })?;
-        }
-
-        if let Some(derefed_lock) = derefed_lock {
-            self.current_frame
-                .drop_lock(&mut self.heap, &mut self.track, derefed_lock)?;
         }
 
         Ok(output)
@@ -604,16 +583,16 @@ where
                         }
 
                         if self.current_frame.get_node_visibility(node_id).is_none() {
-                            let offset = SubstateOffset::Global(GlobalOffset::Global);
+                            let offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
                             self.track
                                 .acquire_lock(
-                                    SubstateId(*node_id, NodeModuleId::SELF, offset.clone()),
+                                    SubstateId(*node_id, NodeModuleId::TypeInfo, offset.clone()),
                                     LockFlags::read_only(),
                                 )
                                 .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
                             self.track
                                 .release_lock(
-                                    SubstateId(*node_id, NodeModuleId::SELF, offset),
+                                    SubstateId(*node_id, NodeModuleId::TypeInfo, offset),
                                     false,
                                 )
                                 .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
@@ -744,34 +723,7 @@ where
         }
 
         match (node_id, &re_node) {
-            (
-                RENodeId::GlobalComponent(..),
-                RENodeInit::GlobalComponent(GlobalSubstate::EpochManager(..)),
-            ) => {}
-            (
-                RENodeId::GlobalComponent(..),
-                RENodeInit::GlobalComponent(GlobalSubstate::Clock(..)),
-            ) => {}
-            (
-                RENodeId::GlobalComponent(..),
-                RENodeInit::GlobalComponent(GlobalSubstate::Validator(..)),
-            ) => {}
-            (
-                RENodeId::GlobalComponent(..),
-                RENodeInit::GlobalComponent(GlobalSubstate::Identity(..)),
-            ) => {}
-            (
-                RENodeId::GlobalComponent(..),
-                RENodeInit::GlobalComponent(GlobalSubstate::AccessController(..)),
-            ) => {}
-            (
-                RENodeId::GlobalComponent(..),
-                RENodeInit::GlobalComponent(GlobalSubstate::Component(..)),
-            ) => {}
-            (
-                RENodeId::GlobalComponent(..),
-                RENodeInit::GlobalComponent(GlobalSubstate::Account(..)),
-            ) => {}
+            (RENodeId::GlobalComponent(..), RENodeInit::GlobalComponent(..)) => {}
             (RENodeId::Component(..), RENodeInit::Component(..)) => {}
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
             (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
@@ -1088,23 +1040,6 @@ where
         let current_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        // Deref
-        let (node_id, derefed_lock) = match node_id {
-            RENodeId::GlobalComponent(..)
-                if !matches!(offset, SubstateOffset::Global(GlobalOffset::Global)) =>
-            {
-                let handle = self.kernel_lock_substate(
-                    node_id,
-                    NodeModuleId::SELF,
-                    SubstateOffset::Global(GlobalOffset::Global),
-                    LockFlags::empty(),
-                )?;
-                let global: &GlobalSubstate = self.kernel_get_substate_ref(handle)?;
-                (global.node_deref(), Some(handle))
-            }
-            _ => (node_id, None),
-        };
-
         // TODO: Check if valid offset for node_id
 
         // Authorization
@@ -1142,7 +1077,7 @@ where
             Err(RuntimeError::KernelError(KernelError::TrackError(TrackError::NotFound(
                 SubstateId(node_id, module_id, ref offset),
             )))) => {
-                if self.try_virtualize(node_id, &offset)? {
+                if self.try_virtualize(node_id, module_id, &offset)? {
                     self.current_frame.acquire_lock(
                         &mut self.heap,
                         &mut self.track,
@@ -1188,11 +1123,6 @@ where
                 }
             }
         };
-
-        if let Some(lock_handle) = derefed_lock {
-            self.current_frame
-                .drop_lock(&mut self.heap, &mut self.track, lock_handle)?;
-        }
 
         // Restore current mode
         self.execution_mode = current_mode;

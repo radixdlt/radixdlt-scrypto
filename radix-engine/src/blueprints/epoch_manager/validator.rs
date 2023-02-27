@@ -2,7 +2,6 @@ use crate::blueprints::epoch_manager::EpochManagerSubstate;
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::global::GlobalSubstate;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
@@ -646,13 +645,8 @@ impl ValidatorCreator {
         });
 
         api.kernel_create_node(node_id, node, node_modules)?;
-        api.kernel_create_node(
-            global_node_id,
-            RENodeInit::GlobalComponent(GlobalSubstate::Validator(node_id.into())),
-            BTreeMap::new(),
-        )?;
-
-        Ok((global_node_id.into(), liquidity_bucket))
+        let address = api.globalize_with_address(node_id, address.into())?;
+        Ok((address, liquidity_bucket))
     }
 
     pub fn create<Y>(
@@ -698,12 +692,8 @@ impl ValidatorCreator {
         });
 
         api.kernel_create_node(node_id, node, node_modules)?;
-        api.kernel_create_node(
-            global_node_id,
-            RENodeInit::GlobalComponent(GlobalSubstate::Validator(node_id.into())),
-            BTreeMap::new(),
-        )?;
 
-        Ok(global_node_id.into())
+        let address = api.globalize_with_address(node_id, address.into())?;
+        Ok(address)
     }
 }

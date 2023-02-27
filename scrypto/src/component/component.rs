@@ -151,11 +151,17 @@ impl Component for OwnedComponent {
     }
 
     fn package_address(&self) -> PackageAddress {
-        ScryptoEnv.get_component_type_info(self.0).unwrap().0
+        ScryptoEnv
+            .get_component_type_info(RENodeId::Component(self.0))
+            .unwrap()
+            .0
     }
 
     fn blueprint_name(&self) -> String {
-        ScryptoEnv.get_component_type_info(self.0).unwrap().1
+        ScryptoEnv
+            .get_component_type_info(RENodeId::Component(self.0))
+            .unwrap()
+            .1
     }
 
     fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
@@ -178,7 +184,7 @@ impl Component for OwnedComponent {
 
 impl LocalComponent for OwnedComponent {
     fn globalize(self) -> ComponentAddress {
-        ScryptoEnv.globalize_component(self.0).unwrap()
+        ScryptoEnv.globalize(RENodeId::Component(self.0)).unwrap()
     }
 }
 
@@ -243,11 +249,17 @@ impl Component for GlobalComponentRef {
     }
 
     fn package_address(&self) -> PackageAddress {
-        ScryptoEnv.get_global_component_type_info(self.0).unwrap().0
+        ScryptoEnv
+            .get_component_type_info(RENodeId::GlobalComponent(self.0))
+            .unwrap()
+            .0
     }
 
     fn blueprint_name(&self) -> String {
-        ScryptoEnv.get_global_component_type_info(self.0).unwrap().1
+        ScryptoEnv
+            .get_component_type_info(RENodeId::GlobalComponent(self.0))
+            .unwrap()
+            .1
     }
 
     fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {

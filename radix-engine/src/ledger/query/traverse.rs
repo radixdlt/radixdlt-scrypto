@@ -1,9 +1,8 @@
 use crate::blueprints::resource::VaultInfoSubstate;
 use crate::ledger::{QueryableSubstateStore, ReadableSubstateStore};
-use crate::system::global::GlobalSubstate;
 use crate::system::node_substates::PersistedSubstate;
 use radix_engine_interface::api::types::{
-    AccountOffset, ComponentOffset, GlobalOffset, KeyValueStoreOffset, NodeModuleId, RENodeId,
+    AccountOffset, ComponentAddress, ComponentOffset, KeyValueStoreOffset, NodeModuleId, RENodeId,
     SubstateId, SubstateOffset, VaultId, VaultOffset,
 };
 use radix_engine_interface::blueprints::resource::{
@@ -78,21 +77,6 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
         }
         self.visitor.visit_node_id(parent, &node_id, depth);
         match node_id {
-            RENodeId::GlobalComponent(..) => {
-                let substate_id = SubstateId(
-                    node_id,
-                    NodeModuleId::SELF,
-                    SubstateOffset::Global(GlobalOffset::Global),
-                );
-                let substate = self
-                    .substate_store
-                    .get_substate(&substate_id)
-                    .ok_or(StateTreeTraverserError::RENodeNotFound(node_id))?;
-                let global: GlobalSubstate = substate.substate.to_runtime().into();
-                let derefed = global.node_deref();
-                self.traverse_recursive(Some(&substate_id), derefed, depth + 1)
-                    .expect("Broken Node Store");
-            }
             RENodeId::Vault(vault_id) => {
                 if let Some(output_value) = self.substate_store.get_substate(&SubstateId(
                     RENodeId::Vault(vault_id),
@@ -169,7 +153,10 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                         .expect("Broken Node Store");
                 }
             }
-            RENodeId::Account(..) => {
+            RENodeId::GlobalComponent(ComponentAddress::Account(..))
+            | RENodeId::GlobalComponent(ComponentAddress::EcdsaSecp256k1VirtualAccount(..))
+            | RENodeId::GlobalComponent(ComponentAddress::EddsaEd25519VirtualAccount(..))
+            | RENodeId::Account(..) => {
                 let substate_id = SubstateId(
                     node_id,
                     NodeModuleId::SELF,
