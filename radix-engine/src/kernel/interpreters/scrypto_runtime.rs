@@ -265,8 +265,8 @@ where
         &mut self,
         node_id: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let node_id = scrypto_decode::<RENodeId>(&node_id)
-            .map_err(WasmRuntimeError::InvalidComponentAddress)?;
+        let node_id =
+            scrypto_decode::<RENodeId>(&node_id).map_err(WasmRuntimeError::InvalidNodeId)?;
         let type_info = self.api.get_component_type_info(node_id)?;
 
         let buffer = scrypto_encode(&type_info).expect("Failed to encode type_info");

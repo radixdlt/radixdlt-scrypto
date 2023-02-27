@@ -15,6 +15,7 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::data::{IndexedScryptoValue, ScryptoValueDisplayContext};
 use radix_engine_interface::network::NetworkDefinition;
 use std::collections::VecDeque;
+use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use utils::ContextualDisplay;
 
 use crate::utils::*;

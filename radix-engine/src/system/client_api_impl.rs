@@ -257,7 +257,7 @@ where
             RENodeId::Clock(..) => RENodeType::GlobalClock,
             RENodeId::Account(..) => RENodeType::GlobalAccount,
             RENodeId::AccessController(..) => RENodeType::GlobalAccessController,
-            _ => panic!("Not supported"),
+            _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
         };
 
         let global_node_id = self.kernel_allocate_node_id(node_type)?;

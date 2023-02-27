@@ -138,7 +138,6 @@ pub enum WasmRuntimeError {
     InvalidComponentId(DecodeError),
     InvalidValue(DecodeError),
     /// Invalid component address
-    InvalidComponentAddress(DecodeError),
     InvalidLockFlags,
     /// Costing error
     FeeReserveError(FeeReserveError),
