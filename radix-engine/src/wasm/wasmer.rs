@@ -270,10 +270,6 @@ impl WasmerModule {
             blueprint_ident_len: u32,
             app_states_ptr: u32,
             app_states_len: u32,
-            royalty_config_ptr: u32,
-            royalty_config_len: u32,
-            metadata_ptr: u32,
-            metadata_len: u32,
         ) -> Result<u64, RuntimeError> {
             let (instance, runtime) = grab_runtime!(env);
 
@@ -281,8 +277,6 @@ impl WasmerModule {
                 .new_component(
                     read_memory(&instance, blueprint_ident_ptr, blueprint_ident_len)?,
                     read_memory(&instance, app_states_ptr, app_states_len)?,
-                    read_memory(&instance, royalty_config_ptr, royalty_config_len)?,
-                    read_memory(&instance, metadata_ptr, metadata_len)?,
                 )
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 

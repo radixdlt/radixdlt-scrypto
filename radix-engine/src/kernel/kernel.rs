@@ -1,3 +1,4 @@
+use native_sdk::metadata::Metadata;
 use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::auth_zone::AuthZoneStackSubstate;
 use crate::blueprints::identity::Identity;
@@ -17,6 +18,7 @@ use native_sdk::resource::SysProof;
 use radix_engine_interface::api::package::{PackageCodeSubstate, PACKAGE_LOADER_BLUEPRINT};
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientComponentApi;
+use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
 // TODO: clean this up!
 use crate::kernel::kernel_api::TemporaryResolvedInvocation;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
@@ -188,7 +190,7 @@ where
             access_rules.default(access_rule.clone(), access_rule)
         };
 
-        let metadata: BTreeMap<String, String> = BTreeMap::new();
+        let metadata = Metadata::sys_new(self)?;
 
         self.globalize_with_address(
             component_id,
@@ -209,7 +211,7 @@ where
     ) -> Result<(), RuntimeError> {
         let access_rule = rule!(require(non_fungible_global_id));
         let (local_id, access_rules) = Identity::create(access_rule, self)?;
-        let metadata: BTreeMap<String, String> = BTreeMap::new();
+        let metadata = Metadata::sys_new(self)?;
 
         self.globalize_with_address(
             local_id,
@@ -736,6 +738,16 @@ where
             (RENodeId::Component(..), RENodeInit::Component(..)) => {}
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
             (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
+            (RENodeId::Component(..), RENodeInit::Metadata(..)) => {
+                module_init.insert(
+                    NodeModuleId::TypeInfo,
+                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                        package_address: METADATA_PACKAGE,
+                        blueprint_name: METADATA_BLUEPRINT.to_string(),
+                        global: false,
+                    }),
+                );
+            }
             (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {
                 module_init.insert(
                     NodeModuleId::TypeInfo,

@@ -1,3 +1,4 @@
+use native_sdk::metadata::Metadata;
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
@@ -208,39 +209,22 @@ impl AccountNativePackage {
             node_id
         };
 
-        // Creating [`AccessRules`] from the passed withdraw access rule.
-        let access_rules = access_rules_from_withdraw_rule(input.withdraw_rule);
 
         // Creating the Account substates and RENode
         let node_id = {
-            let mut node_modules = BTreeMap::new();
-            node_modules.insert(
-                NodeModuleId::Metadata,
-                RENodeModuleInit::Metadata(MetadataSubstate {
-                    metadata: BTreeMap::new(),
-                }),
-            );
-            /*
-            let access_rules_substate = MethodAccessRulesChainSubstate {
-                access_rules_chain: [access_rules].into(),
-            };
-            node_modules.insert(
-                NodeModuleId::AccessRules,
-                RENodeModuleInit::ObjectAccessRulesChain(access_rules_substate),
-            );
-             */
-
             let account_substate = AccountSubstate {
                 vaults: Own::KeyValueStore(kv_store_id.into()),
             };
 
             let node_id = api.kernel_allocate_node_id(RENodeType::Account)?;
             let node = RENodeInit::Account(account_substate);
-            api.kernel_create_node(node_id, node, node_modules)?;
+            api.kernel_create_node(node_id, node, BTreeMap::new())?;
             node_id
         };
 
-        let metadata: BTreeMap<String, String> = BTreeMap::new();
+        // Creating [`AccessRules`] from the passed withdraw access rule.
+        let access_rules = access_rules_from_withdraw_rule(input.withdraw_rule);
+        let metadata = Metadata::sys_new(api)?;
 
         let address = api.globalize(
             node_id,

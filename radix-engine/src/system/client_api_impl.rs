@@ -319,12 +319,20 @@ where
                     );
                 }
                 NodeModuleId::Metadata => {
-                    let metadata: BTreeMap<String, String> = scrypto_decode(&init)
-                        .map_err(|e| RuntimeError::SystemError(SystemError::InvalidMetadata(e)))?;
+                    let metadata: Own = scrypto_decode(&init)
+                        .map_err(|e| {
+                            RuntimeError::SystemError(SystemError::InvalidMetadata(e))
+                        })?;
+
+                    let component_id = metadata.component_id();
+                    let mut node = self.kernel_drop_node(RENodeId::Component(component_id))?;
+
+                    let metadata = node.substates.remove(&(NodeModuleId::SELF, SubstateOffset::Metadata(MetadataOffset::Metadata))).unwrap();
+                    let metadata: MetadataSubstate = metadata.into();
 
                     module_init.insert(
                         NodeModuleId::Metadata,
-                        RENodeModuleInit::Metadata(MetadataSubstate { metadata }),
+                        RENodeModuleInit::Metadata(metadata),
                     );
                 }
                 NodeModuleId::ComponentRoyalty => {

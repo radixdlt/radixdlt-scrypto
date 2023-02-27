@@ -128,6 +128,7 @@ pub enum RENodeInit {
     Logger(LoggerSubstate),
     AccessController(AccessControllerSubstate),
     Account(AccountSubstate),
+    Metadata(MetadataSubstate),
 }
 
 impl RENodeInit {
@@ -312,6 +313,12 @@ impl RENodeInit {
                 substates.insert(
                     SubstateOffset::AccessController(AccessControllerOffset::AccessController),
                     access_controller.into(),
+                );
+            }
+            RENodeInit::Metadata(metadata) => {
+                substates.insert(
+                    SubstateOffset::Metadata(MetadataOffset::Metadata),
+                    metadata.into(),
                 );
             }
         };

@@ -33,6 +33,7 @@ use radix_engine_interface::rule;
 use transaction::data::{manifest_args, manifest_encode};
 use transaction::model::{Instruction, SystemTransaction};
 use transaction::validation::ManifestIdAllocator;
+use crate::system::node_modules::metadata::MetadataNativePackage;
 
 const XRD_SYMBOL: &str = "XRD";
 const XRD_NAME: &str = "Radix";
@@ -74,7 +75,7 @@ pub fn create_genesis(
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
-                package_access_rules: BTreeMap::new(),
+                package_access_rules: MetadataNativePackage::function_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
             })
             .unwrap(),

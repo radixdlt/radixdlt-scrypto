@@ -1,3 +1,4 @@
+use native_sdk::metadata::Metadata;
 use crate::errors::InterpreterError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
@@ -52,7 +53,7 @@ impl IdentityNativePackage {
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let (node_id, access_rules) = Identity::create(input.access_rule, api)?;
-        let metadata: BTreeMap<String, String> = BTreeMap::new();
+        let metadata = Metadata::sys_new(api)?;
         let address = api.globalize(
             node_id,
             btreemap!(
@@ -88,23 +89,7 @@ impl Identity {
             AccessRule::DenyAll,
         );
 
-        let mut node_modules = BTreeMap::new();
-        node_modules.insert(
-            NodeModuleId::Metadata,
-            RENodeModuleInit::Metadata(MetadataSubstate {
-                metadata: BTreeMap::new(),
-            }),
-        );
-        /*
-        node_modules.insert(
-            NodeModuleId::AccessRules,
-            RENodeModuleInit::ObjectAccessRulesChain(MethodAccessRulesChainSubstate {
-                access_rules_chain: vec![access_rules],
-            }),
-        );
-         */
-
-        api.kernel_create_node(underlying_node_id, RENodeInit::Identity(), node_modules)?;
+        api.kernel_create_node(underlying_node_id, RENodeInit::Identity(), BTreeMap::new())?;
 
         Ok((underlying_node_id, access_rules))
     }

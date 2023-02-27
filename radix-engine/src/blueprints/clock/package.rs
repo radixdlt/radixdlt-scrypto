@@ -1,3 +1,4 @@
+use native_sdk::metadata::Metadata;
 use crate::errors::{InterpreterError, RuntimeError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE};
@@ -134,7 +135,7 @@ impl ClockNativePackage {
             BTreeMap::new(),
         )?;
 
-        let metadata: BTreeMap<String, String> = BTreeMap::new();
+        let metadata = Metadata::sys_new(api)?;
 
         let address = ComponentAddress::Clock(input.component_address);
         api.globalize_with_address(

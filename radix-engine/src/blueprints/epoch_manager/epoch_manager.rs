@@ -1,3 +1,4 @@
+use native_sdk::metadata::Metadata;
 use super::ValidatorCreator;
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
@@ -9,6 +10,7 @@ use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::node_modules::metadata::{METADATA_BLUEPRINT, METADATA_CREATE_IDENT, MetadataCreateInput};
 use radix_engine_interface::blueprints::account::{AccountDepositInput, ACCOUNT_DEPOSIT_IDENT};
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -195,7 +197,7 @@ impl EpochManagerBlueprint {
             BTreeMap::new(),
         )?;
 
-        let metadata: BTreeMap<String, String> = BTreeMap::new();
+        let metadata = Metadata::sys_new(api)?;
 
         api.globalize_with_address(
             underlying_node_id,

@@ -1,3 +1,4 @@
+use native_sdk::metadata::Metadata;
 use crate::blueprints::epoch_manager::EpochManagerSubstate;
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
@@ -629,7 +630,7 @@ impl ValidatorCreator {
         api.kernel_create_node(node_id, node, BTreeMap::new())?;
 
         let access_rules = Self::build_access_rules(owner_access_rule);
-        let metadata: BTreeMap<String, String> = BTreeMap::new();
+        let metadata = Metadata::sys_new(api)?;
 
         let address = api.globalize_with_address(
             node_id,
@@ -674,7 +675,7 @@ impl ValidatorCreator {
         api.kernel_create_node(node_id, node, BTreeMap::new())?;
 
         let access_rules = Self::build_access_rules(owner_access_rule);
-        let metadata: BTreeMap<String, String> = BTreeMap::new();
+        let metadata = Metadata::sys_new(api)?;
 
         let address = api.globalize_with_address(
             node_id,

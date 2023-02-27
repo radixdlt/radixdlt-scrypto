@@ -2,18 +2,17 @@ use crate::abi::*;
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::*;
 use crate::*;
-use radix_engine_interface::api::node_modules::metadata::{
-    MetadataSetInput, METADATA_GET_IDENT, METADATA_SET_IDENT,
-};
+use radix_engine_interface::api::node_modules::metadata::{MetadataSetInput, METADATA_GET_IDENT, METADATA_SET_IDENT, METADATA_BLUEPRINT, METADATA_CREATE_IDENT, MetadataCreateInput};
 use radix_engine_interface::api::node_modules::royalty::{
     ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput,
     COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
 use radix_engine_interface::api::types::{ComponentId, RENodeId};
-use radix_engine_interface::api::{types::*, ClientComponentApi};
+use radix_engine_interface::api::{types::*, ClientComponentApi, ClientPackageApi};
 use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRules, Bucket, MethodKey,
 };
+use radix_engine_interface::constants::METADATA_PACKAGE;
 use radix_engine_interface::data::{
     scrypto_decode, scrypto_encode, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
 };
@@ -138,9 +137,17 @@ impl LocalComponent for OwnedComponent {
     fn globalize_with_modules(
         self,
         access_rules: AccessRules,
-        metadata: BTreeMap<String, String>,
+        _metadata: BTreeMap<String, String>,
         config: RoyaltyConfig,
     ) -> ComponentAddress {
+        let rtn = ScryptoEnv.call_function(
+            METADATA_PACKAGE,
+            METADATA_BLUEPRINT,
+            METADATA_CREATE_IDENT,
+            scrypto_encode(&MetadataCreateInput {}).unwrap(),
+        ).unwrap();
+        let metadata: Own = scrypto_decode(&rtn).unwrap();
+
         ScryptoEnv
             .globalize(
                 RENodeId::Component(self.0),
