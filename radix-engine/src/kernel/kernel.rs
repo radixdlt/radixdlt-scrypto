@@ -770,14 +770,6 @@ where
             (RENodeId::Component(..), RENodeInit::Metadata(..)) => { }
             (RENodeId::Component(..), RENodeInit::ComponentRoyalty(..)) => { }
             (RENodeId::Component(..), RENodeInit::AccessRules(..)) => {
-                module_init.insert(
-                    NodeModuleId::TypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: ACCESS_RULES_PACKAGE,
-                        blueprint_name: ACCESS_RULES_BLUEPRINT.to_string(),
-                        global: false,
-                    }),
-                );
             }
             (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {
                 module_init.insert(

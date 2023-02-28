@@ -251,6 +251,14 @@ where
                     _ => return Err(RuntimeError::SystemError(SystemError::BlueprintNotFound)),
                 }
             }
+            ACCESS_RULES_PACKAGE => {
+                let substate_bytes = app_states.into_iter().next().unwrap().1;
+                let substate: MethodAccessRulesSubstate = scrypto_decode(&substate_bytes)
+                    .map_err(|_| RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema))?;
+
+                let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
+                (node_id, RENodeInit::AccessRules(substate))
+            }
             EPOCH_MANAGER_PACKAGE => {
                 match blueprint_ident {
                     VALIDATOR_BLUEPRINT => {
