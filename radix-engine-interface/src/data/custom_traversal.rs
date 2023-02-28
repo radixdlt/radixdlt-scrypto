@@ -22,7 +22,7 @@ impl CustomTraversal for ScryptoCustomTraversal {
     type CustomValueKind = ScryptoCustomValueKind;
     type CustomTerminalValueRef<'de> = ScryptoCustomTerminalValueRef;
 
-    fn read_custom_value_body<'de, R>(
+    fn decode_custom_value_body<'de, R>(
         custom_value_kind: Self::CustomValueKind,
         reader: &mut R,
     ) -> Result<Self::CustomTerminalValueRef<'de>, DecodeError>

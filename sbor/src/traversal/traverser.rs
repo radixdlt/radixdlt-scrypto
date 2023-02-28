@@ -10,7 +10,7 @@ pub trait CustomTraversal: Copy + Debug + Clone + PartialEq + Eq {
         CustomValueKind = Self::CustomValueKind,
     >;
 
-    fn read_custom_value_body<'de, R>(
+    fn decode_custom_value_body<'de, R>(
         custom_value_kind: Self::CustomValueKind,
         reader: &mut R,
     ) -> Result<Self::CustomTerminalValueRef<'de>, DecodeError>
@@ -33,16 +33,13 @@ pub trait CustomTerminalValueBatchRef: Debug + Clone + PartialEq + Eq {
 pub trait CustomContainerHeader: Copy + Debug + Clone + PartialEq + Eq {
     type CustomValueKind: CustomValueKind;
     fn get_child_count(&self) -> u32;
-    fn get_implicit_child_value_kind(
-        &self,
-        index: u32,
-    ) -> (ParentRelationship, Option<ValueKind<Self::CustomValueKind>>);
+    fn get_implicit_child_value_kind(&self, index: u32)
+        -> Option<ValueKind<Self::CustomValueKind>>;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ContainerChild<C: CustomTraversal> {
+pub struct ContainerState<C: CustomTraversal> {
     pub container_header: ContainerHeader<C>,
-    pub container_parent_relationship: ParentRelationship,
     pub container_start_offset: usize,
     pub container_child_count: u32,
     pub next_child_index: u32,
@@ -56,7 +53,7 @@ pub struct VecTraverser<'de, C: CustomTraversal> {
     max_depth: usize,
     check_exact_end: bool,
     decoder: VecDecoder<'de, C::CustomValueKind>,
-    container_stack: Vec<ContainerChild<C>>,
+    container_stack: Vec<ContainerState<C>>,
     next_event_override: NextEventOverride,
 }
 
@@ -178,7 +175,6 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
     fn enter_container<'t>(
         &'t mut self,
         start_offset: usize,
-        container_parent_relationship: ParentRelationship,
         container_header: ContainerHeader<T>,
     ) -> LocatedTraversalEvent<'t, 'de, T> {
         let stack_depth_of_container = self.child_value_depth_for_next_value();
@@ -186,9 +182,8 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
             // We're already at the max depth, we can't add any more containers to the stack
             return self.map_error(start_offset, DecodeError::MaxDepthExceeded(self.max_depth));
         }
-        self.container_stack.push(ContainerChild {
+        self.container_stack.push(ContainerState {
             container_header,
-            container_parent_relationship,
             container_start_offset: start_offset,
             container_child_count: container_header.get_child_count(),
             next_child_index: 0,
@@ -217,15 +212,14 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
 
     fn read_root_value<'t>(&'t mut self) -> LocatedTraversalEvent<'t, 'de, T> {
         let start_offset = self.decoder.get_offset();
-        let parent_relationship = ParentRelationship::Root;
         let value_kind = return_if_error!(self, self.decoder.read_value_kind());
-        self.next_value(start_offset, parent_relationship, value_kind)
+        self.next_value(start_offset, value_kind)
     }
 
     fn read_child_value<'t>(&'t mut self) -> LocatedTraversalEvent<'t, 'de, T> {
         let start_offset = self.decoder.get_offset();
         let parent = self.container_stack.last_mut().unwrap();
-        let (relationship, value_kind) = parent
+        let value_kind = parent
             .container_header
             .get_implicit_child_value_kind(parent.next_child_index);
         let value_kind = match value_kind {
@@ -233,13 +227,12 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
             None => return_if_error!(self, self.decoder.read_value_kind()),
         };
         parent.next_child_index += 1;
-        self.next_value(start_offset, relationship, value_kind)
+        self.next_value(start_offset, value_kind)
     }
 
     fn next_value<'t>(
         &'t mut self,
         start_offset: usize,
-        relationship: ParentRelationship,
         value_kind: ValueKind<T::CustomValueKind>,
     ) -> LocatedTraversalEvent<'t, 'de, T> {
         match value_kind {
@@ -279,12 +272,12 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
             ValueKind::String => {
                 terminal_value!(self, String, start_offset, self.decode_string_body())
             }
-            ValueKind::Array => self.decode_array_header(start_offset, relationship),
-            ValueKind::Map => self.decode_map_header(start_offset, relationship),
-            ValueKind::Enum => self.decode_enum_variant_header(start_offset, relationship),
-            ValueKind::Tuple => self.decode_tuple_header(start_offset, relationship),
+            ValueKind::Array => self.decode_array_header(start_offset),
+            ValueKind::Map => self.decode_map_header(start_offset),
+            ValueKind::Enum => self.decode_enum_variant_header(start_offset),
+            ValueKind::Tuple => self.decode_tuple_header(start_offset),
             ValueKind::Custom(custom_value_kind) => {
-                let result = T::read_custom_value_body(custom_value_kind, &mut self.decoder);
+                let result = T::decode_custom_value_body(custom_value_kind, &mut self.decoder);
                 let location = Location {
                     start_offset: start_offset,
                     end_offset: self.get_offset(),
@@ -335,13 +328,11 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
     fn decode_enum_variant_header<'t>(
         &'t mut self,
         start_offset: usize,
-        parent_relationship: ParentRelationship,
     ) -> LocatedTraversalEvent<'t, 'de, T> {
         let variant = return_if_error!(self, self.decoder.read_byte());
         let length = return_if_error!(self, self.decoder.read_size_u32());
         self.enter_container(
             start_offset,
-            parent_relationship,
             ContainerHeader::EnumVariant(EnumVariantHeader { variant, length }),
         )
     }
@@ -349,20 +340,14 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
     fn decode_tuple_header<'t>(
         &'t mut self,
         start_offset: usize,
-        parent_relationship: ParentRelationship,
     ) -> LocatedTraversalEvent<'t, 'de, T> {
         let length = return_if_error!(self, self.decoder.read_size_u32());
-        self.enter_container(
-            start_offset,
-            parent_relationship,
-            ContainerHeader::Tuple(TupleHeader { length }),
-        )
+        self.enter_container(start_offset, ContainerHeader::Tuple(TupleHeader { length }))
     }
 
     fn decode_array_header<'t>(
         &'t mut self,
         start_offset: usize,
-        parent_relationship: ParentRelationship,
     ) -> LocatedTraversalEvent<'t, 'de, T> {
         let element_value_kind = return_if_error!(self, self.decoder.read_value_kind());
         let length = return_if_error!(self, self.decoder.read_size_u32());
@@ -371,7 +356,6 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
         }
         self.enter_container(
             start_offset,
-            parent_relationship,
             ContainerHeader::Array(ArrayHeader {
                 element_value_kind,
                 length,
@@ -382,14 +366,12 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
     fn decode_map_header<'t>(
         &'t mut self,
         start_offset: usize,
-        parent_relationship: ParentRelationship,
     ) -> LocatedTraversalEvent<'t, 'de, T> {
         let key_value_kind = return_if_error!(self, self.decoder.read_value_kind());
         let value_value_kind = return_if_error!(self, self.decoder.read_value_kind());
         let length = return_if_error!(self, self.decoder.read_size_u32());
         self.enter_container(
             start_offset,
-            parent_relationship,
             ContainerHeader::Map(MapHeader {
                 key_value_kind,
                 value_value_kind,

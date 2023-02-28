@@ -47,7 +47,7 @@ pub struct Location<'t, C: CustomTraversal> {
     pub end_offset: usize,
     /// The path of containers from the root to the current value.
     /// If the event is ContainerStart/End, this does not include the newly started/ended container.
-    pub ancestor_path: &'t [ContainerChild<C>],
+    pub ancestor_path: &'t [ContainerState<C>],
 }
 
 impl<'t, C: CustomTraversal> Location<'t, C> {
@@ -88,16 +88,6 @@ pub struct MapHeader<X: CustomValueKind> {
     pub length: u32,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ParentRelationship {
-    NotInValueModel,
-    Root,
-    Element { index: u32 },
-    ArrayElementBatch { from_index: u32, to_index: u32 },
-    MapKey { index: u32 },
-    MapValue { index: u32 },
-}
-
 impl<C: CustomTraversal> ContainerHeader<C> {
     pub fn get_child_count(&self) -> u32 {
         match self {
@@ -111,31 +101,22 @@ impl<C: CustomTraversal> ContainerHeader<C> {
     pub fn get_implicit_child_value_kind(
         &self,
         index: u32,
-    ) -> (ParentRelationship, Option<ValueKind<C::CustomValueKind>>) {
+    ) -> Option<ValueKind<C::CustomValueKind>> {
         match self {
-            ContainerHeader::Tuple(_) => (ParentRelationship::Element { index }, None),
-            ContainerHeader::EnumVariant(_) => (ParentRelationship::Element { index }, None),
+            ContainerHeader::Tuple(_) => None,
+            ContainerHeader::EnumVariant(_) => None,
             ContainerHeader::Array(ArrayHeader {
                 element_value_kind, ..
-            }) => (
-                ParentRelationship::Element { index },
-                Some(*element_value_kind),
-            ),
+            }) => Some(*element_value_kind),
             ContainerHeader::Map(MapHeader {
                 key_value_kind,
                 value_value_kind,
                 ..
             }) => {
                 if index % 2 == 0 {
-                    (
-                        ParentRelationship::MapKey { index: index / 2 },
-                        Some(*key_value_kind),
-                    )
+                    Some(*key_value_kind)
                 } else {
-                    (
-                        ParentRelationship::MapValue { index: index / 2 },
-                        Some(*value_value_kind),
-                    )
+                    Some(*value_value_kind)
                 }
             }
         }

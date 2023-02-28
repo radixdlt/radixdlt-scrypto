@@ -115,7 +115,7 @@ impl CustomTraversal for NoCustomTraversal {
     type CustomValueKind = NoCustomValueKind;
     type CustomTerminalValueRef<'de> = NoCustomTerminalValueRef;
 
-    fn read_custom_value_body<'de, R>(
+    fn decode_custom_value_body<'de, R>(
         _custom_value_kind: Self::CustomValueKind,
         _reader: &mut R,
     ) -> Result<Self::CustomTerminalValueRef<'de>, DecodeError>
