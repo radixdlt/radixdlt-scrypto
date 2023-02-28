@@ -78,14 +78,14 @@ pub struct ErrorLocation {
 #[macro_export]
 macro_rules! failed_to_resolve_type_validation {
     () => {
-        panic!("Failed to resolve type validation, possibly caused by a bug in consistency check!")
+        panic!("Failed to resolve type validation, possibly caused by a bug in schema or payload validation!")
     };
 }
 
 #[macro_export]
 macro_rules! type_validation_meets_unexpected_value {
     () => {
-        panic!("Type validation meets unexpected value, possibly caused by a bug in consistency check!")
+        panic!("Type validation meets unexpected value, possibly caused by a bug in schema or payload validation!")
     };
 }
 
@@ -162,7 +162,7 @@ pub fn validate_container<E: CustomTypeExtension>(
         .unwrap_or_else(|| failed_to_resolve_type_validation!());
     match validation {
         TypeValidation::None => {}
-        TypeValidation::Array { length_validation } => {
+        TypeValidation::Array(length_validation) => {
             let ContainerHeader::Array(ArrayHeader { length, .. }) = header else {
                 type_validation_meets_unexpected_value!()
             };
@@ -174,7 +174,7 @@ pub fn validate_container<E: CustomTypeExtension>(
                 .into());
             }
         }
-        TypeValidation::Map { length_validation } => {
+        TypeValidation::Map(length_validation) => {
             let ContainerHeader::Map(MapHeader { length, .. }) = header else {
                 type_validation_meets_unexpected_value!()
             };
@@ -185,10 +185,6 @@ pub fn validate_container<E: CustomTypeExtension>(
                 }
                 .into());
             }
-        }
-        TypeValidation::Custom(_) => {
-            // TODO - add this in when we have custom validations
-            unreachable!("Unreachable at present")
         }
         _ => type_validation_meets_unexpected_value!(),
     }
@@ -234,9 +230,17 @@ pub fn validate_terminal_value<'de, E: CustomTypeExtension>(
         TypeValidation::U128(x) => {
             numeric_validation_match!(x, value, U128, U128ValidationError)
         }
-        TypeValidation::Custom(_) => {
-            // TODO - add this in when we have custom validations
-            unreachable!("Unreachable at present")
+        TypeValidation::String(length_validation) => {
+            let TerminalValueRef::String(x) = value else {
+                type_validation_meets_unexpected_value!()
+            };
+            if !length_validation.is_valid(x.len()) {
+                return Err(TypeValidationError::LengthValidationError {
+                    required: *length_validation,
+                    actual: x.len(),
+                }
+                .into());
+            }
         }
         _ => type_validation_meets_unexpected_value!(),
     }
@@ -253,6 +257,8 @@ pub fn validate_terminal_value_batch<'de, E: CustomTypeExtension>(
     match validation {
         TypeValidation::None => {}
         TypeValidation::U8(numeric_validation) => {
+            // This is for `Vec<u8<min, max>>`
+            // TODO: add test
             let TerminalValueBatchRef::U8(value_batch) = value_batch;
             for byte in value_batch.iter() {
                 if !numeric_validation.is_valid(*byte) {
@@ -263,10 +269,6 @@ pub fn validate_terminal_value_batch<'de, E: CustomTypeExtension>(
                     .into());
                 }
             }
-        }
-        TypeValidation::Custom(_) => {
-            // TODO - add this in when we have custom validations
-            unreachable!("Unreachable at present")
         }
         _ => type_validation_meets_unexpected_value!(),
     }

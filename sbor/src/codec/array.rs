@@ -139,12 +139,10 @@ mod schema {
                         element_type: T::TYPE_ID,
                     },
                 )
-                .with_validation(TypeValidation::Array {
-                    length_validation: LengthValidation {
-                        min: Some(size),
-                        max: Some(size),
-                    },
-                }),
+                .with_validation(TypeValidation::Array(LengthValidation {
+                    min: Some(size),
+                    max: Some(size),
+                })),
             )
         }
 
