@@ -5,6 +5,9 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::data::manifest_args;
 
+// TODO: In the future, the ClientAPI should only be able to add events to the event store. It
+// should not be able to have full control over it.
+
 #[test]
 fn can_emit_basic_event_from_scrypto() {
     // Arrange
