@@ -33,6 +33,7 @@ use radix_engine_interface::data::model::Own;
 use radix_engine_interface::data::*;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::clock::CurrentTimeRoundedToMinutesSubstate;
 use crate::system::package::Package;
 
@@ -221,6 +222,14 @@ where
             .package_address();
 
         let (node_id, node_init) = match package_address {
+            ACCOUNT_PACKAGE => {
+                let substate_bytes = app_states.into_iter().next().unwrap().1;
+                let substate: AccountSubstate = scrypto_decode(&substate_bytes)
+                    .map_err(|_| RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema))?;
+
+                let node_id = self.kernel_allocate_node_id(RENodeType::Account)?;
+                (node_id, RENodeInit::Account(substate))
+            }
             CLOCK_PACKAGE => {
                 let substate_bytes = app_states.into_iter().next().unwrap().1;
                 let substate: CurrentTimeRoundedToMinutesSubstate = scrypto_decode(&substate_bytes)

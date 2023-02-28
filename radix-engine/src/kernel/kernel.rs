@@ -16,6 +16,7 @@ use crate::wasm::WasmEngine;
 use native_sdk::access_rules::AccessRulesObject;
 use native_sdk::metadata::Metadata;
 use native_sdk::resource::SysProof;
+use radix_engine_interface::address::*;
 use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
 use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
@@ -148,6 +149,7 @@ where
         global_node_id: RENodeId,
         non_fungible_global_id: NonFungibleGlobalId,
     ) -> Result<(), RuntimeError> {
+
         // TODO: This should move into the appropriate place once virtual manager is implemented
         self.current_frame.add_ref(
             RENodeId::GlobalResourceManager(ECDSA_SECP256K1_TOKEN),
@@ -158,7 +160,6 @@ where
             RENodeVisibilityOrigin::Normal,
         );
 
-        // TODO: Replace with trusted IndexedScryptoValue
         let access_rule = rule!(require(non_fungible_global_id));
         let component_id = {
             let kv_store_id = {
@@ -169,13 +170,14 @@ where
             };
 
             let node_id = {
-                let mut node_modules = BTreeMap::new();
-                node_modules.insert(
-                    NodeModuleId::Metadata,
-                    RENodeModuleInit::Metadata(MetadataSubstate {
-                        metadata: BTreeMap::new(),
-                    }),
+                let node_modules = btreemap!(
+                    NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                        package_address: ACCOUNT_PACKAGE,
+                        blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
+                        global: false
+                    })
                 );
+
                 let account_substate = AccountSubstate {
                     vaults: Own::KeyValueStore(kv_store_id.into()),
                 };
@@ -929,16 +931,7 @@ where
                     }),
                 );
             }
-            (RENodeId::Account(..), RENodeInit::Account(..)) => {
-                module_init.insert(
-                    NodeModuleId::TypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: ACCOUNT_PACKAGE,
-                        blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
-                        global: false,
-                    }),
-                );
-            }
+            (RENodeId::Account(..), RENodeInit::Account(..)) => { }
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id))),
         }
 
