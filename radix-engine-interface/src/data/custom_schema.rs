@@ -153,6 +153,7 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
         }
     }
 
+    // FIXME: this is insufficient, especially for address validation.
     fn custom_type_kind_matches_value_kind<L: SchemaTypeLink>(
         custom_type_kind: &Self::CustomTypeKind<L>,
         value_kind: ValueKind<Self::CustomValueKind>,
