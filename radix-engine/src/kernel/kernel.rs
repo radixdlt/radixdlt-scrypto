@@ -745,7 +745,7 @@ where
                     }),
                 );
             }
-            (RENodeId::Logger, RENodeInit::Logger(..)) => {
+            (RENodeId::Logger, RENodeInit::Logger) => {
                 module_init.insert(
                     NodeModuleId::TypeInfo,
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {

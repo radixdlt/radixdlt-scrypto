@@ -419,7 +419,6 @@ impl SubstateProperties {
             SubstateOffset::Bucket(..) => false,
             SubstateOffset::Proof(..) => false,
             SubstateOffset::Worktop(..) => false,
-            SubstateOffset::Logger(..) => false,
             SubstateOffset::Clock(..) => true,
             SubstateOffset::TransactionRuntime(..) => false,
             SubstateOffset::Account(..) => true,

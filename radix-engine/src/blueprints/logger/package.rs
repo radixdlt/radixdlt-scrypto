@@ -1,8 +1,7 @@
 use crate::errors::{InterpreterError, RuntimeError};
-use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use crate::kernel::kernel_api::KernelModuleApi;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
-use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
@@ -10,11 +9,6 @@ use radix_engine_interface::blueprints::logger::*;
 use radix_engine_interface::data::{
     scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoValue,
 };
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct LoggerSubstate {
-    pub logs: Vec<(Level, String)>,
-}
 
 pub struct LoggerNativePackage;
 impl LoggerNativePackage {
@@ -25,7 +19,7 @@ impl LoggerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError> + KernelModuleApi<RuntimeError>,
     {
         match export_name {
             LOGGER_LOG_IDENT => {
@@ -44,23 +38,19 @@ impl LoggerNativePackage {
     }
 
     pub(crate) fn log<Y>(
-        receiver: RENodeId,
+        _receiver: RENodeId,
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError> + KernelModuleApi<RuntimeError>,
     {
         let input: LoggerLogInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let handle = api.sys_lock_substate(
-            receiver,
-            SubstateOffset::Logger(LoggerOffset::Logger),
-            LockFlags::MUTABLE,
-        )?;
-        let logger: &mut LoggerSubstate = api.kernel_get_substate_ref_mut(handle)?;
-        logger.logs.push((input.level, input.message));
+        api.kernel_get_module_state()
+            .logger
+            .add_log(input.level, input.message);
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }

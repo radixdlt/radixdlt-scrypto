@@ -11,8 +11,8 @@ use crate::errors::{InterpreterError, KernelError, RuntimeError};
 use crate::kernel::actor::ResolvedActor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{
-    ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, KernelWasmApi,
-    TemporaryResolvedInvocation,
+    ExecutableInvocation, Executor, KernelModuleApi, KernelNodeApi, KernelSubstateApi,
+    KernelWasmApi, TemporaryResolvedInvocation,
 };
 use crate::system::node_modules::access_rules::{AccessRulesNativePackage, AuthZoneNativePackage};
 use crate::system::node_modules::metadata::MetadataNativePackage;
@@ -339,7 +339,11 @@ impl Executor for ScryptoExecutor {
         api: &mut Y,
     ) -> Result<(ScryptoValue, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + ClientApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + KernelWasmApi<W>
+            + ClientApi<RuntimeError>
+            + KernelModuleApi<RuntimeError>,
         W: WasmEngine,
     {
         let output = if self.package_address.eq(&PACKAGE_LOADER) {
@@ -488,7 +492,10 @@ impl NativeVm {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi
+            + KernelSubstateApi
+            + ClientApi<RuntimeError>
+            + KernelModuleApi<RuntimeError>,
     {
         let receiver = receiver.map(|r| r.0);
 

@@ -268,7 +268,7 @@ where
             let fee_reserve = modules.costing.take_fee_reserve();
             let (vault_ops, events) = modules.execution_trace.collect_events();
             let application_events = modules.events.events();
-            let application_logs = modules.logger.0;
+            let application_logs = modules.logger.logs();
 
             // Finalize track
             track.finalize(
