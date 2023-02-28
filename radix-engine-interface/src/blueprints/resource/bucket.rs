@@ -11,6 +11,13 @@ use sbor::rust::fmt::Debug;
 
 pub const BUCKET_BLUEPRINT: &str = "Bucket";
 
+pub const BUCKET_DROP_EMPTY_IDENT: &str = "Bucket_drop_empty";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct BucketDropEmptyInput {
+    pub bucket: Bucket,
+}
+
 pub const BUCKET_TAKE_IDENT: &str = "Bucket_take";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]

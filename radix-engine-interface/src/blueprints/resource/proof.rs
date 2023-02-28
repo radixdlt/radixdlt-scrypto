@@ -5,12 +5,20 @@ use crate::data::model::Own;
 use crate::data::ScryptoCustomTypeKind;
 use crate::data::ScryptoCustomValueKind;
 use crate::math::*;
+use crate::*;
 use sbor::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 
 pub const PROOF_BLUEPRINT: &str = "Proof";
+
+pub const PROOF_DROP_IDENT: &str = "Proof_drop";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct ProofDropInput {
+    pub proof: Proof,
+}
 
 pub const PROOF_GET_AMOUNT_IDENT: &str = "Proof_get_amount";
 

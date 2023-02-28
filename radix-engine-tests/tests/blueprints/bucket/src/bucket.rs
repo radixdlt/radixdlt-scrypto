@@ -19,6 +19,15 @@ mod bucket_test {
             bucket
         }
 
+        pub fn drop_empty(amount: u32) {
+            let bucket = ResourceBuilder::new_fungible()
+                .divisibility(DIVISIBILITY_MAXIMUM)
+                .metadata("name", "TestToken")
+                .mint_initial_supply(amount);
+
+            bucket.drop_empty();
+        }
+
         pub fn combine() -> Bucket {
             let mut bucket1 = Self::create_test_token(100);
             let bucket2 = bucket1.take(50);

@@ -19,7 +19,7 @@ fn test_auth_rule(
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .withdraw_all_from_account(account, RADIX_TOKEN)
+        .withdraw_from_account(account, RADIX_TOKEN, 1.into())
         .call_method(
             other_account,
             "deposit_batch",
@@ -231,7 +231,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.create_proof_from_bucket(&bucket_id, |builder, proof_id| {
                 builder.push_to_auth_zone(proof_id);
-                builder.withdraw_all_from_account(account, RADIX_TOKEN);
+                builder.withdraw_from_account(account, RADIX_TOKEN, 1.into());
                 builder.pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id));
                 builder
             });
@@ -265,7 +265,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.create_proof_from_bucket(&bucket_id, |builder, proof_id| {
                 builder.push_to_auth_zone(proof_id);
-                builder.withdraw_all_from_account(account, RADIX_TOKEN);
+                builder.withdraw_from_account(account, RADIX_TOKEN, 1.into());
                 builder.pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id));
                 builder
             });
@@ -299,7 +299,7 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
         .take_from_worktop_by_amount(dec!("0.9"), RADIX_TOKEN, |builder, bucket_id| {
             builder.create_proof_from_bucket(&bucket_id, |builder, proof_id| {
                 builder.push_to_auth_zone(proof_id);
-                builder.withdraw_all_from_account(account, RADIX_TOKEN);
+                builder.withdraw_from_account(account, RADIX_TOKEN, 1.into());
                 builder.pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id));
                 builder
             });

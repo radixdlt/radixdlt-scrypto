@@ -27,6 +27,19 @@ impl NodeMoveModule {
     ) -> Result<(), RuntimeError> {
         match node_id {
             RENodeId::Proof(..) => {
+                if let Some(ResolvedActor {
+                    receiver: None,
+                    identifier:
+                        FnIdentifier {
+                            package_address: RESOURCE_MANAGER_PACKAGE,
+                            ..
+                        },
+                    ..
+                }) = actor
+                {
+                    return Ok(());
+                }
+
                 let handle = api.kernel_lock_substate(
                     node_id,
                     NodeModuleId::SELF,

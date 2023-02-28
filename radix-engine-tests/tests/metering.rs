@@ -68,11 +68,11 @@ fn test_basic_transfer() {
     // (cd radix-engine && cargo test --test metering -- test_basic_transfer)
     assert_eq!(
         12500 /* CreateNode */
-        + 60000 /* DropLock */
+        + 59500 /* DropLock */
         + 12500 /* DropNode */
         + 10000 /* Invoke */
-        + 60500 /* LockSubstate */
-        + 40500 /* ReadSubstate */
+        + 60000 /* LockSubstate */
+        + 40000 /* ReadSubstate */
         + 65000 /* RunPrecompiled */
         + 0 /* RunWasm */
         + 50000 /* TxBaseCost */
@@ -200,13 +200,13 @@ fn test_radiswap() {
     // (cd radix-engine && cargo test --test metering -- test_radiswap)
     assert_eq!(
         17500 /* CreateNode */
-        + 171000 /* DropLock */
+        + 170500 /* DropLock */
         + 15000 /* DropNode */
         + 24330 /* Invoke */
-        + 172500 /* LockSubstate */
-        + 120000 /* ReadSubstate */
+        + 172000 /* LockSubstate */
+        + 119500 /* ReadSubstate */
         + 147500 /* RunPrecompiled */
-        + 1631685 /* RunWasm */
+        + 1631635 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1705 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
@@ -309,17 +309,17 @@ fn test_flash_loan() {
     // (cd radix-engine && cargo test --test metering -- test_flash_loan)
     assert_eq!(
         25000 /* CreateNode */
-        + 252000 /* DropLock */
+        + 256500 /* DropLock */
         + 25000 /* DropNode */
-        + 42570 /* Invoke */
-        + 258500 /* LockSubstate */
-        + 170500 /* ReadSubstate */
-        + 235000 /* RunPrecompiled */
-        + 1375350 /* RunWasm */
+        + 45210 /* Invoke */
+        + 264000 /* LockSubstate */
+        + 173000 /* ReadSubstate */
+        + 240000 /* RunPrecompiled */
+        + 1408860 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2475 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 63500 /* WriteSubstate */
+        + 65500 /* WriteSubstate */
         + 2, /* royalty in cost units */
         receipt.execution.fee_summary.total_cost_units_consumed
     );
