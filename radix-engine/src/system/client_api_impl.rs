@@ -225,6 +225,14 @@ where
             .package_address();
 
         let (node_id, node_init) = match package_address {
+            METADATA_PACKAGE => {
+                let substate_bytes = app_states.into_iter().next().unwrap().1;
+                let substate: MetadataSubstate = scrypto_decode(&substate_bytes)
+                    .map_err(|_| RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema))?;
+
+                let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
+                (node_id, RENodeInit::Metadata(substate))
+            }
             EPOCH_MANAGER_PACKAGE => {
                 match blueprint_ident {
                     VALIDATOR_BLUEPRINT => {

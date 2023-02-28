@@ -767,16 +767,7 @@ where
             (RENodeId::Component(..), RENodeInit::Component(..)) => {}
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
             (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
-            (RENodeId::Component(..), RENodeInit::Metadata(..)) => {
-                module_init.insert(
-                    NodeModuleId::TypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: METADATA_PACKAGE,
-                        blueprint_name: METADATA_BLUEPRINT.to_string(),
-                        global: false,
-                    }),
-                );
-            }
+            (RENodeId::Component(..), RENodeInit::Metadata(..)) => { }
             (RENodeId::Component(..), RENodeInit::ComponentRoyalty(..)) => {
                 module_init.insert(
                     NodeModuleId::TypeInfo,
