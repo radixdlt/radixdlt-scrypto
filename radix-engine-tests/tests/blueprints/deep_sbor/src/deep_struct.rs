@@ -17,7 +17,10 @@ mod deep_struct {
     }
 }
 
-fn generate_deep_access_rules(resource_address: ResourceAddress, exceed_depth: usize) -> AccessRules {
+fn generate_deep_access_rules(
+    resource_address: ResourceAddress,
+    exceed_depth: usize,
+) -> AccessRules {
     let mut access_rule_node = AccessRuleNode::ProofRule(ProofRule::Require(
         SoftResourceOrNonFungible::StaticResource(resource_address),
     ));

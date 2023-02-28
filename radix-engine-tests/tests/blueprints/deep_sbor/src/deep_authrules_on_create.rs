@@ -5,7 +5,10 @@ mod deep_auth_rules_on_create {
     struct DeepAuthRulesOnCreate {}
 
     impl DeepAuthRulesOnCreate {
-        pub fn new(resource_address: ResourceAddress, access_rules_depth: usize) -> ComponentAddress {
+        pub fn new(
+            resource_address: ResourceAddress,
+            access_rules_depth: usize,
+        ) -> ComponentAddress {
             let component = Self {}.instantiate();
             component.add_access_check(generate_deep_access_rules(
                 resource_address,
@@ -16,7 +19,10 @@ mod deep_auth_rules_on_create {
     }
 }
 
-fn generate_deep_access_rules(resource_address: ResourceAddress, exceed_depth: usize) -> AccessRules {
+fn generate_deep_access_rules(
+    resource_address: ResourceAddress,
+    exceed_depth: usize,
+) -> AccessRules {
     let mut access_rule_node = AccessRuleNode::ProofRule(ProofRule::Require(
         SoftResourceOrNonFungible::StaticResource(resource_address),
     ));
