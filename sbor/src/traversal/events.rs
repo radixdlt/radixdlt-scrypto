@@ -9,16 +9,6 @@ pub struct LocatedTraversalEvent<'t, 'de, C: CustomTraversal> {
     pub event: TraversalEvent<'de, C>,
 }
 
-impl<'t, 'de, C: CustomTraversal> LocatedTraversalEvent<'t, 'de, C> {
-    pub fn get_next_sbor_depth(&self) -> usize {
-        match self.event {
-            TraversalEvent::PayloadPrefix | TraversalEvent::End => 0,
-            TraversalEvent::ContainerStart(_) => self.location.get_sbor_depth() + 1,
-            _ => self.location.get_sbor_depth(),
-        }
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TraversalEvent<'de, C: CustomTraversal> {
     PayloadPrefix,
@@ -55,20 +45,14 @@ pub struct Location<'t, C: CustomTraversal> {
     /// * For ContainerEnd, this is the end of the whole container value
     /// * For DecodeError, this is the location where the error occurred
     pub end_offset: usize,
-    /// The relationship of the value currently under consideration with its container parent
-    pub parent_relationship: ParentRelationship,
     /// The path of containers from the root to the current value.
     /// If the event is ContainerStart/End, this does not include the newly started/ended container.
     pub ancestor_path: &'t [ContainerChild<C>],
 }
 
 impl<'t, C: CustomTraversal> Location<'t, C> {
-    /// The current SBOR depth
-    pub fn get_sbor_depth(&self) -> usize {
-        match self.parent_relationship {
-            ParentRelationship::NotInValueModel => 0,
-            _ => self.ancestor_path.len() + 1,
-        }
+    pub fn child_value_depth(&self) -> usize {
+        self.ancestor_path.len() + 1
     }
 }
 

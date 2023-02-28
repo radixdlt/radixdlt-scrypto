@@ -122,22 +122,16 @@ impl<'de, 's, E: CustomTypeExtension> TypedTraverser<'de, 's, E> {
         let typed_event = match event {
             TraversalEvent::PayloadPrefix => TypedTraversalEvent::PayloadPrefix,
             TraversalEvent::ContainerStart(header) => {
-                let type_index = self
-                    .type_state
-                    .get_type_index(&location.parent_relationship);
+                let type_index = self.type_state.get_type_index(&location);
                 self.type_state
                     .map_container_start_event(type_index, header)
             }
             TraversalEvent::TerminalValue(value) => {
-                let type_index = self
-                    .type_state
-                    .get_type_index(&location.parent_relationship);
+                let type_index = self.type_state.get_type_index(&location);
                 self.type_state.map_terminal_value_event(type_index, value)
             }
             TraversalEvent::TerminalValueBatch(value_batch) => {
-                let type_index = self
-                    .type_state
-                    .get_type_index(&location.parent_relationship);
+                let type_index = self.type_state.get_type_index(&location);
                 self.type_state
                     .map_terminal_value_batch_event(type_index, value_batch)
             }
@@ -383,22 +377,26 @@ impl<'s, E: CustomTypeExtension> InternalTypeState<'s, E> {
         TypedTraversalEvent::ContainerEnd(container.own_type, header)
     }
 
-    fn get_type_index(&self, parent_relationship: &ParentRelationship) -> LocalTypeIndex {
-        match parent_relationship {
-            ParentRelationship::Root => Some(self.root_type_index),
-            ParentRelationship::Element { index } => {
-                self.container_stack.last().unwrap().child_types.get_child_type_for_element(*index)
-            },
-            ParentRelationship::ArrayElementBatch { from_index, .. } => {
-                self.container_stack.last().unwrap().child_types.get_child_type_for_element(*from_index)
-            },
-            ParentRelationship::MapKey { .. } => {
-                self.container_stack.last().unwrap().child_types.get_child_type_for_map_key()
-            },
-            ParentRelationship::MapValue { .. } => {
-                self.container_stack.last().unwrap().child_types.get_child_type_for_map_value()
-            },
-            ParentRelationship::NotInValueModel => None,
+    fn get_type_index(&self, location: &Location<E::CustomTraversal>) -> LocalTypeIndex {
+        match location.ancestor_path.last() {
+            Some(container_child) => {
+                let current_child_index = container_child.next_child_index - 1;
+                match container_child.container_header {
+                    ContainerHeader::Tuple(_)
+                    | ContainerHeader::EnumVariant(_)
+                    | ContainerHeader::Array(_) =>  {
+                        self.container_stack.last().unwrap().child_types.get_child_type_for_element(current_child_index)
+                    }
+                    ContainerHeader::Map(_) =>  {
+                        if current_child_index % 2 == 0 {
+                            self.container_stack.last().unwrap().child_types.get_child_type_for_map_key()
+                        } else {
+                            self.container_stack.last().unwrap().child_types.get_child_type_for_map_value()
+                        }
+                    }
+                }
+            }
+            None =>  Some(self.root_type_index),
         }.expect("Type index should be resolvable given checks on the parent and invariants from the untyped traverser")
     }
 }
