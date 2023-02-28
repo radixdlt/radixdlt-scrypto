@@ -45,8 +45,7 @@ pub struct ExecutionConfig {
     pub max_wasm_mem_per_call_frame: usize,
     pub max_substate_reads_per_transaction: usize,
     pub max_substate_writes_per_transaction: usize,
-    pub max_substate_read_size: usize,
-    pub max_substate_write_size: usize,
+    pub max_substate_size: usize,
     pub max_invoke_input_size: usize,
 }
 
@@ -67,8 +66,7 @@ impl ExecutionConfig {
             max_wasm_mem_per_call_frame: DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME,
             max_substate_reads_per_transaction: DEFAULT_MAX_SUBSTATE_READS_PER_TRANSACTION,
             max_substate_writes_per_transaction: DEFAULT_MAX_SUBSTATE_WRITES_PER_TRANSACTION,
-            max_substate_read_size: DEFAULT_MAX_SUBSTATE_READ_SIZE,
-            max_substate_write_size: DEFAULT_MAX_SUBSTATE_WRITE_SIZE,
+            max_substate_size: DEFAULT_MAX_SUBSTATE_SIZE,
             max_invoke_input_size: DEFAULT_MAX_INVOKE_INPUT_SIZE,
         }
     }
