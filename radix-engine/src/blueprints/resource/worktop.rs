@@ -36,6 +36,33 @@ pub struct WorktopBlueprint;
 //==============================================
 
 impl WorktopBlueprint {
+    pub(crate) fn drop<Y>(
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let _input: WorktopDropInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        let mut node = api.kernel_drop_node(RENodeId::Worktop)?;
+        let substate = node
+            .substates
+            .remove(&(
+                NodeModuleId::SELF,
+                SubstateOffset::Worktop(WorktopOffset::Worktop),
+            ))
+            .unwrap();
+        let worktop: WorktopSubstate = substate.into();
+        for (_, bucket) in worktop.resources {
+            let bucket = Bucket(bucket.bucket_id());
+            bucket.sys_drop_empty(api)?;
+        }
+
+        Ok(IndexedScryptoValue::from_typed(&()))
+    }
+
     pub(crate) fn put<Y>(
         receiver: RENodeId,
         input: ScryptoValue,

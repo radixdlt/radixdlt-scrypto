@@ -14,6 +14,7 @@ use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::clock::CLOCK_BLUEPRINT;
 use radix_engine_interface::blueprints::epoch_manager::EPOCH_MANAGER_BLUEPRINT;
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
+use radix_engine_interface::blueprints::resource::PROOF_BLUEPRINT;
 use radix_engine_interface::constants::*;
 use sbor::rust::collections::BTreeMap;
 
@@ -52,26 +53,21 @@ impl VisibilityProperties {
                 },
                 RENodeId::Bucket(..) => match &actor.identifier {
                     FnIdentifier {
-                        package_address: RESOURCE_MANAGER_PACKAGE,
-                        ..
-                    } => true,
+                        package_address, ..
+                    } if package_address.eq(&RESOURCE_MANAGER_PACKAGE) => true,
                     _ => false,
                 },
                 RENodeId::Proof(..) => match &actor.identifier {
                     FnIdentifier {
-                        package_address: RESOURCE_MANAGER_PACKAGE | AUTH_ZONE_PACKAGE,
-                        ..
-                    } => true,
-                    FnIdentifier {
                         package_address,
                         blueprint_name,
                         ..
-                    } if package_address.eq(&PACKAGE_LOADER)
-                        && blueprint_name.eq(&TRANSACTION_PROCESSOR_BLUEPRINT) =>
+                    } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                        && blueprint_name.eq(&PROOF_BLUEPRINT) =>
                     {
                         true
                     }
-                    _ => true,
+                    _ => false,
                 },
                 // TODO: CLEAN THESE UP, these are used for globalization
                 RENodeId::Clock(..) => mode.eq(&ExecutionMode::Client),
