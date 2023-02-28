@@ -35,7 +35,7 @@ impl CustomTypeValidation for ScryptoCustomTypeValidation {}
 pub enum ScryptoCustomTypeExtension {}
 
 impl CustomTypeExtension for ScryptoCustomTypeExtension {
-    const MAX_DEPTH: u8 = SCRYPTO_SBOR_V1_MAX_DEPTH;
+    const MAX_DEPTH: usize = SCRYPTO_SBOR_V1_MAX_DEPTH;
     const PAYLOAD_PREFIX: u8 = SCRYPTO_SBOR_V1_PAYLOAD_PREFIX;
 
     type CustomValueKind = ScryptoCustomValueKind;

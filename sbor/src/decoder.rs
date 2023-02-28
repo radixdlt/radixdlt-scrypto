@@ -27,7 +27,7 @@ pub enum DecodeError {
 
     SizeTooLarge,
 
-    MaxDepthExceeded(u8),
+    MaxDepthExceeded(usize),
 
     InvalidCustomValue, // TODO: generify custom error codes
 }
@@ -194,13 +194,13 @@ pub trait BorrowingDecoder<'de, X: CustomValueKind>: Decoder<X> {
 pub struct VecDecoder<'de, X: CustomValueKind> {
     input: &'de [u8],
     offset: usize,
-    stack_depth: u8,
-    max_depth: u8,
+    stack_depth: usize,
+    max_depth: usize,
     phantom: PhantomData<X>,
 }
 
 impl<'de, X: CustomValueKind> VecDecoder<'de, X> {
-    pub fn new(input: &'de [u8], max_depth: u8) -> Self {
+    pub fn new(input: &'de [u8], max_depth: usize) -> Self {
         Self {
             input,
             offset: 0,
@@ -290,7 +290,7 @@ impl<'de, X: CustomValueKind> BorrowingDecoder<'de, X> for VecDecoder<'de, X> {
 }
 
 pub trait PayloadTraverser<'de, X: CustomValueKind>: BorrowingDecoder<'de, X> {
-    fn get_stack_depth(&self) -> u8;
+    fn get_stack_depth(&self) -> usize;
 
     fn get_offset(&self) -> usize;
 
@@ -304,7 +304,7 @@ pub trait PayloadTraverser<'de, X: CustomValueKind>: BorrowingDecoder<'de, X> {
 
 impl<'de, X: CustomValueKind> PayloadTraverser<'de, X> for VecDecoder<'de, X> {
     #[inline]
-    fn get_stack_depth(&self) -> u8 {
+    fn get_stack_depth(&self) -> usize {
         self.stack_depth
     }
 

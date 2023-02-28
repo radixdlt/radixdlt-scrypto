@@ -19,7 +19,7 @@ pub trait CustomTraversal: Copy + Debug + Clone + PartialEq + Eq {
         custom_value_kind: Self::CustomValueKind,
         parent_relationship: ParentRelationship,
         start_offset: usize,
-        max_depth: u8,
+        max_depth: usize,
     ) -> Self::CustomValueTraverser;
 }
 
@@ -78,7 +78,7 @@ pub struct ContainerChild<C: CustomTraversal> {
 ///
 /// The caller is responsible for stopping calling `next_event` after an Error or End event.
 pub struct VecTraverser<'de, C: CustomTraversal> {
-    max_depth: u8,
+    max_depth: usize,
     check_exact_end: bool,
     decoder: VecDecoder<'de, C::CustomValueKind>,
     container_stack: Vec<ContainerChild<C>>,
@@ -87,10 +87,10 @@ pub struct VecTraverser<'de, C: CustomTraversal> {
 
 #[derive(Debug, Clone, Copy)]
 pub enum NextEventOverride<C> {
-    CheckPrefix(u8),
+    ReadPrefix(u8),
     ReadRootValue,
     ReadBytes(u32),
-    ReadCustomValueBody(C, u8),
+    ReadCustomValueBody(C, usize),
     None,
 }
 
@@ -138,16 +138,16 @@ macro_rules! return_if_error {
 impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
     pub fn new(
         input: &'de [u8],
-        max_depth: u8,
+        max_depth: usize,
         payload_prefix: Option<u8>,
         check_exact_end: bool,
     ) -> Self {
         Self {
             decoder: VecDecoder::new(input, max_depth),
-            container_stack: Vec::with_capacity(max_depth as usize),
+            container_stack: Vec::with_capacity(max_depth),
             max_depth,
             next_event_override: match payload_prefix {
-                Some(prefix) => NextEventOverride::CheckPrefix(prefix),
+                Some(prefix) => NextEventOverride::ReadPrefix(prefix),
                 None => NextEventOverride::ReadRootValue,
             },
             check_exact_end,
@@ -156,7 +156,7 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
 
     pub fn next_event<'t>(&'t mut self) -> LocatedTraversalEvent<'t, 'de, T> {
         match self.next_event_override.clone() {
-            NextEventOverride::CheckPrefix(expected_prefix) => {
+            NextEventOverride::ReadPrefix(expected_prefix) => {
                 self.next_event_override = NextEventOverride::ReadRootValue;
                 self.read_payload_prefix(expected_prefix)
             }
@@ -364,10 +364,8 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
     }
 
     #[inline]
-    fn get_sbor_depth_for_next_value(&self) -> u8 {
-        // SAFE CASTING: The invariant self.container_stack.len() + 1 <= max_depth is maintained in `enter_container` before
-        // we push to the stack. As `max_depth` is a u8, this can't overflow.
-        (self.container_stack.len() as u8) + 1
+    fn get_sbor_depth_for_next_value(&self) -> usize {
+        self.container_stack.len() + 1
     }
 
     #[inline]
@@ -471,7 +469,7 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
     fn read_custom_value_event_override<'t>(
         &'t mut self,
         mut custom_traverser: T::CustomValueTraverser,
-        entry_depth: u8,
+        entry_depth: usize,
     ) -> LocatedTraversalEvent<'t, 'de, T> {
         let traversal_event =
             custom_traverser.next_event(&mut self.container_stack, &mut self.decoder);
@@ -759,7 +757,7 @@ mod tests {
 
     pub fn next_event_is_payload_prefix(
         traverser: &mut BasicTraverser,
-        expected_depth: u8,
+        expected_depth: usize,
         expected_start_offset: usize,
         expected_end_offset: usize,
     ) {
@@ -783,7 +781,7 @@ mod tests {
     pub fn next_event_is_container_start_header(
         traverser: &mut BasicTraverser,
         expected_header: ContainerHeader<NoCustomTraversal>,
-        expected_depth: u8,
+        expected_depth: usize,
         expected_start_offset: usize,
         expected_end_offset: usize,
     ) {
@@ -808,7 +806,7 @@ mod tests {
     pub fn next_event_is_container_end(
         traverser: &mut BasicTraverser,
         expected_header: ContainerHeader<NoCustomTraversal>,
-        expected_depth: u8,
+        expected_depth: usize,
         expected_start_offset: usize,
         expected_end_offset: usize,
     ) {
@@ -833,7 +831,7 @@ mod tests {
     pub fn next_event_is_terminal_value<'de>(
         traverser: &mut BasicTraverser<'de>,
         expected_value: TerminalValueRef<'de, NoCustomTraversal>,
-        expected_stack_depth: u8,
+        expected_stack_depth: usize,
         expected_start_offset: usize,
         expected_end_offset: usize,
     ) {
@@ -858,7 +856,7 @@ mod tests {
     pub fn next_event_is_terminal_value_slice<'de>(
         traverser: &mut BasicTraverser<'de>,
         expected_value_batch: TerminalValueBatchRef<'de, NoCustomTraversal>,
-        expected_stack_depth: u8,
+        expected_stack_depth: usize,
         expected_start_offset: usize,
         expected_end_offset: usize,
     ) {
@@ -882,7 +880,7 @@ mod tests {
 
     pub fn next_event_is_end(
         traverser: &mut BasicTraverser,
-        expected_depth: u8,
+        expected_depth: usize,
         expected_start_offset: usize,
         expected_end_offset: usize,
     ) {

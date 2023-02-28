@@ -272,7 +272,7 @@ fn decode_ignore_depth<'a, T: ScryptoDecode>(payload: &'a [u8]) -> T {
         .unwrap()
 }
 
-fn build_value_of_vec_of_depth(depth: u8) -> ScryptoValue {
+fn build_value_of_vec_of_depth(depth: usize) -> ScryptoValue {
     let mut value = ScryptoValue::Array {
         element_value_kind: ValueKind::Array,
         elements: vec![],
@@ -287,7 +287,7 @@ fn build_value_of_vec_of_depth(depth: u8) -> ScryptoValue {
     value
 }
 
-fn build_value_of_tuple_of_depth(depth: u8) -> ScryptoValue {
+fn build_value_of_tuple_of_depth(depth: usize) -> ScryptoValue {
     let mut value = ScryptoValue::Tuple { fields: vec![] };
     let loop_count = depth - 1;
     for _ in 0..loop_count {
@@ -303,7 +303,7 @@ struct NestedType {
     inner: Box<Rc<Option<RefCell<NestedType>>>>,
 }
 
-fn build_nested_struct_of_depth(depth: u8) -> NestedType {
+fn build_nested_struct_of_depth(depth: usize) -> NestedType {
     assert!(depth % 2 == 0);
     assert!(depth >= 2);
 

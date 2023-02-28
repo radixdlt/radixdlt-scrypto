@@ -58,7 +58,7 @@ impl CustomTraversal for ScryptoCustomTraversal {
         custom_value_kind: Self::CustomValueKind,
         parent_relationship: ParentRelationship,
         start_offset: usize,
-        _: u8,
+        _: usize,
     ) -> Self::CustomValueTraverser {
         ScryptoCustomTraverser {
             custom_value_kind,

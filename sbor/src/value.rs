@@ -605,7 +605,7 @@ mod tests {
         assert!(forbidden_result.is_err());
     }
 
-    pub fn encode_array_of_depth(depth: u8) -> Result<Vec<u8>, EncodeError> {
+    pub fn encode_array_of_depth(depth: usize) -> Result<Vec<u8>, EncodeError> {
         let mut buf = Vec::new();
         let mut encoder = BasicEncoder::new(&mut buf, 255);
         encoder.write_payload_prefix(BASIC_SBOR_V1_PAYLOAD_PREFIX)?;
@@ -622,7 +622,7 @@ mod tests {
         Ok(buf)
     }
 
-    pub fn encode_struct_of_depth(depth: u8) -> Result<Vec<u8>, EncodeError> {
+    pub fn encode_struct_of_depth(depth: usize) -> Result<Vec<u8>, EncodeError> {
         let mut buf = Vec::new();
         let mut encoder = BasicEncoder::new(&mut buf, 255);
         encoder.write_payload_prefix(BASIC_SBOR_V1_PAYLOAD_PREFIX)?;
@@ -638,7 +638,7 @@ mod tests {
         Ok(buf)
     }
 
-    pub fn encode_tuple_of_depth(depth: u8) -> Result<Vec<u8>, EncodeError> {
+    pub fn encode_tuple_of_depth(depth: usize) -> Result<Vec<u8>, EncodeError> {
         let mut buf = Vec::new();
         let mut encoder = BasicEncoder::new(&mut buf, 255);
         encoder.write_payload_prefix(BASIC_SBOR_V1_PAYLOAD_PREFIX)?;

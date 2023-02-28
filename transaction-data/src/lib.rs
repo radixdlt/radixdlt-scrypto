@@ -17,7 +17,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 pub const MANIFEST_SBOR_V1_PAYLOAD_PREFIX: u8 = 77; // [M] ASCII code
-pub const MANIFEST_SBOR_V1_MAX_DEPTH: u8 = 16;
+pub const MANIFEST_SBOR_V1_MAX_DEPTH: usize = 16;
 
 pub type ManifestEncoder<'a> = VecEncoder<'a, ManifestCustomValueKind>;
 pub type ManifestDecoder<'a> = VecDecoder<'a, ManifestCustomValueKind>;

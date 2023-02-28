@@ -28,7 +28,7 @@ pub type BasicValueKind = ValueKind<NoCustomValueKind>;
 
 // 5b for (basic) [5b]or - (90 in decimal)
 pub const BASIC_SBOR_V1_PAYLOAD_PREFIX: u8 = 0x5b;
-pub const BASIC_SBOR_V1_MAX_DEPTH: u8 = 64;
+pub const BASIC_SBOR_V1_MAX_DEPTH: usize = 64;
 
 // The following trait "aliases" are to be used in parameters.
 //
@@ -152,7 +152,7 @@ impl CustomTraversal for NoCustomTraversal {
         _: Self::CustomValueKind,
         _: ParentRelationship,
         _: usize,
-        _: u8,
+        _: usize,
     ) -> Self::CustomValueTraverser {
         unreachable!("The NoCustomValueKind parameter can't exist")
     }
@@ -212,7 +212,7 @@ mod schema {
     create_well_known_lookup!(WELL_KNOWN_LOOKUP, NoCustomTypeKind, []);
 
     impl CustomTypeExtension for NoCustomTypeExtension {
-        const MAX_DEPTH: u8 = BASIC_SBOR_V1_MAX_DEPTH;
+        const MAX_DEPTH: usize = BASIC_SBOR_V1_MAX_DEPTH;
         const PAYLOAD_PREFIX: u8 = BASIC_SBOR_V1_PAYLOAD_PREFIX;
         type CustomValueKind = NoCustomValueKind;
         type CustomTypeKind<L: SchemaTypeLink> = NoCustomTypeKind;

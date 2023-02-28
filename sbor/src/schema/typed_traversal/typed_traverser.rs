@@ -101,7 +101,7 @@ impl<'de, 's, E: CustomTypeExtension> TypedTraverser<'de, 's, E> {
         input: &'de [u8],
         type_kinds: &'s [SchemaTypeKind<E>],
         type_index: LocalTypeIndex,
-        max_depth: u8,
+        max_depth: usize,
         payload_prefix: Option<u8>,
         check_exact_end: bool,
     ) -> Self {

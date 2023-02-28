@@ -13,7 +13,7 @@ pub trait CustomTypeKind<L: SchemaTypeLink>: Debug + Clone + PartialEq + Eq {
 pub trait CustomTypeValidation: Debug + Clone + PartialEq + Eq {}
 
 pub trait CustomTypeExtension: Debug + Clone + PartialEq + Eq + 'static {
-    const MAX_DEPTH: u8;
+    const MAX_DEPTH: usize;
     const PAYLOAD_PREFIX: u8;
     type CustomValueKind: CustomValueKind;
     type CustomTypeKind<L: SchemaTypeLink>: CustomTypeKind<

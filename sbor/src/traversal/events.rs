@@ -10,12 +10,9 @@ pub struct LocatedTraversalEvent<'t, 'de, C: CustomTraversal> {
 }
 
 impl<'t, 'de, C: CustomTraversal> LocatedTraversalEvent<'t, 'de, C> {
-    pub fn get_next_sbor_depth(&self) -> u8 {
+    pub fn get_next_sbor_depth(&self) -> usize {
         match self.event {
             TraversalEvent::PayloadPrefix | TraversalEvent::End => 0,
-            // OVERFLOW SAFETY:
-            // The invariant self.container_stack.len() + 1 <= max_depth is maintained in `traverser.enter_container(..)` before
-            // we push to the stack. As `max_depth` is a u8, this can't overflow.
             TraversalEvent::ContainerStart(_) => self.location.get_sbor_depth() + 1,
             _ => self.location.get_sbor_depth(),
         }
@@ -67,14 +64,10 @@ pub struct Location<'t, C: CustomTraversal> {
 
 impl<'t, C: CustomTraversal> Location<'t, C> {
     /// The current SBOR depth
-    pub fn get_sbor_depth(&self) -> u8 {
+    pub fn get_sbor_depth(&self) -> usize {
         match self.parent_relationship {
             ParentRelationship::NotInValueModel => 0,
-            // OVERFLOW SAFETY:
-            // The invariant self.container_stack.len() + 1 <= max_depth is maintained in `traverser.enter_container(..)` before
-            // we push to the stack.
-            // As `max_depth` is a u8, this can't overflow.
-            _ => (self.ancestor_path.len() as u8) + 1,
+            _ => self.ancestor_path.len() + 1,
         }
     }
 }

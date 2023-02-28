@@ -5,7 +5,7 @@ use crate::*;
 /// Represents an error occurred during encoding.
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum EncodeError {
-    MaxDepthExceeded(u8),
+    MaxDepthExceeded(usize),
     SizeTooLarge { actual: usize, max_allowed: usize },
 }
 
@@ -105,13 +105,13 @@ pub trait Encoder<X: CustomValueKind>: Sized {
 /// An `Encoder` abstracts the logic for writing core types into a byte buffer.
 pub struct VecEncoder<'a, X: CustomValueKind> {
     buf: &'a mut Vec<u8>,
-    max_depth: u8,
+    max_depth: usize,
+    stack_depth: usize,
     phantom: PhantomData<X>,
-    stack_depth: u8,
 }
 
 impl<'a, X: CustomValueKind> VecEncoder<'a, X> {
-    pub fn new(buf: &'a mut Vec<u8>, max_depth: u8) -> Self {
+    pub fn new(buf: &'a mut Vec<u8>, max_depth: usize) -> Self {
         Self {
             buf,
             stack_depth: 0,

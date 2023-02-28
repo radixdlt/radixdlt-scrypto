@@ -38,7 +38,7 @@ pub use value_serializer::*;
 
 // 0x5c for [5c]rypto - (91 in decimal)
 pub const SCRYPTO_SBOR_V1_PAYLOAD_PREFIX: u8 = 0x5c;
-pub const SCRYPTO_SBOR_V1_MAX_DEPTH: u8 = 64;
+pub const SCRYPTO_SBOR_V1_MAX_DEPTH: usize = 64;
 
 pub type ScryptoEncoder<'a> = VecEncoder<'a, ScryptoCustomValueKind>;
 pub type ScryptoDecoder<'a> = VecDecoder<'a, ScryptoCustomValueKind>;

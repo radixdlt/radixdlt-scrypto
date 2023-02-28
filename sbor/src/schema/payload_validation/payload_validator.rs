@@ -74,7 +74,7 @@ pub struct LocatedValidationError<E: CustomTypeExtension> {
 pub struct ErrorLocation {
     start_offset: usize,
     end_offset: usize,
-    sbor_depth: u8,
+    sbor_depth: usize,
 }
 
 pub fn validate<E: CustomTypeExtension>(

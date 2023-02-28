@@ -125,7 +125,7 @@ fn malicious_component_replying_with_large_payload_is_handled_well_by_engine() {
     });
 }
 
-fn publish_wasm_with_deep_sbor_response_and_execute_it(depth: u8) -> TransactionReceipt {
+fn publish_wasm_with_deep_sbor_response_and_execute_it(depth: usize) -> TransactionReceipt {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
 
