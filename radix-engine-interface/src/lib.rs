@@ -20,6 +20,8 @@ pub mod constants;
 pub mod crypto;
 /// RE data model.
 pub mod data;
+/// RE events.
+pub mod events;
 /// RE math library.
 pub mod math;
 /// RE network abstraction.

@@ -35,8 +35,6 @@ impl LoggerNativePackage {
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
 
-                // println!("{:?}", input);
-
                 Self::log(receiver, input, api)
             }
             _ => Err(RuntimeError::InterpreterError(

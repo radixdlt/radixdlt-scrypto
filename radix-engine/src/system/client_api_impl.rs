@@ -1,3 +1,4 @@
+use crate::blueprints::event_store::EventStoreNativePackage;
 use crate::blueprints::resource::NonFungibleSubstate;
 use crate::errors::RuntimeError;
 use crate::errors::{KernelError, SystemError};
@@ -19,10 +20,10 @@ use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate,
     KeyValueStoreEntrySubstate, TypeInfoSubstate,
 };
-use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
+use radix_engine_interface::api::{package::*, ClientEventApi};
 use radix_engine_interface::api::{
     ClientActorApi, ClientApi, ClientComponentApi, ClientNodeApi, ClientPackageApi,
     ClientSubstateApi, ClientUnsafeApi,
@@ -439,6 +440,26 @@ where
 
     fn update_wasm_memory_usage(&mut self, size: usize) -> Result<(), RuntimeError> {
         KernelModuleMixer::on_update_wasm_memory_usage(self, size)
+    }
+}
+
+impl<'g, 's, W> ClientEventApi<RuntimeError> for Kernel<'g, 's, W>
+where
+    W: WasmEngine,
+{
+    fn emit_event<T: ScryptoEncode + abi::LegacyDescribe>(
+        &mut self,
+        event: T,
+    ) -> Result<(), RuntimeError> {
+        EventStoreNativePackage::emit_event(event, self)
+    }
+
+    fn emit_raw_event(
+        &mut self,
+        schema_hash: Hash,
+        event_data: Vec<u8>,
+    ) -> Result<(), RuntimeError> {
+        EventStoreNativePackage::emit_raw_event(schema_hash, event_data, self)
     }
 }
 
