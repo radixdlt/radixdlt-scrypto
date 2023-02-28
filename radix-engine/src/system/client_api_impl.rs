@@ -376,18 +376,6 @@ where
                         NodeModuleId::ComponentRoyalty,
                         RENodeModuleInit::ComponentRoyalty(config, accumulator),
                     );
-
-                    /*
-                    // Create a royalty vault
-                    let royalty_vault_id = ResourceManager(RADIX_TOKEN).new_vault(self)?.vault_id();
-
-                    // Create royalty substates
-                    let royalty_config_substate = ComponentRoyaltyConfigSubstate { royalty_config };
-                    let royalty_accumulator_substate = ComponentRoyaltyAccumulatorSubstate {
-                        royalty: Own::Vault(royalty_vault_id.into()),
-                    };
-
-                     */
                 }
             }
         }

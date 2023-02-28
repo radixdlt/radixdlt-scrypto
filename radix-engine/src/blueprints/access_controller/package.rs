@@ -256,16 +256,6 @@ impl AccessControllerNativePackage {
             vault
         };
 
-        /*
-        let mut node_modules = BTreeMap::new();
-        node_modules.insert(
-            NodeModuleId::AccessRules,
-            RENodeModuleInit::ObjectAccessRulesChain(MethodAccessRulesChainSubstate {
-                access_rules_chain: [].into(),
-            }),
-        );
-         */
-
         // Constructing the Access Controller RENode and Substates
         let access_controller = RENodeInit::AccessController(AccessControllerSubstate::new(
             vault.0,
