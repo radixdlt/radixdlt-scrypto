@@ -36,7 +36,6 @@ impl VisibilityProperties {
                 RENodeId::Logger => true,
                 RENodeId::TransactionRuntime => true,
                 RENodeId::AuthZoneStack => true,
-                RENodeId::EventStore => true,
                 _ => false,
             },
             ExecutionMode::Client | ExecutionMode::AutoDrop => match node_id {
@@ -427,7 +426,6 @@ impl SubstateProperties {
             SubstateOffset::AccessController(..) => true,
             SubstateOffset::TypeInfo(..) => true,
             SubstateOffset::PackageAccessRules => true,
-            SubstateOffset::EventStore(..) => false,
         }
     }
 

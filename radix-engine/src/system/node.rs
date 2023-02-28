@@ -21,8 +21,6 @@ use radix_engine_interface::blueprints::resource::LiquidNonFungibleResource;
 use radix_engine_interface::blueprints::resource::LockedFungibleResource;
 use radix_engine_interface::blueprints::resource::LockedNonFungibleResource;
 
-use super::events::EventStoreSubstate;
-
 #[derive(Debug)]
 pub enum RENodeModuleInit {
     /* Type info */
@@ -129,7 +127,6 @@ pub enum RENodeInit {
     Logger(LoggerSubstate),
     AccessController(AccessControllerSubstate),
     Account(AccountSubstate),
-    EventStore(EventStoreSubstate),
 }
 
 impl RENodeInit {
@@ -314,12 +311,6 @@ impl RENodeInit {
                 substates.insert(
                     SubstateOffset::AccessController(AccessControllerOffset::AccessController),
                     access_controller.into(),
-                );
-            }
-            RENodeInit::EventStore(event_store) => {
-                substates.insert(
-                    SubstateOffset::EventStore(EventStoreOffset::EventStore),
-                    event_store.into(),
                 );
             }
         };

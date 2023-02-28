@@ -1,73 +1,11 @@
-use radix_engine::errors::{KernelError, RuntimeError};
-use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
-use radix_engine_interface::api::LockFlags;
+use radix_engine_interface::abi::LegacyDescribe;
+use radix_engine_interface::events::EventTypeIdentifier;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::data::manifest_args;
 
-fn test_event_store_locking_from_scrypto(lock_flags: LockFlags) -> TransactionReceipt {
-    let mut test_runner = TestRunner::builder().without_trace().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/events");
-
-    let receipt = {
-        let args = manifest_args!(lock_flags.bits());
-        let manifest = ManifestBuilder::new()
-            .call_function(
-                package_address,
-                "EventStoreVisibility",
-                "lock_event_store",
-                args,
-            )
-            .build();
-        test_runner.execute_manifest_ignoring_fee(manifest, vec![])
-    };
-    receipt
-}
-
-/// Tests that Scrypto code can't lock the event store. This is to ensure that Scrypto code can't
-/// add arbitrary events by manually locking the substate and adding events into it.
 #[test]
-fn locking_event_store_mutably_from_scrypto_fails() {
-    // Act
-    let receipt = test_event_store_locking_from_scrypto(LockFlags::MUTABLE);
-
-    // Assert
-    receipt.expect_specific_failure(|error| {
-        matches!(
-            error,
-            RuntimeError::KernelError(KernelError::InvalidSubstateAccess {
-                node_id: RENodeId::EventStore,
-                offset: SubstateOffset::EventStore(EventStoreOffset::EventStore),
-                flags: LockFlags::MUTABLE,
-                ..
-            })
-        )
-    });
-}
-
-/// Tests that Scrypto code can't lock the event store immutably. This is to ensure that Scrypto
-/// code can't see the events that happened in the transaction.
-#[test]
-fn locking_event_store_immutably_from_scrypto_fails() {
-    // Act
-    let receipt = test_event_store_locking_from_scrypto(LockFlags::read_only());
-
-    // Assert
-    receipt.expect_specific_failure(|error| {
-        matches!(
-            error,
-            RuntimeError::KernelError(KernelError::InvalidSubstateAccess {
-                node_id: RENodeId::EventStore,
-                offset: SubstateOffset::EventStore(EventStoreOffset::EventStore),
-                ..
-            })
-        )
-    });
-}
-
-#[test]
-#[ignore = "We need the EventStore RENode to only be visible to the ClientAPI `emit_event` method but not to Scrypto. Still need to figure this out."]
 fn can_emit_basic_event_from_scrypto() {
     // Arrange
     let mut test_runner = TestRunner::builder().without_trace().build();
@@ -86,7 +24,25 @@ fn can_emit_basic_event_from_scrypto() {
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
 
     // Assert
-    // TODO: Assert for correct event emission.
-    receipt.expect_commit_success();
-    assert_eq!(receipt.expect_commit().application_events.len(), 1);
+    {
+        receipt.expect_commit_success();
+        let mut application_events = receipt.expect_commit().application_events.clone();
+        application_events.remove(0); // Removing the first event which is the lock fee against the faucet.
+
+        let expected_events = vec![(
+            EventTypeIdentifier(
+                RENodeId::GlobalPackage(package_address),
+                NodeModuleId::SELF,
+                hash(&scrypto_encode(&CustomEvent::describe()).unwrap()),
+            ),
+            scrypto_encode(&CustomEvent { number: 12 }).unwrap(),
+        )];
+
+        assert_eq!(expected_events, application_events)
+    }
+}
+
+#[derive(ScryptoEncode, LegacyDescribe)]
+struct CustomEvent {
+    number: u64,
 }

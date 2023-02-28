@@ -267,7 +267,7 @@ where
             let (modules, invoke_result) = kernel.teardown(invoke_result);
             let fee_reserve = modules.costing.take_fee_reserve();
             let (vault_ops, events) = modules.execution_trace.collect_events();
-            let application_events = modules.events.0;
+            let application_events = modules.events.events();
             let application_logs = modules.logger.0;
 
             // Finalize track

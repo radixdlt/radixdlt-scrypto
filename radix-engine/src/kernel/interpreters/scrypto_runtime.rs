@@ -23,7 +23,7 @@ where
         + ClientSubstateApi<RuntimeError>
         + ClientPackageApi<RuntimeError>
         + ClientComponentApi<RuntimeError>
-        + ClientActorApi<RuntimeError>,
+        + ClientEventApi<RuntimeError>,
 {
     api: &'y mut Y,
     buffers: BTreeMap<BufferId, Vec<u8>>,
@@ -37,7 +37,7 @@ where
         + ClientSubstateApi<RuntimeError>
         + ClientPackageApi<RuntimeError>
         + ClientComponentApi<RuntimeError>
-        + ClientActorApi<RuntimeError>,
+        + ClientEventApi<RuntimeError>,
 {
     pub fn new(api: &'y mut Y) -> Self {
         ScryptoRuntime {

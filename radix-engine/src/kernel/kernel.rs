@@ -337,7 +337,6 @@ where
                 return Ok(node);
             }
             RENodeId::Logger
-            | RENodeId::EventStore
             | RENodeId::TransactionRuntime
             | RENodeId::Bucket(..)
             | RENodeId::Clock(..)
@@ -866,7 +865,6 @@ where
                     }),
                 );
             }
-            (RENodeId::EventStore, RENodeInit::EventStore(..)) => {}
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id))),
         }
 

@@ -13,16 +13,6 @@ mod event_store_visibility {
     struct EventStoreVisibility;
 
     impl EventStoreVisibility {
-        pub fn lock_event_store(lock_flags: u32) {
-            let mut env = ScryptoEnv;
-            env.sys_lock_substate(
-                RENodeId::EventStore,
-                SubstateOffset::EventStore(EventStoreOffset::EventStore),
-                LockFlags::from_bits(lock_flags).unwrap(),
-            )
-            .unwrap();
-        }
-
         pub fn emit_event(number: u64) {
             Runtime::emit_event(CustomEvent { number });
         }

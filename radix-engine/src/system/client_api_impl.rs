@@ -36,7 +36,7 @@ use radix_engine_interface::events::EventTypeIdentifier;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
-use super::events::{EventError, EventStoreSubstate};
+use super::events::EventError;
 use super::kernel_modules::costing::FIXED_LOW_FEE;
 
 impl<'g, 's, W> ClientNodeApi<RuntimeError> for Kernel<'g, 's, W>
@@ -508,17 +508,9 @@ where
         // event has been successfully registered, it can be emitted (from a schema POV).
 
         // Adding the event to the event store
-        {
-            let handle = self.kernel_lock_substate(
-                RENodeId::EventStore,
-                NodeModuleId::SELF,
-                SubstateOffset::EventStore(EventStoreOffset::EventStore),
-                LockFlags::MUTABLE,
-            )?;
-            let event_store = self.kernel_get_substate_ref_mut::<EventStoreSubstate>(handle)?;
-            event_store.0.push((event_type_id, event_data));
-            self.kernel_drop_lock(handle)?;
-        };
+        self.kernel_get_module_state()
+            .events
+            .add_event(event_type_id, event_data);
 
         Ok(())
     }
