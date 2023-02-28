@@ -34,7 +34,8 @@ members = [
     "vault",
     "royalty",
     "royalty-auth",
-    "transaction_limits"
+    "transaction_limits",
+    "events",
 ]
 
 [profile.release]
