@@ -28,7 +28,7 @@ fn should_not_be_able_to_node_create_with_invalid_blueprint() {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::PackageError(
-                PackageError::BlueprintNotFound
+                PackageError::BlueprintNotFound(..)
             ))
         )
     });

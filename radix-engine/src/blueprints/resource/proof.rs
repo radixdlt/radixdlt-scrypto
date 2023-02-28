@@ -1,6 +1,5 @@
 use crate::errors::{ApplicationError, InterpreterError, RuntimeError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::node::RENodeInit;
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{ProofOffset, RENodeId, SubstateOffset};
@@ -70,7 +69,7 @@ impl ProofInfoSubstate {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct FungibleProof {
     pub total_locked: Decimal,
     /// The supporting containers.
@@ -131,7 +130,7 @@ impl FungibleProof {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct NonFungibleProof {
     /// The total locked amount or non-fungible ids.
     pub total_locked: BTreeSet<NonFungibleLocalId>,
@@ -224,13 +223,15 @@ impl ProofBlueprint {
             let clone = proof.clone_proof(api)?;
             api.sys_drop_lock(handle)?;
 
-            let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
-            api.kernel_create_node(
-                node_id,
-                RENodeInit::FungibleProof(proof_info, clone),
-                BTreeMap::new(),
+            let proof_id = api.new_object(
+                PROOF_BLUEPRINT,
+                btreemap!(
+                    0 => scrypto_encode(&proof_info).unwrap(),
+                    1 => scrypto_encode(&clone).unwrap()
+                )
             )?;
-            node_id
+
+            RENodeId::Proof(proof_id)
         } else {
             let handle = api.sys_lock_substate(
                 receiver,
@@ -242,13 +243,15 @@ impl ProofBlueprint {
             let clone = proof.clone_proof(api)?;
             api.sys_drop_lock(handle)?;
 
-            let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
-            api.kernel_create_node(
-                node_id,
-                RENodeInit::NonFungibleProof(proof_info, clone),
-                BTreeMap::new(),
+            let proof_id = api.new_object(
+                PROOF_BLUEPRINT,
+                btreemap!(
+                    0 => scrypto_encode(&proof_info).unwrap(),
+                    1 => scrypto_encode(&clone).unwrap()
+                )
             )?;
-            node_id
+
+            RENodeId::Proof(proof_id)
         };
 
         let proof_id = node_id.into();

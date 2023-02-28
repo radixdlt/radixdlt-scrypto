@@ -768,42 +768,39 @@ impl BucketBlueprint {
             let amount = FungibleBucket::locked_amount(receiver, api)?
                 + FungibleBucket::liquid_amount(receiver, api)?;
 
+            let proof_info = ProofInfoSubstate {
+                resource_address: info.resource_address,
+                resource_type: info.resource_type,
+                restricted: false,
+            };
             let proof = FungibleBucket::lock_amount(receiver, amount, api)?;
 
-            let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
-            api.kernel_create_node(
-                node_id,
-                RENodeInit::FungibleProof(
-                    ProofInfoSubstate {
-                        resource_address: info.resource_address,
-                        resource_type: info.resource_type,
-                        restricted: false,
-                    },
-                    proof,
-                ),
-                BTreeMap::new(),
+            let proof_id = api.new_object(
+                PROOF_BLUEPRINT,
+                btreemap!(
+                    0 => scrypto_encode(&proof_info).unwrap(),
+                    1 => scrypto_encode(&proof).unwrap()
+                )
             )?;
-            node_id
+            RENodeId::Proof(proof_id)
         } else {
             let amount = NonFungibleBucket::locked_amount(receiver, api)?
                 + NonFungibleBucket::liquid_amount(receiver, api)?;
 
+            let proof_info = ProofInfoSubstate {
+                resource_address: info.resource_address,
+                resource_type: info.resource_type,
+                restricted: false,
+            };
             let proof = NonFungibleBucket::lock_amount(receiver, amount, api)?;
-
-            let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
-            api.kernel_create_node(
-                node_id,
-                RENodeInit::NonFungibleProof(
-                    ProofInfoSubstate {
-                        resource_address: info.resource_address,
-                        resource_type: info.resource_type,
-                        restricted: false,
-                    },
-                    proof,
-                ),
-                BTreeMap::new(),
+            let proof_id = api.new_object(
+                PROOF_BLUEPRINT,
+                btreemap!(
+                    0 => scrypto_encode(&proof_info).unwrap(),
+                    1 => scrypto_encode(&proof).unwrap()
+                )
             )?;
-            node_id
+            RENodeId::Proof(proof_id)
         };
 
         let proof_id = node_id.into();

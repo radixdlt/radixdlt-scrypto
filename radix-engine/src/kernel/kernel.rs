@@ -707,17 +707,8 @@ where
                     }),
                 );
             }
-            (RENodeId::Proof(..), RENodeInit::FungibleProof(..))
-            | (RENodeId::Proof(..), RENodeInit::NonFungibleProof(..)) => {
-                module_init.insert(
-                    NodeModuleId::TypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: RESOURCE_MANAGER_PACKAGE,
-                        blueprint_name: PROOF_BLUEPRINT.to_string(),
-                        global: false,
-                    }),
-                );
-            }
+            (RENodeId::Proof(..), RENodeInit::FungibleProof(..)) => { }
+            (RENodeId::Proof(..), RENodeInit::NonFungibleProof(..)) => { }
             (RENodeId::Vault(..), RENodeInit::FungibleVault(..))
             | (RENodeId::Vault(..), RENodeInit::NonFungibleVault(..)) => {
                 module_init.insert(

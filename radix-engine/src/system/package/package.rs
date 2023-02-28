@@ -26,7 +26,7 @@ pub enum PackageError {
     InvalidRequestData(DecodeError),
     InvalidAbi(DecodeError),
     InvalidWasm(PrepareError),
-    BlueprintNotFound,
+    BlueprintNotFound(PackageAddress, String),
     MethodNotFound(String),
     CouldNotEncodePackageAddress,
 }
@@ -292,7 +292,7 @@ impl Package {
         let abi = info
             .blueprint_abi(&blueprint_name)
             .ok_or(RuntimeError::ApplicationError(
-                ApplicationError::PackageError(PackageError::BlueprintNotFound),
+                ApplicationError::PackageError(PackageError::BlueprintNotFound(receiver.into(), blueprint_name)),
             ))?;
         Ok(abi.clone())
     }
