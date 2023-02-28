@@ -900,16 +900,7 @@ where
                     }),
                 );
             }
-            (RENodeId::Validator(..), RENodeInit::Validator(..)) => {
-                module_init.insert(
-                    NodeModuleId::TypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: EPOCH_MANAGER_PACKAGE,
-                        blueprint_name: VALIDATOR_BLUEPRINT.to_string(),
-                        global: false,
-                    }),
-                );
-            }
+            (RENodeId::Validator(..), RENodeInit::Validator(..)) => { }
             (RENodeId::Clock(..), RENodeInit::Clock(..)) => { }
             (RENodeId::AccessController(..), RENodeInit::AccessController(..)) => { }
             (RENodeId::Identity(..), RENodeInit::Identity(..)) => {

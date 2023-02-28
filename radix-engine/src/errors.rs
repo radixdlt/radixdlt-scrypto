@@ -203,6 +203,7 @@ pub enum SystemError {
     CannotGlobalize,
     InvalidModule,
     ObjectDoesNotMatchSchema,
+    BlueprintNotFound,
     InvalidScryptoValue(DecodeError),
     InvalidAccessRules(DecodeError),
     InvalidMetadata(DecodeError),

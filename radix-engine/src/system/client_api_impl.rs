@@ -16,6 +16,7 @@ use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate
 use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
+use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate,
     KeyValueStoreEntrySubstate,
@@ -36,6 +37,7 @@ use sbor::rust::vec::Vec;
 use crate::blueprints::access_controller::AccessControllerSubstate;
 use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::clock::CurrentTimeRoundedToMinutesSubstate;
+use crate::blueprints::epoch_manager::ValidatorSubstate;
 use crate::system::package::Package;
 
 impl<'g, 's, W> ClientNodeApi<RuntimeError> for Kernel<'g, 's, W>
@@ -223,6 +225,19 @@ where
             .package_address();
 
         let (node_id, node_init) = match package_address {
+            EPOCH_MANAGER_PACKAGE => {
+                match blueprint_ident {
+                    VALIDATOR_BLUEPRINT => {
+                        let substate_bytes = app_states.into_iter().next().unwrap().1;
+                        let substate: ValidatorSubstate = scrypto_decode(&substate_bytes)
+                            .map_err(|_| RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema))?;
+
+                        let node_id = self.kernel_allocate_node_id(RENodeType::Validator)?;
+                        (node_id, RENodeInit::Validator(substate))
+                    }
+                    _ => return Err(RuntimeError::SystemError(SystemError::BlueprintNotFound)),
+                }
+            }
             ACCESS_CONTROLLER_PACKAGE => {
                 let substate_bytes = app_states.into_iter().next().unwrap().1;
                 let substate: AccessControllerSubstate = scrypto_decode(&substate_bytes)
