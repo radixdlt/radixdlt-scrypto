@@ -106,7 +106,7 @@ macro_rules! numeric_validation_match {
     }};
 }
 
-pub fn validate_payload_with_schema<E: CustomTypeExtension>(
+pub fn validate_payload_against_schema<E: CustomTypeExtension>(
     payload: &[u8],
     schema: &Schema<E>,
     index: LocalTypeIndex,
@@ -300,7 +300,7 @@ mod tests {
         })
         .unwrap();
 
-        let result = validate_payload_with_schema(&payload, &schema, type_index);
+        let result = validate_payload_against_schema(&payload, &schema, type_index);
         assert!(result.is_ok())
     }
 
@@ -313,7 +313,7 @@ mod tests {
         })
         .unwrap();
 
-        let result = validate_payload_with_schema(&payload, &schema, type_index);
+        let result = validate_payload_against_schema(&payload, &schema, type_index);
         assert!(matches!(
             result,
             Err(LocatedValidationError {
@@ -391,7 +391,7 @@ mod tests {
         let bytes = basic_encode(&x).unwrap();
         let (type_index, schema) =
             generate_full_schema_from_single_type::<SimpleStruct, NoCustomTypeExtension>();
-        let result = validate_payload_with_schema(&bytes, &schema, type_index);
+        let result = validate_payload_against_schema(&bytes, &schema, type_index);
         assert!(result.is_ok())
     }
 
@@ -428,7 +428,7 @@ mod tests {
         };
 
         assert_eq!(
-            validate_payload_with_schema(
+            validate_payload_against_schema(
                 &basic_encode(&vec![5u8]).unwrap(),
                 &schema,
                 LocalTypeIndex::SchemaLocalIndex(0),
@@ -437,7 +437,7 @@ mod tests {
         );
 
         assert_eq!(
-            validate_payload_with_schema(
+            validate_payload_against_schema(
                 &basic_encode(&vec![8u8]).unwrap(),
                 &schema,
                 LocalTypeIndex::SchemaLocalIndex(0),
@@ -455,7 +455,7 @@ mod tests {
         );
 
         assert_eq!(
-            validate_payload_with_schema(
+            validate_payload_against_schema(
                 &basic_encode(&vec![5u8, 5u8]).unwrap(),
                 &schema,
                 LocalTypeIndex::SchemaLocalIndex(0),

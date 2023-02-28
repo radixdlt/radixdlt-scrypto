@@ -70,7 +70,7 @@ fn bench_schema_new(b: &mut Criterion) {
         generate_full_schema_from_single_type::<SimpleStruct, ScryptoCustomTypeExtension>();
     b.bench_function("New Schema", |b| {
         b.iter(|| {
-            let result = validate_payload_with_schema(&bytes, &schema, type_index);
+            let result = validate_payload_against_schema(&bytes, &schema, type_index);
             assert!(result.is_ok())
         })
     });
