@@ -1,6 +1,7 @@
 use crate::abi::*;
 use crate::api::types::*;
 use crate::data::model::Own;
+use crate::data::ScryptoSchema;
 use radix_engine_derive::*;
 use sbor::rust::collections::*;
 use sbor::rust::fmt::{Debug, Formatter};
@@ -39,9 +40,33 @@ impl Debug for PackageCodeSubstate {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct PackageInfoSubstate {
-    pub blueprint_abis: BTreeMap<String, BlueprintAbi>,
+    pub schema: ScryptoSchema,
+    pub blueprint_schemas: BTreeMap<String, BlueprintSchema>,
     pub dependent_resources: BTreeSet<ResourceAddress>,
     pub dependent_components: BTreeSet<ComponentAddress>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct BlueprintSchema {
+    /// For each offset, there is a [`LocalTypeIndex`]
+    pub substate_schemas: BTreeMap<u8, LocalTypeIndex>,
+    /// For each function, there is a [`FunctionInfo`]
+    pub function_schemas: BTreeMap<String, FunctionSchema>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct FunctionSchema {
+    pub receiver: Option<FunctionReceiver>,
+    pub input: LocalTypeIndex,
+    pub output: LocalTypeIndex,
+    pub export_name: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum FunctionReceiver {
+    Immutable,
+
+    Mutable,
 }
 
 impl PackageInfoSubstate {

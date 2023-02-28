@@ -1,4 +1,5 @@
 use super::*;
+use radix_engine_derive::ScryptoSbor;
 use sbor::rust::collections::*;
 use sbor::*;
 
@@ -27,7 +28,7 @@ impl<L: SchemaTypeLink> CustomTypeKind<L> for ScryptoCustomTypeKind<L> {
     type CustomTypeExtension = ScryptoCustomTypeExtension;
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ScryptoCustomTypeValidation {}
 
 impl CustomTypeValidation for ScryptoCustomTypeValidation {}
