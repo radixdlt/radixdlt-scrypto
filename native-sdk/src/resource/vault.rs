@@ -1,7 +1,5 @@
 use radix_engine_interface::api::types::{RENodeId, VaultId};
-use radix_engine_interface::api::{
-    ClientApi, ClientObjectApi, ClientNodeApi, ClientSubstateApi,
-};
+use radix_engine_interface::api::{ClientApi, ClientNodeApi, ClientObjectApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::model::Own;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode};

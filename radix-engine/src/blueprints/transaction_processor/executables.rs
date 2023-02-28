@@ -7,6 +7,7 @@ use crate::kernel::kernel_api::{
     ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, TemporaryResolvedInvocation,
 };
 use crate::system::node::{RENodeInit, RENodeModuleInit};
+use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::package::PackageError;
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -39,7 +40,6 @@ use transaction::data::{manifest_decode, manifest_encode};
 use transaction::errors::ManifestIdAllocationError;
 use transaction::model::*;
 use transaction::validation::*;
-use crate::system::node_modules::type_info::TypeInfoSubstate;
 
 #[derive(Debug, ScryptoSbor)]
 pub struct TransactionProcessorRunInvocation<'a> {

@@ -2,7 +2,6 @@ use super::ValidatorCreator;
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::node::RENodeInit;
 use crate::types::*;
 use native_sdk::access_rules::AccessRulesObject;
 use native_sdk::metadata::Metadata;
@@ -152,7 +151,7 @@ impl EpochManagerBlueprint {
                 0 => scrypto_encode(&epoch_manager).unwrap(),
                 1 => scrypto_encode(&current_validator_set).unwrap(),
                 2 => scrypto_encode(&preparing_validator_set).unwrap(),
-            )
+            ),
         )?;
 
         let mut access_rules = AccessRules::new();

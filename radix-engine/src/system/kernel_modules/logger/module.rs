@@ -2,16 +2,15 @@ use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
+use crate::system::node::RENodeModuleInit;
+use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::{blueprints::logger::LoggerSubstate, errors::RuntimeError, system::node::RENodeInit};
 use radix_engine_interface::api::types::{NodeModuleId, RENodeId, RENodeType};
 use radix_engine_interface::blueprints::logger::LOGGER_BLUEPRINT;
 use radix_engine_interface::constants::LOGGER_PACKAGE;
 use radix_engine_interface::data::ScryptoValue;
 use sbor::btreemap;
-use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
-use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::type_info::TypeInfoSubstate;
 
 #[derive(Debug, Clone)]
 pub struct LoggerModule {}
@@ -29,7 +28,7 @@ impl KernelModule for LoggerModule {
                     blueprint_name: LOGGER_BLUEPRINT.to_string(),
                     global: false,
                 })
-            )
+            ),
         )?;
 
         Ok(())

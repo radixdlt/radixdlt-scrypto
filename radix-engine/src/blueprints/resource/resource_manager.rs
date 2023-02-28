@@ -1,5 +1,3 @@
-use native_sdk::access_rules::AccessRulesObject;
-use native_sdk::metadata::Metadata;
 use crate::blueprints::resource::*;
 use crate::errors::InvokeError;
 use crate::errors::RuntimeError;
@@ -8,10 +6,9 @@ use crate::kernel::heap::DroppedBucket;
 use crate::kernel::heap::DroppedBucketResource;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node::RENodeInit;
-use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::access_rules::MethodAccessRulesSubstate;
-use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
+use native_sdk::access_rules::AccessRulesObject;
+use native_sdk::metadata::Metadata;
 use native_sdk::resource::SysBucket;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
@@ -21,7 +18,6 @@ use radix_engine_interface::api::types::{
     NonFungibleStoreId, NonFungibleStoreOffset, RENodeId, ResourceManagerOffset, SubstateOffset,
 };
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::model::Own;
@@ -453,7 +449,7 @@ where
         RESOURCE_MANAGER_BLUEPRINT,
         btreemap!(
             0 => scrypto_encode(&resource_manager_substate).unwrap()
-        )
+        ),
     )?;
 
     let (resman_access_rules, vault_access_rules) = build_access_rules(access_rules);
@@ -559,13 +555,11 @@ impl ResourceManagerBlueprint {
                 api,
             )?;
 
-
-
         let object_id = api.new_object(
             RESOURCE_MANAGER_BLUEPRINT,
             btreemap!(
-            0 => scrypto_encode(&resource_manager_substate).unwrap()
-        )
+                0 => scrypto_encode(&resource_manager_substate).unwrap()
+            ),
         )?;
 
         let (resman_access_rules, vault_access_rules) = build_access_rules(input.access_rules);
@@ -576,10 +570,10 @@ impl ResourceManagerBlueprint {
         api.globalize_with_address(
             RENodeId::Component(object_id),
             btreemap!(
-            NodeModuleId::AccessRules => scrypto_encode(&resman_access_rules).unwrap(),
-            NodeModuleId::AccessRules1 => scrypto_encode(&vault_access_rules).unwrap(),
-            NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap()
-        ),
+                NodeModuleId::AccessRules => scrypto_encode(&resman_access_rules).unwrap(),
+                NodeModuleId::AccessRules1 => scrypto_encode(&vault_access_rules).unwrap(),
+                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap()
+            ),
             resource_address.into(),
         )?;
 
@@ -619,8 +613,8 @@ impl ResourceManagerBlueprint {
         let object_id = api.new_object(
             RESOURCE_MANAGER_BLUEPRINT,
             btreemap!(
-            0 => scrypto_encode(&resource_manager_substate).unwrap()
-        )
+                0 => scrypto_encode(&resource_manager_substate).unwrap()
+            ),
         )?;
 
         let (resman_access_rules, vault_access_rules) = build_access_rules(input.access_rules);
@@ -631,10 +625,10 @@ impl ResourceManagerBlueprint {
         api.globalize_with_address(
             RENodeId::Component(object_id),
             btreemap!(
-            NodeModuleId::AccessRules => scrypto_encode(&resman_access_rules).unwrap(),
-            NodeModuleId::AccessRules1 => scrypto_encode(&vault_access_rules).unwrap(),
-            NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap()
-        ),
+                NodeModuleId::AccessRules => scrypto_encode(&resman_access_rules).unwrap(),
+                NodeModuleId::AccessRules1 => scrypto_encode(&vault_access_rules).unwrap(),
+                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap()
+            ),
             resource_address.into(),
         )?;
 
@@ -690,8 +684,8 @@ impl ResourceManagerBlueprint {
         let object_id = api.new_object(
             RESOURCE_MANAGER_BLUEPRINT,
             btreemap!(
-            0 => scrypto_encode(&resource_manager_substate).unwrap()
-        )
+                0 => scrypto_encode(&resource_manager_substate).unwrap()
+            ),
         )?;
 
         let (resman_access_rules, vault_access_rules) = build_access_rules(input.access_rules);
@@ -702,10 +696,10 @@ impl ResourceManagerBlueprint {
         api.globalize_with_address(
             RENodeId::Component(object_id),
             btreemap!(
-            NodeModuleId::AccessRules => scrypto_encode(&resman_access_rules).unwrap(),
-            NodeModuleId::AccessRules1 => scrypto_encode(&vault_access_rules).unwrap(),
-            NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap()
-        ),
+                NodeModuleId::AccessRules => scrypto_encode(&resman_access_rules).unwrap(),
+                NodeModuleId::AccessRules1 => scrypto_encode(&vault_access_rules).unwrap(),
+                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap()
+            ),
             resource_address.into(),
         )?;
 
@@ -736,12 +730,11 @@ impl ResourceManagerBlueprint {
                 api,
             )?;
 
-
         let object_id = api.new_object(
             RESOURCE_MANAGER_BLUEPRINT,
             btreemap!(
-            0 => scrypto_encode(&resource_manager_substate).unwrap()
-        )
+                0 => scrypto_encode(&resource_manager_substate).unwrap()
+            ),
         )?;
 
         let (resman_access_rules, vault_access_rules) = build_access_rules(input.access_rules);
@@ -752,10 +745,10 @@ impl ResourceManagerBlueprint {
         api.globalize_with_address(
             RENodeId::Component(object_id),
             btreemap!(
-            NodeModuleId::AccessRules => scrypto_encode(&resman_access_rules).unwrap(),
-            NodeModuleId::AccessRules1 => scrypto_encode(&vault_access_rules).unwrap(),
-            NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap()
-        ),
+                NodeModuleId::AccessRules => scrypto_encode(&resman_access_rules).unwrap(),
+                NodeModuleId::AccessRules1 => scrypto_encode(&vault_access_rules).unwrap(),
+                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap()
+            ),
             resource_address.into(),
         )?;
 
@@ -1441,7 +1434,7 @@ where
         RESOURCE_MANAGER_BLUEPRINT,
         btreemap!(
             0 => scrypto_encode(&resource_manager_substate).unwrap()
-        )
+        ),
     )?;
 
     let (resman_access_rules, vault_access_rules) = build_access_rules(access_rules);

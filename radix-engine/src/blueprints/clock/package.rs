@@ -1,7 +1,6 @@
 use crate::errors::{InterpreterError, RuntimeError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE};
-use crate::system::node::RENodeInit;
 use crate::types::*;
 use native_sdk::access_rules::AccessRulesObject;
 use native_sdk::metadata::Metadata;
@@ -105,7 +104,7 @@ impl ClockNativePackage {
                 0 => scrypto_encode(&CurrentTimeRoundedToMinutesSubstate {
                     current_time_rounded_to_minutes_ms: 0,
                 }).unwrap()
-            )
+            ),
         )?;
 
         let mut access_rules = AccessRules::new();

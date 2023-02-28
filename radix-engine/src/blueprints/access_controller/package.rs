@@ -2,7 +2,6 @@ use super::state_machine::*;
 use crate::errors::{ApplicationError, InterpreterError, RuntimeError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
-use crate::system::node::RENodeInit;
 use native_sdk::access_rules::AccessRulesObject;
 use native_sdk::metadata::Metadata;
 use native_sdk::resource::{SysBucket, Vault};
@@ -19,7 +18,6 @@ use radix_engine_interface::data::{
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::*;
 use radix_engine_interface::{api::*, rule};
-use sbor::rust::collections::BTreeMap;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct AccessControllerSubstate {
@@ -259,15 +257,13 @@ impl AccessControllerNativePackage {
             vault
         };
 
-        let substate = AccessControllerSubstate::new(
-            vault.0,
-            input.timed_recovery_delay_in_minutes,
-        );
+        let substate =
+            AccessControllerSubstate::new(vault.0, input.timed_recovery_delay_in_minutes);
         let access_controller = api.new_object(
             ACCESS_CONTROLLER_BLUEPRINT,
             btreemap!(
                 0 => scrypto_encode(&substate).unwrap()
-            )
+            ),
         )?;
 
         let access_rules = access_rules_from_rule_set(input.rule_set);

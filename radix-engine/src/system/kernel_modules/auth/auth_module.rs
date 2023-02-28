@@ -333,7 +333,7 @@ impl KernelModule for AuthModule {
                         blueprint_name: AUTH_ZONE_BLUEPRINT.to_string(),
                         global: false,
                     })
-            )
+            ),
         )?;
         Ok(())
     }

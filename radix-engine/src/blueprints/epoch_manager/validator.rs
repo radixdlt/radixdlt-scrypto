@@ -2,7 +2,6 @@ use crate::blueprints::epoch_manager::EpochManagerSubstate;
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::node::RENodeInit;
 use crate::types::*;
 use native_sdk::access_rules::AccessRulesObject;
 use native_sdk::metadata::Metadata;
@@ -616,7 +615,6 @@ impl ValidatorCreator {
         let (liquidity_token, liquidity_bucket) =
             Self::create_liquidity_token_with_initial_amount(initial_liquidity_amount, api)?;
 
-
         let substate = ValidatorSubstate {
             manager,
             key,
@@ -632,7 +630,7 @@ impl ValidatorCreator {
             VALIDATOR_BLUEPRINT,
             btreemap!(
                 0 => scrypto_encode(&substate).unwrap()
-            )
+            ),
         )?;
 
         let access_rules = Self::build_access_rules(owner_access_rule);
@@ -682,7 +680,7 @@ impl ValidatorCreator {
             VALIDATOR_BLUEPRINT,
             btreemap!(
                 0 => scrypto_encode(&substate).unwrap()
-            )
+            ),
         )?;
 
         let access_rules = Self::build_access_rules(owner_access_rule);

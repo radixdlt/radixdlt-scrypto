@@ -7,7 +7,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::{
-    ClientActorApi, ClientObjectApi, ClientNodeApi, ClientPackageApi, ClientSubstateApi,
+    ClientActorApi, ClientNodeApi, ClientObjectApi, ClientPackageApi, ClientSubstateApi,
     ClientUnsafeApi,
 };
 use radix_engine_interface::blueprints::resource::AccessRules;
@@ -160,9 +160,7 @@ where
         let app_states = scrypto_decode::<BTreeMap<u8, Vec<u8>>>(&app_states)
             .map_err(WasmRuntimeError::InvalidAppStates)?;
 
-        let component_id = self
-            .api
-            .new_object(blueprint_ident.as_ref(), app_states)?;
+        let component_id = self.api.new_object(blueprint_ident.as_ref(), app_states)?;
         let component_id_encoded =
             scrypto_encode(&component_id).expect("Failed to encode component id");
 

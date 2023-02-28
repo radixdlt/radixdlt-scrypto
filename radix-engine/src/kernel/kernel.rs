@@ -8,7 +8,6 @@ use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::node::{RENodeInit, RENodeModuleInit};
-use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_properties::VisibilityProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
@@ -16,11 +15,7 @@ use crate::wasm::WasmEngine;
 use native_sdk::access_rules::AccessRulesObject;
 use native_sdk::metadata::Metadata;
 use native_sdk::resource::SysProof;
-use radix_engine_interface::address::*;
-use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
-use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
-use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
-use radix_engine_interface::api::package::{PackageCodeSubstate, PACKAGE_LOADER_BLUEPRINT};
+use radix_engine_interface::api::package::PackageCodeSubstate;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientObjectApi;
 // TODO: clean this up!
@@ -30,23 +25,13 @@ use radix_engine_interface::api::types::{
     AuthZoneStackOffset, LockHandle, ProofOffset, RENodeId, SubstateId, SubstateOffset,
     WorktopOffset,
 };
-use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLUEPRINT;
 use radix_engine_interface::blueprints::account::{
     ACCOUNT_BLUEPRINT, ACCOUNT_DEPOSIT_BATCH_IDENT, ACCOUNT_DEPOSIT_IDENT,
 };
-use radix_engine_interface::blueprints::auth_zone::AUTH_ZONE_BLUEPRINT;
-use radix_engine_interface::blueprints::clock::CLOCK_BLUEPRINT;
-use radix_engine_interface::blueprints::epoch_manager::{
-    EPOCH_MANAGER_BLUEPRINT, VALIDATOR_BLUEPRINT,
-};
-use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
-use radix_engine_interface::blueprints::logger::LOGGER_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRules, LiquidFungibleResource, LiquidNonFungibleResource, MethodKey,
-    ResourceType, BUCKET_BLUEPRINT, PROOF_BLUEPRINT, RESOURCE_MANAGER_BLUEPRINT, VAULT_BLUEPRINT,
-    WORKTOP_BLUEPRINT,
+    ResourceType, BUCKET_BLUEPRINT, PROOF_BLUEPRINT, VAULT_BLUEPRINT,
 };
-use radix_engine_interface::blueprints::transaction_runtime::TRANSACTION_RUNTIME_BLUEPRINT;
 use radix_engine_interface::rule;
 use sbor::rust::mem;
 
@@ -149,7 +134,6 @@ where
         global_node_id: RENodeId,
         non_fungible_global_id: NonFungibleGlobalId,
     ) -> Result<(), RuntimeError> {
-
         // TODO: This should move into the appropriate place once virtual manager is implemented
         self.current_frame.add_ref(
             RENodeId::GlobalResourceManager(ECDSA_SECP256K1_TOKEN),
@@ -765,17 +749,18 @@ where
         match (node_id, &re_node) {
             (RENodeId::GlobalComponent(..), RENodeInit::GlobalObject(..)) => {}
             (RENodeId::GlobalResourceManager(..), RENodeInit::GlobalObject(..)) => {}
+            (RENodeId::GlobalPackage(..), RENodeInit::GlobalPackage(..)) => {}
             (RENodeId::Component(..), RENodeInit::Component(..)) => {}
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
             (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
-            (RENodeId::Component(..), RENodeInit::Metadata(..)) => { }
-            (RENodeId::Component(..), RENodeInit::ComponentRoyalty(..)) => { }
-            (RENodeId::Component(..), RENodeInit::AccessRules(..)) => { }
-            (RENodeId::Component(..), RENodeInit::ResourceManager(..)) => { }
-            (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => { }
-            (RENodeId::TransactionRuntime, RENodeInit::TransactionRuntime(..)) => { }
-            (RENodeId::Logger, RENodeInit::Logger(..)) => { }
-            (RENodeId::Worktop, RENodeInit::Worktop(..)) => { }
+            (RENodeId::Component(..), RENodeInit::Metadata(..)) => {}
+            (RENodeId::Component(..), RENodeInit::ComponentRoyalty(..)) => {}
+            (RENodeId::Component(..), RENodeInit::AccessRules(..)) => {}
+            (RENodeId::Component(..), RENodeInit::ResourceManager(..)) => {}
+            (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {}
+            (RENodeId::TransactionRuntime, RENodeInit::TransactionRuntime(..)) => {}
+            (RENodeId::Logger, RENodeInit::Logger(..)) => {}
+            (RENodeId::Worktop, RENodeInit::Worktop(..)) => {}
             (RENodeId::Bucket(..), RENodeInit::FungibleBucket(..))
             | (RENodeId::Bucket(..), RENodeInit::NonFungibleBucket(..)) => {
                 module_init.insert(
@@ -809,28 +794,17 @@ where
                     }),
                 );
             }
-            (RENodeId::GlobalPackage(..), RENodeInit::GlobalPackage(..)) => {
-                module_init.insert(
-                    NodeModuleId::TypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: PACKAGE_LOADER,
-                        blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-                        global: true,
-                    }),
-                );
-            }
-            (RENodeId::EpochManager(..), RENodeInit::EpochManager(..)) => { }
-            (RENodeId::Validator(..), RENodeInit::Validator(..)) => { }
-            (RENodeId::Clock(..), RENodeInit::Clock(..)) => { }
-            (RENodeId::AccessController(..), RENodeInit::AccessController(..)) => { }
-            (RENodeId::Identity(..), RENodeInit::Identity(..)) => { }
-            (RENodeId::Account(..), RENodeInit::Account(..)) => { }
+            (RENodeId::EpochManager(..), RENodeInit::EpochManager(..)) => {}
+            (RENodeId::Validator(..), RENodeInit::Validator(..)) => {}
+            (RENodeId::Clock(..), RENodeInit::Clock(..)) => {}
+            (RENodeId::AccessController(..), RENodeInit::AccessController(..)) => {}
+            (RENodeId::Identity(..), RENodeInit::Identity(..)) => {}
+            (RENodeId::Account(..), RENodeInit::Account(..)) => {}
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id))),
         }
 
         let push_to_store = match re_node {
-            RENodeInit::GlobalObject(..)
-            | RENodeInit::GlobalPackage(..) => true,
+            RENodeInit::GlobalObject(..) | RENodeInit::GlobalPackage(..) => true,
             _ => false,
         };
 

@@ -1,5 +1,4 @@
-use radix_engine::errors::{ApplicationError, KernelError, RuntimeError};
-use radix_engine::kernel::actor::Actor;
+use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::system::package::PackageError;
 use radix_engine::types::*;
 use scrypto_unit::*;
@@ -28,7 +27,9 @@ fn should_not_be_able_to_node_create_with_invalid_blueprint() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::PackageError(PackageError::BlueprintNotFound))
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::BlueprintNotFound
+            ))
         )
     });
 }

@@ -1,3 +1,9 @@
+use crate::blueprints::access_controller::AccessControllerSubstate;
+use crate::blueprints::account::AccountSubstate;
+use crate::blueprints::clock::CurrentTimeRoundedToMinutesSubstate;
+use crate::blueprints::epoch_manager::{
+    EpochManagerSubstate, ValidatorSetSubstate, ValidatorSubstate,
+};
 use crate::blueprints::resource::{NonFungibleSubstate, ResourceManagerSubstate};
 use crate::errors::RuntimeError;
 use crate::errors::{KernelError, SystemError};
@@ -14,32 +20,28 @@ use crate::system::node_modules::access_rules::MethodAccessRulesSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::system::node_substates::RuntimeSubstate;
+use crate::system::package::Package;
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::blueprints::epoch_manager::*;
-use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate,
     KeyValueStoreEntrySubstate,
 };
+use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::{
-    ClientActorApi, ClientApi, ClientObjectApi, ClientNodeApi, ClientPackageApi,
-    ClientSubstateApi, ClientUnsafeApi,
+    ClientActorApi, ClientApi, ClientNodeApi, ClientObjectApi, ClientPackageApi, ClientSubstateApi,
+    ClientUnsafeApi,
 };
+use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::model::Own;
 use radix_engine_interface::data::*;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
-use crate::blueprints::access_controller::AccessControllerSubstate;
-use crate::blueprints::account::AccountSubstate;
-use crate::blueprints::clock::CurrentTimeRoundedToMinutesSubstate;
-use crate::blueprints::epoch_manager::{EpochManagerSubstate, ValidatorSetSubstate, ValidatorSubstate};
-use crate::system::package::Package;
 
 impl<'g, 's, W> ClientNodeApi<RuntimeError> for Kernel<'g, 's, W>
 where
@@ -226,91 +228,126 @@ where
             .package_address();
 
         let (node_id, node_init) = match package_address {
-            RESOURCE_MANAGER_PACKAGE => {
-                match blueprint_ident {
-                    RESOURCE_MANAGER_BLUEPRINT => {
-                        let substate_bytes = app_states.into_iter().next().unwrap().1;
-                        let substate: ResourceManagerSubstate = scrypto_decode(&substate_bytes)
-                            .map_err(|_| RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema))?;
+            RESOURCE_MANAGER_PACKAGE => match blueprint_ident {
+                RESOURCE_MANAGER_BLUEPRINT => {
+                    let substate_bytes = app_states.into_iter().next().unwrap().1;
+                    let substate: ResourceManagerSubstate = scrypto_decode(&substate_bytes)
+                        .map_err(|_| {
+                            RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
+                        })?;
 
-                        let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
-                        (node_id, RENodeInit::ResourceManager(substate))
-                    }
-                    _ => return Err(RuntimeError::SystemError(SystemError::BlueprintNotFound)),
+                    let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
+                    (node_id, RENodeInit::ResourceManager(substate))
                 }
-            }
+                _ => return Err(RuntimeError::SystemError(SystemError::BlueprintNotFound)),
+            },
             METADATA_PACKAGE => {
                 let substate_bytes = app_states.into_iter().next().unwrap().1;
-                let substate: MetadataSubstate = scrypto_decode(&substate_bytes)
-                    .map_err(|_| RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema))?;
+                let substate: MetadataSubstate = scrypto_decode(&substate_bytes).map_err(|_| {
+                    RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
+                })?;
 
                 let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
                 (node_id, RENodeInit::Metadata(substate))
             }
-            ROYALTY_PACKAGE => {
-                match blueprint_ident {
-                    COMPONENT_ROYALTY_BLUEPRINT => {
-                        let substate_bytes_0 = app_states.remove(&0u8).ok_or(RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema))?;
-                        let substate_bytes_1 = app_states.remove(&1u8).ok_or(RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema))?;
+            ROYALTY_PACKAGE => match blueprint_ident {
+                COMPONENT_ROYALTY_BLUEPRINT => {
+                    let substate_bytes_0 = app_states.remove(&0u8).ok_or(
+                        RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema),
+                    )?;
+                    let substate_bytes_1 = app_states.remove(&1u8).ok_or(
+                        RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema),
+                    )?;
 
-                        let config_substate: ComponentRoyaltyConfigSubstate = scrypto_decode(&substate_bytes_0)
-                            .map_err(|_| RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema))?;
-                        let accumulator_substate: ComponentRoyaltyAccumulatorSubstate = scrypto_decode(&substate_bytes_1)
-                            .map_err(|_| RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema))?;
+                    let config_substate: ComponentRoyaltyConfigSubstate =
+                        scrypto_decode(&substate_bytes_0).map_err(|_| {
+                            RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
+                        })?;
+                    let accumulator_substate: ComponentRoyaltyAccumulatorSubstate =
+                        scrypto_decode(&substate_bytes_1).map_err(|_| {
+                            RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
+                        })?;
 
-                        let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
-                        (node_id, RENodeInit::ComponentRoyalty(config_substate, accumulator_substate))
-                    }
-                    _ => return Err(RuntimeError::SystemError(SystemError::BlueprintNotFound)),
+                    let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
+                    (
+                        node_id,
+                        RENodeInit::ComponentRoyalty(config_substate, accumulator_substate),
+                    )
                 }
-            }
+                _ => return Err(RuntimeError::SystemError(SystemError::BlueprintNotFound)),
+            },
             ACCESS_RULES_PACKAGE => {
                 let substate_bytes = app_states.into_iter().next().unwrap().1;
-                let substate: MethodAccessRulesSubstate = scrypto_decode(&substate_bytes)
-                    .map_err(|_| RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema))?;
+                let substate: MethodAccessRulesSubstate =
+                    scrypto_decode(&substate_bytes).map_err(|_| {
+                        RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
+                    })?;
 
                 let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
                 (node_id, RENodeInit::AccessRules(substate))
             }
-            EPOCH_MANAGER_PACKAGE => {
-                match blueprint_ident {
-                    VALIDATOR_BLUEPRINT => {
-                        let substate_bytes = app_states.into_iter().next().unwrap().1;
-                        let substate: ValidatorSubstate = scrypto_decode(&substate_bytes)
-                            .map_err(|_| RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema))?;
+            EPOCH_MANAGER_PACKAGE => match blueprint_ident {
+                VALIDATOR_BLUEPRINT => {
+                    let substate_bytes = app_states.into_iter().next().unwrap().1;
+                    let substate: ValidatorSubstate =
+                        scrypto_decode(&substate_bytes).map_err(|_| {
+                            RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
+                        })?;
 
-                        let node_id = self.kernel_allocate_node_id(RENodeType::Validator)?;
-                        (node_id, RENodeInit::Validator(substate))
-                    }
-                    EPOCH_MANAGER_BLUEPRINT => {
-                        let substate_bytes_0 = app_states.remove(&0u8).ok_or(RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema))?;
-                        let substate_bytes_1 = app_states.remove(&1u8).ok_or(RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema))?;
-                        let substate_bytes_2 = app_states.remove(&2u8).ok_or(RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema))?;
-
-                        let epoch_mgr_substate: EpochManagerSubstate = scrypto_decode(&substate_bytes_0)
-                            .map_err(|_| RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema))?;
-                        let validator_set_substate_0: ValidatorSetSubstate = scrypto_decode(&substate_bytes_1)
-                            .map_err(|_| RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema))?;
-                        let validator_set_substate_1: ValidatorSetSubstate = scrypto_decode(&substate_bytes_2)
-                            .map_err(|_| RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema))?;
-
-                        let node_id = self.kernel_allocate_node_id(RENodeType::EpochManager)?;
-                        (node_id, RENodeInit::EpochManager(epoch_mgr_substate, validator_set_substate_0, validator_set_substate_1))
-                    }
-                    _ => return Err(RuntimeError::SystemError(SystemError::BlueprintNotFound)),
+                    let node_id = self.kernel_allocate_node_id(RENodeType::Validator)?;
+                    (node_id, RENodeInit::Validator(substate))
                 }
-            }
+                EPOCH_MANAGER_BLUEPRINT => {
+                    let substate_bytes_0 = app_states.remove(&0u8).ok_or(
+                        RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema),
+                    )?;
+                    let substate_bytes_1 = app_states.remove(&1u8).ok_or(
+                        RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema),
+                    )?;
+                    let substate_bytes_2 = app_states.remove(&2u8).ok_or(
+                        RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema),
+                    )?;
+
+                    let epoch_mgr_substate: EpochManagerSubstate =
+                        scrypto_decode(&substate_bytes_0).map_err(|_| {
+                            RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
+                        })?;
+                    let validator_set_substate_0: ValidatorSetSubstate =
+                        scrypto_decode(&substate_bytes_1).map_err(|_| {
+                            RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
+                        })?;
+                    let validator_set_substate_1: ValidatorSetSubstate =
+                        scrypto_decode(&substate_bytes_2).map_err(|_| {
+                            RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
+                        })?;
+
+                    let node_id = self.kernel_allocate_node_id(RENodeType::EpochManager)?;
+                    (
+                        node_id,
+                        RENodeInit::EpochManager(
+                            epoch_mgr_substate,
+                            validator_set_substate_0,
+                            validator_set_substate_1,
+                        ),
+                    )
+                }
+                _ => return Err(RuntimeError::SystemError(SystemError::BlueprintNotFound)),
+            },
             ACCESS_CONTROLLER_PACKAGE => {
                 let substate_bytes = app_states.into_iter().next().unwrap().1;
-                let substate: AccessControllerSubstate = scrypto_decode(&substate_bytes)
-                    .map_err(|_| RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema))?;
+                let substate: AccessControllerSubstate =
+                    scrypto_decode(&substate_bytes).map_err(|_| {
+                        RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
+                    })?;
 
                 let node_id = self.kernel_allocate_node_id(RENodeType::AccessController)?;
                 (node_id, RENodeInit::AccessController(substate))
             }
             IDENTITY_PACKAGE => {
                 if !app_states.is_empty() {
-                    return Err(RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema));
+                    return Err(RuntimeError::SystemError(
+                        SystemError::ObjectDoesNotMatchSchema,
+                    ));
                 }
 
                 let node_id = self.kernel_allocate_node_id(RENodeType::Identity)?;
@@ -318,8 +355,9 @@ where
             }
             ACCOUNT_PACKAGE => {
                 let substate_bytes = app_states.into_iter().next().unwrap().1;
-                let substate: AccountSubstate = scrypto_decode(&substate_bytes)
-                    .map_err(|_| RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema))?;
+                let substate: AccountSubstate = scrypto_decode(&substate_bytes).map_err(|_| {
+                    RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
+                })?;
 
                 let node_id = self.kernel_allocate_node_id(RENodeType::Account)?;
                 (node_id, RENodeInit::Account(substate))
@@ -327,7 +365,9 @@ where
             CLOCK_PACKAGE => {
                 let substate_bytes = app_states.into_iter().next().unwrap().1;
                 let substate: CurrentTimeRoundedToMinutesSubstate = scrypto_decode(&substate_bytes)
-                    .map_err(|e| RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema))?;
+                    .map_err(|_| {
+                        RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
+                    })?;
 
                 let node_id = self.kernel_allocate_node_id(RENodeType::Clock)?;
                 (node_id, RENodeInit::Clock(substate))
@@ -347,12 +387,17 @@ where
                     .map_err(|e| RuntimeError::SystemError(SystemError::InvalidScryptoValue(e)))?;
 
                 if !match_schema_with_value(&abi.structure, &substate) {
-                    return Err(RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema));
+                    return Err(RuntimeError::SystemError(
+                        SystemError::ObjectDoesNotMatchSchema,
+                    ));
                 }
 
                 // Allocate node id
                 let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
-                (node_id, RENodeInit::Component(ComponentStateSubstate::new(substate_bytes)))
+                (
+                    node_id,
+                    RENodeInit::Component(ComponentStateSubstate::new(substate_bytes)),
+                )
             }
         };
 

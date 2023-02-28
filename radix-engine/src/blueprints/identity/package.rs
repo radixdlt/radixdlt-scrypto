@@ -4,6 +4,7 @@ use crate::kernel::kernel_api::KernelNodeApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
+use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
 use native_sdk::access_rules::AccessRulesObject;
 use native_sdk::metadata::Metadata;
@@ -14,7 +15,6 @@ use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
-use crate::system::node_modules::type_info::TypeInfoSubstate;
 
 pub struct IdentityNativePackage;
 impl IdentityNativePackage {
@@ -88,11 +88,7 @@ impl Identity {
             AccessRule::DenyAll,
         );
 
-        let component_id = api.new_object(
-            IDENTITY_BLUEPRINT,
-            btreemap!(
-            )
-        )?;
+        let component_id = api.new_object(IDENTITY_BLUEPRINT, btreemap!())?;
 
         Ok((RENodeId::Identity(component_id), access_rules))
     }
@@ -101,8 +97,8 @@ impl Identity {
         access_rule: AccessRule,
         api: &mut Y,
     ) -> Result<(RENodeId, AccessRules), RuntimeError>
-        where
-            Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
         let underlying_node_id = api.kernel_allocate_node_id(RENodeType::Identity)?;
 

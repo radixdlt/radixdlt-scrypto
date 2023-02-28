@@ -10,8 +10,6 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{RENodeId, SubstateOffset};
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::api::ClientNodeApi;
-use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::blueprints::resource::AccessRules;
@@ -214,8 +212,8 @@ impl AccountNativePackage {
             api.new_object(
                 ACCOUNT_BLUEPRINT,
                 btreemap!(
-                0 => scrypto_encode(&account_substate).unwrap()
-            )
+                    0 => scrypto_encode(&account_substate).unwrap()
+                ),
             )?
         };
 
@@ -240,8 +238,7 @@ impl AccountNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let _input: AccountCreateLocalInput = scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -264,7 +261,7 @@ impl AccountNativePackage {
                 ACCOUNT_BLUEPRINT,
                 btreemap!(
                     0 => scrypto_encode(&account_substate).unwrap()
-                )
+                ),
             )?
         };
 
