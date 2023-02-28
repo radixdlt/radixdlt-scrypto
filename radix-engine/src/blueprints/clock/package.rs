@@ -127,7 +127,7 @@ impl ClockNativePackage {
         let metadata = Metadata::sys_create(api)?;
         let address = ComponentAddress::Clock(input.component_address);
         api.globalize_with_address(
-            RENodeId::Clock(clock_id),
+            RENodeId::Component(clock_id),
             btreemap!(
                 NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
                 NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),

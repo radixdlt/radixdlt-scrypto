@@ -88,7 +88,6 @@ impl IdAllocator {
                 self.new_component_id().map(|id| RENodeId::EpochManager(id))
             }
             RENodeType::Validator => self.new_validator_id().map(|id| RENodeId::Validator(id)),
-            RENodeType::Clock => self.new_component_id().map(|id| RENodeId::Clock(id)),
             RENodeType::AccessController => self
                 .new_access_controller_id()
                 .map(|id| RENodeId::AccessController(id)),
@@ -102,9 +101,6 @@ impl IdAllocator {
                 .map(|address| RENodeId::GlobalComponent(address)),
             RENodeType::GlobalValidator => self
                 .new_validator_address()
-                .map(|address| RENodeId::GlobalComponent(address)),
-            RENodeType::GlobalClock => self
-                .new_clock_address()
                 .map(|address| RENodeId::GlobalComponent(address)),
             RENodeType::GlobalResourceManager => self
                 .new_resource_address()

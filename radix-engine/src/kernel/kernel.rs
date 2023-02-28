@@ -295,7 +295,6 @@ where
             | RENodeId::Logger
             | RENodeId::TransactionRuntime
             | RENodeId::Bucket(..)
-            | RENodeId::Clock(..)
             | RENodeId::EpochManager(..)
             | RENodeId::Account(..)
             | RENodeId::Validator(..)
@@ -681,7 +680,6 @@ where
             (RENodeId::Vault(..), RENodeInit::NonFungibleVault(..)) => {}
             (RENodeId::EpochManager(..), RENodeInit::EpochManager(..)) => {}
             (RENodeId::Validator(..), RENodeInit::Validator(..)) => {}
-            (RENodeId::Clock(..), RENodeInit::Clock(..)) => {}
             (RENodeId::AccessController(..), RENodeInit::AccessController(..)) => {}
             (RENodeId::Identity(..), RENodeInit::Identity(..)) => {}
             (RENodeId::Account(..), RENodeInit::Account(..)) => {}

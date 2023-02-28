@@ -65,7 +65,6 @@ impl VisibilityProperties {
                     _ => false,
                 },
                 // TODO: CLEAN THESE UP, these are used for globalization
-                RENodeId::Clock(..) => mode.eq(&ExecutionMode::Client),
                 RENodeId::EpochManager(..) => mode.eq(&ExecutionMode::Client),
                 RENodeId::Account(..) => mode.eq(&ExecutionMode::Client),
                 RENodeId::Validator(..) => mode.eq(&ExecutionMode::Client),

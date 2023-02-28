@@ -1,6 +1,5 @@
 use crate::blueprints::access_controller::AccessControllerSubstate;
 use crate::blueprints::account::AccountSubstate;
-use crate::blueprints::clock::*;
 use crate::blueprints::epoch_manager::*;
 use crate::blueprints::logger::LoggerSubstate;
 use crate::blueprints::resource::*;
@@ -123,7 +122,6 @@ pub enum RENodeInit {
         ValidatorSetSubstate,
     ),
     Validator(ValidatorSubstate),
-    Clock(CurrentTimeRoundedToMinutesSubstate),
     TransactionRuntime(TransactionRuntimeSubstate),
     Logger(LoggerSubstate),
     AccessController(AccessControllerSubstate),
@@ -287,12 +285,6 @@ impl RENodeInit {
                 substates.insert(
                     SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet),
                     preparing_validator_set_substate.into(),
-                );
-            }
-            RENodeInit::Clock(current_time_rounded_to_minutes_substate) => {
-                substates.insert(
-                    SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes),
-                    current_time_rounded_to_minutes_substate.into(),
                 );
             }
             RENodeInit::TransactionRuntime(transaction_hash) => {

@@ -467,14 +467,27 @@ where
                 (node_id, RENodeInit::Account(substate))
             }
             CLOCK_PACKAGE => {
-                let substate_bytes = app_states.into_iter().next().unwrap().1;
-                let substate: CurrentTimeRoundedToMinutesSubstate = scrypto_decode(&substate_bytes)
+                let substate_bytes_0 = app_states.remove(&0u8).ok_or(
+                    RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema),
+                )?;
+                if !app_states.is_empty() {
+                    return Err(RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema));
+                }
+                let substate: CurrentTimeRoundedToMinutesSubstate = scrypto_decode(&substate_bytes_0)
                     .map_err(|_| {
                         RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
                     })?;
 
-                let node_id = self.kernel_allocate_node_id(RENodeType::Clock)?;
-                (node_id, RENodeInit::Clock(substate))
+                let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
+                (
+                    node_id,
+                    RENodeInit::Component(
+                        btreemap!(
+                            SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes)
+                                => RuntimeSubstate::CurrentTimeRoundedToMinutes(substate)
+                        )
+                    ),
+                )
             }
             _ => {
                 let abi = Package::get_blueprint_abi(
@@ -507,7 +520,8 @@ where
                     node_id,
                     RENodeInit::Component(
                         btreemap!(
-                            SubstateOffset::Component(ComponentOffset::State0) => RuntimeSubstate::ComponentState(ComponentStateSubstate::new(substate_bytes_0))
+                            SubstateOffset::Component(ComponentOffset::State0)
+                            => RuntimeSubstate::ComponentState(ComponentStateSubstate::new(substate_bytes_0))
                         )
                     ),
                 )
@@ -537,7 +551,6 @@ where
             RENodeId::Identity(..) => RENodeType::GlobalIdentity,
             RENodeId::Validator(..) => RENodeType::GlobalValidator,
             RENodeId::EpochManager(..) => RENodeType::GlobalEpochManager,
-            RENodeId::Clock(..) => RENodeType::GlobalClock,
             RENodeId::Account(..) => RENodeType::GlobalAccount,
             RENodeId::AccessController(..) => RENodeType::GlobalAccessController,
             _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
