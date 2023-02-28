@@ -17,6 +17,7 @@ use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::blueprints::epoch_manager::*;
+use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate,
     KeyValueStoreEntrySubstate,
@@ -232,6 +233,23 @@ where
 
                 let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
                 (node_id, RENodeInit::Metadata(substate))
+            }
+            ROYALTY_PACKAGE => {
+                match blueprint_ident {
+                    COMPONENT_ROYALTY_BLUEPRINT => {
+                        let substate_bytes_0 = app_states.remove(&0u8).ok_or(RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema))?;
+                        let substate_bytes_1 = app_states.remove(&1u8).ok_or(RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema))?;
+
+                        let config_substate: ComponentRoyaltyConfigSubstate = scrypto_decode(&substate_bytes_0)
+                            .map_err(|_| RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema))?;
+                        let accumulator_substate: ComponentRoyaltyAccumulatorSubstate = scrypto_decode(&substate_bytes_1)
+                            .map_err(|_| RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema))?;
+
+                        let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
+                        (node_id, RENodeInit::ComponentRoyalty(config_substate, accumulator_substate))
+                    }
+                    _ => return Err(RuntimeError::SystemError(SystemError::BlueprintNotFound)),
+                }
             }
             EPOCH_MANAGER_PACKAGE => {
                 match blueprint_ident {

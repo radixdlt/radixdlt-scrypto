@@ -768,16 +768,7 @@ where
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
             (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
             (RENodeId::Component(..), RENodeInit::Metadata(..)) => { }
-            (RENodeId::Component(..), RENodeInit::ComponentRoyalty(..)) => {
-                module_init.insert(
-                    NodeModuleId::TypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: ROYALTY_PACKAGE,
-                        blueprint_name: COMPONENT_ROYALTY_BLUEPRINT.to_string(),
-                        global: false,
-                    }),
-                );
-            }
+            (RENodeId::Component(..), RENodeInit::ComponentRoyalty(..)) => { }
             (RENodeId::Component(..), RENodeInit::AccessRules(..)) => {
                 module_init.insert(
                     NodeModuleId::TypeInfo,
