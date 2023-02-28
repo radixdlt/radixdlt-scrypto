@@ -637,7 +637,7 @@ impl ValidatorCreator {
 
         let access_rules = Self::build_access_rules(owner_access_rule);
         let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
-        let metadata = Metadata::sys_new(api)?;
+        let metadata = Metadata::sys_create(api)?;
 
         let address = api.globalize_with_address(
             RENodeId::Validator(validator_id),
@@ -687,7 +687,7 @@ impl ValidatorCreator {
 
         let access_rules = Self::build_access_rules(owner_access_rule);
         let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
-        let metadata = Metadata::sys_new(api)?;
+        let metadata = Metadata::sys_create(api)?;
 
         let address = api.globalize_with_address(
             RENodeId::Validator(validator_id),

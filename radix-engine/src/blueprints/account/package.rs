@@ -222,7 +222,7 @@ impl AccountNativePackage {
         // Creating [`AccessRules`] from the passed withdraw access rule.
         let access_rules = access_rules_from_withdraw_rule(input.withdraw_rule);
         let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
-        let metadata = Metadata::sys_new(api)?;
+        let metadata = Metadata::sys_create(api)?;
 
         let address = api.globalize(
             RENodeId::Account(account_id),

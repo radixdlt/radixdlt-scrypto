@@ -196,7 +196,7 @@ impl EpochManagerBlueprint {
         );
 
         let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
-        let metadata = Metadata::sys_new(api)?;
+        let metadata = Metadata::sys_create(api)?;
 
         api.globalize_with_address(
             RENodeId::EpochManager(epoch_manager_id),

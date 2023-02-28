@@ -1,3 +1,5 @@
+use native_sdk::access_rules::AccessRulesObject;
+use native_sdk::metadata::Metadata;
 use crate::blueprints::resource::*;
 use crate::errors::InvokeError;
 use crate::errors::RuntimeError;
@@ -185,9 +187,9 @@ where
     Ok((resource_manager, bucket))
 }
 
-fn build_substates(
+fn build_access_rules(
     mut access_rules_map: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-) -> (MethodAccessRulesSubstate, MethodAccessRulesSubstate) {
+) -> (AccessRules, AccessRules) {
     let (mint_access_rule, mint_mutability) = access_rules_map
         .remove(&Mint)
         .unwrap_or((DenyAll, rule!(deny_all)));
@@ -202,23 +204,23 @@ fn build_substates(
         .remove(&UpdateMetadata)
         .unwrap_or((DenyAll, rule!(deny_all)));
 
-    let mut access_rules = AccessRules::new();
-    access_rules.set_access_rule_and_mutability(
+    let mut resman_access_rules = AccessRules::new();
+    resman_access_rules.set_access_rule_and_mutability(
         MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
         update_metadata_access_rule,
         update_metadata_mutability,
     );
-    access_rules.set_access_rule_and_mutability(
+    resman_access_rules.set_access_rule_and_mutability(
         MethodKey::new(NodeModuleId::Metadata, METADATA_GET_IDENT.to_string()),
         AllowAll,
         DenyAll,
     );
-    access_rules.set_group_access_rule_and_mutability(
+    resman_access_rules.set_group_access_rule_and_mutability(
         "mint".to_string(),
         mint_access_rule,
         mint_mutability,
     );
-    access_rules.set_group_and_mutability(
+    resman_access_rules.set_group_and_mutability(
         MethodKey::new(
             NodeModuleId::SELF,
             RESOURCE_MANAGER_MINT_NON_FUNGIBLE.to_string(),
@@ -226,7 +228,7 @@ fn build_substates(
         "mint".to_string(),
         DenyAll,
     );
-    access_rules.set_group_and_mutability(
+    resman_access_rules.set_group_and_mutability(
         MethodKey::new(
             NodeModuleId::SELF,
             RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE.to_string(),
@@ -234,7 +236,7 @@ fn build_substates(
         "mint".to_string(),
         DenyAll,
     );
-    access_rules.set_group_and_mutability(
+    resman_access_rules.set_group_and_mutability(
         MethodKey::new(
             NodeModuleId::SELF,
             RESOURCE_MANAGER_MINT_FUNGIBLE.to_string(),
@@ -243,12 +245,12 @@ fn build_substates(
         DenyAll,
     );
 
-    access_rules.set_access_rule_and_mutability(
+    resman_access_rules.set_access_rule_and_mutability(
         MethodKey::new(NodeModuleId::SELF, RESOURCE_MANAGER_BURN_IDENT.to_string()),
         burn_access_rule,
         burn_mutability,
     );
-    access_rules.set_access_rule_and_mutability(
+    resman_access_rules.set_access_rule_and_mutability(
         MethodKey::new(
             NodeModuleId::SELF,
             RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT.to_string(),
@@ -256,7 +258,7 @@ fn build_substates(
         update_non_fungible_data_access_rule,
         update_non_fungible_data_mutability,
     );
-    access_rules.set_access_rule_and_mutability(
+    resman_access_rules.set_access_rule_and_mutability(
         MethodKey::new(
             NodeModuleId::SELF,
             RESOURCE_MANAGER_CREATE_BUCKET_IDENT.to_string(),
@@ -264,7 +266,7 @@ fn build_substates(
         AllowAll,
         DenyAll,
     );
-    access_rules.set_access_rule_and_mutability(
+    resman_access_rules.set_access_rule_and_mutability(
         MethodKey::new(
             NodeModuleId::SELF,
             RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT.to_string(),
@@ -272,7 +274,7 @@ fn build_substates(
         AllowAll,
         DenyAll,
     );
-    access_rules.set_access_rule_and_mutability(
+    resman_access_rules.set_access_rule_and_mutability(
         MethodKey::new(
             NodeModuleId::SELF,
             RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT.to_string(),
@@ -280,7 +282,7 @@ fn build_substates(
         AllowAll,
         DenyAll,
     );
-    access_rules.set_access_rule_and_mutability(
+    resman_access_rules.set_access_rule_and_mutability(
         MethodKey::new(
             NodeModuleId::SELF,
             RESOURCE_MANAGER_CREATE_VAULT_IDENT.to_string(),
@@ -288,7 +290,7 @@ fn build_substates(
         AllowAll,
         DenyAll,
     );
-    access_rules.set_access_rule_and_mutability(
+    resman_access_rules.set_access_rule_and_mutability(
         MethodKey::new(
             NodeModuleId::SELF,
             RESOURCE_MANAGER_NON_FUNGIBLE_EXISTS_IDENT.to_string(),
@@ -296,7 +298,7 @@ fn build_substates(
         AllowAll,
         DenyAll,
     );
-    access_rules.set_access_rule_and_mutability(
+    resman_access_rules.set_access_rule_and_mutability(
         MethodKey::new(
             NodeModuleId::SELF,
             RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT.to_string(),
@@ -304,8 +306,6 @@ fn build_substates(
         AllowAll,
         DenyAll,
     );
-
-    let substate = MethodAccessRulesSubstate { access_rules };
 
     let (deposit_access_rule, deposit_mutability) = access_rules_map
         .remove(&ResourceMethodAuthKey::Deposit)
@@ -421,11 +421,7 @@ fn build_substates(
         DenyAll,
     );
 
-    let vault_substate = MethodAccessRulesSubstate {
-        access_rules: vault_access_rules,
-    };
-
-    (substate, vault_substate)
+    (resman_access_rules, vault_access_rules)
 }
 
 fn create_non_fungible_resource_manager<Y>(
@@ -436,7 +432,7 @@ fn create_non_fungible_resource_manager<Y>(
     api: &mut Y,
 ) -> Result<ResourceAddress, RuntimeError>
 where
-    Y: KernelNodeApi + KernelSubstateApi,
+    Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
 {
     let resource_address: ResourceAddress = global_node_id.into();
 
@@ -452,27 +448,27 @@ where
         Some(nf_store_id),
         resource_address,
     );
-    let (access_rules_substate, vault_rules_substate) = build_substates(access_rules);
-    let metadata_substate = MetadataSubstate { metadata };
 
-    let mut node_modules = BTreeMap::new();
-    node_modules.insert(
-        NodeModuleId::Metadata,
-        RENodeModuleInit::Metadata(metadata_substate),
-    );
-    node_modules.insert(
-        NodeModuleId::AccessRules,
-        RENodeModuleInit::ObjectAccessRulesChain(access_rules_substate),
-    );
-    node_modules.insert(
-        NodeModuleId::AccessRules1,
-        RENodeModuleInit::ObjectAccessRulesChain(vault_rules_substate),
-    );
+    let object_id = api.new_object(
+        RESOURCE_MANAGER_BLUEPRINT,
+        btreemap!(
+            0 => scrypto_encode(&resource_manager_substate).unwrap()
+        )
+    )?;
 
-    api.kernel_create_node(
-        global_node_id,
-        RENodeInit::GlobalResourceManager(resource_manager_substate),
-        node_modules,
+    let (resman_access_rules, vault_access_rules) = build_access_rules(access_rules);
+    let resman_access_rules = AccessRulesObject::sys_new(resman_access_rules, api)?;
+    let vault_access_rules = AccessRulesObject::sys_new(vault_access_rules, api)?;
+    let metadata = Metadata::sys_create_with_data(metadata, api)?;
+
+    api.globalize_with_address(
+        RENodeId::Component(object_id),
+        btreemap!(
+            NodeModuleId::AccessRules => scrypto_encode(&resman_access_rules).unwrap(),
+            NodeModuleId::AccessRules1 => scrypto_encode(&vault_access_rules).unwrap(),
+            NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap()
+        ),
+        resource_address.into(),
     )?;
 
     Ok(resource_address)
@@ -562,29 +558,29 @@ impl ResourceManagerBlueprint {
                 input.entries,
                 api,
             )?;
-        let (access_rules_substate, vault_substate) = build_substates(input.access_rules);
-        let metadata_substate = MetadataSubstate {
-            metadata: input.metadata,
-        };
 
-        let mut node_modules = BTreeMap::new();
-        node_modules.insert(
-            NodeModuleId::Metadata,
-            RENodeModuleInit::Metadata(metadata_substate),
-        );
-        node_modules.insert(
-            NodeModuleId::AccessRules,
-            RENodeModuleInit::ObjectAccessRulesChain(access_rules_substate),
-        );
-        node_modules.insert(
-            NodeModuleId::AccessRules1,
-            RENodeModuleInit::ObjectAccessRulesChain(vault_substate),
-        );
 
-        api.kernel_create_node(
-            global_node_id,
-            RENodeInit::GlobalResourceManager(resource_manager_substate),
-            node_modules,
+
+        let object_id = api.new_object(
+            RESOURCE_MANAGER_BLUEPRINT,
+            btreemap!(
+            0 => scrypto_encode(&resource_manager_substate).unwrap()
+        )
+        )?;
+
+        let (resman_access_rules, vault_access_rules) = build_access_rules(input.access_rules);
+        let resman_access_rules = AccessRulesObject::sys_new(resman_access_rules, api)?;
+        let vault_access_rules = AccessRulesObject::sys_new(vault_access_rules, api)?;
+        let metadata = Metadata::sys_create_with_data(input.metadata, api)?;
+
+        api.globalize_with_address(
+            RENodeId::Component(object_id),
+            btreemap!(
+            NodeModuleId::AccessRules => scrypto_encode(&resman_access_rules).unwrap(),
+            NodeModuleId::AccessRules1 => scrypto_encode(&vault_access_rules).unwrap(),
+            NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap()
+        ),
+            resource_address.into(),
         )?;
 
         Ok(IndexedScryptoValue::from_typed(&(resource_address, bucket)))
@@ -619,29 +615,27 @@ impl ResourceManagerBlueprint {
                 entries,
                 api,
             )?;
-        let (access_rules_substate, vault_substate) = build_substates(input.access_rules);
-        let metadata_substate = MetadataSubstate {
-            metadata: input.metadata,
-        };
 
-        let mut node_modules = BTreeMap::new();
-        node_modules.insert(
-            NodeModuleId::Metadata,
-            RENodeModuleInit::Metadata(metadata_substate),
-        );
-        node_modules.insert(
-            NodeModuleId::AccessRules,
-            RENodeModuleInit::ObjectAccessRulesChain(access_rules_substate),
-        );
-        node_modules.insert(
-            NodeModuleId::AccessRules1,
-            RENodeModuleInit::ObjectAccessRulesChain(vault_substate),
-        );
+        let object_id = api.new_object(
+            RESOURCE_MANAGER_BLUEPRINT,
+            btreemap!(
+            0 => scrypto_encode(&resource_manager_substate).unwrap()
+        )
+        )?;
 
-        api.kernel_create_node(
-            global_node_id,
-            RENodeInit::GlobalResourceManager(resource_manager_substate),
-            node_modules,
+        let (resman_access_rules, vault_access_rules) = build_access_rules(input.access_rules);
+        let resman_access_rules = AccessRulesObject::sys_new(resman_access_rules, api)?;
+        let vault_access_rules = AccessRulesObject::sys_new(vault_access_rules, api)?;
+        let metadata = Metadata::sys_create_with_data(input.metadata, api)?;
+
+        api.globalize_with_address(
+            RENodeId::Component(object_id),
+            btreemap!(
+            NodeModuleId::AccessRules => scrypto_encode(&resman_access_rules).unwrap(),
+            NodeModuleId::AccessRules1 => scrypto_encode(&vault_access_rules).unwrap(),
+            NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap()
+        ),
+            resource_address.into(),
         )?;
 
         Ok(IndexedScryptoValue::from_typed(&(resource_address, bucket)))
@@ -675,7 +669,7 @@ impl ResourceManagerBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateFungibleWithInitialSupplyInput =
@@ -692,29 +686,27 @@ impl ResourceManagerBlueprint {
                 input.initial_supply,
                 api,
             )?;
-        let (access_rules_substate, vault_substate) = build_substates(input.access_rules);
-        let metadata_substate = MetadataSubstate {
-            metadata: input.metadata,
-        };
 
-        let mut node_modules = BTreeMap::new();
-        node_modules.insert(
-            NodeModuleId::Metadata,
-            RENodeModuleInit::Metadata(metadata_substate),
-        );
-        node_modules.insert(
-            NodeModuleId::AccessRules,
-            RENodeModuleInit::ObjectAccessRulesChain(access_rules_substate),
-        );
-        node_modules.insert(
-            NodeModuleId::AccessRules1,
-            RENodeModuleInit::ObjectAccessRulesChain(vault_substate),
-        );
+        let object_id = api.new_object(
+            RESOURCE_MANAGER_BLUEPRINT,
+            btreemap!(
+            0 => scrypto_encode(&resource_manager_substate).unwrap()
+        )
+        )?;
 
-        api.kernel_create_node(
-            global_node_id,
-            RENodeInit::GlobalResourceManager(resource_manager_substate),
-            node_modules,
+        let (resman_access_rules, vault_access_rules) = build_access_rules(input.access_rules);
+        let resman_access_rules = AccessRulesObject::sys_new(resman_access_rules, api)?;
+        let vault_access_rules = AccessRulesObject::sys_new(vault_access_rules, api)?;
+        let metadata = Metadata::sys_create_with_data(input.metadata, api)?;
+
+        api.globalize_with_address(
+            RENodeId::Component(object_id),
+            btreemap!(
+            NodeModuleId::AccessRules => scrypto_encode(&resman_access_rules).unwrap(),
+            NodeModuleId::AccessRules1 => scrypto_encode(&vault_access_rules).unwrap(),
+            NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap()
+        ),
+            resource_address.into(),
         )?;
 
         Ok(IndexedScryptoValue::from_typed(&(resource_address, bucket)))
@@ -743,29 +735,28 @@ impl ResourceManagerBlueprint {
                 input.initial_supply,
                 api,
             )?;
-        let (access_rules_substate, vault_substate) = build_substates(input.access_rules);
-        let metadata_substate = MetadataSubstate {
-            metadata: input.metadata,
-        };
 
-        let mut node_modules = BTreeMap::new();
-        node_modules.insert(
-            NodeModuleId::Metadata,
-            RENodeModuleInit::Metadata(metadata_substate),
-        );
-        node_modules.insert(
-            NodeModuleId::AccessRules,
-            RENodeModuleInit::ObjectAccessRulesChain(access_rules_substate),
-        );
-        node_modules.insert(
-            NodeModuleId::AccessRules1,
-            RENodeModuleInit::ObjectAccessRulesChain(vault_substate),
-        );
 
-        api.kernel_create_node(
-            global_node_id,
-            RENodeInit::GlobalResourceManager(resource_manager_substate),
-            node_modules,
+        let object_id = api.new_object(
+            RESOURCE_MANAGER_BLUEPRINT,
+            btreemap!(
+            0 => scrypto_encode(&resource_manager_substate).unwrap()
+        )
+        )?;
+
+        let (resman_access_rules, vault_access_rules) = build_access_rules(input.access_rules);
+        let resman_access_rules = AccessRulesObject::sys_new(resman_access_rules, api)?;
+        let vault_access_rules = AccessRulesObject::sys_new(vault_access_rules, api)?;
+        let metadata = Metadata::sys_create_with_data(input.metadata, api)?;
+
+        api.globalize_with_address(
+            RENodeId::Component(object_id),
+            btreemap!(
+            NodeModuleId::AccessRules => scrypto_encode(&resman_access_rules).unwrap(),
+            NodeModuleId::AccessRules1 => scrypto_encode(&vault_access_rules).unwrap(),
+            NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap()
+        ),
+            resource_address.into(),
         )?;
 
         Ok(IndexedScryptoValue::from_typed(&(resource_address, bucket)))
@@ -1436,7 +1427,7 @@ fn create_fungible_resource_manager<Y>(
     api: &mut Y,
 ) -> Result<ResourceAddress, RuntimeError>
 where
-    Y: KernelNodeApi + KernelSubstateApi,
+    Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
 {
     let resource_address: ResourceAddress = global_node_id.into();
 
@@ -1445,27 +1436,27 @@ where
         None,
         resource_address,
     );
-    let (access_rules_substate, vault_substate) = build_substates(access_rules);
-    let metadata_substate = MetadataSubstate { metadata };
 
-    let mut node_modules = BTreeMap::new();
-    node_modules.insert(
-        NodeModuleId::Metadata,
-        RENodeModuleInit::Metadata(metadata_substate),
-    );
-    node_modules.insert(
-        NodeModuleId::AccessRules,
-        RENodeModuleInit::ObjectAccessRulesChain(access_rules_substate),
-    );
-    node_modules.insert(
-        NodeModuleId::AccessRules1,
-        RENodeModuleInit::ObjectAccessRulesChain(vault_substate),
-    );
+    let object_id = api.new_object(
+        RESOURCE_MANAGER_BLUEPRINT,
+        btreemap!(
+            0 => scrypto_encode(&resource_manager_substate).unwrap()
+        )
+    )?;
 
-    api.kernel_create_node(
-        global_node_id,
-        RENodeInit::GlobalResourceManager(resource_manager_substate),
-        node_modules,
+    let (resman_access_rules, vault_access_rules) = build_access_rules(access_rules);
+    let resman_access_rules = AccessRulesObject::sys_new(resman_access_rules, api)?;
+    let vault_access_rules = AccessRulesObject::sys_new(vault_access_rules, api)?;
+    let metadata = Metadata::sys_create_with_data(metadata, api)?;
+
+    api.globalize_with_address(
+        RENodeId::Component(object_id),
+        btreemap!(
+            NodeModuleId::AccessRules => scrypto_encode(&resman_access_rules).unwrap(),
+            NodeModuleId::AccessRules1 => scrypto_encode(&vault_access_rules).unwrap(),
+            NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap()
+        ),
+        resource_address.into(),
     )?;
 
     Ok(resource_address)

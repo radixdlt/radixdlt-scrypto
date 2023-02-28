@@ -125,7 +125,7 @@ impl ClockNativePackage {
             rule!(allow_all),
         );
         let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
-        let metadata = Metadata::sys_new(api)?;
+        let metadata = Metadata::sys_create(api)?;
         let address = ComponentAddress::Clock(input.component_address);
         api.globalize_with_address(
             RENodeId::Clock(clock_id),

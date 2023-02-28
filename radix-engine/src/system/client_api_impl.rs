@@ -1,4 +1,4 @@
-use crate::blueprints::resource::NonFungibleSubstate;
+use crate::blueprints::resource::{NonFungibleSubstate, ResourceManagerSubstate};
 use crate::errors::RuntimeError;
 use crate::errors::{KernelError, SystemError};
 use crate::kernel::actor::ActorIdentifier;
@@ -226,6 +226,19 @@ where
             .package_address();
 
         let (node_id, node_init) = match package_address {
+            RESOURCE_MANAGER_PACKAGE => {
+                match blueprint_ident {
+                    RESOURCE_MANAGER_BLUEPRINT => {
+                        let substate_bytes = app_states.into_iter().next().unwrap().1;
+                        let substate: ResourceManagerSubstate = scrypto_decode(&substate_bytes)
+                            .map_err(|_| RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema))?;
+
+                        let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
+                        (node_id, RENodeInit::ResourceManager(substate))
+                    }
+                    _ => return Err(RuntimeError::SystemError(SystemError::BlueprintNotFound)),
+                }
+            }
             METADATA_PACKAGE => {
                 let substate_bytes = app_states.into_iter().next().unwrap().1;
                 let substate: MetadataSubstate = scrypto_decode(&substate_bytes)
@@ -414,12 +427,11 @@ where
             match module_id {
                 NodeModuleId::SELF
                 | NodeModuleId::TypeInfo
-                | NodeModuleId::AccessRules1
                 | NodeModuleId::PackageRoyalty
                 | NodeModuleId::FunctionAccessRules => {
                     return Err(RuntimeError::SystemError(SystemError::InvalidModule))
                 }
-                NodeModuleId::AccessRules => {
+                NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {
                     let access_rules: Own = scrypto_decode(&init).map_err(|e| {
                         RuntimeError::SystemError(SystemError::InvalidAccessRules(e))
                     })?;
@@ -437,7 +449,7 @@ where
                     let access_rules: MethodAccessRulesSubstate = access_rules.into();
 
                     module_init.insert(
-                        NodeModuleId::AccessRules,
+                        module_id,
                         RENodeModuleInit::ObjectAccessRulesChain(access_rules),
                     );
                 }
@@ -507,7 +519,7 @@ where
 
         self.kernel_create_node(
             address.into(),
-            RENodeInit::GlobalComponent(component_substates),
+            RENodeInit::GlobalObject(component_substates),
             module_init,
         )?;
 

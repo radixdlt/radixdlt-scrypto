@@ -207,7 +207,7 @@ where
 
         let access_rules = AccessRulesObject::sys_new(access_rules, self)?;
 
-        let metadata = Metadata::sys_new(self)?;
+        let metadata = Metadata::sys_create(self)?;
 
         self.globalize_with_address(
             component_id,
@@ -240,7 +240,7 @@ where
         let (local_id, access_rules) = Identity::create_virtual(access_rule, self)?;
 
         let access_rules = AccessRulesObject::sys_new(access_rules, self)?;
-        let metadata = Metadata::sys_new(self)?;
+        let metadata = Metadata::sys_create(self)?;
 
         self.globalize_with_address(
             local_id,
@@ -763,13 +763,15 @@ where
         }
 
         match (node_id, &re_node) {
-            (RENodeId::GlobalComponent(..), RENodeInit::GlobalComponent(..)) => {}
+            (RENodeId::GlobalComponent(..), RENodeInit::GlobalObject(..)) => {}
+            (RENodeId::GlobalResourceManager(..), RENodeInit::GlobalObject(..)) => {}
             (RENodeId::Component(..), RENodeInit::Component(..)) => {}
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
             (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
             (RENodeId::Component(..), RENodeInit::Metadata(..)) => { }
             (RENodeId::Component(..), RENodeInit::ComponentRoyalty(..)) => { }
             (RENodeId::Component(..), RENodeInit::AccessRules(..)) => { }
+            (RENodeId::Component(..), RENodeInit::ResourceManager(..)) => { }
             (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => { }
             (RENodeId::TransactionRuntime, RENodeInit::TransactionRuntime(..)) => { }
             (RENodeId::Logger, RENodeInit::Logger(..)) => { }
@@ -817,16 +819,6 @@ where
                     }),
                 );
             }
-            (RENodeId::GlobalResourceManager(..), RENodeInit::GlobalResourceManager(..)) => {
-                module_init.insert(
-                    NodeModuleId::TypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: RESOURCE_MANAGER_PACKAGE,
-                        blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                        global: true,
-                    }),
-                );
-            }
             (RENodeId::EpochManager(..), RENodeInit::EpochManager(..)) => { }
             (RENodeId::Validator(..), RENodeInit::Validator(..)) => { }
             (RENodeId::Clock(..), RENodeInit::Clock(..)) => { }
@@ -837,9 +829,8 @@ where
         }
 
         let push_to_store = match re_node {
-            RENodeInit::GlobalComponent(..)
-            | RENodeInit::GlobalPackage(..)
-            | RENodeInit::GlobalResourceManager(..) => true,
+            RENodeInit::GlobalObject(..)
+            | RENodeInit::GlobalPackage(..) => true,
             _ => false,
         };
 

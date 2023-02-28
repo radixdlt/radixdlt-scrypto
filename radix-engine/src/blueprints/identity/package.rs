@@ -54,7 +54,7 @@ impl IdentityNativePackage {
 
         let (node_id, access_rules) = Identity::create(input.access_rule, api)?;
         let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
-        let metadata = Metadata::sys_new(api)?;
+        let metadata = Metadata::sys_create(api)?;
         let address = api.globalize(
             node_id,
             btreemap!(

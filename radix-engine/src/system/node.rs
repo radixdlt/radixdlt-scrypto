@@ -98,13 +98,13 @@ impl RENodeModuleInit {
 
 #[derive(Debug)]
 pub enum RENodeInit {
-    GlobalComponent(BTreeMap<SubstateOffset, RuntimeSubstate>),
+    GlobalObject(BTreeMap<SubstateOffset, RuntimeSubstate>),
     GlobalPackage(
         PackageInfoSubstate,
         PackageCodeTypeSubstate,
         PackageCodeSubstate,
     ),
-    GlobalResourceManager(ResourceManagerSubstate),
+    ResourceManager(ResourceManagerSubstate),
     FungibleVault(VaultInfoSubstate, LiquidFungibleResource),
     NonFungibleVault(VaultInfoSubstate, LiquidNonFungibleResource),
     FungibleBucket(BucketInfoSubstate, LiquidFungibleResource),
@@ -222,7 +222,7 @@ impl RENodeInit {
                     RuntimeSubstate::AuthZoneStack(auth_zone),
                 );
             }
-            RENodeInit::GlobalComponent(component_substates) => {
+            RENodeInit::GlobalObject(component_substates) => {
                 substates.extend(component_substates);
             }
             RENodeInit::KeyValueStore => {}
@@ -256,7 +256,7 @@ impl RENodeInit {
                 );
                 substates.insert(SubstateOffset::Package(PackageOffset::Code), code.into());
             }
-            RENodeInit::GlobalResourceManager(resource_manager) => {
+            RENodeInit::ResourceManager(resource_manager) => {
                 substates.insert(
                     SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
                     resource_manager.into(),

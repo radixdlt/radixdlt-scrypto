@@ -121,7 +121,7 @@ impl VisibilityProperties {
                 RENodeInit::Worktop(..) | RENodeInit::GlobalPackage(..) => {
                     package_address.eq(&PACKAGE_LOADER)
                 }
-                RENodeInit::GlobalResourceManager(..)
+                RENodeInit::ResourceManager(..)
                 | RENodeInit::FungibleVault(..)
                 | RENodeInit::NonFungibleVault(..)
                 | RENodeInit::FungibleBucket(..)
@@ -165,7 +165,7 @@ impl VisibilityProperties {
                         && blueprint_name.eq(ACCESS_RULES_BLUEPRINT)
                 }
                 RENodeInit::KeyValueStore => true,
-                RENodeInit::GlobalComponent(..) => true,
+                RENodeInit::GlobalObject(..) => true,
                 _ => false,
             },
             _ => true,
