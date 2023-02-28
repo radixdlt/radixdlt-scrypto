@@ -176,7 +176,6 @@ impl KernelModule for AuthModule {
                             RENodeId::Proof(..)
                             | RENodeId::Bucket(..)
                             | RENodeId::Worktop
-                            | RENodeId::Logger
                             | RENodeId::TransactionRuntime
                             | RENodeId::AuthZoneStack,
                             ..,

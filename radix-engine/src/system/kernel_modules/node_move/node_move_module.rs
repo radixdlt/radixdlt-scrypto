@@ -60,7 +60,6 @@ impl NodeMoveModule {
 
             RENodeId::TransactionRuntime
             | RENodeId::AuthZoneStack
-            | RENodeId::Logger
             | RENodeId::GlobalResourceManager(..)
             | RENodeId::KeyValueStore(..)
             | RENodeId::NonFungibleStore(..)
@@ -92,7 +91,6 @@ impl NodeMoveModule {
 
             RENodeId::TransactionRuntime
             | RENodeId::AuthZoneStack
-            | RENodeId::Logger
             | RENodeId::GlobalResourceManager(..)
             | RENodeId::KeyValueStore(..)
             | RENodeId::NonFungibleStore(..)

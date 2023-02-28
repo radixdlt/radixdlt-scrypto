@@ -101,11 +101,7 @@ pub trait Executor {
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + KernelWasmApi<W>
-            + ClientApi<RuntimeError>
-            + KernelModuleApi<RuntimeError>, /* TODO: Remove */
+        Y: KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + ClientApi<RuntimeError>,
         W: WasmEngine;
 }
 

@@ -123,7 +123,6 @@ pub enum RENodeInit {
     Validator(ValidatorSubstate),
     Clock(CurrentTimeRoundedToMinutesSubstate),
     TransactionRuntime(TransactionRuntimeSubstate),
-    Logger,
     AccessController(AccessControllerSubstate),
     Account(AccountSubstate),
 }
@@ -306,7 +305,6 @@ impl RENodeInit {
                     access_controller.into(),
                 );
             }
-            RENodeInit::Logger => {}
         };
 
         substates

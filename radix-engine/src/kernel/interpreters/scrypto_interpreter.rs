@@ -3,7 +3,6 @@ use crate::blueprints::account::AccountNativePackage;
 use crate::blueprints::clock::ClockNativePackage;
 use crate::blueprints::epoch_manager::EpochManagerNativePackage;
 use crate::blueprints::identity::IdentityNativePackage;
-use crate::blueprints::logger::LoggerNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_runtime::TransactionRuntimeNativePackage;
 use crate::errors::ScryptoFnResolvingError;
@@ -11,8 +10,8 @@ use crate::errors::{InterpreterError, KernelError, RuntimeError};
 use crate::kernel::actor::ResolvedActor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{
-    ExecutableInvocation, Executor, KernelModuleApi, KernelNodeApi, KernelSubstateApi,
-    KernelWasmApi, TemporaryResolvedInvocation,
+    ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, KernelWasmApi,
+    TemporaryResolvedInvocation,
 };
 use crate::system::node_modules::access_rules::{AccessRulesNativePackage, AuthZoneNativePackage};
 use crate::system::node_modules::metadata::MetadataNativePackage;
@@ -339,11 +338,7 @@ impl Executor for ScryptoExecutor {
         api: &mut Y,
     ) -> Result<(ScryptoValue, CallFrameUpdate), RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + KernelWasmApi<W>
-            + ClientApi<RuntimeError>
-            + KernelModuleApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + ClientApi<RuntimeError>,
         W: WasmEngine,
     {
         let output = if self.package_address.eq(&PACKAGE_LOADER) {
@@ -492,10 +487,7 @@ impl NativeVm {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientApi<RuntimeError>
-            + KernelModuleApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let receiver = receiver.map(|r| r.0);
 
@@ -518,9 +510,6 @@ impl NativeVm {
             }
             ACCESS_CONTROLLER_PACKAGE_CODE_ID => {
                 AccessControllerNativePackage::invoke_export(&export_name, receiver, input, api)
-            }
-            LOGGER_CODE_ID => {
-                LoggerNativePackage::invoke_export(&export_name, receiver, input, api)
             }
             TRANSACTION_RUNTIME_CODE_ID => {
                 TransactionRuntimeNativePackage::invoke_export(&export_name, receiver, input, api)

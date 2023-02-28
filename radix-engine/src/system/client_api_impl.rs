@@ -1,4 +1,5 @@
 use crate::blueprints::event_store::EventStoreNativePackage;
+use crate::blueprints::logger::LoggerNativePackage;
 use crate::blueprints::resource::NonFungibleSubstate;
 use crate::errors::RuntimeError;
 use crate::errors::{KernelError, SystemError};
@@ -21,13 +22,14 @@ use radix_engine_interface::api::component::{
     KeyValueStoreEntrySubstate, TypeInfoSubstate,
 };
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::{package::*, ClientEventApi};
+use radix_engine_interface::api::{types::*, ClientLoggerApi};
 use radix_engine_interface::api::{
     ClientActorApi, ClientApi, ClientComponentApi, ClientNodeApi, ClientPackageApi,
     ClientSubstateApi, ClientUnsafeApi,
 };
+use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RADIX_TOKEN;
 use radix_engine_interface::data::model::Own;
@@ -460,6 +462,15 @@ where
         event_data: Vec<u8>,
     ) -> Result<(), RuntimeError> {
         EventStoreNativePackage::emit_raw_event(schema_hash, event_data, self)
+    }
+}
+
+impl<'g, 's, W> ClientLoggerApi<RuntimeError> for Kernel<'g, 's, W>
+where
+    W: WasmEngine,
+{
+    fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
+        LoggerNativePackage::log_message(level, message, self)
     }
 }
 
