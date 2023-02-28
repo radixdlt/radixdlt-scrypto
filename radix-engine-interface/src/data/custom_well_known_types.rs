@@ -9,18 +9,17 @@ pub mod well_known_scrypto_custom_types {
     // TODO: clean up IDs
 
     pub const ADDRESS_ID: u8 = VALUE_KIND_ADDRESS;
-    pub const PACKAGE_ADDRESS_ID: u8 = 0xe0;
-    pub const COMPONENT_ADDRESS_ID: u8 = 0xe1;
-    pub const RESOURCE_ADDRESS_ID: u8 = 0xe2;
+    pub const PACKAGE_ADDRESS_ID: u8 = VALUE_KIND_ADDRESS + 1;
+    pub const COMPONENT_ADDRESS_ID: u8 = VALUE_KIND_ADDRESS + 2;
+    pub const RESOURCE_ADDRESS_ID: u8 = VALUE_KIND_ADDRESS + 3;
 
     pub const OWN_ID: u8 = VALUE_KIND_OWN;
-    pub const OWN_BUCKET_ID: u8 = 0xf0;
-    pub const OWN_PROOF_ID: u8 = 0xf1;
-    pub const OWN_VAULT_ID: u8 = 0xf2;
-    pub const OWN_COMPONENT_ID: u8 = 0xf3;
-    pub const OWN_KEY_VALUE_STORE_ID: u8 = 0xf4;
-    pub const OWN_ACCOUNT_ID: u8 = 0xf5;
-    // We skip KeyValueStore because it has generic parameters
+    pub const OWN_BUCKET_ID: u8 = VALUE_KIND_OWN + 1;
+    pub const OWN_PROOF_ID: u8 = VALUE_KIND_OWN + 2;
+    pub const OWN_VAULT_ID: u8 = VALUE_KIND_OWN + 3;
+    pub const OWN_COMPONENT_ID: u8 = VALUE_KIND_OWN + 4;
+    pub const OWN_KEY_VALUE_STORE_ID: u8 = VALUE_KIND_OWN + 5;
+    pub const OWN_ACCOUNT_ID: u8 = VALUE_KIND_OWN + 6;
 
     pub const DECIMAL_ID: u8 = VALUE_KIND_DECIMAL;
     pub const PRECISE_DECIMAL_ID: u8 = VALUE_KIND_PRECISE_DECIMAL;
