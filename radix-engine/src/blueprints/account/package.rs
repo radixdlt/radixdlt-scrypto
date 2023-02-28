@@ -3,7 +3,7 @@ use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
+use crate::system::node_modules::access_rules::MethodAccessRulesChainSubstate;
 use crate::types::*;
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::substate_api::LockFlags;
@@ -14,8 +14,8 @@ use radix_engine_interface::api::ClientNodeApi;
 use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::AccessRule;
-use radix_engine_interface::blueprints::resource::AccessRuleKey;
 use radix_engine_interface::blueprints::resource::AccessRules;
+use radix_engine_interface::blueprints::resource::MethodKey;
 
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::system::node_modules::metadata::MetadataSubstate;
@@ -204,7 +204,7 @@ impl AccountNativePackage {
                     metadata: BTreeMap::new(),
                 }),
             );
-            let access_rules_substate = ObjectAccessRulesChainSubstate {
+            let access_rules_substate = MethodAccessRulesChainSubstate {
                 access_rules_chain: [access_rules].into(),
             };
             node_modules.insert(
@@ -262,7 +262,7 @@ impl AccountNativePackage {
                     metadata: BTreeMap::new(),
                 }),
             );
-            let access_rules_substate = ObjectAccessRulesChainSubstate {
+            let access_rules_substate = MethodAccessRulesChainSubstate {
                 access_rules_chain: [access_rules].into(),
             };
             node_modules.insert(
@@ -750,12 +750,12 @@ impl AccountNativePackage {
 fn access_rules_from_withdraw_rule(withdraw_rule: AccessRule) -> AccessRules {
     let mut access_rules = AccessRules::new();
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_IDENT.to_string()),
+        MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_IDENT.to_string()),
         AccessRule::AllowAll,
         AccessRule::DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_BATCH_IDENT.to_string()),
+        MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_BATCH_IDENT.to_string()),
         AccessRule::AllowAll,
         AccessRule::DenyAll,
     );

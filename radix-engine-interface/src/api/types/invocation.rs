@@ -1,14 +1,16 @@
 use crate::api::package::PackageAddress;
 use crate::api::types::*;
+use crate::blueprints::resource::MethodKey;
 use crate::data::ScryptoValue;
 use crate::*;
 use sbor::rust::string::String;
 
+// TODO: Remove
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub enum InvocationIdentifier {
-    Transaction, // TODO: Remove
+pub enum InvocationDebugIdentifier {
+    Transaction,
     Function(FnIdentifier),
-    Method(MethodReceiver, String),
+    Method(MethodIdentifier),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
@@ -16,6 +18,18 @@ pub struct FnIdentifier {
     pub package_address: PackageAddress,
     pub blueprint_name: String,
     pub ident: String,
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq, ScryptoSbor)]
+pub struct MethodReceiver(pub RENodeId, pub NodeModuleId);
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct MethodIdentifier(pub RENodeId, pub NodeModuleId, pub String);
+
+impl MethodIdentifier {
+    pub fn method_key(&self) -> MethodKey {
+        MethodKey::new(self.1, self.2.clone())
+    }
 }
 
 impl FnIdentifier {
@@ -49,25 +63,21 @@ pub struct FunctionInvocation {
 impl Invocation for FunctionInvocation {
     type Output = ScryptoValue;
 
-    fn identifier(&self) -> InvocationIdentifier {
-        InvocationIdentifier::Function(self.fn_identifier.clone())
+    fn debug_identifier(&self) -> InvocationDebugIdentifier {
+        InvocationDebugIdentifier::Function(self.fn_identifier.clone())
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, ScryptoSbor)]
-pub struct MethodReceiver(pub RENodeId, pub NodeModuleId);
-
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct MethodInvocation {
-    pub receiver: MethodReceiver,
-    pub fn_name: String,
+    pub identifier: MethodIdentifier,
     pub args: Vec<u8>,
 }
 
 impl Invocation for MethodInvocation {
     type Output = ScryptoValue;
 
-    fn identifier(&self) -> InvocationIdentifier {
-        InvocationIdentifier::Method(self.receiver, self.fn_name.clone())
+    fn debug_identifier(&self) -> InvocationDebugIdentifier {
+        InvocationDebugIdentifier::Method(self.identifier.clone())
     }
 }

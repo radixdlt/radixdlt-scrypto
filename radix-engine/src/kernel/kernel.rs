@@ -18,7 +18,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::{ClientComponentApi, ClientPackageApi};
 // TODO: clean this up!
 use crate::kernel::kernel_api::TemporaryResolvedInvocation;
-use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
+use crate::system::node_modules::access_rules::MethodAccessRulesChainSubstate;
 use radix_engine_interface::api::types::{
     LockHandle, ProofOffset, RENodeId, SubstateId, SubstateOffset,
 };
@@ -34,16 +34,15 @@ use radix_engine_interface::blueprints::epoch_manager::{
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::logger::LOGGER_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::{
-    require, AccessRule, AccessRuleKey, AccessRules, LiquidFungibleResource,
-    LiquidNonFungibleResource, Proof, ProofDropInput, ResourceType, BUCKET_BLUEPRINT,
-    PROOF_BLUEPRINT, PROOF_DROP_IDENT, RESOURCE_MANAGER_BLUEPRINT, VAULT_BLUEPRINT,
-    WORKTOP_BLUEPRINT,
+    require, AccessRule, AccessRules, LiquidFungibleResource, LiquidNonFungibleResource, MethodKey,
+    Proof, ProofDropInput, ResourceType, BUCKET_BLUEPRINT, PROOF_BLUEPRINT, PROOF_DROP_IDENT,
+    RESOURCE_MANAGER_BLUEPRINT, VAULT_BLUEPRINT, WORKTOP_BLUEPRINT,
 };
 use radix_engine_interface::blueprints::transaction_runtime::TRANSACTION_RUNTIME_BLUEPRINT;
 use radix_engine_interface::rule;
 use sbor::rust::mem;
 
-use super::actor::{ExecutionMode, ResolvedActor};
+use super::actor::{Actor, ExecutionMode};
 use super::call_frame::{CallFrame, RENodeVisibilityOrigin};
 use super::heap::{Heap, HeapRENode};
 use super::id_allocator::IdAllocator;
@@ -155,12 +154,12 @@ where
             let access_rules = {
                 let mut access_rules = AccessRules::new();
                 access_rules.set_access_rule_and_mutability(
-                    AccessRuleKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_IDENT.to_string()),
+                    MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_IDENT.to_string()),
                     AccessRule::AllowAll,
                     AccessRule::DenyAll,
                 );
                 access_rules.set_access_rule_and_mutability(
-                    AccessRuleKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_BATCH_IDENT.to_string()),
+                    MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_BATCH_IDENT.to_string()),
                     AccessRule::AllowAll,
                     AccessRule::DenyAll,
                 );
@@ -175,7 +174,7 @@ where
                         metadata: BTreeMap::new(),
                     }),
                 );
-                let access_rules_substate = ObjectAccessRulesChainSubstate {
+                let access_rules_substate = MethodAccessRulesChainSubstate {
                     access_rules_chain: vec![access_rules],
                 };
                 node_modules.insert(
@@ -851,7 +850,7 @@ where
         self.current_frame.depth
     }
 
-    fn kernel_get_current_actor(&self) -> Option<ResolvedActor> {
+    fn kernel_get_current_actor(&self) -> Option<Actor> {
         self.current_frame.actor.clone()
     }
 
@@ -1185,7 +1184,7 @@ where
     fn kernel_invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
         KernelModuleMixer::before_invoke(
             self,
-            &invocation.identifier(),
+            &invocation.debug_identifier(),
             invocation.payload_size(),
         )?;
 

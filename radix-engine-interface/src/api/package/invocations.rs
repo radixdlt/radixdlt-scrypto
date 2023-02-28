@@ -44,7 +44,7 @@ pub struct PackageLoaderPublishPrecompiledInput {
     pub metadata: BTreeMap<String, String>,
     pub access_rules: AccessRules,
 
-    pub package_access_rules: BTreeMap<(String, String), AccessRule>,
+    pub package_access_rules: BTreeMap<FunctionKey, AccessRule>,
     pub default_package_access_rule: AccessRule,
 }
 

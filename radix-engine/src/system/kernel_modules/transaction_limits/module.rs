@@ -2,13 +2,13 @@ use crate::{
     errors::ModuleError,
     errors::RuntimeError,
     kernel::{
-        actor::ResolvedActor, call_frame::CallFrameUpdate, kernel_api::KernelModuleApi,
+        actor::Actor, call_frame::CallFrameUpdate, kernel_api::KernelModuleApi,
         module::KernelModule,
     },
     types::Vec,
 };
 use radix_engine_interface::{
-    api::types::{InvocationIdentifier, LockHandle},
+    api::types::{InvocationDebugIdentifier, LockHandle},
     data::ScryptoValue,
     ScryptoSbor,
 };
@@ -138,7 +138,7 @@ impl TransactionLimitsModule {
 impl KernelModule for TransactionLimitsModule {
     fn before_invoke<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        _identifier: &InvocationIdentifier,
+        _identifier: &InvocationDebugIdentifier,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
         if input_size
@@ -160,7 +160,7 @@ impl KernelModule for TransactionLimitsModule {
 
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        _actor: &Option<ResolvedActor>,
+        _actor: &Option<Actor>,
         _down_movement: &mut CallFrameUpdate,
         _args: &ScryptoValue,
     ) -> Result<(), RuntimeError> {
