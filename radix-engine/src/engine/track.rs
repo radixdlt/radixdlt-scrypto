@@ -607,7 +607,15 @@ impl<'s> FinalizingTrack<'s> {
 
         // Commit/rollback application state changes
         let mut to_persist = HashMap::new();
-        let mut application_logs = Vec::new();
+        let application_logs = self
+            .loaded_substates
+            .iter()
+            .find(|(substate_id, _)| {
+                matches!(substate_id.1, SubstateOffset::Logger(LoggerOffset::Logger))
+            })
+            .map_or(Vec::new(), |(_, ref substate)| {
+                substate.substate.logger().logs.clone()
+            });
         let mut next_epoch = None;
         let new_global_addresses = if is_success {
             for (id, loaded) in self.loaded_substates {
@@ -617,10 +625,6 @@ impl<'s> FinalizingTrack<'s> {
                 };
 
                 match id.1 {
-                    SubstateOffset::Logger(LoggerOffset::Logger) => {
-                        let logger: LoggerSubstate = loaded.substate.into();
-                        application_logs.extend(logger.logs);
-                    }
                     SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet) => {
                         // TODO: Use application layer events rather than state updates to get this info
                         match &loaded.metastate {
@@ -639,6 +643,7 @@ impl<'s> FinalizingTrack<'s> {
 
                         to_persist.insert(id, (loaded.substate.to_persisted(), old_version));
                     }
+                    SubstateOffset::Logger(..) => {} /* do not persist */
                     _ => {
                         to_persist.insert(id, (loaded.substate.to_persisted(), old_version));
                     }
