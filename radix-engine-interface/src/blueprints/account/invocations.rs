@@ -69,16 +69,6 @@ impl AccountAbi {
             }
             {
                 let fn_def = Fn {
-                    ident: ACCOUNT_WITHDRAW_ALL_IDENT.to_string(),
-                    export_name: ACCOUNT_WITHDRAW_ALL_IDENT.to_string(),
-                    mutability: Some(abi::SelfMutability::Mutable),
-                    input: AccountWithdrawAllInput::describe(),
-                    output: AccountWithdrawAllOutput::describe(),
-                };
-                fns.push(fn_def);
-            }
-            {
-                let fn_def = Fn {
                     ident: ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
                     export_name: ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
                     mutability: Some(abi::SelfMutability::Mutable),
@@ -94,16 +84,6 @@ impl AccountAbi {
                     mutability: Some(abi::SelfMutability::Mutable),
                     input: AccountLockFeeAndWithdrawInput::describe(),
                     output: AccountLockFeeAndWithdrawOutput::describe(),
-                };
-                fns.push(fn_def);
-            }
-            {
-                let fn_def = Fn {
-                    ident: ACCOUNT_LOCK_FEE_AND_WITHDRAW_ALL_IDENT.to_string(),
-                    export_name: ACCOUNT_LOCK_FEE_AND_WITHDRAW_ALL_IDENT.to_string(),
-                    mutability: Some(abi::SelfMutability::Mutable),
-                    input: AccountLockFeeAndWithdrawAllInput::describe(),
-                    output: AccountLockFeeAndWithdrawAllInput::describe(),
                 };
                 fns.push(fn_def);
             }
@@ -302,28 +282,6 @@ pub struct AccountWithdrawInput {
 
 pub type AccountWithdrawOutput = Bucket;
 
-//==================
-// Account Withdraw All
-//==================
-
-pub const ACCOUNT_WITHDRAW_ALL_IDENT: &str = "withdraw_all";
-
-#[derive(
-    Debug,
-    Eq,
-    PartialEq,
-    ScryptoSbor,
-    ManifestCategorize,
-    ManifestEncode,
-    ManifestDecode,
-    LegacyDescribe,
-)]
-pub struct AccountWithdrawAllInput {
-    pub resource_address: ResourceAddress,
-}
-
-pub type AccountWithdrawAllOutput = Bucket;
-
 //=========================
 // Account Withdraw By Ids
 //=========================
@@ -370,29 +328,6 @@ pub struct AccountLockFeeAndWithdrawInput {
 }
 
 pub type AccountLockFeeAndWithdrawOutput = ();
-
-//===========================
-// Account Withdraw All And Lock
-//===========================
-
-pub const ACCOUNT_LOCK_FEE_AND_WITHDRAW_ALL_IDENT: &str = "lock_fee_and_withdraw_all";
-
-#[derive(
-    Debug,
-    Eq,
-    PartialEq,
-    ScryptoSbor,
-    ManifestCategorize,
-    ManifestEncode,
-    ManifestDecode,
-    LegacyDescribe,
-)]
-pub struct AccountLockFeeAndWithdrawAllInput {
-    pub amount_to_lock: Decimal,
-    pub resource_address: ResourceAddress,
-}
-
-pub type AccountLockFeeAndWithdrawAllOutput = ();
 
 //==================================
 // Account Withdraw By Ids And Lock

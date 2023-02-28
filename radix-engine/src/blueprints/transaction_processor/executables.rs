@@ -1,4 +1,4 @@
-use crate::blueprints::resource::WorktopSubstate;
+use crate::blueprints::resource::{WorktopBlueprint, WorktopSubstate};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::actor::Actor;
@@ -745,7 +745,14 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
             outputs.push(result);
         }
 
-        api.kernel_drop_node(worktop_node_id)?;
+        WorktopBlueprint::drop(
+            IndexedScryptoValue::from_typed(&WorktopDropInput {}).into(),
+            api,
+        )?;
+        // Can't use native-sdk yet since there is no way to express moving the worktop
+        /*
+        Worktop::sys_drop(api)?;
+         */
 
         Ok((outputs, CallFrameUpdate::empty()))
     }

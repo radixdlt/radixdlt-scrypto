@@ -990,6 +990,26 @@ impl Into<ProofInfoSubstate> for RuntimeSubstate {
     }
 }
 
+impl Into<FungibleProof> for RuntimeSubstate {
+    fn into(self) -> FungibleProof {
+        if let RuntimeSubstate::FungibleProof(substate) = self {
+            substate
+        } else {
+            panic!("Not a fungible proof");
+        }
+    }
+}
+
+impl Into<NonFungibleProof> for RuntimeSubstate {
+    fn into(self) -> NonFungibleProof {
+        if let RuntimeSubstate::NonFungibleProof(substate) = self {
+            substate
+        } else {
+            panic!("Not a non fungible proof");
+        }
+    }
+}
+
 impl Into<MethodAccessRulesSubstate> for RuntimeSubstate {
     fn into(self) -> MethodAccessRulesSubstate {
         if let RuntimeSubstate::AccessRulesChain(substate) = self {
