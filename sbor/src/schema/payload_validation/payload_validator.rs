@@ -4,12 +4,12 @@ use crate::typed_traversal::*;
 use crate::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ValidationError<E: CustomTypeExtension> {
+pub enum PayloadValidationError<E: CustomTypeExtension> {
     TraversalError(TypedTraversalError<E::CustomValueKind>),
     TypeValidationError(TypeValidationError),
 }
 
-impl<E: CustomTypeExtension> From<TypeValidationError> for ValidationError<E> {
+impl<E: CustomTypeExtension> From<TypeValidationError> for PayloadValidationError<E> {
     fn from(value: TypeValidationError) -> Self {
         Self::TypeValidationError(value)
     }
@@ -65,7 +65,7 @@ pub enum TypeValidationError {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LocatedValidationError<E: CustomTypeExtension> {
-    error: ValidationError<E>,
+    error: PayloadValidationError<E>,
     location: ErrorLocation,
 }
 
@@ -136,7 +136,7 @@ pub fn validate_payload_with_schema<E: CustomTypeExtension>(
 fn validate_event_with_type<E: CustomTypeExtension>(
     type_validations: &[SchemaTypeValidation<E>],
     event: TypedTraversalEvent<E::CustomTraversal>,
-) -> Result<bool, ValidationError<E>> {
+) -> Result<bool, PayloadValidationError<E>> {
     match event {
         TypedTraversalEvent::PayloadPrefix => Ok(false),
         TypedTraversalEvent::ContainerStart(type_index, header) => {
@@ -151,7 +151,7 @@ fn validate_event_with_type<E: CustomTypeExtension>(
                 .map(|_| false)
         }
         TypedTraversalEvent::End => Ok(true),
-        TypedTraversalEvent::Error(error) => Err(ValidationError::TraversalError(error)),
+        TypedTraversalEvent::Error(error) => Err(PayloadValidationError::TraversalError(error)),
     }
 }
 
@@ -159,7 +159,7 @@ pub fn validate_container<E: CustomTypeExtension>(
     type_validations: &[SchemaTypeValidation<E>],
     header: ContainerHeader<E::CustomTraversal>,
     type_index: LocalTypeIndex,
-) -> Result<(), ValidationError<E>> {
+) -> Result<(), PayloadValidationError<E>> {
     let validation = resolve_type_validation::<E>(&type_validations, type_index)
         .unwrap_or_else(|| failed_to_resolve_type_validation!());
     match validation {
@@ -197,7 +197,7 @@ pub fn validate_terminal_value<'de, E: CustomTypeExtension>(
     type_validations: &[SchemaTypeValidation<E>],
     value: TerminalValueRef<'de, E::CustomTraversal>,
     type_index: LocalTypeIndex,
-) -> Result<(), ValidationError<E>> {
+) -> Result<(), PayloadValidationError<E>> {
     let validation = resolve_type_validation::<E>(&type_validations, type_index)
         .unwrap_or_else(|| failed_to_resolve_type_validation!());
     match validation {
@@ -253,7 +253,7 @@ pub fn validate_terminal_value_batch<'de, E: CustomTypeExtension>(
     type_validations: &[SchemaTypeValidation<E>],
     value_batch: TerminalValueBatchRef<'de>,
     type_index: LocalTypeIndex,
-) -> Result<(), ValidationError<E>> {
+) -> Result<(), PayloadValidationError<E>> {
     let validation = resolve_type_validation::<E>(&type_validations, type_index)
         .unwrap_or_else(|| failed_to_resolve_type_validation!());
     match validation {
@@ -317,7 +317,7 @@ mod tests {
         assert!(matches!(
             result,
             Err(LocatedValidationError {
-                error: ValidationError::TypeValidationError(
+                error: PayloadValidationError::TypeValidationError(
                     TypeValidationError::LengthValidationError {
                         required: LengthValidation {
                             min: Some(16),
@@ -393,5 +393,83 @@ mod tests {
             generate_full_schema_from_single_type::<SimpleStruct, NoCustomTypeExtension>();
         let result = validate_payload_with_schema(&bytes, &schema, type_index);
         assert!(result.is_ok())
+    }
+
+    #[test]
+    pub fn test_vec_u8_with_min_max() {
+        let t0 = BasicTypeData {
+            kind: BasicTypeKind::Array {
+                element_type: LocalTypeIndex::SchemaLocalIndex(1),
+            },
+            metadata: TypeMetadata {
+                type_name: "Vec".into(),
+                children: Children::None,
+            },
+            validation: TypeValidation::Array(LengthValidation {
+                min: 0.into(),
+                max: 1.into(),
+            }),
+        };
+        let t1 = BasicTypeData {
+            kind: BasicTypeKind::U8,
+            metadata: TypeMetadata {
+                type_name: "U8".into(),
+                children: Children::None,
+            },
+            validation: TypeValidation::U8(NumericValidation {
+                min: 5.into(),
+                max: 6.into(),
+            }),
+        };
+        let schema = BasicSchema {
+            type_kinds: vec![t0.kind, t1.kind],
+            type_metadata: vec![t0.metadata, t1.metadata],
+            type_validations: vec![t0.validation, t1.validation],
+        };
+
+        assert_eq!(
+            validate_payload_with_schema(
+                &basic_encode(&vec![5u8]).unwrap(),
+                &schema,
+                LocalTypeIndex::SchemaLocalIndex(0),
+            ),
+            Ok(())
+        );
+
+        assert_eq!(
+            validate_payload_with_schema(
+                &basic_encode(&vec![8u8]).unwrap(),
+                &schema,
+                LocalTypeIndex::SchemaLocalIndex(0),
+            )
+            .map_err(|e| e.error),
+            Err(PayloadValidationError::TypeValidationError(
+                TypeValidationError::U8ValidationError {
+                    required: NumericValidation {
+                        min: Some(5),
+                        max: Some(6)
+                    },
+                    actual: 8
+                }
+            ))
+        );
+
+        assert_eq!(
+            validate_payload_with_schema(
+                &basic_encode(&vec![5u8, 5u8]).unwrap(),
+                &schema,
+                LocalTypeIndex::SchemaLocalIndex(0),
+            )
+            .map_err(|e| e.error),
+            Err(PayloadValidationError::TypeValidationError(
+                TypeValidationError::LengthValidationError {
+                    required: LengthValidation {
+                        min: Some(0),
+                        max: Some(1)
+                    },
+                    actual: 2
+                }
+            ))
+        );
     }
 }
