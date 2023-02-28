@@ -29,43 +29,47 @@ pub struct TypedTraverser<'de, 's, E: CustomTypeExtension> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ContainerType<'s> {
-    pub own_type: LocalTypeIndex,
-    pub child_types: ContainerChildTypeRefs<'s>,
+pub enum ContainerType<'s> {
+    Tuple(LocalTypeIndex, &'s [LocalTypeIndex]),
+    EnumVariant(LocalTypeIndex, &'s [LocalTypeIndex]),
+    Array(LocalTypeIndex, LocalTypeIndex),
+    Map(LocalTypeIndex, LocalTypeIndex, LocalTypeIndex),
+    Any(LocalTypeIndex),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ContainerChildTypeRefs<'s> {
-    Tuple(&'s [LocalTypeIndex]),
-    EnumVariant(&'s [LocalTypeIndex]),
-    Array(LocalTypeIndex),
-    Map(LocalTypeIndex, LocalTypeIndex),
-    Any,
-}
+impl<'s> ContainerType<'s> {
+    pub fn self_type(&self) -> LocalTypeIndex {
+        match self {
+            ContainerType::Tuple(i, _)
+            | ContainerType::EnumVariant(i, _)
+            | ContainerType::Array(i, _)
+            | ContainerType::Map(i, _, _)
+            | ContainerType::Any(i) => *i,
+        }
+    }
 
-impl<'s> ContainerChildTypeRefs<'s> {
     pub fn get_child_type_for_element(&self, index: usize) -> Option<LocalTypeIndex> {
         match self {
-            ContainerChildTypeRefs::Tuple(types) => (*types).get(index).copied(),
-            ContainerChildTypeRefs::EnumVariant(types) => (*types).get(index).copied(),
-            ContainerChildTypeRefs::Array(child_type) => Some(*child_type),
-            ContainerChildTypeRefs::Any => Some(LocalTypeIndex::WellKnown(ANY_ID)),
+            Self::Tuple(_, types) => (*types).get(index).copied(),
+            Self::EnumVariant(_, types) => (*types).get(index).copied(),
+            Self::Array(_, child_type) => Some(*child_type),
+            Self::Any(_) => Some(LocalTypeIndex::WellKnown(ANY_ID)),
             _ => None,
         }
     }
 
     pub fn get_child_type_for_map_key(&self) -> Option<LocalTypeIndex> {
         match self {
-            ContainerChildTypeRefs::Map(key_type, _) => Some(*key_type),
-            ContainerChildTypeRefs::Any => Some(LocalTypeIndex::WellKnown(ANY_ID)),
+            Self::Map(_, key_type, _) => Some(*key_type),
+            Self::Any(_) => Some(LocalTypeIndex::WellKnown(ANY_ID)),
             _ => None,
         }
     }
 
     pub fn get_child_type_for_map_value(&self) -> Option<LocalTypeIndex> {
         match self {
-            ContainerChildTypeRefs::Map(_, value_type) => Some(*value_type),
-            ContainerChildTypeRefs::Any => Some(LocalTypeIndex::WellKnown(ANY_ID)),
+            Self::Map(_, _, value_type) => Some(*value_type),
+            Self::Any(_) => Some(LocalTypeIndex::WellKnown(ANY_ID)),
             _ => None,
         }
     }
@@ -104,7 +108,7 @@ impl<'de, 's, E: CustomTypeExtension> TypedTraverser<'de, 's, E> {
         Self {
             traverser: VecTraverser::new(input, max_depth, payload_prefix, check_exact_end),
             type_state: InternalTypeState {
-                container_stack: Vec::with_capacity(max_depth as usize),
+                container_stack: Vec::with_capacity(max_depth),
                 schema_type_kinds: type_kinds,
                 root_type_index: type_index,
             },
@@ -164,16 +168,10 @@ impl<'s, E: CustomTypeExtension> InternalTypeState<'s, E> {
 
         match header {
             ContainerHeader::Tuple(TupleHeader { length }) => match container_type {
-                TypeKind::Any => self.container_stack.push(ContainerType {
-                    own_type: type_index,
-                    child_types: ContainerChildTypeRefs::Any,
-                }),
-                TypeKind::Tuple { field_types } if field_types.len() == length => {
-                    self.container_stack.push(ContainerType {
-                        own_type: type_index,
-                        child_types: ContainerChildTypeRefs::Tuple(field_types),
-                    })
-                }
+                TypeKind::Any => self.container_stack.push(ContainerType::Any(type_index)),
+                TypeKind::Tuple { field_types } if field_types.len() == length => self
+                    .container_stack
+                    .push(ContainerType::Tuple(type_index, field_types)),
                 TypeKind::Tuple { field_types } => return_type_mismatch_error!(
                     location,
                     TypeMismatchError::MismatchingTupleLength {
@@ -192,19 +190,11 @@ impl<'s, E: CustomTypeExtension> InternalTypeState<'s, E> {
             },
             ContainerHeader::EnumVariant(EnumVariantHeader { variant, length }) => {
                 match container_type {
-                    TypeKind::Any => self.container_stack.push(ContainerType {
-                        own_type: type_index,
-                        child_types: ContainerChildTypeRefs::Any,
-                    }),
+                    TypeKind::Any => self.container_stack.push(ContainerType::Any(type_index)),
                     TypeKind::Enum { variants } => match variants.get(&variant) {
-                        Some(variant_child_types) if variant_child_types.len() == length => {
-                            self.container_stack.push(ContainerType {
-                                own_type: type_index,
-                                child_types: ContainerChildTypeRefs::EnumVariant(
-                                    variant_child_types,
-                                ),
-                            })
-                        }
+                        Some(variant_child_types) if variant_child_types.len() == length => self
+                            .container_stack
+                            .push(ContainerType::EnumVariant(type_index, variant_child_types)),
                         Some(variant_child_types) => return_type_mismatch_error!(
                             location,
                             TypeMismatchError::MismatchingEnumVariantLength {
@@ -234,10 +224,7 @@ impl<'s, E: CustomTypeExtension> InternalTypeState<'s, E> {
             ContainerHeader::Array(ArrayHeader {
                 element_value_kind, ..
             }) => match container_type {
-                TypeKind::Any => self.container_stack.push(ContainerType {
-                    own_type: type_index,
-                    child_types: ContainerChildTypeRefs::Any,
-                }),
+                TypeKind::Any => self.container_stack.push(ContainerType::Any(type_index)),
                 TypeKind::Array {
                     element_type: element_type_index,
                 } => {
@@ -251,10 +238,8 @@ impl<'s, E: CustomTypeExtension> InternalTypeState<'s, E> {
                             }
                         )
                     }
-                    self.container_stack.push(ContainerType {
-                        own_type: type_index,
-                        child_types: ContainerChildTypeRefs::Array(*element_type_index),
-                    })
+                    self.container_stack
+                        .push(ContainerType::Array(type_index, *element_type_index))
                 }
                 _ => return_type_mismatch_error!(
                     location,
@@ -269,10 +254,7 @@ impl<'s, E: CustomTypeExtension> InternalTypeState<'s, E> {
                 value_value_kind,
                 ..
             }) => match container_type {
-                TypeKind::Any => self.container_stack.push(ContainerType {
-                    own_type: type_index,
-                    child_types: ContainerChildTypeRefs::Any,
-                }),
+                TypeKind::Any => self.container_stack.push(ContainerType::Any(type_index)),
                 TypeKind::Map {
                     key_type: key_type_index,
                     value_type: value_type_index,
@@ -297,13 +279,11 @@ impl<'s, E: CustomTypeExtension> InternalTypeState<'s, E> {
                             }
                         )
                     }
-                    self.container_stack.push(ContainerType {
-                        own_type: type_index,
-                        child_types: ContainerChildTypeRefs::Map(
-                            *key_type_index,
-                            *value_type_index,
-                        ),
-                    })
+                    self.container_stack.push(ContainerType::Map(
+                        type_index,
+                        *key_type_index,
+                        *value_type_index,
+                    ))
                 }
                 _ => return_type_mismatch_error!(
                     location,
@@ -366,7 +346,7 @@ impl<'s, E: CustomTypeExtension> InternalTypeState<'s, E> {
     ) -> TypedTraversalEvent<'de, E::CustomTraversal> {
         let container = self.container_stack.pop().unwrap();
 
-        TypedTraversalEvent::ContainerEnd(container.own_type, header)
+        TypedTraversalEvent::ContainerEnd(container.self_type(), header)
     }
 
     fn get_type_index(&self, location: &Location<E::CustomTraversal>) -> LocalTypeIndex {
@@ -377,13 +357,13 @@ impl<'s, E: CustomTypeExtension> InternalTypeState<'s, E> {
                     ContainerHeader::Tuple(_)
                     | ContainerHeader::EnumVariant(_)
                     | ContainerHeader::Array(_) =>  {
-                        self.container_stack.last().unwrap().child_types.get_child_type_for_element(current_child_index)
+                        self.container_stack.last().unwrap().get_child_type_for_element(current_child_index)
                     }
                     ContainerHeader::Map(_) =>  {
                         if current_child_index % 2 == 0 {
-                            self.container_stack.last().unwrap().child_types.get_child_type_for_map_key()
+                            self.container_stack.last().unwrap().get_child_type_for_map_key()
                         } else {
-                            self.container_stack.last().unwrap().child_types.get_child_type_for_map_value()
+                            self.container_stack.last().unwrap().get_child_type_for_map_value()
                         }
                     }
                 }
