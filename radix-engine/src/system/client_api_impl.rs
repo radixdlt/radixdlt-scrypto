@@ -483,11 +483,15 @@ where
                     self,
                 )?;
 
-                // FIXME: generalize app substates;
-                // FIXME: remove unwrap;
-                let substate_bytes = app_states.into_iter().next().unwrap().1;
+                let substate_bytes_0 = app_states.remove(&0u8).ok_or(
+                    RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema),
+                )?;
 
-                let substate: ScryptoValue = scrypto_decode(&substate_bytes)
+                if !app_states.is_empty() {
+                    return Err(RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema));
+                }
+
+                let substate: ScryptoValue = scrypto_decode(&substate_bytes_0)
                     .map_err(|e| RuntimeError::SystemError(SystemError::InvalidScryptoValue(e)))?;
 
                 if !match_schema_with_value(&abi.structure, &substate) {
@@ -498,9 +502,14 @@ where
 
                 // Allocate node id
                 let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
+
                 (
                     node_id,
-                    RENodeInit::Component(ComponentStateSubstate::new(substate_bytes)),
+                    RENodeInit::Component(
+                        btreemap!(
+                            SubstateOffset::Component(ComponentOffset::State0) => RuntimeSubstate::ComponentState(ComponentStateSubstate::new(substate_bytes_0))
+                        )
+                    ),
                 )
             }
         };

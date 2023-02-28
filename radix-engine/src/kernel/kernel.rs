@@ -669,16 +669,10 @@ where
             (RENodeId::GlobalResourceManager(..), RENodeInit::GlobalObject(..)) => {}
             (RENodeId::GlobalPackage(..), RENodeInit::GlobalPackage(..)) => {}
             (RENodeId::Component(..), RENodeInit::Component(..)) => {}
-            (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
-            (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
             (RENodeId::Component(..), RENodeInit::Metadata(..)) => {}
             (RENodeId::Component(..), RENodeInit::ComponentRoyalty(..)) => {}
             (RENodeId::Component(..), RENodeInit::AccessRules(..)) => {}
             (RENodeId::Component(..), RENodeInit::ResourceManager(..)) => {}
-            (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {}
-            (RENodeId::TransactionRuntime, RENodeInit::TransactionRuntime(..)) => {}
-            (RENodeId::Logger, RENodeInit::Logger(..)) => {}
-            (RENodeId::Worktop, RENodeInit::Worktop(..)) => {}
             (RENodeId::Bucket(..), RENodeInit::FungibleBucket(..)) => {}
             (RENodeId::Bucket(..), RENodeInit::NonFungibleBucket(..)) => {}
             (RENodeId::Proof(..), RENodeInit::FungibleProof(..)) => {}
@@ -691,6 +685,12 @@ where
             (RENodeId::AccessController(..), RENodeInit::AccessController(..)) => {}
             (RENodeId::Identity(..), RENodeInit::Identity(..)) => {}
             (RENodeId::Account(..), RENodeInit::Account(..)) => {}
+            (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
+            (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
+            (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {}
+            (RENodeId::TransactionRuntime, RENodeInit::TransactionRuntime(..)) => {}
+            (RENodeId::Logger, RENodeInit::Logger(..)) => {}
+            (RENodeId::Worktop, RENodeInit::Worktop(..)) => {}
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id))),
         }
 

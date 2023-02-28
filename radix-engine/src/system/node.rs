@@ -14,7 +14,7 @@ use crate::types::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::{
-    AuthZoneStackOffset, BucketOffset, ComponentOffset, EpochManagerOffset, NonFungibleStoreOffset,
+    AuthZoneStackOffset, BucketOffset, EpochManagerOffset, NonFungibleStoreOffset,
     PackageOffset, ProofOffset, ResourceManagerOffset, SubstateOffset, VaultOffset, WorktopOffset,
 };
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
@@ -116,7 +116,7 @@ pub enum RENodeInit {
     KeyValueStore,
     NonFungibleStore(NonFungibleStore),
     Identity(),
-    Component(ComponentStateSubstate),
+    Component(BTreeMap<SubstateOffset, RuntimeSubstate>),
     EpochManager(
         EpochManagerSubstate,
         ValidatorSetSubstate,
@@ -222,17 +222,12 @@ impl RENodeInit {
                     RuntimeSubstate::AuthZoneStack(auth_zone),
                 );
             }
-            RENodeInit::GlobalObject(component_substates) => {
-                substates.extend(component_substates);
+            RENodeInit::GlobalObject(object_substates)
+            | RENodeInit::Component(object_substates) => {
+                substates.extend(object_substates);
             }
             RENodeInit::KeyValueStore => {}
             RENodeInit::Identity() => {}
-            RENodeInit::Component(state) => {
-                substates.insert(
-                    SubstateOffset::Component(ComponentOffset::State0),
-                    state.into(),
-                );
-            }
             RENodeInit::Worktop(worktop) => {
                 substates.insert(
                     SubstateOffset::Worktop(WorktopOffset::Worktop),
