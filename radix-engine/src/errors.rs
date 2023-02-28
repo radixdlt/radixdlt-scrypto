@@ -161,10 +161,6 @@ pub enum KernelError {
         actor: Actor,
         node_id: RENodeId,
     },
-    InvalidCreateNodeAccess {
-        mode: ExecutionMode,
-        actor: Actor,
-    },
     InvalidSubstateAccess {
         mode: ExecutionMode,
         actor: Actor,

@@ -664,22 +664,6 @@ where
         let current_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        if let Some(actor) = &self.current_frame.actor {
-            if !VisibilityProperties::check_create_node_access(
-                current_mode,
-                actor,
-                &re_node,
-                &module_init,
-            ) {
-                return Err(RuntimeError::KernelError(
-                    KernelError::InvalidCreateNodeAccess {
-                        mode: current_mode,
-                        actor: actor.clone(),
-                    },
-                ));
-            }
-        }
-
         match (node_id, &re_node) {
             (RENodeId::GlobalComponent(..), RENodeInit::GlobalObject(..)) => {}
             (RENodeId::GlobalResourceManager(..), RENodeInit::GlobalObject(..)) => {}

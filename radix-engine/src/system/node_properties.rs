@@ -1,9 +1,5 @@
-use super::node::{RENodeInit, RENodeModuleInit};
 use crate::errors::{KernelError, RuntimeError};
 use crate::kernel::actor::{Actor, ActorIdentifier, ExecutionMode};
-use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
-use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
-use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
@@ -12,14 +8,8 @@ use radix_engine_interface::api::types::{
     FnIdentifier, KeyValueStoreOffset, PackageOffset, ProofOffset, RENodeId, ResourceManagerOffset,
     RoyaltyOffset, SubstateOffset, ValidatorOffset, WorktopOffset,
 };
-use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLUEPRINT;
-use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
-use radix_engine_interface::blueprints::clock::CLOCK_BLUEPRINT;
-use radix_engine_interface::blueprints::epoch_manager::EPOCH_MANAGER_BLUEPRINT;
-use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::PROOF_BLUEPRINT;
 use radix_engine_interface::constants::*;
-use sbor::rust::collections::BTreeMap;
 
 pub struct VisibilityProperties;
 
@@ -85,86 +75,6 @@ impl VisibilityProperties {
                 _ => false,
             },
             _ => return false,
-        }
-    }
-
-    pub fn check_create_node_access(
-        mode: ExecutionMode,
-        actor: &Actor,
-        node: &RENodeInit,
-        module_init: &BTreeMap<NodeModuleId, RENodeModuleInit>,
-    ) -> bool {
-        // TODO: Cleanup and reduce to least privilege
-        match (mode, &actor.fn_identifier) {
-            (
-                ExecutionMode::Client,
-                FnIdentifier {
-                    package_address,
-                    blueprint_name,
-                    ..
-                },
-            ) => match node {
-                RENodeInit::Component(..) => {
-                    if let Some(RENodeModuleInit::TypeInfo(type_info)) =
-                        module_init.get(&NodeModuleId::TypeInfo)
-                    {
-                        blueprint_name.eq(&type_info.blueprint_name)
-                            && package_address.eq(&type_info.package_address)
-                    } else {
-                        false
-                    }
-                }
-                RENodeInit::Worktop(..) | RENodeInit::GlobalPackage(..) => {
-                    package_address.eq(&PACKAGE_LOADER)
-                }
-                RENodeInit::ResourceManager(..)
-                | RENodeInit::FungibleVault(..)
-                | RENodeInit::NonFungibleVault(..)
-                | RENodeInit::FungibleBucket(..)
-                | RENodeInit::NonFungibleBucket(..)
-                | RENodeInit::NonFungibleStore(..)
-                | RENodeInit::FungibleProof(..)
-                | RENodeInit::NonFungibleProof(..) => {
-                    package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                        || package_address.eq(&AUTH_ZONE_PACKAGE)
-                } // TODO: Remove AuthZonePackage
-                RENodeInit::Identity() => {
-                    package_address.eq(&IDENTITY_PACKAGE) && blueprint_name.eq(IDENTITY_BLUEPRINT)
-                }
-                RENodeInit::EpochManager(..) => {
-                    package_address.eq(&EPOCH_MANAGER_PACKAGE)
-                        && blueprint_name.eq(EPOCH_MANAGER_BLUEPRINT)
-                }
-                RENodeInit::Validator(..) => {
-                    package_address.eq(&EPOCH_MANAGER_PACKAGE)
-                        && blueprint_name.eq(EPOCH_MANAGER_BLUEPRINT)
-                }
-                RENodeInit::Clock(..) => {
-                    package_address.eq(&CLOCK_PACKAGE) && blueprint_name.eq(CLOCK_BLUEPRINT)
-                }
-                RENodeInit::Account(..) => {
-                    package_address.eq(&ACCOUNT_PACKAGE) && blueprint_name.eq(ACCOUNT_BLUEPRINT)
-                }
-                RENodeInit::AccessController(..) => {
-                    package_address.eq(&ACCESS_CONTROLLER_PACKAGE)
-                        && blueprint_name.eq(ACCESS_CONTROLLER_BLUEPRINT)
-                }
-                RENodeInit::Metadata(..) => {
-                    package_address.eq(&METADATA_PACKAGE) && blueprint_name.eq(METADATA_BLUEPRINT)
-                }
-                RENodeInit::ComponentRoyalty(..) => {
-                    package_address.eq(&ROYALTY_PACKAGE)
-                        && blueprint_name.eq(COMPONENT_ROYALTY_BLUEPRINT)
-                }
-                RENodeInit::AccessRules(..) => {
-                    package_address.eq(&ACCESS_RULES_PACKAGE)
-                        && blueprint_name.eq(ACCESS_RULES_BLUEPRINT)
-                }
-                RENodeInit::KeyValueStore => true,
-                RENodeInit::GlobalObject(..) => true,
-                _ => false,
-            },
-            _ => true,
         }
     }
 
