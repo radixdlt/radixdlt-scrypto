@@ -67,18 +67,18 @@ fn test_basic_transfer() {
     // Or you can run just this test with the below:
     // (cd radix-engine && cargo test --test metering -- test_basic_transfer)
     assert_eq!(
-        15000 /* CreateNode */
-        + 62000 /* DropLock */
-        + 15000 /* DropNode */
+        12500 /* CreateNode */
+        + 60000 /* DropLock */
+        + 12500 /* DropNode */
         + 10000 /* Invoke */
-        + 62500 /* LockSubstate */
-        + 41000 /* ReadSubstate */
+        + 60500 /* LockSubstate */
+        + 40500 /* ReadSubstate */
         + 65000 /* RunPrecompiled */
         + 0 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1320 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 16500, /* WriteSubstate */
+        + 15000, /* WriteSubstate */
         receipt.execution.fee_summary.total_cost_units_consumed
     );
 }
@@ -199,18 +199,18 @@ fn test_radiswap() {
     // Or you can run just this test with the below:
     // (cd radix-engine && cargo test --test metering -- test_radiswap)
     assert_eq!(
-        20000 /* CreateNode */
-        + 174500 /* DropLock */
-        + 17500 /* DropNode */
+        17500 /* CreateNode */
+        + 171000 /* DropLock */
+        + 15000 /* DropNode */
         + 24330 /* Invoke */
-        + 176000 /* LockSubstate */
-        + 120500 /* ReadSubstate */
+        + 172500 /* LockSubstate */
+        + 120000 /* ReadSubstate */
         + 147500 /* RunPrecompiled */
         + 1631685 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1705 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 40000 /* WriteSubstate */
+        + 37000 /* WriteSubstate */
         + 2, /* royalty in cost units */
         receipt.execution.fee_summary.total_cost_units_consumed
     );
@@ -308,18 +308,18 @@ fn test_flash_loan() {
     // Or you can run just this test with the below:
     // (cd radix-engine && cargo test --test metering -- test_flash_loan)
     assert_eq!(
-        27500 /* CreateNode */
-        + 258000 /* DropLock */
-        + 27500 /* DropNode */
+        25000 /* CreateNode */
+        + 252000 /* DropLock */
+        + 25000 /* DropNode */
         + 42570 /* Invoke */
-        + 264500 /* LockSubstate */
-        + 171000 /* ReadSubstate */
+        + 258500 /* LockSubstate */
+        + 170500 /* ReadSubstate */
         + 235000 /* RunPrecompiled */
         + 1375350 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2475 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 69000 /* WriteSubstate */
+        + 63500 /* WriteSubstate */
         + 2, /* royalty in cost units */
         receipt.execution.fee_summary.total_cost_units_consumed
     );

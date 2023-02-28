@@ -1,7 +1,7 @@
+use crate::blueprints::event_store::EventStoreNativePackage;
 use crate::blueprints::resource::NonFungibleSubstate;
-use crate::errors::{ApplicationError, RuntimeError};
+use crate::errors::RuntimeError;
 use crate::errors::{KernelError, SystemError};
-use crate::kernel::actor::ResolvedActor;
 use crate::kernel::kernel::Kernel;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
@@ -32,12 +32,8 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RADIX_TOKEN;
 use radix_engine_interface::data::model::Own;
 use radix_engine_interface::data::*;
-use radix_engine_interface::events::EventTypeIdentifier;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
-
-use super::events::EventError;
-use super::kernel_modules::costing::FIXED_LOW_FEE;
 
 impl<'g, 's, W> ClientNodeApi<RuntimeError> for Kernel<'g, 's, W>
 where
@@ -455,20 +451,7 @@ where
         &mut self,
         event: T,
     ) -> Result<(), RuntimeError> {
-        let schema_hash = scrypto_encode(&T::describe())
-            .map_err(|_| {
-                RuntimeError::ApplicationError(ApplicationError::EventError(
-                    EventError::FailedToSborEncodeEventSchema,
-                ))
-            })
-            .map(|encoded| hash(encoded))?;
-        let event_data = scrypto_encode(&event).map_err(|_| {
-            RuntimeError::ApplicationError(ApplicationError::EventError(
-                EventError::FailedToSborEncodeEvent,
-            ))
-        })?;
-
-        self.emit_raw_event(schema_hash, event_data)
+        EventStoreNativePackage::emit_event(event, self)
     }
 
     fn emit_raw_event(
@@ -476,43 +459,7 @@ where
         schema_hash: Hash,
         event_data: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        // Costing event emission.
-        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
-
-        let event_type_id = match self.kernel_get_current_actor() {
-            Some(ResolvedActor {
-                receiver: Some(MethodReceiver(node_id, node_module_id)),
-                ..
-            }) => Ok(EventTypeIdentifier(node_id, node_module_id, schema_hash)),
-            Some(ResolvedActor {
-                identifier: FnIdentifier {
-                    package_address, ..
-                },
-                ..
-            }) => Ok(EventTypeIdentifier(
-                RENodeId::GlobalPackage(package_address),
-                NodeModuleId::SELF,
-                schema_hash,
-            )),
-            _ => Err(RuntimeError::ApplicationError(
-                ApplicationError::EventError(EventError::InvalidActor),
-            )),
-        }?;
-
-        // TODO: Validate that the event schema matches that given by the event schema hash.
-        // Need to wait for David's PR for schema validation and move away from LegacyDescribe
-        // over to new Describe.
-
-        // NOTE: We need to ensure that the event being emitted is an SBOR struct or an enum,
-        // this is not done here, this should be done at event registration time. Thus, if the
-        // event has been successfully registered, it can be emitted (from a schema POV).
-
-        // Adding the event to the event store
-        self.kernel_get_module_state()
-            .events
-            .add_event(event_type_id, event_data);
-
-        Ok(())
+        EventStoreNativePackage::emit_raw_event(schema_hash, event_data, self)
     }
 }
 
