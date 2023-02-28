@@ -59,8 +59,8 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
                 key_type,
                 value_type,
             } => ScryptoCustomTypeKind::KeyValueStore {
-                key_type: resolve_local_type_ref(type_indices, &key_type),
-                value_type: resolve_local_type_ref(type_indices, &value_type),
+                key_type: resolve_local_type_index(type_indices, &key_type),
+                value_type: resolve_local_type_index(type_indices, &value_type),
             },
 
             ScryptoCustomTypeKind::Decimal => ScryptoCustomTypeKind::Decimal,

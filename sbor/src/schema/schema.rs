@@ -16,65 +16,38 @@ pub type SchemaCustomTypeKind<E> = <E as CustomTypeExtension>::CustomTypeKind<Lo
 pub type SchemaTypeValidation<E> = TypeValidation<<E as CustomTypeExtension>::CustomTypeValidation>;
 pub type SchemaCustomTypeValidation<E> = <E as CustomTypeExtension>::CustomTypeValidation;
 
-pub fn resolve_type_kind<'s: 't, 't, E: CustomTypeExtension>(
-    type_kinds: &'s [SchemaTypeKind<E>],
-    type_index: LocalTypeIndex,
-) -> Option<&'t SchemaTypeKind<E>> {
-    match type_index {
-        LocalTypeIndex::WellKnown(index) => {
-            E::resolve_well_known_type(index).map(|local_type_data| &local_type_data.kind)
-        }
-        LocalTypeIndex::SchemaLocalIndex(index) => type_kinds.get(index),
-    }
-}
-
-pub fn resolve_type_validation<'s: 't, 't, E: CustomTypeExtension>(
-    type_validations: &'s [SchemaTypeValidation<E>],
-    type_index: LocalTypeIndex,
-) -> Option<&'t SchemaTypeValidation<E>> {
-    match type_index {
-        LocalTypeIndex::WellKnown(index) => {
-            E::resolve_well_known_type(index).map(|local_type_data| &local_type_data.validation)
-        }
-        LocalTypeIndex::SchemaLocalIndex(index) => type_validations.get(index),
-    }
-}
-
-pub struct ResolvedTypeData<'a, E: CustomTypeExtension> {
-    pub kind: &'a TypeKind<E::CustomValueKind, E::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>,
-    pub metadata: &'a TypeMetadata,
-    pub validation: &'a TypeValidation<E::CustomTypeValidation>,
-}
-
 impl<E: CustomTypeExtension> Schema<E> {
-    pub fn resolve<'a>(&'a self, type_ref: LocalTypeIndex) -> Option<ResolvedTypeData<'a, E>> {
-        match type_ref {
-            LocalTypeIndex::WellKnown(index) => match E::resolve_well_known_type(index) {
-                Some(TypeData {
-                    kind,
-                    metadata,
-                    validation,
-                }) => Some(ResolvedTypeData {
-                    kind,
-                    metadata,
-                    validation,
-                }),
-                None => None,
-            },
-            LocalTypeIndex::SchemaLocalIndex(index) => {
-                match (
-                    self.type_kinds.get(index),
-                    self.type_metadata.get(index),
-                    self.type_validations.get(index),
-                ) {
-                    (Some(type_kind), Some(metadata), Some(validation)) => Some(ResolvedTypeData {
-                        kind: type_kind,
-                        metadata: &metadata,
-                        validation,
-                    }),
-                    _ => None,
-                }
+    pub fn resolve_type_kind(
+        &self,
+        type_index: LocalTypeIndex,
+    ) -> Option<&TypeKind<E::CustomValueKind, E::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>>
+    {
+        match type_index {
+            LocalTypeIndex::WellKnown(index) => {
+                E::resolve_well_known_type(index).map(|data| &data.kind)
             }
+            LocalTypeIndex::SchemaLocalIndex(index) => self.type_kinds.get(index),
+        }
+    }
+
+    pub fn resolve_type_metadata(&self, type_index: LocalTypeIndex) -> Option<&TypeMetadata> {
+        match type_index {
+            LocalTypeIndex::WellKnown(index) => {
+                E::resolve_well_known_type(index).map(|data| &data.metadata)
+            }
+            LocalTypeIndex::SchemaLocalIndex(index) => self.type_metadata.get(index),
+        }
+    }
+
+    pub fn resolve_type_validation(
+        &self,
+        type_index: LocalTypeIndex,
+    ) -> Option<&TypeValidation<E::CustomTypeValidation>> {
+        match type_index {
+            LocalTypeIndex::WellKnown(index) => {
+                E::resolve_well_known_type(index).map(|data| &data.validation)
+            }
+            LocalTypeIndex::SchemaLocalIndex(index) => self.type_validations.get(index),
         }
     }
 

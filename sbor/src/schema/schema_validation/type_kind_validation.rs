@@ -1,6 +1,8 @@
 use super::*;
 use crate::schema::*;
 
+pub const MAX_NUMBER_OF_FIELDS: usize = 1024;
+
 pub fn validate_type_kind<'a, E: CustomTypeExtension>(
     context: &TypeValidationContext,
     type_kind: &SchemaTypeKind<E>,
@@ -25,8 +27,10 @@ pub fn validate_type_kind<'a, E: CustomTypeExtension>(
             validate_index::<E>(context, element_type)?;
         }
         TypeKind::Tuple { field_types } => {
-            if field_types.len() > 1024 {
-                return Err(SchemaValidationError::TypeKindTupleTooLong { max_size: 1024 });
+            if field_types.len() > MAX_NUMBER_OF_FIELDS {
+                return Err(SchemaValidationError::TypeKindTupleTooLong {
+                    max_size: MAX_NUMBER_OF_FIELDS,
+                });
             }
             for field_type in field_types.iter() {
                 validate_index::<E>(context, field_type)?;
@@ -34,9 +38,9 @@ pub fn validate_type_kind<'a, E: CustomTypeExtension>(
         }
         TypeKind::Enum { variants } => {
             for (_, field_types) in variants.iter() {
-                if field_types.len() > 1024 {
+                if field_types.len() > MAX_NUMBER_OF_FIELDS {
                     return Err(SchemaValidationError::TypeKindEnumVariantTooLong {
-                        max_size: 1024,
+                        max_size: MAX_NUMBER_OF_FIELDS,
                     });
                 }
                 for field_type in field_types.iter() {

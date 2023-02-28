@@ -54,12 +54,12 @@ fn linearize<E: CustomTypeExtension>(
         TypeKind::U128 => TypeKind::U128,
         TypeKind::String => TypeKind::String,
         TypeKind::Array { element_type } => TypeKind::Array {
-            element_type: resolve_local_type_ref(type_indices, &element_type),
+            element_type: resolve_local_type_index(type_indices, &element_type),
         },
         TypeKind::Tuple { field_types } => TypeKind::Tuple {
             field_types: field_types
                 .into_iter()
-                .map(|t| resolve_local_type_ref(type_indices, &t))
+                .map(|t| resolve_local_type_index(type_indices, &t))
                 .collect(),
         },
         TypeKind::Enum { variants } => TypeKind::Enum {
@@ -68,7 +68,7 @@ fn linearize<E: CustomTypeExtension>(
                 .map(|(variant_index, field_types)| {
                     let new_field_types = field_types
                         .into_iter()
-                        .map(|t| resolve_local_type_ref(type_indices, &t))
+                        .map(|t| resolve_local_type_index(type_indices, &t))
                         .collect();
                     (variant_index, new_field_types)
                 })
@@ -78,8 +78,8 @@ fn linearize<E: CustomTypeExtension>(
             key_type,
             value_type,
         } => TypeKind::Map {
-            key_type: resolve_local_type_ref(type_indices, &key_type),
-            value_type: resolve_local_type_ref(type_indices, &value_type),
+            key_type: resolve_local_type_index(type_indices, &key_type),
+            value_type: resolve_local_type_index(type_indices, &value_type),
         },
         TypeKind::Custom(custom_type_kind) => {
             TypeKind::Custom(E::linearize_type_kind(custom_type_kind, type_indices))
@@ -87,11 +87,11 @@ fn linearize<E: CustomTypeExtension>(
     }
 }
 
-pub fn resolve_local_type_ref(
+pub fn resolve_local_type_index(
     type_indices: &IndexSet<TypeHash>,
-    type_ref: &GlobalTypeId,
+    type_index: &GlobalTypeId,
 ) -> LocalTypeIndex {
-    match type_ref {
+    match type_index {
         GlobalTypeId::WellKnown([well_known_index]) => LocalTypeIndex::WellKnown(*well_known_index),
         GlobalTypeId::Novel(type_hash) => {
             LocalTypeIndex::SchemaLocalIndex(resolve_index(type_indices, type_hash))
@@ -140,10 +140,10 @@ impl<C: CustomTypeKind<GlobalTypeId>> TypeAggregator<C> {
     /// [`add_schema_and_descendents`]: #method.add_schema_and_descendents
     pub fn add_child_type(
         &mut self,
-        type_ref: GlobalTypeId,
+        type_index: GlobalTypeId,
         get_type_data: impl FnOnce() -> Option<TypeData<C, GlobalTypeId>>,
     ) -> LocalTypeIndex {
-        let complex_type_hash = match type_ref {
+        let complex_type_hash = match type_index {
             GlobalTypeId::WellKnown([well_known_type_index]) => {
                 return LocalTypeIndex::WellKnown(well_known_type_index);
             }

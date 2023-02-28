@@ -111,44 +111,41 @@ pub fn validate_payload_against_schema<E: CustomTypeExtension>(
     schema: &Schema<E>,
     index: LocalTypeIndex,
 ) -> Result<(), LocatedValidationError<E>> {
-    let mut traverser = traverse_payload_with_types::<E>(payload, &schema.type_kinds, index);
+    let mut traverser = traverse_payload_with_types::<E>(payload, &schema, index);
     loop {
         let typed_event = traverser.next_event();
-        if validate_event_with_type::<E>(&schema.type_validations, typed_event.event).map_err(
-            |error| {
-                LocatedValidationError {
-                    error,
-                    location: ErrorLocation {
-                        start_offset: typed_event.location.location.start_offset,
-                        end_offset: typed_event.location.location.end_offset,
-                        // TODO - add context from (location + type_index) + type metadata
-                        // This enables a full path to be provided in the error message, which can have a debug such as:
-                        // TypeOne["hello"]->Enum::Variant[4]->TypeTwo[0]->Array[4]->Map[Key]->StructWhichErrored
-                    },
-                }
-            },
-        )? {
+        if validate_event_with_type::<E>(&schema, typed_event.event).map_err(|error| {
+            LocatedValidationError {
+                error,
+                location: ErrorLocation {
+                    start_offset: typed_event.location.location.start_offset,
+                    end_offset: typed_event.location.location.end_offset,
+                    // TODO - add context from (location + type_index) + type metadata
+                    // This enables a full path to be provided in the error message, which can have a debug such as:
+                    // TypeOne["hello"]->Enum::Variant[4]->TypeTwo[0]->Array[4]->Map[Key]->StructWhichErrored
+                },
+            }
+        })? {
             return Ok(());
         }
     }
 }
 
 fn validate_event_with_type<E: CustomTypeExtension>(
-    type_validations: &[SchemaTypeValidation<E>],
+    schema: &Schema<E>,
     event: TypedTraversalEvent<E::CustomTraversal>,
 ) -> Result<bool, PayloadValidationError<E>> {
     match event {
         TypedTraversalEvent::PayloadPrefix => Ok(false),
         TypedTraversalEvent::ContainerStart(type_index, header) => {
-            validate_container::<E>(type_validations, header, type_index).map(|_| false)
+            validate_container::<E>(schema, header, type_index).map(|_| false)
         }
         TypedTraversalEvent::ContainerEnd(_, _) => Ok(false), // Validation already handled at Container Start
         TypedTraversalEvent::TerminalValue(type_index, value_ref) => {
-            validate_terminal_value::<E>(type_validations, value_ref, type_index).map(|_| false)
+            validate_terminal_value::<E>(schema, value_ref, type_index).map(|_| false)
         }
         TypedTraversalEvent::TerminalValueBatch(type_index, value_batch_ref) => {
-            validate_terminal_value_batch::<E>(type_validations, value_batch_ref, type_index)
-                .map(|_| false)
+            validate_terminal_value_batch::<E>(schema, value_batch_ref, type_index).map(|_| false)
         }
         TypedTraversalEvent::End => Ok(true),
         TypedTraversalEvent::Error(error) => Err(PayloadValidationError::TraversalError(error)),
@@ -156,13 +153,14 @@ fn validate_event_with_type<E: CustomTypeExtension>(
 }
 
 pub fn validate_container<E: CustomTypeExtension>(
-    type_validations: &[SchemaTypeValidation<E>],
+    schema: &Schema<E>,
     header: ContainerHeader<E::CustomTraversal>,
     type_index: LocalTypeIndex,
 ) -> Result<(), PayloadValidationError<E>> {
-    let validation = resolve_type_validation::<E>(&type_validations, type_index)
-        .unwrap_or_else(|| failed_to_resolve_type_validation!());
-    match validation {
+    match schema
+        .resolve_type_validation(type_index)
+        .unwrap_or_else(|| failed_to_resolve_type_validation!())
+    {
         TypeValidation::None => {}
         TypeValidation::Array(length_validation) => {
             let ContainerHeader::Array(ArrayHeader { length, .. }) = header else {
@@ -194,13 +192,14 @@ pub fn validate_container<E: CustomTypeExtension>(
 }
 
 pub fn validate_terminal_value<'de, E: CustomTypeExtension>(
-    type_validations: &[SchemaTypeValidation<E>],
+    schema: &Schema<E>,
     value: TerminalValueRef<'de, E::CustomTraversal>,
     type_index: LocalTypeIndex,
 ) -> Result<(), PayloadValidationError<E>> {
-    let validation = resolve_type_validation::<E>(&type_validations, type_index)
-        .unwrap_or_else(|| failed_to_resolve_type_validation!());
-    match validation {
+    match schema
+        .resolve_type_validation(type_index)
+        .unwrap_or_else(|| failed_to_resolve_type_validation!())
+    {
         TypeValidation::None => {}
         TypeValidation::I8(x) => {
             numeric_validation_match!(x, value, I8, I8ValidationError)
@@ -244,19 +243,23 @@ pub fn validate_terminal_value<'de, E: CustomTypeExtension>(
                 .into());
             }
         }
+        TypeValidation::Custom(_) => {
+            todo!("Add support for custom type validation")
+        }
         _ => type_validation_meets_unexpected_value!(),
     }
     Ok(())
 }
 
 pub fn validate_terminal_value_batch<'de, E: CustomTypeExtension>(
-    type_validations: &[SchemaTypeValidation<E>],
+    schema: &Schema<E>,
     value_batch: TerminalValueBatchRef<'de>,
     type_index: LocalTypeIndex,
 ) -> Result<(), PayloadValidationError<E>> {
-    let validation = resolve_type_validation::<E>(&type_validations, type_index)
-        .unwrap_or_else(|| failed_to_resolve_type_validation!());
-    match validation {
+    match schema
+        .resolve_type_validation(type_index)
+        .unwrap_or_else(|| failed_to_resolve_type_validation!())
+    {
         TypeValidation::None => {}
         TypeValidation::U8(numeric_validation) => {
             // This is for `Vec<u8<min, max>>`
