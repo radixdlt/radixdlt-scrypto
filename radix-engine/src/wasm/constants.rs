@@ -30,6 +30,9 @@ pub const WRITE_SUBSTATE_FUNCTION_NAME: &str = "write_substate";
 pub const DROP_LOCK_FUNCTION_ID: usize = 0x43;
 pub const DROP_LOCK_FUNCTION_NAME: &str = "drop_lock";
 
+pub const EMIT_EVENT_FUNCTION_ID: usize = 0x50;
+pub const EMIT_EVENT_FUNCTION_NAME: &str = "emit_event";
+
 // Under active refactoring
 pub const GET_ACTOR_FUNCTION_ID: usize = 0xf0;
 pub const GET_ACTOR_FUNCTION_NAME: &str = "get_actor";

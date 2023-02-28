@@ -8,6 +8,7 @@ use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::blueprints::transaction_runtime::TransactionRuntimeError;
 use crate::kernel::actor::{Actor, ExecutionMode};
 use crate::kernel::track::TrackError;
+use crate::system::events::EventError;
 use crate::system::kernel_modules::auth::AuthError;
 use crate::system::kernel_modules::costing::CostingError;
 use crate::system::kernel_modules::node_move::NodeMoveError;
@@ -336,6 +337,8 @@ pub enum ApplicationError {
     AccountError(AccountError),
 
     AccessControllerError(AccessControllerError),
+
+    EventError(EventError),
 }
 
 impl From<TransactionProcessorError> for ApplicationError {

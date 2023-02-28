@@ -140,6 +140,17 @@ extern "C" {
 
     // Returns the current actor.
     pub fn get_actor() -> Buffer;
+
+    //===============
+    // Events API
+    //===============
+
+    pub fn emit_event(
+        schema_hash_ptr: *const u8,
+        schema_hash_len: usize,
+        event_data_ptr: *const u8,
+        event_data_len: usize,
+    );
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -266,5 +277,15 @@ pub unsafe fn drop_lock(_handle: u32) {
 
 #[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn get_actor() -> Buffer {
+    todo!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn emit_event(
+    _schema_hash_ptr: *const u8,
+    _schema_hash_len: usize,
+    _event_data_ptr: *const u8,
+    _event_data_len: usize,
+) {
     todo!()
 }

@@ -1374,6 +1374,15 @@ impl<'a> From<SubstateRef<'a>> for &'a AuthZoneStackSubstate {
     }
 }
 
+impl<'a> From<SubstateRef<'a>> for &'a LoggerSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::Logger(value) => value,
+            _ => panic!("Not a logger"),
+        }
+    }
+}
+
 impl<'a> SubstateRef<'a> {
     pub fn to_scrypto_value(&self) -> IndexedScryptoValue {
         match self {

@@ -419,6 +419,21 @@ impl WasmerModule {
                 .consume_cost_units(cost_unit)
                 .map_err(|e| RuntimeError::user(Box::new(e)))
         }
+
+        fn emit_event(
+            env: &WasmerInstanceEnv,
+            schema_hash_ptr: u32,
+            schema_hash_len: u32,
+            event_data_ptr: u32,
+            event_data_len: u32,
+        ) -> Result<(), InvokeError<WasmRuntimeError>> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let schema_hash = read_memory(&instance, schema_hash_ptr, schema_hash_len)?;
+            let event_data = read_memory(&instance, event_data_ptr, event_data_len)?;
+
+            runtime.emit_event(schema_hash, event_data)
+        }
         // native functions ends
 
         // env
@@ -445,6 +460,7 @@ impl WasmerModule {
                 DROP_LOCK_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), drop_lock),
                 GET_ACTOR_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_actor),
                 CONSUME_COST_UNITS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), consume_cost_units),
+                EMIT_EVENT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), emit_event),
             }
         };
 
