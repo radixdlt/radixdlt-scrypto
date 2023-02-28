@@ -91,7 +91,6 @@ impl IdAllocator {
             RENodeType::AccessController => self
                 .new_access_controller_id()
                 .map(|id| RENodeId::AccessController(id)),
-            RENodeType::Identity => self.new_component_id().map(|id| RENodeId::Identity(id)),
             RENodeType::GlobalPackage => self
                 .new_package_address()
                 .map(|address| RENodeId::GlobalPackage(address)),

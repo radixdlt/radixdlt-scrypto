@@ -83,7 +83,6 @@ impl NodeMoveModule {
             | RENodeId::GlobalPackage(..)
             | RENodeId::Worktop
             | RENodeId::EpochManager(..)
-            | RENodeId::Identity(..)
             | RENodeId::Validator(..)
             | RENodeId::GlobalComponent(..)
             | RENodeId::AccessController(..) => Err(RuntimeError::ModuleError(
@@ -111,7 +110,6 @@ impl NodeMoveModule {
             | RENodeId::GlobalPackage(..)
             | RENodeId::Worktop
             | RENodeId::EpochManager(..)
-            | RENodeId::Identity(..)
             | RENodeId::Validator(..)
             | RENodeId::GlobalComponent(..)
             | RENodeId::AccessController(..) => Err(RuntimeError::ModuleError(

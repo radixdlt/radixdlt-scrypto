@@ -28,7 +28,6 @@ pub enum RENodeType {
     Vault,
     EpochManager,
     Validator,
-    Identity,
     TransactionRuntime,
     Logger,
     AccessController,
@@ -63,7 +62,6 @@ pub enum RENodeId {
     Component(ComponentId),
     Vault(VaultId),
     EpochManager(EpochManagerId),
-    Identity(IdentityId),
     Validator(ValidatorId),
     AccessController(AccessControllerId),
 }
@@ -98,7 +96,6 @@ impl fmt::Debug for RENodeId {
                 .debug_tuple("EpochManager")
                 .field(&hex::encode(id))
                 .finish(),
-            Self::Identity(id) => f.debug_tuple("Identity").field(&hex::encode(id)).finish(),
             Self::Validator(id) => f.debug_tuple("Validator").field(&hex::encode(id)).finish(),
             Self::AccessController(id) => f
                 .debug_tuple("AccessController")
@@ -116,7 +113,6 @@ impl Into<[u8; 36]> for RENodeId {
             RENodeId::Vault(id) => id,
             RENodeId::Component(id) => id,
             RENodeId::EpochManager(id) => id,
-            RENodeId::Identity(id) => id,
             RENodeId::Validator(id) => id,
             RENodeId::AccessController(id) => id,
             RENodeId::Proof(id) => id,

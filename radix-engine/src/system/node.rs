@@ -113,7 +113,6 @@ pub enum RENodeInit {
     Worktop(WorktopSubstate),
     KeyValueStore,
     NonFungibleStore(NonFungibleStore),
-    Identity(),
     Component(BTreeMap<SubstateOffset, RuntimeSubstate>),
     EpochManager(
         EpochManagerSubstate,
@@ -223,7 +222,6 @@ impl RENodeInit {
                 substates.extend(object_substates);
             }
             RENodeInit::KeyValueStore => {}
-            RENodeInit::Identity() => {}
             RENodeInit::Worktop(worktop) => {
                 substates.insert(
                     SubstateOffset::Worktop(WorktopOffset::Worktop),

@@ -41,6 +41,7 @@ use radix_engine_interface::api::{
     ClientActorApi, ClientApi, ClientNodeApi, ClientObjectApi, ClientPackageApi, ClientSubstateApi,
     ClientUnsafeApi,
 };
+use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -455,8 +456,11 @@ where
                     ));
                 }
 
-                let node_id = self.kernel_allocate_node_id(RENodeType::Identity)?;
-                (node_id, RENodeInit::Identity())
+                let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
+                (
+                    node_id,
+                    RENodeInit::Component(btreemap!()),
+                )
             }
             ACCOUNT_PACKAGE => {
                 let substate_bytes_0 = app_states.remove(&0u8).ok_or(
@@ -565,10 +569,10 @@ where
                 let (package_address, blueprint) = TypeInfoBlueprint::get_type(node_id, self)?;
                 match (package_address, blueprint.as_str()) {
                     (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => RENodeType::GlobalAccount,
+                    (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => RENodeType::GlobalIdentity,
                     _ => RENodeType::GlobalComponent,
                 }
             },
-            RENodeId::Identity(..) => RENodeType::GlobalIdentity,
             RENodeId::Validator(..) => RENodeType::GlobalValidator,
             RENodeId::EpochManager(..) => RENodeType::GlobalEpochManager,
             RENodeId::AccessController(..) => RENodeType::GlobalAccessController,

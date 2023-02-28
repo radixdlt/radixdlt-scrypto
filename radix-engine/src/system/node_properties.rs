@@ -22,7 +22,6 @@ impl VisibilityProperties {
         match mode {
             ExecutionMode::Kernel => match node_id {
                 // TODO: Remove
-                RENodeId::Identity(..) => true,
                 RENodeId::Component(..) => true,
                 _ => false,
             },
@@ -68,7 +67,6 @@ impl VisibilityProperties {
                 RENodeId::Validator(..) => mode.eq(&ExecutionMode::Client),
                 RENodeId::Component(..) => mode.eq(&ExecutionMode::Client),
                 RENodeId::AccessController(..) => mode.eq(&ExecutionMode::Client),
-                RENodeId::Identity(..) => mode.eq(&ExecutionMode::Client),
                 _ => false,
             },
             _ => return false,
