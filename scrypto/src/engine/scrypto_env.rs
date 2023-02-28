@@ -41,7 +41,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         &mut self,
         node_id: RENodeId,
         modules: BTreeMap<NodeModuleId, Vec<u8>>,
-    ) -> Result<ComponentAddress, ClientApiError> {
+    ) -> Result<Address, ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
         let modules = scrypto_encode(&modules).unwrap();
 
@@ -61,7 +61,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         node_id: RENodeId,
         modules: BTreeMap<NodeModuleId, Vec<u8>>,
         address: Address,
-    ) -> Result<ComponentAddress, ClientApiError> {
+    ) -> Result<Address, ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
         let modules = scrypto_encode(&modules).unwrap();
         let address = scrypto_encode(&address).unwrap();

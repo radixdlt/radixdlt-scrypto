@@ -360,7 +360,7 @@ where
         &mut self,
         node_id: RENodeId,
         modules: BTreeMap<NodeModuleId, Vec<u8>>,
-    ) -> Result<ComponentAddress, RuntimeError> {
+    ) -> Result<Address, RuntimeError> {
         let node_type = match node_id {
             RENodeId::Component(..) => RENodeType::GlobalComponent,
             RENodeId::Identity(..) => RENodeType::GlobalIdentity,
@@ -381,7 +381,7 @@ where
         node_id: RENodeId,
         modules: BTreeMap<NodeModuleId, Vec<u8>>,
         address: Address,
-    ) -> Result<ComponentAddress, RuntimeError> {
+    ) -> Result<Address, RuntimeError> {
         let node = self.kernel_drop_node(node_id)?;
 
         let mut module_substates = BTreeMap::new();

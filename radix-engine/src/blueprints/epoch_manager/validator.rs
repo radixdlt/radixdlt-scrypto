@@ -647,7 +647,7 @@ impl ValidatorCreator {
             ),
             address.into(),
         )?;
-        Ok((address, liquidity_bucket))
+        Ok((address.into(), liquidity_bucket))
     }
 
     pub fn create<Y>(
@@ -697,6 +697,6 @@ impl ValidatorCreator {
             ),
             address.into(),
         )?;
-        Ok(address)
+        Ok(address.into())
     }
 }

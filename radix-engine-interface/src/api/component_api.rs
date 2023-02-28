@@ -16,14 +16,14 @@ pub trait ClientObjectApi<E> {
         &mut self,
         node_id: RENodeId,
         modules: BTreeMap<NodeModuleId, Vec<u8>>,
-    ) -> Result<ComponentAddress, E>;
+    ) -> Result<Address, E>;
 
     fn globalize_with_address(
         &mut self,
         node_id: RENodeId,
         modules: BTreeMap<NodeModuleId, Vec<u8>>,
         address: Address,
-    ) -> Result<ComponentAddress, E>;
+    ) -> Result<Address, E>;
 
     fn get_component_type_info(&mut self, node_id: RENodeId)
         -> Result<(PackageAddress, String), E>;

@@ -180,7 +180,7 @@ impl LocalComponent for OwnedComponent {
             .unwrap();
         let access_rules: Own = scrypto_decode(&rtn).unwrap();
 
-        ScryptoEnv
+        let address = ScryptoEnv
             .globalize(
                 RENodeId::Component(self.0),
                 btreemap!(
@@ -189,7 +189,9 @@ impl LocalComponent for OwnedComponent {
                     NodeModuleId::ComponentRoyalty => scrypto_encode(&royalty).unwrap()
                 ),
             )
-            .unwrap()
+            .unwrap();
+
+        address.into()
     }
 }
 
