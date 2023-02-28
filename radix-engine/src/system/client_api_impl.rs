@@ -37,7 +37,7 @@ use sbor::rust::vec::Vec;
 use crate::blueprints::access_controller::AccessControllerSubstate;
 use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::clock::CurrentTimeRoundedToMinutesSubstate;
-use crate::blueprints::epoch_manager::ValidatorSubstate;
+use crate::blueprints::epoch_manager::{EpochManagerSubstate, ValidatorSetSubstate, ValidatorSubstate};
 use crate::system::package::Package;
 
 impl<'g, 's, W> ClientNodeApi<RuntimeError> for Kernel<'g, 's, W>
@@ -214,7 +214,7 @@ where
     fn new_object(
         &mut self,
         blueprint_ident: &str,
-        app_states: BTreeMap<u8, Vec<u8>>,
+        mut app_states: BTreeMap<u8, Vec<u8>>,
     ) -> Result<ComponentId, RuntimeError> {
         // Create component RENode
         // FIXME: support native blueprints
@@ -234,6 +234,21 @@ where
 
                         let node_id = self.kernel_allocate_node_id(RENodeType::Validator)?;
                         (node_id, RENodeInit::Validator(substate))
+                    }
+                    EPOCH_MANAGER_BLUEPRINT => {
+                        let substate_bytes_0 = app_states.remove(&0u8).ok_or(RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema))?;
+                        let substate_bytes_1 = app_states.remove(&1u8).ok_or(RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema))?;
+                        let substate_bytes_2 = app_states.remove(&2u8).ok_or(RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema))?;
+
+                        let epoch_mgr_substate: EpochManagerSubstate = scrypto_decode(&substate_bytes_0)
+                            .map_err(|_| RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema))?;
+                        let validator_set_substate_0: ValidatorSetSubstate = scrypto_decode(&substate_bytes_1)
+                            .map_err(|_| RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema))?;
+                        let validator_set_substate_1: ValidatorSetSubstate = scrypto_decode(&substate_bytes_2)
+                            .map_err(|_| RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema))?;
+
+                        let node_id = self.kernel_allocate_node_id(RENodeType::EpochManager)?;
+                        (node_id, RENodeInit::EpochManager(epoch_mgr_substate, validator_set_substate_0, validator_set_substate_1))
                     }
                     _ => return Err(RuntimeError::SystemError(SystemError::BlueprintNotFound)),
                 }

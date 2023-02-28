@@ -53,13 +53,12 @@ impl EpochManagerBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: EpochManagerCreateInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let underlying_node_id = api.kernel_allocate_node_id(RENodeType::EpochManager)?;
         let address = ComponentAddress::EpochManager(input.component_address);
 
         let epoch_manager = EpochManagerSubstate {
@@ -146,14 +145,14 @@ impl EpochManagerBlueprint {
             epoch: input.initial_epoch + 1,
             validator_set,
         };
-        api.kernel_create_node(
-            underlying_node_id,
-            RENodeInit::EpochManager(
-                epoch_manager,
-                current_validator_set,
-                preparing_validator_set,
-            ),
-            BTreeMap::new(),
+
+        let epoch_manager_id = api.new_object(
+            EPOCH_MANAGER_BLUEPRINT,
+            btreemap!(
+                0 => scrypto_encode(&epoch_manager).unwrap(),
+                1 => scrypto_encode(&current_validator_set).unwrap(),
+                2 => scrypto_encode(&preparing_validator_set).unwrap(),
+            )
         )?;
 
         let mut access_rules = AccessRules::new();
@@ -200,7 +199,7 @@ impl EpochManagerBlueprint {
         let metadata = Metadata::sys_new(api)?;
 
         api.globalize_with_address(
-            underlying_node_id,
+            RENodeId::EpochManager(epoch_manager_id),
             btreemap!(
                 NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
                 NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
