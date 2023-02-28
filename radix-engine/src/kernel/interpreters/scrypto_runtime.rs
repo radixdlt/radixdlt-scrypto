@@ -6,7 +6,7 @@ use crate::wasm::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
-use radix_engine_interface::api::ClientEventsApi;
+use radix_engine_interface::api::ClientEventApi;
 use radix_engine_interface::api::{
     ClientActorApi, ClientComponentApi, ClientNodeApi, ClientPackageApi, ClientSubstateApi,
     ClientUnsafeApi,
@@ -56,7 +56,7 @@ where
         + ClientPackageApi<RuntimeError>
         + ClientComponentApi<RuntimeError>
         + ClientActorApi<RuntimeError>
-        + ClientEventsApi<RuntimeError>,
+        + ClientEventApi<RuntimeError>,
 {
     fn allocate_buffer(
         &mut self,

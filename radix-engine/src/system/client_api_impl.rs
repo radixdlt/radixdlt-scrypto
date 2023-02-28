@@ -23,7 +23,7 @@ use radix_engine_interface::api::component::{
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
-use radix_engine_interface::api::{package::*, ClientEventsApi};
+use radix_engine_interface::api::{package::*, ClientEventApi};
 use radix_engine_interface::api::{
     ClientActorApi, ClientApi, ClientComponentApi, ClientNodeApi, ClientPackageApi,
     ClientSubstateApi, ClientUnsafeApi,
@@ -447,7 +447,7 @@ where
     }
 }
 
-impl<'g, 's, W> ClientEventsApi<RuntimeError> for Kernel<'g, 's, W>
+impl<'g, 's, W> ClientEventApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {

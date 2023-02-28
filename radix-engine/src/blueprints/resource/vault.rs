@@ -9,7 +9,7 @@ use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{RENodeId, SubstateOffset, VaultOffset};
 use radix_engine_interface::api::{types::*, ClientSubstateApi};
-use radix_engine_interface::api::{ClientApi, ClientEventsApi};
+use radix_engine_interface::api::{ClientApi, ClientEventApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
 
@@ -104,7 +104,7 @@ impl FungibleVault {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientEventsApi<RuntimeError>,
+            + ClientEventApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
             node_id,
@@ -133,7 +133,7 @@ impl FungibleVault {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientEventsApi<RuntimeError>,
+            + ClientEventApi<RuntimeError>,
     {
         if resource.is_empty() {
             return Ok(());
@@ -169,7 +169,7 @@ impl FungibleVault {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientEventsApi<RuntimeError>,
+            + ClientEventApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
             node_id,
@@ -211,7 +211,7 @@ impl FungibleVault {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientEventsApi<RuntimeError>,
+            + ClientEventApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
             node_id,
@@ -319,7 +319,7 @@ impl NonFungibleVault {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientEventsApi<RuntimeError>,
+            + ClientEventApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
             node_id,
@@ -349,7 +349,7 @@ impl NonFungibleVault {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientEventsApi<RuntimeError>,
+            + ClientEventApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
             node_id,
@@ -378,7 +378,7 @@ impl NonFungibleVault {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientEventsApi<RuntimeError>,
+            + ClientEventApi<RuntimeError>,
     {
         if resource.is_empty() {
             return Ok(());
@@ -415,7 +415,7 @@ impl NonFungibleVault {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientEventsApi<RuntimeError>,
+            + ClientEventApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
             node_id,
@@ -469,7 +469,7 @@ impl NonFungibleVault {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientEventsApi<RuntimeError>,
+            + ClientEventApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
             node_id,
@@ -514,7 +514,7 @@ impl NonFungibleVault {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientSubstateApi<RuntimeError>
-            + ClientEventsApi<RuntimeError>,
+            + ClientEventApi<RuntimeError>,
     {
         let handle = api.sys_lock_substate(
             node_id,

@@ -1,6 +1,6 @@
 use crate::engine::wasm_api::*;
 use radix_engine_interface::api::package::{PackageCodeSubstate, PackageInfoSubstate};
-use radix_engine_interface::api::{types::*, ClientEventsApi, LockFlags};
+use radix_engine_interface::api::{types::*, ClientEventApi, LockFlags};
 use radix_engine_interface::api::{
     ClientActorApi, ClientComponentApi, ClientNodeApi, ClientPackageApi, ClientSubstateApi,
 };
@@ -279,7 +279,7 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
     }
 }
 
-impl ClientEventsApi<ClientApiError> for ScryptoEnv {
+impl ClientEventApi<ClientApiError> for ScryptoEnv {
     fn emit_event<T: ScryptoEncode + LegacyDescribe>(
         &mut self,
         event: T,
