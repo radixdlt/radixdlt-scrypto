@@ -3,7 +3,6 @@ use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::heap::{DroppedBucket, DroppedBucketResource};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::node::RENodeInit;
 use crate::types::*;
 use native_sdk::resource::SysBucket;
 use radix_engine_interface::api::substate_api::LockFlags;
@@ -546,39 +545,29 @@ impl BucketBlueprint {
             let taken = FungibleBucket::take(receiver, input.amount, api)?;
 
             // Create node
-            let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
-            api.kernel_create_node(
-                node_id,
-                RENodeInit::FungibleBucket(
-                    BucketInfoSubstate {
-                        resource_address: info.resource_address,
-                        resource_type: info.resource_type,
-                    },
-                    taken,
-                ),
-                BTreeMap::new(),
+            let bucket_id = api.new_object(
+                BUCKET_BLUEPRINT,
+                btreemap!(
+                    0 => scrypto_encode(&info).unwrap(),
+                    1 => scrypto_encode(&taken).unwrap()
+                )
             )?;
 
-            node_id
+            RENodeId::Bucket(bucket_id)
         } else {
             // Take
             let taken = NonFungibleBucket::take(receiver, input.amount, api)?;
 
             // Create node
-            let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
-            api.kernel_create_node(
-                node_id,
-                RENodeInit::NonFungibleBucket(
-                    BucketInfoSubstate {
-                        resource_address: info.resource_address,
-                        resource_type: info.resource_type,
-                    },
-                    taken,
-                ),
-                BTreeMap::new(),
+            let bucket_id = api.new_object(
+                BUCKET_BLUEPRINT,
+                btreemap!(
+                    0 => scrypto_encode(&info).unwrap(),
+                    1 => scrypto_encode(&taken).unwrap()
+                )
             )?;
 
-            node_id
+            RENodeId::Bucket(bucket_id)
         };
         let bucket_id = node_id.into();
 
@@ -612,19 +601,13 @@ impl BucketBlueprint {
             let taken = NonFungibleBucket::take_non_fungibles(receiver, &input.ids, api)?;
 
             // Create node
-            let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
-            api.kernel_create_node(
-                node_id,
-                RENodeInit::NonFungibleBucket(
-                    BucketInfoSubstate {
-                        resource_address: info.resource_address,
-                        resource_type: info.resource_type,
-                    },
-                    taken,
-                ),
-                BTreeMap::new(),
+            let bucket_id = api.new_object(
+                BUCKET_BLUEPRINT,
+                btreemap!(
+                    0 => scrypto_encode(&info).unwrap(),
+                    1 => scrypto_encode(&taken).unwrap()
+                )
             )?;
-            let bucket_id = node_id.into();
 
             Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
         }

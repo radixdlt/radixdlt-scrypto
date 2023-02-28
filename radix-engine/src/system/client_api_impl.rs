@@ -5,7 +5,7 @@ use crate::blueprints::epoch_manager::{
     EpochManagerSubstate, ValidatorSetSubstate, ValidatorSubstate,
 };
 use crate::blueprints::event_store::EventStoreNativePackage;
-use crate::blueprints::resource::{FungibleProof, NonFungibleProof, NonFungibleSubstate, ProofInfoSubstate, ResourceManagerSubstate};
+use crate::blueprints::resource::{BucketInfoSubstate, FungibleProof, NonFungibleProof, NonFungibleSubstate, ProofInfoSubstate, ResourceManagerSubstate};
 use crate::errors::RuntimeError;
 use crate::errors::{KernelError, SystemError};
 use crate::kernel::actor::ActorIdentifier;
@@ -269,6 +269,39 @@ where
                                     RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
                                 })?;
                             RENodeInit::FungibleProof(proof_info_substate, fungible_proof)
+                        }
+                    };
+
+                    (node_id, node_init)
+                }
+                BUCKET_BLUEPRINT => {
+                    let substate_bytes_0 = app_states.remove(&0u8).ok_or(
+                        RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema),
+                    )?;
+                    let substate_bytes_1 = app_states.remove(&1u8).ok_or(
+                        RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema),
+                    )?;
+                    let bucket_info_substate: BucketInfoSubstate =
+                        scrypto_decode(&substate_bytes_0).map_err(|_| {
+                            RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
+                        })?;
+
+                    let node_id = self.kernel_allocate_node_id(RENodeType::Bucket)?;
+
+                    let node_init = match bucket_info_substate.resource_type {
+                        ResourceType::NonFungible {..} => {
+                            let liquid_resource: LiquidNonFungibleResource =
+                                scrypto_decode(&substate_bytes_1).map_err(|_| {
+                                    RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
+                                })?;
+                            RENodeInit::NonFungibleBucket(bucket_info_substate, liquid_resource)
+                        }
+                        ResourceType::Fungible {..} => {
+                            let liquid_resource: LiquidFungibleResource =
+                                scrypto_decode(&substate_bytes_1).map_err(|_| {
+                                    RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
+                                })?;
+                            RENodeInit::FungibleBucket(bucket_info_substate, liquid_resource)
                         }
                     };
 

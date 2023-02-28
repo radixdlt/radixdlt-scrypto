@@ -116,19 +116,19 @@ where
         }
         resource_manager.total_supply = entries.len().into();
         let ids = entries.into_keys().collect();
-        let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
-        api.kernel_create_node(
-            node_id,
-            RENodeInit::NonFungibleBucket(
-                BucketInfoSubstate {
-                    resource_address,
-                    resource_type: ResourceType::NonFungible { id_type },
-                },
-                LiquidNonFungibleResource::new(ids),
-            ),
-            BTreeMap::new(),
+
+        let info = BucketInfoSubstate {
+            resource_address,
+            resource_type: ResourceType::NonFungible { id_type },
+        };
+        let bucket_id = api.new_object(
+            BUCKET_BLUEPRINT,
+            btreemap!(
+                    0 => scrypto_encode(&info).unwrap(),
+                    1 => scrypto_encode(&LiquidNonFungibleResource::new(ids)).unwrap()
+                )
         )?;
-        let bucket_id = node_id.into();
+
         Bucket(bucket_id)
     };
 
@@ -142,7 +142,7 @@ fn build_fungible_resource_manager_substate_with_initial_supply<Y>(
     api: &mut Y,
 ) -> Result<(ResourceManagerSubstate, Bucket), RuntimeError>
 where
-    Y: KernelNodeApi + KernelSubstateApi,
+    Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
 {
     let mut resource_manager = ResourceManagerSubstate::new(
         ResourceType::Fungible { divisibility },
@@ -168,19 +168,21 @@ where
             ));
         }
         resource_manager.total_supply = initial_supply;
-        let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
-        api.kernel_create_node(
-            node_id,
-            RENodeInit::FungibleBucket(
-                BucketInfoSubstate {
-                    resource_address,
-                    resource_type: ResourceType::Fungible { divisibility },
-                },
-                LiquidFungibleResource::new(initial_supply),
-            ),
-            BTreeMap::new(),
+
+        let bucket_info = BucketInfoSubstate {
+            resource_address,
+            resource_type: ResourceType::Fungible { divisibility },
+        };
+        let liquid_resource = LiquidFungibleResource::new(initial_supply);
+        let app_states = btreemap!(
+                0u8 => scrypto_encode(&bucket_info).unwrap(),
+                1u8 => scrypto_encode(&liquid_resource).unwrap(),
+            );
+        let bucket_id = api.new_object(
+            BUCKET_BLUEPRINT,
+            app_states,
         )?;
-        let bucket_id = node_id.into();
+
         Bucket(bucket_id)
     };
 
@@ -799,7 +801,7 @@ impl ResourceManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let (resource_init, non_fungibles) = {
+        let (bucket_id, non_fungibles) = {
             let resource_manager: &mut ResourceManagerSubstate =
                 api.kernel_get_substate_ref_mut(resman_handle)?;
             let resource_address = resource_manager.resource_address;
@@ -846,21 +848,24 @@ impl ResourceManagerBlueprint {
                 non_fungibles.insert(id, non_fungible);
             }
 
+
+            let info = BucketInfoSubstate {
+                resource_address,
+                resource_type,
+            };
+            let bucket_id = api.new_object(
+                BUCKET_BLUEPRINT,
+                btreemap!(
+                    0 => scrypto_encode(&info).unwrap(),
+                    1 => scrypto_encode(&LiquidNonFungibleResource::new(ids)).unwrap()
+                )
+            )?;
+
             (
-                RENodeInit::NonFungibleBucket(
-                    BucketInfoSubstate {
-                        resource_address,
-                        resource_type,
-                    },
-                    LiquidNonFungibleResource::new(ids),
-                ),
+                bucket_id,
                 non_fungibles,
             )
         };
-
-        let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
-        api.kernel_create_node(node_id, resource_init, BTreeMap::new())?;
-        let bucket_id = node_id.into();
 
         let (nf_store_id, resource_address) = {
             let resource_manager: &ResourceManagerSubstate =
@@ -972,19 +977,18 @@ impl ResourceManagerBlueprint {
                 }
             }
 
-            let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
-            api.kernel_create_node(
-                node_id,
-                RENodeInit::NonFungibleBucket(
-                    BucketInfoSubstate {
-                        resource_address,
-                        resource_type: ResourceType::NonFungible { id_type },
-                    },
-                    LiquidNonFungibleResource::new(ids.clone()),
-                ),
-                BTreeMap::new(),
+            let info = BucketInfoSubstate {
+                resource_address,
+                resource_type: ResourceType::NonFungible { id_type },
+            };
+            let bucket_id = api.new_object(
+                BUCKET_BLUEPRINT,
+                btreemap!(
+                    0 => scrypto_encode(&info).unwrap(),
+                    1 => scrypto_encode(&LiquidNonFungibleResource::new(ids.clone())).unwrap()
+                )
             )?;
-            let bucket_id: BucketId = node_id.into();
+
             (bucket_id, ids)
         };
 
@@ -1011,7 +1015,7 @@ impl ResourceManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let resource_init = {
+        let bucket_id = {
             let resource_manager: &mut ResourceManagerSubstate =
                 api.kernel_get_substate_ref_mut(resman_handle)?;
             let resource_type = resource_manager.resource_type;
@@ -1037,13 +1041,20 @@ impl ResourceManagerBlueprint {
 
                 resource_manager.total_supply += input.amount;
 
-                RENodeInit::FungibleBucket(
-                    BucketInfoSubstate {
-                        resource_address: resource_manager.resource_address,
-                        resource_type: ResourceType::Fungible { divisibility },
-                    },
-                    LiquidFungibleResource::new(input.amount),
-                )
+                let bucket_info = BucketInfoSubstate {
+                    resource_address: resource_manager.resource_address,
+                    resource_type: ResourceType::Fungible { divisibility },
+                };
+                let liquid_resource = LiquidFungibleResource::new(input.amount);
+                let bucket_id = api.new_object(
+                    BUCKET_BLUEPRINT,
+                        btreemap!(
+                        0 => scrypto_encode(&bucket_info).unwrap(),
+                        1 => scrypto_encode(&liquid_resource).unwrap()
+                    )
+                )?;
+
+                bucket_id
             } else {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::ResourceManagerError(
@@ -1052,10 +1063,6 @@ impl ResourceManagerBlueprint {
                 ));
             }
         };
-
-        let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
-        api.kernel_create_node(node_id, resource_init, BTreeMap::new())?;
-        let bucket_id = node_id.into();
 
         api.emit_event(MintResourceEvent::Amount(input.amount))?;
 
@@ -1166,34 +1173,28 @@ impl ResourceManagerBlueprint {
         let resource_address: ResourceAddress = resource_manager.resource_address;
         let bucket_id = match resource_manager.resource_type {
             ResourceType::Fungible { divisibility } => {
-                let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
-                api.kernel_create_node(
-                    node_id,
-                    RENodeInit::FungibleBucket(
-                        BucketInfoSubstate {
+                api.new_object(
+                    BUCKET_BLUEPRINT,
+                    btreemap!(
+                        0 => scrypto_encode(&BucketInfoSubstate {
                             resource_address,
                             resource_type: ResourceType::Fungible { divisibility },
-                        },
-                        LiquidFungibleResource::new_empty(),
-                    ),
-                    BTreeMap::new(),
-                )?;
-                node_id.into()
+                        }).unwrap(),
+                        1 => scrypto_encode(&LiquidFungibleResource::new_empty()).unwrap()
+                    )
+                )?
             }
             ResourceType::NonFungible { id_type } => {
-                let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
-                api.kernel_create_node(
-                    node_id,
-                    RENodeInit::NonFungibleBucket(
-                        BucketInfoSubstate {
+                api.new_object(
+                    BUCKET_BLUEPRINT,
+                    btreemap!(
+                        0 => scrypto_encode(&BucketInfoSubstate {
                             resource_address,
                             resource_type: ResourceType::NonFungible { id_type },
-                        },
-                        LiquidNonFungibleResource::new_empty(),
-                    ),
-                    BTreeMap::new(),
-                )?;
-                node_id.into()
+                        }).unwrap(),
+                        1 => scrypto_encode(&LiquidNonFungibleResource::new_empty()).unwrap()
+                    )
+                )?
             }
         };
 

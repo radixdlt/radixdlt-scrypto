@@ -27,7 +27,7 @@ use radix_engine_interface::blueprints::account::{
 };
 use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRules, LiquidFungibleResource, LiquidNonFungibleResource, MethodKey,
-    Proof, ProofDropInput, ResourceType, BUCKET_BLUEPRINT, PROOF_BLUEPRINT, PROOF_DROP_IDENT,
+    Proof, ProofDropInput, ResourceType, PROOF_BLUEPRINT, PROOF_DROP_IDENT,
     VAULT_BLUEPRINT,
 };
 use radix_engine_interface::rule;
@@ -696,17 +696,8 @@ where
             (RENodeId::TransactionRuntime, RENodeInit::TransactionRuntime(..)) => {}
             (RENodeId::Logger, RENodeInit::Logger(..)) => {}
             (RENodeId::Worktop, RENodeInit::Worktop(..)) => {}
-            (RENodeId::Bucket(..), RENodeInit::FungibleBucket(..))
-            | (RENodeId::Bucket(..), RENodeInit::NonFungibleBucket(..)) => {
-                module_init.insert(
-                    NodeModuleId::TypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: RESOURCE_MANAGER_PACKAGE,
-                        blueprint_name: BUCKET_BLUEPRINT.to_string(),
-                        global: false,
-                    }),
-                );
-            }
+            (RENodeId::Bucket(..), RENodeInit::FungibleBucket(..)) => { }
+            (RENodeId::Bucket(..), RENodeInit::NonFungibleBucket(..)) => { }
             (RENodeId::Proof(..), RENodeInit::FungibleProof(..)) => { }
             (RENodeId::Proof(..), RENodeInit::NonFungibleProof(..)) => { }
             (RENodeId::Vault(..), RENodeInit::FungibleVault(..))

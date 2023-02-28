@@ -4,7 +4,6 @@ use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::heap::{DroppedBucket, DroppedBucketResource};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::CostingError;
-use crate::system::node::RENodeInit;
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{RENodeId, SubstateOffset, VaultOffset};
@@ -574,39 +573,35 @@ impl VaultBlueprint {
             let taken = FungibleVault::take(receiver, input.amount, api)?;
 
             // Create node
-            let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
-            api.kernel_create_node(
-                node_id,
-                RENodeInit::FungibleBucket(
-                    BucketInfoSubstate {
-                        resource_address: info.resource_address,
-                        resource_type: info.resource_type,
-                    },
-                    taken,
-                ),
-                BTreeMap::new(),
+            let bucket_id = api.new_object(
+                BUCKET_BLUEPRINT,
+                btreemap!(
+                        0 => scrypto_encode(&BucketInfoSubstate {
+                            resource_address: info.resource_address,
+                            resource_type: info.resource_type,
+                        }).unwrap(),
+                        1 => scrypto_encode(&taken).unwrap()
+                    )
             )?;
 
-            node_id
+            RENodeId::Bucket(bucket_id)
         } else {
             // Take
             let taken = NonFungibleVault::take(receiver, input.amount, api)?;
 
             // Create node
-            let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
-            api.kernel_create_node(
-                node_id,
-                RENodeInit::NonFungibleBucket(
-                    BucketInfoSubstate {
-                        resource_address: info.resource_address,
-                        resource_type: info.resource_type,
-                    },
-                    taken,
-                ),
-                BTreeMap::new(),
+            let bucket_id = api.new_object(
+                BUCKET_BLUEPRINT,
+                btreemap!(
+                        0 => scrypto_encode(&BucketInfoSubstate {
+                            resource_address: info.resource_address,
+                            resource_type: info.resource_type,
+                        }).unwrap(),
+                        1 => scrypto_encode(&taken).unwrap()
+                    )
             )?;
 
-            node_id
+            RENodeId::Bucket(bucket_id)
         };
         let bucket_id = node_id.into();
 
@@ -639,19 +634,16 @@ impl VaultBlueprint {
                 NonFungibleVault::take_non_fungibles(receiver, &input.non_fungible_local_ids, api)?;
 
             // Create node
-            let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
-            api.kernel_create_node(
-                node_id,
-                RENodeInit::NonFungibleBucket(
-                    BucketInfoSubstate {
-                        resource_address: info.resource_address,
-                        resource_type: info.resource_type,
-                    },
-                    taken,
-                ),
-                BTreeMap::new(),
+            let bucket_id = api.new_object(
+                BUCKET_BLUEPRINT,
+                btreemap!(
+                        0 => scrypto_encode(&BucketInfoSubstate {
+                            resource_address: info.resource_address,
+                            resource_type: info.resource_type,
+                        }).unwrap(),
+                        1 => scrypto_encode(&taken).unwrap()
+                    )
             )?;
-            let bucket_id = node_id.into();
 
             Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
         }
@@ -858,34 +850,32 @@ impl VaultBlueprint {
 
         let node_id = if info.resource_type.is_fungible() {
             let taken = FungibleVault::take(receiver, input.amount, api)?;
-            let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
-            api.kernel_create_node(
-                node_id,
-                RENodeInit::FungibleBucket(
-                    BucketInfoSubstate {
-                        resource_address: info.resource_address,
-                        resource_type: info.resource_type,
-                    },
-                    taken,
-                ),
-                BTreeMap::new(),
+            let bucket_id = api.new_object(
+                BUCKET_BLUEPRINT,
+                btreemap!(
+                        0 => scrypto_encode(&BucketInfoSubstate {
+                            resource_address: info.resource_address,
+                            resource_type: info.resource_type,
+                        }).unwrap(),
+                        1 => scrypto_encode(&taken).unwrap()
+                    )
             )?;
-            node_id
+
+            RENodeId::Bucket(bucket_id)
         } else {
             let taken = NonFungibleVault::take(receiver, input.amount, api)?;
-            let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
-            api.kernel_create_node(
-                node_id,
-                RENodeInit::NonFungibleBucket(
-                    BucketInfoSubstate {
-                        resource_address: info.resource_address,
-                        resource_type: info.resource_type,
-                    },
-                    taken,
-                ),
-                BTreeMap::new(),
+            let bucket_id = api.new_object(
+                BUCKET_BLUEPRINT,
+                btreemap!(
+                        0 => scrypto_encode(&BucketInfoSubstate {
+                            resource_address: info.resource_address,
+                            resource_type: info.resource_type,
+                        }).unwrap(),
+                        1 => scrypto_encode(&taken).unwrap()
+                    )
             )?;
-            node_id
+
+            RENodeId::Bucket(bucket_id)
         };
         let bucket_id = node_id.into();
 
@@ -917,19 +907,16 @@ impl VaultBlueprint {
             let taken =
                 NonFungibleVault::take_non_fungibles(receiver, &input.non_fungible_local_ids, api)?;
 
-            let node_id = api.kernel_allocate_node_id(RENodeType::Bucket)?;
-            api.kernel_create_node(
-                node_id,
-                RENodeInit::NonFungibleBucket(
-                    BucketInfoSubstate {
-                        resource_address: info.resource_address,
-                        resource_type: info.resource_type,
-                    },
-                    taken,
-                ),
-                BTreeMap::new(),
+            let bucket_id = api.new_object(
+                BUCKET_BLUEPRINT,
+                btreemap!(
+                        0 => scrypto_encode(&BucketInfoSubstate {
+                            resource_address: info.resource_address,
+                            resource_type: info.resource_type,
+                        }).unwrap(),
+                        1 => scrypto_encode(&taken).unwrap()
+                    )
             )?;
-            let bucket_id = node_id.into();
 
             api.emit_event(RecallResourceEvent::Ids(input.non_fungible_local_ids))?;
 
