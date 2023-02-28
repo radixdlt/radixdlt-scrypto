@@ -12,7 +12,6 @@ pub enum ValidationError<E: CustomTypeExtension> {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SchemaInconsistencyError {
-    TypeValidationNotFound(LocalTypeIndex),
     TypeValidationMismatch,
 }
 
@@ -76,55 +75,51 @@ pub struct ErrorLocation {
     end_offset: usize,
 }
 
-pub fn validate<E: CustomTypeExtension>(
+pub fn validate_payload_with_schema<E: CustomTypeExtension>(
     payload: &[u8],
     schema: &Schema<E>,
     index: LocalTypeIndex,
 ) -> Result<(), LocatedValidationError<E>> {
     let mut traverser = traverse_payload_with_types::<E>(payload, &schema.type_kinds, index);
-    // NB - we use loop rather than a while loop partly for borrow-checker reasons
     loop {
-        let TypedLocatedTraversalEvent {
-            event,
-            location: typed_location,
-        } = traverser.next_event();
-        if matches!(event, TypedTraversalEvent::End) {
+        let typed_event = traverser.next_event();
+        if validate_event_with_type::<E>(&schema.type_validations, typed_event.event).map_err(
+            |error| {
+                LocatedValidationError {
+                    error,
+                    location: ErrorLocation {
+                        start_offset: typed_event.location.location.start_offset,
+                        end_offset: typed_event.location.location.end_offset,
+                        // TODO - add context from (location + type_index) + type metadata
+                        // This enables a full path to be provided in the error message, which can have a debug such as:
+                        // TypeOne["hello"]->Enum::Variant[4]->TypeTwo[0]->Array[4]->Map[Key]->StructWhichErrored
+                    },
+                }
+            },
+        )? {
             return Ok(());
         }
-        validate_event_with_type::<E>(&schema.type_validations, event).map_err(|error| {
-            LocatedValidationError {
-                error,
-                location: ErrorLocation {
-                    start_offset: typed_location.location.start_offset,
-                    end_offset: typed_location.location.end_offset,
-                    // TODO - add context from (location + type_index) + type metadata
-                    // This enables a full path to be provided in the error message, which can have a debug such as:
-                    // TypeOne["hello"]->Enum::Variant[4]->TypeTwo[0]->Array[4]->Map[Key]->StructWhichErrored
-                },
-            }
-        })?;
     }
 }
 
 fn validate_event_with_type<E: CustomTypeExtension>(
     type_validations: &[SchemaTypeValidation<E>],
     event: TypedTraversalEvent<E::CustomTraversal>,
-) -> Result<(), ValidationError<E>> {
+) -> Result<bool, ValidationError<E>> {
     match event {
-        TypedTraversalEvent::PayloadPrefix => Ok(()),
+        TypedTraversalEvent::PayloadPrefix => Ok(false),
         TypedTraversalEvent::ContainerStart(type_index, header) => {
-            validate_container::<E>(type_validations, header, type_index)
+            validate_container::<E>(type_validations, header, type_index).map(|_| false)
         }
-        TypedTraversalEvent::ContainerEnd(_, _) => Ok(()), // Validation already handled at Container Start
+        TypedTraversalEvent::ContainerEnd(_, _) => Ok(false), // Validation already handled at Container Start
         TypedTraversalEvent::TerminalValue(type_index, value_ref) => {
-            validate_terminal_value::<E>(type_validations, value_ref, type_index)
+            validate_terminal_value::<E>(type_validations, value_ref, type_index).map(|_| false)
         }
         TypedTraversalEvent::TerminalValueBatch(type_index, value_batch_ref) => {
             validate_terminal_value_batch::<E>(type_validations, value_batch_ref, type_index)
+                .map(|_| false)
         }
-        TypedTraversalEvent::End => {
-            unreachable!("End should already have been covered in the parent function")
-        }
+        TypedTraversalEvent::End => Ok(true),
         TypedTraversalEvent::Error(error) => Err(ValidationError::TraversalError(error)),
     }
 }
@@ -151,7 +146,7 @@ pub fn validate_container<E: CustomTypeExtension>(
     type_index: LocalTypeIndex,
 ) -> Result<(), ValidationError<E>> {
     let Some(validation) = resolve_type_validation::<E>(&type_validations, type_index) else {
-        return Err(ValidationError::SchemaInconsistency(SchemaInconsistencyError::TypeValidationNotFound(type_index)))
+        panic!("Failed to resolve type validation, possibly caused by a bug in consistency check!")
     };
     match validation {
         TypeValidation::None => {}
@@ -207,7 +202,7 @@ pub fn validate_terminal_value<'de, E: CustomTypeExtension>(
     type_index: LocalTypeIndex,
 ) -> Result<(), ValidationError<E>> {
     let Some(validation) = resolve_type_validation::<E>(&type_validations, type_index) else {
-        return Err(ValidationError::SchemaInconsistency(SchemaInconsistencyError::TypeValidationNotFound(type_index)));
+        panic!("Failed to resolve type validation, possibly caused by a bug in consistency check!")
     };
     match validation {
         TypeValidation::None => {}
@@ -256,7 +251,7 @@ pub fn validate_terminal_value_batch<'de, E: CustomTypeExtension>(
     type_index: LocalTypeIndex,
 ) -> Result<(), ValidationError<E>> {
     let Some(validation) = resolve_type_validation::<E>(&type_validations, type_index) else {
-        return Err(ValidationError::SchemaInconsistency(SchemaInconsistencyError::TypeValidationNotFound(type_index)));
+        panic!("Failed to resolve type validation, possibly caused by a bug in consistency check!")
     };
     match validation {
         TypeValidation::None => {}
@@ -304,7 +299,7 @@ mod tests {
         })
         .unwrap();
 
-        let result = validate(&payload, &schema, type_index);
+        let result = validate_payload_with_schema(&payload, &schema, type_index);
         assert!(result.is_ok())
     }
 
@@ -317,7 +312,7 @@ mod tests {
         })
         .unwrap();
 
-        let result = validate(&payload, &schema, type_index);
+        let result = validate_payload_with_schema(&payload, &schema, type_index);
         assert!(matches!(
             result,
             Err(LocatedValidationError {
@@ -395,7 +390,7 @@ mod tests {
         let bytes = basic_encode(&x).unwrap();
         let (type_index, schema) =
             generate_full_schema_from_single_type::<SimpleStruct, NoCustomTypeExtension>();
-        let result = validate(&bytes, &schema, type_index);
+        let result = validate_payload_with_schema(&bytes, &schema, type_index);
         assert!(result.is_ok())
     }
 }
