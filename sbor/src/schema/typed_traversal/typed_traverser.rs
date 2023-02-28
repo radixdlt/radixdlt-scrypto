@@ -25,7 +25,7 @@ pub fn traverse_payload_with_types<'de, 's, E: CustomTypeExtension>(
 /// and adds the relevant type index to the events which are output.
 pub struct TypedTraverser<'de, 's, E: CustomTypeExtension> {
     traverser: VecTraverser<'de, E::CustomTraversal>,
-    type_state: InternalTypeState<'s, E>,
+    state: TypedTraverserState<'s, E>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -107,7 +107,7 @@ impl<'de, 's, E: CustomTypeExtension> TypedTraverser<'de, 's, E> {
     ) -> Self {
         Self {
             traverser: VecTraverser::new(input, max_depth, payload_prefix, check_exact_end),
-            type_state: InternalTypeState {
+            state: TypedTraverserState {
                 container_stack: Vec::with_capacity(max_depth),
                 schema_type_kinds: type_kinds,
                 root_type_index: type_index,
@@ -122,20 +122,19 @@ impl<'de, 's, E: CustomTypeExtension> TypedTraverser<'de, 's, E> {
         let typed_event = match event {
             TraversalEvent::PayloadPrefix => TypedTraversalEvent::PayloadPrefix,
             TraversalEvent::ContainerStart(header) => {
-                let type_index = self.type_state.get_type_index(&location);
-                self.type_state
-                    .map_container_start_event(type_index, header)
+                let type_index = self.state.get_type_index(&location);
+                self.state.map_container_start_event(type_index, header)
             }
             TraversalEvent::TerminalValue(value) => {
-                let type_index = self.type_state.get_type_index(&location);
-                self.type_state.map_terminal_value_event(type_index, value)
+                let type_index = self.state.get_type_index(&location);
+                self.state.map_terminal_value_event(type_index, value)
             }
             TraversalEvent::TerminalValueBatch(value_batch) => {
-                let type_index = self.type_state.get_type_index(&location);
-                self.type_state
+                let type_index = self.state.get_type_index(&location);
+                self.state
                     .map_terminal_value_batch_event(type_index, value_batch)
             }
-            TraversalEvent::ContainerEnd(header) => self.type_state.map_container_end_event(header),
+            TraversalEvent::ContainerEnd(header) => self.state.map_container_end_event(header),
             TraversalEvent::End => TypedTraversalEvent::End,
             TraversalEvent::DecodeError(decode_error) => {
                 TypedTraversalEvent::Error(TypedTraversalError::DecodeError(decode_error))
@@ -145,20 +144,20 @@ impl<'de, 's, E: CustomTypeExtension> TypedTraverser<'de, 's, E> {
         TypedLocatedTraversalEvent {
             location: TypedLocation {
                 location,
-                typed_ancestor_path: &self.type_state.container_stack,
+                typed_ancestor_path: &self.state.container_stack,
             },
             event: typed_event,
         }
     }
 }
 
-struct InternalTypeState<'s, E: CustomTypeExtension> {
+struct TypedTraverserState<'s, E: CustomTypeExtension> {
     container_stack: Vec<ContainerType<'s>>,
     schema_type_kinds: &'s [SchemaTypeKind<E>],
     root_type_index: LocalTypeIndex,
 }
 
-impl<'s, E: CustomTypeExtension> InternalTypeState<'s, E> {
+impl<'s, E: CustomTypeExtension> TypedTraverserState<'s, E> {
     fn map_container_start_event<'t, 'de>(
         &'t mut self,
         type_index: LocalTypeIndex,
