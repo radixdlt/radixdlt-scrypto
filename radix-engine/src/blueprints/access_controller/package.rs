@@ -241,7 +241,7 @@ impl AccessControllerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: AccessControllerCreateGlobalInput =
@@ -259,25 +259,16 @@ impl AccessControllerNativePackage {
             vault
         };
 
-        /*
-        let mut node_modules = BTreeMap::new();
-        node_modules.insert(
-            NodeModuleId::AccessRules,
-            RENodeModuleInit::ObjectAccessRulesChain(MethodAccessRulesChainSubstate {
-                access_rules_chain: [].into(),
-            }),
-        );
-         */
-
-        // Constructing the Access Controller RENode and Substates
-        let access_controller = RENodeInit::AccessController(AccessControllerSubstate::new(
+        let substate = AccessControllerSubstate::new(
             vault.0,
             input.timed_recovery_delay_in_minutes,
-        ));
-
-        // Allocating an RENodeId and creating the access controller RENode
-        let node_id = api.kernel_allocate_node_id(RENodeType::AccessController)?;
-        api.kernel_create_node(node_id, access_controller, BTreeMap::new())?;
+        );
+        let access_controller = api.new_object(
+            ACCESS_CONTROLLER_BLUEPRINT,
+            btreemap!(
+                0 => scrypto_encode(&substate).unwrap()
+            )
+        )?;
 
         let access_rules = access_rules_from_rule_set(input.rule_set);
         let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
@@ -285,7 +276,7 @@ impl AccessControllerNativePackage {
 
         // Creating a global component address for the access controller RENode
         let address = api.globalize(
-            node_id,
+            RENodeId::AccessController(access_controller),
             btreemap!(
                 NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
                 NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),

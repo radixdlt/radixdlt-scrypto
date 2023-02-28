@@ -911,22 +911,13 @@ where
                 );
             }
             (RENodeId::Clock(..), RENodeInit::Clock(..)) => { }
+            (RENodeId::AccessController(..), RENodeInit::AccessController(..)) => { }
             (RENodeId::Identity(..), RENodeInit::Identity(..)) => {
                 module_init.insert(
                     NodeModuleId::TypeInfo,
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: IDENTITY_PACKAGE,
                         blueprint_name: IDENTITY_BLUEPRINT.to_string(),
-                        global: false,
-                    }),
-                );
-            }
-            (RENodeId::AccessController(..), RENodeInit::AccessController(..)) => {
-                module_init.insert(
-                    NodeModuleId::TypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: ACCESS_CONTROLLER_PACKAGE,
-                        blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
                         global: false,
                     }),
                 );

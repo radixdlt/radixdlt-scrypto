@@ -33,6 +33,7 @@ use radix_engine_interface::data::model::Own;
 use radix_engine_interface::data::*;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+use crate::blueprints::access_controller::AccessControllerSubstate;
 use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::clock::CurrentTimeRoundedToMinutesSubstate;
 use crate::system::package::Package;
@@ -222,6 +223,14 @@ where
             .package_address();
 
         let (node_id, node_init) = match package_address {
+            ACCESS_CONTROLLER_PACKAGE => {
+                let substate_bytes = app_states.into_iter().next().unwrap().1;
+                let substate: AccessControllerSubstate = scrypto_decode(&substate_bytes)
+                    .map_err(|_| RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema))?;
+
+                let node_id = self.kernel_allocate_node_id(RENodeType::AccessController)?;
+                (node_id, RENodeInit::AccessController(substate))
+            }
             ACCOUNT_PACKAGE => {
                 let substate_bytes = app_states.into_iter().next().unwrap().1;
                 let substate: AccountSubstate = scrypto_decode(&substate_bytes)
