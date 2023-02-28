@@ -607,7 +607,7 @@ mod tests {
 
     pub fn encode_array_of_depth(depth: usize) -> Result<Vec<u8>, EncodeError> {
         let mut buf = Vec::new();
-        let mut encoder = BasicEncoder::new(&mut buf, 255);
+        let mut encoder = BasicEncoder::new(&mut buf, 256);
         encoder.write_payload_prefix(BASIC_SBOR_V1_PAYLOAD_PREFIX)?;
         encoder.write_value_kind(ValueKind::Array)?;
         // Encodes depth - 1 array bodies
@@ -624,7 +624,7 @@ mod tests {
 
     pub fn encode_struct_of_depth(depth: usize) -> Result<Vec<u8>, EncodeError> {
         let mut buf = Vec::new();
-        let mut encoder = BasicEncoder::new(&mut buf, 255);
+        let mut encoder = BasicEncoder::new(&mut buf, 256);
         encoder.write_payload_prefix(BASIC_SBOR_V1_PAYLOAD_PREFIX)?;
         // Encodes depth - 1 structs containing 1 child
         for _ in 1..depth {
@@ -640,7 +640,7 @@ mod tests {
 
     pub fn encode_tuple_of_depth(depth: usize) -> Result<Vec<u8>, EncodeError> {
         let mut buf = Vec::new();
-        let mut encoder = BasicEncoder::new(&mut buf, 255);
+        let mut encoder = BasicEncoder::new(&mut buf, 256);
         encoder.write_payload_prefix(BASIC_SBOR_V1_PAYLOAD_PREFIX)?;
         // Encodes depth - 1 structs containing 1 child
         for _ in 1..depth {

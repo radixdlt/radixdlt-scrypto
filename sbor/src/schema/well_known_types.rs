@@ -25,11 +25,11 @@ pub mod basic_well_known_types {
 macro_rules! create_well_known_lookup {
     ($lookup_name: ident, $custom_type_kind: ty, [$(($id: path, $type_data: expr),)*]) => {
         lazy_static::lazy_static! {
-            static ref $lookup_name: [Option<TypeData<$custom_type_kind, LocalTypeIndex>>; 255] = {
+            static ref $lookup_name: [Option<TypeData<$custom_type_kind, LocalTypeIndex>>; 256] = {
                 let mut lookup = {
                     // Initialize the array with None, following the example here:
                     // https://github.com/rust-lang/rust/issues/54542#issuecomment-505789992
-                    let mut lookup: [sbor::rust::mem::MaybeUninit<Option<TypeData<$custom_type_kind, LocalTypeIndex>>>; 255] = unsafe {
+                    let mut lookup: [sbor::rust::mem::MaybeUninit<Option<TypeData<$custom_type_kind, LocalTypeIndex>>>; 256] = unsafe {
                         sbor::rust::mem::MaybeUninit::uninit().assume_init()
                     };
 
@@ -37,7 +37,7 @@ macro_rules! create_well_known_lookup {
                         unsafe { sbor::rust::ptr::write(elem.as_mut_ptr(), None); }
                     }
 
-                    unsafe { sbor::rust::mem::transmute::<_, [Option<TypeData<$custom_type_kind, LocalTypeIndex>>; 255]>(lookup) }
+                    unsafe { sbor::rust::mem::transmute::<_, [Option<TypeData<$custom_type_kind, LocalTypeIndex>>; 256]>(lookup) }
                 };
                 // Now add in the basic types
                 lookup[sbor::basic_well_known_types::BOOL_ID as usize] = Some(TypeData::named_no_child_names("Bool", TypeKind::Bool));

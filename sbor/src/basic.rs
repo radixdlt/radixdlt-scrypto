@@ -179,7 +179,7 @@ mod schema {
             well_known_index: u8,
         ) -> Option<&'static TypeData<Self::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>>
         {
-            // We know that WELL_KNOWN_LOOKUP has 255 elements, so can use `get_unchecked` for fast look-ups
+            // We know that WELL_KNOWN_LOOKUP has 256 elements, so can use `get_unchecked` for fast look-ups
             unsafe {
                 WELL_KNOWN_LOOKUP
                     .get_unchecked(well_known_index as usize)

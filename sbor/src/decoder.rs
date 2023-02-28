@@ -318,10 +318,10 @@ mod tests {
     fn encode_decode_size(size: usize) -> Result<(), DecodeError> {
         // Encode
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = BasicEncoder::new(&mut bytes, 255);
+        let mut enc = BasicEncoder::new(&mut bytes, 256);
         enc.write_size(size).unwrap();
 
-        let mut dec = BasicDecoder::new(&bytes, 255);
+        let mut dec = BasicDecoder::new(&bytes, 256);
         dec.read_and_check_size(size)?;
         dec.check_end()?;
         Ok(())
@@ -343,7 +343,7 @@ mod tests {
 
     #[test]
     pub fn test_vlq_too_large() {
-        let mut dec = BasicDecoder::new(&[0xff, 0xff, 0xff, 0xff, 0x00], 255);
+        let mut dec = BasicDecoder::new(&[0xff, 0xff, 0xff, 0xff, 0x00], 256);
         assert_eq!(dec.read_size(), Err(DecodeError::SizeTooLarge));
     }
 
@@ -410,14 +410,14 @@ mod tests {
             34, 0, 1, 9, 1, 0, 0, 0, // Ok<T>
             34, 1, 1, 12, 5, 104, 101, 108, 108, 111, // Err<T>
         ];
-        let mut dec = BasicDecoder::new(&bytes, 255);
+        let mut dec = BasicDecoder::new(&bytes, 256);
         assert_decoding(&mut dec);
     }
 
     #[test]
     pub fn test_decode_box() {
         let bytes = vec![7u8, 5u8];
-        let mut dec = BasicDecoder::new(&bytes, 255);
+        let mut dec = BasicDecoder::new(&bytes, 256);
         let x = dec.decode::<Box<u8>>().unwrap();
         assert_eq!(Box::new(5u8), x);
     }
@@ -425,7 +425,7 @@ mod tests {
     #[test]
     pub fn test_decode_rc() {
         let bytes = vec![7u8, 5u8];
-        let mut dec = BasicDecoder::new(&bytes, 255);
+        let mut dec = BasicDecoder::new(&bytes, 256);
         let x = dec.decode::<Rc<u8>>().unwrap();
         assert_eq!(Rc::new(5u8), x);
     }
@@ -433,7 +433,7 @@ mod tests {
     #[test]
     pub fn test_decode_ref_cell() {
         let bytes = vec![7u8, 5u8];
-        let mut dec = BasicDecoder::new(&bytes, 255);
+        let mut dec = BasicDecoder::new(&bytes, 256);
         let x = dec.decode::<RefCell<u8>>().unwrap();
         assert_eq!(RefCell::new(5u8), x);
     }
@@ -459,10 +459,10 @@ mod tests {
 
         // Encode
         let mut bytes = Vec::with_capacity(512);
-        let mut encoder = BasicEncoder::new(&mut bytes, 255);
+        let mut encoder = BasicEncoder::new(&mut bytes, 256);
         encoder.encode(&value1).unwrap();
 
-        let mut decoder = BasicDecoder::new(&bytes, 255);
+        let mut decoder = BasicDecoder::new(&bytes, 256);
         let value2 = decoder.decode::<[NFA; 2]>().unwrap();
         assert_eq!(value1, value2);
     }

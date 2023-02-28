@@ -208,7 +208,7 @@ mod tests {
     #[test]
     pub fn test_encoding() {
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = BasicEncoder::new(&mut bytes, 255);
+        let mut enc = BasicEncoder::new(&mut bytes, 256);
         do_encoding(&mut enc).unwrap();
 
         assert_eq!(
@@ -258,7 +258,7 @@ mod tests {
     #[test]
     pub fn test_encode_index_map_and_set() {
         let mut bytes = Vec::with_capacity(512);
-        let mut encoder = BasicEncoder::new(&mut bytes, 255);
+        let mut encoder = BasicEncoder::new(&mut bytes, 256);
         let mut set = index_set_new::<u8>();
         set.insert(1);
         set.insert(2);
@@ -276,7 +276,7 @@ mod tests {
             bytes
         );
 
-        let mut decoder = BasicDecoder::new(&bytes, 255);
+        let mut decoder = BasicDecoder::new(&bytes, 256);
         let set_out = decoder.decode::<IndexSet<u8>>().unwrap();
         let map_out = decoder.decode::<IndexMap<u8, u8>>().unwrap();
         decoder.check_end().unwrap();
@@ -292,7 +292,7 @@ mod tests {
         set.insert(2);
         let x = crate::rust::borrow::Cow::Borrowed(&set);
         let mut bytes = Vec::with_capacity(512);
-        let mut encoder = BasicEncoder::new(&mut bytes, 255);
+        let mut encoder = BasicEncoder::new(&mut bytes, 256);
         encoder.encode(&x).unwrap();
         assert_eq!(bytes, vec![32, 7, 2, 1, 2]) // Same as set above
     }
@@ -302,7 +302,7 @@ mod tests {
         use crate::rust::borrow::Cow;
         let x: Cow<u8> = Cow::Owned(5u8);
         let mut bytes = Vec::with_capacity(512);
-        let mut encoder = BasicEncoder::new(&mut bytes, 255);
+        let mut encoder = BasicEncoder::new(&mut bytes, 256);
         encoder.encode(&x).unwrap();
         assert_eq!(bytes, vec![7, 5])
     }
@@ -311,7 +311,7 @@ mod tests {
     pub fn test_encode_box() {
         let x = Box::new(5u8);
         let mut bytes = Vec::with_capacity(512);
-        let mut encoder = BasicEncoder::new(&mut bytes, 255);
+        let mut encoder = BasicEncoder::new(&mut bytes, 256);
         encoder.encode(&x).unwrap();
         assert_eq!(bytes, vec![7, 5])
     }
@@ -320,7 +320,7 @@ mod tests {
     pub fn test_encode_rc() {
         let x = crate::rust::rc::Rc::new(5u8);
         let mut bytes = Vec::with_capacity(512);
-        let mut encoder = BasicEncoder::new(&mut bytes, 255);
+        let mut encoder = BasicEncoder::new(&mut bytes, 256);
         encoder.encode(&x).unwrap();
         assert_eq!(bytes, vec![7, 5])
     }
@@ -329,7 +329,7 @@ mod tests {
     pub fn test_encode_ref_cell() {
         let x = crate::rust::cell::RefCell::new(5u8);
         let mut bytes = Vec::with_capacity(512);
-        let mut encoder = BasicEncoder::new(&mut bytes, 255);
+        let mut encoder = BasicEncoder::new(&mut bytes, 256);
         encoder.encode(&x).unwrap();
         assert_eq!(bytes, vec![7, 5])
     }
