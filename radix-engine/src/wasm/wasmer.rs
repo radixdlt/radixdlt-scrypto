@@ -480,7 +480,7 @@ impl WasmerModule {
                 GET_ACTOR_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_actor),
                 CONSUME_COST_UNITS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), consume_cost_units),
                 EMIT_EVENT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), emit_event),
-                LOG_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), log),
+                LOG_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), log_message),
             }
         };
 
