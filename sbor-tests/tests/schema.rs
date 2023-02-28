@@ -64,18 +64,8 @@ fn create_unit_struct_schema_works_correctly() {
     assert!(matches!(type_ref, LocalTypeIndex::SchemaLocalIndex(0)));
     assert_eq!(schema.type_kinds.len(), 1);
     assert_eq!(schema.type_metadata.len(), 1);
-    assert_eq!(
-        GlobalTypeId::Novel(schema.type_metadata[0].type_hash),
-        <UnitStruct as Describe<NoCustomTypeKind>>::TYPE_ID
-    );
-    assert_eq!(
-        schema.type_metadata[0].type_metadata.type_name,
-        "UnitStruct"
-    );
-    assert!(matches!(
-        &schema.type_metadata[0].type_metadata.children,
-        Children::None
-    ));
+    assert_eq!(schema.type_metadata[0].type_name, "UnitStruct");
+    assert!(matches!(&schema.type_metadata[0].children, Children::None));
     assert!(schema.validate().is_ok());
 }
 

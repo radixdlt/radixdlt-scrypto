@@ -4,6 +4,7 @@ use sbor::*;
 
 pub type ScryptoTypeKind<L> = TypeKind<ScryptoCustomValueKind, ScryptoCustomTypeKind<L>, L>;
 pub type ScryptoSchema = Schema<ScryptoCustomTypeExtension>;
+pub type ScryptoTypeData<L> = TypeData<ScryptoCustomTypeKind<L>, L>;
 
 /// A schema for the values that a codec can decode / views as valid
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]

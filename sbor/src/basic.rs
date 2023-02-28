@@ -220,4 +220,5 @@ mod schema {
 
     pub type BasicTypeKind<L> = TypeKind<NoCustomValueKind, NoCustomTypeKind, L>;
     pub type BasicSchema = Schema<NoCustomTypeExtension>;
+    pub type BasicTypeData<L> = TypeData<NoCustomTypeKind, L>;
 }

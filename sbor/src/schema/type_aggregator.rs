@@ -19,12 +19,12 @@ pub fn generate_full_schema<C: CustomTypeKind<GlobalTypeId>>(
     let mut type_kinds = Vec::with_capacity(type_count);
     let mut type_metadata = Vec::with_capacity(type_count);
     let mut type_validations = Vec::with_capacity(type_count);
-    for (type_hash, type_data) in aggregator.types {
+    for (_type_hash, type_data) in aggregator.types {
         type_kinds.push(linearize::<C::CustomTypeExtension>(
             type_data.kind,
             &type_indices,
         ));
-        type_metadata.push(type_data.metadata.with_type_hash(type_hash));
+        type_metadata.push(type_data.metadata);
         type_validations.push(type_data.validation);
     }
 

@@ -6,7 +6,7 @@ use crate::*;
 #[sbor(child_types = "E::CustomTypeKind<LocalTypeIndex>, E::CustomTypeValidation")]
 pub struct Schema<E: CustomTypeExtension> {
     pub type_kinds: Vec<SchemaTypeKind<E>>,
-    pub type_metadata: Vec<NovelTypeMetadata>,
+    pub type_metadata: Vec<TypeMetadata>, // TODO: reconsider adding type hash when it's ready!
     pub type_validations: Vec<SchemaTypeValidation<E>>,
 }
 
@@ -67,13 +67,11 @@ impl<E: CustomTypeExtension> Schema<E> {
                     self.type_metadata.get(index),
                     self.type_validations.get(index),
                 ) {
-                    (Some(type_kind), Some(novel_metadata), Some(validation)) => {
-                        Some(ResolvedTypeData {
-                            kind: type_kind,
-                            metadata: &novel_metadata.type_metadata,
-                            validation,
-                        })
-                    }
+                    (Some(type_kind), Some(metadata), Some(validation)) => Some(ResolvedTypeData {
+                        kind: type_kind,
+                        metadata: &metadata,
+                        validation,
+                    }),
                     _ => None,
                 }
             }

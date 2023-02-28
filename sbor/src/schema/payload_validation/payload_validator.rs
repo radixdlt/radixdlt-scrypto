@@ -75,6 +75,8 @@ pub struct ErrorLocation {
     end_offset: usize,
 }
 
+// TODO: need better representation for validated scheme to eliminate panic below
+
 #[macro_export]
 macro_rules! failed_to_resolve_type_validation {
     () => {
@@ -258,7 +260,6 @@ pub fn validate_terminal_value_batch<'de, E: CustomTypeExtension>(
         TypeValidation::None => {}
         TypeValidation::U8(numeric_validation) => {
             // This is for `Vec<u8<min, max>>`
-            // TODO: add test
             let TerminalValueBatchRef::U8(value_batch) = value_batch;
             for byte in value_batch.iter() {
                 if !numeric_validation.is_valid(*byte) {
@@ -360,7 +361,7 @@ mod tests {
     }
 
     #[test]
-    pub fn test_schema() {
+    pub fn test_basic_payload_validation() {
         let mut x = SimpleStruct {
             unit: (),
             boolean: true,
