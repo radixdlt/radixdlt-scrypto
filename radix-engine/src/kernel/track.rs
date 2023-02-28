@@ -291,8 +291,8 @@ impl<'s> Track<'s> {
         match &substate_id {
             SubstateId(
                 RENodeId::GlobalComponent(component_address),
-                NodeModuleId::SELF,
-                SubstateOffset::Global(GlobalOffset::Global),
+                NodeModuleId::TypeInfo,
+                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
             ) => {
                 self.new_global_addresses
                     .push(Address::Component(*component_address));
@@ -603,7 +603,7 @@ impl<'s> FinalizingTrack<'s> {
                 .iter()
                 .find(|(identifier, _)| match identifier {
                     EventTypeIdentifier(
-                        RENodeId::EpochManager(..),
+                        RENodeId::GlobalComponent(ComponentAddress::EpochManager(..)),
                         NodeModuleId::SELF,
                         schema_hash,
                     ) if *schema_hash == expected_schema_hash => true,
@@ -717,9 +717,9 @@ impl<'s> FinalizingTrack<'s> {
                         )
                         .unwrap();
                 }
-                RoyaltyReceiver::Component(_, component_id) => {
+                RoyaltyReceiver::Component(node_id) => {
                     let substate_id = SubstateId(
-                        RENodeId::Component(*component_id),
+                        *node_id,
                         NodeModuleId::ComponentRoyalty,
                         SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                     );

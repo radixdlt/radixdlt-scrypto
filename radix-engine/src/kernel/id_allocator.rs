@@ -40,7 +40,7 @@ impl IdAllocator {
         let ids = self.frame_allocated_ids.pop().expect("No frame found");
         if !ids.is_empty() {
             return Err(RuntimeError::KernelError(KernelError::IdAllocationError(
-                IdAllocationError::AllocatedIDsNotEmpty,
+                IdAllocationError::AllocatedIDsNotEmpty(ids),
             )));
         }
         Ok(())
@@ -56,6 +56,16 @@ impl IdAllocator {
             )));
         }
         Ok(())
+    }
+
+    // Protected, only virtual manager should call this
+    // TODO: Clean up interface
+    pub fn allocate_virtual_node_id(&mut self, node_id: RENodeId) {
+        let ids = self
+            .frame_allocated_ids
+            .last_mut()
+            .expect("No frame found.");
+        ids.insert(node_id);
     }
 
     pub fn allocate_node_id(&mut self, node_type: RENodeType) -> Result<RENodeId, RuntimeError> {

@@ -19,28 +19,7 @@ pub enum ClientApiError {
 
 pub struct ScryptoEnv;
 
-impl ScryptoEnv {
-    pub fn get_global_component_type_info(
-        &mut self,
-        component_address: ComponentAddress,
-    ) -> Result<(PackageAddress, String), ClientApiError> {
-        let component_id = self.lookup_global_component(component_address)?;
-        self.get_component_type_info(component_id)
-    }
-}
-
 impl ClientComponentApi<ClientApiError> for ScryptoEnv {
-    fn lookup_global_component(
-        &mut self,
-        component_address: ComponentAddress,
-    ) -> Result<ComponentId, ClientApiError> {
-        let component_address = scrypto_encode(&component_address).unwrap();
-        let bytes = copy_buffer(unsafe {
-            lookup_global_component(component_address.as_ptr(), component_address.len())
-        });
-        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
-    }
-
     fn new_component(
         &mut self,
         blueprint_ident: &str,
@@ -71,14 +50,29 @@ impl ClientComponentApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
-    fn globalize_component(
-        &mut self,
-        component_id: ComponentId,
-    ) -> Result<ComponentAddress, ClientApiError> {
-        let component_id = scrypto_encode(&component_id).unwrap();
+    fn globalize(&mut self, node_id: RENodeId) -> Result<ComponentAddress, ClientApiError> {
+        let node_id = scrypto_encode(&node_id).unwrap();
 
-        let bytes =
-            copy_buffer(unsafe { globalize_component(component_id.as_ptr(), component_id.len()) });
+        let bytes = copy_buffer(unsafe { globalize_component(node_id.as_ptr(), node_id.len()) });
+        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
+    }
+
+    fn globalize_with_address(
+        &mut self,
+        node_id: RENodeId,
+        address: Address,
+    ) -> Result<ComponentAddress, ClientApiError> {
+        let node_id = scrypto_encode(&node_id).unwrap();
+        let address = scrypto_encode(&address).unwrap();
+
+        let bytes = copy_buffer(unsafe {
+            globalize_with_address(
+                node_id.as_ptr(),
+                node_id.len(),
+                address.as_ptr(),
+                address.len(),
+            )
+        });
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
@@ -117,13 +111,12 @@ impl ClientComponentApi<ClientApiError> for ScryptoEnv {
 
     fn get_component_type_info(
         &mut self,
-        component_id: ComponentId,
+        node_id: RENodeId,
     ) -> Result<(PackageAddress, String), ClientApiError> {
-        let component_id = scrypto_encode(&component_id).unwrap();
+        let node_id = scrypto_encode(&node_id).unwrap();
 
-        let bytes = copy_buffer(unsafe {
-            get_component_type_info(component_id.as_ptr(), component_id.len())
-        });
+        let bytes =
+            copy_buffer(unsafe { get_component_type_info(node_id.as_ptr(), node_id.len()) });
 
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }

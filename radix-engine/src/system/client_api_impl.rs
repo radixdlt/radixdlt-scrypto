@@ -1,14 +1,13 @@
 use crate::blueprints::resource::NonFungibleSubstate;
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::errors::{KernelError, SystemError};
-use crate::kernel::actor::{ResolvedActor, ResolvedReceiver};
+use crate::kernel::actor::ResolvedActor;
 use crate::kernel::kernel::Kernel;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::{Invokable, KernelInternalApi};
 use crate::kernel::module::KernelModule;
 use crate::kernel::module_mixer::KernelModuleMixer;
-use crate::system::global::GlobalSubstate;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
@@ -67,7 +66,7 @@ where
         }
 
         let module_id = if let Some(receiver) = self.kernel_get_current_actor().unwrap().receiver {
-            receiver.receiver.1
+            receiver.1
         } else {
             NodeModuleId::SELF
         };
@@ -208,21 +207,6 @@ impl<'g, 's, W> ClientComponentApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    fn lookup_global_component(
-        &mut self,
-        component_address: ComponentAddress,
-    ) -> Result<ComponentId, RuntimeError> {
-        let offset = SubstateOffset::Global(GlobalOffset::Global);
-        let handle = self.kernel_lock_substate(
-            RENodeId::GlobalComponent(component_address),
-            NodeModuleId::SELF,
-            offset,
-            LockFlags::empty(),
-        )?;
-        let global: &GlobalSubstate = self.kernel_get_substate_ref(handle)?;
-        Ok(global.node_deref().into())
-    }
-
     fn new_component(
         &mut self,
         blueprint_ident: &str,
@@ -282,19 +266,102 @@ where
         Ok(node_id.into())
     }
 
-    fn globalize_component(
+    fn globalize(&mut self, node_id: RENodeId) -> Result<ComponentAddress, RuntimeError> {
+        let node_type = match node_id {
+            RENodeId::Component(..) => RENodeType::GlobalComponent,
+            RENodeId::Identity(..) => RENodeType::GlobalIdentity,
+            RENodeId::Validator(..) => RENodeType::GlobalValidator,
+            RENodeId::EpochManager(..) => RENodeType::GlobalEpochManager,
+            RENodeId::Clock(..) => RENodeType::GlobalClock,
+            RENodeId::Account(..) => RENodeType::GlobalAccount,
+            RENodeId::AccessController(..) => RENodeType::GlobalAccessController,
+            _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
+        };
+
+        let global_node_id = self.kernel_allocate_node_id(node_type)?;
+        self.globalize_with_address(node_id, global_node_id.into())
+    }
+
+    fn globalize_with_address(
         &mut self,
-        component_id: ComponentId,
+        node_id: RENodeId,
+        address: Address,
     ) -> Result<ComponentAddress, RuntimeError> {
-        let node_id = self.kernel_allocate_node_id(RENodeType::GlobalComponent)?;
+        let node = self.kernel_drop_node(node_id)?;
+
+        let mut module_substates = BTreeMap::new();
+        let mut component_substates = BTreeMap::new();
+        for ((node_module_id, offset), substate) in node.substates {
+            match node_module_id {
+                NodeModuleId::SELF => component_substates.insert(offset, substate),
+                _ => module_substates.insert((node_module_id, offset), substate),
+            };
+        }
+
+        let mut module_init = BTreeMap::new();
+
+        let type_info = module_substates
+            .remove(&(
+                NodeModuleId::TypeInfo,
+                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+            ))
+            .unwrap();
+        let type_info_substate: TypeInfoSubstate = type_info.into();
+        module_init.insert(
+            NodeModuleId::TypeInfo,
+            RENodeModuleInit::TypeInfo(type_info_substate),
+        );
+
+        if let Some(access_rules) = module_substates.remove(&(
+            NodeModuleId::AccessRules,
+            SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+        )) {
+            let access_rules_substate: ObjectAccessRulesChainSubstate = access_rules.into();
+            module_init.insert(
+                NodeModuleId::AccessRules,
+                RENodeModuleInit::ObjectAccessRulesChain(access_rules_substate),
+            );
+        }
+        if let Some(royalty_config) = module_substates.remove(&(
+            NodeModuleId::ComponentRoyalty,
+            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
+        )) {
+            let royalty_config_substate: ComponentRoyaltyConfigSubstate = royalty_config.into();
+            let royalty_accumulator = module_substates
+                .remove(&(
+                    NodeModuleId::ComponentRoyalty,
+                    SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
+                ))
+                .unwrap();
+            let royalty_accumulator_substate: ComponentRoyaltyAccumulatorSubstate =
+                royalty_accumulator.into();
+            module_init.insert(
+                NodeModuleId::ComponentRoyalty,
+                RENodeModuleInit::ComponentRoyalty(
+                    royalty_config_substate,
+                    royalty_accumulator_substate,
+                ),
+            );
+        }
+
+        if let Some(metadata) = module_substates.remove(&(
+            NodeModuleId::Metadata,
+            SubstateOffset::Metadata(MetadataOffset::Metadata),
+        )) {
+            let metadata_substate: MetadataSubstate = metadata.into();
+            module_init.insert(
+                NodeModuleId::Metadata,
+                RENodeModuleInit::Metadata(metadata_substate),
+            );
+        }
 
         self.kernel_create_node(
-            node_id,
-            RENodeInit::GlobalComponent(GlobalSubstate::Component(component_id)),
-            btreemap!(),
+            address.into(),
+            RENodeInit::GlobalComponent(component_substates),
+            module_init,
         )?;
 
-        Ok(node_id.into())
+        Ok(address.into())
     }
 
     fn call_method(
@@ -325,11 +392,11 @@ where
 
     fn get_component_type_info(
         &mut self,
-        component_id: ComponentId,
+        node_id: RENodeId,
     ) -> Result<(PackageAddress, String), RuntimeError> {
-        let component_node_id = RENodeId::Component(component_id);
+        // TODO: Use Node Module method instead of direct access
         let handle = self.kernel_lock_substate(
-            component_node_id,
+            node_id,
             NodeModuleId::TypeInfo,
             SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
             LockFlags::read_only(),
@@ -414,11 +481,7 @@ where
 
         let event_type_id = match self.kernel_get_current_actor() {
             Some(ResolvedActor {
-                receiver:
-                    Some(ResolvedReceiver {
-                        receiver: MethodReceiver(node_id, node_module_id),
-                        ..
-                    }),
+                receiver: Some(MethodReceiver(node_id, node_module_id)),
                 ..
             }) => Ok(EventTypeIdentifier(node_id, node_module_id, schema_hash)),
             Some(ResolvedActor {
