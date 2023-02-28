@@ -1,4 +1,3 @@
-use crate::decoder::PayloadTraverser;
 use crate::rust::collections::*;
 use crate::rust::vec::Vec;
 use crate::traversal::*;
@@ -110,70 +109,20 @@ impl CustomTerminalValueRef for NoCustomTerminalValueRef {
 }
 
 #[derive(Copy, Debug, Clone, PartialEq, Eq)]
-pub enum NoCustomTerminalValueBatchRef {}
-
-impl CustomTerminalValueBatchRef for NoCustomTerminalValueBatchRef {
-    type CustomValueKind = NoCustomValueKind;
-
-    fn custom_value_kind(&self) -> Self::CustomValueKind {
-        unreachable!("NoCustomTerminalValueBatchRef can't exist")
-    }
-}
-
-#[derive(Copy, Debug, Clone, PartialEq, Eq)]
-pub enum NoCustomContainerHeader {}
-
-impl CustomContainerHeader for NoCustomContainerHeader {
-    type CustomValueKind = NoCustomValueKind;
-
-    fn get_child_count(&self) -> u32 {
-        unreachable!("NoCustomContainerHeader can't exist")
-    }
-
-    fn get_implicit_child_value_kind(
-        &self,
-        _: u32,
-    ) -> (ParentRelationship, Option<ValueKind<Self::CustomValueKind>>) {
-        unreachable!("NoCustomContainerHeader can't exist")
-    }
-}
-
-#[derive(Copy, Debug, Clone, PartialEq, Eq)]
 pub enum NoCustomTraversal {}
 
 impl CustomTraversal for NoCustomTraversal {
     type CustomValueKind = NoCustomValueKind;
     type CustomTerminalValueRef<'de> = NoCustomTerminalValueRef;
-    type CustomTerminalValueBatchRef<'de> = NoCustomTerminalValueBatchRef;
-    type CustomContainerHeader = NoCustomContainerHeader;
-    type CustomValueTraverser = NoCustomTraverser;
 
-    fn new_value_traversal(
-        _: Self::CustomValueKind,
-        _: ParentRelationship,
-        _: usize,
-        _: usize,
-    ) -> Self::CustomValueTraverser {
-        unreachable!("The NoCustomValueKind parameter can't exist")
-    }
-}
-
-#[derive(Clone)]
-pub enum NoCustomTraverser {}
-
-impl CustomValueTraverser for NoCustomTraverser {
-    type CustomTraversal = NoCustomTraversal;
-
-    fn next_event<
-        't,
-        'de,
-        R: PayloadTraverser<'de, <Self::CustomTraversal as CustomTraversal>::CustomValueKind>,
-    >(
-        &mut self,
-        _: &'t mut Vec<ContainerChild<Self::CustomTraversal>>,
-        _: &mut R,
-    ) -> LocatedTraversalEvent<'t, 'de, Self::CustomTraversal> {
-        unreachable!("NoCustomTraverser can't exist")
+    fn read_custom_value_body<'de, R>(
+        _custom_value_kind: Self::CustomValueKind,
+        _reader: &mut R,
+    ) -> Result<Self::CustomTerminalValueRef<'de>, DecodeError>
+    where
+        R: decoder::PayloadTraverser<'de, Self::CustomValueKind>,
+    {
+        unreachable!("NoCustomTraversal can't exist")
     }
 }
 

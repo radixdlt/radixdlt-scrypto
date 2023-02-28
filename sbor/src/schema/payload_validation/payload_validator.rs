@@ -254,7 +254,7 @@ pub fn validate_terminal_value<'de, E: CustomTypeExtension>(
 
 pub fn validate_terminal_value_batch<'de, E: CustomTypeExtension>(
     type_validations: &[SchemaTypeValidation<E>],
-    value_batch: TerminalValueBatchRef<'de, E::CustomTraversal>,
+    value_batch: TerminalValueBatchRef<'de>,
     type_index: LocalTypeIndex,
 ) -> Result<(), ValidationError<E>> {
     let Some(validation) = resolve_type_validation::<E>(&type_validations, type_index) else {
@@ -263,9 +263,7 @@ pub fn validate_terminal_value_batch<'de, E: CustomTypeExtension>(
     match validation {
         TypeValidation::None => {}
         TypeValidation::U8(numeric_validation) => {
-            let TerminalValueBatchRef::U8(value_batch) = value_batch else {
-                return_type_validation_mismatch!()
-            };
+            let TerminalValueBatchRef::U8(value_batch) = value_batch;
             for byte in value_batch.iter() {
                 if !numeric_validation.is_valid(*byte) {
                     return_type_validation_error!(TypeValidationError::U8ValidationError {

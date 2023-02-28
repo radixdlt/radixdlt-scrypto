@@ -14,7 +14,7 @@ fn deep_auth_rules_on_component_create_creation_fails() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/deep_sbor");
 
     // Act 1 - Small Depth
-    let depth = 10u8;
+    let depth = 10usize;
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
@@ -28,7 +28,7 @@ fn deep_auth_rules_on_component_create_creation_fails() {
     receipt.expect_commit_success();
 
     // Act 2 - Very Large Depth - we get a panic at encoding time in the Scrypto WASM
-    let depth = 100u8;
+    let depth = 100usize;
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
@@ -67,7 +67,7 @@ fn setting_struct_with_deep_recursive_data_panics_inside_component() {
     let component_address = receipt.new_component_addresses().get(0).unwrap();
 
     // Act 1 - Small Depth - Succeeds
-    let depth = 10u8;
+    let depth = 10usize;
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_method(
@@ -80,7 +80,7 @@ fn setting_struct_with_deep_recursive_data_panics_inside_component() {
     receipt.expect_commit_success();
 
     // Act 2 - Very Large Depth - we get a panic at encoding time in the Scrypto WASM
-    let depth = 100u8;
+    let depth = 100usize;
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_method(

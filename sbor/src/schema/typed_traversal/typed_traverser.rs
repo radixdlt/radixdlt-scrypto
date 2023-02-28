@@ -327,9 +327,6 @@ impl<'s, E: CustomTypeExtension> InternalTypeState<'s, E> {
                     }
                 ),
             },
-            ContainerHeader::Custom(_) => {
-                unimplemented!("Custom containers are not yet fully supported")
-            }
         }
 
         TypedTraversalEvent::ContainerStart(type_index, header)
@@ -359,7 +356,7 @@ impl<'s, E: CustomTypeExtension> InternalTypeState<'s, E> {
     fn map_terminal_value_batch_event<'t, 'de>(
         &'t mut self,
         type_index: LocalTypeIndex,
-        value_batch_ref: TerminalValueBatchRef<'de, E::CustomTraversal>,
+        value_batch_ref: TerminalValueBatchRef<'de>,
     ) -> TypedTraversalEvent<'de, E::CustomTraversal> {
         let value_kind = value_batch_ref.value_kind();
         let type_kind = look_up_type!(self, E, type_index);

@@ -9,18 +9,13 @@ pub trait CustomTraversal: Copy + Debug + Clone + PartialEq + Eq {
     type CustomTerminalValueRef<'de>: CustomTerminalValueRef<
         CustomValueKind = Self::CustomValueKind,
     >;
-    type CustomTerminalValueBatchRef<'de>: CustomTerminalValueBatchRef<
-        CustomValueKind = Self::CustomValueKind,
-    >;
-    type CustomContainerHeader: CustomContainerHeader<CustomValueKind = Self::CustomValueKind>;
-    type CustomValueTraverser: CustomValueTraverser<CustomTraversal = Self> + Clone;
 
-    fn new_value_traversal(
+    fn read_custom_value_body<'de, R>(
         custom_value_kind: Self::CustomValueKind,
-        parent_relationship: ParentRelationship,
-        start_offset: usize,
-        max_depth: usize,
-    ) -> Self::CustomValueTraverser;
+        reader: &mut R,
+    ) -> Result<Self::CustomTerminalValueRef<'de>, DecodeError>
+    where
+        R: PayloadTraverser<'de, Self::CustomValueKind>;
 }
 
 pub trait CustomTerminalValueRef: Debug + Clone + PartialEq + Eq {
@@ -44,26 +39,6 @@ pub trait CustomContainerHeader: Copy + Debug + Clone + PartialEq + Eq {
     ) -> (ParentRelationship, Option<ValueKind<Self::CustomValueKind>>);
 }
 
-/// A `CustomValueTraverser` is responsible for emitting traversal events for a single custom value - and therefore is either:
-/// - Emitting a single event for a terminal value at the current depth
-/// - Emitting multiple events representing a single container value, which will return to the current depth
-///
-/// If traversing a container type, the `CustomValueTraverser` is responsible for keeping track of the depth itself,
-/// and erroring if the max depth is exceeded.
-pub trait CustomValueTraverser {
-    type CustomTraversal: CustomTraversal;
-
-    fn next_event<
-        't,
-        'de,
-        R: PayloadTraverser<'de, <Self::CustomTraversal as CustomTraversal>::CustomValueKind>,
-    >(
-        &mut self,
-        container_stack: &'t mut Vec<ContainerChild<Self::CustomTraversal>>,
-        reader: &mut R,
-    ) -> LocatedTraversalEvent<'t, 'de, Self::CustomTraversal>;
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ContainerChild<C: CustomTraversal> {
     pub container_header: ContainerHeader<C>,
@@ -82,15 +57,14 @@ pub struct VecTraverser<'de, C: CustomTraversal> {
     check_exact_end: bool,
     decoder: VecDecoder<'de, C::CustomValueKind>,
     container_stack: Vec<ContainerChild<C>>,
-    next_event_override: NextEventOverride<C::CustomValueTraverser>,
+    next_event_override: NextEventOverride,
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum NextEventOverride<C> {
+pub enum NextEventOverride {
     ReadPrefix(u8),
     ReadRootValue,
     ReadBytes(u32),
-    ReadCustomValueBody(C, usize),
     None,
 }
 
@@ -163,10 +137,6 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
             NextEventOverride::ReadRootValue => {
                 self.next_event_override = NextEventOverride::None;
                 self.read_root_value()
-            }
-            NextEventOverride::ReadCustomValueBody(traversal, sbor_depth) => {
-                self.next_event_override = NextEventOverride::None;
-                self.read_custom_value_event_override(traversal, sbor_depth)
             }
             NextEventOverride::ReadBytes(size) => {
                 self.next_event_override = NextEventOverride::None;
@@ -332,16 +302,20 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
             ValueKind::Enum => self.decode_enum_variant_header(start_offset, relationship),
             ValueKind::Tuple => self.decode_tuple_header(start_offset, relationship),
             ValueKind::Custom(custom_value_kind) => {
-                self.next_event_override = NextEventOverride::ReadCustomValueBody(
-                    T::new_value_traversal(
-                        custom_value_kind,
-                        relationship,
-                        start_offset,
-                        self.max_depth,
-                    ),
-                    self.get_sbor_depth_for_next_value(),
-                );
-                self.next_event()
+                let result = T::read_custom_value_body(custom_value_kind, &mut self.decoder);
+                let location = Location {
+                    start_offset: start_offset,
+                    end_offset: self.get_offset(),
+                    parent_relationship: relationship,
+                    ancestor_path: &self.container_stack,
+                };
+                let event = match result {
+                    Ok(custom_value) => {
+                        TraversalEvent::TerminalValue(TerminalValueRef::Custom(custom_value))
+                    }
+                    Err(decode_error) => TraversalEvent::DecodeError(decode_error),
+                };
+                LocatedTraversalEvent { location, event }
             }
         }
     }
@@ -464,24 +438,6 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
                 ancestor_path: &self.container_stack,
             },
         }
-    }
-
-    fn read_custom_value_event_override<'t>(
-        &'t mut self,
-        mut custom_traverser: T::CustomValueTraverser,
-        entry_depth: usize,
-    ) -> LocatedTraversalEvent<'t, 'de, T> {
-        let traversal_event =
-            custom_traverser.next_event(&mut self.container_stack, &mut self.decoder);
-        // We assume the custom traverser is for a single value - and therefore is either:
-        // - Emitting a single event for a terminal value at the current depth
-        // - Emitting multiple events representing a single container value, which will return to the current depth
-        // Either way, when the traversal_event's next sbor depth matches the sbor depth when the custom traverser was entered,
-        // this means that the custom traverser has returned
-        if traversal_event.get_next_sbor_depth() == entry_depth {
-            self.next_event_override = NextEventOverride::None;
-        }
-        traversal_event
     }
 
     fn read_bytes_event_override<'t>(&'t mut self, size: u32) -> LocatedTraversalEvent<'t, 'de, T> {
@@ -855,7 +811,7 @@ mod tests {
 
     pub fn next_event_is_terminal_value_slice<'de>(
         traverser: &mut BasicTraverser<'de>,
-        expected_value_batch: TerminalValueBatchRef<'de, NoCustomTraversal>,
+        expected_value_batch: TerminalValueBatchRef<'de>,
         expected_stack_depth: usize,
         expected_start_offset: usize,
         expected_end_offset: usize,

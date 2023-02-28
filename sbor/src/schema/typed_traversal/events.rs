@@ -14,7 +14,7 @@ pub enum TypedTraversalEvent<'de, C: CustomTraversal> {
     ContainerStart(LocalTypeIndex, ContainerHeader<C>),
     ContainerEnd(LocalTypeIndex, ContainerHeader<C>),
     TerminalValue(LocalTypeIndex, TerminalValueRef<'de, C>),
-    TerminalValueBatch(LocalTypeIndex, TerminalValueBatchRef<'de, C>),
+    TerminalValueBatch(LocalTypeIndex, TerminalValueBatchRef<'de>),
     End,
     Error(TypedTraversalError<C::CustomValueKind>),
 }

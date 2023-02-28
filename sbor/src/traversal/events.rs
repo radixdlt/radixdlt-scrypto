@@ -25,7 +25,7 @@ pub enum TraversalEvent<'de, C: CustomTraversal> {
     ContainerStart(ContainerHeader<C>),
     ContainerEnd(ContainerHeader<C>),
     TerminalValue(TerminalValueRef<'de, C>),
-    TerminalValueBatch(TerminalValueBatchRef<'de, C>),
+    TerminalValueBatch(TerminalValueBatchRef<'de>),
     End,
     DecodeError(DecodeError),
 }
@@ -78,7 +78,6 @@ pub enum ContainerHeader<C: CustomTraversal> {
     EnumVariant(EnumVariantHeader),
     Array(ArrayHeader<C::CustomValueKind>),
     Map(MapHeader<C::CustomValueKind>),
-    Custom(C::CustomContainerHeader),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -122,7 +121,6 @@ impl<C: CustomTraversal> ContainerHeader<C> {
             ContainerHeader::EnumVariant(EnumVariantHeader { length, .. }) => *length,
             ContainerHeader::Array(ArrayHeader { length, .. }) => *length,
             ContainerHeader::Map(MapHeader { length, .. }) => *length * 2,
-            ContainerHeader::Custom(custom_header) => custom_header.get_child_count(),
         }
     }
 
@@ -155,9 +153,6 @@ impl<C: CustomTraversal> ContainerHeader<C> {
                         Some(*value_value_kind),
                     )
                 }
-            }
-            ContainerHeader::Custom(custom_header) => {
-                custom_header.get_implicit_child_value_kind(index)
             }
         }
     }
@@ -201,16 +196,14 @@ impl<'de, T: CustomTraversal> TerminalValueRef<'de, T> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TerminalValueBatchRef<'de, T: CustomTraversal> {
+pub enum TerminalValueBatchRef<'de> {
     U8(&'de [u8]),
-    Custom(T::CustomTerminalValueBatchRef<'de>),
 }
 
-impl<'de, T: CustomTraversal> TerminalValueBatchRef<'de, T> {
-    pub fn value_kind(&self) -> ValueKind<T::CustomValueKind> {
+impl<'de> TerminalValueBatchRef<'de> {
+    pub fn value_kind<X: CustomValueKind>(&self) -> ValueKind<X> {
         match self {
             TerminalValueBatchRef::U8(_) => ValueKind::U8,
-            TerminalValueBatchRef::Custom(c) => ValueKind::Custom(c.custom_value_kind()),
         }
     }
 }
