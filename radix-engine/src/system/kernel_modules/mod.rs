@@ -1,5 +1,6 @@
 pub mod auth;
 pub mod costing;
+pub mod events;
 pub mod execution_trace;
 pub mod kernel_debug;
 pub mod logger;

@@ -4,7 +4,7 @@ use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
+use crate::system::node_modules::access_rules::MethodAccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use native_sdk::resource::{ResourceManager, SysBucket, Vault};
@@ -19,6 +19,11 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::rule;
+
+use super::{
+    ClaimXrdEvent, RegisterValidatorEvent, StakeEvent, UnregisterValidatorEvent, UnstakeEvent,
+    UpdateAcceptingStakeDelegationStateEvent,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ValidatorSubstate {
@@ -96,6 +101,8 @@ impl ValidatorBlueprint {
             }
         }
 
+        api.emit_event(RegisterValidatorEvent)?;
+
         return Ok(IndexedScryptoValue::from_typed(&()));
     }
 
@@ -139,6 +146,8 @@ impl ValidatorBlueprint {
             )?;
         }
 
+        api.emit_event(UnregisterValidatorEvent)?;
+
         return Ok(IndexedScryptoValue::from_typed(&()));
     }
 
@@ -153,6 +162,12 @@ impl ValidatorBlueprint {
         // TODO: Remove decode/encode mess
         let input: ValidatorStakeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        // Prepare the event and emit it once the operations succeed
+        let event = {
+            let amount = input.stake.sys_amount(api)?;
+            StakeEvent { xrd_staked: amount }
+        };
 
         let handle = api.sys_lock_substate(
             receiver,
@@ -203,6 +218,8 @@ impl ValidatorBlueprint {
             }
         }
 
+        api.emit_event(event)?;
+
         Ok(IndexedScryptoValue::from_typed(&lp_token_bucket))
     }
 
@@ -217,6 +234,14 @@ impl ValidatorBlueprint {
         // TODO: Remove decode/encode mess
         let input: ValidatorUnstakeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+
+        // Prepare event and emit it once operations finish
+        let event = {
+            let amount = input.lp_tokens.sys_amount(api)?;
+            UnstakeEvent {
+                stake_units: amount,
+            }
+        };
 
         let handle = api.sys_lock_substate(
             receiver,
@@ -294,6 +319,8 @@ impl ValidatorBlueprint {
             }
         };
 
+        api.emit_event(event)?;
+
         Ok(IndexedScryptoValue::from_typed(&unstake_bucket))
     }
 
@@ -354,6 +381,11 @@ impl ValidatorBlueprint {
         nft_resman.burn(bucket, api)?;
 
         let claimed_bucket = unstake_vault.sys_take(unstake_amount, api)?;
+
+        let amount = claimed_bucket.sys_amount(api)?;
+        api.emit_event(ClaimXrdEvent {
+            claimed_xrd: amount,
+        })?;
 
         Ok(IndexedScryptoValue::from_typed(&claimed_bucket))
     }
@@ -429,11 +461,15 @@ impl ValidatorBlueprint {
             ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
             scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
                 index: 0u32,
-                key: AccessRuleKey::new(NodeModuleId::SELF, VALIDATOR_STAKE_IDENT.to_string()),
+                key: MethodKey::new(NodeModuleId::SELF, VALIDATOR_STAKE_IDENT.to_string()),
                 rule,
             })
             .unwrap(),
         )?;
+
+        api.emit_event(UpdateAcceptingStakeDelegationStateEvent {
+            accepts_delegation: input.accept_delegated_stake,
+        })?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -549,23 +585,23 @@ impl ValidatorCreator {
             AccessRule::DenyAll,
         );
         access_rules.set_method_access_rule_to_group(
-            AccessRuleKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
+            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
             "owner".to_string(),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::new(NodeModuleId::SELF, VALIDATOR_REGISTER_IDENT.to_string()),
+            MethodKey::new(NodeModuleId::SELF, VALIDATOR_REGISTER_IDENT.to_string()),
             "owner".to_string(),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::new(NodeModuleId::SELF, VALIDATOR_UNREGISTER_IDENT.to_string()),
+            MethodKey::new(NodeModuleId::SELF, VALIDATOR_UNREGISTER_IDENT.to_string()),
             "owner".to_string(),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::new(NodeModuleId::SELF, VALIDATOR_UPDATE_KEY_IDENT.to_string()),
+            MethodKey::new(NodeModuleId::SELF, VALIDATOR_UPDATE_KEY_IDENT.to_string()),
             "owner".to_string(),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::new(
+            MethodKey::new(
                 NodeModuleId::SELF,
                 VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT.to_string(),
             ),
@@ -576,21 +612,21 @@ impl ValidatorCreator {
             NonFungibleLocalId::bytes(scrypto_encode(&EPOCH_MANAGER_PACKAGE).unwrap()).unwrap();
         let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
         access_rules.set_group_and_mutability(
-            AccessRuleKey::new(NodeModuleId::SELF, VALIDATOR_STAKE_IDENT.to_string()),
+            MethodKey::new(NodeModuleId::SELF, VALIDATOR_STAKE_IDENT.to_string()),
             "owner".to_string(),
             rule!(require(non_fungible_global_id)),
         );
 
         access_rules.set_method_access_rule(
-            AccessRuleKey::new(NodeModuleId::Metadata, METADATA_GET_IDENT.to_string()),
+            MethodKey::new(NodeModuleId::Metadata, METADATA_GET_IDENT.to_string()),
             rule!(allow_all),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::new(NodeModuleId::SELF, VALIDATOR_UNSTAKE_IDENT.to_string()),
+            MethodKey::new(NodeModuleId::SELF, VALIDATOR_UNSTAKE_IDENT.to_string()),
             rule!(allow_all),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::new(NodeModuleId::SELF, VALIDATOR_CLAIM_XRD_IDENT.to_string()),
+            MethodKey::new(NodeModuleId::SELF, VALIDATOR_CLAIM_XRD_IDENT.to_string()),
             rule!(allow_all),
         );
 
@@ -628,7 +664,7 @@ impl ValidatorCreator {
         );
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::ObjectAccessRulesChain(ObjectAccessRulesChainSubstate {
+            RENodeModuleInit::ObjectAccessRulesChain(MethodAccessRulesChainSubstate {
                 access_rules_chain: vec![Self::build_access_rules(owner_access_rule)],
             }),
         );
@@ -675,7 +711,7 @@ impl ValidatorCreator {
         );
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::ObjectAccessRulesChain(ObjectAccessRulesChainSubstate {
+            RENodeModuleInit::ObjectAccessRulesChain(MethodAccessRulesChainSubstate {
                 access_rules_chain: vec![Self::build_access_rules(owner_access_rule)],
             }),
         );

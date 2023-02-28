@@ -1,6 +1,6 @@
 use radix_engine_interface::api::types::FnIdentifier;
-use radix_engine_interface::api::ClientActorApi;
 use radix_engine_interface::api::{types::*, ClientComponentApi, ClientPackageApi};
+use radix_engine_interface::api::{ClientActorApi, ClientEventApi};
 use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerGetCurrentEpochInput, EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
 };
@@ -9,10 +9,11 @@ use radix_engine_interface::blueprints::transaction_runtime::{
     TRANSACTION_RUNTIME_GENERATE_UUID_IDENT, TRANSACTION_RUNTIME_GET_HASH_IDENT,
 };
 use radix_engine_interface::constants::{EPOCH_MANAGER, PACKAGE_TOKEN};
-use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode};
+use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode};
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 use scrypto::engine::scrypto_env::ScryptoEnv;
+use scrypto_abi::LegacyDescribe;
 
 /// The transaction runtime.
 #[derive(Debug)]
@@ -105,5 +106,10 @@ impl Runtime {
             )
             .unwrap();
         scrypto_decode(&output).unwrap()
+    }
+
+    /// Emits an application event
+    pub fn emit_event<T: ScryptoEncode + LegacyDescribe>(event: T) {
+        ScryptoEnv.emit_event(event).unwrap();
     }
 }

@@ -6,8 +6,9 @@ use crate::blueprints::resource::{
 };
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::blueprints::transaction_runtime::TransactionRuntimeError;
-use crate::kernel::actor::{ExecutionMode, ResolvedActor};
+use crate::kernel::actor::{Actor, ExecutionMode};
 use crate::kernel::track::TrackError;
+use crate::system::events::EventError;
 use crate::system::kernel_modules::auth::AuthError;
 use crate::system::kernel_modules::costing::CostingError;
 use crate::system::kernel_modules::node_move::NodeMoveError;
@@ -157,16 +158,16 @@ pub enum KernelError {
     // Actor Constraints
     InvalidDropNodeAccess {
         mode: ExecutionMode,
-        actor: ResolvedActor,
+        actor: Actor,
         node_id: RENodeId,
     },
     InvalidCreateNodeAccess {
         mode: ExecutionMode,
-        actor: ResolvedActor,
+        actor: Actor,
     },
     InvalidSubstateAccess {
         mode: ExecutionMode,
-        actor: ResolvedActor,
+        actor: Actor,
         node_id: RENodeId,
         offset: SubstateOffset,
         flags: LockFlags,
@@ -332,6 +333,8 @@ pub enum ApplicationError {
     AccountError(AccountError),
 
     AccessControllerError(AccessControllerError),
+
+    EventError(EventError),
 }
 
 impl From<TransactionProcessorError> for ApplicationError {

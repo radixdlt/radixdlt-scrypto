@@ -1,5 +1,5 @@
 use super::node_modules::access_rules::AuthZoneStackSubstate;
-use super::node_modules::access_rules::ObjectAccessRulesChainSubstate;
+use super::node_modules::access_rules::MethodAccessRulesChainSubstate;
 use super::node_modules::metadata::MetadataSubstate;
 use super::type_info::PackageCodeTypeSubstate;
 use crate::blueprints::access_controller::AccessControllerSubstate;
@@ -19,7 +19,7 @@ use crate::blueprints::resource::VaultInfoSubstate;
 use crate::blueprints::resource::WorktopSubstate;
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::errors::*;
-use crate::system::node_modules::access_rules::PackageAccessRulesSubstate;
+use crate::system::node_modules::access_rules::FunctionAccessRulesSubstate;
 use crate::types::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::package::*;
@@ -55,8 +55,8 @@ pub enum PersistedSubstate {
     TypeInfo(TypeInfoSubstate),
 
     /* Access rules */
-    AccessRulesChain(ObjectAccessRulesChainSubstate),
-    PackageAccessRules(PackageAccessRulesSubstate),
+    AccessRulesChain(MethodAccessRulesChainSubstate),
+    PackageAccessRules(FunctionAccessRulesSubstate),
 
     /* Metadata */
     Metadata(MetadataSubstate),
@@ -257,8 +257,8 @@ pub enum RuntimeSubstate {
     TypeInfo(TypeInfoSubstate),
 
     /* Access rules */
-    AccessRulesChain(ObjectAccessRulesChainSubstate),
-    PackageAccessRules(PackageAccessRulesSubstate),
+    AccessRulesChain(MethodAccessRulesChainSubstate),
+    PackageAccessRules(FunctionAccessRulesSubstate),
 
     /* Metadata */
     Metadata(MetadataSubstate),
@@ -641,7 +641,7 @@ impl RuntimeSubstate {
         }
     }
 
-    pub fn access_rules_chain(&self) -> &ObjectAccessRulesChainSubstate {
+    pub fn access_rules_chain(&self) -> &MethodAccessRulesChainSubstate {
         if let RuntimeSubstate::AccessRulesChain(access_rules_chain) = self {
             access_rules_chain
         } else {
@@ -658,7 +658,7 @@ impl RuntimeSubstate {
     }
 }
 
-impl Into<RuntimeSubstate> for ObjectAccessRulesChainSubstate {
+impl Into<RuntimeSubstate> for MethodAccessRulesChainSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::AccessRulesChain(self)
     }
@@ -705,7 +705,7 @@ impl Into<RuntimeSubstate> for PackageCodeTypeSubstate {
         RuntimeSubstate::PackageCodeType(self)
     }
 }
-impl Into<RuntimeSubstate> for PackageAccessRulesSubstate {
+impl Into<RuntimeSubstate> for FunctionAccessRulesSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::PackageAccessRules(self)
     }
@@ -989,8 +989,28 @@ impl Into<ProofInfoSubstate> for RuntimeSubstate {
     }
 }
 
-impl Into<ObjectAccessRulesChainSubstate> for RuntimeSubstate {
-    fn into(self) -> ObjectAccessRulesChainSubstate {
+impl Into<FungibleProof> for RuntimeSubstate {
+    fn into(self) -> FungibleProof {
+        if let RuntimeSubstate::FungibleProof(substate) = self {
+            substate
+        } else {
+            panic!("Not a fungible proof");
+        }
+    }
+}
+
+impl Into<NonFungibleProof> for RuntimeSubstate {
+    fn into(self) -> NonFungibleProof {
+        if let RuntimeSubstate::NonFungibleProof(substate) = self {
+            substate
+        } else {
+            panic!("Not a non fungible proof");
+        }
+    }
+}
+
+impl Into<MethodAccessRulesChainSubstate> for RuntimeSubstate {
+    fn into(self) -> MethodAccessRulesChainSubstate {
         if let RuntimeSubstate::AccessRulesChain(substate) = self {
             substate
         } else {
@@ -1073,8 +1093,8 @@ pub enum SubstateRef<'a> {
     ValidatorSet(&'a ValidatorSetSubstate),
     Validator(&'a ValidatorSubstate),
     CurrentTimeRoundedToMinutes(&'a CurrentTimeRoundedToMinutesSubstate),
-    AccessRulesChain(&'a ObjectAccessRulesChainSubstate),
-    PackageAccessRules(&'a PackageAccessRulesSubstate),
+    AccessRulesChain(&'a MethodAccessRulesChainSubstate),
+    PackageAccessRules(&'a FunctionAccessRulesSubstate),
     Metadata(&'a MetadataSubstate),
     TransactionRuntime(&'a TransactionRuntimeSubstate),
     Account(&'a AccountSubstate),
@@ -1256,7 +1276,7 @@ impl<'a> From<SubstateRef<'a>> for &'a PackageRoyaltyConfigSubstate {
     }
 }
 
-impl<'a> From<SubstateRef<'a>> for &'a PackageAccessRulesSubstate {
+impl<'a> From<SubstateRef<'a>> for &'a FunctionAccessRulesSubstate {
     fn from(value: SubstateRef<'a>) -> Self {
         match value {
             SubstateRef::PackageAccessRules(value) => value,
@@ -1310,7 +1330,7 @@ impl<'a> From<SubstateRef<'a>> for &'a PackageCodeTypeSubstate {
     }
 }
 
-impl<'a> From<SubstateRef<'a>> for &'a ObjectAccessRulesChainSubstate {
+impl<'a> From<SubstateRef<'a>> for &'a MethodAccessRulesChainSubstate {
     fn from(value: SubstateRef<'a>) -> Self {
         match value {
             SubstateRef::AccessRulesChain(value) => value,
@@ -1369,6 +1389,15 @@ impl<'a> From<SubstateRef<'a>> for &'a AuthZoneStackSubstate {
         match value {
             SubstateRef::AuthZoneStack(value) => value,
             _ => panic!("Not an AuthZoneStack"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a LoggerSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::Logger(value) => value,
+            _ => panic!("Not a logger"),
         }
     }
 }
@@ -1541,7 +1570,7 @@ pub enum SubstateRefMut<'a> {
     PackageCode(&'a mut PackageCodeSubstate),
     PackageRoyaltyConfig(&'a mut PackageRoyaltyConfigSubstate),
     PackageRoyaltyAccumulator(&'a mut PackageRoyaltyAccumulatorSubstate),
-    PackageAccessRules(&'a mut PackageAccessRulesSubstate),
+    PackageAccessRules(&'a mut FunctionAccessRulesSubstate),
     NonFungible(&'a mut NonFungibleSubstate),
     KeyValueStoreEntry(&'a mut KeyValueStoreEntrySubstate),
     VaultInfo(&'a mut VaultInfoSubstate),
@@ -1559,7 +1588,7 @@ pub enum SubstateRefMut<'a> {
     ValidatorSet(&'a mut ValidatorSetSubstate),
     Validator(&'a mut ValidatorSubstate),
     CurrentTimeRoundedToMinutes(&'a mut CurrentTimeRoundedToMinutesSubstate),
-    AccessRulesChain(&'a mut ObjectAccessRulesChainSubstate),
+    AccessRulesChain(&'a mut MethodAccessRulesChainSubstate),
     Metadata(&'a mut MetadataSubstate),
     ProofInfo(&'a mut ProofInfoSubstate),
     FungibleProof(&'a mut FungibleProof),
@@ -1717,7 +1746,7 @@ impl<'a> From<SubstateRefMut<'a>> for &'a mut LoggerSubstate {
     }
 }
 
-impl<'a> From<SubstateRefMut<'a>> for &'a mut ObjectAccessRulesChainSubstate {
+impl<'a> From<SubstateRefMut<'a>> for &'a mut MethodAccessRulesChainSubstate {
     fn from(value: SubstateRefMut<'a>) -> Self {
         match value {
             SubstateRefMut::AccessRulesChain(value) => value,

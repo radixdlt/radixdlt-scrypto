@@ -1,6 +1,7 @@
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::api::{ClientComponentApi, ClientNodeApi, ClientSubstateApi};
+use radix_engine_interface::api::{ClientApi, ClientComponentApi};
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 use radix_engine_interface::data::{
     scrypto_decode, scrypto_encode, ScryptoCategorize, ScryptoDecode,
 };
@@ -42,7 +43,7 @@ pub trait SysProof {
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E>;
+        Y: ClientApi<E>;
 }
 
 impl SysProof for Proof {
@@ -108,8 +109,17 @@ impl SysProof for Proof {
 
     fn sys_drop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(self, api: &mut Y) -> Result<(), E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E>,
+        Y: ClientApi<E>,
     {
-        api.sys_drop_node(RENodeId::Proof(self.0))
+        api.call_function(
+            RESOURCE_MANAGER_PACKAGE,
+            PROOF_BLUEPRINT,
+            PROOF_DROP_IDENT,
+            scrypto_encode(&ProofDropInput {
+                proof: Proof(self.0),
+            })
+            .unwrap(),
+        )?;
+        Ok(())
     }
 }

@@ -1,5 +1,5 @@
 use crate::errors::{CallFrameError, KernelError, RuntimeError};
-use crate::kernel::actor::ResolvedActor;
+use crate::kernel::actor::Actor;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_properties::SubstateProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
@@ -92,7 +92,7 @@ pub struct CallFrame {
 
     /// The running application actor of this frame
     /// TODO: Move to an RENode
-    pub actor: Option<ResolvedActor>,
+    pub actor: Option<Actor>,
 
     /// Node refs which are immortal during the life time of this frame:
     /// - Any node refs received from other frames;
@@ -349,7 +349,7 @@ impl CallFrame {
 
     pub fn new_child_from_parent(
         parent: &mut CallFrame,
-        actor: ResolvedActor,
+        actor: Actor,
         call_frame_update: CallFrameUpdate,
     ) -> Result<Self, RuntimeError> {
         let mut owned_heap_nodes = HashMap::new();
@@ -507,7 +507,16 @@ impl CallFrame {
         self.take_node_internal(node_id)?;
         let node = heap.remove_node(node_id)?;
         for (_, substate) in &node.substates {
-            let (_, child_nodes) = substate.to_ref().references_and_owned_nodes();
+            let (refs, child_nodes) = substate.to_ref().references_and_owned_nodes();
+            for node_ref in refs {
+                self.immortal_node_refs.insert(
+                    node_ref,
+                    RENodeRefData {
+                        visibility: RENodeVisibilityOrigin::Normal,
+                    },
+                );
+            }
+
             for child_node in child_nodes {
                 self.owned_root_nodes.insert(child_node, 0u32);
             }

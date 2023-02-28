@@ -1,10 +1,10 @@
-use super::ValidatorCreator;
+use super::{EpochChangeEvent, RoundChangeEvent, ValidatorCreator};
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
+use crate::system::node_modules::access_rules::MethodAccessRulesChainSubstate;
 use crate::types::*;
 use native_sdk::resource::{ResourceManager, SysBucket};
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
@@ -28,7 +28,7 @@ pub struct EpochManagerSubstate {
     pub num_unstake_epochs: u64,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, ScryptoSbor, LegacyDescribe)]
 pub struct Validator {
     pub key: EcdsaSecp256k1PublicKey,
     pub stake: Decimal,
@@ -149,21 +149,21 @@ impl EpochManagerBlueprint {
 
         let mut access_rules = AccessRules::new();
         access_rules.set_method_access_rule(
-            AccessRuleKey::new(
+            MethodKey::new(
                 NodeModuleId::SELF,
                 EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
             ),
             rule!(require(AuthAddresses::validator_role())),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::new(
+            MethodKey::new(
                 NodeModuleId::SELF,
                 EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
             ),
             rule!(allow_all),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::new(
+            MethodKey::new(
                 NodeModuleId::SELF,
                 EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
             ),
@@ -173,14 +173,14 @@ impl EpochManagerBlueprint {
             NonFungibleLocalId::bytes(scrypto_encode(&EPOCH_MANAGER_PACKAGE).unwrap()).unwrap();
         let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
         access_rules.set_method_access_rule(
-            AccessRuleKey::new(
+            MethodKey::new(
                 NodeModuleId::SELF,
                 EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT.to_string(),
             ),
             rule!(require(non_fungible_global_id)),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::new(
+            MethodKey::new(
                 NodeModuleId::SELF,
                 EPOCH_MANAGER_SET_EPOCH_IDENT.to_string(),
             ),
@@ -190,7 +190,7 @@ impl EpochManagerBlueprint {
         let mut node_modules = BTreeMap::new();
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::ObjectAccessRulesChain(ObjectAccessRulesChainSubstate {
+            RENodeModuleInit::ObjectAccessRulesChain(MethodAccessRulesChainSubstate {
                 access_rules_chain: vec![access_rules],
             }),
         );
@@ -280,9 +280,16 @@ impl EpochManagerBlueprint {
             let validator_set: &mut ValidatorSetSubstate =
                 api.kernel_get_substate_ref_mut(handle)?;
             validator_set.epoch = prepared_epoch;
-            validator_set.validator_set = next_validator_set;
+            validator_set.validator_set = next_validator_set.clone();
+
+            api.emit_event(EpochChangeEvent {
+                epoch: prepared_epoch,
+                validators: next_validator_set,
+            })?;
         } else {
             epoch_manager.round = input.round;
+
+            api.emit_event(RoundChangeEvent { round: input.round })?;
         }
 
         Ok(IndexedScryptoValue::from_typed(&()))

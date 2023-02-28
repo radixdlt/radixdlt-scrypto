@@ -3,7 +3,7 @@ use crate::*;
 use transaction_data::*;
 
 /// An enum of the roles in the Access Controller component
-#[derive(Debug, Clone, Copy, PartialOrd, PartialEq, Ord, Eq, ScryptoSbor, Hash)]
+#[derive(Debug, Clone, Copy, PartialOrd, PartialEq, Ord, Eq, ScryptoSbor, Hash, LegacyDescribe)]
 pub enum Role {
     Primary,
     Recovery,
@@ -12,7 +12,7 @@ pub enum Role {
 
 /// The set of roles allowed to propose recoveries. Only Primary and Recovery roles can initiate,
 /// or propose recoveries, Confirmation can't initiate nor propose.
-#[derive(Debug, Clone, Copy, PartialOrd, PartialEq, Ord, Eq, ScryptoSbor, Hash)]
+#[derive(Debug, Clone, Copy, PartialOrd, PartialEq, Ord, Eq, ScryptoSbor, Hash, LegacyDescribe)]
 pub enum Proposer {
     Primary,
     Recovery,
@@ -30,7 +30,15 @@ impl From<Proposer> for Role {
 /// A struct with the set of rule associated with each role - used when creating a new access
 /// controller for the initial rules and also used during recovery for proposing a rule set.
 #[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
+    Debug,
+    Clone,
+    Eq,
+    PartialEq,
+    ScryptoSbor,
+    ManifestCategorize,
+    ManifestEncode,
+    ManifestDecode,
+    LegacyDescribe,
 )]
 pub struct RuleSet {
     pub primary_role: AccessRule,
@@ -38,7 +46,7 @@ pub struct RuleSet {
     pub confirmation_role: AccessRule,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, LegacyDescribe)]
 pub struct RecoveryProposal {
     /// The set of rules being proposed for the different roles.
     pub rule_set: RuleSet,

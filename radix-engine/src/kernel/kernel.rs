@@ -1,8 +1,7 @@
 use crate::blueprints::account::AccountSubstate;
-use crate::blueprints::auth_zone::AuthZoneStackSubstate;
 use crate::blueprints::identity::Identity;
 use crate::blueprints::resource::{
-    BucketInfoSubstate, FungibleProof, NonFungibleProof, ProofInfoSubstate, WorktopSubstate,
+    BucketInfoSubstate, FungibleProof, NonFungibleProof, ProofInfoSubstate,
 };
 use crate::errors::RuntimeError;
 use crate::errors::*;
@@ -13,17 +12,15 @@ use crate::system::node_properties::VisibilityProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use native_sdk::resource::SysProof;
 use radix_engine_interface::api::component::TypeInfoSubstate;
 use radix_engine_interface::api::package::{PackageCodeSubstate, PACKAGE_LOADER_BLUEPRINT};
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::ClientComponentApi;
+use radix_engine_interface::api::{ClientComponentApi, ClientPackageApi};
 // TODO: clean this up!
 use crate::kernel::kernel_api::TemporaryResolvedInvocation;
-use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
+use crate::system::node_modules::access_rules::MethodAccessRulesChainSubstate;
 use radix_engine_interface::api::types::{
-    AuthZoneStackOffset, LockHandle, ProofOffset, RENodeId, SubstateId, SubstateOffset,
-    WorktopOffset,
+    LockHandle, ProofOffset, RENodeId, SubstateId, SubstateOffset,
 };
 use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLUEPRINT;
 use radix_engine_interface::blueprints::account::{
@@ -37,15 +34,15 @@ use radix_engine_interface::blueprints::epoch_manager::{
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::logger::LOGGER_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::{
-    require, AccessRule, AccessRuleKey, AccessRules, LiquidFungibleResource,
-    LiquidNonFungibleResource, ResourceType, BUCKET_BLUEPRINT, PROOF_BLUEPRINT,
+    require, AccessRule, AccessRules, LiquidFungibleResource, LiquidNonFungibleResource, MethodKey,
+    Proof, ProofDropInput, ResourceType, BUCKET_BLUEPRINT, PROOF_BLUEPRINT, PROOF_DROP_IDENT,
     RESOURCE_MANAGER_BLUEPRINT, VAULT_BLUEPRINT, WORKTOP_BLUEPRINT,
 };
 use radix_engine_interface::blueprints::transaction_runtime::TRANSACTION_RUNTIME_BLUEPRINT;
 use radix_engine_interface::rule;
 use sbor::rust::mem;
 
-use super::actor::{ExecutionMode, ResolvedActor};
+use super::actor::{Actor, ExecutionMode};
 use super::call_frame::{CallFrame, RENodeVisibilityOrigin};
 use super::heap::{Heap, HeapRENode};
 use super::id_allocator::IdAllocator;
@@ -157,12 +154,12 @@ where
             let access_rules = {
                 let mut access_rules = AccessRules::new();
                 access_rules.set_access_rule_and_mutability(
-                    AccessRuleKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_IDENT.to_string()),
+                    MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_IDENT.to_string()),
                     AccessRule::AllowAll,
                     AccessRule::DenyAll,
                 );
                 access_rules.set_access_rule_and_mutability(
-                    AccessRuleKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_BATCH_IDENT.to_string()),
+                    MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_BATCH_IDENT.to_string()),
                     AccessRule::AllowAll,
                     AccessRule::DenyAll,
                 );
@@ -177,7 +174,7 @@ where
                         metadata: BTreeMap::new(),
                     }),
                 );
-                let access_rules_substate = ObjectAccessRulesChainSubstate {
+                let access_rules_substate = MethodAccessRulesChainSubstate {
                     access_rules_chain: vec![access_rules],
                 };
                 node_modules.insert(
@@ -268,75 +265,10 @@ where
 
     fn drop_node_internal(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError> {
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::DropNode, |api| match node_id {
-            RENodeId::AuthZoneStack => {
-                let handle = api.kernel_lock_substate(
-                    node_id,
-                    NodeModuleId::SELF,
-                    SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
-                    LockFlags::MUTABLE,
-                )?;
-                let substate_ref: &AuthZoneStackSubstate = api.kernel_get_substate_ref(handle)?;
-                let mut auth_zone_stack = substate_ref.clone();
-                loop {
-                    if let Some(mut auth_zone) = auth_zone_stack.pop_auth_zone() {
-                        for p in auth_zone.drain() {
-                            p.sys_drop(api)?;
-                        }
-                    } else {
-                        break;
-                    }
-                }
-                api.kernel_drop_lock(handle)?;
-                api.current_frame.remove_node(&mut api.heap, node_id)
-            }
-            RENodeId::Proof(..) => {
-                let proof_info = ProofInfoSubstate::of(node_id, api)?;
-                if proof_info.resource_type.is_fungible() {
-                    let handle = api.kernel_lock_substate(
-                        node_id,
-                        NodeModuleId::SELF,
-                        SubstateOffset::Proof(ProofOffset::Fungible),
-                        LockFlags::read_only(),
-                    )?;
-                    let proof: &FungibleProof = api.kernel_get_substate_ref(handle)?;
-                    let proof = proof.clone();
-                    proof.drop_proof(api)?;
-                    api.kernel_drop_lock(handle)?;
-                } else {
-                    let handle = api.kernel_lock_substate(
-                        node_id,
-                        NodeModuleId::SELF,
-                        SubstateOffset::Proof(ProofOffset::NonFungible),
-                        LockFlags::read_only(),
-                    )?;
-                    let proof: &NonFungibleProof = api.kernel_get_substate_ref(handle)?;
-                    let proof = proof.clone();
-                    proof.drop_proof(api)?;
-                    api.kernel_drop_lock(handle)?;
-                }
-
-                api.current_frame.remove_node(&mut api.heap, node_id)
-            }
-            RENodeId::Worktop => {
-                let mut node = api.current_frame.remove_node(&mut api.heap, node_id)?;
-
-                let substate = node
-                    .substates
-                    .remove(&(
-                        NodeModuleId::SELF,
-                        SubstateOffset::Worktop(WorktopOffset::Worktop),
-                    ))
-                    .unwrap();
-                let worktop: WorktopSubstate = substate.into();
-                if !worktop.resources.is_empty() {
-                    return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
-                        RENodeId::Worktop,
-                    )));
-                }
-
-                return Ok(node);
-            }
-            RENodeId::Logger
+            RENodeId::Proof(..)
+            | RENodeId::AuthZoneStack
+            | RENodeId::Worktop
+            | RENodeId::Logger
             | RENodeId::TransactionRuntime
             | RENodeId::Bucket(..)
             | RENodeId::Clock(..)
@@ -352,37 +284,39 @@ where
         })
     }
 
-    fn kernel_drop_node_recursively(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
-        let node = self.kernel_drop_node(node_id)?;
-        for (_, substate) in &node.substates {
-            let (_, child_nodes) = substate.to_ref().references_and_owned_nodes();
-            for child_node in child_nodes {
-                self.kernel_drop_node_recursively(child_node)?;
-            }
-        }
-
-        Ok(())
-    }
-
-    fn drop_nodes_in_frame(&mut self) -> Result<(), RuntimeError> {
-        let mut worktops = Vec::new();
+    fn auto_drop_nodes_in_frame(&mut self) -> Result<(), RuntimeError> {
         let owned_nodes = self.current_frame.owned_nodes();
-
-        // Need to go through api so that access rules can be caught
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AutoDrop, |api| {
             for node_id in owned_nodes {
-                if let RENodeId::Worktop = node_id {
-                    worktops.push(node_id);
-                } else {
-                    api.kernel_drop_node_recursively(node_id)?;
+                match node_id {
+                    RENodeId::Proof(proof_id) => {
+                        api.call_function(
+                            RESOURCE_MANAGER_PACKAGE,
+                            PROOF_BLUEPRINT,
+                            PROOF_DROP_IDENT,
+                            scrypto_encode(&ProofDropInput {
+                                proof: Proof(proof_id),
+                            })
+                            .unwrap(),
+                        )?;
+                    }
+                    _ => {
+                        return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
+                            node_id,
+                        )))
+                    }
                 }
-            }
-            for worktop_id in worktops {
-                api.kernel_drop_node_recursively(worktop_id)?;
             }
 
             Ok(())
         })?;
+
+        // Last check
+        if let Some(node_id) = self.current_frame.owned_nodes().into_iter().next() {
+            return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
+                node_id,
+            )));
+        }
 
         Ok(())
     }
@@ -458,7 +392,7 @@ where
             CallFrame::update_upstream(&mut self.current_frame, &mut parent, update)?;
 
             // drop proofs and check resource leak
-            self.drop_nodes_in_frame()?;
+            self.auto_drop_nodes_in_frame()?;
 
             // Restore previous frame
             self.current_frame = parent;
@@ -916,7 +850,7 @@ where
         self.current_frame.depth
     }
 
-    fn kernel_get_current_actor(&self) -> Option<ResolvedActor> {
+    fn kernel_get_current_actor(&self) -> Option<Actor> {
         self.current_frame.actor.clone()
     }
 
@@ -1250,7 +1184,7 @@ where
     fn kernel_invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
         KernelModuleMixer::before_invoke(
             self,
-            &invocation.identifier(),
+            &invocation.debug_identifier(),
             invocation.payload_size(),
         )?;
 

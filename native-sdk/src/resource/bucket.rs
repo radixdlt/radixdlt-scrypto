@@ -80,9 +80,35 @@ pub trait SysBucket {
     ) -> Result<bool, E>
     where
         Y: ClientApi<E>;
+
+    fn sys_drop_empty<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        self,
+        api: &mut Y,
+    ) -> Result<(), E>
+    where
+        Y: ClientApi<E>;
 }
 
 impl SysBucket for Bucket {
+    fn sys_drop_empty<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        self,
+        api: &mut Y,
+    ) -> Result<(), E>
+    where
+        Y: ClientApi<E>,
+    {
+        let rtn = api.call_function(
+            RESOURCE_MANAGER_PACKAGE,
+            BUCKET_BLUEPRINT,
+            BUCKET_DROP_EMPTY_IDENT,
+            scrypto_encode(&BucketDropEmptyInput {
+                bucket: Bucket(self.0),
+            })
+            .unwrap(),
+        )?;
+        Ok(scrypto_decode(&rtn).unwrap())
+    }
+
     fn sys_new<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         receiver: ResourceAddress,
         api: &mut Y,

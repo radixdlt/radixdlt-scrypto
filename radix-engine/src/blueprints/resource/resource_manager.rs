@@ -7,7 +7,7 @@ use crate::kernel::heap::DroppedBucketResource;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
+use crate::system::node_modules::access_rules::MethodAccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use native_sdk::resource::SysBucket;
@@ -26,6 +26,10 @@ use radix_engine_interface::data::model::Own;
 use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;
+
+use super::events::resource_manager::BurnResourceEvent;
+use super::events::resource_manager::MintResourceEvent;
+use super::events::resource_manager::VaultCreationEvent;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ResourceManagerSubstate {
@@ -188,8 +192,8 @@ where
 fn build_substates(
     mut access_rules_map: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
 ) -> (
-    ObjectAccessRulesChainSubstate,
-    ObjectAccessRulesChainSubstate,
+    MethodAccessRulesChainSubstate,
+    MethodAccessRulesChainSubstate,
 ) {
     let (mint_access_rule, mint_mutability) = access_rules_map
         .remove(&Mint)
@@ -207,12 +211,12 @@ fn build_substates(
 
     let mut access_rules = AccessRules::new();
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
+        MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
         update_metadata_access_rule,
         update_metadata_mutability,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(NodeModuleId::Metadata, METADATA_GET_IDENT.to_string()),
+        MethodKey::new(NodeModuleId::Metadata, METADATA_GET_IDENT.to_string()),
         AllowAll,
         DenyAll,
     );
@@ -222,7 +226,7 @@ fn build_substates(
         mint_mutability,
     );
     access_rules.set_group_and_mutability(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             RESOURCE_MANAGER_MINT_NON_FUNGIBLE.to_string(),
         ),
@@ -230,7 +234,7 @@ fn build_substates(
         DenyAll,
     );
     access_rules.set_group_and_mutability(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE.to_string(),
         ),
@@ -238,7 +242,7 @@ fn build_substates(
         DenyAll,
     );
     access_rules.set_group_and_mutability(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             RESOURCE_MANAGER_MINT_FUNGIBLE.to_string(),
         ),
@@ -247,12 +251,12 @@ fn build_substates(
     );
 
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(NodeModuleId::SELF, RESOURCE_MANAGER_BURN_IDENT.to_string()),
+        MethodKey::new(NodeModuleId::SELF, RESOURCE_MANAGER_BURN_IDENT.to_string()),
         burn_access_rule,
         burn_mutability,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT.to_string(),
         ),
@@ -260,7 +264,7 @@ fn build_substates(
         update_non_fungible_data_mutability,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             RESOURCE_MANAGER_CREATE_BUCKET_IDENT.to_string(),
         ),
@@ -268,7 +272,7 @@ fn build_substates(
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT.to_string(),
         ),
@@ -276,7 +280,7 @@ fn build_substates(
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT.to_string(),
         ),
@@ -284,7 +288,7 @@ fn build_substates(
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             RESOURCE_MANAGER_CREATE_VAULT_IDENT.to_string(),
         ),
@@ -292,7 +296,7 @@ fn build_substates(
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             RESOURCE_MANAGER_NON_FUNGIBLE_EXISTS_IDENT.to_string(),
         ),
@@ -300,7 +304,7 @@ fn build_substates(
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT.to_string(),
         ),
@@ -308,7 +312,7 @@ fn build_substates(
         DenyAll,
     );
 
-    let substate = ObjectAccessRulesChainSubstate {
+    let substate = MethodAccessRulesChainSubstate {
         access_rules_chain: vec![access_rules],
     };
 
@@ -334,12 +338,12 @@ fn build_substates(
         recall_mutability,
     );
     vault_access_rules.set_group_and_mutability(
-        AccessRuleKey::new(NodeModuleId::SELF, VAULT_TAKE_IDENT.to_string()),
+        MethodKey::new(NodeModuleId::SELF, VAULT_TAKE_IDENT.to_string()),
         "withdraw".to_string(),
         DenyAll,
     );
     vault_access_rules.set_group_and_mutability(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             VAULT_TAKE_NON_FUNGIBLES_IDENT.to_string(),
         ),
@@ -347,23 +351,23 @@ fn build_substates(
         DenyAll,
     );
     vault_access_rules.set_group_and_mutability(
-        AccessRuleKey::new(NodeModuleId::SELF, VAULT_LOCK_FEE_IDENT.to_string()),
+        MethodKey::new(NodeModuleId::SELF, VAULT_LOCK_FEE_IDENT.to_string()),
         "withdraw".to_string(),
         DenyAll,
     );
 
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string()),
+        MethodKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string()),
         deposit_access_rule,
         deposit_mutability,
     );
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(NodeModuleId::SELF, VAULT_GET_AMOUNT_IDENT.to_string()),
+        MethodKey::new(NodeModuleId::SELF, VAULT_GET_AMOUNT_IDENT.to_string()),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             VAULT_GET_RESOURCE_ADDRESS_IDENT.to_string(),
         ),
@@ -371,7 +375,7 @@ fn build_substates(
         DenyAll,
     );
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
         ),
@@ -379,12 +383,12 @@ fn build_substates(
         DenyAll,
     );
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(NodeModuleId::SELF, VAULT_CREATE_PROOF_IDENT.to_string()),
+        MethodKey::new(NodeModuleId::SELF, VAULT_CREATE_PROOF_IDENT.to_string()),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             VAULT_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
         ),
@@ -392,15 +396,41 @@ fn build_substates(
         DenyAll,
     );
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             VAULT_CREATE_PROOF_BY_IDS_IDENT.to_string(),
         ),
         AllowAll,
         DenyAll,
     );
+    vault_access_rules.set_access_rule_and_mutability(
+        MethodKey::new(NodeModuleId::SELF, VAULT_LOCK_AMOUNT_IDENT.to_string()),
+        AllowAll,
+        DenyAll,
+    );
+    vault_access_rules.set_access_rule_and_mutability(
+        MethodKey::new(
+            NodeModuleId::SELF,
+            VAULT_LOCK_NON_FUNGIBLES_IDENT.to_string(),
+        ),
+        AllowAll,
+        DenyAll,
+    );
+    vault_access_rules.set_access_rule_and_mutability(
+        MethodKey::new(NodeModuleId::SELF, VAULT_UNLOCK_AMOUNT_IDENT.to_string()),
+        AllowAll,
+        DenyAll,
+    );
+    vault_access_rules.set_access_rule_and_mutability(
+        MethodKey::new(
+            NodeModuleId::SELF,
+            VAULT_UNLOCK_NON_FUNGIBLES_IDENT.to_string(),
+        ),
+        AllowAll,
+        DenyAll,
+    );
 
-    let vault_substate = ObjectAccessRulesChainSubstate {
+    let vault_substate = MethodAccessRulesChainSubstate {
         access_rules_chain: vec![vault_access_rules],
     };
 
@@ -820,7 +850,7 @@ impl ResourceManagerBlueprint {
             // Allocate non-fungibles
             let mut ids = BTreeSet::new();
             let mut non_fungibles = BTreeMap::new();
-            for (id, data) in input.entries {
+            for (id, data) in input.entries.clone().into_iter() {
                 if id.id_type() != id_type {
                     return Err(RuntimeError::ApplicationError(
                         ApplicationError::ResourceManagerError(
@@ -889,6 +919,10 @@ impl ResourceManagerBlueprint {
             api.sys_drop_lock(non_fungible_handle)?;
         }
 
+        api.emit_event(MintResourceEvent::Ids(
+            input.entries.into_iter().map(|(k, _)| k).collect(),
+        ))?;
+
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
 
@@ -910,7 +944,7 @@ impl ResourceManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let bucket_id = {
+        let (bucket_id, ids) = {
             let resource_manager: &mut ResourceManagerSubstate =
                 api.kernel_get_substate_ref_mut(resman_handle)?;
             let resource_address = resource_manager.resource_address;
@@ -967,13 +1001,15 @@ impl ResourceManagerBlueprint {
                         resource_address,
                         resource_type: ResourceType::NonFungible { id_type },
                     },
-                    LiquidNonFungibleResource::new(ids),
+                    LiquidNonFungibleResource::new(ids.clone()),
                 ),
                 BTreeMap::new(),
             )?;
             let bucket_id: BucketId = node_id.into();
-            bucket_id
+            (bucket_id, ids)
         };
+
+        api.emit_event(MintResourceEvent::Ids(ids))?;
 
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
@@ -1042,6 +1078,8 @@ impl ResourceManagerBlueprint {
         api.kernel_create_node(node_id, resource_init, BTreeMap::new())?;
         let bucket_id = node_id.into();
 
+        api.emit_event(MintResourceEvent::Amount(input.amount))?;
+
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
 
@@ -1066,6 +1104,16 @@ impl ResourceManagerBlueprint {
         let dropped_bucket: DroppedBucket = api
             .kernel_drop_node(RENodeId::Bucket(input.bucket.0))?
             .into();
+
+        // Construct the event and only emit it once all of the operations are done.
+        let event = match dropped_bucket.resource {
+            DroppedBucketResource::Fungible(ref resource) => {
+                BurnResourceEvent::Amount(resource.amount())
+            }
+            DroppedBucketResource::NonFungible(ref resource) => {
+                BurnResourceEvent::Ids(resource.ids().clone())
+            }
+        };
 
         // Check if resource matches
         // TODO: Move this check into actor check
@@ -1110,6 +1158,8 @@ impl ResourceManagerBlueprint {
                 }
             }
         }
+
+        api.emit_event(event)?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -1224,6 +1274,10 @@ impl ResourceManagerBlueprint {
                 node_id.into()
             }
         };
+
+        api.emit_event(VaultCreationEvent {
+            vault_id: RENodeId::Vault(vault_id),
+        })?;
 
         Ok(IndexedScryptoValue::from_typed(&Own::Vault(vault_id)))
     }
