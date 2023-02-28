@@ -13,7 +13,7 @@ pub trait CustomTraversal: Copy + Debug + Clone + PartialEq + Eq {
         CustomValueKind = Self::CustomValueKind,
     >;
     type CustomContainerHeader: CustomContainerHeader<CustomValueKind = Self::CustomValueKind>;
-    type CustomValueTraverser: CustomValueTraverser<CustomTraversal = Self>;
+    type CustomValueTraverser: CustomValueTraverser<CustomTraversal = Self> + Clone;
 
     fn new_value_traversal(
         custom_value_kind: Self::CustomValueKind,
@@ -78,18 +78,19 @@ pub struct ContainerChild<C: CustomTraversal> {
 ///
 /// The caller is responsible for stopping calling `next_event` after an Error or End event.
 pub struct VecTraverser<'de, C: CustomTraversal> {
+    max_depth: u8,
+    check_exact_end: bool,
     decoder: VecDecoder<'de, C::CustomValueKind>,
     container_stack: Vec<ContainerChild<C>>,
-    max_depth: u8,
     next_event_override: NextEventOverride<C::CustomValueTraverser>,
-    check_exact_end: bool,
 }
 
+#[derive(Debug, Clone, Copy)]
 pub enum NextEventOverride<C> {
-    Prefix(u8),
-    Start,
+    CheckPrefix(u8),
+    ReadRootValue,
     ReadBytes(u32),
-    CustomValueTraversal(C, u8),
+    ReadCustomValueBody(C, u8),
     None,
 }
 
@@ -146,14 +147,48 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
             container_stack: Vec::with_capacity(max_depth as usize),
             max_depth,
             next_event_override: match payload_prefix {
-                Some(prefix) => NextEventOverride::Prefix(prefix),
-                None => NextEventOverride::Start,
+                Some(prefix) => NextEventOverride::CheckPrefix(prefix),
+                None => NextEventOverride::ReadRootValue,
             },
             check_exact_end,
         }
     }
 
-    pub fn read_and_check_payload_prefix<'t>(
+    pub fn next_event<'t>(&'t mut self) -> LocatedTraversalEvent<'t, 'de, T> {
+        match self.next_event_override.clone() {
+            NextEventOverride::CheckPrefix(expected_prefix) => {
+                self.next_event_override = NextEventOverride::ReadRootValue;
+                self.read_payload_prefix(expected_prefix)
+            }
+            NextEventOverride::ReadRootValue => {
+                self.next_event_override = NextEventOverride::None;
+                self.read_root_value()
+            }
+            NextEventOverride::ReadCustomValueBody(traversal, sbor_depth) => {
+                self.next_event_override = NextEventOverride::None;
+                self.read_custom_value_event_override(traversal, sbor_depth)
+            }
+            NextEventOverride::ReadBytes(size) => {
+                self.next_event_override = NextEventOverride::None;
+                self.read_bytes_event_override(size)
+            }
+            NextEventOverride::None => {
+                let parent = self.container_stack.last();
+                match parent {
+                    Some(parent) => {
+                        if parent.current_child_index >= parent.container_child_count {
+                            self.exit_container()
+                        } else {
+                            self.read_child_value()
+                        }
+                    }
+                    None => self.read_end(),
+                }
+            }
+        }
+    }
+
+    pub fn read_payload_prefix<'t>(
         &'t mut self,
         expected_prefix: u8,
     ) -> LocatedTraversalEvent<'t, 'de, T> {
@@ -173,36 +208,6 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
                 ancestor_path: &self.container_stack,
             },
         }
-    }
-
-    pub fn next_event<'t>(&'t mut self) -> LocatedTraversalEvent<'t, 'de, T> {
-        let event = match &mut self.next_event_override {
-            NextEventOverride::Prefix(expected_prefix) => {
-                let expected_prefix = *expected_prefix;
-                self.next_event_override = NextEventOverride::Start;
-                self.read_and_check_payload_prefix(expected_prefix)
-            }
-            NextEventOverride::Start => {
-                self.next_event_override = NextEventOverride::None;
-                self.root_value()
-            }
-            NextEventOverride::CustomValueTraversal(_, _) => self.custom_event_override(),
-            NextEventOverride::ReadBytes(_) => self.read_bytes_event_override(),
-            NextEventOverride::None => {
-                let parent = self.container_stack.last();
-                match parent {
-                    Some(parent) => {
-                        if parent.current_child_index >= parent.container_child_count {
-                            self.exit_container()
-                        } else {
-                            self.child_value()
-                        }
-                    }
-                    None => self.end_event(),
-                }
-            }
-        };
-        event
     }
 
     fn enter_container<'t>(
@@ -251,7 +256,7 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
         }
     }
 
-    fn root_value<'t>(&'t mut self) -> LocatedTraversalEvent<'t, 'de, T> {
+    fn read_root_value<'t>(&'t mut self) -> LocatedTraversalEvent<'t, 'de, T> {
         let start_offset = self.decoder.get_offset();
         let parent_relationship = ParentRelationship::Root;
         let value_kind =
@@ -259,7 +264,7 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
         self.next_value(start_offset, parent_relationship, value_kind)
     }
 
-    fn child_value<'t>(&'t mut self) -> LocatedTraversalEvent<'t, 'de, T> {
+    fn read_child_value<'t>(&'t mut self) -> LocatedTraversalEvent<'t, 'de, T> {
         let start_offset = self.decoder.get_offset();
         let parent = self.container_stack.last_mut().unwrap();
         let (relationship, value_kind) = parent
@@ -327,7 +332,7 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
             ValueKind::Enum => self.decode_enum_variant_header(start_offset, relationship),
             ValueKind::Tuple => self.decode_tuple_header(start_offset, relationship),
             ValueKind::Custom(custom_value_kind) => {
-                self.next_event_override = NextEventOverride::CustomValueTraversal(
+                self.next_event_override = NextEventOverride::ReadCustomValueBody(
                     T::new_value_traversal(
                         custom_value_kind,
                         relationship,
@@ -336,7 +341,7 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
                     ),
                     self.get_sbor_depth_for_next_value(),
                 );
-                self.custom_event_override()
+                self.next_event()
             }
         }
     }
@@ -445,7 +450,7 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
         )
     }
 
-    fn end_event<'t>(&'t self) -> LocatedTraversalEvent<'t, 'de, T> {
+    fn read_end<'t>(&'t self) -> LocatedTraversalEvent<'t, 'de, T> {
         let parent_relationship = ParentRelationship::NotInValueModel;
         if self.check_exact_end {
             return_if_error!(self, parent_relationship, self.decoder.check_end());
@@ -463,10 +468,11 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
         }
     }
 
-    fn custom_event_override<'t>(&'t mut self) -> LocatedTraversalEvent<'t, 'de, T> {
-        let NextEventOverride::CustomValueTraversal(custom_traverser, entry_depth) = &mut self.next_event_override else {
-            panic!("self.next_event_override expected to be NextEventOverride::Custom to hit this code")
-        };
+    fn read_custom_value_event_override<'t>(
+        &'t mut self,
+        mut custom_traverser: T::CustomValueTraverser,
+        entry_depth: u8,
+    ) -> LocatedTraversalEvent<'t, 'de, T> {
         let traversal_event =
             custom_traverser.next_event(&mut self.container_stack, &mut self.decoder);
         // We assume the custom traverser is for a single value - and therefore is either:
@@ -474,16 +480,13 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
         // - Emitting multiple events representing a single container value, which will return to the current depth
         // Either way, when the traversal_event's next sbor depth matches the sbor depth when the custom traverser was entered,
         // this means that the custom traverser has returned
-        if traversal_event.get_next_sbor_depth() == *entry_depth {
+        if traversal_event.get_next_sbor_depth() == entry_depth {
             self.next_event_override = NextEventOverride::None;
         }
         traversal_event
     }
 
-    fn read_bytes_event_override<'t>(&'t mut self) -> LocatedTraversalEvent<'t, 'de, T> {
-        let NextEventOverride::ReadBytes(size) = self.next_event_override else {
-            panic!("self.next_event_override expected to be NextEventOverride::ReadBytes to hit this code")
-        };
+    fn read_bytes_event_override<'t>(&'t mut self, size: u32) -> LocatedTraversalEvent<'t, 'de, T> {
         let start_offset = self.get_offset();
         let parent_relationship = ParentRelationship::ArrayElementBatch {
             from_index: 0,

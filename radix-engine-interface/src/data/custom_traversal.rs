@@ -68,6 +68,7 @@ impl CustomTraversal for ScryptoCustomTraversal {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct ScryptoCustomTraverser {
     custom_value_kind: ScryptoCustomValueKind,
     parent_relationship: ParentRelationship,

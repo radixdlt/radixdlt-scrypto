@@ -158,6 +158,7 @@ impl CustomTraversal for NoCustomTraversal {
     }
 }
 
+#[derive(Clone)]
 pub enum NoCustomTraverser {}
 
 impl CustomValueTraverser for NoCustomTraverser {
