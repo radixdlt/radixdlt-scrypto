@@ -28,7 +28,6 @@ use radix_engine_interface::blueprints::account::{
 use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRules, LiquidFungibleResource, LiquidNonFungibleResource, MethodKey,
     Proof, ProofDropInput, ResourceType, PROOF_BLUEPRINT, PROOF_DROP_IDENT,
-    VAULT_BLUEPRINT,
 };
 use radix_engine_interface::rule;
 use sbor::rust::mem;
@@ -657,7 +656,7 @@ where
         &mut self,
         node_id: RENodeId,
         re_node: RENodeInit,
-        mut module_init: BTreeMap<NodeModuleId, RENodeModuleInit>,
+        module_init: BTreeMap<NodeModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError> {
         KernelModuleMixer::before_create_node(self, &node_id, &re_node, &module_init)?;
 
@@ -696,21 +695,12 @@ where
             (RENodeId::TransactionRuntime, RENodeInit::TransactionRuntime(..)) => {}
             (RENodeId::Logger, RENodeInit::Logger(..)) => {}
             (RENodeId::Worktop, RENodeInit::Worktop(..)) => {}
-            (RENodeId::Bucket(..), RENodeInit::FungibleBucket(..)) => { }
-            (RENodeId::Bucket(..), RENodeInit::NonFungibleBucket(..)) => { }
-            (RENodeId::Proof(..), RENodeInit::FungibleProof(..)) => { }
-            (RENodeId::Proof(..), RENodeInit::NonFungibleProof(..)) => { }
-            (RENodeId::Vault(..), RENodeInit::FungibleVault(..))
-            | (RENodeId::Vault(..), RENodeInit::NonFungibleVault(..)) => {
-                module_init.insert(
-                    NodeModuleId::TypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: RESOURCE_MANAGER_PACKAGE,
-                        blueprint_name: VAULT_BLUEPRINT.to_string(),
-                        global: false,
-                    }),
-                );
-            }
+            (RENodeId::Bucket(..), RENodeInit::FungibleBucket(..)) => {}
+            (RENodeId::Bucket(..), RENodeInit::NonFungibleBucket(..)) => {}
+            (RENodeId::Proof(..), RENodeInit::FungibleProof(..)) => {}
+            (RENodeId::Proof(..), RENodeInit::NonFungibleProof(..)) => {}
+            (RENodeId::Vault(..), RENodeInit::FungibleVault(..)) => {}
+            (RENodeId::Vault(..), RENodeInit::NonFungibleVault(..)) => {}
             (RENodeId::EpochManager(..), RENodeInit::EpochManager(..)) => {}
             (RENodeId::Validator(..), RENodeInit::Validator(..)) => {}
             (RENodeId::Clock(..), RENodeInit::Clock(..)) => {}

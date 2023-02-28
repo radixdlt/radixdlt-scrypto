@@ -576,12 +576,12 @@ impl VaultBlueprint {
             let bucket_id = api.new_object(
                 BUCKET_BLUEPRINT,
                 btreemap!(
-                        0 => scrypto_encode(&BucketInfoSubstate {
-                            resource_address: info.resource_address,
-                            resource_type: info.resource_type,
-                        }).unwrap(),
-                        1 => scrypto_encode(&taken).unwrap()
-                    )
+                    0 => scrypto_encode(&BucketInfoSubstate {
+                        resource_address: info.resource_address,
+                        resource_type: info.resource_type,
+                    }).unwrap(),
+                    1 => scrypto_encode(&taken).unwrap()
+                ),
             )?;
 
             RENodeId::Bucket(bucket_id)
@@ -593,12 +593,12 @@ impl VaultBlueprint {
             let bucket_id = api.new_object(
                 BUCKET_BLUEPRINT,
                 btreemap!(
-                        0 => scrypto_encode(&BucketInfoSubstate {
-                            resource_address: info.resource_address,
-                            resource_type: info.resource_type,
-                        }).unwrap(),
-                        1 => scrypto_encode(&taken).unwrap()
-                    )
+                    0 => scrypto_encode(&BucketInfoSubstate {
+                        resource_address: info.resource_address,
+                        resource_type: info.resource_type,
+                    }).unwrap(),
+                    1 => scrypto_encode(&taken).unwrap()
+                ),
             )?;
 
             RENodeId::Bucket(bucket_id)
@@ -637,12 +637,12 @@ impl VaultBlueprint {
             let bucket_id = api.new_object(
                 BUCKET_BLUEPRINT,
                 btreemap!(
-                        0 => scrypto_encode(&BucketInfoSubstate {
-                            resource_address: info.resource_address,
-                            resource_type: info.resource_type,
-                        }).unwrap(),
-                        1 => scrypto_encode(&taken).unwrap()
-                    )
+                    0 => scrypto_encode(&BucketInfoSubstate {
+                        resource_address: info.resource_address,
+                        resource_type: info.resource_type,
+                    }).unwrap(),
+                    1 => scrypto_encode(&taken).unwrap()
+                ),
             )?;
 
             Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
@@ -853,12 +853,12 @@ impl VaultBlueprint {
             let bucket_id = api.new_object(
                 BUCKET_BLUEPRINT,
                 btreemap!(
-                        0 => scrypto_encode(&BucketInfoSubstate {
-                            resource_address: info.resource_address,
-                            resource_type: info.resource_type,
-                        }).unwrap(),
-                        1 => scrypto_encode(&taken).unwrap()
-                    )
+                    0 => scrypto_encode(&BucketInfoSubstate {
+                        resource_address: info.resource_address,
+                        resource_type: info.resource_type,
+                    }).unwrap(),
+                    1 => scrypto_encode(&taken).unwrap()
+                ),
             )?;
 
             RENodeId::Bucket(bucket_id)
@@ -867,12 +867,12 @@ impl VaultBlueprint {
             let bucket_id = api.new_object(
                 BUCKET_BLUEPRINT,
                 btreemap!(
-                        0 => scrypto_encode(&BucketInfoSubstate {
-                            resource_address: info.resource_address,
-                            resource_type: info.resource_type,
-                        }).unwrap(),
-                        1 => scrypto_encode(&taken).unwrap()
-                    )
+                    0 => scrypto_encode(&BucketInfoSubstate {
+                        resource_address: info.resource_address,
+                        resource_type: info.resource_type,
+                    }).unwrap(),
+                    1 => scrypto_encode(&taken).unwrap()
+                ),
             )?;
 
             RENodeId::Bucket(bucket_id)
@@ -910,12 +910,12 @@ impl VaultBlueprint {
             let bucket_id = api.new_object(
                 BUCKET_BLUEPRINT,
                 btreemap!(
-                        0 => scrypto_encode(&BucketInfoSubstate {
-                            resource_address: info.resource_address,
-                            resource_type: info.resource_type,
-                        }).unwrap(),
-                        1 => scrypto_encode(&taken).unwrap()
-                    )
+                    0 => scrypto_encode(&BucketInfoSubstate {
+                        resource_address: info.resource_address,
+                        resource_type: info.resource_type,
+                    }).unwrap(),
+                    1 => scrypto_encode(&taken).unwrap()
+                ),
             )?;
 
             api.emit_event(RecallResourceEvent::Ids(input.non_fungible_local_ids))?;
@@ -955,7 +955,7 @@ impl VaultBlueprint {
                 btreemap!(
                     0 => scrypto_encode(&proof_info).unwrap(),
                     1 => scrypto_encode(&proof).unwrap()
-                )
+                ),
             )?;
 
             RENodeId::Proof(proof_id)
@@ -975,7 +975,7 @@ impl VaultBlueprint {
                 btreemap!(
                     0 => scrypto_encode(&proof_info).unwrap(),
                     1 => scrypto_encode(&proof).unwrap()
-                )
+                ),
             )?;
 
             RENodeId::Proof(proof_id)
@@ -1018,7 +1018,7 @@ impl VaultBlueprint {
                 btreemap!(
                     0 => scrypto_encode(&proof_info).unwrap(),
                     1 => scrypto_encode(&proof).unwrap()
-                )
+                ),
             )?;
 
             RENodeId::Proof(proof_id)
@@ -1034,7 +1034,7 @@ impl VaultBlueprint {
                 btreemap!(
                     0 => scrypto_encode(&proof_info).unwrap(),
                     1 => scrypto_encode(&proof).unwrap()
-                )
+                ),
             )?;
 
             RENodeId::Proof(proof_id)
@@ -1076,7 +1076,7 @@ impl VaultBlueprint {
                 btreemap!(
                     0 => scrypto_encode(&proof_info).unwrap(),
                     1 => scrypto_encode(&proof).unwrap()
-                )
+                ),
             )?;
             Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
         }

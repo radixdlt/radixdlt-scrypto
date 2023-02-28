@@ -292,7 +292,10 @@ impl Package {
         let abi = info
             .blueprint_abi(&blueprint_name)
             .ok_or(RuntimeError::ApplicationError(
-                ApplicationError::PackageError(PackageError::BlueprintNotFound(receiver.into(), blueprint_name)),
+                ApplicationError::PackageError(PackageError::BlueprintNotFound(
+                    receiver.into(),
+                    blueprint_name,
+                )),
             ))?;
         Ok(abi.clone())
     }

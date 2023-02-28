@@ -228,7 +228,7 @@ impl ProofBlueprint {
                 btreemap!(
                     0 => scrypto_encode(&proof_info).unwrap(),
                     1 => scrypto_encode(&clone).unwrap()
-                )
+                ),
             )?;
 
             RENodeId::Proof(proof_id)
@@ -248,7 +248,7 @@ impl ProofBlueprint {
                 btreemap!(
                     0 => scrypto_encode(&proof_info).unwrap(),
                     1 => scrypto_encode(&clone).unwrap()
-                )
+                ),
             )?;
 
             RENodeId::Proof(proof_id)

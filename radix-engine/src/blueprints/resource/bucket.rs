@@ -550,7 +550,7 @@ impl BucketBlueprint {
                 btreemap!(
                     0 => scrypto_encode(&info).unwrap(),
                     1 => scrypto_encode(&taken).unwrap()
-                )
+                ),
             )?;
 
             RENodeId::Bucket(bucket_id)
@@ -564,7 +564,7 @@ impl BucketBlueprint {
                 btreemap!(
                     0 => scrypto_encode(&info).unwrap(),
                     1 => scrypto_encode(&taken).unwrap()
-                )
+                ),
             )?;
 
             RENodeId::Bucket(bucket_id)
@@ -606,7 +606,7 @@ impl BucketBlueprint {
                 btreemap!(
                     0 => scrypto_encode(&info).unwrap(),
                     1 => scrypto_encode(&taken).unwrap()
-                )
+                ),
             )?;
 
             Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
@@ -763,7 +763,7 @@ impl BucketBlueprint {
                 btreemap!(
                     0 => scrypto_encode(&proof_info).unwrap(),
                     1 => scrypto_encode(&proof).unwrap()
-                )
+                ),
             )?;
             RENodeId::Proof(proof_id)
         } else {
@@ -781,7 +781,7 @@ impl BucketBlueprint {
                 btreemap!(
                     0 => scrypto_encode(&proof_info).unwrap(),
                     1 => scrypto_encode(&proof).unwrap()
-                )
+                ),
             )?;
             RENodeId::Proof(proof_id)
         };
