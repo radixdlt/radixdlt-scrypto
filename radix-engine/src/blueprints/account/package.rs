@@ -207,7 +207,7 @@ impl AccountNativePackage {
         let metadata = Metadata::sys_create(api)?;
 
         let address = api.globalize(
-            RENodeId::Account(account_id),
+            RENodeId::Component(account_id),
             btreemap!(
                 NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
                 NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
@@ -249,7 +249,7 @@ impl AccountNativePackage {
             )?
         };
 
-        Ok(IndexedScryptoValue::from_typed(&Own::Account(account_id)))
+        Ok(IndexedScryptoValue::from_typed(&Own::Component(account_id)))
     }
 
     fn lock_fee_internal<Y>(

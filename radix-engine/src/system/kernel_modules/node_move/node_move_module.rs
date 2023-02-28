@@ -86,7 +86,6 @@ impl NodeMoveModule {
             | RENodeId::Identity(..)
             | RENodeId::Validator(..)
             | RENodeId::GlobalComponent(..)
-            | RENodeId::Account(..)
             | RENodeId::AccessController(..) => Err(RuntimeError::ModuleError(
                 ModuleError::NodeMoveError(NodeMoveError::CantMoveDownstream(node_id)),
             )),
@@ -101,8 +100,7 @@ impl NodeMoveModule {
             RENodeId::Bucket(..)
             | RENodeId::Proof(..)
             | RENodeId::Component(..)
-            | RENodeId::Vault(..)
-            | RENodeId::Account(..) => Ok(()),
+            | RENodeId::Vault(..) => Ok(()),
 
             RENodeId::TransactionRuntime
             | RENodeId::AuthZoneStack

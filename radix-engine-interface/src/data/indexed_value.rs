@@ -155,9 +155,6 @@ impl ValueVisitor<ScryptoCustomValueKind, ScryptoCustomValue> for ScryptoValueVi
                     Own::Component(component_id) => {
                         self.owned_nodes.push(RENodeId::Component(*component_id))
                     }
-                    Own::Account(component_id) => {
-                        self.owned_nodes.push(RENodeId::Account(*component_id))
-                    }
                     Own::KeyValueStore(kv_store_id) => {
                         self.owned_nodes.push(RENodeId::KeyValueStore(*kv_store_id))
                     }

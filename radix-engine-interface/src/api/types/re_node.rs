@@ -31,7 +31,6 @@ pub enum RENodeType {
     Identity,
     TransactionRuntime,
     Logger,
-    Account,
     AccessController,
 }
 
@@ -66,7 +65,6 @@ pub enum RENodeId {
     EpochManager(EpochManagerId),
     Identity(IdentityId),
     Validator(ValidatorId),
-    Account(AccountId),
     AccessController(AccessControllerId),
 }
 
@@ -102,7 +100,6 @@ impl fmt::Debug for RENodeId {
                 .finish(),
             Self::Identity(id) => f.debug_tuple("Identity").field(&hex::encode(id)).finish(),
             Self::Validator(id) => f.debug_tuple("Validator").field(&hex::encode(id)).finish(),
-            Self::Account(id) => f.debug_tuple("Account").field(&hex::encode(id)).finish(),
             Self::AccessController(id) => f
                 .debug_tuple("AccessController")
                 .field(&hex::encode(id))
@@ -121,7 +118,6 @@ impl Into<[u8; 36]> for RENodeId {
             RENodeId::EpochManager(id) => id,
             RENodeId::Identity(id) => id,
             RENodeId::Validator(id) => id,
-            RENodeId::Account(id) => id,
             RENodeId::AccessController(id) => id,
             RENodeId::Proof(id) => id,
             RENodeId::Bucket(id) => id,

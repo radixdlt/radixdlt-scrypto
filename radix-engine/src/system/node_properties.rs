@@ -22,7 +22,6 @@ impl VisibilityProperties {
         match mode {
             ExecutionMode::Kernel => match node_id {
                 // TODO: Remove
-                RENodeId::Account(..) => true,
                 RENodeId::Identity(..) => true,
                 RENodeId::Component(..) => true,
                 _ => false,
@@ -66,7 +65,6 @@ impl VisibilityProperties {
                 },
                 // TODO: CLEAN THESE UP, these are used for globalization
                 RENodeId::EpochManager(..) => mode.eq(&ExecutionMode::Client),
-                RENodeId::Account(..) => mode.eq(&ExecutionMode::Client),
                 RENodeId::Validator(..) => mode.eq(&ExecutionMode::Client),
                 RENodeId::Component(..) => mode.eq(&ExecutionMode::Client),
                 RENodeId::AccessController(..) => mode.eq(&ExecutionMode::Client),
@@ -285,8 +283,7 @@ impl VisibilityProperties {
                             },
 
                             ActorIdentifier::Method(method_identifier) => match method_identifier {
-                                MethodIdentifier(RENodeId::Component(component_address), ..)
-                                | MethodIdentifier(RENodeId::Account(component_address), ..) => {
+                                MethodIdentifier(RENodeId::Component(component_address), ..) => {
                                     match (node_id, offset) {
                                         (
                                             RENodeId::KeyValueStore(_),

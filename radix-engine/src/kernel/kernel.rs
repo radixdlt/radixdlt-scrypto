@@ -8,7 +8,7 @@ use crate::errors::*;
 use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_properties::VisibilityProperties;
-use crate::system::node_substates::{SubstateRef, SubstateRefMut};
+use crate::system::node_substates::{RuntimeSubstate, SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::access_rules::AccessRulesObject;
@@ -163,8 +163,11 @@ where
                     vaults: Own::KeyValueStore(kv_store_id.into()),
                 };
 
-                let node_id = self.kernel_allocate_node_id(RENodeType::Account)?;
-                let node = RENodeInit::Account(account_substate);
+                let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
+                let node = RENodeInit::Component(
+                    btreemap!(
+                        SubstateOffset::Account(AccountOffset::Account) => RuntimeSubstate::Account(account_substate)
+                    ));
                 self.kernel_create_node(node_id, node, node_modules)?;
                 node_id
             };
@@ -296,7 +299,6 @@ where
             | RENodeId::TransactionRuntime
             | RENodeId::Bucket(..)
             | RENodeId::EpochManager(..)
-            | RENodeId::Account(..)
             | RENodeId::Validator(..)
             | RENodeId::Component(..)
             | RENodeId::AccessController(..)
@@ -654,16 +656,16 @@ where
     fn kernel_create_node(
         &mut self,
         node_id: RENodeId,
-        re_node: RENodeInit,
+        init: RENodeInit,
         module_init: BTreeMap<NodeModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError> {
-        KernelModuleMixer::before_create_node(self, &node_id, &re_node, &module_init)?;
+        KernelModuleMixer::before_create_node(self, &node_id, &init, &module_init)?;
 
         // Change to kernel mode
         let current_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        match (node_id, &re_node) {
+        match (node_id, &init) {
             (RENodeId::GlobalComponent(..), RENodeInit::GlobalObject(..)) => {}
             (RENodeId::GlobalResourceManager(..), RENodeInit::GlobalObject(..)) => {}
             (RENodeId::GlobalPackage(..), RENodeInit::GlobalPackage(..)) => {}
@@ -682,7 +684,6 @@ where
             (RENodeId::Validator(..), RENodeInit::Validator(..)) => {}
             (RENodeId::AccessController(..), RENodeInit::AccessController(..)) => {}
             (RENodeId::Identity(..), RENodeInit::Identity(..)) => {}
-            (RENodeId::Account(..), RENodeInit::Account(..)) => {}
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
             (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
             (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {}
@@ -692,7 +693,7 @@ where
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id))),
         }
 
-        let push_to_store = match re_node {
+        let push_to_store = match init {
             RENodeInit::GlobalObject(..) | RENodeInit::GlobalPackage(..) => true,
             _ => false,
         };
@@ -700,7 +701,7 @@ where
         self.id_allocator.take_node_id(node_id)?;
         self.current_frame.create_node(
             node_id,
-            re_node,
+            init,
             module_init,
             &mut self.heap,
             &mut self.track,

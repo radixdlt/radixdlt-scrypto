@@ -11,5 +11,4 @@ pub type VaultId = [u8; 36];
 pub type EpochManagerId = [u8; 36];
 pub type IdentityId = [u8; 36];
 pub type ValidatorId = [u8; 36];
-pub type AccountId = [u8; 36];
 pub type AccessControllerId = [u8; 36];
