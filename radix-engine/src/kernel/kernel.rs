@@ -237,7 +237,7 @@ where
         );
 
         let access_rule = rule!(require(non_fungible_global_id));
-        let (local_id, access_rules) = Identity::create(access_rule, self)?;
+        let (local_id, access_rules) = Identity::create_virtual(access_rule, self)?;
 
         let access_rules = AccessRulesObject::sys_new(access_rules, self)?;
         let metadata = Metadata::sys_new(self)?;
@@ -831,16 +831,7 @@ where
             (RENodeId::Validator(..), RENodeInit::Validator(..)) => { }
             (RENodeId::Clock(..), RENodeInit::Clock(..)) => { }
             (RENodeId::AccessController(..), RENodeInit::AccessController(..)) => { }
-            (RENodeId::Identity(..), RENodeInit::Identity(..)) => {
-                module_init.insert(
-                    NodeModuleId::TypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: IDENTITY_PACKAGE,
-                        blueprint_name: IDENTITY_BLUEPRINT.to_string(),
-                        global: false,
-                    }),
-                );
-            }
+            (RENodeId::Identity(..), RENodeInit::Identity(..)) => { }
             (RENodeId::Account(..), RENodeInit::Account(..)) => { }
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id))),
         }

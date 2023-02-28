@@ -295,6 +295,14 @@ where
                 let node_id = self.kernel_allocate_node_id(RENodeType::AccessController)?;
                 (node_id, RENodeInit::AccessController(substate))
             }
+            IDENTITY_PACKAGE => {
+                if !app_states.is_empty() {
+                    return Err(RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema));
+                }
+
+                let node_id = self.kernel_allocate_node_id(RENodeType::Identity)?;
+                (node_id, RENodeInit::Identity())
+            }
             ACCOUNT_PACKAGE => {
                 let substate_bytes = app_states.into_iter().next().unwrap().1;
                 let substate: AccountSubstate = scrypto_decode(&substate_bytes)

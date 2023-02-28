@@ -3,7 +3,7 @@ use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
-use crate::system::node::RENodeInit;
+use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::types::*;
 use native_sdk::access_rules::AccessRulesObject;
 use native_sdk::metadata::Metadata;
@@ -14,6 +14,7 @@ use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
+use crate::system::node_modules::type_info::TypeInfoSubstate;
 
 pub struct IdentityNativePackage;
 impl IdentityNativePackage {
@@ -73,7 +74,35 @@ impl Identity {
         api: &mut Y,
     ) -> Result<(RENodeId, AccessRules), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let mut access_rules = AccessRules::new();
+        access_rules.set_access_rule_and_mutability(
+            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
+            access_rule.clone(),
+            access_rule,
+        );
+        access_rules.set_access_rule_and_mutability(
+            MethodKey::new(NodeModuleId::Metadata, METADATA_GET_IDENT.to_string()),
+            AccessRule::AllowAll,
+            AccessRule::DenyAll,
+        );
+
+        let component_id = api.new_object(
+            IDENTITY_BLUEPRINT,
+            btreemap!(
+            )
+        )?;
+
+        Ok((RENodeId::Identity(component_id), access_rules))
+    }
+
+    pub fn create_virtual<Y>(
+        access_rule: AccessRule,
+        api: &mut Y,
+    ) -> Result<(RENodeId, AccessRules), RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
         let underlying_node_id = api.kernel_allocate_node_id(RENodeType::Identity)?;
 
@@ -89,7 +118,17 @@ impl Identity {
             AccessRule::DenyAll,
         );
 
-        api.kernel_create_node(underlying_node_id, RENodeInit::Identity(), BTreeMap::new())?;
+        api.kernel_create_node(
+            underlying_node_id,
+            RENodeInit::Identity(),
+            btreemap!(
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                    package_address: IDENTITY_PACKAGE,
+                    blueprint_name: IDENTITY_BLUEPRINT.to_string(),
+                    global: false,
+                })
+            ),
+        )?;
 
         Ok((underlying_node_id, access_rules))
     }
