@@ -41,8 +41,8 @@ pub trait CustomContainerHeader: Copy + Debug + Clone + PartialEq + Eq {
 pub struct ContainerState<C: CustomTraversal> {
     pub container_header: ContainerHeader<C>,
     pub container_start_offset: usize,
-    pub container_child_count: u32,
-    pub next_child_index: u32,
+    pub container_child_count: usize,
+    pub next_child_index: usize,
 }
 
 /// The `VecTraverser` is for streamed decoding of a payload.
@@ -61,7 +61,7 @@ pub struct VecTraverser<'de, C: CustomTraversal> {
 pub enum NextEventOverride {
     ReadPrefix(u8),
     ReadRootValue,
-    ReadBytes(u32),
+    ReadBytes(usize),
     None,
 }
 
@@ -330,7 +330,7 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
         start_offset: usize,
     ) -> LocatedTraversalEvent<'t, 'de, T> {
         let variant = return_if_error!(self, self.decoder.read_byte());
-        let length = return_if_error!(self, self.decoder.read_size_u32());
+        let length = return_if_error!(self, self.decoder.read_size());
         self.enter_container(
             start_offset,
             ContainerHeader::EnumVariant(EnumVariantHeader { variant, length }),
@@ -341,7 +341,7 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
         &'t mut self,
         start_offset: usize,
     ) -> LocatedTraversalEvent<'t, 'de, T> {
-        let length = return_if_error!(self, self.decoder.read_size_u32());
+        let length = return_if_error!(self, self.decoder.read_size());
         self.enter_container(start_offset, ContainerHeader::Tuple(TupleHeader { length }))
     }
 
@@ -350,7 +350,7 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
         start_offset: usize,
     ) -> LocatedTraversalEvent<'t, 'de, T> {
         let element_value_kind = return_if_error!(self, self.decoder.read_value_kind());
-        let length = return_if_error!(self, self.decoder.read_size_u32());
+        let length = return_if_error!(self, self.decoder.read_size());
         if element_value_kind == ValueKind::U8 && length > 0 {
             self.next_event_override = NextEventOverride::ReadBytes(length);
         }
@@ -369,7 +369,7 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
     ) -> LocatedTraversalEvent<'t, 'de, T> {
         let key_value_kind = return_if_error!(self, self.decoder.read_value_kind());
         let value_value_kind = return_if_error!(self, self.decoder.read_value_kind());
-        let length = return_if_error!(self, self.decoder.read_size_u32());
+        let length = return_if_error!(self, self.decoder.read_size());
         self.enter_container(
             start_offset,
             ContainerHeader::Map(MapHeader {
@@ -396,9 +396,12 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
         }
     }
 
-    fn read_bytes_event_override<'t>(&'t mut self, size: u32) -> LocatedTraversalEvent<'t, 'de, T> {
+    fn read_bytes_event_override<'t>(
+        &'t mut self,
+        size: usize,
+    ) -> LocatedTraversalEvent<'t, 'de, T> {
         let start_offset = self.get_offset();
-        let bytes = return_if_error!(self, self.decoder.read_slice_from_payload(size as usize));
+        let bytes = return_if_error!(self, self.decoder.read_slice_from_payload(size));
         // Set it up so that we jump to the end of the child iteration
         self.container_stack.last_mut().unwrap().next_child_index = size;
         self.next_event_override = NextEventOverride::None;

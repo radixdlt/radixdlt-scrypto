@@ -20,7 +20,7 @@ pub enum SchemaInconsistencyError {
 pub enum TypeValidationError {
     LengthValidationError {
         required: LengthValidation,
-        actual: u32,
+        actual: usize,
     },
     I8ValidationError {
         required: NumericValidation<i8>,

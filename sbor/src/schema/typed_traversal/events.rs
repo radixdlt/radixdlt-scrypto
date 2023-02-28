@@ -54,12 +54,12 @@ pub enum TypeMismatchError<X: CustomValueKind> {
     },
     MismatchingTupleLength {
         expected: usize,
-        actual: u32,
+        actual: usize,
         type_index: LocalTypeIndex,
     },
     MismatchingEnumVariantLength {
         expected: usize,
-        actual: u32,
+        actual: usize,
         variant: u8,
         type_index: LocalTypeIndex,
     },

@@ -110,24 +110,6 @@ pub trait Decoder<X: CustomValueKind>: Sized {
         Ok(size)
     }
 
-    fn read_size_u32(&mut self) -> Result<u32, DecodeError> {
-        // LEB128 and 4 bytes max
-        let mut size = 0u32;
-        let mut shift = 0;
-        loop {
-            let byte = self.read_byte()?;
-            size |= ((byte & 0x7F) as u32) << shift;
-            if byte < 0x80 {
-                break;
-            }
-            shift += 7;
-            if shift >= 28 {
-                return Err(DecodeError::SizeTooLarge);
-            }
-        }
-        Ok(size)
-    }
-
     #[inline]
     fn check_preloaded_value_kind(
         &self,

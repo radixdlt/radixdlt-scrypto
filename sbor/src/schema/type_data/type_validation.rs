@@ -39,8 +39,8 @@ impl LengthValidation {
         }
     }
 
-    pub fn is_valid(&self, length: u32) -> bool {
-        self.min.unwrap_or(0) <= length && length <= self.max.unwrap_or(u32::MAX)
+    pub fn is_valid(&self, length: usize) -> bool {
+        self.min.unwrap_or(0) as usize <= length && length <= self.max.unwrap_or(u32::MAX) as usize
     }
 }
 
