@@ -769,48 +769,11 @@ where
             (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
             (RENodeId::Component(..), RENodeInit::Metadata(..)) => { }
             (RENodeId::Component(..), RENodeInit::ComponentRoyalty(..)) => { }
-            (RENodeId::Component(..), RENodeInit::AccessRules(..)) => {
-            }
-            (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {
-                module_init.insert(
-                    NodeModuleId::TypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: AUTH_ZONE_PACKAGE,
-                        blueprint_name: AUTH_ZONE_BLUEPRINT.to_string(),
-                        global: false,
-                    }),
-                );
-            }
-            (RENodeId::TransactionRuntime, RENodeInit::TransactionRuntime(..)) => {
-                module_init.insert(
-                    NodeModuleId::TypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: TRANSACTION_RUNTIME_PACKAGE,
-                        blueprint_name: TRANSACTION_RUNTIME_BLUEPRINT.to_string(),
-                        global: false,
-                    }),
-                );
-            }
-            (RENodeId::Logger, RENodeInit::Logger(..)) => {
-                module_init.insert(
-                    NodeModuleId::TypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: LOGGER_PACKAGE,
-                        blueprint_name: LOGGER_BLUEPRINT.to_string(),
-                        global: false,
-                    }),
-                );
-            }
-            (RENodeId::Worktop, RENodeInit::Worktop(..)) => {
-                module_init.insert(
-                    NodeModuleId::TypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: RESOURCE_MANAGER_PACKAGE,
-                        blueprint_name: WORKTOP_BLUEPRINT.to_string(),
-                        global: false,
-                    }),
-                );
-            }
+            (RENodeId::Component(..), RENodeInit::AccessRules(..)) => { }
+            (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => { }
+            (RENodeId::TransactionRuntime, RENodeInit::TransactionRuntime(..)) => { }
+            (RENodeId::Logger, RENodeInit::Logger(..)) => { }
+            (RENodeId::Worktop, RENodeInit::Worktop(..)) => { }
             (RENodeId::Bucket(..), RENodeInit::FungibleBucket(..))
             | (RENodeId::Bucket(..), RENodeInit::NonFungibleBucket(..)) => {
                 module_init.insert(

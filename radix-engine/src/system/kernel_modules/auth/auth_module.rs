@@ -6,12 +6,12 @@ use crate::kernel::call_frame::RENodeVisibilityOrigin;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
 use crate::system::kernel_modules::auth::convert;
-use crate::system::node::RENodeInit;
+use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::access_rules::{
     AccessRulesNativePackage, AuthZoneStackSubstate, FunctionAccessRulesSubstate,
     MethodAccessRulesSubstate,
 };
-use crate::system::node_modules::type_info::TypeInfoBlueprint;
+use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::types::*;
 use radix_engine_interface::api::component::ComponentStateSubstate;
 use radix_engine_interface::api::node_modules::auth::*;
@@ -327,7 +327,13 @@ impl KernelModule for AuthModule {
         api.kernel_create_node(
             node_id,
             RENodeInit::AuthZoneStack(auth_zone),
-            BTreeMap::new(),
+            btreemap!(
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                        package_address: AUTH_ZONE_PACKAGE,
+                        blueprint_name: AUTH_ZONE_BLUEPRINT.to_string(),
+                        global: false,
+                    })
+            )
         )?;
         Ok(())
     }

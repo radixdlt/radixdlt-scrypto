@@ -6,7 +6,7 @@ use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{
     ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, TemporaryResolvedInvocation,
 };
-use crate::system::node::RENodeInit;
+use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::package::PackageError;
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -39,6 +39,7 @@ use transaction::data::{manifest_decode, manifest_encode};
 use transaction::errors::ManifestIdAllocationError;
 use transaction::model::*;
 use transaction::validation::*;
+use crate::system::node_modules::type_info::TypeInfoSubstate;
 
 #[derive(Debug, ScryptoSbor)]
 pub struct TransactionProcessorRunInvocation<'a> {
@@ -311,7 +312,13 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
         api.kernel_create_node(
             worktop_node_id,
             RENodeInit::Worktop(WorktopSubstate::new()),
-            BTreeMap::new(),
+            btreemap!(
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                    package_address: RESOURCE_MANAGER_PACKAGE,
+                    blueprint_name: WORKTOP_BLUEPRINT.to_string(),
+                    global: false,
+                })
+            ),
         )?;
 
         let instructions: Vec<Instruction> = manifest_decode(&self.instructions).unwrap();
