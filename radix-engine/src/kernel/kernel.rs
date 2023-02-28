@@ -908,16 +908,7 @@ where
                     }),
                 );
             }
-            (RENodeId::Clock(..), RENodeInit::Clock(..)) => {
-                module_init.insert(
-                    NodeModuleId::TypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: CLOCK_PACKAGE,
-                        blueprint_name: CLOCK_BLUEPRINT.to_string(),
-                        global: false,
-                    }),
-                );
-            }
+            (RENodeId::Clock(..), RENodeInit::Clock(..)) => { }
             (RENodeId::Identity(..), RENodeInit::Identity(..)) => {
                 module_init.insert(
                     NodeModuleId::TypeInfo,

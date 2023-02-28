@@ -33,6 +33,7 @@ use radix_engine_interface::data::model::Own;
 use radix_engine_interface::data::*;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+use crate::blueprints::clock::CurrentTimeRoundedToMinutesSubstate;
 use crate::system::package::Package;
 
 impl<'g, 's, W> ClientNodeApi<RuntimeError> for Kernel<'g, 's, W>
@@ -219,29 +220,42 @@ where
             .fn_identifier
             .package_address();
 
-        let abi = Package::get_blueprint_abi(
-            RENodeId::GlobalPackage(package_address),
-            blueprint_ident.to_string(),
-            self,
-        )?;
+        let (node_id, node_init) = match package_address {
+            CLOCK_PACKAGE => {
+                let substate_bytes = app_states.into_iter().next().unwrap().1;
+                let substate: CurrentTimeRoundedToMinutesSubstate = scrypto_decode(&substate_bytes)
+                    .map_err(|e| RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema))?;
 
-        // FIXME: generalize app substates;
-        // FIXME: remove unwrap;
-        // FIXME: support native blueprints
-        let substate_bytes = app_states.into_iter().next().unwrap().1;
-        let substate: ScryptoValue = scrypto_decode(&substate_bytes)
-            .map_err(|e| RuntimeError::SystemError(SystemError::InvalidScryptoValue(e)))?;
+                let node_id = self.kernel_allocate_node_id(RENodeType::Clock)?;
+                (node_id, RENodeInit::Clock(substate))
+            }
+            _ => {
+                let abi = Package::get_blueprint_abi(
+                    RENodeId::GlobalPackage(package_address),
+                    blueprint_ident.to_string(),
+                    self,
+                )?;
 
-        if !match_schema_with_value(&abi.structure, &substate) {
-            return Err(RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema));
-        }
+                // FIXME: generalize app substates;
+                // FIXME: remove unwrap;
+                let substate_bytes = app_states.into_iter().next().unwrap().1;
 
-        // Allocate node id
-        let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
+                let substate: ScryptoValue = scrypto_decode(&substate_bytes)
+                    .map_err(|e| RuntimeError::SystemError(SystemError::InvalidScryptoValue(e)))?;
+
+                if !match_schema_with_value(&abi.structure, &substate) {
+                    return Err(RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema));
+                }
+
+                // Allocate node id
+                let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
+                (node_id, RENodeInit::Component(ComponentStateSubstate::new(substate_bytes)))
+            }
+        };
 
         self.kernel_create_node(
             node_id,
-            RENodeInit::Component(ComponentStateSubstate::new(substate_bytes)),
+            node_init,
             btreemap!(
                 NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(
                     TypeInfoSubstate::new(package_address, blueprint_ident.to_string(), false)
