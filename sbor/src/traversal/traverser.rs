@@ -673,7 +673,7 @@ mod tests {
             1,
             55,
         );
-        next_event_is_end(&mut traverser, 0, 55, 55);
+        next_event_is_end(&mut traverser, 55, 55);
     }
 
     pub fn next_event_is_payload_prefix(
@@ -694,6 +694,7 @@ mod tests {
         };
         assert_eq!(start_offset, expected_start_offset);
         assert_eq!(end_offset, expected_end_offset);
+        assert!(event.location.ancestor_path.is_empty());
     }
 
     pub fn next_event_is_container_start_header(
@@ -798,12 +799,10 @@ mod tests {
 
     pub fn next_event_is_end(
         traverser: &mut BasicTraverser,
-        expected_depth: usize,
         expected_start_offset: usize,
         expected_end_offset: usize,
     ) {
         let event = traverser.next_event();
-        let sbor_depth = event.location.child_value_depth();
         let LocatedTraversalEvent {
             event: TraversalEvent::End,
             location: Location {
@@ -814,8 +813,8 @@ mod tests {
         } = event else {
             panic!("Invalid event - expected End, was {:?}", event);
         };
-        assert_eq!(sbor_depth, expected_depth);
         assert_eq!(start_offset, expected_start_offset);
         assert_eq!(end_offset, expected_end_offset);
+        assert!(event.location.ancestor_path.is_empty());
     }
 }
