@@ -7,12 +7,12 @@ use crate::*;
 pub enum ValidationError<E: CustomTypeExtension> {
     TraversalError(TypedTraversalError<E::CustomValueKind>),
     TypeValidationError(TypeValidationError),
-    SchemaInconsistency(SchemaInconsistencyError),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum SchemaInconsistencyError {
-    TypeValidationMismatch,
+impl<E: CustomTypeExtension> From<TypeValidationError> for ValidationError<E> {
+    fn from(value: TypeValidationError) -> Self {
+        Self::TypeValidationError(value)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -75,6 +75,35 @@ pub struct ErrorLocation {
     end_offset: usize,
 }
 
+#[macro_export]
+macro_rules! failed_to_resolve_type_validation {
+    () => {
+        panic!("Failed to resolve type validation, possibly caused by a bug in consistency check!")
+    };
+}
+
+#[macro_export]
+macro_rules! type_validation_meets_unexpected_value {
+    () => {
+        panic!("Type validation meets unexpected value, possibly caused by a bug in consistency check!")
+    };
+}
+
+#[macro_export]
+macro_rules! numeric_validation_match {
+    ($numeric_validation: ident, $value: expr, $type: ident, $error_type: ident) => {{
+        {
+            let TerminalValueRef::$type(value) = $value else { type_validation_meets_unexpected_value!() };
+            if !$numeric_validation.is_valid(value) {
+                return Err(TypeValidationError::$error_type {
+                    required: *$numeric_validation,
+                    actual: value,
+                }.into());
+            }
+        }
+    }};
+}
+
 pub fn validate_payload_with_schema<E: CustomTypeExtension>(
     payload: &[u8],
     schema: &Schema<E>,
@@ -124,76 +153,46 @@ fn validate_event_with_type<E: CustomTypeExtension>(
     }
 }
 
-#[macro_export]
-macro_rules! return_type_validation_mismatch {
-    () => {
-        return Err(ValidationError::SchemaInconsistency(
-            SchemaInconsistencyError::TypeValidationMismatch,
-        ))
-    };
-}
-
-#[macro_export]
-macro_rules! return_type_validation_error {
-    ($error: expr) => {
-        return Err(ValidationError::TypeValidationError($error));
-    };
-}
-
 pub fn validate_container<E: CustomTypeExtension>(
     type_validations: &[SchemaTypeValidation<E>],
     header: ContainerHeader<E::CustomTraversal>,
     type_index: LocalTypeIndex,
 ) -> Result<(), ValidationError<E>> {
-    let Some(validation) = resolve_type_validation::<E>(&type_validations, type_index) else {
-        panic!("Failed to resolve type validation, possibly caused by a bug in consistency check!")
-    };
+    let validation = resolve_type_validation::<E>(&type_validations, type_index)
+        .unwrap_or_else(|| failed_to_resolve_type_validation!());
     match validation {
         TypeValidation::None => {}
         TypeValidation::Array { length_validation } => {
             let ContainerHeader::Array(ArrayHeader { length, .. }) = header else {
-                return_type_validation_mismatch!()
+                type_validation_meets_unexpected_value!()
             };
             if !length_validation.is_valid(length) {
-                return_type_validation_error!(TypeValidationError::LengthValidationError {
+                return Err(TypeValidationError::LengthValidationError {
                     required: *length_validation,
                     actual: length,
-                });
+                }
+                .into());
             }
         }
         TypeValidation::Map { length_validation } => {
             let ContainerHeader::Map(MapHeader { length, .. }) = header else {
-                return_type_validation_mismatch!()
+                type_validation_meets_unexpected_value!()
             };
             if !length_validation.is_valid(length) {
-                return_type_validation_error!(TypeValidationError::LengthValidationError {
+                return Err(TypeValidationError::LengthValidationError {
                     required: *length_validation,
                     actual: length,
-                });
+                }
+                .into());
             }
         }
         TypeValidation::Custom(_) => {
             // TODO - add this in when we have custom validations
             unreachable!("Unreachable at present")
         }
-        _ => return_type_validation_mismatch!(),
+        _ => type_validation_meets_unexpected_value!(),
     }
     Ok(())
-}
-
-#[macro_export]
-macro_rules! numeric_validation_match {
-    ($numeric_validation: ident, $value: expr, $type: ident, $error_type: ident) => {{
-        {
-            let TerminalValueRef::$type(value) = $value else { return_type_validation_mismatch!() };
-            if !$numeric_validation.is_valid(value) {
-                return_type_validation_error!(TypeValidationError::$error_type {
-                    required: *$numeric_validation,
-                    actual: value,
-                });
-            }
-        }
-    }};
 }
 
 pub fn validate_terminal_value<'de, E: CustomTypeExtension>(
@@ -201,9 +200,8 @@ pub fn validate_terminal_value<'de, E: CustomTypeExtension>(
     value: TerminalValueRef<'de, E::CustomTraversal>,
     type_index: LocalTypeIndex,
 ) -> Result<(), ValidationError<E>> {
-    let Some(validation) = resolve_type_validation::<E>(&type_validations, type_index) else {
-        panic!("Failed to resolve type validation, possibly caused by a bug in consistency check!")
-    };
+    let validation = resolve_type_validation::<E>(&type_validations, type_index)
+        .unwrap_or_else(|| failed_to_resolve_type_validation!());
     match validation {
         TypeValidation::None => {}
         TypeValidation::I8(x) => {
@@ -240,7 +238,7 @@ pub fn validate_terminal_value<'de, E: CustomTypeExtension>(
             // TODO - add this in when we have custom validations
             unreachable!("Unreachable at present")
         }
-        _ => return_type_validation_mismatch!(),
+        _ => type_validation_meets_unexpected_value!(),
     }
     Ok(())
 }
@@ -250,19 +248,19 @@ pub fn validate_terminal_value_batch<'de, E: CustomTypeExtension>(
     value_batch: TerminalValueBatchRef<'de>,
     type_index: LocalTypeIndex,
 ) -> Result<(), ValidationError<E>> {
-    let Some(validation) = resolve_type_validation::<E>(&type_validations, type_index) else {
-        panic!("Failed to resolve type validation, possibly caused by a bug in consistency check!")
-    };
+    let validation = resolve_type_validation::<E>(&type_validations, type_index)
+        .unwrap_or_else(|| failed_to_resolve_type_validation!());
     match validation {
         TypeValidation::None => {}
         TypeValidation::U8(numeric_validation) => {
             let TerminalValueBatchRef::U8(value_batch) = value_batch;
             for byte in value_batch.iter() {
                 if !numeric_validation.is_valid(*byte) {
-                    return_type_validation_error!(TypeValidationError::U8ValidationError {
+                    return Err(TypeValidationError::U8ValidationError {
                         required: *numeric_validation,
                         actual: *byte,
-                    });
+                    }
+                    .into());
                 }
             }
         }
@@ -270,7 +268,7 @@ pub fn validate_terminal_value_batch<'de, E: CustomTypeExtension>(
             // TODO - add this in when we have custom validations
             unreachable!("Unreachable at present")
         }
-        _ => return_type_validation_mismatch!(),
+        _ => type_validation_meets_unexpected_value!(),
     }
     Ok(())
 }
