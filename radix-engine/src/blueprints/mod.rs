@@ -3,6 +3,7 @@ pub mod account;
 pub mod auth_zone;
 pub mod clock;
 pub mod epoch_manager;
+pub mod event_store;
 pub mod identity;
 pub mod logger;
 pub mod resource;

@@ -27,6 +27,10 @@ use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;
 
+use super::events::resource_manager::BurnResourceEvent;
+use super::events::resource_manager::MintResourceEvent;
+use super::events::resource_manager::VaultCreationEvent;
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ResourceManagerSubstate {
     pub resource_address: ResourceAddress, // TODO: Figure out a way to remove?
@@ -846,7 +850,7 @@ impl ResourceManagerBlueprint {
             // Allocate non-fungibles
             let mut ids = BTreeSet::new();
             let mut non_fungibles = BTreeMap::new();
-            for (id, data) in input.entries {
+            for (id, data) in input.entries.clone().into_iter() {
                 if id.id_type() != id_type {
                     return Err(RuntimeError::ApplicationError(
                         ApplicationError::ResourceManagerError(
@@ -915,6 +919,10 @@ impl ResourceManagerBlueprint {
             api.sys_drop_lock(non_fungible_handle)?;
         }
 
+        api.emit_event(MintResourceEvent::Ids(
+            input.entries.into_iter().map(|(k, _)| k).collect(),
+        ))?;
+
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
 
@@ -936,7 +944,7 @@ impl ResourceManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let bucket_id = {
+        let (bucket_id, ids) = {
             let resource_manager: &mut ResourceManagerSubstate =
                 api.kernel_get_substate_ref_mut(resman_handle)?;
             let resource_address = resource_manager.resource_address;
@@ -993,13 +1001,15 @@ impl ResourceManagerBlueprint {
                         resource_address,
                         resource_type: ResourceType::NonFungible { id_type },
                     },
-                    LiquidNonFungibleResource::new(ids),
+                    LiquidNonFungibleResource::new(ids.clone()),
                 ),
                 BTreeMap::new(),
             )?;
             let bucket_id: BucketId = node_id.into();
-            bucket_id
+            (bucket_id, ids)
         };
+
+        api.emit_event(MintResourceEvent::Ids(ids))?;
 
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
@@ -1068,6 +1078,8 @@ impl ResourceManagerBlueprint {
         api.kernel_create_node(node_id, resource_init, BTreeMap::new())?;
         let bucket_id = node_id.into();
 
+        api.emit_event(MintResourceEvent::Amount(input.amount))?;
+
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
 
@@ -1092,6 +1104,16 @@ impl ResourceManagerBlueprint {
         let dropped_bucket: DroppedBucket = api
             .kernel_drop_node(RENodeId::Bucket(input.bucket.0))?
             .into();
+
+        // Construct the event and only emit it once all of the operations are done.
+        let event = match dropped_bucket.resource {
+            DroppedBucketResource::Fungible(ref resource) => {
+                BurnResourceEvent::Amount(resource.amount())
+            }
+            DroppedBucketResource::NonFungible(ref resource) => {
+                BurnResourceEvent::Ids(resource.ids().clone())
+            }
+        };
 
         // Check if resource matches
         // TODO: Move this check into actor check
@@ -1136,6 +1158,8 @@ impl ResourceManagerBlueprint {
                 }
             }
         }
+
+        api.emit_event(event)?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -1250,6 +1274,10 @@ impl ResourceManagerBlueprint {
                 node_id.into()
             }
         };
+
+        api.emit_event(VaultCreationEvent {
+            vault_id: RENodeId::Vault(vault_id),
+        })?;
 
         Ok(IndexedScryptoValue::from_typed(&Own::Vault(vault_id)))
     }

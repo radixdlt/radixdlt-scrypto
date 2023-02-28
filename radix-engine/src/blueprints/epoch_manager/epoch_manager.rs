@@ -1,4 +1,4 @@
-use super::ValidatorCreator;
+use super::{EpochChangeEvent, RoundChangeEvent, ValidatorCreator};
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
@@ -28,7 +28,7 @@ pub struct EpochManagerSubstate {
     pub num_unstake_epochs: u64,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, ScryptoSbor, LegacyDescribe)]
 pub struct Validator {
     pub key: EcdsaSecp256k1PublicKey,
     pub stake: Decimal,
@@ -280,9 +280,16 @@ impl EpochManagerBlueprint {
             let validator_set: &mut ValidatorSetSubstate =
                 api.kernel_get_substate_ref_mut(handle)?;
             validator_set.epoch = prepared_epoch;
-            validator_set.validator_set = next_validator_set;
+            validator_set.validator_set = next_validator_set.clone();
+
+            api.emit_event(EpochChangeEvent {
+                epoch: prepared_epoch,
+                validators: next_validator_set,
+            })?;
         } else {
             epoch_manager.round = input.round;
+
+            api.emit_event(RoundChangeEvent { round: input.round })?;
         }
 
         Ok(IndexedScryptoValue::from_typed(&()))
