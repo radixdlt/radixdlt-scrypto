@@ -672,7 +672,11 @@ fn cannot_claim_unstake_immediately() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .withdraw_all_from_account(account_with_lp, validator_substate.liquidity_token)
+        .withdraw_from_account(
+            account_with_lp,
+            validator_substate.liquidity_token,
+            1.into(),
+        )
         .take_from_worktop(validator_substate.liquidity_token, |builder, bucket| {
             builder.unstake_validator(validator_address, bucket)
         })
@@ -727,7 +731,11 @@ fn can_claim_unstake_after_epochs() {
     let validator_substate = test_runner.get_validator_info(validator_address);
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .withdraw_all_from_account(account_with_lp, validator_substate.liquidity_token)
+        .withdraw_from_account(
+            account_with_lp,
+            validator_substate.liquidity_token,
+            1.into(),
+        )
         .take_from_worktop(validator_substate.liquidity_token, |builder, bucket| {
             builder.unstake_validator(validator_address, bucket)
         })
@@ -747,7 +755,7 @@ fn can_claim_unstake_after_epochs() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .withdraw_all_from_account(account_with_lp, validator_substate.unstake_nft)
+        .withdraw_from_account(account_with_lp, validator_substate.unstake_nft, 1.into())
         .take_from_worktop(validator_substate.unstake_nft, |builder, bucket| {
             builder.claim_xrd(validator_address, bucket)
         })

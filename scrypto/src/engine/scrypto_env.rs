@@ -1,15 +1,16 @@
 use crate::engine::wasm_api::*;
 use radix_engine_interface::api::package::{PackageCodeSubstate, PackageInfoSubstate};
-use radix_engine_interface::api::{types::*, LockFlags};
+use radix_engine_interface::api::{types::*, ClientEventApi, LockFlags};
 use radix_engine_interface::api::{
     ClientActorApi, ClientNodeApi, ClientObjectApi, ClientPackageApi, ClientSubstateApi,
 };
 use radix_engine_interface::blueprints::resource::AccessRules;
-use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
+use radix_engine_interface::crypto::hash;
+use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoEncode};
 use sbor::rust::collections::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
-use scrypto_abi::BlueprintAbi;
+use scrypto_abi::{BlueprintAbi, LegacyDescribe};
 
 #[derive(Debug, Sbor)]
 pub enum ClientApiError {
@@ -279,6 +280,33 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
         let actor = copy_buffer(unsafe { get_actor() });
 
         scrypto_decode(&actor).map_err(ClientApiError::DecodeError)
+    }
+}
+
+impl ClientEventApi<ClientApiError> for ScryptoEnv {
+    fn emit_event<T: ScryptoEncode + LegacyDescribe>(
+        &mut self,
+        event: T,
+    ) -> Result<(), ClientApiError> {
+        let schema_hash = hash(scrypto_encode(&T::describe()).unwrap());
+        let event_data = scrypto_encode(&event).unwrap();
+        self.emit_raw_event(schema_hash, event_data)
+    }
+
+    fn emit_raw_event(
+        &mut self,
+        schema_hash: Hash,
+        event_data: Vec<u8>,
+    ) -> Result<(), ClientApiError> {
+        unsafe {
+            emit_event(
+                schema_hash.0.as_ptr(),
+                schema_hash.0.len(),
+                event_data.as_ptr(),
+                event_data.len(),
+            )
+        };
+        Ok(())
     }
 }
 

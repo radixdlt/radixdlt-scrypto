@@ -367,6 +367,31 @@ fn consume_cost_units(
     let (_memory, runtime) = grab_runtime!(caller);
     runtime.consume_cost_units(cost_unit)
 }
+
+fn emit_event(
+    mut caller: Caller<'_, HostState>,
+    schema_hash_ptr: u32,
+    schema_hash_len: u32,
+    event_data_ptr: u32,
+    event_data_len: u32,
+) -> Result<(), InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let schema_hash = read_memory(
+        caller.as_context_mut(),
+        memory,
+        schema_hash_ptr,
+        schema_hash_len,
+    )?;
+    let event_data = read_memory(
+        caller.as_context_mut(),
+        memory,
+        event_data_ptr,
+        event_data_len,
+    )?;
+
+    runtime.emit_event(schema_hash, event_data)
+}
 // native functions ends
 
 macro_rules! linker_define {
@@ -618,6 +643,25 @@ impl WasmiModule {
             },
         );
 
+        let host_emit_event = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             schema_hash_ptr: u32,
+             schema_hash_len: u32,
+             event_data_ptr: u32,
+             event_data_len: u32|
+             -> Result<(), Trap> {
+                emit_event(
+                    caller,
+                    schema_hash_ptr,
+                    schema_hash_len,
+                    event_data_ptr,
+                    event_data_len,
+                )
+                .map_err(|e| e.into())
+            },
+        );
+
         let mut linker = <Linker<HostState>>::new();
         linker_define!(linker, CONSUME_BUFFER_FUNCTION_NAME, host_consume_buffer);
         linker_define!(linker, CALL_METHOD_FUNCTION_NAME, host_call_method);
@@ -650,6 +694,7 @@ impl WasmiModule {
             CONSUME_COST_UNITS_FUNCTION_NAME,
             host_consume_cost_units
         );
+        linker_define!(linker, EMIT_EVENT_FUNCTION_NAME, host_emit_event);
 
         linker.instantiate(store.as_context_mut(), &module)
     }

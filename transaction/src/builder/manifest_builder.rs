@@ -849,22 +849,6 @@ impl ManifestBuilder {
     }
 
     /// Withdraws resource from an account.
-    pub fn withdraw_all_from_account(
-        &mut self,
-        account: ComponentAddress,
-        resource_address: ResourceAddress,
-    ) -> &mut Self {
-        let args = manifest_encode(&AccountWithdrawAllInput { resource_address }).unwrap();
-
-        self.add_instruction(Instruction::CallMethod {
-            component_address: account,
-            method_name: ACCOUNT_WITHDRAW_ALL_IDENT.to_string(),
-            args,
-        })
-        .0
-    }
-
-    /// Withdraws resource from an account.
     pub fn withdraw_non_fungibles_from_account(
         &mut self,
         account: ComponentAddress,
@@ -880,26 +864,6 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
             method_name: ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
-            args,
-        })
-        .0
-    }
-
-    pub fn lock_fee_and_withdraw_all(
-        &mut self,
-        account: ComponentAddress,
-        amount: Decimal,
-        resource_address: ResourceAddress,
-    ) -> &mut Self {
-        let args = manifest_encode(&AccountLockFeeAndWithdrawAllInput {
-            amount_to_lock: amount,
-            resource_address,
-        })
-        .unwrap();
-
-        self.add_instruction(Instruction::CallMethod {
-            component_address: account,
-            method_name: ACCOUNT_LOCK_FEE_AND_WITHDRAW_ALL_IDENT.to_string(),
             args,
         })
         .0

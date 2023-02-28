@@ -4,6 +4,7 @@ use crate::blueprints::clock::CurrentTimeRoundedToMinutesSubstate;
 use crate::blueprints::epoch_manager::{
     EpochManagerSubstate, ValidatorSetSubstate, ValidatorSubstate,
 };
+use crate::blueprints::event_store::EventStoreNativePackage;
 use crate::blueprints::resource::{NonFungibleSubstate, ResourceManagerSubstate};
 use crate::errors::RuntimeError;
 use crate::errors::{KernelError, SystemError};
@@ -32,6 +33,7 @@ use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
+use radix_engine_interface::api::ClientEventApi;
 use radix_engine_interface::api::{
     ClientActorApi, ClientApi, ClientNodeApi, ClientObjectApi, ClientPackageApi, ClientSubstateApi,
     ClientUnsafeApi,
@@ -546,18 +548,6 @@ where
                         NodeModuleId::ComponentRoyalty,
                         RENodeModuleInit::ComponentRoyalty(config, accumulator),
                     );
-
-                    /*
-                    // Create a royalty vault
-                    let royalty_vault_id = ResourceManager(RADIX_TOKEN).new_vault(self)?.vault_id();
-
-                    // Create royalty substates
-                    let royalty_config_substate = ComponentRoyaltyConfigSubstate { royalty_config };
-                    let royalty_accumulator_substate = ComponentRoyaltyAccumulatorSubstate {
-                        royalty: Own::Vault(royalty_vault_id.into()),
-                    };
-
-                     */
                 }
             }
         }
@@ -639,6 +629,26 @@ where
 
     fn update_wasm_memory_usage(&mut self, size: usize) -> Result<(), RuntimeError> {
         KernelModuleMixer::on_update_wasm_memory_usage(self, size)
+    }
+}
+
+impl<'g, 's, W> ClientEventApi<RuntimeError> for Kernel<'g, 's, W>
+where
+    W: WasmEngine,
+{
+    fn emit_event<T: ScryptoEncode + abi::LegacyDescribe>(
+        &mut self,
+        event: T,
+    ) -> Result<(), RuntimeError> {
+        EventStoreNativePackage::emit_event(event, self)
+    }
+
+    fn emit_raw_event(
+        &mut self,
+        schema_hash: Hash,
+        event_data: Vec<u8>,
+    ) -> Result<(), RuntimeError> {
+        EventStoreNativePackage::emit_raw_event(schema_hash, event_data, self)
     }
 }
 

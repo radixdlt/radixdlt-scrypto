@@ -340,4 +340,39 @@ impl ProofBlueprint {
             &proof_info.resource_address,
         ))
     }
+
+    pub(crate) fn drop<Y>(proof: Proof, api: &mut Y) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let mut heap_node = api.kernel_drop_node(RENodeId::Proof(proof.0))?;
+        let proof_info: ProofInfoSubstate = heap_node
+            .substates
+            .remove(&(NodeModuleId::SELF, SubstateOffset::Proof(ProofOffset::Info)))
+            .unwrap()
+            .into();
+        if proof_info.resource_type.is_fungible() {
+            let proof: FungibleProof = heap_node
+                .substates
+                .remove(&(
+                    NodeModuleId::SELF,
+                    SubstateOffset::Proof(ProofOffset::Fungible),
+                ))
+                .unwrap()
+                .into();
+            proof.drop_proof(api)?;
+        } else {
+            let proof: NonFungibleProof = heap_node
+                .substates
+                .remove(&(
+                    NodeModuleId::SELF,
+                    SubstateOffset::Proof(ProofOffset::NonFungible),
+                ))
+                .unwrap()
+                .into();
+            proof.drop_proof(api)?;
+        }
+
+        Ok(IndexedScryptoValue::from_typed(&()))
+    }
 }

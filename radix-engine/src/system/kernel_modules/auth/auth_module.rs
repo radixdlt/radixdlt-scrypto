@@ -339,6 +339,7 @@ impl KernelModule for AuthModule {
     }
 
     fn on_teardown<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
+        // Proofs in authzone will get auto-dropped when frame exits
         api.kernel_drop_node(RENodeId::AuthZoneStack)?;
 
         Ok(())

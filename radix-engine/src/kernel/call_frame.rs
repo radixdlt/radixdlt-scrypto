@@ -507,7 +507,16 @@ impl CallFrame {
         self.take_node_internal(node_id)?;
         let node = heap.remove_node(node_id)?;
         for (_, substate) in &node.substates {
-            let (_, child_nodes) = substate.to_ref().references_and_owned_nodes();
+            let (refs, child_nodes) = substate.to_ref().references_and_owned_nodes();
+            for node_ref in refs {
+                self.immortal_node_refs.insert(
+                    node_ref,
+                    RENodeRefData {
+                        visibility: RENodeVisibilityOrigin::Normal,
+                    },
+                );
+            }
+
             for child_node in child_nodes {
                 self.owned_root_nodes.insert(child_node, 0u32);
             }

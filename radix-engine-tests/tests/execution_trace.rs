@@ -274,7 +274,14 @@ fn test_instruction_traces() {
         let traces = traces_for_instruction(&child_traces, 4);
         assert_eq!(1, traces.len());
         let trace = traces.get(0).unwrap();
-        assert_eq!(KernelCallOrigin::DropNode, trace.origin);
+        assert_eq!(
+            KernelCallOrigin::ScryptoFunction(FnIdentifier {
+                package_address: RESOURCE_MANAGER_PACKAGE,
+                blueprint_name: PROOF_BLUEPRINT.to_string(),
+                ident: PROOF_DROP_IDENT.to_string()
+            }),
+            trace.origin
+        );
 
         assert!(trace.output.is_empty());
         assert!(trace.input.buckets.is_empty());

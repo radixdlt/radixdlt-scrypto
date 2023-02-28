@@ -11,6 +11,7 @@ use scrypto::engine::scrypto_env::ScryptoEnv;
 
 pub trait ScryptoBucket {
     fn new(resource_address: ResourceAddress) -> Self;
+    fn drop_empty(self);
     fn burn(self);
     fn create_proof(&self) -> Proof;
     fn resource_address(&self) -> ResourceAddress;
@@ -44,9 +45,24 @@ impl ScryptoBucket for Bucket {
         scrypto_decode(&rtn).unwrap()
     }
 
+    fn drop_empty(self) {
+        let mut env = ScryptoEnv;
+        let _rtn = env
+            .call_function(
+                RESOURCE_MANAGER_PACKAGE,
+                BUCKET_BLUEPRINT,
+                BUCKET_DROP_EMPTY_IDENT,
+                scrypto_encode(&BucketDropEmptyInput {
+                    bucket: Bucket(self.0),
+                })
+                .unwrap(),
+            )
+            .unwrap();
+    }
+
     fn burn(self) {
         let mut env = ScryptoEnv;
-        let rtn = env
+        let _rtn = env
             .call_function(
                 RESOURCE_MANAGER_PACKAGE,
                 RESOURCE_MANAGER_BLUEPRINT,
@@ -57,7 +73,6 @@ impl ScryptoBucket for Bucket {
                 .unwrap(),
             )
             .unwrap();
-        let _: () = scrypto_decode(&rtn).unwrap();
     }
 
     fn create_proof(&self) -> Proof {

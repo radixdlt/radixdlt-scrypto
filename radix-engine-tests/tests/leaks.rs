@@ -1,7 +1,6 @@
-use radix_engine::errors::{KernelError, RuntimeError};
-use radix_engine::kernel::actor::{Actor, ActorIdentifier, ExecutionMode};
+use radix_engine::blueprints::resource::BucketError;
+use radix_engine::errors::{ApplicationError, KernelError, RuntimeError};
 use radix_engine::types::*;
-use radix_engine_interface::api::types::RENodeId;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::data::manifest_args;
@@ -28,14 +27,7 @@ fn dangling_component_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::InvalidDropNodeAccess {
-                mode: ExecutionMode::AutoDrop,
-                actor: Actor {
-                    identifier: ActorIdentifier::Function(..),
-                    ..
-                },
-                node_id: RENodeId::Component(..)
-            })
+            RuntimeError::KernelError(KernelError::DropNodeFailure(..))
         )
     });
 }
@@ -62,14 +54,7 @@ fn dangling_bucket_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::InvalidDropNodeAccess {
-                mode: ExecutionMode::AutoDrop,
-                actor: Actor {
-                    identifier: ActorIdentifier::Function(..),
-                    ..
-                },
-                node_id: RENodeId::Bucket(..)
-            })
+            RuntimeError::KernelError(KernelError::DropNodeFailure(..))
         )
     });
 }
@@ -91,14 +76,7 @@ fn dangling_vault_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::InvalidDropNodeAccess {
-                mode: ExecutionMode::AutoDrop,
-                actor: Actor {
-                    identifier: ActorIdentifier::Function(..),
-                    ..
-                },
-                node_id: RENodeId::Vault(..)
-            })
+            RuntimeError::KernelError(KernelError::DropNodeFailure(..))
         )
     });
 }
@@ -120,7 +98,7 @@ fn dangling_worktop_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::DropNodeFailure(RENodeId::Worktop))
+            RuntimeError::ApplicationError(ApplicationError::BucketError(BucketError::NotEmpty))
         )
     });
 }
@@ -147,14 +125,7 @@ fn dangling_kv_store_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::InvalidDropNodeAccess {
-                mode: ExecutionMode::AutoDrop,
-                actor: Actor {
-                    identifier: ActorIdentifier::Function(..),
-                    ..
-                },
-                node_id: RENodeId::KeyValueStore(..)
-            })
+            RuntimeError::KernelError(KernelError::DropNodeFailure(..))
         )
     });
 }
@@ -181,14 +152,7 @@ fn dangling_bucket_with_proof_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::InvalidDropNodeAccess {
-                mode: ExecutionMode::AutoDrop,
-                actor: Actor {
-                    identifier: ActorIdentifier::Function(..),
-                    ..
-                },
-                node_id: RENodeId::Bucket(..)
-            })
+            RuntimeError::KernelError(KernelError::DropNodeFailure(..))
         )
     });
 }

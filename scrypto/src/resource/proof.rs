@@ -1,6 +1,7 @@
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::api::{ClientNodeApi, ClientObjectApi};
+use radix_engine_interface::api::{ClientObjectApi, ClientPackageApi};
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeSet;
@@ -256,7 +257,16 @@ impl ScryptoProof for Proof {
 
     fn drop(self) {
         let mut env = ScryptoEnv;
-        env.sys_drop_node(RENodeId::Proof(self.0)).unwrap()
+        env.call_function(
+            RESOURCE_MANAGER_PACKAGE,
+            PROOF_BLUEPRINT,
+            PROOF_DROP_IDENT,
+            scrypto_encode(&ProofDropInput {
+                proof: Proof(self.0),
+            })
+            .unwrap(),
+        )
+        .unwrap();
     }
 }
 
