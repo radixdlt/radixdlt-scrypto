@@ -755,6 +755,10 @@ impl<'s> FinalizingTrack<'s> {
             invoke_result.is_ok(),
         );
         TransactionResult::Commit(CommitResult {
+            application_events: match invoke_result.is_ok() {
+                true => application_events,
+                false => Vec::new(),
+            },
             outcome: match invoke_result {
                 Ok(output) => TransactionOutcome::Success(output),
                 Err(error) => TransactionOutcome::Failure(error),
@@ -763,7 +767,6 @@ impl<'s> FinalizingTrack<'s> {
             entity_changes: EntityChanges::new(new_global_addresses),
             resource_changes: execution_trace_receipt.resource_changes,
             application_logs,
-            application_events,
             next_epoch,
         })
     }
