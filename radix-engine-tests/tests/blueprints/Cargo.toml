@@ -36,6 +36,7 @@ members = [
     "royalty-auth",
     "transaction_limits",
     "events",
+    "logger"
 ]
 
 [profile.release]
