@@ -6,15 +6,15 @@ compile_error!("Either feature `std` or `alloc` must be enabled for this crate."
 #[cfg(all(feature = "std", feature = "alloc"))]
 compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
-/// RE addresses.
+/// RE bech32 address library.
 pub mod address;
 /// RE crypto library
 pub mod crypto;
-/// RE data model.
+/// RE scrypto data model.
 pub mod data;
 /// RE math library.
 pub mod math;
-/// RE network abstraction.
+/// RE network identifier model.
 pub mod network;
 /// RE time library.
 pub mod time;
