@@ -2,8 +2,7 @@ use crate::errors::{IdAllocationError, KernelError, RuntimeError};
 use radix_engine_interface::address::EntityType;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
-    ObjectId, KeyValueStoreId, NonFungibleStoreId, ProofId, RENodeId, RENodeType,
-    VaultId,
+    KeyValueStoreId, NonFungibleStoreId, ObjectId, RENodeId, RENodeType, VaultId,
 };
 use radix_engine_interface::crypto::{hash, Hash};
 use sbor::rust::collections::{BTreeMap, BTreeSet};
@@ -71,7 +70,6 @@ impl IdAllocator {
     pub fn allocate_node_id(&mut self, node_type: RENodeType) -> Result<RENodeId, RuntimeError> {
         let node_id = match node_type {
             RENodeType::AuthZoneStack => Ok(RENodeId::AuthZoneStack),
-            RENodeType::Proof => self.new_proof_id().map(|id| RENodeId::Proof(id)),
             RENodeType::TransactionRuntime => Ok(RENodeId::TransactionRuntime),
             RENodeType::Worktop => Ok(RENodeId::Worktop),
             RENodeType::Logger => Ok(RENodeId::Logger),
@@ -82,7 +80,7 @@ impl IdAllocator {
             RENodeType::NonFungibleStore => self
                 .new_nf_store_id()
                 .map(|id| RENodeId::NonFungibleStore(id)),
-            RENodeType::Object => self.new_component_id().map(|id| RENodeId::Object(id)),
+            RENodeType::Object => self.new_object_id().map(|id| RENodeId::Object(id)),
             RENodeType::GlobalPackage => self
                 .new_package_address()
                 .map(|address| RENodeId::GlobalPackage(address)),
@@ -219,17 +217,12 @@ impl IdAllocator {
         Ok(ResourceAddress::Normal(hash(data).lower_26_bytes()))
     }
 
-    /// Creates a new proof ID.
-    pub fn new_proof_id(&mut self) -> Result<ProofId, IdAllocationError> {
-        self.next_id()
-    }
-
     /// Creates a new vault ID.
     pub fn new_vault_id(&mut self) -> Result<VaultId, IdAllocationError> {
         self.next_id()
     }
 
-    pub fn new_component_id(&mut self) -> Result<ObjectId, IdAllocationError> {
+    pub fn new_object_id(&mut self) -> Result<ObjectId, IdAllocationError> {
         self.next_id()
     }
 

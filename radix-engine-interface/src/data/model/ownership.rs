@@ -13,7 +13,7 @@ use utils::copy_u8_array;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Own {
     Bucket(ObjectId),
-    Proof(ProofId),
+    Proof(ObjectId),
     Vault(VaultId),
     Component(ObjectId),
     KeyValueStore(KeyValueStoreId),
@@ -44,7 +44,7 @@ impl Own {
             _ => panic!("Not a bucket ownership"),
         }
     }
-    pub fn proof_id(&self) -> ProofId {
+    pub fn proof_id(&self) -> ObjectId {
         match self {
             Own::Proof(v) => *v,
             _ => panic!("Not a proof ownership"),

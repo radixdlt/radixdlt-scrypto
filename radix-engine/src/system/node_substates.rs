@@ -1552,7 +1552,7 @@ impl<'a> SubstateRef<'a> {
             SubstateRef::AuthZoneStack(substate) => {
                 let mut owned_nodes = Vec::new();
                 for p in substate.all_proofs() {
-                    owned_nodes.push(RENodeId::Proof(p.0));
+                    owned_nodes.push(RENodeId::Object(p.0));
                 }
                 (HashSet::new(), owned_nodes)
             }

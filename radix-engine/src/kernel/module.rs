@@ -1,3 +1,4 @@
+use radix_engine_interface::api::ClientApi;
 use crate::errors::RuntimeError;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use radix_engine_interface::api::types::*;
@@ -46,7 +47,7 @@ pub trait KernelModule {
     }
 
     #[inline(always)]
-    fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
+    fn before_push_frame<Y: KernelModuleApi<RuntimeError> + ClientApi<RuntimeError>>(
         _api: &mut Y,
         _actor: &Option<Actor>,
         _down_movement: &mut CallFrameUpdate,

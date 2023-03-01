@@ -231,7 +231,7 @@ impl ProofBlueprint {
                 ),
             )?;
 
-            RENodeId::Proof(proof_id)
+            RENodeId::Object(proof_id)
         } else {
             let handle = api.sys_lock_substate(
                 receiver,
@@ -251,7 +251,7 @@ impl ProofBlueprint {
                 ),
             )?;
 
-            RENodeId::Proof(proof_id)
+            RENodeId::Object(proof_id)
         };
 
         let proof_id = node_id.into();
@@ -348,7 +348,7 @@ impl ProofBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let mut heap_node = api.kernel_drop_node(RENodeId::Proof(proof.0))?;
+        let mut heap_node = api.kernel_drop_node(RENodeId::Object(proof.0))?;
         let proof_info: ProofInfoSubstate = heap_node
             .substates
             .remove(&(NodeModuleId::SELF, SubstateOffset::Proof(ProofOffset::Info)))

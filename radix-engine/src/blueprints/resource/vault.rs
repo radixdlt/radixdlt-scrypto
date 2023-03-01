@@ -958,7 +958,7 @@ impl VaultBlueprint {
                 ),
             )?;
 
-            RENodeId::Proof(proof_id)
+            RENodeId::Object(proof_id)
         } else {
             let amount = NonFungibleVault::liquid_amount(receiver, api)?
                 + NonFungibleVault::locked_amount(receiver, api)?;
@@ -978,7 +978,7 @@ impl VaultBlueprint {
                 ),
             )?;
 
-            RENodeId::Proof(proof_id)
+            RENodeId::Object(proof_id)
         };
 
         let proof_id = node_id.into();
@@ -1021,7 +1021,7 @@ impl VaultBlueprint {
                 ),
             )?;
 
-            RENodeId::Proof(proof_id)
+            RENodeId::Object(proof_id)
         } else {
             let proof_info = ProofInfoSubstate {
                 resource_address: info.resource_address,
@@ -1037,7 +1037,7 @@ impl VaultBlueprint {
                 ),
             )?;
 
-            RENodeId::Proof(proof_id)
+            RENodeId::Object(proof_id)
         };
 
         let proof_id = node_id.into();

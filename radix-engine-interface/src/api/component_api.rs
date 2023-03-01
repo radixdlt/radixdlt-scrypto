@@ -25,8 +25,7 @@ pub trait ClientObjectApi<E> {
         address: Address,
     ) -> Result<Address, E>;
 
-    fn get_object_type_info(&mut self, node_id: RENodeId)
-                            -> Result<(PackageAddress, String), E>;
+    fn get_object_type_info(&mut self, node_id: RENodeId) -> Result<(PackageAddress, String), E>;
 
     fn call_method(
         &mut self,

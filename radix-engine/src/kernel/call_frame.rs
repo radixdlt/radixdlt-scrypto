@@ -244,12 +244,11 @@ impl CallFrame {
                 self.take_node_internal(*child_id)?;
 
                 // TODO: Move this check into system layer
-                if let Ok(info) = heap
-                    .get_substate(
-                        *child_id,
-                        NodeModuleId::TypeInfo,
-                        &SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-                    ) {
+                if let Ok(info) = heap.get_substate(
+                    *child_id,
+                    NodeModuleId::TypeInfo,
+                    &SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+                ) {
                     let type_info: &TypeInfoSubstate = info.into();
                     SubstateProperties::verify_can_own(
                         &offset,
@@ -481,12 +480,11 @@ impl CallFrame {
                 self.take_node_internal(child_id)?;
 
                 // TODO: Move this logic into system layer
-                if let Ok(info) = heap
-                    .get_substate(
-                        child_id,
-                        NodeModuleId::TypeInfo,
-                        &SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-                    ) {
+                if let Ok(info) = heap.get_substate(
+                    child_id,
+                    NodeModuleId::TypeInfo,
+                    &SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+                ) {
                     let type_info: &TypeInfoSubstate = info.into();
                     SubstateProperties::verify_can_own(
                         &offset,

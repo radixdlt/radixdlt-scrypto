@@ -765,7 +765,7 @@ impl BucketBlueprint {
                     1 => scrypto_encode(&proof).unwrap()
                 ),
             )?;
-            RENodeId::Proof(proof_id)
+            RENodeId::Object(proof_id)
         } else {
             let amount = NonFungibleBucket::locked_amount(receiver, api)?
                 + NonFungibleBucket::liquid_amount(receiver, api)?;
@@ -783,7 +783,7 @@ impl BucketBlueprint {
                     1 => scrypto_encode(&proof).unwrap()
                 ),
             )?;
-            RENodeId::Proof(proof_id)
+            RENodeId::Object(proof_id)
         };
 
         let proof_id = node_id.into();

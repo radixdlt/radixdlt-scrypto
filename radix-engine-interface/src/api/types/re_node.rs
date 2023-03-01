@@ -10,7 +10,6 @@ use transaction_data::*;
 // TODO: Remove when better type system implemented
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor)]
 pub enum RENodeType {
-    Proof,
     AuthZoneStack,
     Worktop,
     GlobalAccount,
@@ -44,7 +43,6 @@ pub enum RENodeType {
     LegacyDescribe,
 )]
 pub enum RENodeId {
-    Proof(ProofId),
     AuthZoneStack,
     Worktop,
     Logger,
@@ -61,7 +59,6 @@ pub enum RENodeId {
 impl fmt::Debug for RENodeId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Proof(id) => f.debug_tuple("Proof").field(&hex::encode(id)).finish(),
             Self::AuthZoneStack => write!(f, "AuthZoneStack"),
             Self::Worktop => write!(f, "Worktop"),
             Self::Logger => write!(f, "Logger"),
@@ -94,7 +91,6 @@ impl Into<[u8; 36]> for RENodeId {
             RENodeId::NonFungibleStore(id) => id,
             RENodeId::Vault(id) => id,
             RENodeId::Object(id) => id,
-            RENodeId::Proof(id) => id,
             RENodeId::Worktop => [3u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
             RENodeId::Logger => [4u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
             RENodeId::TransactionRuntime => [5u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now

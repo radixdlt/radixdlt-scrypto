@@ -315,7 +315,7 @@ fn cant_move_restricted_proof() {
         matches!(
             e,
             RuntimeError::ModuleError(ModuleError::NodeMoveError(
-                NodeMoveError::CantMoveDownstream(RENodeId::Proof(..))
+                NodeMoveError::CantMoveDownstream(RENodeId::Object(..))
             ))
         )
     });

@@ -131,8 +131,7 @@ impl AuthModule {
                 }
             }
             MethodIdentifier(
-                RENodeId::Proof(..)
-                | RENodeId::Object(..)
+                RENodeId::Object(..)
                 | RENodeId::Worktop
                 | RENodeId::Logger
                 | RENodeId::TransactionRuntime

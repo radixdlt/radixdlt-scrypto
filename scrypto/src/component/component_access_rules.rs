@@ -6,7 +6,7 @@ use radix_engine_interface::api::node_modules::auth::{
     ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT, ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
 };
 use radix_engine_interface::api::types::{
-    ComponentAddress, ObjectId, NodeModuleId, RENodeId, ToString,
+    ComponentAddress, NodeModuleId, ObjectId, RENodeId, ToString,
 };
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::{AccessRule, AccessRuleEntry, MethodKey};

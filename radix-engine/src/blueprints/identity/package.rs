@@ -116,7 +116,7 @@ impl Identity {
 
         api.kernel_create_node(
             node_id,
-            RENodeInit::Component(btreemap!()),
+            RENodeInit::Object(btreemap!()),
             btreemap!(
                 NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                     package_address: IDENTITY_PACKAGE,

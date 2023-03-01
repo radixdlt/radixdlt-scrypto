@@ -125,11 +125,7 @@ where
 
     fn sys_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
         let info = self.kernel_get_lock_info(lock_handle)?;
-        if info.flags.contains(LockFlags::MUTABLE) {
-
-        }
-
-
+        if info.flags.contains(LockFlags::MUTABLE) {}
 
         self.kernel_drop_lock(lock_handle)
     }
@@ -266,7 +262,7 @@ where
                             RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
                         })?;
 
-                    let node_id = self.kernel_allocate_node_id(RENodeType::Proof)?;
+                    let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
 
                     let node_init = match proof_info_substate.resource_type {
                         ResourceType::NonFungible { .. } => {
@@ -274,14 +270,21 @@ where
                                 scrypto_decode(&substate_bytes_1).map_err(|_| {
                                     RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
                                 })?;
-                            RENodeInit::NonFungibleProof(proof_info_substate, non_fungible_proof)
+
+                            RENodeInit::Object(btreemap!(
+                                SubstateOffset::Proof(ProofOffset::Info) => RuntimeSubstate::ProofInfo(proof_info_substate),
+                                SubstateOffset::Proof(ProofOffset::NonFungible) => RuntimeSubstate::NonFungibleProof(non_fungible_proof),
+                            ))
                         }
                         ResourceType::Fungible { .. } => {
                             let fungible_proof: FungibleProof = scrypto_decode(&substate_bytes_1)
                                 .map_err(|_| {
                                 RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
                             })?;
-                            RENodeInit::FungibleProof(proof_info_substate, fungible_proof)
+                            RENodeInit::Object(btreemap!(
+                                SubstateOffset::Proof(ProofOffset::Info) => RuntimeSubstate::ProofInfo(proof_info_substate),
+                                SubstateOffset::Proof(ProofOffset::Fungible) => RuntimeSubstate::FungibleProof(fungible_proof),
+                            ))
                         }
                     };
 
@@ -308,7 +311,7 @@ where
                                     RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
                                 })?;
 
-                            RENodeInit::Component(btreemap!(
+                            RENodeInit::Object(btreemap!(
                                 SubstateOffset::Bucket(BucketOffset::Info) => RuntimeSubstate::BucketInfo(bucket_info_substate),
                                 SubstateOffset::Bucket(BucketOffset::LiquidNonFungible) => RuntimeSubstate::BucketLiquidNonFungible(liquid_resource),
                                 SubstateOffset::Bucket(BucketOffset::LockedNonFungible) => RuntimeSubstate::BucketLockedNonFungible(LockedNonFungibleResource::new_empty()),
@@ -320,7 +323,7 @@ where
                                     RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
                                 })?;
 
-                            RENodeInit::Component(btreemap!(
+                            RENodeInit::Object(btreemap!(
                                 SubstateOffset::Bucket(BucketOffset::Info) => RuntimeSubstate::BucketInfo(bucket_info_substate),
                                 SubstateOffset::Bucket(BucketOffset::LiquidFungible) => RuntimeSubstate::BucketLiquidFungible(liquid_resource),
                                 SubstateOffset::Bucket(BucketOffset::LockedFungible) => RuntimeSubstate::BucketLockedFungible(LockedFungibleResource::new_empty()),
@@ -384,7 +387,7 @@ where
                 let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
                 (
                     node_id,
-                    RENodeInit::Component(btreemap!(
+                    RENodeInit::Object(btreemap!(
                         SubstateOffset::Metadata(MetadataOffset::Metadata) => RuntimeSubstate::Metadata(substate),
                     )),
                 )
@@ -416,7 +419,7 @@ where
                     let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
                     (
                         node_id,
-                        RENodeInit::Component(btreemap!(
+                        RENodeInit::Object(btreemap!(
                             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig) => RuntimeSubstate::ComponentRoyaltyConfig(config_substate),
                             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator) => RuntimeSubstate::ComponentRoyaltyAccumulator(accumulator_substate)
                         )),
@@ -443,7 +446,7 @@ where
                 let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
                 (
                     node_id,
-                    RENodeInit::Component(btreemap!(
+                    RENodeInit::Object(btreemap!(
                         SubstateOffset::AccessRules(AccessRulesOffset::AccessRules) => RuntimeSubstate::AccessRulesChain(substate)
                     )),
                 )
@@ -468,7 +471,7 @@ where
                     let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
                     (
                         node_id,
-                        RENodeInit::Component(btreemap!(
+                        RENodeInit::Object(btreemap!(
                             SubstateOffset::Validator(ValidatorOffset::Validator) => RuntimeSubstate::Validator(substate)
                         )),
                     )
@@ -506,7 +509,7 @@ where
                     let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
                     (
                         node_id,
-                        RENodeInit::Component(btreemap!(
+                        RENodeInit::Object(btreemap!(
                             SubstateOffset::EpochManager(EpochManagerOffset::EpochManager) => RuntimeSubstate::EpochManager(epoch_mgr_substate),
                             SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet) => RuntimeSubstate::ValidatorSet(validator_set_substate_0),
                             SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet) => RuntimeSubstate::ValidatorSet(validator_set_substate_1)
@@ -533,7 +536,7 @@ where
                 let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
                 (
                     node_id,
-                    RENodeInit::Component(btreemap!(
+                    RENodeInit::Object(btreemap!(
                         SubstateOffset::AccessController(AccessControllerOffset::AccessController)
                             => RuntimeSubstate::AccessController(substate)
                     )),
@@ -547,7 +550,7 @@ where
                 }
 
                 let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
-                (node_id, RENodeInit::Component(btreemap!()))
+                (node_id, RENodeInit::Object(btreemap!()))
             }
             ACCOUNT_PACKAGE => {
                 let substate_bytes_0 = app_states.remove(&0u8).ok_or(RuntimeError::SystemError(
@@ -566,7 +569,7 @@ where
                 let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
                 (
                     node_id,
-                    RENodeInit::Component(btreemap!(
+                    RENodeInit::Object(btreemap!(
                         SubstateOffset::Account(AccountOffset::Account)
                             => RuntimeSubstate::Account(substate)
                     )),
@@ -589,7 +592,7 @@ where
                 let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
                 (
                     node_id,
-                    RENodeInit::Component(btreemap!(
+                    RENodeInit::Object(btreemap!(
                         SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes)
                             => RuntimeSubstate::CurrentTimeRoundedToMinutes(substate)
                     )),
@@ -626,7 +629,7 @@ where
 
                 (
                     node_id,
-                    RENodeInit::Component(btreemap!(
+                    RENodeInit::Object(btreemap!(
                         SubstateOffset::Component(ComponentOffset::State0)
                         => RuntimeSubstate::ComponentState(ComponentStateSubstate::new(substate_bytes_0))
                     )),

@@ -21,6 +21,7 @@ use crate::system::node::RENodeModuleInit;
 use crate::transaction::ExecutionConfig;
 use crate::types::api::unsafe_api::ClientCostingReason;
 use bitflags::bitflags;
+use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::NodeModuleId;
 use radix_engine_interface::api::types::RENodeId;
@@ -241,7 +242,7 @@ impl KernelModule for KernelModuleMixer {
         Ok(())
     }
 
-    fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
+    fn before_push_frame<Y: KernelModuleApi<RuntimeError> + ClientApi<RuntimeError>>(
         api: &mut Y,
         actor: &Option<Actor>,
         update: &mut CallFrameUpdate,

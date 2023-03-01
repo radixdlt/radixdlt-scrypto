@@ -164,7 +164,7 @@ where
                 };
 
                 let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
-                let node = RENodeInit::Component(btreemap!(
+                let node = RENodeInit::Object(btreemap!(
                     SubstateOffset::Account(AccountOffset::Account) => RuntimeSubstate::Account(account_substate)
                 ));
                 self.kernel_create_node(node_id, node, node_modules)?;
@@ -291,8 +291,7 @@ where
 
     fn drop_node_internal(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError> {
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::DropNode, |api| match node_id {
-            RENodeId::Proof(..)
-            | RENodeId::AuthZoneStack
+            RENodeId::AuthZoneStack
             | RENodeId::Worktop
             | RENodeId::Logger
             | RENodeId::TransactionRuntime
@@ -307,23 +306,29 @@ where
         let owned_nodes = self.current_frame.owned_nodes();
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AutoDrop, |api| {
             for node_id in owned_nodes {
-                match node_id {
-                    RENodeId::Proof(proof_id) => {
-                        api.call_function(
-                            RESOURCE_MANAGER_PACKAGE,
-                            PROOF_BLUEPRINT,
-                            PROOF_DROP_IDENT,
-                            scrypto_encode(&ProofDropInput {
-                                proof: Proof(proof_id),
-                            })
-                            .unwrap(),
-                        )?;
+                if let Ok((package_address, blueprint)) = api.get_object_type_info(node_id) {
+                    match (package_address, blueprint.as_str()) {
+                        (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
+                            api.call_function(
+                                RESOURCE_MANAGER_PACKAGE,
+                                PROOF_BLUEPRINT,
+                                PROOF_DROP_IDENT,
+                                scrypto_encode(&ProofDropInput {
+                                    proof: Proof(node_id.into()),
+                                })
+                                    .unwrap(),
+                            )?;
+                        }
+                        _ => {
+                            return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
+                                node_id,
+                            )))
+                        }
                     }
-                    _ => {
-                        return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
-                            node_id,
-                        )))
-                    }
+                } else {
+                    return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
+                        node_id,
+                    )))
                 }
             }
 
@@ -621,7 +626,12 @@ where
         // TODO: Move this into the system layer
         if let Some(actor) = self.current_frame.actor.clone() {
             let (package_address, blueprint_name) = self.get_object_type_info(node_id)?;
-            if !VisibilityProperties::check_drop_node_visibility(current_mode, &actor, package_address, blueprint_name.as_str()) {
+            if !VisibilityProperties::check_drop_node_visibility(
+                current_mode,
+                &actor,
+                package_address,
+                blueprint_name.as_str(),
+            ) {
                 return Err(RuntimeError::KernelError(
                     KernelError::InvalidDropNodeAccess {
                         mode: current_mode,
@@ -667,10 +677,8 @@ where
             (RENodeId::GlobalComponent(..), RENodeInit::GlobalObject(..)) => {}
             (RENodeId::GlobalResourceManager(..), RENodeInit::GlobalObject(..)) => {}
             (RENodeId::GlobalPackage(..), RENodeInit::GlobalPackage(..)) => {}
-            (RENodeId::Object(..), RENodeInit::Component(..)) => {}
+            (RENodeId::Object(..), RENodeInit::Object(..)) => {}
             (RENodeId::Object(..), RENodeInit::ResourceManager(..)) => {}
-            (RENodeId::Proof(..), RENodeInit::FungibleProof(..)) => {}
-            (RENodeId::Proof(..), RENodeInit::NonFungibleProof(..)) => {}
             (RENodeId::Vault(..), RENodeInit::FungibleVault(..)) => {}
             (RENodeId::Vault(..), RENodeInit::NonFungibleVault(..)) => {}
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
@@ -780,9 +788,9 @@ where
         }
     }
 
-    fn kernel_read_proof(&mut self, proof_id: ProofId) -> Option<ProofSnapshot> {
+    fn kernel_read_proof(&mut self, proof_id: ObjectId) -> Option<ProofSnapshot> {
         if let Ok(substate) = self.heap.get_substate(
-            RENodeId::Proof(proof_id),
+            RENodeId::Object(proof_id),
             NodeModuleId::SELF,
             &SubstateOffset::Proof(ProofOffset::Info),
         ) {
@@ -794,7 +802,7 @@ where
                     let substate = self
                         .heap
                         .get_substate(
-                            RENodeId::Proof(proof_id),
+                            RENodeId::Object(proof_id),
                             NodeModuleId::SELF,
                             &SubstateOffset::Proof(ProofOffset::Fungible),
                         )
@@ -812,7 +820,7 @@ where
                     let substate = self
                         .heap
                         .get_substate(
-                            RENodeId::Proof(proof_id),
+                            RENodeId::Object(proof_id),
                             NodeModuleId::SELF,
                             &SubstateOffset::Proof(ProofOffset::NonFungible),
                         )

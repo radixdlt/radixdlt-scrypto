@@ -766,7 +766,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 }
 
 struct TransactionProcessor<'blob> {
-    proof_id_mapping: HashMap<ManifestProof, ProofId>,
+    proof_id_mapping: HashMap<ManifestProof, ObjectId>,
     bucket_id_mapping: HashMap<ManifestBucket, ObjectId>,
     id_allocator: ManifestIdAllocator,
     blobs_by_hash: HashMap<Hash, &'blob Vec<u8>>,
@@ -879,8 +879,7 @@ impl<'blob> TransactionProcessor<'blob> {
                     let proof = Proof(owned_node.clone().into());
                     ComponentAuthZone::sys_push(proof, api)?;
                 }
-                _ => {
-                }
+                _ => {}
             }
         }
 

@@ -192,7 +192,7 @@ impl AuthZoneBlueprint {
             compose_proof_by_amount(&auth_zone.proofs, input.resource_address, None, api)?
         };
 
-        let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
+        let node_id = api.kernel_allocate_node_id(RENodeType::Object)?;
         api.kernel_create_node(
             node_id,
             composed_proof.into(),
@@ -239,7 +239,7 @@ impl AuthZoneBlueprint {
             )?
         };
 
-        let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
+        let node_id = api.kernel_allocate_node_id(RENodeType::Object)?;
         api.kernel_create_node(
             node_id,
             composed_proof.into(),
@@ -285,7 +285,7 @@ impl AuthZoneBlueprint {
             )?
         };
 
-        let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
+        let node_id = api.kernel_allocate_node_id(RENodeType::Object)?;
         api.kernel_create_node(
             node_id,
             composed_proof.into(),

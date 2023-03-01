@@ -132,7 +132,7 @@ impl ProofSnapshot {
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct ResourceSummary {
     pub buckets: HashMap<ObjectId, BucketSnapshot>,
-    pub proofs: HashMap<ProofId, ProofSnapshot>,
+    pub proofs: HashMap<ObjectId, ProofSnapshot>,
 }
 
 // TODO: Clean up
@@ -182,14 +182,12 @@ impl ResourceSummary {
         let mut proofs = HashMap::new();
         for node_id in &call_frame_update.nodes_to_move {
             match &node_id {
-                RENodeId::Object(bucket_id) => {
-                    if let Some(x) = api.kernel_read_bucket(*bucket_id) {
-                        buckets.insert(*bucket_id, x);
+                RENodeId::Object(object_id) => {
+                    if let Some(x) = api.kernel_read_bucket(*object_id) {
+                        buckets.insert(*object_id, x);
                     }
-                }
-                RENodeId::Proof(proof_id) => {
-                    if let Some(x) = api.kernel_read_proof(*proof_id) {
-                        proofs.insert(*proof_id, x);
+                    if let Some(x) = api.kernel_read_proof(*object_id) {
+                        proofs.insert(*object_id, x);
                     }
                 }
                 _ => {}
@@ -202,14 +200,12 @@ impl ResourceSummary {
         let mut buckets = HashMap::new();
         let mut proofs = HashMap::new();
         match node_id {
-            RENodeId::Object(bucket_id) => {
-                if let Some(x) = api.kernel_read_bucket(*bucket_id) {
-                    buckets.insert(*bucket_id, x);
+            RENodeId::Object(object_id) => {
+                if let Some(x) = api.kernel_read_bucket(*object_id) {
+                    buckets.insert(*object_id, x);
                 }
-            }
-            RENodeId::Proof(proof_id) => {
-                if let Some(x) = api.kernel_read_proof(*proof_id) {
-                    proofs.insert(*proof_id, x);
+                if let Some(x) = api.kernel_read_proof(*object_id) {
+                    proofs.insert(*object_id, x);
                 }
             }
             _ => {}

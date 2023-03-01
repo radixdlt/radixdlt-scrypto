@@ -1,5 +1,8 @@
 use crate::errors::{KernelError, RuntimeError};
 use crate::kernel::actor::{Actor, ActorIdentifier, ExecutionMode};
+use radix_engine_interface::api::node_modules::auth::*;
+use radix_engine_interface::api::node_modules::metadata::*;
+use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
@@ -8,9 +11,6 @@ use radix_engine_interface::api::types::{
     PackageOffset, ProofOffset, RENodeId, ResourceManagerOffset, SubstateOffset, WorktopOffset,
 };
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::api::node_modules::metadata::*;
-use radix_engine_interface::api::node_modules::royalty::*;
-use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::constants::*;
 
 pub struct VisibilityProperties;
@@ -27,7 +27,11 @@ impl VisibilityProperties {
             ExecutionMode::KernelModule => true,
             ExecutionMode::AutoDrop => {
                 if package_address.eq(&RESOURCE_MANAGER_PACKAGE) && blueprint.eq(PROOF_BLUEPRINT) {
-                    actor.fn_identifier.package_address.eq(&RESOURCE_MANAGER_PACKAGE) && actor.fn_identifier.blueprint_name.eq(PROOF_BLUEPRINT)
+                    actor
+                        .fn_identifier
+                        .package_address
+                        .eq(&RESOURCE_MANAGER_PACKAGE)
+                        && actor.fn_identifier.blueprint_name.eq(PROOF_BLUEPRINT)
                 } else {
                     false
                 }
@@ -38,9 +42,9 @@ impl VisibilityProperties {
                     (METADATA_PACKAGE, METADATA_BLUEPRINT)
                     | (ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT)
                     | (ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT) => true, // TODO: This is required for current implementation of globalize, maybe there's a better way
-                    _ => package_address.eq(&actor.fn_identifier.package_address)
+                    _ => package_address.eq(&actor.fn_identifier.package_address),
                 }
-            },
+            }
             _ => return false,
         }
     }
@@ -68,6 +72,7 @@ impl VisibilityProperties {
                 _ => false,
             },
             (ExecutionMode::AutoDrop, offset) => match offset {
+                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo) => true,
                 _ => false,
             },
             (ExecutionMode::DropNode, offset) => match offset {
