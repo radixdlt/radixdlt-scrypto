@@ -11,6 +11,8 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 
+use super::NonFungibleData;
+
 pub trait ScryptoBucket {
     fn new(resource_address: ResourceAddress) -> Self;
     fn drop_empty(self);

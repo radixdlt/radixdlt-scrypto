@@ -530,7 +530,7 @@ impl TestRunner {
     pub fn publish_package(
         &mut self,
         code: Vec<u8>,
-        abi: BTreeMap<String, BlueprintAbi>,
+        schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
         access_rules: AccessRules,
@@ -548,7 +548,7 @@ impl TestRunner {
     pub fn publish_package_with_owner(
         &mut self,
         code: Vec<u8>,
-        abi: BTreeMap<String, BlueprintAbi>,
+        schema: PackageSchema,
         owner_badge: NonFungibleGlobalId,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()

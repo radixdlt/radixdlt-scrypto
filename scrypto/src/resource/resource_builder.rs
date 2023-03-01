@@ -11,6 +11,8 @@ use sbor::rust::marker::PhantomData;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 
+use super::NonFungibleData;
+
 /// Not divisible.
 pub const DIVISIBILITY_NONE: u8 = 0;
 /// The maximum divisibility supported.

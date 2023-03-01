@@ -1,3 +1,5 @@
+use super::NonFungibleData;
+use crate::*;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetGroupAccessRuleInput, AccessRulesSetMethodAccessRuleInput,
@@ -17,8 +19,6 @@ use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::engine::scrypto_env::ScryptoEnv;
-
-use crate::*;
 
 /// Represents a resource manager.
 #[derive(Debug)]

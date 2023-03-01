@@ -23,7 +23,7 @@ echo "Testing crates with no_std..."
 test_crates_features \
     "sbor \
     sbor-tests \
-    scrypto-abi \
+    scrypto-schema \
     scrypto-tests \
     radix-engine \
     radix-engine-tests" \

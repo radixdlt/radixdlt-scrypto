@@ -258,7 +258,7 @@ dependencies = [
  "paste",
  "radix-engine-derive",
  "sbor",
- "scrypto-abi",
+ "scrypto-schema",
  "strum",
  "transaction-data",
  "utils",
@@ -318,14 +318,14 @@ dependencies = [
  "radix-engine-derive",
  "radix-engine-interface",
  "sbor",
- "scrypto-abi",
+ "scrypto-schema",
  "scrypto-derive",
  "strum",
  "utils",
 ]
 
 [[package]]
-name = "scrypto-abi"
+name = "scrypto-schema"
 version = "0.9.0"
 dependencies = [
  "sbor",
@@ -338,7 +338,7 @@ version = "0.9.0"
 dependencies = [
  "proc-macro2",
  "quote",
- "scrypto-abi",
+ "scrypto-schema",
  "serde",
  "serde_json",
  "syn",

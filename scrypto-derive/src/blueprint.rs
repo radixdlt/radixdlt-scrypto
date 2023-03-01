@@ -68,8 +68,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         pub mod #module_ident {
             use super::*;
 
-            #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
-            #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
+            #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode)]
+            #[sbor(custom_value_kind = "::scrypto::data::scrypto::ScryptoCustomValueKind")]
             pub struct #bp_ident #bp_fields #bp_semi_token
 
             impl #bp_ident {
@@ -100,33 +100,28 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
     trace!("Generated dispatcher: \n{}", quote! { #output_dispatcher });
 
-    #[cfg(feature = "no-abi-gen")]
-    let output_abi = quote! {};
-    #[cfg(not(feature = "no-abi-gen"))]
-    let output_abi = {
-        let abi_ident = format_ident!("{}_abi", bp_ident);
-        let abi_functions = generate_abi(bp_ident, bp_items)?;
+    #[cfg(feature = "no-schema")]
+    let output_schema = quote! {};
+    #[cfg(not(feature = "no-schema"))]
+    let output_schema = {
+        let schema_ident = format_ident!("{}_schema", bp_ident);
         quote! {
             #[no_mangle]
-            pub extern "C" fn #abi_ident() -> ::scrypto::engine::wasm_api::Slice {
-                use ::scrypto::abi::{BlueprintAbi, LegacyDescribe, Fn, Type};
-                use ::sbor::rust::borrow::ToOwned;
-                use ::sbor::rust::vec;
-                use ::sbor::rust::vec::Vec;
+            pub extern "C" fn #schema_ident() -> ::scrypto::engine::wasm_api::Slice {
+                use ::scrypto::schema::BlueprintSchema;
+                use ::sbor::rust::prelude::*;
 
-                let fns: Vec<Fn> = vec![ #(#abi_functions),* ];
-                let structure: Type = #module_ident::#bp_ident::describe();
-                let return_data = BlueprintAbi {
-                    structure,
-                    fns,
+                let return_data = BlueprintSchema {
+                    substate_schemas: BTreeMap::new(),
+                    function_schemas: BTreeMap::new()
                 };
 
-                return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&return_data).unwrap());
+                return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
             }
         }
     };
     trace!(
-        "Generated ABI exporter: \n{}",
+        "Generated SCHEMA exporter: \n{}",
         quote! { #output_dispatcher }
     );
 
@@ -137,7 +132,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
         #output_dispatcher
 
-        #output_abi
+        #output_schema
 
         #output_stubs
     };
@@ -181,8 +176,8 @@ fn generate_method_input_structs(bp_ident: &Ident, items: &[ImplItem]) -> Vec<It
 
             let method_input_struct: ItemStruct = parse_quote! {
                 #[allow(non_camel_case_types)]
-                #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
-                #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
+                #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode)]
+                #[sbor(custom_value_kind = "::scrypto::data::scrypto::ScryptoCustomValueKind")]
                 pub struct #input_struct_name {
                     #(#args),*
                 }
@@ -250,7 +245,7 @@ fn generate_dispatcher(
                 // parse args
                 let input_struct_name = format_ident!("{}_{}_Input", bp_ident, ident);
                 stmts.push(parse_quote! {
-                    let input: #input_struct_name = ::scrypto::data::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(args)).unwrap();
+                    let input: #input_struct_name = ::scrypto::data::scrypto::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(args)).unwrap();
                 });
 
                 let is_method = get_state.is_some();
@@ -259,7 +254,7 @@ fn generate_dispatcher(
                 if let Some(stmt) = get_state {
                     trace!("Generated stmt: {}", quote! { #stmt });
                     stmts.push(parse_quote! {
-                        let component_id: radix_engine_interface::api::types::RENodeId = ::scrypto::data::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(component_id)).unwrap();
+                        let component_id: radix_engine_interface::api::types::RENodeId = ::scrypto::data::scrypto::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(component_id)).unwrap();
                     });
                     stmts.push(parse_quote! {
                         let mut component_data = ::scrypto::runtime::ComponentStatePointer::new(component_id);
@@ -276,7 +271,7 @@ fn generate_dispatcher(
 
                 // return
                 let stmt: Stmt = parse_quote! {
-                    return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&return_data).unwrap());
+                    return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
                 };
                 trace!("Generated stmt: {}", quote! { #stmt });
                 stmts.push(stmt);
@@ -325,97 +320,7 @@ fn generate_dispatcher(
     Ok(functions)
 }
 
-// Parses function items of an `Impl` and returns ABI of functions.
-#[allow(dead_code)]
-fn generate_abi(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Expr>> {
-    let mut fns = Vec::<Expr>::new();
-
-    for item in items {
-        trace!("Processing item: {}", quote! { #item });
-        match item {
-            ImplItem::Method(ref m) => {
-                if let Visibility::Public(_) = &m.vis {
-                    let name = m.sig.ident.to_string();
-                    let mut mutability = None;
-                    let mut inputs = vec![];
-                    for input in &m.sig.inputs {
-                        match input {
-                            FnArg::Receiver(ref r) => {
-                                // Check receiver type and mutability
-                                if r.reference.is_none() {
-                                    return Err(Error::new(r.span(), "Function input `self` is not supported. Try replacing it with &self."));
-                                }
-
-                                if r.mutability.is_some() {
-                                    mutability =
-                                        Some(quote! { ::scrypto::abi::SelfMutability::Mutable });
-                                } else {
-                                    mutability =
-                                        Some(quote! { ::scrypto::abi::SelfMutability::Immutable });
-                                }
-                            }
-                            FnArg::Typed(ref t) => {
-                                let ty = replace_self_with(&t.ty, &bp_ident.to_string());
-                                inputs.push(quote! {
-                                    <#ty>::describe()
-                                });
-                            }
-                        }
-                    }
-
-                    let input_struct_name = format_ident!("{}_{}_Input", bp_ident, m.sig.ident);
-                    let input = quote! {
-                        #input_struct_name::describe()
-                    };
-                    let output = match &m.sig.output {
-                        ReturnType::Default => quote! {
-                            ::scrypto::abi::Type::Tuple { element_types: ::sbor::rust::vec![] }
-                        },
-                        ReturnType::Type(_, t) => {
-                            let ty = replace_self_with(t, &bp_ident.to_string());
-                            quote! {
-                                <#ty>::describe()
-                            }
-                        }
-                    };
-                    let export_name = format!("{}_{}", bp_ident, m.sig.ident);
-
-                    if mutability.is_none() {
-                        fns.push(parse_quote! {
-                            ::scrypto::abi::Fn {
-                                ident: #name.to_owned(),
-                                mutability: Option::None,
-                                input: #input,
-                                output: #output,
-                                export_name: #export_name.to_string(),
-                            }
-                        });
-                    } else {
-                        fns.push(parse_quote! {
-                            ::scrypto::abi::Fn {
-                                ident: #name.to_owned(),
-                                mutability: Option::Some(#mutability),
-                                input: #input,
-                                output: #output,
-                                export_name: #export_name.to_string(),
-                            }
-                        });
-                    }
-                }
-            }
-            _ => {
-                return Err(Error::new(
-                    item.span(),
-                    "Non-method impl items are not supported!",
-                ));
-            }
-        };
-    }
-
-    Ok(fns)
-}
-
-// Parses function items of an `Impl` and returns ABI of functions.
+// Parses function items of an `Impl` and returns SCHEMA of functions.
 fn generate_stubs(
     component_ident: &Ident,
     component_ref_ident: &Ident,
@@ -503,8 +408,8 @@ fn generate_stubs(
 
     let output = quote! {
         #[allow(non_camel_case_types)]
-        #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
-        #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
+        #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode)]
+        #[sbor(custom_value_kind = "::scrypto::data::scrypto::ScryptoCustomValueKind")]
         pub struct #component_ident {
             pub component: ::scrypto::component::OwnedComponent,
         }
@@ -516,17 +421,17 @@ fn generate_stubs(
             fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
                 self.component.set_metadata(name, value);
             }
-            fn add_access_check(&self, access_rules: ::scrypto::model::AccessRules) {
+            fn add_access_check(&self, access_rules: ::scrypto::prelude::AccessRules) {
                 self.component.add_access_check(access_rules);
             }
-            fn set_royalty_config(&self, royalty_config: ::scrypto::model::RoyaltyConfig) {
+            fn set_royalty_config(&self, royalty_config: ::scrypto::prelude::RoyaltyConfig) {
                 self.component.set_royalty_config(royalty_config);
             }
             fn claim_royalty(&self) -> Bucket {
                 self.component.claim_royalty()
             }
 
-            fn package_address(&self) -> ::scrypto::model::PackageAddress {
+            fn package_address(&self) -> ::scrypto::prelude::PackageAddress {
                 self.component.package_address()
             }
             fn blueprint_name(&self) -> String {
@@ -570,17 +475,17 @@ fn generate_stubs(
             fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
                 self.component.set_metadata(name, value);
             }
-            fn add_access_check(&self, access_rules: ::scrypto::model::AccessRules) {
+            fn add_access_check(&self, access_rules: ::scrypto::prelude::AccessRules) {
                 self.component.add_access_check(access_rules);
             }
-            fn set_royalty_config(&self, royalty_config: ::scrypto::model::RoyaltyConfig) {
+            fn set_royalty_config(&self, royalty_config: ::scrypto::prelude::RoyaltyConfig) {
                 self.component.set_royalty_config(royalty_config);
             }
             fn claim_royalty(&self) -> Bucket {
                 self.component.claim_royalty()
             }
 
-            fn package_address(&self) -> ::scrypto::model::PackageAddress {
+            fn package_address(&self) -> ::scrypto::prelude::PackageAddress {
                 self.component.package_address()
             }
             fn blueprint_name(&self) -> String {
@@ -650,8 +555,8 @@ mod tests {
                 pub mod test {
                     use super::*;
 
-                    #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
-                    #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
+                    #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode)]
+                    #[sbor(custom_value_kind = "::scrypto::data::scrypto::ScryptoCustomValueKind")]
                     pub struct Test {
                         a: u32,
                         admin: ResourceManager
@@ -680,13 +585,13 @@ mod tests {
                 }
 
                 #[allow(non_camel_case_types)]
-                #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
-                #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
+                #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode)]
+                #[sbor(custom_value_kind = "::scrypto::data::scrypto::ScryptoCustomValueKind")]
                 pub struct Test_x_Input { arg0 : u32 }
 
                 #[allow(non_camel_case_types)]
-                #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
-                #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
+                #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode)]
+                #[sbor(custom_value_kind = "::scrypto::data::scrypto::ScryptoCustomValueKind")]
                 pub struct Test_y_Input { arg0 : u32 }
 
                 #[no_mangle]
@@ -700,12 +605,12 @@ mod tests {
                     ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
                     ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
-                    let input: Test_x_Input = ::scrypto::data::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(args)).unwrap();
-                    let component_id: radix_engine_interface::api::types::RENodeId = ::scrypto::data::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(component_id)).unwrap();
+                    let input: Test_x_Input = ::scrypto::data::scrypto::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(args)).unwrap();
+                    let component_id: radix_engine_interface::api::types::RENodeId = ::scrypto::data::scrypto::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(component_id)).unwrap();
                     let mut component_data = ::scrypto::runtime::ComponentStatePointer::new(component_id);
                     let state: DataRef<test::Test> = component_data.get();
                     let return_data = test::Test::x(state.deref(), input.arg0);
-                    return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&return_data).unwrap());
+                    return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
                 }
 
                 #[no_mangle]
@@ -719,44 +624,26 @@ mod tests {
                     ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
                     ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
-                    let input: Test_y_Input = ::scrypto::data::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(args)).unwrap();
+                    let input: Test_y_Input = ::scrypto::data::scrypto::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(args)).unwrap();
                     let return_data = test::Test::y(input.arg0);
-                    return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&return_data).unwrap());
+                    return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
                 }
 
                 #[no_mangle]
-                pub extern "C" fn Test_abi() -> ::scrypto::engine::wasm_api::Slice {
-                    use ::scrypto::abi::{BlueprintAbi, LegacyDescribe, Fn, Type};
-                    use ::sbor::rust::borrow::ToOwned;
-                    use ::sbor::rust::vec;
-                    use ::sbor::rust::vec::Vec;
-                    let fns: Vec<Fn> = vec![
-                        ::scrypto::abi::Fn {
-                            ident: "x".to_owned(),
-                            mutability: Option::Some(::scrypto::abi::SelfMutability::Immutable),
-                            input: Test_x_Input::describe(),
-                            output: <u32>::describe(),
-                            export_name: "Test_x".to_string(),
-                        },
-                        ::scrypto::abi::Fn {
-                            ident: "y".to_owned(),
-                            mutability: Option::None,
-                            input: Test_y_Input::describe(),
-                            output: <u32>::describe(),
-                            export_name: "Test_y".to_string(),
-                        }
-                    ];
-                    let structure: Type = test::Test::describe();
-                    let return_data = BlueprintAbi {
-                        structure,
-                        fns,
+                pub extern "C" fn Test_schema() -> ::scrypto::engine::wasm_api::Slice {
+                    use ::scrypto::schema::BlueprintSchema;
+                    use ::sbor::rust::prelude::*;
+
+                    let return_data = BlueprintSchema {
+                        substate_schemas: BTreeMap::new(),
+                        function_schemas: BTreeMap::new()
                     };
-                    return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&return_data).unwrap());
+                    return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
                 }
 
                 #[allow(non_camel_case_types)]
-                #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
-                #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
+                #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode)]
+                #[sbor(custom_value_kind = "::scrypto::data::scrypto::ScryptoCustomValueKind")]
                 pub struct TestComponent {
                     pub component: ::scrypto::component::OwnedComponent,
                 }
@@ -768,17 +655,17 @@ mod tests {
                     fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
                         self.component.set_metadata(name, value);
                     }
-                    fn add_access_check(&self, access_rules: ::scrypto::model::AccessRules) {
+                    fn add_access_check(&self, access_rules: ::scrypto::prelude::AccessRules) {
                         self.component.add_access_check(access_rules);
                     }
-                    fn set_royalty_config(&self, royalty_config: ::scrypto::model::RoyaltyConfig) {
+                    fn set_royalty_config(&self, royalty_config: ::scrypto::prelude::RoyaltyConfig) {
                         self.component.set_royalty_config(royalty_config);
                     }
                     fn claim_royalty(&self) -> Bucket {
                         self.component.claim_royalty()
                     }
 
-                    fn package_address(&self) -> ::scrypto::model::PackageAddress {
+                    fn package_address(&self) -> ::scrypto::prelude::PackageAddress {
                         self.component.package_address()
                     }
                     fn blueprint_name(&self) -> String {
@@ -825,17 +712,17 @@ mod tests {
                     fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
                         self.component.set_metadata(name, value);
                     }
-                    fn add_access_check(&self, access_rules: ::scrypto::model::AccessRules) {
+                    fn add_access_check(&self, access_rules: ::scrypto::prelude::AccessRules) {
                         self.component.add_access_check(access_rules);
                     }
-                    fn set_royalty_config(&self, royalty_config: ::scrypto::model::RoyaltyConfig) {
+                    fn set_royalty_config(&self, royalty_config: ::scrypto::prelude::RoyaltyConfig) {
                         self.component.set_royalty_config(royalty_config);
                     }
                     fn claim_royalty(&self) -> Bucket {
                         self.component.claim_royalty()
                     }
 
-                    fn package_address(&self) -> ::scrypto::model::PackageAddress {
+                    fn package_address(&self) -> ::scrypto::prelude::PackageAddress {
                         self.component.package_address()
                     }
                     fn blueprint_name(&self) -> String {
@@ -869,8 +756,8 @@ mod tests {
                 pub mod test {
                     use super::*;
 
-                    #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
-                    #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
+                    #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode)]
+                    #[sbor(custom_value_kind = "::scrypto::data::scrypto::ScryptoCustomValueKind")]
                     pub struct Test {
                     }
 
@@ -891,23 +778,20 @@ mod tests {
                 }
 
                 #[no_mangle]
-                pub extern "C" fn Test_abi() -> ::scrypto::engine::wasm_api::Slice {
-                    use ::scrypto::abi::{BlueprintAbi, LegacyDescribe, Fn, Type};
-                    use ::sbor::rust::borrow::ToOwned;
-                    use ::sbor::rust::vec;
-                    use ::sbor::rust::vec::Vec;
-                    let fns: Vec<Fn> = vec![];
-                    let structure: Type = test::Test::describe();
-                    let return_data = BlueprintAbi {
-                        structure,
-                        fns,
+                pub extern "C" fn Test_schema() -> ::scrypto::engine::wasm_api::Slice {
+                    use ::scrypto::schema::BlueprintSchema;
+                    use ::sbor::rust::prelude::*;
+
+                    let return_data = BlueprintSchema {
+                        substate_schemas: BTreeMap::new(),
+                        function_schemas: BTreeMap::new()
                     };
-                    return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&return_data).unwrap());
+                    return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
                 }
 
                 #[allow(non_camel_case_types)]
-                #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
-                #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
+                #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode)]
+                #[sbor(custom_value_kind = "::scrypto::data::scrypto::ScryptoCustomValueKind")]
                 pub struct TestComponent {
                     pub component: ::scrypto::component::OwnedComponent,
                 }
@@ -919,17 +803,17 @@ mod tests {
                     fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
                         self.component.set_metadata(name, value);
                     }
-                    fn add_access_check(&self, access_rules: ::scrypto::model::AccessRules) {
+                    fn add_access_check(&self, access_rules: ::scrypto::prelude::AccessRules) {
                         self.component.add_access_check(access_rules);
                     }
-                    fn set_royalty_config(&self, royalty_config: ::scrypto::model::RoyaltyConfig) {
+                    fn set_royalty_config(&self, royalty_config: ::scrypto::prelude::RoyaltyConfig) {
                         self.component.set_royalty_config(royalty_config);
                     }
                     fn claim_royalty(&self) -> Bucket {
                         self.component.claim_royalty()
                     }
 
-                    fn package_address(&self) -> ::scrypto::model::PackageAddress {
+                    fn package_address(&self) -> ::scrypto::prelude::PackageAddress {
                         self.component.package_address()
                     }
                     fn blueprint_name(&self) -> String {
@@ -969,17 +853,17 @@ mod tests {
                     fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
                         self.component.set_metadata(name, value);
                     }
-                    fn add_access_check(&self, access_rules: ::scrypto::model::AccessRules) {
+                    fn add_access_check(&self, access_rules: ::scrypto::prelude::AccessRules) {
                         self.component.add_access_check(access_rules);
                     }
-                    fn set_royalty_config(&self, royalty_config: ::scrypto::model::RoyaltyConfig) {
+                    fn set_royalty_config(&self, royalty_config: ::scrypto::prelude::RoyaltyConfig) {
                         self.component.set_royalty_config(royalty_config);
                     }
                     fn claim_royalty(&self) -> Bucket {
                         self.component.claim_royalty()
                     }
 
-                    fn package_address(&self) -> ::scrypto::model::PackageAddress {
+                    fn package_address(&self) -> ::scrypto::prelude::PackageAddress {
                         self.component.package_address()
                     }
                     fn blueprint_name(&self) -> String {
@@ -1014,8 +898,8 @@ mod tests {
                 pub mod test {
                     use super::*;
 
-                    #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
-                    #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
+                    #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode)]
+                    #[sbor(custom_value_kind = "::scrypto::data::scrypto::ScryptoCustomValueKind")]
                     pub struct Test {
                     }
 
@@ -1036,23 +920,20 @@ mod tests {
                 }
 
                 #[no_mangle]
-                pub extern "C" fn Test_abi() -> ::scrypto::engine::wasm_api::Slice {
-                    use ::scrypto::abi::{BlueprintAbi, LegacyDescribe, Fn, Type};
-                    use ::sbor::rust::borrow::ToOwned;
-                    use ::sbor::rust::vec;
-                    use ::sbor::rust::vec::Vec;
-                    let fns: Vec<Fn> = vec![];
-                    let structure: Type = test::Test::describe();
-                    let return_data = BlueprintAbi {
-                        structure,
-                        fns,
+                pub extern "C" fn Test_schema() -> ::scrypto::engine::wasm_api::Slice {
+                    use ::scrypto::schema::BlueprintSchema;
+                    use ::sbor::rust::prelude::*;
+
+                    let return_data = BlueprintSchema {
+                        substate_schemas: BTreeMap::new(),
+                        function_schemas: BTreeMap::new()
                     };
-                    return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&return_data).unwrap());
+                    return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
                 }
 
                 #[allow(non_camel_case_types)]
-                #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
-                #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
+                #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode)]
+                #[sbor(custom_value_kind = "::scrypto::data::scrypto::ScryptoCustomValueKind")]
                 pub struct TestComponent {
                     pub component: ::scrypto::component::OwnedComponent,
                 }
@@ -1064,17 +945,17 @@ mod tests {
                     fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
                         self.component.set_metadata(name, value);
                     }
-                    fn add_access_check(&self, access_rules: ::scrypto::model::AccessRules) {
+                    fn add_access_check(&self, access_rules: ::scrypto::prelude::AccessRules) {
                         self.component.add_access_check(access_rules);
                     }
-                    fn set_royalty_config(&self, royalty_config: ::scrypto::model::RoyaltyConfig) {
+                    fn set_royalty_config(&self, royalty_config: ::scrypto::prelude::RoyaltyConfig) {
                         self.component.set_royalty_config(royalty_config);
                     }
                     fn claim_royalty(&self) -> Bucket {
                         self.component.claim_royalty()
                     }
 
-                    fn package_address(&self) -> ::scrypto::model::PackageAddress {
+                    fn package_address(&self) -> ::scrypto::prelude::PackageAddress {
                         self.component.package_address()
                     }
                     fn blueprint_name(&self) -> String {
@@ -1114,17 +995,17 @@ mod tests {
                     fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
                         self.component.set_metadata(name, value);
                     }
-                    fn add_access_check(&self, access_rules: ::scrypto::model::AccessRules) {
+                    fn add_access_check(&self, access_rules: ::scrypto::prelude::AccessRules) {
                         self.component.add_access_check(access_rules);
                     }
-                    fn set_royalty_config(&self, royalty_config: ::scrypto::model::RoyaltyConfig) {
+                    fn set_royalty_config(&self, royalty_config: ::scrypto::prelude::RoyaltyConfig) {
                         self.component.set_royalty_config(royalty_config);
                     }
                     fn claim_royalty(&self) -> Bucket {
                         self.component.claim_royalty()
                     }
 
-                    fn package_address(&self) -> ::scrypto::model::PackageAddress {
+                    fn package_address(&self) -> ::scrypto::prelude::PackageAddress {
                         self.component.package_address()
                     }
                     fn blueprint_name(&self) -> String {

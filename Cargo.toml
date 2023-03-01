@@ -17,7 +17,7 @@ members = [
     "sbor-derive-common",
     "sbor-derive",
     "sbor-tests",
-    "scrypto-abi",
+    "scrypto-schema",
     "scrypto-derive",
     "scrypto",
     "scrypto-tests",

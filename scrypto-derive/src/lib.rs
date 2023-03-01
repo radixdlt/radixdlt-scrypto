@@ -1,6 +1,5 @@
 mod ast;
 mod blueprint;
-mod import;
 mod non_fungible_data;
 mod utils;
 
@@ -44,57 +43,6 @@ use proc_macro::TokenStream;
 #[proc_macro_attribute]
 pub fn blueprint(_: TokenStream, input: TokenStream) -> TokenStream {
     blueprint::handle_blueprint(proc_macro2::TokenStream::from(input))
-        .unwrap_or_else(|err| err.to_compile_error())
-        .into()
-}
-
-/// Imports a blueprint from its ABI.
-///
-/// This macro will generate stubs for accessing the blueprint according to
-/// its ABI specification.
-///
-/// # Example
-/// ```ignore
-/// use scrypto::prelude::*;
-///
-/// import! {
-/// r#"
-/// {
-///     "package_address": "01a405d3129b61e86c51c3168d553d2ffd7a3f0bd2f66b5a3e9876",
-///     "blueprint_name": "GumballMachine",
-///     "functions": [
-///         {
-///             "name": "new",
-///             "inputs": [],
-///             "output": {
-///                 "type": "Custom",
-///                 "name": "ComponentAddress"
-///             }
-///         }
-///     ],
-///     "methods": [
-///         {
-///             "name": "get_gumball",
-///             "mutability": "Mutable",
-///             "inputs": [
-///                 {
-///                     "type": "Custom",
-///                     "name": "Bucket"
-///                 }
-///             ],
-///             "output": {
-///                 "type": "Custom",
-///                 "name": "Bucket"
-///             }
-///         }
-///     ]
-/// }
-/// "#
-/// }
-/// ```
-#[proc_macro]
-pub fn import(input: TokenStream) -> TokenStream {
-    import::handle_import(proc_macro2::TokenStream::from(input))
         .unwrap_or_else(|err| err.to_compile_error())
         .into()
 }

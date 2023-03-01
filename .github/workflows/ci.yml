@@ -103,7 +103,7 @@ jobs:
       working-directory: scrypto
     - name: Run abi tests
       run: cargo test
-      working-directory: scrypto-abi
+      working-directory: scrypto-schema
     - name: Run derive tests
       run: cargo test
       working-directory: scrypto-derive
