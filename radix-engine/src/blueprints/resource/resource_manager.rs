@@ -22,8 +22,8 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::model::Own;
-use radix_engine_interface::data::ScryptoValue;
+use radix_engine_interface::data::scrypto::model::Own;
+use radix_engine_interface::data::scrypto::ScryptoValue;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;
 
@@ -919,9 +919,10 @@ impl ResourceManagerBlueprint {
             api.sys_drop_lock(non_fungible_handle)?;
         }
 
-        api.emit_event(MintResourceEvent::Ids(
-            input.entries.into_iter().map(|(k, _)| k).collect(),
-        ))?;
+        Runtime::emit_event(
+            api,
+            MintResourceEvent::Ids(input.entries.into_iter().map(|(k, _)| k).collect()),
+        )?;
 
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
@@ -1009,7 +1010,7 @@ impl ResourceManagerBlueprint {
             (bucket_id, ids)
         };
 
-        api.emit_event(MintResourceEvent::Ids(ids))?;
+        Runtime::emit_event(api, MintResourceEvent::Ids(ids))?;
 
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
@@ -1078,7 +1079,7 @@ impl ResourceManagerBlueprint {
         api.kernel_create_node(node_id, resource_init, BTreeMap::new())?;
         let bucket_id = node_id.into();
 
-        api.emit_event(MintResourceEvent::Amount(input.amount))?;
+        Runtime::emit_event(api, MintResourceEvent::Amount(input.amount))?;
 
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
@@ -1159,7 +1160,7 @@ impl ResourceManagerBlueprint {
             }
         }
 
-        api.emit_event(event)?;
+        Runtime::emit_event(api, event)?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -1275,9 +1276,12 @@ impl ResourceManagerBlueprint {
             }
         };
 
-        api.emit_event(VaultCreationEvent {
-            vault_id: RENodeId::Vault(vault_id),
-        })?;
+        Runtime::emit_event(
+            api,
+            VaultCreationEvent {
+                vault_id: RENodeId::Vault(vault_id),
+            },
+        )?;
 
         Ok(IndexedScryptoValue::from_typed(&Own::Vault(vault_id)))
     }

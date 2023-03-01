@@ -7,7 +7,7 @@ use crate::kernel::module::KernelModule;
 use crate::types::*;
 use radix_engine_interface::api::types::{ProofOffset, RENodeId, SubstateOffset};
 use radix_engine_interface::api::LockFlags;
-use radix_engine_interface::data::ScryptoValue;
+use radix_engine_interface::data::scrypto::ScryptoValue;
 use radix_engine_interface::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

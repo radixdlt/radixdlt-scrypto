@@ -34,8 +34,8 @@ use radix_engine_interface::blueprints::epoch_manager::{
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRules, LiquidFungibleResource, LiquidNonFungibleResource, MethodKey,
-    Proof, ProofDropInput, ResourceType, BUCKET_BLUEPRINT, PROOF_BLUEPRINT, PROOF_DROP_IDENT,
-    RESOURCE_MANAGER_BLUEPRINT, VAULT_BLUEPRINT, WORKTOP_BLUEPRINT,
+    NonFungibleGlobalId, Proof, ProofDropInput, ResourceType, BUCKET_BLUEPRINT, PROOF_BLUEPRINT,
+    PROOF_DROP_IDENT, RESOURCE_MANAGER_BLUEPRINT, VAULT_BLUEPRINT, WORKTOP_BLUEPRINT,
 };
 use radix_engine_interface::blueprints::transaction_runtime::TRANSACTION_RUNTIME_BLUEPRINT;
 use radix_engine_interface::rule;

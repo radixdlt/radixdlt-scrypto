@@ -1,7 +1,4 @@
-use radix_engine_interface::api::types::rust::collections::BTreeSet;
-use radix_engine_interface::api::types::NonFungibleLocalId;
-use radix_engine_interface::math::Decimal;
-use radix_engine_interface::*;
+use crate::types::*;
 
 #[derive(ScryptoSbor)]
 pub struct LockFeeEvent {

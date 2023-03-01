@@ -9,7 +9,7 @@ use crate::system::node::RENodeModuleInit;
 use crate::types::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::ScryptoValue;
+use radix_engine_interface::data::scrypto::ScryptoValue;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::*;
 use sbor::rust::fmt::Debug;

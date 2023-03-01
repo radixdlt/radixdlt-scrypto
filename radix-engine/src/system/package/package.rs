@@ -18,13 +18,13 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::AccessRule;
-use radix_engine_interface::data::ScryptoValue;
+use radix_engine_interface::data::scrypto::ScryptoValue;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PackageError {
     InvalidRequestData(DecodeError),
-    InvalidAbi(DecodeError),
     InvalidWasm(PrepareError),
+    InvalidSchema(DecodeError),
     BlueprintNotFound,
     MethodNotFound(String),
     CouldNotEncodePackageAddress,

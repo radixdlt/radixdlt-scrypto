@@ -252,13 +252,6 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
 }
 
 impl ClientEventApi<ClientApiError> for ScryptoEnv {
-    fn emit_event<T: ScryptoEncode + ScryptoDescribe>(
-        &mut self,
-        _event: T,
-    ) -> Result<(), ClientApiError> {
-        todo!()
-    }
-
     fn emit_raw_event(
         &mut self,
         schema_hash: Hash,

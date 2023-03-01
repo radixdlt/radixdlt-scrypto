@@ -7,13 +7,6 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use scrypto_schema::PackageSchema;
 
-pub struct PackageAbi;
-
-impl PackageAbi {
-    pub fn schema() -> PackageSchema {
-        PackageSchema::default()
-    }
-}
 pub const PACKAGE_LOADER_BLUEPRINT: &str = "PackageLoader";
 
 pub const PACKAGE_LOADER_PUBLISH_WASM_IDENT: &str = "publish_wasm";

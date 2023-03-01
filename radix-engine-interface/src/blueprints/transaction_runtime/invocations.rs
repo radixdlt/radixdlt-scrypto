@@ -2,14 +2,6 @@ use crate::*;
 use sbor::rust::fmt::Debug;
 use scrypto_schema::PackageSchema;
 
-pub struct TransactionRuntimeAbi;
-
-impl TransactionRuntimeAbi {
-    pub fn schema() -> PackageSchema {
-        PackageSchema::default()
-    }
-}
-
 pub const TRANSACTION_RUNTIME_BLUEPRINT: &str = "TransactionRuntime";
 
 pub const TRANSACTION_RUNTIME_GET_HASH_IDENT: &str = "get_hash";

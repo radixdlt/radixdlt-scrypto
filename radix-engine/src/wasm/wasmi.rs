@@ -1,8 +1,8 @@
-use radix_engine_interface::api::types::rust::mem::transmute;
-use radix_engine_interface::api::types::rust::mem::MaybeUninit;
 use radix_engine_interface::api::types::Buffer;
 use radix_engine_interface::api::types::BufferId;
 use radix_engine_interface::api::types::Slice;
+use sbor::rust::mem::transmute;
+use sbor::rust::mem::MaybeUninit;
 use sbor::rust::sync::Arc;
 use wasmi::core::Value;
 use wasmi::core::{HostError, Trap};

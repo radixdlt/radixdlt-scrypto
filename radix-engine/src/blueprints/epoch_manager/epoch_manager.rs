@@ -7,6 +7,7 @@ use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::MethodAccessRulesChainSubstate;
 use crate::types::*;
 use native_sdk::resource::{ResourceManager, SysBucket};
+use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
@@ -14,7 +15,7 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::{AccountDepositInput, ACCOUNT_DEPOSIT_IDENT};
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::ScryptoValue;
+use radix_engine_interface::data::scrypto::ScryptoValue;
 use radix_engine_interface::rule;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -282,14 +283,17 @@ impl EpochManagerBlueprint {
             validator_set.epoch = prepared_epoch;
             validator_set.validator_set = next_validator_set.clone();
 
-            api.emit_event(EpochChangeEvent {
-                epoch: prepared_epoch,
-                validators: next_validator_set,
-            })?;
+            Runtime::emit_event(
+                api,
+                EpochChangeEvent {
+                    epoch: prepared_epoch,
+                    validators: next_validator_set,
+                },
+            )?;
         } else {
             epoch_manager.round = input.round;
 
-            api.emit_event(RoundChangeEvent { round: input.round })?;
+            Runtime::emit_event(api, RoundChangeEvent { round: input.round })?;
         }
 
         Ok(IndexedScryptoValue::from_typed(&()))

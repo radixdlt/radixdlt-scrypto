@@ -30,7 +30,7 @@ use radix_engine_interface::api::types::VaultId;
 use radix_engine_interface::api::types::{InvocationDebugIdentifier, LockHandle};
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::crypto::Hash;
-use radix_engine_interface::data::ScryptoValue;
+use radix_engine_interface::data::scrypto::ScryptoValue;
 use sbor::rust::collections::BTreeMap;
 use transaction::model::AuthZoneParams;
 

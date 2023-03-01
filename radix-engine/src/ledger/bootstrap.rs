@@ -14,22 +14,15 @@ use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::package::{
     PackageLoaderPublishPrecompiledInput, PackageLoaderPublishWasmInput,
 };
-use radix_engine_interface::api::types::*;
-use radix_engine_interface::blueprints::access_controller::AccessControllerAbi;
-use radix_engine_interface::blueprints::account::AccountAbi;
-use radix_engine_interface::blueprints::auth_zone::AuthZoneAbi;
 use radix_engine_interface::blueprints::clock::{
-    ClockAbi, ClockCreateInput, CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT,
+    ClockCreateInput, CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::epoch_manager::{
-    EpochManagerAbi, ManifestValidatorInit, EPOCH_MANAGER_BLUEPRINT, EPOCH_MANAGER_CREATE_IDENT,
+    ManifestValidatorInit, EPOCH_MANAGER_BLUEPRINT, EPOCH_MANAGER_CREATE_IDENT,
 };
-use radix_engine_interface::blueprints::identity::IdentityAbi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::blueprints::transaction_runtime::TransactionRuntimeAbi;
-use radix_engine_interface::data::*;
 use radix_engine_interface::rule;
-use transaction::data::{manifest_args, manifest_encode};
+use radix_engine_interface::schema::PackageSchema;
 use transaction::model::{Instruction, SystemTransaction};
 use transaction::validation::ManifestIdAllocator;
 
@@ -68,7 +61,7 @@ pub fn create_genesis(
             args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: METADATA_CODE_ID,
-                abi: MetadataAbi::blueprint_abis(),
+                schema: PackageSchema::default(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
@@ -92,7 +85,7 @@ pub fn create_genesis(
             args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: ROYALTY_CODE_ID,
-                abi: RoyaltyAbi::blueprint_abis(),
+                schema: PackageSchema::default(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
@@ -115,7 +108,7 @@ pub fn create_genesis(
             args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: ACCESS_RULES_CODE_ID,
-                abi: AccessRulesAbi::blueprint_abis(),
+                schema: PackageSchema::default(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
@@ -138,7 +131,7 @@ pub fn create_genesis(
             args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: RESOURCE_MANAGER_PACKAGE_CODE_ID,
-                abi: ResourceManagerAbi::blueprint_abis(),
+                schema: PackageSchema::default(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
@@ -212,7 +205,7 @@ pub fn create_genesis(
             function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                abi: IdentityAbi::blueprint_abis(),
+                schema: PackageSchema::default(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
                 native_package_code_id: IDENTITY_PACKAGE_CODE_ID,
@@ -235,7 +228,7 @@ pub fn create_genesis(
             function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                abi: EpochManagerAbi::blueprint_abis(),
+                schema: PackageSchema::default(),
                 native_package_code_id: EPOCH_MANAGER_PACKAGE_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
@@ -258,7 +251,7 @@ pub fn create_genesis(
             function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                abi: ClockAbi::blueprint_abis(),
+                schema: PackageSchema::default(),
                 native_package_code_id: CLOCK_PACKAGE_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
@@ -281,7 +274,7 @@ pub fn create_genesis(
             function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                abi: AccountAbi::blueprint_abis(),
+                schema: PackageSchema::default(),
                 native_package_code_id: ACCOUNT_PACKAGE_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
@@ -304,7 +297,7 @@ pub fn create_genesis(
             function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                abi: AccessControllerAbi::blueprint_abis(),
+                schema: PackageSchema::default(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
                 native_package_code_id: ACCESS_CONTROLLER_PACKAGE_CODE_ID,
@@ -327,7 +320,7 @@ pub fn create_genesis(
             function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                abi: TransactionRuntimeAbi::blueprint_abis(),
+                schema: PackageSchema::default(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
                 native_package_code_id: TRANSACTION_RUNTIME_CODE_ID,
@@ -350,7 +343,7 @@ pub fn create_genesis(
             function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                abi: AuthZoneAbi::blueprint_abis(),
+                schema: PackageSchema::default(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
                 native_package_code_id: AUTH_ZONE_CODE_ID,
@@ -440,7 +433,7 @@ pub fn create_genesis(
             args: manifest_encode(&PackageLoaderPublishWasmInput {
                 package_address: Some(package_address),
                 code: faucet_code, // TODO: Use blob here instead?
-                abi: scrypto_decode(&faucet_abi).unwrap(), // TODO: Use blob here instead?
+                schema: PackageSchema::default(),
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll),
@@ -623,11 +616,9 @@ where
 
 #[cfg(test)]
 mod tests {
-    use transaction::data::{manifest_decode, manifest_encode};
-    use transaction::{data::ManifestBucket, ecdsa_secp256k1::EcdsaSecp256k1PrivateKey};
-
     use super::*;
     use crate::{ledger::TypedInMemorySubstateStore, wasm::DefaultWasmEngine};
+    use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 
     #[test]
     fn bootstrap_receipt_should_match_constants() {

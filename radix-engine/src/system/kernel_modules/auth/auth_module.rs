@@ -22,7 +22,7 @@ use radix_engine_interface::api::types::{
     AuthZoneStackOffset, RENodeId, SubstateOffset, VaultOffset,
 };
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::ScryptoValue;
+use radix_engine_interface::data::scrypto::ScryptoValue;
 use transaction::model::AuthZoneParams;
 
 use super::auth_converter::convert_contextless;

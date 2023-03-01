@@ -3,6 +3,7 @@ use parity_wasm::elements::{
     Instruction::{self, *},
     Internal, Module, Type, ValueType,
 };
+use radix_engine_interface::schema::PackageSchema;
 use wasm_instrument::{
     gas_metering::{self, Rules},
     inject_stack_limiter,
@@ -535,46 +536,8 @@ impl WasmModule {
         Ok(self)
     }
 
-    pub fn enforce_export_constraints(
-        self,
-        blueprints: &BTreeMap<String, BlueprintAbi>,
-    ) -> Result<Self, PrepareError> {
-        let exports = self
-            .module
-            .export_section()
-            .ok_or(PrepareError::NoExportSection)?;
-        for (_, blueprint_abi) in blueprints {
-            for func in &blueprint_abi.fns {
-                let func_name = &func.export_name;
-                if !exports.entries().iter().any(|x| {
-                    x.field().eq(func_name) && {
-                        if let Internal::Function(func_index) = x.internal() {
-                            if func.mutability.is_some() {
-                                Self::function_matches(
-                                    &self.module,
-                                    *func_index as usize,
-                                    vec![ValueType::I64, ValueType::I64],
-                                    vec![ValueType::I64],
-                                )
-                            } else {
-                                Self::function_matches(
-                                    &self.module,
-                                    *func_index as usize,
-                                    vec![ValueType::I64],
-                                    vec![ValueType::I64],
-                                )
-                            }
-                        } else {
-                            false
-                        }
-                    }
-                }) {
-                    return Err(PrepareError::MissingExport {
-                        export_name: func_name.to_string(),
-                    });
-                }
-            }
-        }
+    pub fn enforce_export_constraints(self, schema: &PackageSchema) -> Result<Self, PrepareError> {
+        // FIXME restore schema validation!
 
         Ok(self)
     }
@@ -694,7 +657,6 @@ impl WasmModule {
 mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
-    use radix_engine_interface::abi;
     use wabt::wat2wasm;
 
     macro_rules! assert_invalid_wasm {
@@ -848,34 +810,14 @@ mod tests {
 
     #[test]
     fn test_blueprint_constraints() {
-        let mut blueprint_abis = BTreeMap::new();
-        blueprint_abis.insert(
-            "Test".to_string(),
-            BlueprintAbi {
-                structure: abi::Type::Tuple {
-                    element_types: vec![],
-                },
-                fns: vec![abi::Fn {
-                    ident: "f".to_string(),
-                    mutability: Option::None,
-                    input: abi::Type::Struct {
-                        name: "Any".to_string(),
-                        fields: Fields::Named { named: vec![] },
-                    },
-                    output: abi::Type::Tuple {
-                        element_types: vec![],
-                    },
-                    export_name: "Test_f".to_string(),
-                }],
-            },
-        );
+        let mut package_schema = PackageSchema::default();
         assert_invalid_wasm!(
             r#"
             (module
             )
             "#,
             PrepareError::NoExportSection,
-            |x| WasmModule::enforce_export_constraints(x, &blueprint_abis)
+            |x| WasmModule::enforce_export_constraints(x, &package_schema)
         );
         // symbol not found
         assert_invalid_wasm!(
@@ -889,7 +831,7 @@ mod tests {
             PrepareError::MissingExport {
                 export_name: "Test_f".to_string()
             },
-            |x| WasmModule::enforce_export_constraints(x, &blueprint_abis)
+            |x| WasmModule::enforce_export_constraints(x, &package_schema)
         );
         // signature does not match
         assert_invalid_wasm!(
@@ -903,7 +845,7 @@ mod tests {
             PrepareError::MissingExport {
                 export_name: "Test_f".to_string()
             },
-            |x| WasmModule::enforce_export_constraints(x, &blueprint_abis)
+            |x| WasmModule::enforce_export_constraints(x, &package_schema)
         );
     }
 }

@@ -9,7 +9,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
     InvocationDebugIdentifier, LockHandle, NodeModuleId, RENodeId, RENodeType, SubstateOffset,
 };
-use radix_engine_interface::data::ScryptoValue;
+use radix_engine_interface::data::scrypto::ScryptoValue;
 use sbor::rust::collections::BTreeMap;
 
 #[derive(Debug, Clone)]

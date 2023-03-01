@@ -9,7 +9,7 @@ use super::actor::Actor;
 use super::call_frame::CallFrameUpdate;
 use super::kernel_api::KernelModuleApi;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::data::ScryptoValue;
+use radix_engine_interface::data::scrypto::ScryptoValue;
 
 pub trait KernelModule {
     //======================

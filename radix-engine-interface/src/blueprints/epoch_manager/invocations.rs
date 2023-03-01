@@ -8,14 +8,6 @@ use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
 use scrypto_schema::PackageSchema;
 
-pub struct EpochManagerAbi;
-
-impl EpochManagerAbi {
-    pub fn schema() -> PackageSchema {
-        PackageSchema::default()
-    }
-}
-
 pub const EPOCH_MANAGER_BLUEPRINT: &str = "EpochManager";
 pub const VALIDATOR_BLUEPRINT: &str = "Validator";
 

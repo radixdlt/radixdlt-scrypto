@@ -7,14 +7,6 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use scrypto_schema::PackageSchema;
 
-pub struct AccountAbi;
-
-impl AccountAbi {
-    pub fn schema() -> PackageSchema {
-        PackageSchema::default()
-    }
-}
-
 pub const ACCOUNT_BLUEPRINT: &str = "Account";
 
 //================

@@ -1,7 +1,7 @@
+use crate::types::*;
 use crate::{blueprints::resource::VaultInfoSubstate, ledger::StateTreeVisitor};
-use radix_engine_interface::{
-    api::types::{ResourceAddress, VaultId},
-    blueprints::resource::{LiquidFungibleResource, LiquidNonFungibleResource},
+use radix_engine_interface::blueprints::resource::{
+    LiquidFungibleResource, LiquidNonFungibleResource,
 };
 use sbor::rust::vec::Vec;
 

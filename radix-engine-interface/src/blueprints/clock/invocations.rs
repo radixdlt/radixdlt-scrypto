@@ -4,14 +4,6 @@ use crate::*;
 use sbor::rust::fmt::Debug;
 use scrypto_schema::PackageSchema;
 
-pub struct ClockAbi;
-
-impl ClockAbi {
-    pub fn schema() -> PackageSchema {
-        PackageSchema::default()
-    }
-}
-
 pub const CLOCK_BLUEPRINT: &str = "Clock";
 
 pub const CLOCK_CREATE_IDENT: &str = "create";

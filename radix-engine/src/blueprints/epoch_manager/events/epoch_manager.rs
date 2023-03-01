@@ -1,6 +1,5 @@
 use crate::blueprints::epoch_manager::Validator;
-use radix_engine_interface::api::types::{rust::collections::BTreeMap, ComponentAddress};
-use radix_engine_interface::*;
+use crate::types::*;
 
 #[derive(ScryptoSbor)]
 pub struct RoundChangeEvent {

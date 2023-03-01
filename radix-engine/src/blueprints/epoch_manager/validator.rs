@@ -8,6 +8,7 @@ use crate::system::node_modules::access_rules::MethodAccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
 use native_sdk::resource::{ResourceManager, SysBucket, Vault};
+use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
 };
@@ -17,7 +18,7 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::ScryptoValue;
+use radix_engine_interface::data::scrypto::ScryptoValue;
 use radix_engine_interface::rule;
 
 use super::{
@@ -101,7 +102,7 @@ impl ValidatorBlueprint {
             }
         }
 
-        api.emit_event(RegisterValidatorEvent)?;
+        Runtime::emit_event(api, RegisterValidatorEvent)?;
 
         return Ok(IndexedScryptoValue::from_typed(&()));
     }
@@ -146,7 +147,7 @@ impl ValidatorBlueprint {
             )?;
         }
 
-        api.emit_event(UnregisterValidatorEvent)?;
+        Runtime::emit_event(api, UnregisterValidatorEvent)?;
 
         return Ok(IndexedScryptoValue::from_typed(&()));
     }
@@ -218,7 +219,7 @@ impl ValidatorBlueprint {
             }
         }
 
-        api.emit_event(event)?;
+        Runtime::emit_event(api, event)?;
 
         Ok(IndexedScryptoValue::from_typed(&lp_token_bucket))
     }
@@ -319,7 +320,7 @@ impl ValidatorBlueprint {
             }
         };
 
-        api.emit_event(event)?;
+        Runtime::emit_event(api, event)?;
 
         Ok(IndexedScryptoValue::from_typed(&unstake_bucket))
     }
@@ -383,9 +384,12 @@ impl ValidatorBlueprint {
         let claimed_bucket = unstake_vault.sys_take(unstake_amount, api)?;
 
         let amount = claimed_bucket.sys_amount(api)?;
-        api.emit_event(ClaimXrdEvent {
-            claimed_xrd: amount,
-        })?;
+        Runtime::emit_event(
+            api,
+            ClaimXrdEvent {
+                claimed_xrd: amount,
+            },
+        )?;
 
         Ok(IndexedScryptoValue::from_typed(&claimed_bucket))
     }
@@ -467,9 +471,12 @@ impl ValidatorBlueprint {
             .unwrap(),
         )?;
 
-        api.emit_event(UpdateAcceptingStakeDelegationStateEvent {
-            accepts_delegation: input.accept_delegated_stake,
-        })?;
+        Runtime::emit_event(
+            api,
+            UpdateAcceptingStakeDelegationStateEvent {
+                accepts_delegation: input.accept_delegated_stake,
+            },
+        )?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }

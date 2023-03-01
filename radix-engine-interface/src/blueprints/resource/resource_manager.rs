@@ -7,14 +7,6 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use scrypto_schema::PackageSchema;
 
-pub struct ResourceManagerAbi;
-
-impl ResourceManagerAbi {
-    pub fn schema() -> PackageSchema {
-        PackageSchema::default()
-    }
-}
-
 pub const RESOURCE_MANAGER_BLUEPRINT: &str = "ResourceManager";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor, ManifestSbor)]

@@ -6,14 +6,6 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use scrypto_schema::PackageSchema;
 
-pub struct AuthZoneAbi;
-
-impl AuthZoneAbi {
-    pub fn schema() -> PackageSchema {
-        PackageSchema::default()
-    }
-}
-
 pub const AUTH_ZONE_BLUEPRINT: &str = "AuthZone";
 
 pub const AUTH_ZONE_POP_IDENT: &str = "pop";

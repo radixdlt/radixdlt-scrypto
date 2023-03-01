@@ -17,7 +17,7 @@ use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::resource::MethodKey;
 use radix_engine_interface::blueprints::resource::{require, AccessRule};
 use radix_engine_interface::blueprints::resource::{AccessRules, FunctionKey};
-use radix_engine_interface::data::ScryptoValue;
+use radix_engine_interface::data::scrypto::ScryptoValue;
 use radix_engine_interface::rule;
 use radix_engine_interface::time::*;
 

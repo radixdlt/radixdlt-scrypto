@@ -6,12 +6,13 @@ use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::CostingError;
 use crate::system::node::RENodeInit;
 use crate::types::*;
+use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{RENodeId, SubstateOffset, VaultOffset};
 use radix_engine_interface::api::{types::*, ClientSubstateApi};
 use radix_engine_interface::api::{ClientApi, ClientEventApi};
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::ScryptoValue;
+use radix_engine_interface::data::scrypto::ScryptoValue;
 
 use super::events::vault::{
     DepositResourceEvent, LockFeeEvent, RecallResourceEvent, WithdrawResourceEvent,
@@ -119,7 +120,7 @@ impl FungibleVault {
         })?;
         api.sys_drop_lock(handle)?;
 
-        api.emit_event(WithdrawResourceEvent::Amount(amount))?;
+        Runtime::emit_event(api, WithdrawResourceEvent::Amount(amount))?;
 
         Ok(taken)
     }
@@ -154,7 +155,7 @@ impl FungibleVault {
         })?;
         api.sys_drop_lock(handle)?;
 
-        api.emit_event(event)?;
+        Runtime::emit_event(api, event)?;
 
         Ok(())
     }
@@ -335,7 +336,7 @@ impl NonFungibleVault {
         })?;
         api.sys_drop_lock(handle)?;
 
-        api.emit_event(WithdrawResourceEvent::Amount(amount))?;
+        Runtime::emit_event(api, WithdrawResourceEvent::Amount(amount))?;
 
         Ok(taken)
     }
@@ -364,7 +365,7 @@ impl NonFungibleVault {
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::VaultError(e)))?;
         api.sys_drop_lock(handle)?;
 
-        api.emit_event(WithdrawResourceEvent::Ids(ids.clone()))?;
+        Runtime::emit_event(api, WithdrawResourceEvent::Ids(ids.clone()))?;
 
         Ok(taken)
     }
@@ -400,7 +401,7 @@ impl NonFungibleVault {
         })?;
         api.sys_drop_lock(handle)?;
 
-        api.emit_event(event)?;
+        Runtime::emit_event(api, event)?;
 
         Ok(())
     }
@@ -828,9 +829,12 @@ impl VaultBlueprint {
         }
 
         // Emitting an event once the fee has been locked
-        api.emit_event(LockFeeEvent {
-            amount: input.amount,
-        })?;
+        Runtime::emit_event(
+            api,
+            LockFeeEvent {
+                amount: input.amount,
+            },
+        )?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -889,7 +893,7 @@ impl VaultBlueprint {
         };
         let bucket_id = node_id.into();
 
-        api.emit_event(RecallResourceEvent::Amount(input.amount))?;
+        Runtime::emit_event(api, RecallResourceEvent::Amount(input.amount))?;
 
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
@@ -931,7 +935,7 @@ impl VaultBlueprint {
             )?;
             let bucket_id = node_id.into();
 
-            api.emit_event(RecallResourceEvent::Ids(input.non_fungible_local_ids))?;
+            Runtime::emit_event(api, RecallResourceEvent::Ids(input.non_fungible_local_ids))?;
 
             Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
         }
