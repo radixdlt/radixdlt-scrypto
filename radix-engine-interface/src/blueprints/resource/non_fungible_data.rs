@@ -1,6 +1,5 @@
 use sbor::rust::vec::Vec;
 use sbor::{DecodeError, EncodeError};
-use scrypto_abi::Type;
 
 /// Represents the data structure of a non-fungible.
 pub trait NonFungibleData {
@@ -14,10 +13,4 @@ pub trait NonFungibleData {
 
     /// Returns the serialization of the mutable data part.
     fn mutable_data(&self) -> Result<Vec<u8>, EncodeError>;
-
-    /// Returns the schema of the immutable data.
-    fn immutable_data_schema() -> Type;
-
-    /// Returns the schema of the mutable data.
-    fn mutable_data_schema() -> Type;
 }

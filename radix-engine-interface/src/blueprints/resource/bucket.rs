@@ -1,4 +1,3 @@
-use crate::abi::*;
 use crate::api::types::*;
 use crate::data::scrypto::model::Own;
 use crate::data::scrypto::model::*;
@@ -136,12 +135,6 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for B
             Own::Bucket(bucket_id) => Ok(Self(bucket_id)),
             _ => Err(DecodeError::InvalidCustomValue),
         }
-    }
-}
-
-impl scrypto_abi::LegacyDescribe for Bucket {
-    fn describe() -> scrypto_abi::Type {
-        Type::Bucket
     }
 }
 

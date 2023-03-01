@@ -1,4 +1,3 @@
-use crate::abi::*;
 use crate::api::types::*;
 use crate::blueprints::resource::*;
 use crate::data::scrypto::model::Own;
@@ -131,12 +130,6 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for P
             Own::Proof(proof_id) => Ok(Self(proof_id)),
             _ => Err(DecodeError::InvalidCustomValue),
         }
-    }
-}
-
-impl scrypto_abi::LegacyDescribe for Proof {
-    fn describe() -> scrypto_abi::Type {
-        Type::Proof
     }
 }
 

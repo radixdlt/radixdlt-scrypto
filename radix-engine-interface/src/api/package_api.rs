@@ -1,15 +1,15 @@
-use crate::abi::BlueprintAbi;
 use crate::api::types::*;
 use crate::blueprints::resource::AccessRules;
 use crate::data::scrypto::model::*;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
+use scrypto_schema::PackageSchema;
 
 pub trait ClientPackageApi<E> {
     fn new_package(
         &mut self,
         code: Vec<u8>,
-        abi: BTreeMap<String, BlueprintAbi>,
+        schema: PackageSchema,
         access_rules: AccessRules,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
@@ -22,11 +22,4 @@ pub trait ClientPackageApi<E> {
         function_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, E>;
-
-    fn get_code(&mut self, package_address: PackageAddress) -> Result<PackageCode, E>;
-
-    fn get_abi(
-        &mut self,
-        package_address: PackageAddress,
-    ) -> Result<BTreeMap<String, BlueprintAbi>, E>;
 }

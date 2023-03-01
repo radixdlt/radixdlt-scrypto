@@ -6,13 +6,13 @@ use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
-use scrypto_abi::BlueprintAbi;
+use scrypto_schema::PackageSchema;
 
 pub struct EpochManagerAbi;
 
 impl EpochManagerAbi {
-    pub fn blueprint_abis() -> BTreeMap<String, BlueprintAbi> {
-        BTreeMap::new()
+    pub fn schema() -> PackageSchema {
+        PackageSchema::default()
     }
 }
 

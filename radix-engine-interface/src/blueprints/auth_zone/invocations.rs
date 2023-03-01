@@ -2,15 +2,15 @@ use crate::blueprints::resource::*;
 use crate::data::scrypto::model::*;
 use crate::math::Decimal;
 use crate::*;
-use sbor::rust::collections::{BTreeMap, BTreeSet};
+use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
-use scrypto_abi::BlueprintAbi;
+use scrypto_schema::PackageSchema;
 
 pub struct AuthZoneAbi;
 
 impl AuthZoneAbi {
-    pub fn blueprint_abis() -> BTreeMap<String, BlueprintAbi> {
-        BTreeMap::new()
+    pub fn schema() -> PackageSchema {
+        PackageSchema::default()
     }
 }
 

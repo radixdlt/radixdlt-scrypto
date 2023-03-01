@@ -4,12 +4,8 @@ use crate::data::scrypto::model::*;
 use crate::data::scrypto::SchemaPath;
 use crate::math::Decimal;
 use crate::*;
-use sbor::rust::borrow::ToOwned;
-use sbor::rust::boxed::Box;
-use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
-use scrypto_abi::{Fields, Type, Variant};
 
 #[derive(
     Debug,
@@ -251,39 +247,6 @@ pub enum AccessRuleNode {
     ProofRule(ProofRule),
     AnyOf(Vec<AccessRuleNode>),
     AllOf(Vec<AccessRuleNode>),
-}
-
-// FIXME: describe types with cycles
-impl scrypto_abi::LegacyDescribe for AccessRuleNode {
-    fn describe() -> Type {
-        Type::Enum {
-            name: "AccessRuleNode".to_owned(),
-            variants: vec![
-                Variant {
-                    name: "ProofRule".to_string(),
-                    fields: Fields::Unnamed {
-                        unnamed: vec![Type::Any],
-                    },
-                },
-                Variant {
-                    name: "AnyOf".to_string(),
-                    fields: Fields::Unnamed {
-                        unnamed: vec![Type::Vec {
-                            element_type: Box::new(Type::Any),
-                        }],
-                    },
-                },
-                Variant {
-                    name: "AllOf".to_string(),
-                    fields: Fields::Unnamed {
-                        unnamed: vec![Type::Vec {
-                            element_type: Box::new(Type::Any),
-                        }],
-                    },
-                },
-            ],
-        }
-    }
 }
 
 impl AccessRuleNode {

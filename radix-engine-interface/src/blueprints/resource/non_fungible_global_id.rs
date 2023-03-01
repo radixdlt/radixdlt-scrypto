@@ -8,8 +8,6 @@ use sbor::rust::format;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use scrypto_abi::LegacyDescribe;
-use scrypto_abi::Type;
 use utils::ContextualDisplay;
 
 /// Represents the global id of a non-fungible.
@@ -26,12 +24,6 @@ use utils::ContextualDisplay;
     ManifestDecode,
 )]
 pub struct NonFungibleGlobalId(ResourceAddress, NonFungibleLocalId);
-
-impl LegacyDescribe for NonFungibleGlobalId {
-    fn describe() -> scrypto_abi::Type {
-        Type::NonFungibleGlobalId
-    }
-}
 
 impl NonFungibleGlobalId {
     pub const fn new(resource_address: ResourceAddress, local_id: NonFungibleLocalId) -> Self {

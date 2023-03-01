@@ -19,8 +19,8 @@ mod macros;
 pub use macros::*;
 
 // Re-export common
-pub mod abi {
-    pub use scrypto_abi::*;
+pub mod schema {
+    pub use scrypto_schema::*;
 }
 pub mod address {
     pub use radix_engine_common::address::*;

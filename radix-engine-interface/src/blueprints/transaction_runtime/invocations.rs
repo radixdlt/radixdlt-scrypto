@@ -1,14 +1,12 @@
 use crate::*;
-use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
-use sbor::rust::string::String;
-use scrypto_abi::BlueprintAbi;
+use scrypto_schema::PackageSchema;
 
 pub struct TransactionRuntimeAbi;
 
 impl TransactionRuntimeAbi {
-    pub fn blueprint_abis() -> BTreeMap<String, BlueprintAbi> {
-        BTreeMap::new()
+    pub fn schema() -> PackageSchema {
+        PackageSchema::default()
     }
 }
 

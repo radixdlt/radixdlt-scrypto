@@ -1,15 +1,14 @@
 use crate::blueprints::access_controller::*;
 use crate::blueprints::resource::*;
 use crate::*;
-use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
-use scrypto_abi::BlueprintAbi;
+use scrypto_schema::PackageSchema;
 
 pub struct AccessControllerAbi;
 
 impl AccessControllerAbi {
-    pub fn blueprint_abis() -> BTreeMap<String, BlueprintAbi> {
-        BTreeMap::new()
+    pub fn schema() -> PackageSchema {
+        PackageSchema::default()
     }
 }
 

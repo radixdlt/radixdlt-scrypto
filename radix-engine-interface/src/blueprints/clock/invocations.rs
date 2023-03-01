@@ -1,15 +1,14 @@
 use crate::blueprints::clock::TimePrecision;
 use crate::time::{Instant, TimeComparisonOperator};
 use crate::*;
-use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
-use scrypto_abi::BlueprintAbi;
+use scrypto_schema::PackageSchema;
 
 pub struct ClockAbi;
 
 impl ClockAbi {
-    pub fn blueprint_abis() -> BTreeMap<String, BlueprintAbi> {
-        BTreeMap::new()
+    pub fn schema() -> PackageSchema {
+        PackageSchema::default()
     }
 }
 

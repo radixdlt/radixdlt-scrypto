@@ -5,13 +5,13 @@ use crate::*;
 use sbor::rust::collections::{BTreeMap, BTreeSet};
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use scrypto_abi::BlueprintAbi;
+use scrypto_schema::PackageSchema;
 
 pub struct ResourceManagerAbi;
 
 impl ResourceManagerAbi {
-    pub fn blueprint_abis() -> BTreeMap<String, BlueprintAbi> {
-        BTreeMap::new()
+    pub fn schema() -> PackageSchema {
+        PackageSchema::default()
     }
 }
 
