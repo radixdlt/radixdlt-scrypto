@@ -26,7 +26,6 @@ pub enum RENodeType {
     NonFungibleStore,
     Component,
     Vault,
-    Validator,
     TransactionRuntime,
     Logger,
 }
@@ -59,7 +58,6 @@ pub enum RENodeId {
     NonFungibleStore(NonFungibleStoreId),
     Component(ComponentId),
     Vault(VaultId),
-    Validator(ValidatorId),
 }
 
 impl fmt::Debug for RENodeId {
@@ -88,7 +86,6 @@ impl fmt::Debug for RENodeId {
                 f.debug_tuple("ResourceManager").field(&address).finish()
             }
             Self::GlobalPackage(address) => f.debug_tuple("GlobalPackage").field(&address).finish(),
-            Self::Validator(id) => f.debug_tuple("Validator").field(&hex::encode(id)).finish(),
         }
     }
 }
@@ -100,7 +97,6 @@ impl Into<[u8; 36]> for RENodeId {
             RENodeId::NonFungibleStore(id) => id,
             RENodeId::Vault(id) => id,
             RENodeId::Component(id) => id,
-            RENodeId::Validator(id) => id,
             RENodeId::Proof(id) => id,
             RENodeId::Bucket(id) => id,
             RENodeId::Worktop => [3u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now

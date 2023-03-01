@@ -2,8 +2,8 @@ use crate::errors::{IdAllocationError, KernelError, RuntimeError};
 use radix_engine_interface::address::EntityType;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
-    BucketId, ComponentId, KeyValueStoreId, NonFungibleStoreId, ProofId,
-    RENodeId, RENodeType, ValidatorId, VaultId,
+    BucketId, ComponentId, KeyValueStoreId, NonFungibleStoreId, ProofId, RENodeId, RENodeType,
+    VaultId,
 };
 use radix_engine_interface::crypto::{hash, Hash};
 use sbor::rust::collections::{BTreeMap, BTreeSet};
@@ -84,7 +84,6 @@ impl IdAllocator {
                 .new_nf_store_id()
                 .map(|id| RENodeId::NonFungibleStore(id)),
             RENodeType::Component => self.new_component_id().map(|id| RENodeId::Component(id)),
-            RENodeType::Validator => self.new_validator_id().map(|id| RENodeId::Validator(id)),
             RENodeType::GlobalPackage => self
                 .new_package_address()
                 .map(|address| RENodeId::GlobalPackage(address)),
@@ -237,10 +236,6 @@ impl IdAllocator {
     }
 
     pub fn new_component_id(&mut self) -> Result<ComponentId, IdAllocationError> {
-        self.next_id()
-    }
-
-    pub fn new_validator_id(&mut self) -> Result<ValidatorId, IdAllocationError> {
         self.next_id()
     }
 

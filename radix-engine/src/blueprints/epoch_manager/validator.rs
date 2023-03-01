@@ -674,7 +674,7 @@ impl ValidatorCreator {
         let metadata = Metadata::sys_create(api)?;
 
         let address = api.globalize_with_address(
-            RENodeId::Validator(validator_id),
+            RENodeId::Component(validator_id),
             btreemap!(
                 NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
                 NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
@@ -724,7 +724,7 @@ impl ValidatorCreator {
         let metadata = Metadata::sys_create(api)?;
 
         let address = api.globalize_with_address(
-            RENodeId::Validator(validator_id),
+            RENodeId::Component(validator_id),
             btreemap!(
                 NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
                 NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),

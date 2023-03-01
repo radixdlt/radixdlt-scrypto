@@ -63,7 +63,6 @@ impl VisibilityProperties {
                     _ => false,
                 },
                 // TODO: CLEAN THESE UP, these are used for globalization
-                RENodeId::Validator(..) => mode.eq(&ExecutionMode::Client),
                 RENodeId::Component(..) => mode.eq(&ExecutionMode::Client),
                 _ => false,
             },

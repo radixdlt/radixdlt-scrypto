@@ -164,10 +164,9 @@ where
                 };
 
                 let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
-                let node = RENodeInit::Component(
-                    btreemap!(
-                        SubstateOffset::Account(AccountOffset::Account) => RuntimeSubstate::Account(account_substate)
-                    ));
+                let node = RENodeInit::Component(btreemap!(
+                    SubstateOffset::Account(AccountOffset::Account) => RuntimeSubstate::Account(account_substate)
+                ));
                 self.kernel_create_node(node_id, node, node_modules)?;
                 node_id
             };
@@ -298,9 +297,7 @@ where
             | RENodeId::Logger
             | RENodeId::TransactionRuntime
             | RENodeId::Bucket(..)
-            | RENodeId::Validator(..)
-            | RENodeId::Component(..)
-            => api.current_frame.remove_node(&mut api.heap, node_id),
+            | RENodeId::Component(..) => api.current_frame.remove_node(&mut api.heap, node_id),
             _ => Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
                 node_id,
             ))),
@@ -678,7 +675,6 @@ where
             (RENodeId::Proof(..), RENodeInit::NonFungibleProof(..)) => {}
             (RENodeId::Vault(..), RENodeInit::FungibleVault(..)) => {}
             (RENodeId::Vault(..), RENodeInit::NonFungibleVault(..)) => {}
-            (RENodeId::Validator(..), RENodeInit::Validator(..)) => {}
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
             (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
             (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {}

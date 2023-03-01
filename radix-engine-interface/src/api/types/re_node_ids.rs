@@ -8,4 +8,3 @@ pub type ComponentId = [u8; 36];
 pub type KeyValueStoreId = [u8; 36];
 pub type NonFungibleStoreId = [u8; 36];
 pub type VaultId = [u8; 36];
-pub type ValidatorId = [u8; 36];
