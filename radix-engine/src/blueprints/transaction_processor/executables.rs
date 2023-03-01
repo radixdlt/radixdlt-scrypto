@@ -859,10 +859,10 @@ impl<'blob> TransactionProcessor<'blob> {
         // Auto move into worktop & auth_zone
         for owned_node in value.owned_node_ids() {
             match owned_node {
-                Own::Bucket(bucket_id) => {
+                RENodeId::Bucket(bucket_id) => {
                     Worktop::sys_put(Bucket(*bucket_id), api)?;
                 }
-                Own::Proof(proof_id) => {
+                RENodeId::Proof(proof_id) => {
                     let proof = Proof(*proof_id);
                     ComponentAuthZone::sys_push(proof, api)?;
                 }

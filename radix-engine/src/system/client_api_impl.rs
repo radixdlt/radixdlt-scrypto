@@ -33,6 +33,7 @@ use radix_engine_interface::api::{
 use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RADIX_TOKEN;
+use radix_engine_interface::schema::PackageSchema;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
@@ -129,7 +130,7 @@ where
     fn new_package(
         &mut self,
         code: Vec<u8>,
-        abi: BTreeMap<String, BlueprintAbi>,
+        schema: PackageSchema,
         access_rules: AccessRules,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
@@ -141,7 +142,7 @@ where
             scrypto_encode(&PackageLoaderPublishWasmInput {
                 package_address: None,
                 code,
-                abi,
+                schema,
                 access_rules,
                 royalty_config,
                 metadata,
@@ -171,35 +172,6 @@ where
 
         self.kernel_invoke(invocation)
             .map(|v| scrypto_encode(&v).expect("Failed to encode scrypto fn return"))
-    }
-
-    fn get_code(&mut self, package_address: PackageAddress) -> Result<PackageCode, RuntimeError> {
-        let handle = self.kernel_lock_substate(
-            RENodeId::GlobalPackage(package_address),
-            NodeModuleId::SELF,
-            SubstateOffset::Package(PackageOffset::Code),
-            LockFlags::read_only(),
-        )?;
-        let package: &PackageCodeSubstate = self.kernel_get_substate_ref(handle)?;
-        let code = package.code().to_vec();
-        self.kernel_drop_lock(handle)?;
-        Ok(PackageCode::Wasm(code))
-    }
-
-    fn get_abi(
-        &mut self,
-        package_address: PackageAddress,
-    ) -> Result<BTreeMap<String, BlueprintAbi>, RuntimeError> {
-        let handle = self.kernel_lock_substate(
-            RENodeId::GlobalPackage(package_address),
-            NodeModuleId::SELF,
-            SubstateOffset::Package(PackageOffset::Info),
-            LockFlags::read_only(),
-        )?;
-        let package: &PackageInfoSubstate = self.kernel_get_substate_ref(handle)?;
-        let abi = package.blueprint_abis.clone();
-        self.kernel_drop_lock(handle)?;
-        Ok(abi)
     }
 }
 

@@ -2,6 +2,7 @@ use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
+use crate::types::*;
 use crate::{
     blueprints::transaction_runtime::TransactionRuntimeSubstate, errors::RuntimeError,
     system::node::RENodeInit,

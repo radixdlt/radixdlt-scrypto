@@ -13,6 +13,7 @@ use radix_engine_interface::api::{
 };
 use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::blueprints::resource::AccessRules;
+use radix_engine_interface::schema::PackageSchema;
 use sbor::rust::vec::Vec;
 use utils::copy_u8_array;
 
@@ -137,8 +138,8 @@ where
         royalty_config: Vec<u8>,
         metadata: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let abi = scrypto_decode::<BTreeMap<String, BlueprintAbi>>(&abi)
-            .map_err(WasmRuntimeError::InvalidAbi)?;
+        let schema =
+            scrypto_decode::<PackageSchema>(&abi).map_err(WasmRuntimeError::InvalidSchema)?;
         let access_rules = scrypto_decode::<AccessRules>(&access_rules)
             .map_err(WasmRuntimeError::InvalidAccessRulesChain)?;
         let royalty_config = scrypto_decode::<BTreeMap<String, RoyaltyConfig>>(&royalty_config)
@@ -148,7 +149,7 @@ where
 
         let package_address =
             self.api
-                .new_package(code, abi, access_rules, royalty_config, metadata)?;
+                .new_package(code, schema, access_rules, royalty_config, metadata)?;
         let package_address_encoded =
             scrypto_encode(&package_address).expect("Failed to encode package address");
 

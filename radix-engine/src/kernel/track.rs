@@ -595,16 +595,17 @@ impl<'s> FinalizingTrack<'s> {
         // Commit/rollback application state changes
         let mut to_persist = HashMap::new();
         let next_epoch = {
-            let expected_schema_hash =
-                hash(scrypto_encode(&EpochChangeEvent::describe()).expect("Impossible Case!"));
             application_events
                 .iter()
-                .find(|(identifier, _)| match identifier {
+                .find(|(identifier, raw)| match identifier {
                     EventTypeIdentifier(
                         RENodeId::GlobalComponent(ComponentAddress::EpochManager(..)),
                         NodeModuleId::SELF,
                         schema_hash,
-                    ) if *schema_hash == expected_schema_hash => true,
+                    ) => {
+                        // FIXME use type hash or local type index
+                        scrypto_decode::<EpochChangeEvent>(raw).is_ok()
+                    }
                     _ => false,
                 })
                 .map(|(_, data)| {

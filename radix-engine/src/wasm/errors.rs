@@ -126,7 +126,7 @@ pub enum WasmRuntimeError {
     /// Invalid access rules
     InvalidAccessRulesChain(DecodeError),
     /// Invalid access rules
-    InvalidAbi(DecodeError),
+    InvalidSchema(DecodeError),
     /// Invalid royalty config
     InvalidRoyaltyConfig(DecodeError),
     /// Invalid metadata
