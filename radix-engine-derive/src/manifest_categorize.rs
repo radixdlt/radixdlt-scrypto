@@ -1,10 +1,10 @@
 use proc_macro2::TokenStream;
 use syn::Result;
 
-pub fn handle_categorize(input: TokenStream) -> Result<TokenStream> {
+pub fn handle_manifest_categorize(input: TokenStream) -> Result<TokenStream> {
     sbor_derive_common::categorize::handle_categorize(
         input,
-        Some("radix_engine_interface::data::ScryptoCustomValueKind"),
+        Some("radix_engine_common::data::manifest::ManifestCustomValueKind"),
     )
 }
 
@@ -22,14 +22,14 @@ mod tests {
     #[test]
     fn test_categorize_struct() {
         let input = TokenStream::from_str("pub struct MyStruct { }").unwrap();
-        let output = handle_categorize(input).unwrap();
+        let output = handle_manifest_categorize(input).unwrap();
 
         assert_code_eq(
             output,
             quote! {
-                impl ::sbor::Categorize<radix_engine_interface::data::ScryptoCustomValueKind> for MyStruct {
+                impl ::sbor::Categorize<radix_engine_common::data::manifest::ManifestCustomValueKind> for MyStruct {
                     #[inline]
-                    fn value_kind() -> ::sbor::ValueKind<radix_engine_interface::data::ScryptoCustomValueKind> {
+                    fn value_kind() -> ::sbor::ValueKind<radix_engine_common::data::manifest::ManifestCustomValueKind> {
                         ::sbor::ValueKind::Tuple
                     }
                 }
@@ -41,16 +41,16 @@ mod tests {
     fn test_categorize_enum() {
         let input = TokenStream::from_str("enum MyEnum<T: Bound> { A { named: T }, B(String), C }")
             .unwrap();
-        let output = handle_categorize(input).unwrap();
+        let output = handle_manifest_categorize(input).unwrap();
 
         assert_code_eq(
             output,
             quote! {
-                impl<T: Bound> ::sbor::Categorize<radix_engine_interface::data::ScryptoCustomValueKind>
+                impl<T: Bound> ::sbor::Categorize<radix_engine_common::data::manifest::ManifestCustomValueKind>
                     for MyEnum<T>
                 {
                     #[inline]
-                    fn value_kind() -> ::sbor::ValueKind<radix_engine_interface::data::ScryptoCustomValueKind> {
+                    fn value_kind() -> ::sbor::ValueKind<radix_engine_common::data::manifest::ManifestCustomValueKind> {
                         ::sbor::ValueKind::Enum
                     }
                 }

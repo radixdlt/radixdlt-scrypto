@@ -1,10 +1,10 @@
 use proc_macro2::TokenStream;
 use syn::Result;
 
-pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
+pub fn handle_manifest_decode(input: TokenStream) -> Result<TokenStream> {
     sbor_derive_common::decode::handle_decode(
         input,
-        Some("radix_engine_interface::data::ScryptoCustomValueKind"),
+        Some("radix_engine_common::data::manifest::ManifestCustomValueKind"),
     )
 }
 
@@ -22,18 +22,18 @@ mod tests {
     #[test]
     fn test_decode_struct() {
         let input = TokenStream::from_str("pub struct MyStruct { }").unwrap();
-        let output = handle_decode(input).unwrap();
+        let output = handle_manifest_decode(input).unwrap();
 
         assert_code_eq(
             output,
             quote! {
-                impl<D: ::sbor::Decoder<radix_engine_interface::data::ScryptoCustomValueKind> >
-                    ::sbor::Decode<radix_engine_interface::data::ScryptoCustomValueKind, D> for MyStruct
+                impl<D: ::sbor::Decoder<radix_engine_common::data::manifest::ManifestCustomValueKind> >
+                    ::sbor::Decode<radix_engine_common::data::manifest::ManifestCustomValueKind, D> for MyStruct
                 {
                     #[inline]
                     fn decode_body_with_value_kind(
                         decoder: &mut D,
-                        value_kind: ::sbor::ValueKind<radix_engine_interface::data::ScryptoCustomValueKind>
+                        value_kind: ::sbor::ValueKind<radix_engine_common::data::manifest::ManifestCustomValueKind>
                     ) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
                         decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Tuple)?;
@@ -49,23 +49,23 @@ mod tests {
     fn test_decode_enum() {
         let input = TokenStream::from_str("enum MyEnum<T: Bound> { A { named: T }, B(String), C }")
             .unwrap();
-        let output = handle_decode(input).unwrap();
+        let output = handle_manifest_decode(input).unwrap();
 
         assert_code_eq(
             output,
             quote! {
                 impl<
                         T: Bound,
-                        D: ::sbor::Decoder<radix_engine_interface::data::ScryptoCustomValueKind>
-                    > ::sbor::Decode<radix_engine_interface::data::ScryptoCustomValueKind, D> for MyEnum<T>
+                        D: ::sbor::Decoder<radix_engine_common::data::manifest::ManifestCustomValueKind>
+                    > ::sbor::Decode<radix_engine_common::data::manifest::ManifestCustomValueKind, D> for MyEnum<T>
                 where
-                    T: ::sbor::Decode<radix_engine_interface::data::ScryptoCustomValueKind, D>,
-                    T: ::sbor::Categorize<radix_engine_interface::data::ScryptoCustomValueKind>
+                    T: ::sbor::Decode<radix_engine_common::data::manifest::ManifestCustomValueKind, D>,
+                    T: ::sbor::Categorize<radix_engine_common::data::manifest::ManifestCustomValueKind>
                 {
                     #[inline]
                     fn decode_body_with_value_kind(
                         decoder: &mut D,
-                        value_kind: ::sbor::ValueKind<radix_engine_interface::data::ScryptoCustomValueKind>
+                        value_kind: ::sbor::ValueKind<radix_engine_common::data::manifest::ManifestCustomValueKind>
                     ) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
                         decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Enum)?;

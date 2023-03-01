@@ -1,10 +1,10 @@
 use proc_macro2::TokenStream;
 use syn::Result;
 
-pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
+pub fn handle_manifest_encode(input: TokenStream) -> Result<TokenStream> {
     sbor_derive_common::encode::handle_encode(
         input,
-        Some("transaction_data::ManifestCustomValueKind"),
+        Some("radix_engine_common::data::manifest::ManifestCustomValueKind"),
     )
 }
 
@@ -22,13 +22,13 @@ mod tests {
     #[test]
     fn test_encode_struct() {
         let input = TokenStream::from_str("pub struct MyStruct { }").unwrap();
-        let output = handle_encode(input).unwrap();
+        let output = handle_manifest_encode(input).unwrap();
 
         assert_code_eq(
             output,
             quote! {
-                impl<E: ::sbor::Encoder<transaction_data::ManifestCustomValueKind> >
-                    ::sbor::Encode<transaction_data::ManifestCustomValueKind, E> for MyStruct
+                impl<E: ::sbor::Encoder<radix_engine_common::data::manifest::ManifestCustomValueKind> >
+                    ::sbor::Encode<radix_engine_common::data::manifest::ManifestCustomValueKind, E> for MyStruct
                 {
                     #[inline]
                     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {
@@ -49,18 +49,18 @@ mod tests {
     fn test_encode_enum() {
         let input = TokenStream::from_str("enum MyEnum<T: Bound> { A { named: T }, B(String), C }")
             .unwrap();
-        let output = handle_encode(input).unwrap();
+        let output = handle_manifest_encode(input).unwrap();
 
         assert_code_eq(
             output,
             quote! {
                 impl<
                         T: Bound,
-                        E: ::sbor::Encoder<transaction_data::ManifestCustomValueKind>
-                    > ::sbor::Encode<transaction_data::ManifestCustomValueKind, E> for MyEnum<T>
+                        E: ::sbor::Encoder<radix_engine_common::data::manifest::ManifestCustomValueKind>
+                    > ::sbor::Encode<radix_engine_common::data::manifest::ManifestCustomValueKind, E> for MyEnum<T>
                 where
-                    T: ::sbor::Encode<transaction_data::ManifestCustomValueKind, E>,
-                    T: ::sbor::Categorize<transaction_data::ManifestCustomValueKind>
+                    T: ::sbor::Encode<radix_engine_common::data::manifest::ManifestCustomValueKind, E>,
+                    T: ::sbor::Categorize<radix_engine_common::data::manifest::ManifestCustomValueKind>
                 {
                     #[inline]
                     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {

@@ -1,5 +1,6 @@
-use transaction_data::model::*;
-use transaction_data::*;
+use radix_engine_common::data::manifest::model::*;
+use radix_engine_common::data::manifest::*;
+use radix_engine_common::*;
 
 #[derive(ManifestCategorize, ManifestEncode, ManifestDecode, PartialEq, Eq, Debug)]
 struct TestStruct {
