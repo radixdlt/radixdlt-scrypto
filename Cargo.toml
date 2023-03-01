@@ -27,6 +27,7 @@ members = [
     "transaction-derive",
     "native-sdk",
     "radix-engine",
+    "radix-engine-common",
     "radix-engine-interface",
     "radix-engine-derive",
     "radix-engine-stores",
