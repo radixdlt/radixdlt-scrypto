@@ -1,3 +1,8 @@
+use super::auth_converter::convert_contextless;
+use super::method_authorization::MethodAuthorization;
+use super::HardAuthRule;
+use super::HardProofRule;
+use super::HardResourceOrNonFungible;
 use crate::blueprints::resource::VaultInfoSubstate;
 use crate::errors::*;
 use crate::kernel::actor::{Actor, ActorIdentifier};
@@ -23,12 +28,6 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::blueprints::resource::*;
 use transaction::model::AuthZoneParams;
-
-use super::auth_converter::convert_contextless;
-use super::method_authorization::MethodAuthorization;
-use super::HardAuthRule;
-use super::HardProofRule;
-use super::HardResourceOrNonFungible;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
@@ -262,9 +261,10 @@ impl AuthModule {
             let package: &PackageInfoSubstate = api.kernel_get_substate_ref(handle)?;
 
             let schema = package
-                .blueprint_abi(&blueprint_ident)
+                .schema
+                .blueprints
+                .get(&blueprint_ident)
                 .expect("Blueprint not found for existing component")
-                .structure
                 .clone();
             api.kernel_drop_lock(handle)?;
             schema

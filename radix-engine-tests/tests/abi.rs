@@ -22,12 +22,12 @@ pub fn assert_json_eq<T: Serialize>(actual: T, expected: Value) {
 }
 
 #[test]
-fn test_export_abi() {
+fn test_export_schema() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/abi");
 
-    let abi = test_runner.export_abi(package_address, "Simple");
+    let abi = test_runner.export_schema(package_address, "Simple");
     assert_json_eq(
         abi,
         json!({

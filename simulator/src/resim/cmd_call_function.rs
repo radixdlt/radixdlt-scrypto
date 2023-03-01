@@ -1,8 +1,6 @@
 use clap::Parser;
 use radix_engine::types::*;
 use transaction::builder::ManifestBuilder;
-use transaction::data::manifest_args;
-use transaction::data::model::*;
 
 use crate::resim::*;
 use crate::utils::*;
@@ -74,8 +72,12 @@ impl CallFunction {
                     &self.blueprint_name,
                     &self.function_name,
                     self.arguments.clone(),
-                    Some(default_account),
-                    &export_abi(self.package_address.0, &self.blueprint_name)?,
+                    ArgParsingContext {
+                        account: Some(default_account),
+                        package_schema: export_package_schema(self.package_address.0)?,
+                        package_address: self.package_address.0,
+                        blueprint_name: self.blueprint_name.clone(),
+                    },
                 )
                 .map_err(Error::TransactionConstructionError)?;
                 Ok(builder)

@@ -3,7 +3,6 @@ use radix_engine_constants::DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME;
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::data::manifest_args;
 
 #[test]
 fn test_loop() {
@@ -17,9 +16,6 @@ fn test_loop() {
         generate_single_function_abi(
             "Test",
             "f",
-            Type::Tuple {
-                element_types: vec![],
-            },
         ),
         BTreeMap::new(),
         BTreeMap::new(),
@@ -49,9 +45,6 @@ fn test_loop_out_of_cost_unit() {
         generate_single_function_abi(
             "Test",
             "f",
-            Type::Tuple {
-                element_types: vec![],
-            },
         ),
         BTreeMap::new(),
         BTreeMap::new(),
@@ -80,9 +73,6 @@ fn test_recursion() {
         generate_single_function_abi(
             "Test",
             "f",
-            Type::Tuple {
-                element_types: vec![],
-            },
         ),
         BTreeMap::new(),
         BTreeMap::new(),
@@ -110,9 +100,6 @@ fn test_recursion_stack_overflow() {
         generate_single_function_abi(
             "Test",
             "f",
-            Type::Tuple {
-                element_types: vec![],
-            },
         ),
         BTreeMap::new(),
         BTreeMap::new(),
@@ -144,9 +131,6 @@ fn test_grow_memory() {
         generate_single_function_abi(
             "Test",
             "f",
-            Type::Tuple {
-                element_types: vec![],
-            },
         ),
         BTreeMap::new(),
         BTreeMap::new(),
@@ -174,9 +158,6 @@ fn test_grow_memory_out_of_cost_unit() {
         generate_single_function_abi(
             "Test",
             "f",
-            Type::Tuple {
-                element_types: vec![],
-            },
         ),
         BTreeMap::new(),
         BTreeMap::new(),

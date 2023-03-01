@@ -8,12 +8,14 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 use sbor::rust::prelude::*;
 use sbor::*;
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Default, Debug, Clone, PartialEq, Eq, Sbor)]
 pub struct PackageSchema {
     pub blueprints: BTreeMap<String, BlueprintSchema>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Sbor)]
 pub struct BlueprintSchema {
     /// For each offset, there is a [`LocalTypeIndex`]
     pub substate_schemas: BTreeMap<u8, LocalTypeIndex>,
@@ -21,6 +23,7 @@ pub struct BlueprintSchema {
     pub function_schemas: BTreeMap<String, FunctionSchema>,
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub struct FunctionSchema {
     pub receiver: Option<FunctionReceiver>,
@@ -29,6 +32,7 @@ pub struct FunctionSchema {
     pub export_name: String,
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum FunctionReceiver {
     Immutable,

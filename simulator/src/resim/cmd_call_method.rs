@@ -3,8 +3,6 @@
 use clap::Parser;
 use radix_engine::types::*;
 use transaction::builder::ManifestBuilder;
-use transaction::data::manifest_args;
-use transaction::data::model::*;
 
 use crate::resim::*;
 use crate::utils::*;
@@ -63,6 +61,8 @@ impl CallMethod {
             })?;
         }
 
+        let (package_address, blueprint_name) = get_blueprint(self.component_address.0)?;
+
         let manifest = manifest_builder
             .lock_fee(FAUCET_COMPONENT, 100.into())
             .borrow_mut(|builder| {
@@ -72,8 +72,12 @@ impl CallMethod {
                     self.component_address.0,
                     &self.method_name,
                     self.arguments.clone(),
-                    Some(default_account),
-                    &export_abi_by_component(self.component_address.0)?,
+                    ArgParsingContext {
+                        account: Some(default_account),
+                        package_schema: export_package_schema(package_address)?,
+                        package_address,
+                        blueprint_name,
+                    },
                 )
                 .map_err(Error::TransactionConstructionError)?;
                 Ok(builder)

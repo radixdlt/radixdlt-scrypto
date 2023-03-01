@@ -536,7 +536,7 @@ impl WasmModule {
         Ok(self)
     }
 
-    pub fn enforce_export_constraints(self, schema: &PackageSchema) -> Result<Self, PrepareError> {
+    pub fn enforce_export_constraints(self, _schema: &PackageSchema) -> Result<Self, PrepareError> {
         // FIXME restore schema validation!
 
         Ok(self)
@@ -612,6 +612,8 @@ impl WasmModule {
         Ok((code, function_exports))
     }
 
+    #[allow(unused_variables)]
+    #[allow(dead_code)]
     fn function_matches(
         module: &Module,
         func_index: usize,
@@ -810,7 +812,7 @@ mod tests {
 
     #[test]
     fn test_blueprint_constraints() {
-        let mut package_schema = PackageSchema::default();
+        let package_schema = PackageSchema::default();
         assert_invalid_wasm!(
             r#"
             (module

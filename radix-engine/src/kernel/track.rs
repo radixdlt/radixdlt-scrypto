@@ -601,7 +601,7 @@ impl<'s> FinalizingTrack<'s> {
                     EventTypeIdentifier(
                         RENodeId::GlobalComponent(ComponentAddress::EpochManager(..)),
                         NodeModuleId::SELF,
-                        schema_hash,
+                        ..,
                     ) => {
                         // FIXME use type hash or local type index
                         scrypto_decode::<EpochChangeEvent>(raw).is_ok()

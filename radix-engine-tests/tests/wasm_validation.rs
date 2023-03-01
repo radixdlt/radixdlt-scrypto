@@ -8,9 +8,6 @@ fn test_large_data() {
     let abi = generate_single_function_abi(
         "Test",
         "f",
-        Type::Tuple {
-            element_types: vec![],
-        },
     );
     let result = WasmValidator::default().validate(&code, &abi);
 
@@ -23,9 +20,6 @@ fn test_large_memory() {
     let abi = generate_single_function_abi(
         "Test",
         "f",
-        Type::Tuple {
-            element_types: vec![],
-        },
     );
     let result = WasmValidator::default().validate(&code, &abi);
 

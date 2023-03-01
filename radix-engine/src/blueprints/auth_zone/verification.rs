@@ -30,7 +30,7 @@ impl AuthVerification {
                 Ok(proof_resource_address == *resource_address)
             }
             HardResourceOrNonFungible::InvalidSchemaPath
-            | HardResourceOrNonFungible::DisallowdValueType => Ok(false),
+            | HardResourceOrNonFungible::DisallowedValueType => Ok(false),
         }
     }
 

@@ -4,14 +4,19 @@
 //! builder that is being used.
 
 use radix_engine::types::*;
-use radix_engine_interface::abi::{BlueprintAbi, Type};
-use radix_engine_interface::blueprints::resource::ParseNonFungibleLocalIdError;
 use radix_engine_interface::math::{ParseDecimalError, PreciseDecimal};
+use radix_engine_interface::schema::PackageSchema;
 use transaction::builder::ManifestBuilder;
-use transaction::data::*;
 use transaction::model::Instruction;
 
 use crate::resim::SimulatorNonFungibleGlobalId;
+
+pub struct ArgParsingContext {
+    account: Option<ComponentAddress>,
+    package_schema: PackageSchema,
+    package_address: PackageAddress,
+    blueprint_name: String,
+}
 
 // =======
 // Macros
@@ -57,8 +62,7 @@ pub fn add_call_function_instruction_with_abi<'a>(
     blueprint_name: &str,
     function: &str,
     args: Vec<String>,
-    account: Option<ComponentAddress>,
-    blueprint_abi: &BlueprintAbi,
+    context: ArgParsingContext,
 ) -> Result<&'a mut ManifestBuilder, BuildCallWithAbiError> {
     let abi = blueprint_abi
         .fns
@@ -99,8 +103,7 @@ pub fn add_call_method_instruction_with_abi<'a>(
     component_address: ComponentAddress,
     method_name: &str,
     args: Vec<String>,
-    account: Option<ComponentAddress>,
-    blueprint_abi: &BlueprintAbi,
+    context: ArgParsingContext,
 ) -> Result<&'a mut ManifestBuilder, BuildCallWithAbiError> {
     let abi = blueprint_abi
         .fns

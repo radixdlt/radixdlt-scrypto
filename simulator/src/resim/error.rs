@@ -2,7 +2,7 @@ use std::io;
 use std::path::PathBuf;
 
 use radix_engine::errors::{RejectionError, RuntimeError};
-use radix_engine::system::package::{ExportError, ExtractAbiError};
+use radix_engine::system::package::ExtractAbiError;
 use radix_engine::transaction::AbortReason;
 use radix_engine::types::AddressError;
 use radix_engine::wasm::PrepareError;
@@ -50,8 +50,6 @@ pub enum Error {
     TransactionRejected(RejectionError),
 
     TransactionAborted(AbortReason),
-
-    AbiExportError(ExportError),
 
     LedgerDumpError(DisplayError),
 

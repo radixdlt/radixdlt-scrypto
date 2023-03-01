@@ -1,7 +1,7 @@
 mod addressing;
 mod cmd_call_function;
 mod cmd_call_method;
-mod cmd_export_abi;
+mod cmd_export_package_schema;
 mod cmd_generate_key_pair;
 mod cmd_mint;
 mod cmd_new_account;
@@ -26,7 +26,7 @@ mod error;
 pub use addressing::*;
 pub use cmd_call_function::*;
 pub use cmd_call_method::*;
-pub use cmd_export_abi::*;
+pub use cmd_export_package_schema::*;
 pub use cmd_generate_key_pair::*;
 pub use cmd_mint::*;
 pub use cmd_new_account::*;
@@ -62,11 +62,10 @@ use radix_engine::transaction::TransactionResult;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::wasm::*;
-use radix_engine_constants::*;
-use radix_engine_interface::abi;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::network::NetworkDefinition;
+use radix_engine_interface::schema::PackageSchema;
 use radix_engine_stores::rocks_db::RadixEngineDB;
 use std::env;
 use std::fs;
@@ -98,7 +97,7 @@ impl ResimCli {
 pub enum Command {
     CallFunction(CallFunction),
     CallMethod(CallMethod),
-    ExportAbi(ExportAbi),
+    ExportPackageSchema(ExportPackageSchema),
     GenerateKeyPair(GenerateKeyPair),
     Mint(crate::resim::cmd_mint::Mint),
     NewAccount(NewAccount),
@@ -127,7 +126,7 @@ pub fn run() -> Result<(), Error> {
     match cli.command {
         Command::CallFunction(cmd) => cmd.run(&mut out),
         Command::CallMethod(cmd) => cmd.run(&mut out),
-        Command::ExportAbi(cmd) => cmd.run(&mut out),
+        Command::ExportPackageSchema(cmd) => cmd.run(&mut out),
         Command::GenerateKeyPair(cmd) => cmd.run(&mut out),
         Command::Mint(cmd) => cmd.run(&mut out),
         Command::NewAccount(cmd) => cmd.run(&mut out),
@@ -299,32 +298,19 @@ pub fn get_signing_keys(
     Ok(private_keys)
 }
 
-pub fn export_abi(
-    package_address: PackageAddress,
-    blueprint_name: &str,
-) -> Result<abi::BlueprintAbi, Error> {
-    let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
-    let substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
-    radix_engine::system::package::export_abi(&substate_store, package_address, blueprint_name)
-        .map_err(Error::AbiExportError)
+pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageSchema, Error> {
+    todo!()
 }
 
-pub fn export_abi_by_component(
+pub fn get_blueprint(
     component_address: ComponentAddress,
-) -> Result<abi::BlueprintAbi, Error> {
+) -> Result<(PackageAddress, String), Error> {
     match component_address {
         ComponentAddress::Account(..)
         | ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
         | ComponentAddress::EddsaEd25519VirtualAccount(..)
         | ComponentAddress::Normal(..) => {
-            let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
-            let substate_store =
-                RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
-            radix_engine::system::package::export_abi_by_component(
-                &substate_store,
-                component_address,
-            )
-            .map_err(Error::AbiExportError)
+            todo!()
         }
 
         _ => todo!("Unsupported native ABI."),

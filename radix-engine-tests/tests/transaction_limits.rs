@@ -25,9 +25,6 @@ fn transaction_limit_call_frame_memory_exceeded() {
         generate_single_function_abi(
             "Test",
             "f",
-            Type::Tuple {
-                element_types: vec![],
-            },
         ),
         BTreeMap::new(),
         BTreeMap::new(),

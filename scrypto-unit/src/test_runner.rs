@@ -21,8 +21,7 @@ use radix_engine::transaction::{
     PreviewResult, TransactionReceipt, TransactionResult,
 };
 use radix_engine::types::*;
-use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
-use radix_engine_constants::*;
+use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig}; 
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::types::{RENodeId, VaultOffset};
 use radix_engine_interface::api::ClientPackageApi;
@@ -36,7 +35,11 @@ use radix_engine_interface::blueprints::epoch_manager::{
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{EPOCH_MANAGER, FAUCET_COMPONENT};
+use radix_engine_interface::data::manifest::model::ManifestExpression;
+use radix_engine_interface::data::manifest::{  manifest_encode};
 use radix_engine_interface::math::Decimal;
+use radix_engine_interface::network::NetworkDefinition;
+use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
 use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
@@ -45,8 +48,6 @@ use scrypto::component::Mutability;
 use scrypto::component::Mutability::*;
 use scrypto::NonFungibleData;
 use transaction::builder::ManifestBuilder;
-use transaction::data::model::ManifestExpression;
-use transaction::data::{manifest_args, manifest_encode};
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::{AuthZoneParams, PreviewIntent, TestTransaction};
 use transaction::model::{Executable, Instruction, SystemTransaction, TransactionManifest};
@@ -55,7 +56,7 @@ use transaction::validation::TestIntentHashManager;
 pub struct Compile;
 
 impl Compile {
-    pub fn compile<P: AsRef<Path>>(package_dir: P) -> (Vec<u8>, BTreeMap<String, BlueprintAbi>) {
+    pub fn compile<P: AsRef<Path>>(package_dir: P) -> (Vec<u8>, PackageSchema) {
         // Build
         let status = Command::new("cargo")
             .current_dir(package_dir.as_ref())
@@ -537,7 +538,7 @@ impl TestRunner {
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .publish_package(code, abi, royalty_config, metadata, access_rules)
+            .publish_package(code, schema, royalty_config, metadata, access_rules)
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -553,7 +554,7 @@ impl TestRunner {
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .publish_package_with_owner(code, abi, owner_badge)
+            .publish_package_with_owner(code, schema, owner_badge)
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -668,20 +669,6 @@ impl TestRunner {
             network,
             preview_intent,
         )
-    }
-
-    pub fn export_abi(
-        &mut self,
-        package_address: PackageAddress,
-        blueprint_name: &str,
-    ) -> BlueprintAbi {
-        export_abi(&self.substate_store, package_address, blueprint_name)
-            .expect("Failed to export ABI")
-    }
-
-    pub fn export_abi_by_component(&mut self, component_address: ComponentAddress) -> BlueprintAbi {
-        export_abi_by_component(&self.substate_store, component_address)
-            .expect("Failed to export ABI")
     }
 
     pub fn lock_resource_auth(
@@ -1201,31 +1188,11 @@ pub fn get_cargo_target_directory(manifest_path: impl AsRef<OsStr>) -> String {
     }
 }
 
-pub fn generate_single_function_abi(
-    blueprint_name: &str,
-    function_name: &str,
-    output_type: Type,
-) -> BTreeMap<String, BlueprintAbi> {
-    let mut blueprint_abis = BTreeMap::new();
-    blueprint_abis.insert(
-        blueprint_name.to_string(),
-        BlueprintAbi {
-            structure: Type::Tuple {
-                element_types: vec![],
-            },
-            fns: vec![Fn {
-                ident: function_name.to_string(),
-                mutability: Option::None,
-                input: Type::Struct {
-                    name: "Any".to_string(),
-                    fields: Fields::Named { named: vec![] },
-                },
-                output: output_type,
-                export_name: format!("{}_{}", blueprint_name, function_name),
-            }],
-        },
-    );
-    blueprint_abis
+pub fn generate_single_function_abi(_blueprint_name: &str, _function_name: &str) -> PackageSchema {
+    // FIXME implement this
+    PackageSchema {
+        blueprints: BTreeMap::new(),
+    }
 }
 
 #[derive(NonFungibleData)]

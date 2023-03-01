@@ -35,6 +35,7 @@ use radix_engine_interface::schema::PackageSchema;
 
 // FIXME add validation!
 
+#[allow(unused_variables)]
 fn validate_input(
     schema: &PackageSchema,
     fn_identifier: &FnIdentifier,
@@ -44,6 +45,7 @@ fn validate_input(
     Ok("todo!".to_string())
 }
 
+#[allow(unused_variables)]
 fn validate_output(
     schema: &PackageSchema,
     fn_identifier: &FnIdentifier,
@@ -254,12 +256,6 @@ impl ExecutableInvocation for FunctionInvocation {
             }
         };
 
-        let executor = ScryptoExecutor {
-            fn_identifier: self.fn_identifier,
-            export_name,
-            receiver: None,
-        };
-
         // TODO: remove? currently needed for `Runtime::package_address()` API.
         node_refs_to_copy.insert(RENodeId::GlobalPackage(self.fn_identifier.package_address));
 
@@ -270,7 +266,11 @@ impl ExecutableInvocation for FunctionInvocation {
                 node_refs_to_copy,
             },
             args: value,
-            executor,
+            executor: ScryptoExecutor {
+                fn_identifier: self.fn_identifier,
+                export_name,
+                receiver: None,
+            },
         };
 
         Ok(resolved)

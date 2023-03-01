@@ -8,11 +8,11 @@ use radix_engine::types::*;
 use radix_engine_interface::address::AddressDisplayContext;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::package::PackageCodeSubstate;
+use radix_engine_interface::api::types::IndexedScryptoValue;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::blueprints::resource::{
     AccessRules, LiquidFungibleResource, LiquidNonFungibleResource,
 };
-use radix_engine_interface::data::{IndexedScryptoValue, ScryptoValueDisplayContext};
 use radix_engine_interface::network::NetworkDefinition;
 use std::collections::VecDeque;
 use utils::ContextualDisplay;
