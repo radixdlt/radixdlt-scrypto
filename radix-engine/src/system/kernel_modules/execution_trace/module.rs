@@ -35,7 +35,7 @@ pub struct ExecutionTraceModule {
     traced_kernel_call_inputs_stack: Vec<(ResourceSummary, KernelCallOrigin, usize)>,
 
     /// A mapping of complete KernelCallTrace stacks (\w both inputs and outputs), indexed by depth.
-    kernel_call_traces_stacks: HashMap<usize, Vec<KernelCallTrace>>,
+    kernel_call_traces_stacks: IndexMap<usize, Vec<KernelCallTrace>>,
 
     /// Vault operations: (Caller, Vault ID, operation)
     vault_ops: Vec<(TraceActor, VaultId, VaultOp)>,
@@ -131,8 +131,8 @@ impl ProofSnapshot {
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct ResourceSummary {
-    pub buckets: HashMap<BucketId, BucketSnapshot>,
-    pub proofs: HashMap<ProofId, ProofSnapshot>,
+    pub buckets: IndexMap<BucketId, BucketSnapshot>,
+    pub proofs: IndexMap<ProofId, ProofSnapshot>,
 }
 
 // TODO: Clean up
@@ -165,8 +165,8 @@ pub enum KernelCallOrigin {
 impl ResourceSummary {
     pub fn new_empty() -> Self {
         Self {
-            buckets: HashMap::new(),
-            proofs: HashMap::new(),
+            buckets: index_map_new(),
+            proofs: index_map_new(),
         }
     }
 
@@ -178,8 +178,8 @@ impl ResourceSummary {
         api: &mut Y,
         call_frame_update: &CallFrameUpdate,
     ) -> Self {
-        let mut buckets = HashMap::new();
-        let mut proofs = HashMap::new();
+        let mut buckets = index_map_new();
+        let mut proofs = index_map_new();
         for node_id in &call_frame_update.nodes_to_move {
             match &node_id {
                 RENodeId::Bucket(bucket_id) => {
@@ -199,8 +199,8 @@ impl ResourceSummary {
     }
 
     pub fn from_node_id<Y: KernelModuleApi<RuntimeError>>(api: &mut Y, node_id: &RENodeId) -> Self {
-        let mut buckets = HashMap::new();
-        let mut proofs = HashMap::new();
+        let mut buckets = index_map_new();
+        let mut proofs = index_map_new();
         match node_id {
             RENodeId::Bucket(bucket_id) => {
                 if let Some(x) = api.kernel_read_bucket(*bucket_id) {
@@ -310,7 +310,7 @@ impl ExecutionTraceModule {
             current_transaction_index: 0,
             current_kernel_call_depth: 0,
             traced_kernel_call_inputs_stack: vec![],
-            kernel_call_traces_stacks: HashMap::new(),
+            kernel_call_traces_stacks: index_map_new(),
             vault_ops: Vec::new(),
         }
     }
@@ -533,7 +533,7 @@ impl ExecutionTraceModule {
 
     pub fn collect_events(mut self) -> (Vec<(TraceActor, VaultId, VaultOp)>, Vec<TrackedEvent>) {
         let mut events = Vec::new();
-        for (_, traces) in self.kernel_call_traces_stacks.drain() {
+        for (_, traces) in self.kernel_call_traces_stacks.drain(..) {
             // Emit an output event for each "root" kernel call trace
             for trace in traces {
                 events.push(TrackedEvent::KernelCallTrace(trace));
@@ -606,8 +606,8 @@ impl ExecutionTraceReceipt {
     ) -> Self {
         // TODO: Might want to change the key from being a ComponentId to being an enum to
         //       accommodate for accounts
-        let mut vault_changes = HashMap::<RENodeId, HashMap<VaultId, Decimal>>::new();
-        let mut vault_locked_by = HashMap::<VaultId, RENodeId>::new();
+        let mut vault_changes = index_map_new::<RENodeId, IndexMap<VaultId, Decimal>>();
+        let mut vault_locked_by = index_map_new::<VaultId, RENodeId>();
         for (actor, vault_id, vault_op) in ops {
             if let TraceActor::Actor(Actor {
                 identifier: ActorIdentifier::Method(method),
