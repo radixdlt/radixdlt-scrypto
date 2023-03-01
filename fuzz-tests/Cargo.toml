@@ -10,6 +10,10 @@ cargo-fuzz = true
 [dependencies]
 libfuzzer-sys = { version = "0.4", optional = true }
 afl = { version = "0.12.14", optional = true }
+clap = { version = "4.1.7", optional = true }
+rand = { version = "0.8.5", optional = true }
+rand_chacha = { version = "0.3.1", optional = true }
+log = { version = "0.4.17", optional = true }
 sbor = { path = "../sbor", default-features = false }
 radix-engine = { path = "../radix-engine", default-features = false }
 radix-engine-constants = { path = "../radix-engine-constants" }
@@ -39,5 +43,8 @@ wasmer = ["radix-engine/wasmer"]
 cpu_ram_metrics = ["radix-engine/cpu_ram_metrics"]
 flamegraph = []
 
+simple-fuzzer = [ "clap", "rand", "rand_chacha", "log" ]
+
 #fuzzer = [ "libfuzzer-sys" ]
-fuzzer = [ "afl" ]
+#fuzzer = [ "afl" ]
+fuzzer = [ "simple-fuzzer" ]
