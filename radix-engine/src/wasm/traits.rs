@@ -97,6 +97,12 @@ pub trait WasmRuntime {
         schema_hash: Vec<u8>,
         event: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>>;
+
+    fn log_message(
+        &mut self,
+        level: Vec<u8>,
+        message: Vec<u8>,
+    ) -> Result<(), InvokeError<WasmRuntimeError>>;
 }
 
 /// Represents an instantiated, invokable Scrypto module.

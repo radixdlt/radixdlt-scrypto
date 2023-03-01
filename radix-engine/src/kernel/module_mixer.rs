@@ -1,4 +1,4 @@
-use super::actor::ResolvedActor;
+use super::actor::Actor;
 use super::kernel_api::KernelModuleApi;
 use crate::errors::*;
 use crate::kernel::call_frame::CallFrameUpdate;
@@ -22,13 +22,12 @@ use crate::transaction::ExecutionConfig;
 use crate::types::api::unsafe_api::ClientCostingReason;
 use bitflags::bitflags;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::InvocationIdentifier;
-use radix_engine_interface::api::types::LockHandle;
 use radix_engine_interface::api::types::NodeModuleId;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::types::RENodeType;
 use radix_engine_interface::api::types::SubstateOffset;
 use radix_engine_interface::api::types::VaultId;
+use radix_engine_interface::api::types::{InvocationDebugIdentifier, LockHandle};
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::ScryptoValue;
@@ -106,8 +105,9 @@ impl KernelModuleMixer {
             transaction_limits: TransactionLimitsModule::new(TransactionLimitsConfig {
                 max_wasm_memory: execution_config.max_wasm_mem_per_transaction,
                 max_wasm_memory_per_call_frame: execution_config.max_wasm_mem_per_call_frame,
-                max_substate_reads: execution_config.max_substate_reads_per_transaction,
-                max_substate_writes: execution_config.max_substate_writes_per_transaction,
+                max_substate_read_count: execution_config.max_substate_reads_per_transaction,
+                max_substate_write_count: execution_config.max_substate_writes_per_transaction,
+                max_substate_size: execution_config.max_substate_size,
                 max_invoke_payload_size: execution_config.max_invoke_input_size,
             }),
             execution_trace: ExecutionTraceModule::new(
@@ -208,7 +208,7 @@ impl KernelModule for KernelModuleMixer {
 
     fn before_invoke<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        identifier: &InvocationIdentifier,
+        identifier: &InvocationDebugIdentifier,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
@@ -244,7 +244,7 @@ impl KernelModule for KernelModuleMixer {
 
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        actor: &Option<ResolvedActor>,
+        actor: &Option<Actor>,
         update: &mut CallFrameUpdate,
         args: &ScryptoValue,
     ) -> Result<(), RuntimeError> {
@@ -281,7 +281,7 @@ impl KernelModule for KernelModuleMixer {
 
     fn on_execution_start<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        caller: &Option<ResolvedActor>,
+        caller: &Option<Actor>,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
@@ -316,7 +316,7 @@ impl KernelModule for KernelModuleMixer {
 
     fn on_execution_finish<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        caller: &Option<ResolvedActor>,
+        caller: &Option<Actor>,
         update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;

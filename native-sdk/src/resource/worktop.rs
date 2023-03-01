@@ -1,6 +1,7 @@
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 use radix_engine_interface::data::{
     scrypto_decode, scrypto_encode, ScryptoCategorize, ScryptoDecode,
 };
@@ -12,6 +13,20 @@ use sbor::rust::vec::Vec;
 pub struct Worktop;
 
 impl Worktop {
+    pub fn sys_drop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(api: &mut Y) -> Result<(), E>
+    where
+        Y: ClientApi<E>,
+    {
+        let _rtn = api.call_function(
+            RESOURCE_MANAGER_PACKAGE,
+            WORKTOP_BLUEPRINT,
+            WORKTOP_DROP_IDENT,
+            scrypto_encode(&WorktopDropInput {}).unwrap(),
+        )?;
+
+        Ok(())
+    }
+
     pub fn sys_put<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         bucket: Bucket,
         api: &mut Y,

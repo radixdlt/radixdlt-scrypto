@@ -1,7 +1,9 @@
 use crate::blueprints::event_store::EventStoreNativePackage;
+use crate::blueprints::logger::LoggerNativePackage;
 use crate::blueprints::resource::NonFungibleSubstate;
 use crate::errors::RuntimeError;
 use crate::errors::{KernelError, SystemError};
+use crate::kernel::actor::ActorIdentifier;
 use crate::kernel::kernel::Kernel;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
@@ -10,7 +12,7 @@ use crate::kernel::module::KernelModule;
 use crate::kernel::module_mixer::KernelModuleMixer;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
+use crate::system::node_modules::access_rules::MethodAccessRulesChainSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
@@ -21,13 +23,14 @@ use radix_engine_interface::api::component::{
     KeyValueStoreEntrySubstate, TypeInfoSubstate,
 };
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::{package::*, ClientEventApi};
+use radix_engine_interface::api::{types::*, ClientLoggerApi};
 use radix_engine_interface::api::{
     ClientActorApi, ClientApi, ClientComponentApi, ClientNodeApi, ClientPackageApi,
     ClientSubstateApi, ClientUnsafeApi,
 };
+use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RADIX_TOKEN;
 use radix_engine_interface::data::model::Own;
@@ -61,9 +64,12 @@ where
             }
         }
 
-        let module_id = if let Some(receiver) = self.kernel_get_current_actor().unwrap().receiver {
-            receiver.1
+        let module_id = if let ActorIdentifier::Method(method) =
+            self.kernel_get_current_actor().unwrap().identifier
+        {
+            method.1
         } else {
+            // TODO: Remove this
             NodeModuleId::SELF
         };
 
@@ -114,7 +120,7 @@ where
     W: WasmEngine,
 {
     fn get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
-        Ok(self.kernel_get_current_actor().unwrap().identifier)
+        Ok(self.kernel_get_current_actor().unwrap().fn_identifier)
     }
 }
 
@@ -227,14 +233,14 @@ where
         let metadata_substate = MetadataSubstate { metadata };
 
         // Create auth substates
-        let auth_substate = ObjectAccessRulesChainSubstate { access_rules_chain };
+        let auth_substate = MethodAccessRulesChainSubstate { access_rules_chain };
 
         // Create component RENode
         // FIXME: support native blueprints
         let package_address = self
             .kernel_get_current_actor()
             .unwrap()
-            .identifier
+            .fn_identifier
             .package_address();
 
         let blueprint_ident = blueprint_ident.to_string();
@@ -312,7 +318,7 @@ where
             NodeModuleId::AccessRules,
             SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
         )) {
-            let access_rules_substate: ObjectAccessRulesChainSubstate = access_rules.into();
+            let access_rules_substate: MethodAccessRulesChainSubstate = access_rules.into();
             module_init.insert(
                 NodeModuleId::AccessRules,
                 RENodeModuleInit::ObjectAccessRulesChain(access_rules_substate),
@@ -377,8 +383,7 @@ where
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         let invocation = MethodInvocation {
-            receiver: MethodReceiver(receiver, node_module_id),
-            fn_name: method_name.to_string(),
+            identifier: MethodIdentifier(receiver, node_module_id, method_name.to_string()),
             args,
         };
 
@@ -460,6 +465,15 @@ where
         event_data: Vec<u8>,
     ) -> Result<(), RuntimeError> {
         EventStoreNativePackage::emit_raw_event(schema_hash, event_data, self)
+    }
+}
+
+impl<'g, 's, W> ClientLoggerApi<RuntimeError> for Kernel<'g, 's, W>
+where
+    W: WasmEngine,
+{
+    fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
+        LoggerNativePackage::log_message(level, message, self)
     }
 }
 

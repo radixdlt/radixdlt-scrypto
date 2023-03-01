@@ -1,4 +1,4 @@
-use super::actor::ResolvedActor;
+use super::actor::Actor;
 use super::call_frame::CallFrameUpdate;
 use super::call_frame::RENodeVisibilityOrigin;
 use super::heap::HeapRENode;
@@ -110,7 +110,7 @@ pub struct TemporaryResolvedInvocation<E: Executor> {
     pub update: CallFrameUpdate,
 
     // TODO: Make these two RENodes / Substates
-    pub resolved_actor: ResolvedActor,
+    pub resolved_actor: Actor,
     pub args: ScryptoValue,
 }
 
@@ -142,7 +142,7 @@ pub trait KernelInternalApi {
     fn kernel_get_current_depth(&self) -> usize;
 
     // TODO: Remove
-    fn kernel_get_current_actor(&self) -> Option<ResolvedActor>;
+    fn kernel_get_current_actor(&self) -> Option<Actor>;
 
     /* Super unstable interface, specifically for `ExecutionTrace` kernel module */
     fn kernel_read_bucket(&mut self, bucket_id: BucketId) -> Option<BucketSnapshot>;

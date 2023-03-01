@@ -1,5 +1,5 @@
 use crate::errors::{ApplicationError, RuntimeError};
-use crate::kernel::actor::ResolvedActor;
+use crate::kernel::actor::{Actor, ActorIdentifier};
 use crate::kernel::kernel_api::{KernelInternalApi, KernelModuleApi};
 use crate::system::events::EventError;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
@@ -46,14 +46,15 @@ impl EventStoreNativePackage {
 
         // Construct the event type identifier based on the current actor
         let event_type_id = match api.kernel_get_current_actor() {
-            Some(ResolvedActor {
-                receiver: Some(MethodReceiver(node_id, node_module_id)),
+            Some(Actor {
+                identifier: ActorIdentifier::Method(MethodIdentifier(node_id, node_module_id, ..)),
                 ..
             }) => Ok(EventTypeIdentifier(node_id, node_module_id, schema_hash)),
-            Some(ResolvedActor {
-                identifier: FnIdentifier {
-                    package_address, ..
-                },
+            Some(Actor {
+                identifier:
+                    ActorIdentifier::Function(FnIdentifier {
+                        package_address, ..
+                    }),
                 ..
             }) => Ok(EventTypeIdentifier(
                 RENodeId::GlobalPackage(package_address),

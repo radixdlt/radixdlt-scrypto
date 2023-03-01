@@ -116,7 +116,7 @@ fn can_lock_package_metadata_with_owner() {
         .set_method_access_rule(
             Address::Package(package_address),
             0,
-            AccessRuleKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
+            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
             AccessRule::DenyAll,
         )
         .build();

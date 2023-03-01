@@ -4,7 +4,7 @@ use crate::errors::{ApplicationError, InterpreterError, RuntimeError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
-use crate::system::node_modules::access_rules::ObjectAccessRulesChainSubstate;
+use crate::system::node_modules::access_rules::MethodAccessRulesChainSubstate;
 use native_sdk::resource::{SysBucket, Vault};
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::substate_api::LockFlags;
@@ -258,7 +258,7 @@ impl AccessControllerNativePackage {
         let mut node_modules = BTreeMap::new();
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::ObjectAccessRulesChain(ObjectAccessRulesChainSubstate {
+            RENodeModuleInit::ObjectAccessRulesChain(MethodAccessRulesChainSubstate {
                 access_rules_chain: [access_rules_from_rule_set(input.rule_set)].into(),
             }),
         );
@@ -620,21 +620,21 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
     let primary_group = "primary";
     access_rules.set_group_access_rule(primary_group.into(), rule_set.primary_role.clone());
     access_rules.set_method_access_rule_to_group(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             ACCESS_CONTROLLER_CREATE_PROOF_IDENT.to_string(),
         ),
         primary_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT.to_string(),
         ),
         primary_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
         ),
@@ -645,35 +645,35 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
     let recovery_group = "recovery";
     access_rules.set_group_access_rule(recovery_group.into(), rule_set.recovery_role.clone());
     access_rules.set_method_access_rule_to_group(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT.to_string(),
         ),
         recovery_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT.to_string(),
         ),
         recovery_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
         ),
         recovery_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE.to_string(),
         ),
         recovery_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE.to_string(),
         ),
@@ -689,7 +689,7 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
 
     // Other methods
     access_rules.set_method_access_rule(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             ACCESS_CONTROLLER_STOP_TIMED_RECOVERY.to_string(),
         ),
@@ -703,14 +703,14 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
         ),
     );
     access_rules.set_method_access_rule(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
         ),
         access_rule_or([rule_set.recovery_role, rule_set.confirmation_role.clone()].into()),
     );
     access_rules.set_method_access_rule(
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::SELF,
             ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
         ),

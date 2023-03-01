@@ -270,7 +270,7 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
             .set_method_access_rule(
                 Address::Component(test_runner.component_address),
                 0,
-                AccessRuleKey::new(NodeModuleId::SELF, "borrow_funds".to_string()),
+                MethodKey::new(NodeModuleId::SELF, "borrow_funds".to_string()),
                 rule!(deny_all),
             )
             .build(),
@@ -288,23 +288,23 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
 fn user_can_not_mutate_auth_on_methods_that_control_auth() {
     // Arrange
     for access_rule_key in [
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::AccessRules,
             ACCESS_RULES_GET_LENGTH_IDENT.to_string(),
         ),
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::AccessRules,
             ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT.to_string(),
         ),
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::AccessRules,
             ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT.to_string(),
         ),
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::AccessRules,
             ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT.to_string(),
         ),
-        AccessRuleKey::new(
+        MethodKey::new(
             NodeModuleId::AccessRules,
             ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT.to_string(),
         ),
@@ -315,10 +315,10 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
             NonFungibleGlobalId::from_public_key(&public_key);
 
         let access_rules = vec![manifest_decode::<AccessRules>(&manifest_args!(
-            HashMap::<AccessRuleKey, AccessRuleEntry>::new(),
+            HashMap::<MethodKey, AccessRuleEntry>::new(),
             HashMap::<String, AccessRule>::new(),
             AccessRule::AllowAll,
-            HashMap::<AccessRuleKey, AccessRule>::new(),
+            HashMap::<MethodKey, AccessRule>::new(),
             HashMap::<String, AccessRule>::new(),
             AccessRule::AllowAll
         ))
@@ -421,7 +421,7 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
     };
 
     let manifest = ManifestBuilder::new()
-        .withdraw_all_from_account(account_component, RADIX_TOKEN)
+        .withdraw_from_account(account_component, RADIX_TOKEN, 1.into())
         .call_method(
             component_address,
             "assert_access_rule",
@@ -473,7 +473,7 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
     };
 
     let manifest = ManifestBuilder::new()
-        .withdraw_all_from_account(account_component, RADIX_TOKEN)
+        .withdraw_from_account(account_component, RADIX_TOKEN, 1.into())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket| {
             builder.call_method(
                 component_address,
