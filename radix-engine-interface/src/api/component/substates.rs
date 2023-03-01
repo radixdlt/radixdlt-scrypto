@@ -1,6 +1,7 @@
 use crate::api::types::*;
-use crate::data::model::Own;
-use radix_engine_derive::*;
+use crate::data::scrypto::model::Own;
+use crate::data::scrypto::model::*;
+use crate::*;
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq)]
 pub struct ComponentStateSubstate {

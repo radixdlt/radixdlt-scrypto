@@ -1,10 +1,13 @@
 use crate::abi::*;
 use crate::api::types::*;
-use crate::data::model::Own;
-use crate::data::ScryptoSchema;
-use radix_engine_derive::*;
+use crate::data::scrypto::model::Own;
+use crate::data::scrypto::model::*;
+use crate::data::scrypto::ScryptoSchema;
+use crate::*;
 use sbor::rust::collections::*;
+use sbor::rust::fmt;
 use sbor::rust::fmt::{Debug, Formatter};
+use sbor::LocalTypeIndex;
 
 pub const NATIVE_PACKAGE_CODE_ID: u8 = 0u8;
 pub const RESOURCE_MANAGER_PACKAGE_CODE_ID: u8 = 1u8;
@@ -49,7 +52,7 @@ pub struct PackageInfoSubstate {
 pub struct BlueprintSchema {
     /// For each offset, there is a [`LocalTypeIndex`]
     pub substate_schemas: BTreeMap<u8, LocalTypeIndex>,
-    /// For each function, there is a [`FunctionInfo`]
+    /// For each function, there is a [`FunctionSchema`]
     pub function_schemas: BTreeMap<String, FunctionSchema>,
 }
 

@@ -7,7 +7,7 @@ use sbor::*;
 use crate::*;
 
 /// Royalty rules
-#[derive(Debug, Clone, PartialEq, Eq, Sbor, LegacyDescribe)]
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub struct RoyaltyConfig {
     pub rules: HashMap<String, u32>,
     pub default_rule: u32,

@@ -1,14 +1,12 @@
-use crate::api::component::ComponentAddress;
-use crate::api::types::*;
 use crate::blueprints::resource::*;
+use crate::data::manifest::model::*;
+use crate::data::scrypto::model::*;
 use crate::*;
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
 use scrypto_abi::BlueprintAbi;
-use transaction_data::model::ManifestBucket;
-use transaction_data::*;
 
 pub struct EpochManagerAbi;
 

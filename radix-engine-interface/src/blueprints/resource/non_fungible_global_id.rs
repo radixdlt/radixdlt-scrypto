@@ -1,9 +1,8 @@
 use crate::address::*;
-use crate::blueprints::resource::ResourceAddress;
-use crate::blueprints::resource::*;
 use crate::constants::*;
 use crate::crypto::*;
-use radix_engine_derive::*;
+use crate::data::scrypto::model::*;
+use crate::*;
 use sbor::rust::fmt;
 use sbor::rust::format;
 use sbor::rust::str::FromStr;
@@ -11,7 +10,6 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use scrypto_abi::LegacyDescribe;
 use scrypto_abi::Type;
-use transaction_data::*;
 use utils::ContextualDisplay;
 
 /// Represents the global id of a non-fungible.

@@ -1,5 +1,5 @@
-use crate::api::types::*;
 use crate::blueprints::resource::*;
+use crate::data::scrypto::model::*;
 use crate::math::Decimal;
 use crate::*;
 use sbor::rust::collections::{BTreeMap, BTreeSet};

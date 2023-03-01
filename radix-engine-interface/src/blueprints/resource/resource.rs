@@ -1,7 +1,6 @@
+use crate::data::scrypto::model::*;
 use crate::math::*;
 use crate::*;
-use radix_engine_interface::api::types::*;
-use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::collections::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

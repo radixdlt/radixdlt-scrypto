@@ -1,11 +1,11 @@
 use crate::blueprints::resource::*;
+use crate::data::scrypto::model::*;
 use crate::math::*;
 use crate::*;
 use sbor::rust::collections::{BTreeMap, BTreeSet};
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use scrypto_abi::BlueprintAbi;
-use transaction_data::*;
 
 pub struct ResourceManagerAbi;
 
@@ -30,7 +30,6 @@ pub const RESOURCE_MANAGER_BLUEPRINT: &str = "ResourceManager";
     ManifestCategorize,
     ManifestEncode,
     ManifestDecode,
-    LegacyDescribe,
 )]
 pub enum ResourceMethodAuthKey {
     Mint,

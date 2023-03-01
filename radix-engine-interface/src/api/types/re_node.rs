@@ -1,11 +1,7 @@
 use super::*;
-use crate::api::component::ComponentAddress;
-use crate::api::package::PackageAddress;
-use crate::blueprints::resource::NonFungibleLocalId;
-use crate::blueprints::resource::ResourceAddress;
+use crate::data::scrypto::model::*;
 use crate::*;
 use sbor::rust::fmt;
-use transaction_data::*;
 
 // TODO: Remove when better type system implemented
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor)]
@@ -48,7 +44,6 @@ pub enum RENodeType {
     ManifestCategorize,
     ManifestEncode,
     ManifestDecode,
-    LegacyDescribe,
 )]
 pub enum RENodeId {
     Bucket(BucketId),
@@ -198,7 +193,6 @@ impl Into<ResourceAddress> for RENodeId {
     ManifestCategorize,
     ManifestEncode,
     ManifestDecode,
-    LegacyDescribe,
 )]
 pub enum NodeModuleId {
     SELF,

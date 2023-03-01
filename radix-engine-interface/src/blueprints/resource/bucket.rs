@@ -1,13 +1,14 @@
 use crate::abi::*;
 use crate::api::types::*;
-use crate::blueprints::resource::*;
-use crate::data::model::Own;
-use crate::data::ScryptoCustomTypeKind;
-use crate::data::ScryptoCustomValueKind;
+use crate::data::scrypto::model::Own;
+use crate::data::scrypto::model::*;
+use crate::data::scrypto::ScryptoCustomTypeKind;
+use crate::data::scrypto::ScryptoCustomValueKind;
 use crate::math::*;
 use crate::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
+use sbor::*;
 
 pub const BUCKET_BLUEPRINT: &str = "Bucket";
 
@@ -145,6 +146,7 @@ impl scrypto_abi::LegacyDescribe for Bucket {
 }
 
 impl Describe<ScryptoCustomTypeKind<GlobalTypeId>> for Bucket {
-    const TYPE_ID: GlobalTypeId =
-        GlobalTypeId::well_known(crate::data::well_known_scrypto_custom_types::OWN_BUCKET_ID);
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(
+        crate::data::scrypto::well_known_scrypto_custom_types::OWN_BUCKET_ID,
+    );
 }

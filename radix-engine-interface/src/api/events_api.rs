@@ -1,8 +1,7 @@
 use crate::abi::LegacyDescribe;
-use crate::data::ScryptoEncode;
+use crate::crypto::Hash;
+use crate::data::scrypto::ScryptoEncode;
 use crate::sbor::rust::vec::Vec;
-
-use super::types::Hash;
 
 pub trait ClientEventApi<E> {
     fn emit_event<T: ScryptoEncode + LegacyDescribe>(&mut self, event: T) -> Result<(), E>;

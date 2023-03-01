@@ -1,6 +1,7 @@
 use crate::blueprints::resource::AccessRuleNode::{AllOf, AnyOf};
 use crate::blueprints::resource::*;
-use crate::data::SchemaPath;
+use crate::data::scrypto::model::*;
+use crate::data::scrypto::SchemaPath;
 use crate::math::Decimal;
 use crate::*;
 use sbor::rust::borrow::ToOwned;
@@ -9,7 +10,6 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use scrypto_abi::{Fields, Type, Variant};
-use transaction_data::*;
 
 #[derive(
     Debug,
@@ -23,7 +23,6 @@ use transaction_data::*;
     ManifestCategorize,
     ManifestEncode,
     ManifestDecode,
-    LegacyDescribe,
 )]
 pub enum SoftDecimal {
     Static(Decimal),
@@ -61,7 +60,6 @@ impl From<&str> for SoftDecimal {
     ManifestCategorize,
     ManifestEncode,
     ManifestDecode,
-    LegacyDescribe,
 )]
 pub enum SoftCount {
     Static(u8),
@@ -99,7 +97,6 @@ impl From<&str> for SoftCount {
     ManifestCategorize,
     ManifestEncode,
     ManifestDecode,
-    LegacyDescribe,
 )]
 pub enum SoftResource {
     Static(ResourceAddress),
@@ -137,7 +134,6 @@ impl From<&str> for SoftResource {
     ManifestCategorize,
     ManifestEncode,
     ManifestDecode,
-    LegacyDescribe,
 )]
 pub enum SoftResourceOrNonFungible {
     StaticNonFungible(NonFungibleGlobalId),
@@ -182,7 +178,6 @@ impl From<&str> for SoftResourceOrNonFungible {
     ManifestCategorize,
     ManifestEncode,
     ManifestDecode,
-    LegacyDescribe,
 )]
 pub enum SoftResourceOrNonFungibleList {
     Static(Vec<SoftResourceOrNonFungible>),
@@ -224,7 +219,6 @@ where
     ManifestCategorize,
     ManifestEncode,
     ManifestDecode,
-    LegacyDescribe,
 )]
 pub enum ProofRule {
     Require(SoftResourceOrNonFungible),
@@ -363,7 +357,6 @@ where
     ManifestCategorize,
     ManifestEncode,
     ManifestDecode,
-    LegacyDescribe,
 )]
 pub enum AccessRule {
     AllowAll,

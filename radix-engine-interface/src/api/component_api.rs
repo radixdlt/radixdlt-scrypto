@@ -1,5 +1,6 @@
 use crate::api::types::*;
 use crate::blueprints::resource::AccessRules;
+use crate::data::scrypto::model::*;
 use sbor::rust::collections::*;
 use sbor::rust::vec::Vec;
 

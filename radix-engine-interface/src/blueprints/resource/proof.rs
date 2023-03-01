@@ -1,15 +1,17 @@
 use crate::abi::*;
 use crate::api::types::*;
 use crate::blueprints::resource::*;
-use crate::data::model::Own;
-use crate::data::ScryptoCustomTypeKind;
-use crate::data::ScryptoCustomValueKind;
+use crate::data::scrypto::model::Own;
+use crate::data::scrypto::model::*;
+use crate::data::scrypto::ScryptoCustomTypeKind;
+use crate::data::scrypto::ScryptoCustomValueKind;
 use crate::math::*;
 use crate::*;
 use sbor::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
+use sbor::*;
 
 pub const PROOF_BLUEPRINT: &str = "Proof";
 
@@ -139,6 +141,7 @@ impl scrypto_abi::LegacyDescribe for Proof {
 }
 
 impl Describe<ScryptoCustomTypeKind<GlobalTypeId>> for Proof {
-    const TYPE_ID: GlobalTypeId =
-        GlobalTypeId::well_known(crate::data::well_known_scrypto_custom_types::OWN_PROOF_ID);
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(
+        crate::data::scrypto::well_known_scrypto_custom_types::OWN_PROOF_ID,
+    );
 }

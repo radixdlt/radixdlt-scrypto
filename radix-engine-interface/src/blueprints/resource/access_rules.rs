@@ -8,7 +8,6 @@ use sbor::rust::collections::BTreeMap;
 use sbor::rust::str;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
-use transaction_data::*;
 
 use super::AccessRule;
 
@@ -24,7 +23,6 @@ use super::AccessRule;
     ManifestCategorize,
     ManifestEncode,
     ManifestDecode,
-    LegacyDescribe,
 )]
 pub struct FunctionKey {
     pub blueprint: String,
@@ -49,7 +47,6 @@ impl FunctionKey {
     ManifestCategorize,
     ManifestEncode,
     ManifestDecode,
-    LegacyDescribe,
 )]
 pub struct MethodKey {
     pub node_module_id: NodeModuleId,
@@ -77,7 +74,6 @@ impl MethodKey {
     ManifestCategorize,
     ManifestEncode,
     ManifestDecode,
-    LegacyDescribe,
 )]
 pub enum AccessRuleEntry {
     AccessRule(AccessRule),
@@ -98,15 +94,7 @@ impl From<String> for AccessRuleEntry {
 
 /// Method authorization rules for a component
 #[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    ScryptoSbor,
-    ManifestCategorize,
-    ManifestEncode,
-    ManifestDecode,
-    LegacyDescribe,
+    Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
 )]
 pub struct AccessRules {
     method_auth: BTreeMap<MethodKey, AccessRuleEntry>,

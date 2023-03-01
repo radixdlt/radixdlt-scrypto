@@ -1,5 +1,5 @@
+use crate::data::scrypto::*;
 use radix_engine_interface::blueprints::resource::NonFungibleLocalId;
-use radix_engine_interface::data::*;
 use radix_engine_interface::*;
 use sbor::rust::boxed::Box;
 use sbor::rust::cell::RefCell;

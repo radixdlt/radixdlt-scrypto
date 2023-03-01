@@ -1,20 +1,20 @@
-use criterion::{criterion_group, criterion_main, Criterion};
-use radix_engine_interface::data::{
+use crate::data::scrypto::{
     match_schema_with_value, scrypto_decode, scrypto_encode, ScryptoCustomTypeExtension,
     ScryptoValue,
 };
+use criterion::{criterion_group, criterion_main, Criterion};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use sbor::*;
 
-#[derive(Debug, Clone, Sbor, LegacyDescribe)]
+#[derive(Debug, Clone, Sbor)]
 pub enum SimpleEnum {
     Unit,
     Unnamed(u32),
     Named { x: u32, y: u32 },
 }
 
-#[derive(Debug, Clone, Sbor, LegacyDescribe)]
+#[derive(Debug, Clone, Sbor)]
 pub struct SimpleStruct {
     pub number: u64,
     pub string: String,

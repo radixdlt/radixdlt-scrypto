@@ -1,7 +1,7 @@
-use crate::api::types::*;
-use crate::data::IndexedScryptoValue;
-use radix_engine_derive::*;
-use radix_engine_interface::data::ScryptoValue;
+use crate::data::scrypto::model::*;
+use crate::data::scrypto::IndexedScryptoValue;
+use crate::data::scrypto::ScryptoValue;
+use crate::*;
 use sbor::rust::collections::*;
 
 // TODO: Josh is leaning towards keeping `Entry::Key` as part of the substate key.
@@ -17,7 +17,7 @@ impl KeyValueStoreEntrySubstate {
         matches!(self, Self::None)
     }
 
-    pub fn owned_node_ids(&self) -> Vec<RENodeId> {
+    pub fn owned_node_ids(&self) -> Vec<Own> {
         match self {
             KeyValueStoreEntrySubstate::Some(k, v) => {
                 let (_, _, mut owns1, _) = IndexedScryptoValue::from_value(k.clone()).unpack();
@@ -29,7 +29,7 @@ impl KeyValueStoreEntrySubstate {
         }
     }
 
-    pub fn global_references(&self) -> HashSet<RENodeId> {
+    pub fn global_references(&self) -> HashSet<Address> {
         match self {
             KeyValueStoreEntrySubstate::Some(k, v) => {
                 let (_, _, _, mut refs1) = IndexedScryptoValue::from_value(k.clone()).unpack();

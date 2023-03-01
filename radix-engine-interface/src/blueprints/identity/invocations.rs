@@ -4,7 +4,6 @@ use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use scrypto_abi::BlueprintAbi;
-use transaction_data::*;
 
 pub struct IdentityAbi;
 

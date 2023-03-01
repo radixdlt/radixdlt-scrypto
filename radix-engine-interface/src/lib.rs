@@ -6,44 +6,49 @@ compile_error!("Either feature `std` or `alloc` must be enabled for this crate."
 #[cfg(all(feature = "std", feature = "alloc"))]
 compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
-/// RE Scrypto ABI.
-pub mod abi {
-    pub use scrypto_abi::*;
-}
-/// RE addresses.
-pub mod address;
-/// RE APIs
+/// RE client APIs
 pub mod api;
+/// RE blueprints interface
+pub mod blueprints;
 /// RE constants
 pub mod constants;
-/// RE crypto library
-pub mod crypto;
-/// RE data model.
-pub mod data;
 /// RE events.
 pub mod events;
-/// RE math library.
-pub mod math;
-/// RE network abstraction.
-pub mod network;
-/// RE time library.
-pub mod time;
-
-pub mod blueprints;
 
 mod macros;
 pub use macros::*;
 
+// Re-export common
+pub mod abi {
+    pub use scrypto_abi::*;
+}
+pub mod address {
+    pub use radix_engine_common::address::*;
+}
+pub mod crypto {
+    pub use radix_engine_common::crypto::*;
+}
+pub mod data {
+    pub use radix_engine_common::data::*;
+}
+pub mod math {
+    pub use radix_engine_common::math::*;
+}
+pub mod network {
+    pub use radix_engine_common::network::*;
+}
+pub mod time {
+    pub use radix_engine_common::time::*;
+}
+pub use radix_engine_common::{construct_address, dec, pdec, vanity_address};
+
 // Re-export SBOR derive.
 extern crate sbor;
-pub use sbor::{Categorize, Decode, Encode};
+pub use sbor::{Categorize, Decode, Encode, Sbor};
 
 // Re-export Engine derive.
-extern crate radix_engine_derive;
-pub use radix_engine_derive::{
-    LegacyDescribe, NonFungibleData, ScryptoCategorize, ScryptoDecode, ScryptoDescribe,
-    ScryptoEncode, ScryptoSbor,
-};
+extern crate radix_engine_common;
+pub use radix_engine_common::*;
 
 // This is to make derives work within this crate.
 // See: https://users.rust-lang.org/t/how-can-i-use-my-derive-macro-from-the-crate-that-declares-the-trait/60502
