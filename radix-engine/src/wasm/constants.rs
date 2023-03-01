@@ -32,6 +32,8 @@ pub const DROP_LOCK_FUNCTION_NAME: &str = "drop_lock";
 
 pub const EMIT_EVENT_FUNCTION_ID: usize = 0x50;
 pub const EMIT_EVENT_FUNCTION_NAME: &str = "emit_event";
+pub const LOG_FUNCTION_ID: usize = 0x51;
+pub const LOG_FUNCTION_NAME: &str = "log_message";
 
 // Under active refactoring
 pub const GET_ACTOR_FUNCTION_ID: usize = 0xf0;

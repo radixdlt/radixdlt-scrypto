@@ -32,7 +32,6 @@ use radix_engine_interface::blueprints::epoch_manager::{
     EPOCH_MANAGER_BLUEPRINT, VALIDATOR_BLUEPRINT,
 };
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
-use radix_engine_interface::blueprints::logger::LOGGER_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRules, LiquidFungibleResource, LiquidNonFungibleResource, MethodKey,
     Proof, ProofDropInput, ResourceType, BUCKET_BLUEPRINT, PROOF_BLUEPRINT, PROOF_DROP_IDENT,
@@ -268,7 +267,6 @@ where
             RENodeId::Proof(..)
             | RENodeId::AuthZoneStack
             | RENodeId::Worktop
-            | RENodeId::Logger
             | RENodeId::TransactionRuntime
             | RENodeId::Bucket(..)
             | RENodeId::Clock(..)
@@ -676,15 +674,6 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: TRANSACTION_RUNTIME_PACKAGE,
                         blueprint_name: TRANSACTION_RUNTIME_BLUEPRINT.to_string(),
-                    }),
-                );
-            }
-            (RENodeId::Logger, RENodeInit::Logger(..)) => {
-                module_init.insert(
-                    NodeModuleId::TypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: LOGGER_PACKAGE,
-                        blueprint_name: LOGGER_BLUEPRINT.to_string(),
                     }),
                 );
             }

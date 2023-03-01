@@ -438,6 +438,21 @@ impl WasmerModule {
 
             runtime.emit_event(schema_hash, event_data)
         }
+
+        fn log_message(
+            env: &WasmerInstanceEnv,
+            level_ptr: u32,
+            level_len: u32,
+            message_ptr: u32,
+            message_len: u32,
+        ) -> Result<(), InvokeError<WasmRuntimeError>> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let level = read_memory(&instance, level_ptr, level_len)?;
+            let message = read_memory(&instance, message_ptr, message_len)?;
+
+            runtime.log_message(level, message)
+        }
         // native functions ends
 
         // env
@@ -465,6 +480,7 @@ impl WasmerModule {
                 GET_ACTOR_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_actor),
                 CONSUME_COST_UNITS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), consume_cost_units),
                 EMIT_EVENT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), emit_event),
+                LOG_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), log_message),
             }
         };
 

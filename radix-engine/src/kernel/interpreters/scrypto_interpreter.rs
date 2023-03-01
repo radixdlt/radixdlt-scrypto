@@ -3,7 +3,6 @@ use crate::blueprints::account::AccountNativePackage;
 use crate::blueprints::clock::ClockNativePackage;
 use crate::blueprints::epoch_manager::EpochManagerNativePackage;
 use crate::blueprints::identity::IdentityNativePackage;
-use crate::blueprints::logger::LoggerNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_runtime::TransactionRuntimeNativePackage;
 use crate::errors::ScryptoFnResolvingError;
@@ -516,9 +515,6 @@ impl NativeVm {
             }
             ACCESS_CONTROLLER_PACKAGE_CODE_ID => {
                 AccessControllerNativePackage::invoke_export(&export_name, receiver, input, api)
-            }
-            LOGGER_CODE_ID => {
-                LoggerNativePackage::invoke_export(&export_name, receiver, input, api)
             }
             TRANSACTION_RUNTIME_CODE_ID => {
                 TransactionRuntimeNativePackage::invoke_export(&export_name, receiver, input, api)
