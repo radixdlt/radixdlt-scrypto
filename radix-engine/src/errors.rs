@@ -160,6 +160,8 @@ pub enum KernelError {
         mode: ExecutionMode,
         actor: Actor,
         node_id: RENodeId,
+        package_address: PackageAddress,
+        blueprint_name: String,
     },
     InvalidSubstateAccess {
         mode: ExecutionMode,

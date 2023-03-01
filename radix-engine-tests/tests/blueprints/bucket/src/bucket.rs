@@ -1,7 +1,10 @@
 use scrypto::prelude::*;
+use scrypto::engine::scrypto_env::*;
+use radix_engine_interface::api::*;
 
 #[blueprint]
 mod bucket_test {
+
     struct BucketTest {
         vault: Vault,
     }
@@ -17,6 +20,15 @@ mod bucket_test {
             proof1.drop();
             proof2.drop();
             bucket
+        }
+
+        pub fn drop_bucket() {
+            let bucket = ResourceBuilder::new_fungible()
+                .divisibility(DIVISIBILITY_MAXIMUM)
+                .metadata("name", "TestToken")
+                .mint_initial_supply(1u32);
+
+            ScryptoEnv.sys_drop_node(RENodeId::Component(bucket.0)).unwrap();
         }
 
         pub fn drop_empty(amount: u32) {

@@ -8,6 +8,9 @@ use radix_engine_interface::api::types::{
     PackageOffset, ProofOffset, RENodeId, ResourceManagerOffset, SubstateOffset, WorktopOffset,
 };
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::api::node_modules::metadata::*;
+use radix_engine_interface::api::node_modules::royalty::*;
+use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::constants::*;
 
 pub struct VisibilityProperties;
@@ -16,49 +19,27 @@ impl VisibilityProperties {
     pub fn check_drop_node_visibility(
         mode: ExecutionMode,
         actor: &Actor,
-        node_id: RENodeId,
+        package_address: PackageAddress,
+        blueprint: &str,
     ) -> bool {
         match mode {
-            ExecutionMode::Kernel => match node_id {
-                // TODO: Remove
-                RENodeId::Component(..) => true,
-                _ => false,
-            },
-            ExecutionMode::KernelModule => match node_id {
-                RENodeId::Logger => true,
-                RENodeId::TransactionRuntime => true,
-                RENodeId::AuthZoneStack => true,
-                _ => false,
-            },
-            ExecutionMode::Client | ExecutionMode::AutoDrop => match node_id {
-                RENodeId::Worktop => match &actor.fn_identifier {
-                    FnIdentifier {
-                        package_address,
-                        blueprint_name,
-                        ..
-                    } if package_address.eq(&PACKAGE_LOADER)
-                        && blueprint_name.eq(&TRANSACTION_PROCESSOR_BLUEPRINT) =>
-                    {
-                        true
-                    }
-                    _ => false,
-                },
-                RENodeId::Proof(..) => match &actor.fn_identifier {
-                    FnIdentifier {
-                        package_address,
-                        blueprint_name,
-                        ..
-                    } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                        && blueprint_name.eq(&PROOF_BLUEPRINT) =>
-                    {
-                        true
-                    }
-                    _ => false,
-                },
-                // TODO: CLEAN THESE UP, these are used for globalization
-                // TODO: This includes Bucket, which should be protected
-                RENodeId::Component(..) => mode.eq(&ExecutionMode::Client),
-                _ => false,
+            ExecutionMode::Kernel => true,
+            ExecutionMode::KernelModule => true,
+            ExecutionMode::AutoDrop => {
+                if package_address.eq(&RESOURCE_MANAGER_PACKAGE) && blueprint.eq(PROOF_BLUEPRINT) {
+                    actor.fn_identifier.package_address.eq(&RESOURCE_MANAGER_PACKAGE) && actor.fn_identifier.blueprint_name.eq(PROOF_BLUEPRINT)
+                } else {
+                    false
+                }
+            }
+            ExecutionMode::Client => {
+                match (package_address, blueprint) {
+                    (RESOURCE_MANAGER_PACKAGE, WORKTOP_BLUEPRINT) => true, // TODO: Remove
+                    (METADATA_PACKAGE, METADATA_BLUEPRINT)
+                    | (ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT)
+                    | (ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT) => true, // TODO: This is required for current implementation of globalize, maybe there's a better way
+                    _ => package_address.eq(&actor.fn_identifier.package_address)
+                }
             },
             _ => return false,
         }
@@ -76,6 +57,7 @@ impl VisibilityProperties {
         // TODO: Cleanup and reduce to least privilege
         match (mode, offset) {
             (ExecutionMode::Kernel, offset) => match offset {
+                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo) => true,
                 _ => false, // Protect ourselves!
             },
             (ExecutionMode::Resolver, offset) => match offset {

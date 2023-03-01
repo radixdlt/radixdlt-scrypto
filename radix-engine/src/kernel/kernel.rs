@@ -618,13 +618,17 @@ where
         let current_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        if let Some(actor) = &self.current_frame.actor {
-            if !VisibilityProperties::check_drop_node_visibility(current_mode, actor, node_id) {
+        // TODO: Move this into the system layer
+        if let Some(actor) = self.current_frame.actor.clone() {
+            let (package_address, blueprint_name) = self.get_component_type_info(node_id)?;
+            if !VisibilityProperties::check_drop_node_visibility(current_mode, &actor, package_address, blueprint_name.as_str()) {
                 return Err(RuntimeError::KernelError(
                     KernelError::InvalidDropNodeAccess {
                         mode: current_mode,
                         actor: actor.clone(),
                         node_id,
+                        package_address,
+                        blueprint_name,
                     },
                 ));
             }
