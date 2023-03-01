@@ -135,7 +135,7 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                     }
                 }
             }
-            RENodeId::Component(..) => {
+            RENodeId::Object(..) => {
                 let substate_id = SubstateId(
                     node_id,
                     NodeModuleId::SELF,

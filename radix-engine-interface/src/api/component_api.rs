@@ -8,7 +8,7 @@ pub trait ClientObjectApi<E> {
         &mut self,
         blueprint_ident: &str,
         app_states: BTreeMap<u8, Vec<u8>>,
-    ) -> Result<ComponentId, E>;
+    ) -> Result<ObjectId, E>;
 
     fn new_key_value_store(&mut self) -> Result<KeyValueStoreId, E>;
 
@@ -25,8 +25,8 @@ pub trait ClientObjectApi<E> {
         address: Address,
     ) -> Result<Address, E>;
 
-    fn get_component_type_info(&mut self, node_id: RENodeId)
-        -> Result<(PackageAddress, String), E>;
+    fn get_object_type_info(&mut self, node_id: RENodeId)
+                            -> Result<(PackageAddress, String), E>;
 
     fn call_method(
         &mut self,

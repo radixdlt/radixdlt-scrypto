@@ -233,7 +233,7 @@ where
         &mut self,
         blueprint_ident: &str,
         mut app_states: BTreeMap<u8, Vec<u8>>,
-    ) -> Result<ComponentId, RuntimeError> {
+    ) -> Result<ObjectId, RuntimeError> {
         // Create component RENode
         // FIXME: support native blueprints
         let package_address = self
@@ -251,7 +251,7 @@ where
                             RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
                         })?;
 
-                    let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
+                    let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
                     (node_id, RENodeInit::ResourceManager(substate))
                 }
                 PROOF_BLUEPRINT => {
@@ -299,7 +299,7 @@ where
                             RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
                         })?;
 
-                    let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
+                    let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
 
                     let node_init = match bucket_info_substate.resource_type {
                         ResourceType::NonFungible { .. } => {
@@ -381,7 +381,7 @@ where
                         RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
                     })?;
 
-                let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
+                let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
                 (
                     node_id,
                     RENodeInit::Component(btreemap!(
@@ -413,7 +413,7 @@ where
                             RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
                         })?;
 
-                    let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
+                    let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
                     (
                         node_id,
                         RENodeInit::Component(btreemap!(
@@ -440,7 +440,7 @@ where
                         RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
                     })?;
 
-                let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
+                let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
                 (
                     node_id,
                     RENodeInit::Component(btreemap!(
@@ -465,7 +465,7 @@ where
                             RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
                         })?;
 
-                    let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
+                    let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
                     (
                         node_id,
                         RENodeInit::Component(btreemap!(
@@ -503,7 +503,7 @@ where
                             RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
                         })?;
 
-                    let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
+                    let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
                     (
                         node_id,
                         RENodeInit::Component(btreemap!(
@@ -530,7 +530,7 @@ where
                     ));
                 }
 
-                let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
+                let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
                 (
                     node_id,
                     RENodeInit::Component(btreemap!(
@@ -546,7 +546,7 @@ where
                     ));
                 }
 
-                let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
+                let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
                 (node_id, RENodeInit::Component(btreemap!()))
             }
             ACCOUNT_PACKAGE => {
@@ -563,7 +563,7 @@ where
                         RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
                     })?;
 
-                let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
+                let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
                 (
                     node_id,
                     RENodeInit::Component(btreemap!(
@@ -586,7 +586,7 @@ where
                         RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
                     })?;
 
-                let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
+                let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
                 (
                     node_id,
                     RENodeInit::Component(btreemap!(
@@ -622,7 +622,7 @@ where
                 }
 
                 // Allocate node id
-                let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
+                let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
 
                 (
                     node_id,
@@ -653,7 +653,7 @@ where
         modules: BTreeMap<NodeModuleId, Vec<u8>>,
     ) -> Result<Address, RuntimeError> {
         let node_type = match node_id {
-            RENodeId::Component(..) => {
+            RENodeId::Object(..) => {
                 let (package_address, blueprint) = TypeInfoBlueprint::get_type(node_id, self)?;
                 match (package_address, blueprint.as_str()) {
                     (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => RENodeType::GlobalAccount,
@@ -720,7 +720,7 @@ where
                     })?;
 
                     let component_id = access_rules.component_id();
-                    let mut node = self.kernel_drop_node(RENodeId::Component(component_id))?;
+                    let mut node = self.kernel_drop_node(RENodeId::Object(component_id))?;
 
                     let access_rules = node
                         .substates
@@ -741,7 +741,7 @@ where
                         .map_err(|e| RuntimeError::SystemError(SystemError::InvalidMetadata(e)))?;
 
                     let component_id = metadata.component_id();
-                    let mut node = self.kernel_drop_node(RENodeId::Component(component_id))?;
+                    let mut node = self.kernel_drop_node(RENodeId::Object(component_id))?;
 
                     let metadata = node
                         .substates
@@ -761,7 +761,7 @@ where
                     })?;
 
                     let component_id = royalty.component_id();
-                    let mut node = self.kernel_drop_node(RENodeId::Component(component_id))?;
+                    let mut node = self.kernel_drop_node(RENodeId::Object(component_id))?;
 
                     let config = node
                         .substates
@@ -822,7 +822,7 @@ where
             .map(|v| scrypto_encode(&v).expect("Failed to encode scrypto fn return"))
     }
 
-    fn get_component_type_info(
+    fn get_object_type_info(
         &mut self,
         node_id: RENodeId,
     ) -> Result<(PackageAddress, String), RuntimeError> {

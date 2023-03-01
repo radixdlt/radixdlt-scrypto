@@ -12,15 +12,15 @@ use utils::copy_u8_array;
 // TODO: it's still up to debate whether this should be an enum OR dedicated types for each variant.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Own {
-    Bucket(ComponentId),
+    Bucket(ObjectId),
     Proof(ProofId),
     Vault(VaultId),
-    Component(ComponentId),
+    Component(ObjectId),
     KeyValueStore(KeyValueStoreId),
 }
 
 impl Own {
-    pub fn component_id(&self) -> ComponentId {
+    pub fn component_id(&self) -> ObjectId {
         match self {
             Own::Component(v) => *v,
             _ => panic!("Not a component ownership"),
@@ -38,7 +38,7 @@ impl Own {
             _ => panic!("Not a kv-store ownership"),
         }
     }
-    pub fn bucket_id(&self) -> ComponentId {
+    pub fn bucket_id(&self) -> ObjectId {
         match self {
             Own::Bucket(v) => *v,
             _ => panic!("Not a bucket ownership"),

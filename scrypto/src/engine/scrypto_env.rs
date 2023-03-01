@@ -24,7 +24,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         &mut self,
         blueprint_ident: &str,
         app_states: BTreeMap<u8, Vec<u8>>,
-    ) -> Result<ComponentId, ClientApiError> {
+    ) -> Result<ObjectId, ClientApiError> {
         let app_states = scrypto_encode(&app_states).unwrap();
 
         let bytes = copy_buffer(unsafe {
@@ -113,7 +113,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         Ok(return_data)
     }
 
-    fn get_component_type_info(
+    fn get_object_type_info(
         &mut self,
         node_id: RENodeId,
     ) -> Result<(PackageAddress, String), ClientApiError> {

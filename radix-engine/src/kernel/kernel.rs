@@ -163,7 +163,7 @@ where
                     vaults: Own::KeyValueStore(kv_store_id.into()),
                 };
 
-                let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
+                let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
                 let node = RENodeInit::Component(btreemap!(
                     SubstateOffset::Account(AccountOffset::Account) => RuntimeSubstate::Account(account_substate)
                 ));
@@ -296,7 +296,7 @@ where
             | RENodeId::Worktop
             | RENodeId::Logger
             | RENodeId::TransactionRuntime
-            | RENodeId::Component(..) => api.current_frame.remove_node(&mut api.heap, node_id),
+            | RENodeId::Object(..) => api.current_frame.remove_node(&mut api.heap, node_id),
             _ => Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
                 node_id,
             ))),
@@ -620,7 +620,7 @@ where
 
         // TODO: Move this into the system layer
         if let Some(actor) = self.current_frame.actor.clone() {
-            let (package_address, blueprint_name) = self.get_component_type_info(node_id)?;
+            let (package_address, blueprint_name) = self.get_object_type_info(node_id)?;
             if !VisibilityProperties::check_drop_node_visibility(current_mode, &actor, package_address, blueprint_name.as_str()) {
                 return Err(RuntimeError::KernelError(
                     KernelError::InvalidDropNodeAccess {
@@ -667,8 +667,8 @@ where
             (RENodeId::GlobalComponent(..), RENodeInit::GlobalObject(..)) => {}
             (RENodeId::GlobalResourceManager(..), RENodeInit::GlobalObject(..)) => {}
             (RENodeId::GlobalPackage(..), RENodeInit::GlobalPackage(..)) => {}
-            (RENodeId::Component(..), RENodeInit::Component(..)) => {}
-            (RENodeId::Component(..), RENodeInit::ResourceManager(..)) => {}
+            (RENodeId::Object(..), RENodeInit::Component(..)) => {}
+            (RENodeId::Object(..), RENodeInit::ResourceManager(..)) => {}
             (RENodeId::Proof(..), RENodeInit::FungibleProof(..)) => {}
             (RENodeId::Proof(..), RENodeInit::NonFungibleProof(..)) => {}
             (RENodeId::Vault(..), RENodeInit::FungibleVault(..)) => {}
@@ -730,9 +730,9 @@ where
         self.current_frame.actor.clone()
     }
 
-    fn kernel_read_bucket(&mut self, bucket_id: ComponentId) -> Option<BucketSnapshot> {
+    fn kernel_read_bucket(&mut self, bucket_id: ObjectId) -> Option<BucketSnapshot> {
         if let Ok(substate) = self.heap.get_substate(
-            RENodeId::Component(bucket_id),
+            RENodeId::Object(bucket_id),
             NodeModuleId::SELF,
             &SubstateOffset::Bucket(BucketOffset::Info),
         ) {
@@ -744,7 +744,7 @@ where
                     let substate = self
                         .heap
                         .get_substate(
-                            RENodeId::Component(bucket_id),
+                            RENodeId::Object(bucket_id),
                             NodeModuleId::SELF,
                             &SubstateOffset::Bucket(BucketOffset::LiquidFungible),
                         )
@@ -761,7 +761,7 @@ where
                     let substate = self
                         .heap
                         .get_substate(
-                            RENodeId::Component(bucket_id),
+                            RENodeId::Object(bucket_id),
                             NodeModuleId::SELF,
                             &SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
                         )

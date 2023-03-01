@@ -461,7 +461,7 @@ where
     let metadata = Metadata::sys_create_with_data(metadata, api)?;
 
     api.globalize_with_address(
-        RENodeId::Component(object_id),
+        RENodeId::Object(object_id),
         btreemap!(
             NodeModuleId::AccessRules => scrypto_encode(&resman_access_rules).unwrap(),
             NodeModuleId::AccessRules1 => scrypto_encode(&vault_access_rules).unwrap(),
@@ -571,7 +571,7 @@ impl ResourceManagerBlueprint {
         let metadata = Metadata::sys_create_with_data(input.metadata, api)?;
 
         api.globalize_with_address(
-            RENodeId::Component(object_id),
+            RENodeId::Object(object_id),
             btreemap!(
                 NodeModuleId::AccessRules => scrypto_encode(&resman_access_rules).unwrap(),
                 NodeModuleId::AccessRules1 => scrypto_encode(&vault_access_rules).unwrap(),
@@ -626,7 +626,7 @@ impl ResourceManagerBlueprint {
         let metadata = Metadata::sys_create_with_data(input.metadata, api)?;
 
         api.globalize_with_address(
-            RENodeId::Component(object_id),
+            RENodeId::Object(object_id),
             btreemap!(
                 NodeModuleId::AccessRules => scrypto_encode(&resman_access_rules).unwrap(),
                 NodeModuleId::AccessRules1 => scrypto_encode(&vault_access_rules).unwrap(),
@@ -697,7 +697,7 @@ impl ResourceManagerBlueprint {
         let metadata = Metadata::sys_create_with_data(input.metadata, api)?;
 
         api.globalize_with_address(
-            RENodeId::Component(object_id),
+            RENodeId::Object(object_id),
             btreemap!(
                 NodeModuleId::AccessRules => scrypto_encode(&resman_access_rules).unwrap(),
                 NodeModuleId::AccessRules1 => scrypto_encode(&vault_access_rules).unwrap(),
@@ -746,7 +746,7 @@ impl ResourceManagerBlueprint {
         let metadata = Metadata::sys_create_with_data(input.metadata, api)?;
 
         api.globalize_with_address(
-            RENodeId::Component(object_id),
+            RENodeId::Object(object_id),
             btreemap!(
                 NodeModuleId::AccessRules => scrypto_encode(&resman_access_rules).unwrap(),
                 NodeModuleId::AccessRules1 => scrypto_encode(&vault_access_rules).unwrap(),
@@ -770,7 +770,7 @@ impl ResourceManagerBlueprint {
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         if input.bucket.sys_amount(api)?.is_zero() {
-            api.kernel_drop_node(RENodeId::Component(input.bucket.0))?;
+            api.kernel_drop_node(RENodeId::Object(input.bucket.0))?;
         } else {
             let resource_address = input.bucket.sys_resource_address(api)?;
             native_sdk::resource::ResourceManager(resource_address).burn(input.bucket, api)?;
@@ -1081,7 +1081,7 @@ impl ResourceManagerBlueprint {
 
         // FIXME: check if the bucket is locked!!!
         let dropped_bucket: DroppedBucket = api
-            .kernel_drop_node(RENodeId::Component(input.bucket.0))?
+            .kernel_drop_node(RENodeId::Object(input.bucket.0))?
             .into();
 
         // Construct the event and only emit it once all of the operations are done.
@@ -1457,7 +1457,7 @@ where
     let metadata = Metadata::sys_create_with_data(metadata, api)?;
 
     api.globalize_with_address(
-        RENodeId::Component(object_id),
+        RENodeId::Object(object_id),
         btreemap!(
             NodeModuleId::AccessRules => scrypto_encode(&resman_access_rules).unwrap(),
             NodeModuleId::AccessRules1 => scrypto_encode(&vault_access_rules).unwrap(),

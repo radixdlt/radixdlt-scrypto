@@ -207,7 +207,7 @@ impl AccountNativePackage {
         let metadata = Metadata::sys_create(api)?;
 
         let address = api.globalize(
-            RENodeId::Component(account_id),
+            RENodeId::Object(account_id),
             btreemap!(
                 NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
                 NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),

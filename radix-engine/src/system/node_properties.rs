@@ -142,7 +142,7 @@ impl VisibilityProperties {
                                 ) => read_only,
                                 // READ global substates
                                 (
-                                    RENodeId::Component(_),
+                                    RENodeId::Object(_),
                                     SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
                                 ) => read_only,
                                 // READ/WRITE KVStore entry
@@ -154,7 +154,7 @@ impl VisibilityProperties {
                                 _ => false,
                             },
                             ActorIdentifier::Method(method_identifier) => match method_identifier {
-                                MethodIdentifier(RENodeId::Component(component_address), ..) => {
+                                MethodIdentifier(RENodeId::Object(component_address), ..) => {
                                     match (node_id, offset) {
                                         // READ package code & abi
                                         (
@@ -178,7 +178,7 @@ impl VisibilityProperties {
                                         ) => true,
                                         // READ/WRITE component application state
                                         (
-                                            RENodeId::Component(addr),
+                                            RENodeId::Object(addr),
                                             SubstateOffset::Component(ComponentOffset::State0),
                                         ) => addr.eq(component_address),
                                         // Otherwise, false
@@ -254,7 +254,7 @@ impl VisibilityProperties {
                             },
 
                             ActorIdentifier::Method(method_identifier) => match method_identifier {
-                                MethodIdentifier(RENodeId::Component(component_address), ..) => {
+                                MethodIdentifier(RENodeId::Object(component_address), ..) => {
                                     match (node_id, offset) {
                                         (
                                             RENodeId::KeyValueStore(_),
@@ -263,7 +263,7 @@ impl VisibilityProperties {
                                             ),
                                         ) => true,
                                         (
-                                            RENodeId::Component(addr),
+                                            RENodeId::Object(addr),
                                             SubstateOffset::Component(ComponentOffset::State0),
                                         ) => addr.eq(component_address),
                                         _ => false,

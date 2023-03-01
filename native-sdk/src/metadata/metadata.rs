@@ -7,7 +7,8 @@ use radix_engine_interface::constants::METADATA_PACKAGE;
 use radix_engine_interface::data::model::Own;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode};
 use sbor::rust::fmt::Debug;
-use std::collections::BTreeMap;
+use sbor::rust::collections::BTreeMap;
+use sbor::rust::string::String;
 
 pub struct Metadata;
 

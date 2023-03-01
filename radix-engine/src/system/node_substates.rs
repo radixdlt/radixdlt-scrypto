@@ -1436,7 +1436,7 @@ impl<'a> SubstateRef<'a> {
                 let nodes = worktop
                     .resources
                     .values()
-                    .map(|o| RENodeId::Component(o.bucket_id()))
+                    .map(|o| RENodeId::Object(o.bucket_id()))
                     .collect();
                 (HashSet::new(), nodes)
             }

@@ -71,7 +71,7 @@ impl NodeMoveModule {
                 Ok(())
             }
 
-            RENodeId::Component(..) => Ok(()),
+            RENodeId::Object(..) => Ok(()),
 
             RENodeId::TransactionRuntime
             | RENodeId::AuthZoneStack
@@ -94,7 +94,7 @@ impl NodeMoveModule {
     ) -> Result<(), RuntimeError> {
         match node_id {
             RENodeId::Proof(..)
-            | RENodeId::Component(..)
+            | RENodeId::Object(..)
             | RENodeId::Vault(..) => Ok(()),
 
             RENodeId::TransactionRuntime

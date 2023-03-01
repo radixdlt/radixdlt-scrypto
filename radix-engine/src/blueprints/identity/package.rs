@@ -90,7 +90,7 @@ impl Identity {
 
         let component_id = api.new_object(IDENTITY_BLUEPRINT, btreemap!())?;
 
-        Ok((RENodeId::Component(component_id), access_rules))
+        Ok((RENodeId::Object(component_id), access_rules))
     }
 
     pub fn create_virtual<Y>(
@@ -100,7 +100,7 @@ impl Identity {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let node_id = api.kernel_allocate_node_id(RENodeType::Component)?;
+        let node_id = api.kernel_allocate_node_id(RENodeType::Object)?;
 
         let mut access_rules = AccessRules::new();
         access_rules.set_access_rule_and_mutability(

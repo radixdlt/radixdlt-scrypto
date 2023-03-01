@@ -584,7 +584,7 @@ impl VaultBlueprint {
                 ),
             )?;
 
-            RENodeId::Component(bucket_id)
+            RENodeId::Object(bucket_id)
         } else {
             // Take
             let taken = NonFungibleVault::take(receiver, input.amount, api)?;
@@ -601,7 +601,7 @@ impl VaultBlueprint {
                 ),
             )?;
 
-            RENodeId::Component(bucket_id)
+            RENodeId::Object(bucket_id)
         };
         let bucket_id = node_id.into();
 
@@ -665,7 +665,7 @@ impl VaultBlueprint {
 
         // Drop other bucket
         let other_bucket: DroppedBucket = api
-            .kernel_drop_node(RENodeId::Component(input.bucket.0))?
+            .kernel_drop_node(RENodeId::Object(input.bucket.0))?
             .into();
 
         // Check resource address
@@ -861,7 +861,7 @@ impl VaultBlueprint {
                 ),
             )?;
 
-            RENodeId::Component(bucket_id)
+            RENodeId::Object(bucket_id)
         } else {
             let taken = NonFungibleVault::take(receiver, input.amount, api)?;
             let bucket_id = api.new_object(
@@ -875,7 +875,7 @@ impl VaultBlueprint {
                 ),
             )?;
 
-            RENodeId::Component(bucket_id)
+            RENodeId::Object(bucket_id)
         };
         let bucket_id = node_id.into();
 

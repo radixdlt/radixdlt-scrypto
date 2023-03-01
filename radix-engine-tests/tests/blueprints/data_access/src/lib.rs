@@ -38,7 +38,7 @@ mod data_access {
         pub fn create_component_and_read_info() {
             let component_address = Self {}.instantiate().globalize();
             ScryptoEnv
-                .get_component_type_info(RENodeId::GlobalComponent(component_address))
+                .get_object_type_info(RENodeId::GlobalComponent(component_address))
                 .unwrap();
         }
     }
