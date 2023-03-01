@@ -33,7 +33,7 @@ pub enum FeePayment {
 
 #[derive(Debug)]
 pub struct Executable<'a> {
-    instructions: &'a [Instruction],
+    instructions: Vec<Instruction>,
     blobs: &'a [Vec<u8>],
     pub context: ExecutionContext,
 }
@@ -76,7 +76,7 @@ impl RuntimeValidation {
 
 impl<'a> Executable<'a> {
     pub fn new(
-        instructions: &'a [Instruction],
+        instructions: Vec<Instruction>,
         blobs: &'a [Vec<u8>],
         context: ExecutionContext,
     ) -> Self {
@@ -87,7 +87,7 @@ impl<'a> Executable<'a> {
         }
     }
 
-    pub fn new_no_blobs(instructions: &'a [Instruction], context: ExecutionContext) -> Self {
+    pub fn new_no_blobs(instructions: Vec<Instruction>, context: ExecutionContext) -> Self {
         Self {
             instructions,
             blobs: &[],
@@ -104,7 +104,7 @@ impl<'a> Executable<'a> {
     }
 
     pub fn instructions(&self) -> &[Instruction] {
-        self.instructions
+        &self.instructions
     }
 
     pub fn auth_zone_params(&self) -> &AuthZoneParams {
