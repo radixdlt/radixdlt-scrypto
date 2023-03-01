@@ -11,7 +11,7 @@ use sbor::*;
 // TODO: add versioning of transaction schema
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, Eq, PartialEq, ManifestCategorize, ManifestEncode, ManifestDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct TransactionHeader {
     pub version: u8,
     pub network_id: u8,
@@ -24,19 +24,19 @@ pub struct TransactionHeader {
     pub tip_percentage: u16,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ManifestCategorize, ManifestEncode, ManifestDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct TransactionIntent {
     pub header: TransactionHeader,
     pub manifest: TransactionManifest,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ManifestCategorize, ManifestEncode, ManifestDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct SignedTransactionIntent {
     pub intent: TransactionIntent,
     pub intent_signatures: Vec<SignatureWithPublicKey>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ManifestCategorize, ManifestEncode, ManifestDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct NotarizedTransaction {
     pub signed_intent: SignedTransactionIntent,
     pub notary_signature: Signature,
@@ -48,9 +48,7 @@ pub struct NotarizedTransaction {
     derive(serde::Serialize, serde::Deserialize),
     serde(tag = "type", content = "signature")
 )]
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, ManifestCategorize, ManifestEncode, ManifestDecode,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ManifestSbor)]
 pub enum Signature {
     EcdsaSecp256k1(EcdsaSecp256k1Signature),
     EddsaEd25519(EddsaEd25519Signature),
@@ -62,9 +60,7 @@ pub enum Signature {
     derive(serde::Serialize, serde::Deserialize),
     serde(tag = "type")
 )]
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, ManifestCategorize, ManifestEncode, ManifestDecode,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ManifestSbor)]
 pub enum SignatureWithPublicKey {
     EcdsaSecp256k1 {
         signature: EcdsaSecp256k1Signature,

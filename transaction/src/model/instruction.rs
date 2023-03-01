@@ -8,7 +8,7 @@ use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 
-#[derive(Debug, Clone, PartialEq, Eq, ManifestCategorize, ManifestEncode, ManifestDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
 pub enum Instruction {
     /// Takes resource from worktop.
     TakeFromWorktop {

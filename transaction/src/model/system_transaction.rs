@@ -6,7 +6,7 @@ use radix_engine_interface::crypto::hash;
 use radix_engine_interface::*;
 use std::collections::BTreeSet;
 
-#[derive(Debug, Clone, Eq, PartialEq, ManifestCategorize, ManifestEncode, ManifestDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct SystemTransaction {
     pub instructions: Vec<Instruction>,
     pub pre_allocated_ids: BTreeSet<RENodeId>,

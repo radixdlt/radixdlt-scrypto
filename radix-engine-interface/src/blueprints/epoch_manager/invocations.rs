@@ -26,7 +26,7 @@ pub struct ValidatorInit {
     pub stake_account_address: ComponentAddress,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestCategorize, ManifestEncode, ManifestDecode)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
 pub struct ManifestValidatorInit {
     pub validator_account_address: ComponentAddress,
     pub initial_stake: ManifestBucket,
@@ -91,9 +91,7 @@ pub struct EpochManagerNextRoundInput {
 
 pub const EPOCH_MANAGER_CREATE_VALIDATOR_IDENT: &str = "create_validator";
 
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
-)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct EpochManagerCreateValidatorInput {
     pub key: EcdsaSecp256k1PublicKey,
     pub owner_access_rule: AccessRule,
@@ -101,17 +99,13 @@ pub struct EpochManagerCreateValidatorInput {
 
 pub const EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT: &str = "update_validator";
 
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
-)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub enum UpdateValidator {
     Register(EcdsaSecp256k1PublicKey, Decimal),
     Unregister,
 }
 
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
-)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct EpochManagerUpdateValidatorInput {
     pub validator_address: ComponentAddress,
     pub update: UpdateValidator,

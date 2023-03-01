@@ -12,7 +12,7 @@ pub struct PreviewFlags {
     pub permit_invalid_header_epoch: bool,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ManifestCategorize, ManifestEncode, ManifestDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct PreviewIntent {
     pub intent: TransactionIntent,
     pub signer_public_keys: Vec<PublicKey>,

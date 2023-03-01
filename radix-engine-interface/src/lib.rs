@@ -40,14 +40,13 @@ pub mod network {
 pub mod time {
     pub use radix_engine_common::time::*;
 }
-pub use radix_engine_common::{construct_address, dec, pdec, vanity_address};
 
 // Re-export SBOR derive.
-extern crate sbor;
+pub extern crate sbor;
 pub use sbor::{Categorize, Decode, Encode, Sbor};
 
 // Re-export Engine derive.
-extern crate radix_engine_common;
+pub extern crate radix_engine_common;
 pub use radix_engine_common::*;
 
 // This is to make derives work within this crate.

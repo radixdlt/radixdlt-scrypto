@@ -32,19 +32,7 @@ pub enum RENodeType {
     AccessController,
 }
 
-#[derive(
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    Ord,
-    PartialOrd,
-    ScryptoSbor,
-    ManifestCategorize,
-    ManifestEncode,
-    ManifestDecode,
-)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum RENodeId {
     Bucket(BucketId),
     Proof(ProofId),
@@ -180,20 +168,7 @@ impl Into<ResourceAddress> for RENodeId {
     }
 }
 
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    ScryptoSbor,
-    ManifestCategorize,
-    ManifestEncode,
-    ManifestDecode,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor, ManifestSbor)]
 pub enum NodeModuleId {
     SELF,
     TypeInfo,

@@ -11,18 +11,7 @@ use sbor::rust::vec::Vec;
 use utils::ContextualDisplay;
 
 /// Represents the global id of a non-fungible.
-#[derive(
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    Ord,
-    PartialOrd,
-    ScryptoSbor,
-    ManifestCategorize,
-    ManifestEncode,
-    ManifestDecode,
-)]
+#[derive(Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct NonFungibleGlobalId(ResourceAddress, NonFungibleLocalId);
 
 impl NonFungibleGlobalId {

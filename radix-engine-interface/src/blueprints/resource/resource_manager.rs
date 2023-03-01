@@ -17,20 +17,7 @@ impl ResourceManagerAbi {
 
 pub const RESOURCE_MANAGER_BLUEPRINT: &str = "ResourceManager";
 
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    ScryptoSbor,
-    ManifestCategorize,
-    ManifestEncode,
-    ManifestDecode,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor, ManifestSbor)]
 pub enum ResourceMethodAuthKey {
     Mint,
     Burn,
@@ -43,9 +30,7 @@ pub enum ResourceMethodAuthKey {
 
 pub const RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT: &str = "create_fungible";
 
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
-)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct ResourceManagerCreateFungibleInput {
     pub divisibility: u8,
     pub metadata: BTreeMap<String, String>,
@@ -55,9 +40,7 @@ pub struct ResourceManagerCreateFungibleInput {
 pub const RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT: &str =
     "create_fungible_with_initial_supply";
 
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
-)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct ResourceManagerCreateFungibleWithInitialSupplyInput {
     pub divisibility: u8,
     pub metadata: BTreeMap<String, String>,
@@ -68,9 +51,7 @@ pub struct ResourceManagerCreateFungibleWithInitialSupplyInput {
 pub const RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT: &str =
     "create_fungible_with_initial_supply_and_address";
 
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
-)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput {
     pub divisibility: u8,
     pub metadata: BTreeMap<String, String>,
@@ -81,9 +62,7 @@ pub struct ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput {
 
 pub const RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT: &str = "create_non_fungible";
 
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
-)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct ResourceManagerCreateNonFungibleInput {
     pub id_type: NonFungibleIdType,
     pub metadata: BTreeMap<String, String>,
@@ -93,9 +72,7 @@ pub struct ResourceManagerCreateNonFungibleInput {
 pub const RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT: &str =
     "create_non_fungible_with_initial_supply";
 
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
-)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct ResourceManagerCreateNonFungibleWithInitialSupplyInput {
     pub id_type: NonFungibleIdType,
     pub metadata: BTreeMap<String, String>,
@@ -106,9 +83,7 @@ pub struct ResourceManagerCreateNonFungibleWithInitialSupplyInput {
 pub const RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT: &str =
     "create_non_fungible_with_address";
 
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
-)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct ResourceManagerCreateNonFungibleWithAddressInput {
     pub id_type: NonFungibleIdType,
     pub metadata: BTreeMap<String, String>,
@@ -119,9 +94,7 @@ pub struct ResourceManagerCreateNonFungibleWithAddressInput {
 pub const RESOURCE_MANAGER_CREATE_UUID_NON_FUNGIBLE_WITH_INITIAL_SUPPLY: &str =
     "create_uuid_non_fungible_with_initial_supply";
 
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
-)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct ResourceManagerCreateUuidNonFungibleWithInitialSupplyInput {
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,

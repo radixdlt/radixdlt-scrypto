@@ -18,9 +18,7 @@ pub const PACKAGE_LOADER_BLUEPRINT: &str = "PackageLoader";
 
 pub const PACKAGE_LOADER_PUBLISH_WASM_IDENT: &str = "publish_wasm";
 
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
-)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct PackageLoaderPublishWasmInput {
     pub package_address: Option<[u8; 26]>, // TODO: Clean this up
     pub code: Vec<u8>,
@@ -32,9 +30,7 @@ pub struct PackageLoaderPublishWasmInput {
 
 pub const PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT: &str = "publish_precompiled";
 
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
-)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct PackageLoaderPublishPrecompiledInput {
     pub package_address: Option<[u8; 26]>, // TODO: Clean this up
     pub native_package_code_id: u8,

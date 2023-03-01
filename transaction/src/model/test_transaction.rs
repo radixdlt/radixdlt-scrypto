@@ -6,7 +6,7 @@ use radix_engine_interface::*;
 use sbor::rust::vec::Vec;
 use std::collections::BTreeSet;
 
-#[derive(ManifestCategorize, ManifestEncode, ManifestDecode)]
+#[derive(ManifestSbor)]
 pub struct TestTransaction {
     nonce: u64,
     cost_unit_limit: u32,

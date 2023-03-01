@@ -2,7 +2,7 @@ use radix_engine_common::data::manifest::model::*;
 use radix_engine_common::data::manifest::*;
 use radix_engine_common::*;
 
-#[derive(ManifestCategorize, ManifestEncode, ManifestDecode, PartialEq, Eq, Debug)]
+#[derive(ManifestSbor, PartialEq, Eq, Debug)]
 struct TestStruct {
     a: ManifestAddress,
     b: ManifestAddress,

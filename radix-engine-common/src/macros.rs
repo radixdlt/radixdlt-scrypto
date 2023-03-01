@@ -239,7 +239,7 @@ macro_rules! manifest_args {
         encoder.write_payload_prefix($crate::data::manifest::MANIFEST_SBOR_V1_PAYLOAD_PREFIX).unwrap();
         encoder.write_value_kind($crate::data::manifest::ManifestValueKind::Tuple).unwrap();
         // Hack: stringify to skip ownership move semantics
-        encoder.write_size($crate::data::manifest::count!($(stringify!($args)),*)).unwrap();
+        encoder.write_size($crate::count!($(stringify!($args)),*)).unwrap();
         $(
             let arg = $args;
             encoder.encode(&arg).unwrap();
