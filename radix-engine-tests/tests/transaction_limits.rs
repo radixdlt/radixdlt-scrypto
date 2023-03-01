@@ -126,7 +126,7 @@ fn transaction_limit_exceeded_substate_reads_should_fail() {
         matches!(
             e,
             RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
-                TransactionLimitsError::MaxSubstateReadsCountExceeded
+                TransactionLimitsError::MaxSubstateReadCountExceeded
             ))
         )
     });
@@ -163,7 +163,7 @@ fn transaction_limit_exceeded_substate_writes_should_fail() {
         matches!(
             e,
             RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
-                TransactionLimitsError::MaxSubstateWritesCountExceeded
+                TransactionLimitsError::MaxSubstateWriteCountExceeded
             ))
         )
     });

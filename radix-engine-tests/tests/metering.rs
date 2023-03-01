@@ -204,7 +204,7 @@ fn test_radiswap() {
         + 12500 /* DropNode */
         + 24330 /* Invoke */
         + 172000 /* LockSubstate */
-        + 119500 /* ReadSubstate */
+        + 2615200 /* ReadSubstate */
         + 147500 /* RunPrecompiled */
         + 1631555 /* RunWasm */
         + 50000 /* TxBaseCost */
@@ -313,7 +313,7 @@ fn test_flash_loan() {
         + 22500 /* DropNode */
         + 45210 /* Invoke */
         + 266500 /* LockSubstate */
-        + 175500 /* ReadSubstate */
+        + 5255260 /* ReadSubstate */
         + 240000 /* RunPrecompiled */
         + 1408755 /* RunWasm */
         + 50000 /* TxBaseCost */
