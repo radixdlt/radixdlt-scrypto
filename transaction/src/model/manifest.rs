@@ -1,5 +1,5 @@
 use crate::model::Instruction;
-use transaction_data::*;
+use radix_engine_interface::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestCategorize, ManifestEncode, ManifestDecode)]
 pub struct TransactionManifest {

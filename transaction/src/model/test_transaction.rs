@@ -1,9 +1,10 @@
 use crate::model::*;
-use radix_engine_interface::api::types::*;
+use radix_engine_interface::blueprints::resource::NonFungibleGlobalId;
 use radix_engine_interface::crypto::hash;
+use radix_engine_interface::data::manifest::*;
+use radix_engine_interface::*;
 use sbor::rust::vec::Vec;
 use std::collections::BTreeSet;
-use transaction_data::*;
 
 #[derive(ManifestCategorize, ManifestEncode, ManifestDecode)]
 pub struct TestTransaction {

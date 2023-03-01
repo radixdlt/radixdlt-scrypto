@@ -8,7 +8,7 @@ use sbor::rust::collections::{BTreeSet, HashSet};
 use crate::errors::{SignatureValidationError, *};
 use crate::model::*;
 use crate::validation::*;
-use transaction_data::*;
+use radix_engine_interface::data::manifest::*;
 
 pub trait TransactionValidator<T: ManifestDecode> {
     fn check_length_and_decode_from_slice(

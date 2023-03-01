@@ -1,8 +1,8 @@
 use crate::model::TransactionIntent;
 use radix_engine_interface::crypto::{hash, Hash, PublicKey};
+use radix_engine_interface::data::manifest::*;
 use radix_engine_interface::*;
 use sbor::*;
-use transaction_data::*;
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq)]
 pub struct PreviewFlags {

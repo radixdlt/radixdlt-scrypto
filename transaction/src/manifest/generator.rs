@@ -4,7 +4,6 @@ use crate::manifest::ast;
 use crate::model::*;
 use crate::validation::*;
 use radix_engine_interface::address::Bech32Decoder;
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::access_controller::RuleSet;
 use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
@@ -18,6 +17,7 @@ use radix_engine_interface::blueprints::epoch_manager::{
 use radix_engine_interface::blueprints::identity::{
     IdentityCreateInput, IDENTITY_BLUEPRINT, IDENTITY_CREATE_IDENT,
 };
+use radix_engine_interface::blueprints::resource::NonFungibleGlobalId;
 use radix_engine_interface::blueprints::resource::{
     AccessRule, ResourceManagerCreateFungibleInput,
     ResourceManagerCreateFungibleWithInitialSupplyInput, ResourceManagerCreateNonFungibleInput,
@@ -32,12 +32,17 @@ use radix_engine_interface::constants::{
     RESOURCE_MANAGER_PACKAGE,
 };
 use radix_engine_interface::crypto::Hash;
+use radix_engine_interface::data::manifest::model::*;
+use radix_engine_interface::data::manifest::*;
+use radix_engine_interface::data::scrypto::model::*;
+use radix_engine_interface::manifest_args;
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
 use sbor::rust::borrow::Borrow;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::str::FromStr;
 use sbor::rust::vec;
+use sbor::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GeneratorError {
@@ -386,13 +391,13 @@ pub fn generate_instruction(
         }
         ast::Instruction::PublishPackage {
             code,
-            abi,
+            schema,
             royalty_config,
             metadata,
             access_rules,
         } => Instruction::PublishPackage {
             code: generate_blob(code, blobs)?,
-            abi: generate_blob(abi, blobs)?,
+            schema: generate_blob(schema, blobs)?,
             royalty_config: generate_typed_value(royalty_config, resolver, bech32_decoder, blobs)?,
             metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
             access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
@@ -1343,7 +1348,7 @@ mod tests {
     use crate::manifest::parser::Parser;
     use radix_engine_interface::address::Bech32Decoder;
     use radix_engine_interface::blueprints::resource::{
-        AccessRule, AccessRules, NonFungibleIdType, ResourceMethodAuthKey,
+        AccessRule, AccessRules, ResourceMethodAuthKey,
     };
     use radix_engine_interface::network::NetworkDefinition;
     use radix_engine_interface::{dec, pdec};
@@ -1588,7 +1593,7 @@ mod tests {
                         .try_into()
                         .unwrap()
                 ),
-                abi: ManifestBlobRef(
+                schema: ManifestBlobRef(
                     hex::decode("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791")
                         .unwrap()
                         .try_into()

@@ -1,4 +1,6 @@
+use radix_engine_common::data::scrypto::model::ResourceAddress;
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::blueprints::resource::NonFungibleGlobalId;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::*;
 use sbor::rust::collections::BTreeSet;

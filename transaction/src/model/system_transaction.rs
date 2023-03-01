@@ -1,9 +1,10 @@
 use super::{ExecutionContext, FeePayment, Instruction};
 use crate::model::{AuthZoneParams, Executable};
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::blueprints::resource::NonFungibleGlobalId;
 use radix_engine_interface::crypto::hash;
+use radix_engine_interface::*;
 use std::collections::BTreeSet;
-use transaction_data::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestCategorize, ManifestEncode, ManifestDecode)]
 pub struct SystemTransaction {

@@ -1,13 +1,15 @@
 use crate::data::*;
-use radix_engine_interface::data::model::Own;
-use radix_engine_interface::data::{
+use radix_engine_interface::data::manifest::model::{
+    ManifestBlobRef, ManifestBucket, ManifestExpression, ManifestProof,
+};
+use radix_engine_interface::data::manifest::{
+    ManifestCustomValue, ManifestCustomValueKind, ManifestValue, ManifestValueKind,
+};
+use radix_engine_interface::data::scrypto::model::Own;
+use radix_engine_interface::data::scrypto::{
     ScryptoCustomValue, ScryptoCustomValueKind, ScryptoValue, ScryptoValueKind,
 };
 use sbor::rust::vec::Vec;
-use transaction_data::model::{ManifestBlobRef, ManifestBucket, ManifestExpression, ManifestProof};
-use transaction_data::{
-    ManifestCustomValue, ManifestCustomValueKind, ManifestValue, ManifestValueKind,
-};
 
 pub trait TransformHandler<E> {
     fn replace_bucket(&mut self, b: ManifestBucket) -> Result<Own, E>;

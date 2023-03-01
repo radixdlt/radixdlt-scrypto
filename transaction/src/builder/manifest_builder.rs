@@ -1,4 +1,3 @@
-use radix_engine_interface::abi::*;
 use radix_engine_interface::api::types::VaultId;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::access_controller::{
@@ -20,15 +19,16 @@ use radix_engine_interface::constants::{
     RESOURCE_MANAGER_PACKAGE,
 };
 use radix_engine_interface::crypto::{hash, EcdsaSecp256k1PublicKey, Hash};
-use radix_engine_interface::data::*;
-use radix_engine_interface::math::Decimal;
+use radix_engine_interface::data::manifest::{manifest_encode, model::*};
+use radix_engine_interface::data::scrypto::{model::*, scrypto_encode};
+use radix_engine_interface::math::*;
+use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
-use transaction_data::{manifest_args, manifest_encode, model::*};
 
 use crate::data::from_address;
 use crate::model::*;
@@ -548,7 +548,7 @@ impl ManifestBuilder {
     pub fn publish_package(
         &mut self,
         code: Vec<u8>,
-        abi: BTreeMap<String, BlueprintAbi>,
+        schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
         access_rules: AccessRules,
@@ -556,13 +556,13 @@ impl ManifestBuilder {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
 
-        let abi = scrypto_encode(&abi).unwrap();
-        let abi_hash = hash(&abi);
-        self.blobs.insert(abi_hash, abi);
+        let schema = scrypto_encode(&schema).unwrap();
+        let schema_hash = hash(&schema);
+        self.blobs.insert(schema_hash, schema);
 
         self.add_instruction(Instruction::PublishPackage {
             code: ManifestBlobRef(code_hash.0),
-            abi: ManifestBlobRef(abi_hash.0),
+            schema: ManifestBlobRef(schema_hash.0),
             royalty_config,
             metadata,
             access_rules,
@@ -574,19 +574,19 @@ impl ManifestBuilder {
     pub fn publish_package_with_owner(
         &mut self,
         code: Vec<u8>,
-        abi: BTreeMap<String, BlueprintAbi>,
+        schema: PackageSchema,
         owner_badge: NonFungibleGlobalId,
     ) -> &mut Self {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
 
-        let abi = scrypto_encode(&abi).unwrap();
-        let abi_hash = hash(&abi);
-        self.blobs.insert(abi_hash, abi);
+        let schema = scrypto_encode(&schema).unwrap();
+        let schema_hash = hash(&schema);
+        self.blobs.insert(schema_hash, schema);
 
         self.add_instruction(Instruction::PublishPackage {
             code: ManifestBlobRef(code_hash.0),
-            abi: ManifestBlobRef(abi_hash.0),
+            schema: ManifestBlobRef(schema_hash.0),
             royalty_config: BTreeMap::new(),
             metadata: BTreeMap::new(),
             access_rules: package_access_rules_from_owner_badge(&owner_badge),

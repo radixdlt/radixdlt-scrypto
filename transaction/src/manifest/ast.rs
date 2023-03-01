@@ -1,4 +1,4 @@
-use transaction_data::{ManifestCustomValueKind, ManifestValueKind};
+use radix_engine_interface::data::manifest::{ManifestCustomValueKind, ManifestValueKind};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Instruction {
@@ -95,7 +95,7 @@ pub enum Instruction {
 
     PublishPackage {
         code: Value,
-        abi: Value,
+        schema: Value,
         royalty_config: Value,
         metadata: Value,
         access_rules: Value,

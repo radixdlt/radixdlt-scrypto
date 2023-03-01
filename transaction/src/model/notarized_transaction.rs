@@ -3,9 +3,10 @@ use crate::eddsa_ed25519::EddsaEd25519Signature;
 use crate::manifest::{compile, CompileError};
 use crate::model::TransactionManifest;
 use radix_engine_interface::crypto::*;
+use radix_engine_interface::data::manifest::*;
 use radix_engine_interface::network::NetworkDefinition;
+use radix_engine_interface::*;
 use sbor::*;
-use transaction_data::*;
 
 // TODO: add versioning of transaction schema
 
