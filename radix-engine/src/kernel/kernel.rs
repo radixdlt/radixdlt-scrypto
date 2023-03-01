@@ -665,9 +665,6 @@ where
             (RENodeId::GlobalResourceManager(..), RENodeInit::GlobalObject(..)) => {}
             (RENodeId::GlobalPackage(..), RENodeInit::GlobalPackage(..)) => {}
             (RENodeId::Component(..), RENodeInit::Component(..)) => {}
-            (RENodeId::Component(..), RENodeInit::Metadata(..)) => {}
-            (RENodeId::Component(..), RENodeInit::ComponentRoyalty(..)) => {}
-            (RENodeId::Component(..), RENodeInit::AccessRules(..)) => {}
             (RENodeId::Component(..), RENodeInit::ResourceManager(..)) => {}
             (RENodeId::Bucket(..), RENodeInit::FungibleBucket(..)) => {}
             (RENodeId::Bucket(..), RENodeInit::NonFungibleBucket(..)) => {}

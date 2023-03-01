@@ -349,13 +349,27 @@ where
                 _ => return Err(RuntimeError::SystemError(SystemError::BlueprintNotFound)),
             },
             METADATA_PACKAGE => {
-                let substate_bytes = app_states.into_iter().next().unwrap().1;
-                let substate: MetadataSubstate = scrypto_decode(&substate_bytes).map_err(|_| {
+                let substate_bytes_0 = app_states.remove(&0u8).ok_or(
+                    RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema),
+                )?;
+
+                if !app_states.is_empty() {
+                    return Err(RuntimeError::SystemError(
+                        SystemError::ObjectDoesNotMatchSchema,
+                    ));
+                }
+
+                let substate: MetadataSubstate = scrypto_decode(&substate_bytes_0).map_err(|_| {
                     RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
                 })?;
 
                 let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
-                (node_id, RENodeInit::Metadata(substate))
+                (
+                    node_id,
+                    RENodeInit::Component(btreemap!(
+                        SubstateOffset::Metadata(MetadataOffset::Metadata) => RuntimeSubstate::Metadata(substate),
+                    ))
+                )
             }
             ROYALTY_PACKAGE => match blueprint_ident {
                 COMPONENT_ROYALTY_BLUEPRINT => {
@@ -365,6 +379,12 @@ where
                     let substate_bytes_1 = app_states.remove(&1u8).ok_or(
                         RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema),
                     )?;
+
+                    if !app_states.is_empty() {
+                        return Err(RuntimeError::SystemError(
+                            SystemError::ObjectDoesNotMatchSchema,
+                        ));
+                    }
 
                     let config_substate: ComponentRoyaltyConfigSubstate =
                         scrypto_decode(&substate_bytes_0).map_err(|_| {
@@ -378,26 +398,52 @@ where
                     let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
                     (
                         node_id,
-                        RENodeInit::ComponentRoyalty(config_substate, accumulator_substate),
+                        RENodeInit::Component(btreemap!(
+                            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig) => RuntimeSubstate::ComponentRoyaltyConfig(config_substate),
+                            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator) => RuntimeSubstate::ComponentRoyaltyAccumulator(accumulator_substate)
+                        ))
                     )
                 }
                 _ => return Err(RuntimeError::SystemError(SystemError::BlueprintNotFound)),
             },
             ACCESS_RULES_PACKAGE => {
-                let substate_bytes = app_states.into_iter().next().unwrap().1;
+                let substate_bytes_0 = app_states.remove(&0u8).ok_or(
+                    RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema),
+                )?;
+
+                if !app_states.is_empty() {
+                    return Err(RuntimeError::SystemError(
+                        SystemError::ObjectDoesNotMatchSchema,
+                    ));
+                }
+
                 let substate: MethodAccessRulesSubstate =
-                    scrypto_decode(&substate_bytes).map_err(|_| {
+                    scrypto_decode(&substate_bytes_0).map_err(|_| {
                         RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
                     })?;
 
                 let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
-                (node_id, RENodeInit::AccessRules(substate))
+                (
+                    node_id,
+                    RENodeInit::Component(btreemap!(
+                        SubstateOffset::AccessRules(AccessRulesOffset::AccessRules) => RuntimeSubstate::AccessRulesChain(substate)
+                    ))
+                )
             }
             EPOCH_MANAGER_PACKAGE => match blueprint_ident {
                 VALIDATOR_BLUEPRINT => {
-                    let substate_bytes = app_states.into_iter().next().unwrap().1;
+                    let substate_bytes_0 = app_states.remove(&0u8).ok_or(
+                        RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema),
+                    )?;
+
+                    if !app_states.is_empty() {
+                        return Err(RuntimeError::SystemError(
+                            SystemError::ObjectDoesNotMatchSchema,
+                        ));
+                    }
+
                     let substate: ValidatorSubstate =
-                        scrypto_decode(&substate_bytes).map_err(|_| {
+                        scrypto_decode(&substate_bytes_0).map_err(|_| {
                             RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
                         })?;
 
@@ -419,6 +465,12 @@ where
                     let substate_bytes_2 = app_states.remove(&2u8).ok_or(
                         RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema),
                     )?;
+
+                    if !app_states.is_empty() {
+                        return Err(RuntimeError::SystemError(
+                            SystemError::ObjectDoesNotMatchSchema,
+                        ));
+                    }
 
                     let epoch_mgr_substate: EpochManagerSubstate =
                         scrypto_decode(&substate_bytes_0).map_err(|_| {
@@ -453,6 +505,12 @@ where
                     .map_err(|_| {
                         RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
                     })?;
+
+                if !app_states.is_empty() {
+                    return Err(RuntimeError::SystemError(
+                        SystemError::ObjectDoesNotMatchSchema,
+                    ));
+                }
 
                 let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
                 (

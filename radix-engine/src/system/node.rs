@@ -114,12 +114,6 @@ pub enum RENodeInit {
     Component(BTreeMap<SubstateOffset, RuntimeSubstate>),
     TransactionRuntime(TransactionRuntimeSubstate),
     Logger(LoggerSubstate),
-    Metadata(MetadataSubstate),
-    ComponentRoyalty(
-        ComponentRoyaltyConfigSubstate,
-        ComponentRoyaltyAccumulatorSubstate,
-    ),
-    AccessRules(MethodAccessRulesSubstate),
 }
 
 impl RENodeInit {
@@ -256,28 +250,6 @@ impl RENodeInit {
                         TransactionRuntimeOffset::TransactionRuntime,
                     ),
                     transaction_hash.into(),
-                );
-            }
-            RENodeInit::Metadata(metadata) => {
-                substates.insert(
-                    SubstateOffset::Metadata(MetadataOffset::Metadata),
-                    metadata.into(),
-                );
-            }
-            RENodeInit::ComponentRoyalty(config, accumulator) => {
-                substates.insert(
-                    SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
-                    config.into(),
-                );
-                substates.insert(
-                    SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
-                    accumulator.into(),
-                );
-            }
-            RENodeInit::AccessRules(access_rules) => {
-                substates.insert(
-                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
-                    access_rules.into(),
                 );
             }
         };
