@@ -452,13 +452,6 @@ impl<'g, 's, W> ClientEventApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    fn emit_event<T: ScryptoEncode + abi::LegacyDescribe>(
-        &mut self,
-        event: T,
-    ) -> Result<(), RuntimeError> {
-        EventStoreNativePackage::emit_event(event, self)
-    }
-
     fn emit_raw_event(
         &mut self,
         schema_hash: Hash,

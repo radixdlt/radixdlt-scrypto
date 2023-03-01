@@ -4,7 +4,6 @@ use crate::kernel::kernel_api::{KernelInternalApi, KernelModuleApi};
 use crate::system::events::EventError;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
-use radix_engine_interface::abi::LegacyDescribe;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientUnsafeApi;
@@ -12,27 +11,6 @@ use radix_engine_interface::events::EventTypeIdentifier;
 
 pub struct EventStoreNativePackage;
 impl EventStoreNativePackage {
-    pub(crate) fn emit_event<Y, T>(event: T, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelModuleApi<RuntimeError> + ClientUnsafeApi<RuntimeError> + KernelInternalApi,
-        T: ScryptoEncode + LegacyDescribe,
-    {
-        let schema_hash = scrypto_encode(&T::describe())
-            .map_err(|_| {
-                RuntimeError::ApplicationError(ApplicationError::EventError(
-                    EventError::FailedToSborEncodeEventSchema,
-                ))
-            })
-            .map(|encoded| hash(encoded))?;
-        let event_data = scrypto_encode(&event).map_err(|_| {
-            RuntimeError::ApplicationError(ApplicationError::EventError(
-                EventError::FailedToSborEncodeEvent,
-            ))
-        })?;
-
-        Self::emit_raw_event(schema_hash, event_data, api)
-    }
-
     pub(crate) fn emit_raw_event<Y>(
         schema_hash: Hash,
         event_data: Vec<u8>,

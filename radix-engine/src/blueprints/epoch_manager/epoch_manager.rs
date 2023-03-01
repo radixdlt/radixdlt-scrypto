@@ -28,7 +28,7 @@ pub struct EpochManagerSubstate {
     pub num_unstake_epochs: u64,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, ScryptoSbor, LegacyDescribe)]
+#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, ScryptoSbor)]
 pub struct Validator {
     pub key: EcdsaSecp256k1PublicKey,
     pub stake: Decimal,
