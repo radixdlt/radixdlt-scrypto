@@ -2,15 +2,6 @@ use crate::blueprints::access_controller::*;
 use crate::blueprints::resource::*;
 use crate::*;
 use sbor::rust::fmt::Debug;
-use scrypto_schema::PackageSchema;
-
-pub struct AccessControllerAbi;
-
-impl AccessControllerAbi {
-    pub fn schema() -> PackageSchema {
-        PackageSchema::default()
-    }
-}
 
 pub const ACCESS_CONTROLLER_BLUEPRINT: &str = "AccessController";
 

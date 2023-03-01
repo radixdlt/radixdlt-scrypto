@@ -1,3 +1,4 @@
+mod indexed_value;
 mod invocation;
 mod package_code;
 mod re_node;
@@ -6,6 +7,7 @@ mod royalty_config;
 mod traits;
 mod wasm;
 
+pub use indexed_value::*;
 pub use invocation::*;
 pub use package_code::*;
 pub use re_node::*;

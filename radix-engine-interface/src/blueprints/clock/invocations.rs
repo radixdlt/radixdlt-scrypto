@@ -2,7 +2,6 @@ use crate::blueprints::clock::TimePrecision;
 use crate::time::{Instant, TimeComparisonOperator};
 use crate::*;
 use sbor::rust::fmt::Debug;
-use scrypto_schema::PackageSchema;
 
 pub const CLOCK_BLUEPRINT: &str = "Clock";
 

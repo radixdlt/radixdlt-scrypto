@@ -1,6 +1,3 @@
-use radix_engine_interface::api::types::Buffer;
-use radix_engine_interface::api::types::BufferId;
-use radix_engine_interface::api::types::Slice;
 use sbor::rust::mem::transmute;
 use sbor::rust::mem::MaybeUninit;
 use sbor::rust::sync::Arc;

@@ -1,7 +1,6 @@
 use crate::blueprints::resource::*;
 use crate::*;
 use sbor::rust::fmt::Debug;
-use scrypto_schema::PackageSchema;
 
 pub const IDENTITY_BLUEPRINT: &str = "Identity";
 

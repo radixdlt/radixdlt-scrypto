@@ -6,9 +6,7 @@ use crate::{
     blueprints::transaction_runtime::TransactionRuntimeSubstate, errors::RuntimeError,
     system::node::RENodeInit,
 };
-use radix_engine_interface::api::types::{RENodeId, RENodeType};
 use radix_engine_interface::crypto::Hash;
-use radix_engine_interface::data::scrypto::ScryptoValue;
 use sbor::rust::collections::BTreeMap;
 
 #[derive(Debug, Clone)]

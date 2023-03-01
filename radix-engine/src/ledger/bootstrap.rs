@@ -7,9 +7,7 @@ use crate::transaction::{
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::node_modules::auth::{AccessRulesAbi, AuthAddresses};
-use radix_engine_interface::api::node_modules::metadata::MetadataAbi;
-use radix_engine_interface::api::node_modules::royalty::RoyaltyAbi;
+use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::package::{
     PackageLoaderPublishPrecompiledInput, PackageLoaderPublishWasmInput,

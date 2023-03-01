@@ -1,6 +1,5 @@
 use super::{CostingReason, RoyaltyReceiver};
 use crate::types::*;
-use radix_engine_interface::api::types::VaultId;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use sbor::rust::collections::*;
 

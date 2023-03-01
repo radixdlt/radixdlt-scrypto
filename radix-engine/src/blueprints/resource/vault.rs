@@ -8,11 +8,9 @@ use crate::system::node::RENodeInit;
 use crate::types::*;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::{RENodeId, SubstateOffset, VaultOffset};
 use radix_engine_interface::api::{types::*, ClientSubstateApi};
 use radix_engine_interface::api::{ClientApi, ClientEventApi};
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::scrypto::ScryptoValue;
 
 use super::events::vault::{
     DepositResourceEvent, LockFeeEvent, RecallResourceEvent, WithdrawResourceEvent,

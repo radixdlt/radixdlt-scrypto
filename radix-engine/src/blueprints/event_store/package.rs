@@ -4,7 +4,6 @@ use crate::kernel::kernel_api::{KernelInternalApi, KernelModuleApi};
 use crate::system::events::EventError;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientUnsafeApi;
 use radix_engine_interface::events::EventTypeIdentifier;

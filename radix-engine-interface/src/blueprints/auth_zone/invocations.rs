@@ -4,7 +4,6 @@ use crate::math::Decimal;
 use crate::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
-use scrypto_schema::PackageSchema;
 
 pub const AUTH_ZONE_BLUEPRINT: &str = "AuthZone";
 

@@ -23,11 +23,9 @@ use radix_engine_interface::api::node_modules::royalty::{
     PACKAGE_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
 use radix_engine_interface::api::package::*;
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientComponentApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::scrypto::{IndexedScryptoValue, ScryptoValue};
 use sbor::rust::borrow::Cow;
 use transaction::data::to_address;
 use transaction::data::transform;

@@ -1,5 +1,4 @@
 use crate::{system::node_substates::PersistedSubstate, types::*};
-use radix_engine_interface::api::types::{KeyValueStoreId, SubstateId};
 
 pub trait QueryableSubstateStore {
     fn get_kv_store_entries(

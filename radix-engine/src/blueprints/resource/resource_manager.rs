@@ -14,7 +14,6 @@ use native_sdk::resource::SysBucket;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     NonFungibleStoreId, NonFungibleStoreOffset, RENodeId, ResourceManagerOffset, SubstateOffset,
 };
@@ -22,8 +21,6 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::scrypto::model::Own;
-use radix_engine_interface::data::scrypto::ScryptoValue;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;
 

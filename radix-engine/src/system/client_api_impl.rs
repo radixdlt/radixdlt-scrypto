@@ -33,8 +33,6 @@ use radix_engine_interface::api::{
 use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RADIX_TOKEN;
-use radix_engine_interface::data::scrypto::model::Own;
-use radix_engine_interface::data::scrypto::*;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 

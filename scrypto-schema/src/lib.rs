@@ -37,7 +37,7 @@ pub enum FunctionReceiver {
 }
 
 impl PackageSchema {
-    pub fn contains_fn(&self, blueprint_name: &str, fn_ident: &str) -> bool {
+    pub fn contains_fn(&self, _blueprint_name: &str, _fn_ident: &str) -> bool {
         // FIXME  implement this function
         true
     }

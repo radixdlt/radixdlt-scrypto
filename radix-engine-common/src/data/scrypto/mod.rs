@@ -8,8 +8,6 @@ mod custom_value;
 mod custom_value_kind;
 /// Defines the scrypto custom well known types.
 mod custom_well_known_types;
-/// Indexed Scrypto value.
-mod indexed_value;
 /// Defines a way to uniquely identify an element within a Scrypto schema type.
 mod schema_path;
 /// Format any Scrypto value using the Manifest syntax.
@@ -25,7 +23,6 @@ pub use custom_traversal::*;
 pub use custom_value::*;
 pub use custom_value_kind::*;
 pub use custom_well_known_types::*;
-pub use indexed_value::*;
 pub use schema_path::*;
 pub use value_formatter::*;
 #[cfg(feature = "serde")]

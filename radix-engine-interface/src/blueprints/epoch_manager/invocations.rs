@@ -6,7 +6,6 @@ use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
-use scrypto_schema::PackageSchema;
 
 pub const EPOCH_MANAGER_BLUEPRINT: &str = "EpochManager";
 pub const VALIDATOR_BLUEPRINT: &str = "Validator";

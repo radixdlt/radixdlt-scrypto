@@ -4,7 +4,6 @@ use crate::system::kernel_modules::costing::*;
 use crate::types::*;
 use crate::wasm::*;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientEventApi;
 use radix_engine_interface::api::ClientLoggerApi;

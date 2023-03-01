@@ -1,18 +1,19 @@
-use crate::data::scrypto::model::*;
-use crate::data::scrypto::*;
+use crate::api::types::*;
 use core::convert::Infallible;
+use radix_engine_common::data::scrypto::model::*;
+use radix_engine_common::data::scrypto::*;
 use sbor::path::SborPathBuf;
-use sbor::rust::collections::HashSet;
 use sbor::rust::fmt;
-use sbor::rust::vec::Vec;
+use sbor::rust::prelude::*;
+use sbor::*;
 use utils::ContextualDisplay;
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct IndexedScryptoValue {
     bytes: Vec<u8>,
     value: ScryptoValue,
-    global_references: HashSet<Address>,
-    owned_nodes: Vec<Own>,
+    global_references: HashSet<RENodeId>,
+    owned_nodes: Vec<RENodeId>,
 }
 
 impl IndexedScryptoValue {
@@ -68,15 +69,15 @@ impl IndexedScryptoValue {
         &self.value
     }
 
-    pub fn global_references(&self) -> &HashSet<Address> {
+    pub fn global_references(&self) -> &HashSet<RENodeId> {
         &self.global_references
     }
 
-    pub fn owned_node_ids(&self) -> &Vec<Own> {
+    pub fn owned_node_ids(&self) -> &Vec<RENodeId> {
         &self.owned_nodes
     }
 
-    pub fn unpack(self) -> (Vec<u8>, ScryptoValue, Vec<Own>, HashSet<Address>) {
+    pub fn unpack(self) -> (Vec<u8>, ScryptoValue, Vec<RENodeId>, HashSet<RENodeId>) {
         (
             self.bytes,
             self.value,
@@ -120,8 +121,8 @@ impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for IndexedScryptoVal
 }
 
 pub struct ScryptoValueVisitor {
-    pub global_references: HashSet<Address>,
-    pub owned_nodes: Vec<Own>,
+    pub global_references: HashSet<RENodeId>,
+    pub owned_nodes: Vec<RENodeId>,
 }
 
 impl ScryptoValueVisitor {
@@ -143,10 +144,23 @@ impl ValueVisitor<ScryptoCustomValueKind, ScryptoCustomValue> for ScryptoValueVi
     ) -> Result<(), Self::Err> {
         match value {
             ScryptoCustomValue::Address(value) => {
-                self.global_references.insert(value.clone());
+                self.global_references.insert(value.clone().into());
             }
             ScryptoCustomValue::Own(value) => {
-                self.owned_nodes.push(value.clone());
+                match value {
+                    Own::Bucket(bucket_id) => self.owned_nodes.push(RENodeId::Bucket(*bucket_id)),
+                    Own::Proof(proof_id) => self.owned_nodes.push(RENodeId::Proof(*proof_id)),
+                    Own::Vault(vault_id) => self.owned_nodes.push(RENodeId::Vault(*vault_id)),
+                    Own::Component(component_id) => {
+                        self.owned_nodes.push(RENodeId::Component(*component_id))
+                    }
+                    Own::Account(component_id) => {
+                        self.owned_nodes.push(RENodeId::Account(*component_id))
+                    }
+                    Own::KeyValueStore(kv_store_id) => {
+                        self.owned_nodes.push(RENodeId::KeyValueStore(*kv_store_id))
+                    }
+                };
             }
 
             ScryptoCustomValue::Decimal(_)

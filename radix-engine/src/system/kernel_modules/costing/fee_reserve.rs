@@ -3,7 +3,6 @@ use crate::{errors::CanBeAbortion, transaction::AbortReason, types::*};
 use radix_engine_constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_SYSTEM_LOAN,
 };
-use radix_engine_interface::api::types::VaultId;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use strum::EnumCount;
 

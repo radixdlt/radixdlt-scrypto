@@ -1,5 +1,3 @@
-use radix_engine_interface::api::types::BufferId;
-
 use crate::errors::{CanBeAbortion, InvokeError, KernelError, RuntimeError, SelfError};
 use crate::system::kernel_modules::costing::FeeReserveError;
 use crate::transaction::AbortReason;

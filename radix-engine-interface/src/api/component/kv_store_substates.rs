@@ -1,5 +1,4 @@
-use crate::data::scrypto::model::*;
-use crate::data::scrypto::IndexedScryptoValue;
+use crate::api::types::{IndexedScryptoValue, RENodeId};
 use crate::data::scrypto::ScryptoValue;
 use crate::*;
 use sbor::rust::collections::*;
@@ -17,7 +16,7 @@ impl KeyValueStoreEntrySubstate {
         matches!(self, Self::None)
     }
 
-    pub fn owned_node_ids(&self) -> Vec<Own> {
+    pub fn owned_node_ids(&self) -> Vec<RENodeId> {
         match self {
             KeyValueStoreEntrySubstate::Some(k, v) => {
                 let (_, _, mut owns1, _) = IndexedScryptoValue::from_value(k.clone()).unpack();
@@ -29,7 +28,7 @@ impl KeyValueStoreEntrySubstate {
         }
     }
 
-    pub fn global_references(&self) -> HashSet<Address> {
+    pub fn global_references(&self) -> HashSet<RENodeId> {
         match self {
             KeyValueStoreEntrySubstate::Some(k, v) => {
                 let (_, _, _, mut refs1) = IndexedScryptoValue::from_value(k.clone()).unpack();

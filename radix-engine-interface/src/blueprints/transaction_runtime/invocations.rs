@@ -1,6 +1,5 @@
 use crate::*;
 use sbor::rust::fmt::Debug;
-use scrypto_schema::PackageSchema;
 
 pub const TRANSACTION_RUNTIME_BLUEPRINT: &str = "TransactionRuntime";
 

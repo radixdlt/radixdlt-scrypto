@@ -5,7 +5,6 @@ use crate::*;
 use sbor::rust::collections::{BTreeMap, BTreeSet};
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use scrypto_schema::PackageSchema;
 
 pub const RESOURCE_MANAGER_BLUEPRINT: &str = "ResourceManager";
 

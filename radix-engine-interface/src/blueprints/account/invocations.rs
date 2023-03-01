@@ -5,7 +5,6 @@ use crate::*;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
-use scrypto_schema::PackageSchema;
 
 pub const ACCOUNT_BLUEPRINT: &str = "Account";
 
