@@ -2,7 +2,7 @@ use crate::errors::{IdAllocationError, KernelError, RuntimeError};
 use radix_engine_interface::address::EntityType;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
-    AccessControllerId, BucketId, ComponentId, KeyValueStoreId, NonFungibleStoreId, ProofId,
+    BucketId, ComponentId, KeyValueStoreId, NonFungibleStoreId, ProofId,
     RENodeId, RENodeType, ValidatorId, VaultId,
 };
 use radix_engine_interface::crypto::{hash, Hash};
@@ -88,9 +88,6 @@ impl IdAllocator {
                 self.new_component_id().map(|id| RENodeId::EpochManager(id))
             }
             RENodeType::Validator => self.new_validator_id().map(|id| RENodeId::Validator(id)),
-            RENodeType::AccessController => self
-                .new_access_controller_id()
-                .map(|id| RENodeId::AccessController(id)),
             RENodeType::GlobalPackage => self
                 .new_package_address()
                 .map(|address| RENodeId::GlobalPackage(address)),
@@ -257,10 +254,6 @@ impl IdAllocator {
 
     /// Creates a new non-fungible store ID.
     pub fn new_nf_store_id(&mut self) -> Result<NonFungibleStoreId, IdAllocationError> {
-        self.next_id()
-    }
-
-    pub fn new_access_controller_id(&mut self) -> Result<AccessControllerId, IdAllocationError> {
         self.next_id()
     }
 }

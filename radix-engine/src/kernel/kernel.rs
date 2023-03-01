@@ -301,7 +301,6 @@ where
             | RENodeId::EpochManager(..)
             | RENodeId::Validator(..)
             | RENodeId::Component(..)
-            | RENodeId::AccessController(..)
             => api.current_frame.remove_node(&mut api.heap, node_id),
             _ => Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
                 node_id,
@@ -682,7 +681,6 @@ where
             (RENodeId::Vault(..), RENodeInit::NonFungibleVault(..)) => {}
             (RENodeId::EpochManager(..), RENodeInit::EpochManager(..)) => {}
             (RENodeId::Validator(..), RENodeInit::Validator(..)) => {}
-            (RENodeId::AccessController(..), RENodeInit::AccessController(..)) => {}
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
             (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
             (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {}

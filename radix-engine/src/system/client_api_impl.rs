@@ -43,6 +43,7 @@ use radix_engine_interface::api::{
 };
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::account::*;
+use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::model::Own;
@@ -440,14 +441,22 @@ where
                 _ => return Err(RuntimeError::SystemError(SystemError::BlueprintNotFound)),
             },
             ACCESS_CONTROLLER_PACKAGE => {
-                let substate_bytes = app_states.into_iter().next().unwrap().1;
+                let substate_bytes_0 = app_states.remove(&0u8).ok_or(
+                    RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema),
+                )?;
                 let substate: AccessControllerSubstate =
-                    scrypto_decode(&substate_bytes).map_err(|_| {
+                    scrypto_decode(&substate_bytes_0).map_err(|_| {
                         RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
                     })?;
 
-                let node_id = self.kernel_allocate_node_id(RENodeType::AccessController)?;
-                (node_id, RENodeInit::AccessController(substate))
+                let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
+                (
+                    node_id,
+                    RENodeInit::Component(btreemap!(
+                        SubstateOffset::AccessController(AccessControllerOffset::AccessController)
+                            => RuntimeSubstate::AccessController(substate)
+                    )),
+                )
             }
             IDENTITY_PACKAGE => {
                 if !app_states.is_empty() {
@@ -570,12 +579,12 @@ where
                 match (package_address, blueprint.as_str()) {
                     (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => RENodeType::GlobalAccount,
                     (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => RENodeType::GlobalIdentity,
+                    (ACCESS_CONTROLLER_PACKAGE, ACCESS_CONTROLLER_BLUEPRINT) => RENodeType::GlobalAccessController,
                     _ => RENodeType::GlobalComponent,
                 }
             },
             RENodeId::Validator(..) => RENodeType::GlobalValidator,
             RENodeId::EpochManager(..) => RENodeType::GlobalEpochManager,
-            RENodeId::AccessController(..) => RENodeType::GlobalAccessController,
             _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
         };
 

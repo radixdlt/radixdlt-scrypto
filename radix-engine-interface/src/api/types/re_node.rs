@@ -30,7 +30,6 @@ pub enum RENodeType {
     Validator,
     TransactionRuntime,
     Logger,
-    AccessController,
 }
 
 #[derive(
@@ -63,7 +62,6 @@ pub enum RENodeId {
     Vault(VaultId),
     EpochManager(EpochManagerId),
     Validator(ValidatorId),
-    AccessController(AccessControllerId),
 }
 
 impl fmt::Debug for RENodeId {
@@ -97,10 +95,6 @@ impl fmt::Debug for RENodeId {
                 .field(&hex::encode(id))
                 .finish(),
             Self::Validator(id) => f.debug_tuple("Validator").field(&hex::encode(id)).finish(),
-            Self::AccessController(id) => f
-                .debug_tuple("AccessController")
-                .field(&hex::encode(id))
-                .finish(),
         }
     }
 }
@@ -114,7 +108,6 @@ impl Into<[u8; 36]> for RENodeId {
             RENodeId::Component(id) => id,
             RENodeId::EpochManager(id) => id,
             RENodeId::Validator(id) => id,
-            RENodeId::AccessController(id) => id,
             RENodeId::Proof(id) => id,
             RENodeId::Bucket(id) => id,
             RENodeId::Worktop => [3u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now

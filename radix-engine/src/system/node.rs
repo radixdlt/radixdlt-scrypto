@@ -1,4 +1,3 @@
-use crate::blueprints::access_controller::AccessControllerSubstate;
 use crate::blueprints::epoch_manager::*;
 use crate::blueprints::logger::LoggerSubstate;
 use crate::blueprints::resource::*;
@@ -122,7 +121,6 @@ pub enum RENodeInit {
     Validator(ValidatorSubstate),
     TransactionRuntime(TransactionRuntimeSubstate),
     Logger(LoggerSubstate),
-    AccessController(AccessControllerSubstate),
     Metadata(MetadataSubstate),
     ComponentRoyalty(
         ComponentRoyaltyConfigSubstate,
@@ -289,12 +287,6 @@ impl RENodeInit {
                         TransactionRuntimeOffset::TransactionRuntime,
                     ),
                     transaction_hash.into(),
-                );
-            }
-            RENodeInit::AccessController(access_controller) => {
-                substates.insert(
-                    SubstateOffset::AccessController(AccessControllerOffset::AccessController),
-                    access_controller.into(),
                 );
             }
             RENodeInit::Metadata(metadata) => {

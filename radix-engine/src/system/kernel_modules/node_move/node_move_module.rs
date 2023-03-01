@@ -85,7 +85,7 @@ impl NodeMoveModule {
             | RENodeId::EpochManager(..)
             | RENodeId::Validator(..)
             | RENodeId::GlobalComponent(..)
-            | RENodeId::AccessController(..) => Err(RuntimeError::ModuleError(
+            => Err(RuntimeError::ModuleError(
                 ModuleError::NodeMoveError(NodeMoveError::CantMoveDownstream(node_id)),
             )),
         }
@@ -112,7 +112,7 @@ impl NodeMoveModule {
             | RENodeId::EpochManager(..)
             | RENodeId::Validator(..)
             | RENodeId::GlobalComponent(..)
-            | RENodeId::AccessController(..) => Err(RuntimeError::ModuleError(
+            => Err(RuntimeError::ModuleError(
                 ModuleError::NodeMoveError(NodeMoveError::CantMoveUpstream(node_id)),
             )),
         }

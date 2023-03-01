@@ -256,7 +256,7 @@ impl AccessControllerNativePackage {
 
         let substate =
             AccessControllerSubstate::new(vault.0, input.timed_recovery_delay_in_minutes);
-        let access_controller = api.new_object(
+        let object_id = api.new_object(
             ACCESS_CONTROLLER_BLUEPRINT,
             btreemap!(
                 0 => scrypto_encode(&substate).unwrap()
@@ -269,7 +269,7 @@ impl AccessControllerNativePackage {
 
         // Creating a global component address for the access controller RENode
         let address = api.globalize(
-            RENodeId::AccessController(access_controller),
+            RENodeId::Component(object_id),
             btreemap!(
                 NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
                 NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),

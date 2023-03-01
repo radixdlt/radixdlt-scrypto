@@ -66,7 +66,6 @@ impl VisibilityProperties {
                 RENodeId::EpochManager(..) => mode.eq(&ExecutionMode::Client),
                 RENodeId::Validator(..) => mode.eq(&ExecutionMode::Client),
                 RENodeId::Component(..) => mode.eq(&ExecutionMode::Client),
-                RENodeId::AccessController(..) => mode.eq(&ExecutionMode::Client),
                 _ => false,
             },
             _ => return false,
