@@ -11,7 +11,7 @@ use crate::types::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::{
-    AuthZoneStackOffset, BucketOffset, EpochManagerOffset, NonFungibleStoreOffset,
+    AuthZoneStackOffset, BucketOffset, NonFungibleStoreOffset,
     PackageOffset, ProofOffset, ResourceManagerOffset, SubstateOffset, VaultOffset, WorktopOffset,
 };
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
@@ -113,11 +113,6 @@ pub enum RENodeInit {
     KeyValueStore,
     NonFungibleStore(NonFungibleStore),
     Component(BTreeMap<SubstateOffset, RuntimeSubstate>),
-    EpochManager(
-        EpochManagerSubstate,
-        ValidatorSetSubstate,
-        ValidatorSetSubstate,
-    ),
     Validator(ValidatorSubstate),
     TransactionRuntime(TransactionRuntimeSubstate),
     Logger(LoggerSubstate),
@@ -262,24 +257,6 @@ impl RENodeInit {
                         non_fungible.into(),
                     );
                 }
-            }
-            RENodeInit::EpochManager(
-                epoch_manager,
-                current_validator_set_substate,
-                preparing_validator_set_substate,
-            ) => {
-                substates.insert(
-                    SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
-                    epoch_manager.into(),
-                );
-                substates.insert(
-                    SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet),
-                    current_validator_set_substate.into(),
-                );
-                substates.insert(
-                    SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet),
-                    preparing_validator_set_substate.into(),
-                );
             }
             RENodeInit::TransactionRuntime(transaction_hash) => {
                 substates.insert(

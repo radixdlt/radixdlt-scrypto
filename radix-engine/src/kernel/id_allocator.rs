@@ -84,9 +84,6 @@ impl IdAllocator {
                 .new_nf_store_id()
                 .map(|id| RENodeId::NonFungibleStore(id)),
             RENodeType::Component => self.new_component_id().map(|id| RENodeId::Component(id)),
-            RENodeType::EpochManager => {
-                self.new_component_id().map(|id| RENodeId::EpochManager(id))
-            }
             RENodeType::Validator => self.new_validator_id().map(|id| RENodeId::Validator(id)),
             RENodeType::GlobalPackage => self
                 .new_package_address()

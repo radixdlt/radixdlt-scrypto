@@ -26,7 +26,6 @@ pub enum RENodeType {
     NonFungibleStore,
     Component,
     Vault,
-    EpochManager,
     Validator,
     TransactionRuntime,
     Logger,
@@ -60,7 +59,6 @@ pub enum RENodeId {
     NonFungibleStore(NonFungibleStoreId),
     Component(ComponentId),
     Vault(VaultId),
-    EpochManager(EpochManagerId),
     Validator(ValidatorId),
 }
 
@@ -90,10 +88,6 @@ impl fmt::Debug for RENodeId {
                 f.debug_tuple("ResourceManager").field(&address).finish()
             }
             Self::GlobalPackage(address) => f.debug_tuple("GlobalPackage").field(&address).finish(),
-            Self::EpochManager(id) => f
-                .debug_tuple("EpochManager")
-                .field(&hex::encode(id))
-                .finish(),
             Self::Validator(id) => f.debug_tuple("Validator").field(&hex::encode(id)).finish(),
         }
     }
@@ -106,7 +100,6 @@ impl Into<[u8; 36]> for RENodeId {
             RENodeId::NonFungibleStore(id) => id,
             RENodeId::Vault(id) => id,
             RENodeId::Component(id) => id,
-            RENodeId::EpochManager(id) => id,
             RENodeId::Validator(id) => id,
             RENodeId::Proof(id) => id,
             RENodeId::Bucket(id) => id,

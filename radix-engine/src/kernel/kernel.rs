@@ -298,7 +298,6 @@ where
             | RENodeId::Logger
             | RENodeId::TransactionRuntime
             | RENodeId::Bucket(..)
-            | RENodeId::EpochManager(..)
             | RENodeId::Validator(..)
             | RENodeId::Component(..)
             => api.current_frame.remove_node(&mut api.heap, node_id),
@@ -679,7 +678,6 @@ where
             (RENodeId::Proof(..), RENodeInit::NonFungibleProof(..)) => {}
             (RENodeId::Vault(..), RENodeInit::FungibleVault(..)) => {}
             (RENodeId::Vault(..), RENodeInit::NonFungibleVault(..)) => {}
-            (RENodeId::EpochManager(..), RENodeInit::EpochManager(..)) => {}
             (RENodeId::Validator(..), RENodeInit::Validator(..)) => {}
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
             (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}

@@ -428,14 +428,14 @@ where
                             RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
                         })?;
 
-                    let node_id = self.kernel_allocate_node_id(RENodeType::EpochManager)?;
+                    let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
                     (
                         node_id,
-                        RENodeInit::EpochManager(
-                            epoch_mgr_substate,
-                            validator_set_substate_0,
-                            validator_set_substate_1,
-                        ),
+                        RENodeInit::Component(btreemap!(
+                            SubstateOffset::EpochManager(EpochManagerOffset::EpochManager) => RuntimeSubstate::EpochManager(epoch_mgr_substate),
+                            SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet) => RuntimeSubstate::ValidatorSet(validator_set_substate_0),
+                            SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet) => RuntimeSubstate::ValidatorSet(validator_set_substate_1)
+                        ))
                     )
                 }
                 _ => return Err(RuntimeError::SystemError(SystemError::BlueprintNotFound)),
@@ -584,7 +584,6 @@ where
                 }
             },
             RENodeId::Validator(..) => RENodeType::GlobalValidator,
-            RENodeId::EpochManager(..) => RENodeType::GlobalEpochManager,
             _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
         };
 
