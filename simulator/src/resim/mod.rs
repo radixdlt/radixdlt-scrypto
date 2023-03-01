@@ -298,6 +298,7 @@ pub fn get_signing_keys(
     Ok(private_keys)
 }
 
+#[allow(unused_variables)]
 pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageSchema, Error> {
     todo!()
 }

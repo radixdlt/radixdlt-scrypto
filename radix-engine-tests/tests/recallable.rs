@@ -5,7 +5,6 @@ use radix_engine_interface::api::types::RENodeId;
 use scrypto_unit::*;
 use std::ops::Sub;
 use transaction::builder::ManifestBuilder;
-use transaction::data::{manifest_args, ManifestExpression};
 
 #[test]
 fn non_existing_vault_should_cause_error() {

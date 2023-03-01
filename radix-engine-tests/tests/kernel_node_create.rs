@@ -3,7 +3,6 @@ use radix_engine::kernel::actor::Actor;
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::data::manifest_args;
 
 #[test]
 fn should_not_be_able_to_node_create_with_invalid_blueprint() {

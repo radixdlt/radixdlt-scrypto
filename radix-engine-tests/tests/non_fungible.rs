@@ -3,7 +3,6 @@ use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto::NonFungibleData;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::data::{manifest_args, ManifestExpression};
 
 #[test]
 fn create_non_fungible_mutable() {

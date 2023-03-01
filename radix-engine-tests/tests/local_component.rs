@@ -4,7 +4,6 @@ use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::data::{manifest_args, ManifestExpression};
 
 #[test]
 fn local_component_should_return_correct_info() {

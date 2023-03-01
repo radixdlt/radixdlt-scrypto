@@ -3,7 +3,6 @@ use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::data::manifest_args;
 
 #[test]
 fn stored_bucket_in_committed_component_should_fail() {

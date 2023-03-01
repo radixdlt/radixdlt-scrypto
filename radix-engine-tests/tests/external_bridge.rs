@@ -1,7 +1,6 @@
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::data::manifest_args;
 
 /// This tests the external_blueprint! and external_component! macros
 #[test]

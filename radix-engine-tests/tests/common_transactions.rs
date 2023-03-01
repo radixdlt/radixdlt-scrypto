@@ -1,10 +1,5 @@
-use radix_engine::types::{
-    hash, BTreeMap, Bech32Encoder, ComponentAddress, Decimal, NetworkDefinition,
-    NonFungibleGlobalId, NonFungibleLocalId, ResourceAddress, FAUCET_COMPONENT, RADIX_TOKEN,
-};
+use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::dec;
-use radix_engine_interface::rule;
 use scrypto::NonFungibleData;
 use scrypto_unit::TestRunner;
 use transaction::builder::ManifestBuilder;

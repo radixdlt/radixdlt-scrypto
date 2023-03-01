@@ -13,10 +13,7 @@ fn test_loop() {
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "1000"));
     let package_address = test_runner.publish_package(
         code,
-        generate_single_function_abi(
-            "Test",
-            "f",
-        ),
+        generate_single_function_abi("Test", "f"),
         BTreeMap::new(),
         BTreeMap::new(),
         AccessRules::new(),
@@ -42,10 +39,7 @@ fn test_loop_out_of_cost_unit() {
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "2000000"));
     let package_address = test_runner.publish_package(
         code,
-        generate_single_function_abi(
-            "Test",
-            "f",
-        ),
+        generate_single_function_abi("Test", "f"),
         BTreeMap::new(),
         BTreeMap::new(),
         AccessRules::new(),
@@ -70,10 +64,7 @@ fn test_recursion() {
     let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "256"));
     let package_address = test_runner.publish_package(
         code,
-        generate_single_function_abi(
-            "Test",
-            "f",
-        ),
+        generate_single_function_abi("Test", "f"),
         BTreeMap::new(),
         BTreeMap::new(),
         AccessRules::new(),
@@ -97,10 +88,7 @@ fn test_recursion_stack_overflow() {
     let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "257"));
     let package_address = test_runner.publish_package(
         code,
-        generate_single_function_abi(
-            "Test",
-            "f",
-        ),
+        generate_single_function_abi("Test", "f"),
         BTreeMap::new(),
         BTreeMap::new(),
         AccessRules::new(),
@@ -128,10 +116,7 @@ fn test_grow_memory() {
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", &grow_value.to_string()));
     let package_address = test_runner.publish_package(
         code,
-        generate_single_function_abi(
-            "Test",
-            "f",
-        ),
+        generate_single_function_abi("Test", "f"),
         BTreeMap::new(),
         BTreeMap::new(),
         AccessRules::new(),
@@ -155,10 +140,7 @@ fn test_grow_memory_out_of_cost_unit() {
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100000"));
     let package_address = test_runner.publish_package(
         code,
-        generate_single_function_abi(
-            "Test",
-            "f",
-        ),
+        generate_single_function_abi("Test", "f"),
         BTreeMap::new(),
         BTreeMap::new(),
         AccessRules::new(),

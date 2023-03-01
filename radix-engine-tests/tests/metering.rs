@@ -3,9 +3,9 @@ use radix_engine::types::*;
 use radix_engine_constants::DEFAULT_MAX_INVOKE_INPUT_SIZE;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::schema::PackageSchema;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::data::{manifest_args, ManifestExpression};
 use transaction::model::TransactionManifest;
 
 // For WASM-specific metering tests, see `wasm_metering.rs`.
@@ -346,7 +346,7 @@ fn test_publish_large_package() {
         .lock_fee(FAUCET_COMPONENT, 100.into())
         .publish_package(
             code,
-            BTreeMap::new(),
+            PackageSchema::default(),
             BTreeMap::new(),
             BTreeMap::new(),
             AccessRules::new(),

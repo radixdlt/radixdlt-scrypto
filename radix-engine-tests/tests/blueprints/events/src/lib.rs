@@ -3,7 +3,7 @@ use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 use scrypto::radix_engine_interface::api::ClientSubstateApi;
 
-#[derive(ScryptoEncode, LegacyDescribe)]
+#[derive(ScryptoEncode)]
 struct CustomEvent {
     number: u64,
 }

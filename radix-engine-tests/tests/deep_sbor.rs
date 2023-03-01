@@ -2,10 +2,8 @@ use radix_engine::errors::{InterpreterError, KernelError, RuntimeError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::SCRYPTO_SBOR_V1_MAX_DEPTH;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::data::manifest_args;
 
 #[test]
 fn deep_auth_rules_on_component_create_creation_fails() {

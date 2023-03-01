@@ -1,8 +1,8 @@
 pub use radix_engine_constants::*;
 pub use radix_engine_interface::address::{AddressError, Bech32Decoder, Bech32Encoder};
 pub use radix_engine_interface::api::types::*;
-pub use radix_engine_interface::constants::*;
 pub use radix_engine_interface::blueprints::resource::NonFungibleGlobalId;
+pub use radix_engine_interface::constants::*;
 pub use radix_engine_interface::crypto::*;
 pub use radix_engine_interface::data::manifest::model::*;
 pub use radix_engine_interface::data::manifest::*;

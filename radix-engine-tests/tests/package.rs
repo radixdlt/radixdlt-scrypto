@@ -3,9 +3,9 @@ use radix_engine::system::package::PackageError;
 use radix_engine::types::*;
 use radix_engine::wasm::*;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::schema::PackageSchema;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::data::manifest_args;
 
 #[test]
 fn missing_memory_should_cause_error() {
@@ -26,7 +26,7 @@ fn missing_memory_should_cause_error() {
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .publish_package(
             code,
-            BTreeMap::new(),
+            PackageSchema::default(),
             BTreeMap::new(),
             BTreeMap::new(),
             AccessRules::new(),
@@ -143,26 +143,7 @@ fn test_basic_package() {
 fn test_basic_package_missing_export() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
-    let mut blueprints = BTreeMap::new();
-    blueprints.insert(
-        "some_blueprint".to_string(),
-        BlueprintAbi {
-            structure: Type::Tuple {
-                element_types: vec![],
-            },
-            fns: vec![Fn {
-                ident: "f".to_string(),
-                mutability: Option::None,
-                input: Type::Tuple {
-                    element_types: vec![],
-                },
-                output: Type::Tuple {
-                    element_types: vec![],
-                },
-                export_name: "f".to_string(),
-            }],
-        },
-    );
+    let schema = PackageSchema::default();
 
     // Act
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
@@ -170,7 +151,7 @@ fn test_basic_package_missing_export() {
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .publish_package(
             code,
-            blueprints,
+            schema,
             BTreeMap::new(),
             BTreeMap::new(),
             AccessRules::new(),

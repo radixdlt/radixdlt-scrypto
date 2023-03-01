@@ -21,7 +21,7 @@ use radix_engine::transaction::{
     PreviewResult, TransactionReceipt, TransactionResult,
 };
 use radix_engine::types::*;
-use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig}; 
+use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::types::{RENodeId, VaultOffset};
 use radix_engine_interface::api::ClientPackageApi;
@@ -35,8 +35,8 @@ use radix_engine_interface::blueprints::epoch_manager::{
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{EPOCH_MANAGER, FAUCET_COMPONENT};
+use radix_engine_interface::data::manifest::manifest_encode;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
-use radix_engine_interface::data::manifest::{  manifest_encode};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::schema::PackageSchema;

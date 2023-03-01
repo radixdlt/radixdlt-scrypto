@@ -1,7 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use radix_engine::types::*;
 use scrypto_unit::TestRunner;
-use transaction::{builder::ManifestBuilder, data::manifest_args};
+use transaction::builder::ManifestBuilder;
 
 fn bench_spin_loop(c: &mut Criterion) {
     // Set up environment.
