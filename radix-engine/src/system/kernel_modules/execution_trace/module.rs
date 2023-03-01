@@ -131,7 +131,7 @@ impl ProofSnapshot {
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct ResourceSummary {
-    pub buckets: HashMap<BucketId, BucketSnapshot>,
+    pub buckets: HashMap<ComponentId, BucketSnapshot>,
     pub proofs: HashMap<ProofId, ProofSnapshot>,
 }
 
@@ -182,7 +182,7 @@ impl ResourceSummary {
         let mut proofs = HashMap::new();
         for node_id in &call_frame_update.nodes_to_move {
             match &node_id {
-                RENodeId::Bucket(bucket_id) => {
+                RENodeId::Component(bucket_id) => {
                     if let Some(x) = api.kernel_read_bucket(*bucket_id) {
                         buckets.insert(*bucket_id, x);
                     }
@@ -202,7 +202,7 @@ impl ResourceSummary {
         let mut buckets = HashMap::new();
         let mut proofs = HashMap::new();
         match node_id {
-            RENodeId::Bucket(bucket_id) => {
+            RENodeId::Component(bucket_id) => {
                 if let Some(x) = api.kernel_read_bucket(*bucket_id) {
                     buckets.insert(*bucket_id, x);
                 }

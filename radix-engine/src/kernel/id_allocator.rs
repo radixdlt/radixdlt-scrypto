@@ -2,7 +2,7 @@ use crate::errors::{IdAllocationError, KernelError, RuntimeError};
 use radix_engine_interface::address::EntityType;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
-    BucketId, ComponentId, KeyValueStoreId, NonFungibleStoreId, ProofId, RENodeId, RENodeType,
+    ComponentId, KeyValueStoreId, NonFungibleStoreId, ProofId, RENodeId, RENodeType,
     VaultId,
 };
 use radix_engine_interface::crypto::{hash, Hash};
@@ -71,7 +71,6 @@ impl IdAllocator {
     pub fn allocate_node_id(&mut self, node_type: RENodeType) -> Result<RENodeId, RuntimeError> {
         let node_id = match node_type {
             RENodeType::AuthZoneStack => Ok(RENodeId::AuthZoneStack),
-            RENodeType::Bucket => self.new_bucket_id().map(|id| RENodeId::Bucket(id)),
             RENodeType::Proof => self.new_proof_id().map(|id| RENodeId::Proof(id)),
             RENodeType::TransactionRuntime => Ok(RENodeId::TransactionRuntime),
             RENodeType::Worktop => Ok(RENodeId::Worktop),
@@ -218,11 +217,6 @@ impl IdAllocator {
         let next_id = self.next_entity_id(EntityType::Resource)?;
         data.extend(next_id.to_le_bytes());
         Ok(ResourceAddress::Normal(hash(data).lower_26_bytes()))
-    }
-
-    /// Creates a new bucket ID.
-    pub fn new_bucket_id(&mut self) -> Result<BucketId, IdAllocationError> {
-        self.next_id()
     }
 
     /// Creates a new proof ID.

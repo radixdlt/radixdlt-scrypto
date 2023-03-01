@@ -100,7 +100,7 @@ pub const BUCKET_UNLOCK_NON_FUNGIBLES_IDENT: &str = "Bucket_unlock_non_fungibles
 //========
 
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub struct Bucket(pub BucketId);
+pub struct Bucket(pub ComponentId);
 
 //========
 // binary

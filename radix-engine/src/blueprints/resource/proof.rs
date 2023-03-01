@@ -10,14 +10,14 @@ use radix_engine_interface::data::ScryptoValue;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, ScryptoSbor)]
 pub enum LocalRef {
-    Bucket(BucketId),
+    Bucket(ComponentId),
     Vault(VaultId),
 }
 
 impl LocalRef {
     pub fn to_re_node_id(&self) -> RENodeId {
         match self {
-            LocalRef::Bucket(id) => RENodeId::Bucket(id.clone()),
+            LocalRef::Bucket(id) => RENodeId::Component(id.clone()),
             LocalRef::Vault(id) => RENodeId::Vault(id.clone()),
         }
     }

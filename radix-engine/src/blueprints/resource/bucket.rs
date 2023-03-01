@@ -508,7 +508,7 @@ impl BucketBlueprint {
 
         let amount = input.bucket.sys_amount(api)?;
         if amount.is_zero() {
-            api.kernel_drop_node(RENodeId::Bucket(input.bucket.0))?;
+            api.kernel_drop_node(RENodeId::Component(input.bucket.0))?;
             Ok(IndexedScryptoValue::from_typed(&()))
         } else {
             Err(RuntimeError::ApplicationError(
@@ -553,7 +553,7 @@ impl BucketBlueprint {
                 ),
             )?;
 
-            RENodeId::Bucket(bucket_id)
+            RENodeId::Component(bucket_id)
         } else {
             // Take
             let taken = NonFungibleBucket::take(receiver, input.amount, api)?;
@@ -567,7 +567,7 @@ impl BucketBlueprint {
                 ),
             )?;
 
-            RENodeId::Bucket(bucket_id)
+            RENodeId::Component(bucket_id)
         };
         let bucket_id = node_id.into();
 
@@ -630,7 +630,7 @@ impl BucketBlueprint {
 
         // Drop other bucket
         let other_bucket: DroppedBucket = api
-            .kernel_drop_node(RENodeId::Bucket(input.bucket.0))?
+            .kernel_drop_node(RENodeId::Component(input.bucket.0))?
             .into();
 
         // Check resource address

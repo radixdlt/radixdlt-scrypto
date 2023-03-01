@@ -10,7 +10,7 @@ use crate::types::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::{
-    AuthZoneStackOffset, BucketOffset, NonFungibleStoreOffset, PackageOffset, ProofOffset,
+    AuthZoneStackOffset, NonFungibleStoreOffset, PackageOffset, ProofOffset,
     ResourceManagerOffset, SubstateOffset, VaultOffset, WorktopOffset,
 };
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
@@ -103,8 +103,6 @@ pub enum RENodeInit {
     ResourceManager(ResourceManagerSubstate),
     FungibleVault(VaultInfoSubstate, LiquidFungibleResource),
     NonFungibleVault(VaultInfoSubstate, LiquidNonFungibleResource),
-    FungibleBucket(BucketInfoSubstate, LiquidFungibleResource),
-    NonFungibleBucket(BucketInfoSubstate, LiquidNonFungibleResource),
     FungibleProof(ProofInfoSubstate, FungibleProof),
     NonFungibleProof(ProofInfoSubstate, NonFungibleProof),
     AuthZoneStack(AuthZoneStackSubstate),
@@ -146,34 +144,6 @@ impl RENodeInit {
                 substates.insert(
                     SubstateOffset::Vault(VaultOffset::LockedNonFungible),
                     RuntimeSubstate::VaultLockedNonFungible(LockedNonFungibleResource::new_empty()),
-                );
-            }
-            RENodeInit::FungibleBucket(info, liquid) => {
-                substates.insert(
-                    SubstateOffset::Bucket(BucketOffset::Info),
-                    RuntimeSubstate::BucketInfo(info),
-                );
-                substates.insert(
-                    SubstateOffset::Bucket(BucketOffset::LiquidFungible),
-                    RuntimeSubstate::BucketLiquidFungible(liquid),
-                );
-                substates.insert(
-                    SubstateOffset::Bucket(BucketOffset::LockedFungible),
-                    RuntimeSubstate::BucketLockedFungible(LockedFungibleResource::new_empty()),
-                );
-            }
-            RENodeInit::NonFungibleBucket(info, liquid) => {
-                substates.insert(
-                    SubstateOffset::Bucket(BucketOffset::Info),
-                    RuntimeSubstate::BucketInfo(info),
-                );
-                substates.insert(
-                    SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
-                    RuntimeSubstate::BucketLiquidNonFungible(liquid),
-                );
-                substates.insert(
-                    SubstateOffset::Bucket(BucketOffset::LockedNonFungible),
-                    RuntimeSubstate::BucketLockedNonFungible(LockedNonFungibleResource::new_empty()),
                 );
             }
             RENodeInit::FungibleProof(info, proof) => {

@@ -767,7 +767,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
 struct TransactionProcessor<'blob> {
     proof_id_mapping: HashMap<ManifestProof, ProofId>,
-    bucket_id_mapping: HashMap<ManifestBucket, BucketId>,
+    bucket_id_mapping: HashMap<ManifestBucket, ComponentId>,
     id_allocator: ManifestIdAllocator,
     blobs_by_hash: HashMap<Hash, &'blob Vec<u8>>,
 }
@@ -870,7 +870,7 @@ impl<'blob> TransactionProcessor<'blob> {
         // Auto move into worktop & auth_zone
         for owned_node in value.owned_node_ids() {
             match owned_node {
-                RENodeId::Bucket(bucket_id) => {
+                RENodeId::Component(bucket_id) => {
                     Worktop::sys_put(Bucket(*bucket_id), api)?;
                 }
                 RENodeId::Proof(proof_id) => {

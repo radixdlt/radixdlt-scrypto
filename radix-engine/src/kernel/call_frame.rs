@@ -305,6 +305,7 @@ impl CallFrame {
 
         Ok(LockInfo {
             offset: substate_lock.offset.clone(),
+            flags: substate_lock.flags,
         })
     }
 

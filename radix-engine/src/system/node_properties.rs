@@ -43,12 +43,6 @@ impl VisibilityProperties {
                     }
                     _ => false,
                 },
-                RENodeId::Bucket(..) => match &actor.fn_identifier {
-                    FnIdentifier {
-                        package_address, ..
-                    } if package_address.eq(&RESOURCE_MANAGER_PACKAGE) => true,
-                    _ => false,
-                },
                 RENodeId::Proof(..) => match &actor.fn_identifier {
                     FnIdentifier {
                         package_address,
@@ -62,6 +56,7 @@ impl VisibilityProperties {
                     _ => false,
                 },
                 // TODO: CLEAN THESE UP, these are used for globalization
+                // TODO: This includes Bucket, which should be protected
                 RENodeId::Component(..) => mode.eq(&ExecutionMode::Client),
                 _ => false,
             },

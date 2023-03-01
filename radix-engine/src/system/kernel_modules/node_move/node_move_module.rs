@@ -71,7 +71,7 @@ impl NodeMoveModule {
                 Ok(())
             }
 
-            RENodeId::Bucket(..) | RENodeId::Component(..) => Ok(()),
+            RENodeId::Component(..) => Ok(()),
 
             RENodeId::TransactionRuntime
             | RENodeId::AuthZoneStack
@@ -93,8 +93,7 @@ impl NodeMoveModule {
         _api: &mut Y,
     ) -> Result<(), RuntimeError> {
         match node_id {
-            RENodeId::Bucket(..)
-            | RENodeId::Proof(..)
+            RENodeId::Proof(..)
             | RENodeId::Component(..)
             | RENodeId::Vault(..) => Ok(()),
 

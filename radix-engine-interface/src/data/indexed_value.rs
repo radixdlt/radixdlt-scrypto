@@ -149,7 +149,7 @@ impl ValueVisitor<ScryptoCustomValueKind, ScryptoCustomValue> for ScryptoValueVi
             }
             ScryptoCustomValue::Own(value) => {
                 match value {
-                    Own::Bucket(bucket_id) => self.owned_nodes.push(RENodeId::Bucket(*bucket_id)),
+                    Own::Bucket(object_id) => self.owned_nodes.push(RENodeId::Component(*object_id)),
                     Own::Proof(proof_id) => self.owned_nodes.push(RENodeId::Proof(*proof_id)),
                     Own::Vault(vault_id) => self.owned_nodes.push(RENodeId::Vault(*vault_id)),
                     Own::Component(component_id) => {

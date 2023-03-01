@@ -296,7 +296,6 @@ where
             | RENodeId::Worktop
             | RENodeId::Logger
             | RENodeId::TransactionRuntime
-            | RENodeId::Bucket(..)
             | RENodeId::Component(..) => api.current_frame.remove_node(&mut api.heap, node_id),
             _ => Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
                 node_id,
@@ -666,8 +665,6 @@ where
             (RENodeId::GlobalPackage(..), RENodeInit::GlobalPackage(..)) => {}
             (RENodeId::Component(..), RENodeInit::Component(..)) => {}
             (RENodeId::Component(..), RENodeInit::ResourceManager(..)) => {}
-            (RENodeId::Bucket(..), RENodeInit::FungibleBucket(..)) => {}
-            (RENodeId::Bucket(..), RENodeInit::NonFungibleBucket(..)) => {}
             (RENodeId::Proof(..), RENodeInit::FungibleProof(..)) => {}
             (RENodeId::Proof(..), RENodeInit::NonFungibleProof(..)) => {}
             (RENodeId::Vault(..), RENodeInit::FungibleVault(..)) => {}
@@ -729,9 +726,9 @@ where
         self.current_frame.actor.clone()
     }
 
-    fn kernel_read_bucket(&mut self, bucket_id: BucketId) -> Option<BucketSnapshot> {
+    fn kernel_read_bucket(&mut self, bucket_id: ComponentId) -> Option<BucketSnapshot> {
         if let Ok(substate) = self.heap.get_substate(
-            RENodeId::Bucket(bucket_id),
+            RENodeId::Component(bucket_id),
             NodeModuleId::SELF,
             &SubstateOffset::Bucket(BucketOffset::Info),
         ) {
@@ -743,7 +740,7 @@ where
                     let substate = self
                         .heap
                         .get_substate(
-                            RENodeId::Bucket(bucket_id),
+                            RENodeId::Component(bucket_id),
                             NodeModuleId::SELF,
                             &SubstateOffset::Bucket(BucketOffset::LiquidFungible),
                         )
@@ -760,7 +757,7 @@ where
                     let substate = self
                         .heap
                         .get_substate(
-                            RENodeId::Bucket(bucket_id),
+                            RENodeId::Component(bucket_id),
                             NodeModuleId::SELF,
                             &SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
                         )
@@ -779,7 +776,7 @@ where
         }
     }
 
-    fn kernel_read_proof(&mut self, proof_id: BucketId) -> Option<ProofSnapshot> {
+    fn kernel_read_proof(&mut self, proof_id: ProofId) -> Option<ProofSnapshot> {
         if let Ok(substate) = self.heap.get_substate(
             RENodeId::Proof(proof_id),
             NodeModuleId::SELF,

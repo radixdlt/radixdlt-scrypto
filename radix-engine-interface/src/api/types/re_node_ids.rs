@@ -1,6 +1,5 @@
 pub type LockHandle = u32;
 pub type AuthZoneStackId = u32;
-pub type BucketId = [u8; 36];
 pub type ProofId = [u8; 36];
 pub type TransactionRuntimeId = u32;
 

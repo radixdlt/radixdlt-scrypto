@@ -124,6 +124,13 @@ where
     }
 
     fn sys_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
+        let info = self.kernel_get_lock_info(lock_handle)?;
+        if info.flags.contains(LockFlags::MUTABLE) {
+
+        }
+
+
+
         self.kernel_drop_lock(lock_handle)
     }
 }
@@ -292,7 +299,7 @@ where
                             RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
                         })?;
 
-                    let node_id = self.kernel_allocate_node_id(RENodeType::Bucket)?;
+                    let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
 
                     let node_init = match bucket_info_substate.resource_type {
                         ResourceType::NonFungible { .. } => {
@@ -300,14 +307,24 @@ where
                                 scrypto_decode(&substate_bytes_1).map_err(|_| {
                                     RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
                                 })?;
-                            RENodeInit::NonFungibleBucket(bucket_info_substate, liquid_resource)
+
+                            RENodeInit::Component(btreemap!(
+                                SubstateOffset::Bucket(BucketOffset::Info) => RuntimeSubstate::BucketInfo(bucket_info_substate),
+                                SubstateOffset::Bucket(BucketOffset::LiquidNonFungible) => RuntimeSubstate::BucketLiquidNonFungible(liquid_resource),
+                                SubstateOffset::Bucket(BucketOffset::LockedNonFungible) => RuntimeSubstate::BucketLockedNonFungible(LockedNonFungibleResource::new_empty()),
+                            ))
                         }
                         ResourceType::Fungible { .. } => {
                             let liquid_resource: LiquidFungibleResource =
                                 scrypto_decode(&substate_bytes_1).map_err(|_| {
                                     RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
                                 })?;
-                            RENodeInit::FungibleBucket(bucket_info_substate, liquid_resource)
+
+                            RENodeInit::Component(btreemap!(
+                                SubstateOffset::Bucket(BucketOffset::Info) => RuntimeSubstate::BucketInfo(bucket_info_substate),
+                                SubstateOffset::Bucket(BucketOffset::LiquidFungible) => RuntimeSubstate::BucketLiquidFungible(liquid_resource),
+                                SubstateOffset::Bucket(BucketOffset::LockedFungible) => RuntimeSubstate::BucketLockedFungible(LockedFungibleResource::new_empty()),
+                            ))
                         }
                     };
 
