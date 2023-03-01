@@ -4,11 +4,10 @@ use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
-    AuthZoneStackOffset, BucketOffset, ComponentOffset,
-    FnIdentifier, KeyValueStoreOffset, PackageOffset, ProofOffset, RENodeId, ResourceManagerOffset,
-    SubstateOffset, WorktopOffset,
+    AuthZoneStackOffset, BucketOffset, ComponentOffset, FnIdentifier, KeyValueStoreOffset,
+    PackageOffset, ProofOffset, RENodeId, ResourceManagerOffset, SubstateOffset, WorktopOffset,
 };
-use radix_engine_interface::blueprints::resource::PROOF_BLUEPRINT;
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::*;
 
 pub struct VisibilityProperties;
@@ -349,27 +348,29 @@ impl SubstateProperties {
         }
     }
 
-    pub fn verify_can_own(offset: &SubstateOffset, node_id: RENodeId) -> Result<(), RuntimeError> {
-        match node_id {
-            RENodeId::Bucket(..) => {
-                match offset {
-                    SubstateOffset::Worktop(WorktopOffset::Worktop) => Ok(()),
-                    _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
-                        offset.clone(),
-                        node_id,
-                    ))),
-                }
-            }
-            RENodeId::Proof(..) => {
-                match offset {
-                    SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack) => Ok(()),
-                    _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
-                        offset.clone(),
-                        node_id,
-                    ))),
-                }
-            }
-            _ => Ok(())
+    pub fn verify_can_own(
+        offset: &SubstateOffset,
+        package_address: PackageAddress,
+        blueprint_name: &str,
+    ) -> Result<(), RuntimeError> {
+        match (package_address, blueprint_name) {
+            (RESOURCE_MANAGER_PACKAGE, BUCKET_BLUEPRINT) => match offset {
+                SubstateOffset::Worktop(WorktopOffset::Worktop) => Ok(()),
+                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
+                    offset.clone(),
+                    package_address,
+                    blueprint_name.to_string(),
+                ))),
+            },
+            (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => match offset {
+                SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack) => Ok(()),
+                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
+                    offset.clone(),
+                    package_address,
+                    blueprint_name.to_string(),
+                ))),
+            },
+            _ => Ok(()),
         }
     }
 }
