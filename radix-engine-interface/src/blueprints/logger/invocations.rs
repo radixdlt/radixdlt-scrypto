@@ -1,18 +1,7 @@
 use crate::api::types::*;
 use crate::*;
-use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
-use sbor::rust::string::String;
-use scrypto_abi::BlueprintAbi;
-
-pub struct LoggerAbi;
-
-impl LoggerAbi {
-    pub fn blueprint_abis() -> BTreeMap<String, BlueprintAbi> {
-        BTreeMap::new()
-    }
-}
 
 /// Represents the level of a log message.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Sbor, LegacyDescribe)]
@@ -34,14 +23,4 @@ impl fmt::Display for Level {
             Level::Trace => write!(f, "TRACE"),
         }
     }
-}
-
-pub const LOGGER_BLUEPRINT: &str = "Logger";
-
-pub const LOGGER_LOG_IDENT: &str = "log";
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct LoggerLogInput {
-    pub level: Level,
-    pub message: String,
 }

@@ -1,5 +1,4 @@
 use super::track::Track;
-use crate::blueprints::logger::LoggerSubstate;
 use crate::blueprints::resource::{BucketInfoSubstate, NonFungibleSubstate, ProofInfoSubstate};
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::errors::CallFrameError;
@@ -8,8 +7,8 @@ use crate::system::node_substates::{RuntimeSubstate, SubstateRef, SubstateRefMut
 use crate::types::HashMap;
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::types::{
-    AuthZoneStackOffset, BucketOffset, LoggerOffset, NodeModuleId, ProofOffset, RENodeId,
-    SubstateId, SubstateOffset, TransactionRuntimeOffset,
+    AuthZoneStackOffset, BucketOffset, NodeModuleId, ProofOffset, RENodeId, SubstateId,
+    SubstateOffset, TransactionRuntimeOffset,
 };
 use radix_engine_interface::blueprints::resource::{
     LiquidFungibleResource, LiquidNonFungibleResource, ResourceType,
@@ -206,18 +205,6 @@ impl Into<ProofInfoSubstate> for HeapRENode {
     fn into(mut self) -> ProofInfoSubstate {
         self.substates
             .remove(&(NodeModuleId::SELF, SubstateOffset::Proof(ProofOffset::Info)))
-            .unwrap()
-            .into()
-    }
-}
-
-impl Into<LoggerSubstate> for HeapRENode {
-    fn into(mut self) -> LoggerSubstate {
-        self.substates
-            .remove(&(
-                NodeModuleId::SELF,
-                SubstateOffset::Logger(LoggerOffset::Logger),
-            ))
             .unwrap()
             .into()
     }
