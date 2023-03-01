@@ -1,6 +1,7 @@
 mod categorize;
 mod decode;
 mod encode;
+mod manifest_sbor;
 
 use proc_macro::TokenStream;
 
@@ -60,6 +61,15 @@ pub fn decode(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(ManifestCategorize, attributes(sbor))]
 pub fn categorize(input: TokenStream) -> TokenStream {
     categorize::handle_categorize(proc_macro2::TokenStream::from(input))
+        .unwrap_or_else(|err| err.to_compile_error())
+        .into()
+}
+
+/// Derive code that implements `ManifestCategorize`, `ManifestEncode` and `ManifestDecode` traits for this struct or enum.
+///
+#[proc_macro_derive(ManifestSbor, attributes(sbor))]
+pub fn manifest_sbor(input: TokenStream) -> TokenStream {
+    manifest_sbor::handle_manifest_sbor(proc_macro2::TokenStream::from(input))
         .unwrap_or_else(|err| err.to_compile_error())
         .into()
 }
