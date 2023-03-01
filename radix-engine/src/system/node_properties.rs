@@ -4,9 +4,9 @@ use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
-    AccessControllerOffset, AccountOffset, AuthZoneStackOffset, BucketOffset, ComponentOffset,
+    AuthZoneStackOffset, BucketOffset, ComponentOffset,
     FnIdentifier, KeyValueStoreOffset, PackageOffset, ProofOffset, RENodeId, ResourceManagerOffset,
-    RoyaltyOffset, SubstateOffset, ValidatorOffset, WorktopOffset,
+    SubstateOffset, WorktopOffset,
 };
 use radix_engine_interface::blueprints::resource::PROOF_BLUEPRINT;
 use radix_engine_interface::constants::*;
@@ -350,74 +350,26 @@ impl SubstateProperties {
     }
 
     pub fn verify_can_own(offset: &SubstateOffset, node_id: RENodeId) -> Result<(), RuntimeError> {
-        match offset {
-            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))
-            | SubstateOffset::Component(ComponentOffset::State0) => match node_id {
-                RENodeId::KeyValueStore(..) | RENodeId::Component { .. } | RENodeId::Vault(..) => {
-                    Ok(())
-                }
-                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
-                    offset.clone(),
-                    node_id,
-                ))),
-            },
-            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => {
-                match node_id {
-                    RENodeId::NonFungibleStore(..) => Ok(()),
+        match node_id {
+            RENodeId::Bucket(..) => {
+                match offset {
+                    SubstateOffset::Worktop(WorktopOffset::Worktop) => Ok(()),
                     _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
                         offset.clone(),
                         node_id,
                     ))),
                 }
             }
-            SubstateOffset::Worktop(WorktopOffset::Worktop) => match node_id {
-                RENodeId::Bucket(..) => Ok(()),
-                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
-                    offset.clone(),
-                    node_id,
-                ))),
-            },
-            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator) => match node_id {
-                RENodeId::Vault(..) => Ok(()),
-                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
-                    offset.clone(),
-                    node_id,
-                ))),
-            },
-            SubstateOffset::AccessController(AccessControllerOffset::AccessController) => {
-                match node_id {
-                    RENodeId::Vault(..) => Ok(()),
+            RENodeId::Proof(..) => {
+                match offset {
+                    SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack) => Ok(()),
                     _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
                         offset.clone(),
                         node_id,
                     ))),
                 }
             }
-            SubstateOffset::Validator(ValidatorOffset::Validator) => match node_id {
-                RENodeId::Vault(..) => Ok(()),
-                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
-                    offset.clone(),
-                    node_id,
-                ))),
-            },
-            SubstateOffset::Account(AccountOffset::Account) => match node_id {
-                RENodeId::KeyValueStore(..) => Ok(()),
-                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
-                    offset.clone(),
-                    node_id,
-                ))),
-            },
-            SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack) => match node_id {
-                RENodeId::Proof(..) => Ok(()),
-                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
-                    offset.clone(),
-                    node_id,
-                ))),
-            },
-            _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
-                offset.clone(),
-                node_id,
-            ))),
+            _ => Ok(())
         }
     }
 }
