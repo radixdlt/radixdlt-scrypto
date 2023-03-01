@@ -2,7 +2,8 @@ use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::{ClientApi, ClientComponentApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
-use radix_engine_interface::data::{
+use radix_engine_interface::data::scrypto::model::*;
+use radix_engine_interface::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoCategorize, ScryptoDecode,
 };
 use radix_engine_interface::math::Decimal;

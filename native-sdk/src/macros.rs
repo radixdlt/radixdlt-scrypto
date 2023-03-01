@@ -4,7 +4,7 @@ macro_rules! native_env_native_fn {
         $vis $fn $fn_name<Y, E>($($args)*, env: &mut Y) -> Result<$rtn, E>
         where
             Y: radix_engine_interface::api::ClientNativeInvokeApi<E>,
-            E: sbor::rust::fmt::Debug + Categorize<radix_engine_interface::data::ScryptoCustomValueKind> + radix_engine_interface::data::ScryptoDecode,
+            E: sbor::rust::fmt::Debug + Categorize<radix_engine_interface::data::scrypto::ScryptoCustomValueKind> + radix_engine_interface::data::scrypto::ScryptoDecode,
         {
             env.call_native($invocation { $($invocation_args)* })
         }
@@ -14,7 +14,7 @@ macro_rules! native_env_native_fn {
         $vis $fn $fn_name<Y, E>(env: &mut Y) -> Result<$rtn, E>
         where
             Y: radix_engine_interface::api::ClientNativeInvokeApi<E>,
-            E: sbor::rust::fmt::Debug + Categorize<radix_engine_interface::data::ScryptoCustomValueKind> + radix_engine_interface::data::ScryptoDecode,
+            E: sbor::rust::fmt::Debug + Categorize<radix_engine_interface::data::scrypto::ScryptoCustomValueKind> + radix_engine_interface::data::scrypto::ScryptoDecode,
         {
             env.call_native($invocation { $($invocation_args)* })
         }
