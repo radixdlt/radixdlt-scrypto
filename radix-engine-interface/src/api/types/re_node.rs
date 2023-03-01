@@ -208,7 +208,7 @@ pub enum NodeModuleId {
     AccessRules1,
     ComponentRoyalty,
     PackageRoyalty,
-    PackageAccessRules,
+    FunctionAccessRules,
 }
 
 impl NodeModuleId {
@@ -221,7 +221,7 @@ impl NodeModuleId {
             4u32 => Some(NodeModuleId::AccessRules1),
             5u32 => Some(NodeModuleId::ComponentRoyalty),
             6u32 => Some(NodeModuleId::PackageRoyalty),
-            7u32 => Some(NodeModuleId::PackageAccessRules),
+            7u32 => Some(NodeModuleId::FunctionAccessRules),
             _ => None,
         }
     }
@@ -235,7 +235,7 @@ impl NodeModuleId {
             NodeModuleId::AccessRules1 => 4u32,
             NodeModuleId::ComponentRoyalty => 5u32,
             NodeModuleId::PackageRoyalty => 6u32,
-            NodeModuleId::PackageAccessRules => 7u32,
+            NodeModuleId::FunctionAccessRules => 7u32,
         }
     }
 }

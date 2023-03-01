@@ -9,7 +9,7 @@ use radix_engine_interface::api::types::{
     ComponentAddress, ComponentId, NodeModuleId, RENodeId, ToString,
 };
 use radix_engine_interface::api::ClientComponentApi;
-use radix_engine_interface::blueprints::resource::{AccessRule, AccessRuleEntry, AccessRuleKey};
+use radix_engine_interface::blueprints::resource::{AccessRule, AccessRuleEntry, MethodKey};
 use radix_engine_interface::data::scrypto_encode;
 
 // TODO: Should `Encode` and `Decode` be removed so that `ComponentAccessRules` can not be passed
@@ -45,7 +45,7 @@ impl ComponentAccessRules {
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
                     index: self.index,
-                    key: AccessRuleKey::new(NodeModuleId::SELF, method_name.to_string()),
+                    key: MethodKey::new(NodeModuleId::SELF, method_name.to_string()),
                     rule: AccessRuleEntry::AccessRule(access_rule),
                 })
                 .unwrap(),
@@ -62,7 +62,7 @@ impl ComponentAccessRules {
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
                     index: self.index,
-                    key: AccessRuleKey::new(NodeModuleId::SELF, method_name.to_string()),
+                    key: MethodKey::new(NodeModuleId::SELF, method_name.to_string()),
                     mutability: AccessRule::DenyAll,
                 })
                 .unwrap(),

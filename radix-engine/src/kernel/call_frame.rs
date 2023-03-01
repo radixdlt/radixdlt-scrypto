@@ -1,5 +1,5 @@
 use crate::errors::{CallFrameError, KernelError, RuntimeError};
-use crate::kernel::actor::ResolvedActor;
+use crate::kernel::actor::Actor;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_properties::SubstateProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
@@ -92,7 +92,7 @@ pub struct CallFrame {
 
     /// The running application actor of this frame
     /// TODO: Move to an RENode
-    pub actor: Option<ResolvedActor>,
+    pub actor: Option<Actor>,
 
     /// Node refs which are immortal during the life time of this frame:
     /// - Any node refs received from other frames;
@@ -349,7 +349,7 @@ impl CallFrame {
 
     pub fn new_child_from_parent(
         parent: &mut CallFrame,
-        actor: ResolvedActor,
+        actor: Actor,
         call_frame_update: CallFrameUpdate,
     ) -> Result<Self, RuntimeError> {
         let mut owned_heap_nodes = HashMap::new();

@@ -29,8 +29,8 @@ pub enum RENodeModuleInit {
     Metadata(MetadataSubstate),
 
     /* Access rules */
-    ObjectAccessRulesChain(ObjectAccessRulesChainSubstate),
-    PackageAccessRules(PackageAccessRulesSubstate),
+    ObjectAccessRulesChain(MethodAccessRulesChainSubstate),
+    PackageAccessRules(FunctionAccessRulesSubstate),
 
     /* Royalty */
     ComponentRoyalty(

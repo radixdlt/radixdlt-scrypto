@@ -518,7 +518,7 @@ impl ManifestBuilder {
         &mut self,
         entity_address: Address,
         index: u32,
-        key: AccessRuleKey,
+        key: MethodKey,
         rule: AccessRule,
     ) -> &mut Self {
         self.add_instruction(Instruction::SetMethodAccessRule {

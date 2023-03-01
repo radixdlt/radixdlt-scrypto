@@ -1,4 +1,4 @@
-use crate::kernel::actor::ResolvedActor;
+use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::{
     errors::RuntimeError,
@@ -7,7 +7,7 @@ use crate::{
 };
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
-    InvocationIdentifier, LockHandle, NodeModuleId, RENodeId, RENodeType, SubstateOffset,
+    InvocationDebugIdentifier, LockHandle, NodeModuleId, RENodeId, RENodeType, SubstateOffset,
 };
 use radix_engine_interface::data::ScryptoValue;
 use sbor::rust::collections::BTreeMap;
@@ -27,7 +27,7 @@ macro_rules! log {
 impl KernelModule for KernelDebugModule {
     fn before_invoke<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        identifier: &InvocationIdentifier,
+        identifier: &InvocationDebugIdentifier,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
         log!(
@@ -41,7 +41,7 @@ impl KernelModule for KernelDebugModule {
 
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        callee: &Option<ResolvedActor>,
+        callee: &Option<Actor>,
         nodes_and_refs: &mut CallFrameUpdate,
         _args: &ScryptoValue,
     ) -> Result<(), RuntimeError> {
@@ -52,7 +52,7 @@ impl KernelModule for KernelDebugModule {
 
     fn on_execution_finish<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        caller: &Option<ResolvedActor>,
+        caller: &Option<Actor>,
         nodes_and_refs: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         log!(api, "Returning nodes: {:?}", nodes_and_refs.nodes_to_move);
