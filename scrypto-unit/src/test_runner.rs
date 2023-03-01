@@ -98,7 +98,7 @@ impl Compile {
                 &path, err
             )
         });
-        let abi = extract_abi(&code).unwrap();
+        let abi = extract_schema(&code).unwrap();
 
         (code, abi)
     }

@@ -169,7 +169,7 @@ pub fn build_package<P: AsRef<Path>>(
     // Extract ABI
     let wasm =
         fs::read(&wasm_path).map_err(|err| BuildError::IOErrorAtPath(err, wasm_path.clone()))?;
-    let abi = extract_abi(&wasm).map_err(BuildError::AbiExtractionError)?;
+    let abi = extract_schema(&wasm).map_err(BuildError::AbiExtractionError)?;
     fs::write(
         &abi_path,
         scrypto_encode(&abi).map_err(BuildError::AbiEncodeError)?,

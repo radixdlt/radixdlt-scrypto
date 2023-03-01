@@ -103,9 +103,9 @@ impl Package {
         );
 
         let info = PackageInfoSubstate {
+            schema: input.schema,
             dependent_resources: input.dependent_resources.into_iter().collect(),
             dependent_components: input.dependent_components.into_iter().collect(),
-            blueprint_abis: input.abi,
         };
         let code_type = PackageCodeTypeSubstate::Precompiled;
         let code = PackageCodeSubstate {
@@ -143,7 +143,7 @@ impl Package {
         let royalty_vault_id = ResourceManager(RADIX_TOKEN).new_vault(api)?.vault_id();
 
         WasmValidator::default()
-            .validate(&input.code, &input.abi)
+            .validate(&input.code, &input.schema)
             .map_err(|e| {
                 RuntimeError::ApplicationError(ApplicationError::PackageError(
                     PackageError::InvalidWasm(e),
@@ -153,7 +153,7 @@ impl Package {
         let code_type_substate = PackageCodeTypeSubstate::Wasm;
         let wasm_code_substate = PackageCodeSubstate { code: input.code };
         let package_info_substate = PackageInfoSubstate {
-            blueprint_abis: input.abi,
+            schema: input.schema,
             dependent_resources: BTreeSet::new(),
             dependent_components: BTreeSet::new(),
         };

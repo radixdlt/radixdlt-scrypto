@@ -1,3 +1,6 @@
+use radix_engine_interface::schema::BlueprintSchema;
+use radix_engine_interface::schema::PackageSchema;
+
 use crate::errors::InvokeError;
 use crate::kernel::interpreters::NopWasmRuntime;
 use crate::system::kernel_modules::costing::SystemLoanFeeReserve;
@@ -12,7 +15,7 @@ pub enum ExtractAbiError {
     InvalidBlueprintAbi,
 }
 
-pub fn extract_abi(code: &[u8]) -> Result<BTreeMap<String, BlueprintAbi>, ExtractAbiError> {
+pub fn extract_schema(code: &[u8]) -> Result<PackageSchema, ExtractAbiError> {
     let function_exports = WasmModule::init(code)
         .and_then(WasmModule::to_bytes)
         .map_err(ExtractAbiError::InvalidWasm)?
@@ -31,19 +34,16 @@ pub fn extract_abi(code: &[u8]) -> Result<BTreeMap<String, BlueprintAbi>, Extrac
     let mut runtime: Box<dyn WasmRuntime> = Box::new(NopWasmRuntime::new(fee_reserve));
     let mut instance = wasm_engine.instantiate(&instrumented_code);
     let mut blueprints = BTreeMap::new();
-    for method_name in function_exports {
+    for function_export in function_exports {
         let rtn = instance
-            .invoke_export(&method_name, vec![], &mut runtime)
+            .invoke_export(&function_export, vec![], &mut runtime)
             .map_err(ExtractAbiError::FailedToExportBlueprintAbi)?;
 
-        let abi: BlueprintAbi =
+        let name = function_export.replace("_abi", "").to_string();
+        let schema: BlueprintSchema =
             scrypto_decode(rtn.as_slice()).map_err(ExtractAbiError::AbiDecodeError)?;
 
-        if let Type::Struct { name, fields: _ } = &abi.structure {
-            blueprints.insert(name.clone(), abi);
-        } else {
-            return Err(ExtractAbiError::InvalidBlueprintAbi);
-        }
+        blueprints.insert(name, schema);
     }
-    Ok(blueprints)
+    Ok(PackageSchema { blueprints })
 }

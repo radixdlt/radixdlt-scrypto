@@ -10,7 +10,7 @@ use sbor::*;
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Sbor)]
 pub struct PackageSchema {
-    pub blueprints: HashMap<String, BlueprintSchema>,
+    pub blueprints: BTreeMap<String, BlueprintSchema>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
