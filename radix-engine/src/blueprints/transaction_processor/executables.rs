@@ -869,15 +869,18 @@ impl<'blob> TransactionProcessor<'blob> {
     {
         // Auto move into worktop & auth_zone
         for owned_node in value.owned_node_ids() {
-            match owned_node {
-                RENodeId::Object(bucket_id) => {
-                    Worktop::sys_put(Bucket(*bucket_id), api)?;
+            let (package_address, blueprint) = api.get_object_type_info(*owned_node)?;
+            match (package_address, blueprint.as_str()) {
+                (RESOURCE_MANAGER_PACKAGE, BUCKET_BLUEPRINT) => {
+                    let bucket = Bucket(owned_node.clone().into());
+                    Worktop::sys_put(bucket, api)?;
                 }
-                RENodeId::Proof(proof_id) => {
-                    let proof = Proof(*proof_id);
+                (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
+                    let proof = Proof(owned_node.clone().into());
                     ComponentAuthZone::sys_push(proof, api)?;
                 }
-                _ => {}
+                _ => {
+                }
             }
         }
 
