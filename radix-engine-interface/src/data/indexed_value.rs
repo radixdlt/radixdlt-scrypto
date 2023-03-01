@@ -155,7 +155,9 @@ impl ValueVisitor<ScryptoCustomValueKind, ScryptoCustomValue> for ScryptoValueVi
                     Own::Proof(proof_id) => {
                         self.owned_nodes.push(RENodeId::Object(*proof_id));
                     }
-                    Own::Vault(vault_id) => self.owned_nodes.push(RENodeId::Vault(*vault_id)),
+                    Own::Vault(vault_id) => {
+                        self.owned_nodes.push(RENodeId::Object(*vault_id))
+                    },
                     Own::Component(component_id) => {
                         self.owned_nodes.push(RENodeId::Object(*component_id))
                     }

@@ -3,7 +3,6 @@ use crate::{errors::CanBeAbortion, transaction::AbortReason, types::*};
 use radix_engine_constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_SYSTEM_LOAN,
 };
-use radix_engine_interface::api::types::VaultId;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use strum::EnumCount;
 
@@ -60,7 +59,7 @@ pub trait ExecutionFeeReserve {
 
     fn lock_fee(
         &mut self,
-        vault_id: VaultId,
+        vault_id: ObjectId,
         fee: LiquidFungibleResource,
         contingent: bool,
     ) -> Result<LiquidFungibleResource, FeeReserveError>;
@@ -116,7 +115,7 @@ pub struct SystemLoanFeeReserve {
     tip_percentage: u16,
 
     /// Payments made during the execution of a transaction.
-    payments: Vec<(VaultId, LiquidFungibleResource, bool)>,
+    payments: Vec<(ObjectId, LiquidFungibleResource, bool)>,
 
     /// The cost unit balance (from system loan)
     remaining_loan_balance: u32,
@@ -375,7 +374,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
 
     fn lock_fee(
         &mut self,
-        vault_id: VaultId,
+        vault_id: ObjectId,
         mut fee: LiquidFungibleResource,
         contingent: bool,
     ) -> Result<LiquidFungibleResource, FeeReserveError> {
@@ -437,7 +436,7 @@ impl Default for SystemLoanFeeReserve {
 mod tests {
     use super::*;
 
-    const TEST_VAULT_ID: VaultId = [0u8; 36];
+    const TEST_VAULT_ID: ObjectId = [0u8; 36];
 
     fn xrd<T: Into<Decimal>>(amount: T) -> LiquidFungibleResource {
         LiquidFungibleResource::new(amount.into())

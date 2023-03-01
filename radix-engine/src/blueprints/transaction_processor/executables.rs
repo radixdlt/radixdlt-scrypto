@@ -128,7 +128,7 @@ fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFra
             // TODO: This needs to be cleaned up
             // TODO: How does this relate to newly created vaults in the transaction frame?
             // TODO: Will probably want different spacing for refed vs. owned nodes
-            update.add_ref(RENodeId::Vault(*vault_id));
+            update.add_ref(RENodeId::Object(*vault_id));
         }
 
         Instruction::SetPackageRoyaltyConfig {
@@ -600,7 +600,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 }
                 Instruction::RecallResource { vault_id, amount } => {
                     let rtn = api.call_method(
-                        RENodeId::Vault(vault_id),
+                        RENodeId::Object(vault_id),
                         VAULT_RECALL_IDENT,
                         scrypto_encode(&VaultRecallInput { amount }).unwrap(),
                     )?;

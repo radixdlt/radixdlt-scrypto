@@ -30,7 +30,7 @@ fn non_existing_vault_should_cause_error() {
     // Assert
     receipt.expect_specific_rejection(|e| {
         e.eq(&RejectionError::ErrorBeforeFeeLoanRepaid(
-            RuntimeError::KernelError(KernelError::RENodeNotFound(RENodeId::Vault(
+            RuntimeError::KernelError(KernelError::RENodeNotFound(RENodeId::Object(
                 non_existing_vault_id,
             ))),
         ))

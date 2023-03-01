@@ -461,7 +461,7 @@ impl<'s> Track<'s> {
         self,
         mut invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
         mut fee_reserve: SystemLoanFeeReserve,
-        vault_ops: Vec<(TraceActor, VaultId, VaultOp)>,
+        vault_ops: Vec<(TraceActor, ObjectId, VaultOp)>,
         events: Vec<TrackedEvent>,
         application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
         application_logs: Vec<(Level, String)>,
@@ -588,7 +588,7 @@ impl<'s> FinalizingTrack<'s> {
         self,
         invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
         fee_summary: &mut FeeSummary,
-        vault_ops: Vec<(TraceActor, VaultId, VaultOp)>,
+        vault_ops: Vec<(TraceActor, ObjectId, VaultOp)>,
         application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
         application_logs: Vec<(Level, String)>,
     ) -> TransactionResult {
@@ -646,7 +646,7 @@ impl<'s> FinalizingTrack<'s> {
         }
 
         // Finalize payments
-        let mut actual_fee_payments: BTreeMap<VaultId, Decimal> = BTreeMap::new();
+        let mut actual_fee_payments: BTreeMap<ObjectId, Decimal> = BTreeMap::new();
         let mut required = fee_summary.total_execution_cost_xrd
             + fee_summary.total_royalty_cost_xrd
             - fee_summary.bad_debt_xrd;
@@ -670,7 +670,7 @@ impl<'s> FinalizingTrack<'s> {
 
             // Refund overpayment
             let substate_id = SubstateId(
-                RENodeId::Vault(vault_id),
+                RENodeId::Object(vault_id),
                 NodeModuleId::SELF,
                 SubstateOffset::Vault(VaultOffset::LiquidFungible),
             );
@@ -703,7 +703,7 @@ impl<'s> FinalizingTrack<'s> {
                         .vault_id();
                     let royalty_vault_substate = to_persist
                         .get_mut(&SubstateId(
-                            RENodeId::Vault(royalty_vault_id),
+                            RENodeId::Object(royalty_vault_id),
                             NodeModuleId::SELF,
                             SubstateOffset::Vault(VaultOffset::LiquidFungible),
                         ))
@@ -731,7 +731,7 @@ impl<'s> FinalizingTrack<'s> {
                         .vault_id();
                     let royalty_vault_substate = to_persist
                         .get_mut(&SubstateId(
-                            RENodeId::Vault(royalty_vault_id),
+                            RENodeId::Object(royalty_vault_id),
                             NodeModuleId::SELF,
                             SubstateOffset::Vault(VaultOffset::LiquidFungible),
                         ))

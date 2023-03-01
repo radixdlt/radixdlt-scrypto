@@ -63,7 +63,7 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
 
 struct ComponentStateDump {
     pub raw_state: Option<IndexedScryptoValue>,
-    pub owned_vaults: Option<HashSet<VaultId>>,
+    pub owned_vaults: Option<HashSet<ObjectId>>,
     pub package_address: Option<PackageAddress>, // Native components have no package address.
     pub blueprint_name: String,                  // All components have a blueprint, native or not.
     pub access_rules: Option<AccessRules>,       // Virtual Components don't have access rules.
@@ -126,12 +126,12 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
             let metadata = metadata_substate.metadata;
 
             // Find all vaults owned by the component, assuming a tree structure.
-            let mut vaults_found: HashSet<VaultId> = raw_state
+            let mut vaults_found: HashSet<ObjectId> = raw_state
                 .owned_node_ids()
                 .iter()
                 .cloned()
                 .filter_map(|node_id| match node_id {
-                    RENodeId::Vault(vault_id) => Some(vault_id),
+                    RENodeId::Object(vault_id) => Some(vault_id),
                     _ => None,
                 })
                 .collect();
@@ -358,7 +358,7 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
     kv_store_id: &KeyValueStoreId,
     substate_store: &T,
     output: &mut O,
-) -> Result<(Vec<KeyValueStoreId>, Vec<VaultId>), DisplayError> {
+) -> Result<(Vec<KeyValueStoreId>, Vec<ObjectId>), DisplayError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
     let mut owned_kv_stores = Vec::new();
     let mut owned_vaults = Vec::new();
@@ -384,7 +384,7 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
             );
             for owned_node in substate.kv_store_entry().owned_node_ids() {
                 match owned_node {
-                    RENodeId::Vault(vault_id) => {
+                    RENodeId::Object(vault_id) => {
                         owned_vaults.push(vault_id);
                     }
                     RENodeId::KeyValueStore(kv_store_id) => {
@@ -399,7 +399,7 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
 }
 
 fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
-    vaults: &HashSet<VaultId>,
+    vaults: &HashSet<ObjectId>,
     substate_store: &T,
     output: &mut O,
 ) -> Result<(), DisplayError> {
@@ -410,7 +410,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
         // READ vault info
         let vault_info: VaultInfoSubstate = substate_store
             .get_substate(&SubstateId(
-                RENodeId::Vault(*vault_id),
+                RENodeId::Object(*vault_id),
                 NodeModuleId::SELF,
                 SubstateOffset::Vault(VaultOffset::Info),
             ))
@@ -443,7 +443,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
         let amount = if vault_info.resource_type.is_fungible() {
             let vault: LiquidFungibleResource = substate_store
                 .get_substate(&SubstateId(
-                    RENodeId::Vault(*vault_id),
+                    RENodeId::Object(*vault_id),
                     NodeModuleId::SELF,
                     SubstateOffset::Vault(VaultOffset::LiquidFungible),
                 ))
@@ -454,7 +454,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
         } else {
             let vault: LiquidNonFungibleResource = substate_store
                 .get_substate(&SubstateId(
-                    RENodeId::Vault(*vault_id),
+                    RENodeId::Object(*vault_id),
                     NodeModuleId::SELF,
                     SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
                 ))
@@ -485,7 +485,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
         if !vault_info.resource_type.is_fungible() {
             let vault: LiquidNonFungibleResource = substate_store
                 .get_substate(&SubstateId(
-                    RENodeId::Vault(*vault_id),
+                    RENodeId::Object(*vault_id),
                     NodeModuleId::SELF,
                     SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
                 ))

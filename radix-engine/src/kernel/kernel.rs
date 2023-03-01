@@ -25,10 +25,7 @@ use radix_engine_interface::api::types::{
 use radix_engine_interface::blueprints::account::{
     ACCOUNT_BLUEPRINT, ACCOUNT_DEPOSIT_BATCH_IDENT, ACCOUNT_DEPOSIT_IDENT,
 };
-use radix_engine_interface::blueprints::resource::{
-    require, AccessRule, AccessRules, LiquidFungibleResource, LiquidNonFungibleResource, MethodKey,
-    Proof, ProofDropInput, ResourceType, PROOF_BLUEPRINT, PROOF_DROP_IDENT,
-};
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use sbor::rust::mem;
 
@@ -558,18 +555,25 @@ where
                                 .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
                         }
                     }
-                    RENodeId::Vault(..) => {
+                    RENodeId::Object(..) => {
                         if self.current_frame.get_node_visibility(node_id).is_none() {
-                            let offset = SubstateOffset::Vault(VaultOffset::Info);
+                            let offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
                             self.track
                                 .acquire_lock(
-                                    SubstateId(*node_id, NodeModuleId::SELF, offset.clone()),
+                                    SubstateId(*node_id, NodeModuleId::TypeInfo, offset.clone()),
                                     LockFlags::read_only(),
                                 )
                                 .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
+
+                            let substate_ref = self.track.get_substate(*node_id, NodeModuleId::TypeInfo, &offset);
+                            let type_substate: &TypeInfoSubstate = substate_ref.into();
+                            if !matches!((type_substate.package_address, type_substate.blueprint_name.as_str()), (RESOURCE_MANAGER_PACKAGE, VAULT_BLUEPRINT)) {
+                                return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
+                            }
+
                             self.track
                                 .release_lock(
-                                    SubstateId(*node_id, NodeModuleId::SELF, offset),
+                                    SubstateId(*node_id, NodeModuleId::TypeInfo, offset),
                                     false,
                                 )
                                 .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
@@ -678,8 +682,6 @@ where
             (RENodeId::GlobalResourceManager(..), RENodeInit::GlobalObject(..)) => {}
             (RENodeId::GlobalPackage(..), RENodeInit::GlobalPackage(..)) => {}
             (RENodeId::Object(..), RENodeInit::Object(..)) => {}
-            (RENodeId::Vault(..), RENodeInit::FungibleVault(..)) => {}
-            (RENodeId::Vault(..), RENodeInit::NonFungibleVault(..)) => {}
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
             (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
             (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {}

@@ -131,6 +131,7 @@ pub enum KernelError {
     RENodeNotFound(RENodeId),
 
     InvalidScryptoFnOutput,
+    InvalidDirectAccess,
 
     // ID allocation
     IdAllocationError(IdAllocationError),

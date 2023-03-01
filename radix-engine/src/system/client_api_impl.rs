@@ -72,7 +72,8 @@ where
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
         if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
-            if !matches!(node_id, RENodeId::Vault(_)) {
+            let (package_address, blueprint) = self.get_object_type_info(node_id)?;
+            if !matches!((package_address, blueprint.as_str()), (RESOURCE_MANAGER_PACKAGE, VAULT_BLUEPRINT)) {
                 return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
             }
         }
@@ -347,7 +348,7 @@ where
                             RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
                         })?;
 
-                    let node_id = self.kernel_allocate_node_id(RENodeType::Vault)?;
+                    let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
 
                     let node_init = match vault_info_substate.resource_type {
                         ResourceType::NonFungible { .. } => {
@@ -355,14 +356,24 @@ where
                                 scrypto_decode(&substate_bytes_1).map_err(|_| {
                                     RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
                                 })?;
-                            RENodeInit::NonFungibleVault(vault_info_substate, liquid_resource)
+
+                            RENodeInit::Object(btreemap!(
+                                SubstateOffset::Vault(VaultOffset::Info) => RuntimeSubstate::VaultInfo(vault_info_substate),
+                                SubstateOffset::Vault(VaultOffset::LiquidNonFungible) => RuntimeSubstate::VaultLiquidNonFungible(liquid_resource),
+                                SubstateOffset::Vault(VaultOffset::LockedNonFungible) => RuntimeSubstate::VaultLockedNonFungible(LockedNonFungibleResource::new_empty()),
+                            ))
                         }
                         ResourceType::Fungible { .. } => {
                             let liquid_resource: LiquidFungibleResource =
                                 scrypto_decode(&substate_bytes_1).map_err(|_| {
                                     RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
                                 })?;
-                            RENodeInit::FungibleVault(vault_info_substate, liquid_resource)
+
+                            RENodeInit::Object(btreemap!(
+                                SubstateOffset::Vault(VaultOffset::Info) => RuntimeSubstate::VaultInfo(vault_info_substate),
+                                SubstateOffset::Vault(VaultOffset::LiquidFungible) => RuntimeSubstate::VaultLiquidFungible(liquid_resource),
+                                SubstateOffset::Vault(VaultOffset::LockedFungible) => RuntimeSubstate::VaultLockedFungible(LockedFungibleResource::new_empty()),
+                            ))
                         }
                     };
 
@@ -857,7 +868,7 @@ where
 
     fn credit_cost_units(
         &mut self,
-        vault_id: VaultId,
+        vault_id: ObjectId,
         locked_fee: LiquidFungibleResource,
         contingent: bool,
     ) -> Result<LiquidFungibleResource, RuntimeError> {

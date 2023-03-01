@@ -17,10 +17,7 @@ use radix_engine_interface::api::package::{
     PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate,
 };
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::{
-    ComponentAddress, InvocationDebugIdentifier, LockHandle, MethodIdentifier, NodeModuleId,
-    RoyaltyOffset, SubstateOffset, VaultId, VaultOffset,
-};
+use radix_engine_interface::api::types::{ComponentAddress, InvocationDebugIdentifier, LockHandle, MethodIdentifier, NodeModuleId, ObjectId, RoyaltyOffset, SubstateOffset, VaultOffset};
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::constants::*;
@@ -198,7 +195,7 @@ impl KernelModule for CostingModule {
             api.kernel_get_substate_ref(handle)?;
         {
             let royalty_vault = package_royalty_accumulator.royalty.clone();
-            let vault_node_id = RENodeId::Vault(royalty_vault.vault_id());
+            let vault_node_id = RENodeId::Object(royalty_vault.vault_id());
             let vault_handle = api.kernel_lock_substate(
                 vault_node_id,
                 NodeModuleId::SELF,
@@ -251,7 +248,7 @@ impl KernelModule for CostingModule {
                 let royalty_accumulator: &ComponentRoyaltyAccumulatorSubstate =
                     api.kernel_get_substate_ref(handle)?;
                 let royalty_vault = royalty_accumulator.royalty.clone();
-                let vault_node_id = RENodeId::Vault(royalty_vault.vault_id());
+                let vault_node_id = RENodeId::Object(royalty_vault.vault_id());
                 let vault_handle = api.kernel_lock_substate(
                     vault_node_id,
                     NodeModuleId::SELF,
@@ -386,7 +383,7 @@ impl KernelModule for CostingModule {
 
     fn on_credit_cost_units<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        vault_id: VaultId,
+        vault_id: ObjectId,
         fee: LiquidFungibleResource,
         contingent: bool,
     ) -> Result<LiquidFungibleResource, RuntimeError> {

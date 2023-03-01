@@ -131,75 +131,82 @@ impl AuthModule {
                 }
             }
             MethodIdentifier(
-                RENodeId::Object(..)
-                | RENodeId::Worktop
+                RENodeId::Worktop
                 | RENodeId::Logger
                 | RENodeId::TransactionRuntime
                 | RENodeId::AuthZoneStack,
                 ..,
             ) => MethodAuthorization::AllowAll,
-            MethodIdentifier(RENodeId::Vault(vault_id), ..) => {
-                let vault_node_id = RENodeId::Vault(*vault_id);
-                let visibility = api.kernel_get_node_visibility_origin(vault_node_id).ok_or(
-                    RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(vault_node_id)),
-                )?;
 
-                let resource_address = {
-                    let handle = api.kernel_lock_substate(
-                        vault_node_id,
-                        NodeModuleId::SELF,
-                        SubstateOffset::Vault(VaultOffset::Info),
-                        LockFlags::read_only(),
-                    )?;
-                    let substate_ref: &VaultInfoSubstate = api.kernel_get_substate_ref(handle)?;
-                    let resource_address = substate_ref.resource_address;
-                    api.kernel_drop_lock(handle)?;
-                    resource_address
-                };
-
-                // TODO: Revisit what the correct abstraction is for visibility in the auth module
-                let method_key = identifier.method_key();
-                let auth = match visibility {
-                    RENodeVisibilityOrigin::Normal => Self::method_authorization_contextless(
-                        RENodeId::GlobalResourceManager(resource_address),
-                        NodeModuleId::AccessRules1,
-                        method_key,
-                        api,
-                    )?,
-                    RENodeVisibilityOrigin::DirectAccess => {
-                        let handle = api.kernel_lock_substate(
-                            RENodeId::GlobalResourceManager(resource_address),
-                            NodeModuleId::AccessRules1,
-                            SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
-                            LockFlags::read_only(),
+            MethodIdentifier(RENodeId::Object(object_id), ..) => {
+                let node_id = RENodeId::Object(*object_id);
+                let (package_address, blueprint) = api.get_object_type_info(node_id)?;
+                match (package_address, blueprint.as_str()) {
+                    (RESOURCE_MANAGER_PACKAGE, VAULT_BLUEPRINT) => {
+                        let visibility = api.kernel_get_node_visibility_origin(node_id).ok_or(
+                            RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(node_id)),
                         )?;
 
-                        let substate: &MethodAccessRulesSubstate =
-                            api.kernel_get_substate_ref(handle)?;
-
-                        // TODO: Do we want to allow recaller to be able to withdraw from
-                        // TODO: any visible vault?
-                        let auth = if method_key.node_module_id.eq(&NodeModuleId::SELF)
-                            && (method_key.ident.eq(VAULT_RECALL_IDENT)
-                                || method_key.ident.eq(VAULT_RECALL_NON_FUNGIBLES_IDENT))
-                        {
-                            let access_rule = substate.access_rules.get_group("recall");
-                            let authorization = convert_contextless(access_rule);
-                            authorization
-                        } else {
-                            return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                                AuthError::VisibilityError(vault_node_id),
-                            )));
+                        let resource_address = {
+                            let handle = api.kernel_lock_substate(
+                                node_id,
+                                NodeModuleId::SELF,
+                                SubstateOffset::Vault(VaultOffset::Info),
+                                LockFlags::read_only(),
+                            )?;
+                            let substate_ref: &VaultInfoSubstate = api.kernel_get_substate_ref(handle)?;
+                            let resource_address = substate_ref.resource_address;
+                            api.kernel_drop_lock(handle)?;
+                            resource_address
                         };
 
-                        api.kernel_drop_lock(handle)?;
+                        // TODO: Revisit what the correct abstraction is for visibility in the auth module
+                        let method_key = identifier.method_key();
+                        let auth = match visibility {
+                            RENodeVisibilityOrigin::Normal => Self::method_authorization_contextless(
+                                RENodeId::GlobalResourceManager(resource_address),
+                                NodeModuleId::AccessRules1,
+                                method_key,
+                                api,
+                            )?,
+                            RENodeVisibilityOrigin::DirectAccess => {
+                                let handle = api.kernel_lock_substate(
+                                    RENodeId::GlobalResourceManager(resource_address),
+                                    NodeModuleId::AccessRules1,
+                                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+                                    LockFlags::read_only(),
+                                )?;
+
+                                let substate: &MethodAccessRulesSubstate =
+                                    api.kernel_get_substate_ref(handle)?;
+
+                                // TODO: Do we want to allow recaller to be able to withdraw from
+                                // TODO: any visible vault?
+                                let auth = if method_key.node_module_id.eq(&NodeModuleId::SELF)
+                                    && (method_key.ident.eq(VAULT_RECALL_IDENT)
+                                    || method_key.ident.eq(VAULT_RECALL_NON_FUNGIBLES_IDENT))
+                                {
+                                    let access_rule = substate.access_rules.get_group("recall");
+                                    let authorization = convert_contextless(access_rule);
+                                    authorization
+                                } else {
+                                    return Err(RuntimeError::ModuleError(ModuleError::AuthError(
+                                        AuthError::VisibilityError(node_id),
+                                    )));
+                                };
+
+                                api.kernel_drop_lock(handle)?;
+
+                                auth
+                            }
+                        };
 
                         auth
                     }
-                };
+                    _ => MethodAuthorization::AllowAll,
+                }
+            },
 
-                auth
-            }
             MethodIdentifier(node_id, module_id, ..) => {
                 let method_key = identifier.method_key();
 

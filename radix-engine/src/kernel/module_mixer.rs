@@ -23,11 +23,10 @@ use crate::types::api::unsafe_api::ClientCostingReason;
 use bitflags::bitflags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::NodeModuleId;
+use radix_engine_interface::api::types::{NodeModuleId, ObjectId};
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::types::RENodeType;
 use radix_engine_interface::api::types::SubstateOffset;
-use radix_engine_interface::api::types::VaultId;
 use radix_engine_interface::api::types::{InvocationDebugIdentifier, LockHandle};
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::crypto::Hash;
@@ -815,7 +814,7 @@ impl KernelModule for KernelModuleMixer {
 
     fn on_credit_cost_units<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        vault_id: VaultId,
+        vault_id: ObjectId,
         mut fee: LiquidFungibleResource,
         contingent: bool,
     ) -> Result<LiquidFungibleResource, RuntimeError> {

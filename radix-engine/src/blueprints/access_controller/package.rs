@@ -23,7 +23,7 @@ use radix_engine_interface::{api::*, rule};
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct AccessControllerSubstate {
     /// A vault where the asset controlled by the access controller lives.
-    pub controlled_asset: VaultId,
+    pub controlled_asset: ObjectId,
 
     /// The amount of time (in minutes) that it takes for timed recovery to be done. Maximum is
     /// 4,294,967,295 minutes which is 8171.5511700913 years. When this is [`None`], then timed
@@ -39,7 +39,7 @@ pub struct AccessControllerSubstate {
 }
 
 impl AccessControllerSubstate {
-    pub fn new(controlled_asset: VaultId, timed_recovery_delay_in_minutes: Option<u32>) -> Self {
+    pub fn new(controlled_asset: ObjectId, timed_recovery_delay_in_minutes: Option<u32>) -> Self {
         Self {
             controlled_asset,
             timed_recovery_delay_in_minutes,

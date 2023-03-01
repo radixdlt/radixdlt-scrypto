@@ -32,8 +32,8 @@ pub struct ValidatorSubstate {
 
     pub unstake_nft: ResourceAddress,
     pub liquidity_token: ResourceAddress,
-    pub stake_xrd_vault_id: VaultId,
-    pub pending_xrd_withdraw_vault_id: VaultId,
+    pub stake_xrd_vault_id: ObjectId,
+    pub pending_xrd_withdraw_vault_id: ObjectId,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

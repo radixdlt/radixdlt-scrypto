@@ -195,7 +195,7 @@ pub trait KernelModule {
     #[inline(always)]
     fn on_credit_cost_units<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
-        _vault_id: VaultId,
+        _vault_id: ObjectId,
         locked_fee: LiquidFungibleResource,
         _contingent: bool,
     ) -> Result<LiquidFungibleResource, RuntimeError> {

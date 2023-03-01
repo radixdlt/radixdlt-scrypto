@@ -85,7 +85,6 @@ impl NodeMoveModule {
             | RENodeId::GlobalResourceManager(..)
             | RENodeId::KeyValueStore(..)
             | RENodeId::NonFungibleStore(..)
-            | RENodeId::Vault(..)
             | RENodeId::GlobalPackage(..)
             | RENodeId::Worktop
             | RENodeId::GlobalComponent(..) => Err(RuntimeError::ModuleError(
@@ -99,7 +98,7 @@ impl NodeMoveModule {
         _api: &mut Y,
     ) -> Result<(), RuntimeError> {
         match node_id {
-            RENodeId::Object(..) | RENodeId::Vault(..) => Ok(()),
+            RENodeId::Object(..) => Ok(()),
 
             RENodeId::TransactionRuntime
             | RENodeId::AuthZoneStack

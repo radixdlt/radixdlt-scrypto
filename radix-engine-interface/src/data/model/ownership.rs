@@ -14,7 +14,7 @@ use utils::copy_u8_array;
 pub enum Own {
     Bucket(ObjectId),
     Proof(ObjectId),
-    Vault(VaultId),
+    Vault(ObjectId),
     Component(ObjectId),
     KeyValueStore(KeyValueStoreId),
 }
@@ -26,13 +26,13 @@ impl Own {
             _ => panic!("Not a component ownership"),
         }
     }
-    pub fn vault_id(&self) -> VaultId {
+    pub fn vault_id(&self) -> ObjectId {
         match self {
             Own::Vault(v) => *v,
             _ => panic!("Not a vault ownership"),
         }
     }
-    pub fn key_value_store_id(&self) -> VaultId {
+    pub fn key_value_store_id(&self) -> KeyValueStoreId {
         match self {
             Own::KeyValueStore(v) => *v,
             _ => panic!("Not a kv-store ownership"),

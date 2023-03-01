@@ -11,12 +11,8 @@ use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, NonFungibleStoreOffset, PackageOffset,
-    SubstateOffset, VaultOffset, WorktopOffset,
+    SubstateOffset, WorktopOffset,
 };
-use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
-use radix_engine_interface::blueprints::resource::LiquidNonFungibleResource;
-use radix_engine_interface::blueprints::resource::LockedFungibleResource;
-use radix_engine_interface::blueprints::resource::LockedNonFungibleResource;
 
 #[derive(Debug)]
 pub enum RENodeModuleInit {
@@ -101,8 +97,6 @@ pub enum RENodeInit {
         PackageCodeSubstate,
     ),
     Object(BTreeMap<SubstateOffset, RuntimeSubstate>),
-    FungibleVault(VaultInfoSubstate, LiquidFungibleResource),
-    NonFungibleVault(VaultInfoSubstate, LiquidNonFungibleResource),
     AuthZoneStack(AuthZoneStackSubstate),
     Worktop(WorktopSubstate),
     KeyValueStore,
@@ -115,34 +109,6 @@ impl RENodeInit {
     pub fn to_substates(self) -> HashMap<SubstateOffset, RuntimeSubstate> {
         let mut substates = HashMap::<SubstateOffset, RuntimeSubstate>::new();
         match self {
-            RENodeInit::FungibleVault(info, liquid) => {
-                substates.insert(
-                    SubstateOffset::Vault(VaultOffset::Info),
-                    RuntimeSubstate::VaultInfo(info),
-                );
-                substates.insert(
-                    SubstateOffset::Vault(VaultOffset::LiquidFungible),
-                    RuntimeSubstate::VaultLiquidFungible(liquid),
-                );
-                substates.insert(
-                    SubstateOffset::Vault(VaultOffset::LockedFungible),
-                    RuntimeSubstate::VaultLockedFungible(LockedFungibleResource::new_empty()),
-                );
-            }
-            RENodeInit::NonFungibleVault(info, liquid) => {
-                substates.insert(
-                    SubstateOffset::Vault(VaultOffset::Info),
-                    RuntimeSubstate::VaultInfo(info),
-                );
-                substates.insert(
-                    SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
-                    RuntimeSubstate::VaultLiquidNonFungible(liquid),
-                );
-                substates.insert(
-                    SubstateOffset::Vault(VaultOffset::LockedNonFungible),
-                    RuntimeSubstate::VaultLockedNonFungible(LockedNonFungibleResource::new_empty()),
-                );
-            }
             RENodeInit::AuthZoneStack(auth_zone) => {
                 substates.insert(
                     SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),

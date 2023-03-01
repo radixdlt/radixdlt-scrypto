@@ -2,7 +2,7 @@ use crate::errors::{IdAllocationError, KernelError, RuntimeError};
 use radix_engine_interface::address::EntityType;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
-    KeyValueStoreId, NonFungibleStoreId, ObjectId, RENodeId, RENodeType, VaultId,
+    KeyValueStoreId, NonFungibleStoreId, ObjectId, RENodeId, RENodeType,
 };
 use radix_engine_interface::crypto::{hash, Hash};
 use sbor::rust::collections::{BTreeMap, BTreeSet};
@@ -73,7 +73,6 @@ impl IdAllocator {
             RENodeType::TransactionRuntime => Ok(RENodeId::TransactionRuntime),
             RENodeType::Worktop => Ok(RENodeId::Worktop),
             RENodeType::Logger => Ok(RENodeId::Logger),
-            RENodeType::Vault => self.new_vault_id().map(|id| RENodeId::Vault(id)),
             RENodeType::KeyValueStore => {
                 self.new_kv_store_id().map(|id| RENodeId::KeyValueStore(id))
             }
@@ -215,11 +214,6 @@ impl IdAllocator {
         let next_id = self.next_entity_id(EntityType::Resource)?;
         data.extend(next_id.to_le_bytes());
         Ok(ResourceAddress::Normal(hash(data).lower_26_bytes()))
-    }
-
-    /// Creates a new vault ID.
-    pub fn new_vault_id(&mut self) -> Result<VaultId, IdAllocationError> {
-        self.next_id()
     }
 
     pub fn new_object_id(&mut self) -> Result<ObjectId, IdAllocationError> {

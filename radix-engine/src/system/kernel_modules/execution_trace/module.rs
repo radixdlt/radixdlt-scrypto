@@ -38,13 +38,13 @@ pub struct ExecutionTraceModule {
     kernel_call_traces_stacks: HashMap<usize, Vec<KernelCallTrace>>,
 
     /// Vault operations: (Caller, Vault ID, operation)
-    vault_ops: Vec<(TraceActor, VaultId, VaultOp)>,
+    vault_ops: Vec<(TraceActor, ObjectId, VaultOp)>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ResourceChange {
     pub node_id: RENodeId,
-    pub vault_id: VaultId,
+    pub vault_id: ObjectId,
     pub amount: Decimal,
 }
 
@@ -421,7 +421,7 @@ impl ExecutionTraceModule {
                         blueprint_name,
                         ident,
                     },
-                identifier: ActorIdentifier::Method(MethodIdentifier(RENodeId::Vault(vault_id), ..)),
+                identifier: ActorIdentifier::Method(MethodIdentifier(RENodeId::Object(vault_id), ..)),
             }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_PUT_IDENT) =>
@@ -435,7 +435,7 @@ impl ExecutionTraceModule {
                         blueprint_name,
                         ident,
                     },
-                identifier: ActorIdentifier::Method(MethodIdentifier(RENodeId::Vault(vault_id), ..)),
+                identifier: ActorIdentifier::Method(MethodIdentifier(RENodeId::Object(vault_id), ..)),
             }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_LOCK_FEE_IDENT) =>
@@ -461,7 +461,7 @@ impl ExecutionTraceModule {
                         blueprint_name,
                         ident,
                     },
-                identifier: ActorIdentifier::Method(MethodIdentifier(RENodeId::Vault(vault_id), ..)),
+                identifier: ActorIdentifier::Method(MethodIdentifier(RENodeId::Object(vault_id), ..)),
             }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_TAKE_IDENT) =>
@@ -527,7 +527,7 @@ impl ExecutionTraceModule {
         }
     }
 
-    pub fn collect_events(mut self) -> (Vec<(TraceActor, VaultId, VaultOp)>, Vec<TrackedEvent>) {
+    pub fn collect_events(mut self) -> (Vec<(TraceActor, ObjectId, VaultOp)>, Vec<TrackedEvent>) {
         let mut events = Vec::new();
         for (_, traces) in self.kernel_call_traces_stacks.drain() {
             // Emit an output event for each "root" kernel call trace
@@ -547,7 +547,7 @@ impl ExecutionTraceModule {
         &mut self,
         resource_summary: &ResourceSummary,
         caller: &Option<Actor>,
-        vault_id: &VaultId,
+        vault_id: &ObjectId,
     ) {
         let actor = caller
             .clone()
@@ -562,7 +562,7 @@ impl ExecutionTraceModule {
         }
     }
 
-    fn handle_vault_lock_fee_input<'s>(&mut self, caller: &Option<Actor>, vault_id: &VaultId) {
+    fn handle_vault_lock_fee_input<'s>(&mut self, caller: &Option<Actor>, vault_id: &ObjectId) {
         let actor = caller
             .clone()
             .map(|a| TraceActor::Actor(a))
@@ -575,7 +575,7 @@ impl ExecutionTraceModule {
         &mut self,
         resource_summary: &ResourceSummary,
         caller: &Option<Actor>,
-        vault_id: &VaultId,
+        vault_id: &ObjectId,
     ) {
         let actor = caller
             .clone()
@@ -596,14 +596,14 @@ impl ExecutionTraceReceipt {
     // The current approach relies on various runtime invariants.
 
     pub fn new(
-        ops: Vec<(TraceActor, VaultId, VaultOp)>,
-        actual_fee_payments: &BTreeMap<VaultId, Decimal>,
+        ops: Vec<(TraceActor, ObjectId, VaultOp)>,
+        actual_fee_payments: &BTreeMap<ObjectId, Decimal>,
         is_commit_success: bool,
     ) -> Self {
         // TODO: Might want to change the key from being a ComponentId to being an enum to
         //       accommodate for accounts
-        let mut vault_changes = HashMap::<RENodeId, HashMap<VaultId, Decimal>>::new();
-        let mut vault_locked_by = HashMap::<VaultId, RENodeId>::new();
+        let mut vault_changes = HashMap::<RENodeId, HashMap<ObjectId, Decimal>>::new();
+        let mut vault_locked_by = HashMap::<ObjectId, RENodeId>::new();
         for (actor, vault_id, vault_op) in ops {
             if let TraceActor::Actor(Actor {
                 identifier: ActorIdentifier::Method(method),

@@ -1241,7 +1241,7 @@ impl ResourceManagerBlueprint {
         };
 
         api.emit_event(VaultCreationEvent {
-            vault_id: RENodeId::Vault(vault_id),
+            vault_id: RENodeId::Object(vault_id),
         })?;
 
         Ok(IndexedScryptoValue::from_typed(&Own::Vault(vault_id)))

@@ -27,7 +27,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::CallFrameError(CallFrameError::RENodeNotOwned(RENodeId::Vault(_)))
+            RuntimeError::CallFrameError(CallFrameError::RENodeNotOwned(RENodeId::Object(_)))
         )
     });
 }
@@ -62,7 +62,7 @@ fn non_existent_vault_in_committed_component_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::CallFrameError(CallFrameError::RENodeNotOwned(RENodeId::Vault(_)))
+            RuntimeError::CallFrameError(CallFrameError::RENodeNotOwned(RENodeId::Object(_)))
         )
     });
 }
@@ -89,7 +89,7 @@ fn non_existent_vault_in_kv_store_creation_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::CallFrameError(CallFrameError::RENodeNotOwned(RENodeId::Vault(_)))
+            RuntimeError::CallFrameError(CallFrameError::RENodeNotOwned(RENodeId::Object(_)))
         )
     });
 }
@@ -124,7 +124,7 @@ fn non_existent_vault_in_committed_kv_store_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::CallFrameError(CallFrameError::RENodeNotOwned(RENodeId::Vault(_)))
+            RuntimeError::CallFrameError(CallFrameError::RENodeNotOwned(RENodeId::Object(_)))
         )
     });
 }
@@ -173,7 +173,7 @@ fn invalid_double_ownership_of_vault() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::CallFrameError(CallFrameError::RENodeNotOwned(RENodeId::Vault(_)))
+            RuntimeError::CallFrameError(CallFrameError::RENodeNotOwned(RENodeId::Object(_)))
         )
     });
 }
@@ -235,7 +235,7 @@ fn cannot_overwrite_vault_in_map() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::StoredNodeRemoved(RENodeId::Vault(_)))
+            RuntimeError::KernelError(KernelError::StoredNodeRemoved(RENodeId::Object(_)))
         )
     });
 }
@@ -293,7 +293,7 @@ fn cannot_remove_vaults() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::StoredNodeRemoved(RENodeId::Vault(_)))
+            RuntimeError::KernelError(KernelError::StoredNodeRemoved(RENodeId::Object(_)))
         )
     });
 }
