@@ -421,7 +421,8 @@ impl ExecutionTraceModule {
                         blueprint_name,
                         ident,
                     },
-                identifier: ActorIdentifier::Method(MethodIdentifier(RENodeId::Object(vault_id), ..)),
+                identifier:
+                    ActorIdentifier::Method(MethodIdentifier(RENodeId::Object(vault_id), ..)),
             }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_PUT_IDENT) =>
@@ -435,7 +436,8 @@ impl ExecutionTraceModule {
                         blueprint_name,
                         ident,
                     },
-                identifier: ActorIdentifier::Method(MethodIdentifier(RENodeId::Object(vault_id), ..)),
+                identifier:
+                    ActorIdentifier::Method(MethodIdentifier(RENodeId::Object(vault_id), ..)),
             }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_LOCK_FEE_IDENT) =>
@@ -461,7 +463,8 @@ impl ExecutionTraceModule {
                         blueprint_name,
                         ident,
                     },
-                identifier: ActorIdentifier::Method(MethodIdentifier(RENodeId::Object(vault_id), ..)),
+                identifier:
+                    ActorIdentifier::Method(MethodIdentifier(RENodeId::Object(vault_id), ..)),
             }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_TAKE_IDENT) =>

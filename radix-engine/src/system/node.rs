@@ -10,8 +10,7 @@ use crate::types::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::{
-    AuthZoneStackOffset, NonFungibleStoreOffset, PackageOffset,
-    SubstateOffset, WorktopOffset,
+    AuthZoneStackOffset, NonFungibleStoreOffset, PackageOffset, SubstateOffset, WorktopOffset,
 };
 
 #[derive(Debug)]

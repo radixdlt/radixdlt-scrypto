@@ -73,7 +73,10 @@ where
     ) -> Result<LockHandle, RuntimeError> {
         if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
             let (package_address, blueprint) = self.get_object_type_info(node_id)?;
-            if !matches!((package_address, blueprint.as_str()), (RESOURCE_MANAGER_PACKAGE, VAULT_BLUEPRINT)) {
+            if !matches!(
+                (package_address, blueprint.as_str()),
+                (RESOURCE_MANAGER_PACKAGE, VAULT_BLUEPRINT)
+            ) {
                 return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
             }
         }
@@ -249,9 +252,12 @@ where
                         })?;
 
                     let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
-                    (node_id, RENodeInit::Object(btreemap!(
-                        SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => RuntimeSubstate::ResourceManager(substate)
-                    )))
+                    (
+                        node_id,
+                        RENodeInit::Object(btreemap!(
+                            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => RuntimeSubstate::ResourceManager(substate)
+                        )),
+                    )
                 }
                 PROOF_BLUEPRINT => {
                     let substate_bytes_0 = app_states.remove(&0u8).ok_or(

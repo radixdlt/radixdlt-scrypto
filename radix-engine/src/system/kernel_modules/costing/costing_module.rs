@@ -17,7 +17,10 @@ use radix_engine_interface::api::package::{
     PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate,
 };
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::{ComponentAddress, InvocationDebugIdentifier, LockHandle, MethodIdentifier, NodeModuleId, ObjectId, RoyaltyOffset, SubstateOffset, VaultOffset};
+use radix_engine_interface::api::types::{
+    ComponentAddress, InvocationDebugIdentifier, LockHandle, MethodIdentifier, NodeModuleId,
+    ObjectId, RoyaltyOffset, SubstateOffset, VaultOffset,
+};
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::constants::*;

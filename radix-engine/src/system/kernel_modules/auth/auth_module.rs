@@ -154,7 +154,8 @@ impl AuthModule {
                                 SubstateOffset::Vault(VaultOffset::Info),
                                 LockFlags::read_only(),
                             )?;
-                            let substate_ref: &VaultInfoSubstate = api.kernel_get_substate_ref(handle)?;
+                            let substate_ref: &VaultInfoSubstate =
+                                api.kernel_get_substate_ref(handle)?;
                             let resource_address = substate_ref.resource_address;
                             api.kernel_drop_lock(handle)?;
                             resource_address
@@ -163,12 +164,14 @@ impl AuthModule {
                         // TODO: Revisit what the correct abstraction is for visibility in the auth module
                         let method_key = identifier.method_key();
                         let auth = match visibility {
-                            RENodeVisibilityOrigin::Normal => Self::method_authorization_contextless(
-                                RENodeId::GlobalResourceManager(resource_address),
-                                NodeModuleId::AccessRules1,
-                                method_key,
-                                api,
-                            )?,
+                            RENodeVisibilityOrigin::Normal => {
+                                Self::method_authorization_contextless(
+                                    RENodeId::GlobalResourceManager(resource_address),
+                                    NodeModuleId::AccessRules1,
+                                    method_key,
+                                    api,
+                                )?
+                            }
                             RENodeVisibilityOrigin::DirectAccess => {
                                 let handle = api.kernel_lock_substate(
                                     RENodeId::GlobalResourceManager(resource_address),
@@ -184,7 +187,7 @@ impl AuthModule {
                                 // TODO: any visible vault?
                                 let auth = if method_key.node_module_id.eq(&NodeModuleId::SELF)
                                     && (method_key.ident.eq(VAULT_RECALL_IDENT)
-                                    || method_key.ident.eq(VAULT_RECALL_NON_FUNGIBLES_IDENT))
+                                        || method_key.ident.eq(VAULT_RECALL_NON_FUNGIBLES_IDENT))
                                 {
                                     let access_rule = substate.access_rules.get_group("recall");
                                     let authorization = convert_contextless(access_rule);
@@ -205,7 +208,7 @@ impl AuthModule {
                     }
                     _ => MethodAuthorization::AllowAll,
                 }
-            },
+            }
 
             MethodIdentifier(node_id, module_id, ..) => {
                 let method_key = identifier.method_key();

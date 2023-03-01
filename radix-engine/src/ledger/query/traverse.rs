@@ -1,13 +1,16 @@
 use crate::blueprints::resource::VaultInfoSubstate;
 use crate::ledger::{QueryableSubstateStore, ReadableSubstateStore};
+use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::PersistedSubstate;
-use radix_engine_interface::api::types::{AccountOffset, ComponentAddress, ComponentOffset, KeyValueStoreOffset, NodeModuleId, ObjectId, RENodeId, SubstateId, SubstateOffset, TypeInfoOffset, VaultOffset};
+use radix_engine_interface::api::types::{
+    AccountOffset, ComponentAddress, ComponentOffset, KeyValueStoreOffset, NodeModuleId, ObjectId,
+    RENodeId, SubstateId, SubstateOffset, TypeInfoOffset, VaultOffset,
+};
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::resource::{
     LiquidFungibleResource, LiquidNonFungibleResource, ResourceType,
 };
 use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
-use radix_engine_interface::blueprints::resource::*;
-use crate::system::node_modules::type_info::TypeInfoSubstate;
 
 #[derive(Debug)]
 pub enum StateTreeTraverserError {
@@ -106,7 +109,10 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                 let runtime_substate = output_value.substate.to_runtime();
                 let type_substate: TypeInfoSubstate = runtime_substate.into();
 
-                match (type_substate.package_address, type_substate.blueprint_name.as_str()) {
+                match (
+                    type_substate.package_address,
+                    type_substate.blueprint_name.as_str(),
+                ) {
                     (RESOURCE_MANAGER_PACKAGE, VAULT_BLUEPRINT) => {
                         if let Some(output_value) = self.substate_store.get_substate(&SubstateId(
                             node_id,
@@ -127,7 +133,11 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                                         .substate
                                         .into();
 
-                                    self.visitor.visit_fungible_vault(node_id.into(), &info, &liquid);
+                                    self.visitor.visit_fungible_vault(
+                                        node_id.into(),
+                                        &info,
+                                        &liquid,
+                                    );
                                 }
                                 ResourceType::NonFungible { .. } => {
                                     let liquid: LiquidNonFungibleResource = self
@@ -141,8 +151,11 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                                         .substate
                                         .into();
 
-                                    self.visitor
-                                        .visit_non_fungible_vault(node_id.into(), &info, &liquid);
+                                    self.visitor.visit_non_fungible_vault(
+                                        node_id.into(),
+                                        &info,
+                                        &liquid,
+                                    );
                                 }
                             }
                         } else {

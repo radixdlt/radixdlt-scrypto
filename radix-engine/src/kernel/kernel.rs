@@ -313,7 +313,7 @@ where
                                 scrypto_encode(&ProofDropInput {
                                     proof: Proof(node_id.into()),
                                 })
-                                    .unwrap(),
+                                .unwrap(),
                             )?;
                         }
                         _ => {
@@ -325,7 +325,7 @@ where
                 } else {
                     return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
                         node_id,
-                    )))
+                    )));
                 }
             }
 
@@ -565,10 +565,20 @@ where
                                 )
                                 .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
 
-                            let substate_ref = self.track.get_substate(*node_id, NodeModuleId::TypeInfo, &offset);
+                            let substate_ref =
+                                self.track
+                                    .get_substate(*node_id, NodeModuleId::TypeInfo, &offset);
                             let type_substate: &TypeInfoSubstate = substate_ref.into();
-                            if !matches!((type_substate.package_address, type_substate.blueprint_name.as_str()), (RESOURCE_MANAGER_PACKAGE, VAULT_BLUEPRINT)) {
-                                return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
+                            if !matches!(
+                                (
+                                    type_substate.package_address,
+                                    type_substate.blueprint_name.as_str()
+                                ),
+                                (RESOURCE_MANAGER_PACKAGE, VAULT_BLUEPRINT)
+                            ) {
+                                return Err(RuntimeError::KernelError(
+                                    KernelError::InvalidDirectAccess,
+                                ));
                             }
 
                             self.track
