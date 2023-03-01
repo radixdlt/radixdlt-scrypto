@@ -960,7 +960,7 @@ roots_op_impl! {U8, U16, U32, U64, U128, U256, U384, U512, U768, I8, I16, I32, I
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::data::*;
+    use crate::data::scrypto::*;
 
     fn encode_integers(encoder: &mut ScryptoEncoder) -> Result<(), EncodeError> {
         encoder.encode(&I8::by(1i8))?;

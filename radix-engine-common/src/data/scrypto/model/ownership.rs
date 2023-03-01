@@ -1,5 +1,5 @@
-use crate::data::ScryptoCustomTypeKind;
-use crate::data::{ScryptoCustomValueKind, ScryptoEncoder};
+use crate::data::scrypto::ScryptoCustomTypeKind;
+use crate::data::scrypto::{ScryptoCustomValueKind, ScryptoEncoder};
 use crate::*;
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
@@ -162,5 +162,5 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for O
 
 impl Describe<ScryptoCustomTypeKind<GlobalTypeId>> for Own {
     const TYPE_ID: GlobalTypeId =
-        GlobalTypeId::well_known(crate::data::well_known_scrypto_custom_types::OWN_ID);
+        GlobalTypeId::well_known(crate::data::scrypto::well_known_scrypto_custom_types::OWN_ID);
 }

@@ -1,6 +1,6 @@
 use crate::api::types::*;
 use crate::blueprints::resource::*;
-use crate::data::*;
+use crate::data::scrypto::*;
 use sbor::rust::format;
 use sbor::rust::vec;
 use serde::ser::*;

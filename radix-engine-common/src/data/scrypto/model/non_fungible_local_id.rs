@@ -1,5 +1,6 @@
-use crate::data::model::*;
-use crate::data::*;
+use crate::data::manifest::ManifestCustomValueKind;
+use crate::data::scrypto::model::*;
+use crate::data::scrypto::*;
 use crate::*;
 use sbor::rust::fmt;
 use sbor::rust::format;
@@ -8,7 +9,6 @@ use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use transaction_data::*;
 use utils::copy_u8_array;
 
 pub const NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH: usize = 64;

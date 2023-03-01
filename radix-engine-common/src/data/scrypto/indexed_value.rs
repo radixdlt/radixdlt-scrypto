@@ -1,5 +1,5 @@
-use crate::data::model::*;
-use crate::data::*;
+use crate::data::scrypto::model::*;
+use crate::data::scrypto::*;
 use core::convert::Infallible;
 use sbor::path::SborPathBuf;
 use sbor::rust::collections::HashSet;

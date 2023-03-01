@@ -1,5 +1,5 @@
 use crate::address::Bech32Encoder;
-use crate::data::*;
+use crate::data::scrypto::*;
 use sbor::rust::fmt;
 use utils::ContextualDisplay;
 

@@ -1,5 +1,5 @@
-use radix_engine_common::data::model::NonFungibleLocalId;
-use radix_engine_common::data::*;
+use radix_engine_common::data::scrypto::model::NonFungibleLocalId;
+use radix_engine_common::data::scrypto::*;
 use radix_engine_common::*;
 use sbor::rust::boxed::Box;
 use sbor::rust::cell::RefCell;

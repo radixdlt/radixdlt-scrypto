@@ -11,12 +11,13 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-use crate::data::*;
+use crate::data::manifest::ManifestCustomValueKind;
+use crate::data::scrypto::*;
 use crate::math::bnum_integer::*;
 use crate::math::decimal::*;
 use crate::math::rounding_mode::*;
 use crate::well_known_scrypto_custom_type;
-use transaction_data::*;
+use crate::*;
 
 /// `PreciseDecimal` represents a 512 bit representation of a fixed-scale decimal number.
 ///

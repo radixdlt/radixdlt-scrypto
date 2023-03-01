@@ -74,15 +74,15 @@ macro_rules! pdec {
 macro_rules! well_known_scrypto_custom_type {
     // with describe
     ($t:ty, $value_kind:expr, $schema_type:expr, $size:expr, $well_known_id:ident) => {
-        impl sbor::Categorize<crate::data::ScryptoCustomValueKind> for $t {
+        impl sbor::Categorize<crate::data::scrypto::ScryptoCustomValueKind> for $t {
             #[inline]
-            fn value_kind() -> sbor::ValueKind<crate::data::ScryptoCustomValueKind> {
+            fn value_kind() -> sbor::ValueKind<crate::data::scrypto::ScryptoCustomValueKind> {
                 sbor::ValueKind::Custom($value_kind)
             }
         }
 
-        impl<E: sbor::Encoder<crate::data::ScryptoCustomValueKind>>
-            sbor::Encode<crate::data::ScryptoCustomValueKind, E> for $t
+        impl<E: sbor::Encoder<crate::data::scrypto::ScryptoCustomValueKind>>
+            sbor::Encode<crate::data::scrypto::ScryptoCustomValueKind, E> for $t
         {
             #[inline]
             fn encode_value_kind(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
@@ -95,12 +95,12 @@ macro_rules! well_known_scrypto_custom_type {
             }
         }
 
-        impl<D: sbor::Decoder<crate::data::ScryptoCustomValueKind>>
-            sbor::Decode<crate::data::ScryptoCustomValueKind, D> for $t
+        impl<D: sbor::Decoder<crate::data::scrypto::ScryptoCustomValueKind>>
+            sbor::Decode<crate::data::scrypto::ScryptoCustomValueKind, D> for $t
         {
             fn decode_body_with_value_kind(
                 decoder: &mut D,
-                value_kind: sbor::ValueKind<crate::data::ScryptoCustomValueKind>,
+                value_kind: sbor::ValueKind<crate::data::scrypto::ScryptoCustomValueKind>,
             ) -> Result<Self, sbor::DecodeError> {
                 decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
                 let slice = decoder.read_slice($size)?;
@@ -108,9 +108,11 @@ macro_rules! well_known_scrypto_custom_type {
             }
         }
 
-        impl sbor::Describe<crate::data::ScryptoCustomTypeKind<sbor::schema::GlobalTypeId>> for $t {
+        impl sbor::Describe<crate::data::scrypto::ScryptoCustomTypeKind<sbor::schema::GlobalTypeId>>
+            for $t
+        {
             const TYPE_ID: sbor::schema::GlobalTypeId = sbor::schema::GlobalTypeId::well_known(
-                crate::data::well_known_scrypto_custom_types::$well_known_id,
+                crate::data::scrypto::well_known_scrypto_custom_types::$well_known_id,
             );
         }
     };
@@ -120,15 +122,15 @@ macro_rules! well_known_scrypto_custom_type {
 macro_rules! schemaless_scrypto_custom_type {
     // without describe
     ($t:ty, $value_kind:expr, $size: expr) => {
-        impl sbor::Categorize<crate::data::ScryptoCustomValueKind> for $t {
+        impl sbor::Categorize<crate::data::scrypto::ScryptoCustomValueKind> for $t {
             #[inline]
-            fn value_kind() -> sbor::ValueKind<crate::data::ScryptoCustomValueKind> {
+            fn value_kind() -> sbor::ValueKind<crate::data::scrypto::ScryptoCustomValueKind> {
                 sbor::ValueKind::Custom($value_kind)
             }
         }
 
-        impl<E: sbor::Encoder<crate::data::ScryptoCustomValueKind>>
-            sbor::Encode<crate::data::ScryptoCustomValueKind, E> for $t
+        impl<E: sbor::Encoder<crate::data::scrypto::ScryptoCustomValueKind>>
+            sbor::Encode<crate::data::scrypto::ScryptoCustomValueKind, E> for $t
         {
             #[inline]
             fn encode_value_kind(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
@@ -141,12 +143,52 @@ macro_rules! schemaless_scrypto_custom_type {
             }
         }
 
-        impl<D: sbor::Decoder<crate::data::ScryptoCustomValueKind>>
-            sbor::Decode<crate::data::ScryptoCustomValueKind, D> for $t
+        impl<D: sbor::Decoder<crate::data::scrypto::ScryptoCustomValueKind>>
+            sbor::Decode<crate::data::scrypto::ScryptoCustomValueKind, D> for $t
         {
             fn decode_body_with_value_kind(
                 decoder: &mut D,
-                value_kind: sbor::ValueKind<crate::data::ScryptoCustomValueKind>,
+                value_kind: sbor::ValueKind<crate::data::scrypto::ScryptoCustomValueKind>,
+            ) -> Result<Self, sbor::DecodeError> {
+                decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
+                let slice = decoder.read_slice($size)?;
+                Self::try_from(slice).map_err(|_| sbor::DecodeError::InvalidCustomValue)
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! manifest_type {
+    // without describe
+    ($t:ty, $value_kind:expr, $size: expr) => {
+        impl sbor::Categorize<$crate::data::manifest::ManifestCustomValueKind> for $t {
+            #[inline]
+            fn value_kind() -> sbor::ValueKind<$crate::data::manifest::ManifestCustomValueKind> {
+                sbor::ValueKind::Custom($value_kind)
+            }
+        }
+
+        impl<E: sbor::Encoder<$crate::data::manifest::ManifestCustomValueKind>>
+            sbor::Encode<$crate::data::manifest::ManifestCustomValueKind, E> for $t
+        {
+            #[inline]
+            fn encode_value_kind(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
+                encoder.write_value_kind(Self::value_kind())
+            }
+
+            #[inline]
+            fn encode_body(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
+                encoder.write_slice(&self.to_vec())
+            }
+        }
+
+        impl<D: sbor::Decoder<$crate::data::manifest::ManifestCustomValueKind>>
+            sbor::Decode<$crate::data::manifest::ManifestCustomValueKind, D> for $t
+        {
+            fn decode_body_with_value_kind(
+                decoder: &mut D,
+                value_kind: sbor::ValueKind<$crate::data::manifest::ManifestCustomValueKind>,
             ) -> Result<Self, sbor::DecodeError> {
                 decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
                 let slice = decoder.read_slice($size)?;
@@ -168,15 +210,15 @@ macro_rules! scrypto_args {
     ($($args: expr),*) => {{
         use ::sbor::Encoder;
         let mut buf = ::sbor::rust::vec::Vec::new();
-        let mut encoder = $crate::data::ScryptoEncoder::new(
+        let mut encoder = $crate::data::scrypto::ScryptoEncoder::new(
             &mut buf,
-            $crate::data::SCRYPTO_SBOR_V1_MAX_DEPTH,
+            $crate::data::scrypto::SCRYPTO_SBOR_V1_MAX_DEPTH,
         );
         encoder
-            .write_payload_prefix($crate::data::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)
+            .write_payload_prefix($crate::data::scrypto::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)
             .unwrap();
         encoder
-            .write_value_kind($crate::data::ScryptoValueKind::Tuple)
+            .write_value_kind($crate::data::scrypto::ScryptoValueKind::Tuple)
             .unwrap();
         // Hack: stringify to skip ownership move semantics
         encoder.write_size($crate::count!($(stringify!($args)),*)).unwrap();
@@ -186,4 +228,114 @@ macro_rules! scrypto_args {
         )*
         buf
     }};
+}
+
+#[macro_export]
+macro_rules! manifest_args {
+    ($($args: expr),*) => {{
+        use ::sbor::Encoder;
+        let mut buf = ::sbor::rust::vec::Vec::new();
+        let mut encoder = $crate::data::manifest::ManifestEncoder::new(&mut buf, $crate::data::manifest::MANIFEST_SBOR_V1_MAX_DEPTH);
+        encoder.write_payload_prefix($crate::data::manifest::MANIFEST_SBOR_V1_PAYLOAD_PREFIX).unwrap();
+        encoder.write_value_kind($crate::data::manifest::ManifestValueKind::Tuple).unwrap();
+        // Hack: stringify to skip ownership move semantics
+        encoder.write_size($crate::data::manifest::count!($(stringify!($args)),*)).unwrap();
+        $(
+            let arg = $args;
+            encoder.encode(&arg).unwrap();
+        )*
+        buf
+    }};
+}
+
+/// Constructs an address.
+#[macro_export]
+macro_rules! construct_address {
+    (EntityType::Resource, $($bytes:expr),*) => {
+        $crate::data::scrypto::model::ResourceAddress::Normal([$($bytes),*])
+    };
+    (EntityType::Package, $($bytes:expr),*) => {
+        $crate::data::scrypto::model::PackageAddress::Normal([$($bytes),*])
+    };
+    (EntityType::NormalComponent, $($bytes:expr),*) => {
+        $crate::data::scrypto::model::ComponentAddress::Normal([$($bytes),*])
+    };
+    (EntityType::AccountComponent, $($bytes:expr),*) => {
+        $crate::data::scrypto::model::ComponentAddress::Account([$($bytes),*])
+    };
+    (EntityType::EpochManager, $($bytes:expr),*) => {
+        $crate::data::scrypto::model::ComponentAddress::EpochManager([$($bytes),*])
+    };
+    (EntityType::Clock, $($bytes:expr),*) => {
+        $crate::data::scrypto::model::ComponentAddress::Clock([$($bytes),*])
+    };
+}
+
+#[macro_export]
+macro_rules! vanity_address {
+    (EntityType::$entity_type:tt, $last_byte:literal) => {
+        $crate::construct_address!(
+            EntityType::$entity_type,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            $last_byte
+        )
+    };
+    (EntityType::$entity_type:tt, [$repeat_byte:literal; 26]) => {
+        $crate::construct_address!(
+            EntityType::$entity_type,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte
+        )
+    };
+    (EntityType::$entity_type:tt, $($bytes:literal),*) => {
+        $crate::construct_address!($crate::address::EntityType::$entity_type, $($bytes),*)
+    };
 }

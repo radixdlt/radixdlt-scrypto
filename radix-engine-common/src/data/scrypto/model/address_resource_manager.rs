@@ -1,11 +1,11 @@
 use crate::address::{AddressDisplayContext, AddressError, EntityType, NO_NETWORK};
-use crate::data::ScryptoCustomValueKind;
+use crate::data::manifest::ManifestCustomValueKind;
+use crate::data::scrypto::*;
 use crate::well_known_scrypto_custom_type;
 use crate::*;
 use sbor::rust::fmt;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use transaction_data::*;
 use utils::{copy_u8_array, ContextualDisplay};
 
 /// Represents a resource address.

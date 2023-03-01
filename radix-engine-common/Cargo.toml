@@ -5,7 +5,6 @@ edition = "2021"
 
 [dependencies]
 sbor = { path = "../sbor", default-features = false }
-transaction-data = { path = "../transaction-data", default-features = false }
 utils = { path = "../utils", default-features = false }
 
 hex = { version = "0.4.3", default-features = false }
@@ -40,8 +39,8 @@ harness = false
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["hex/std", "sbor/std", "utils/std", "serde_json/std", "transaction-data/std", "blake2/std"]
-alloc = ["hex/alloc", "sbor/alloc", "utils/alloc", "serde_json/alloc", "transaction-data/alloc", "lazy_static/spin_no_std"]
+std = ["hex/std", "sbor/std", "utils/std", "serde_json/std", "blake2/std"]
+alloc = ["hex/alloc", "sbor/alloc", "utils/alloc", "serde_json/alloc", "lazy_static/spin_no_std"]
 
 # Enable serde derives
 serde = ["utils/serde", "sbor/serde", "serde/derive", "hex/serde", "serde_with"]

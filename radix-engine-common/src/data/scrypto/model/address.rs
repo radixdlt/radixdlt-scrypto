@@ -1,12 +1,11 @@
 use crate::address::{AddressDisplayContext, AddressError, NO_NETWORK};
-use crate::data::model::*;
-use crate::data::ScryptoCustomTypeKind;
-use crate::data::ScryptoCustomValueKind;
+use crate::data::manifest::ManifestCustomValueKind;
+use crate::data::scrypto::model::*;
+use crate::data::scrypto::*;
 use crate::*;
 use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use transaction_data::*;
 use utils::ContextualDisplay;
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -126,7 +125,7 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for A
 
 impl Describe<ScryptoCustomTypeKind<GlobalTypeId>> for Address {
     const TYPE_ID: GlobalTypeId =
-        GlobalTypeId::well_known(crate::data::well_known_scrypto_custom_types::ADDRESS_ID);
+        GlobalTypeId::well_known(crate::data::scrypto::well_known_scrypto_custom_types::ADDRESS_ID);
 }
 
 //==================

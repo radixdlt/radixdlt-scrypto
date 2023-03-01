@@ -1,5 +1,5 @@
-use crate::data::model::*;
-use crate::data::*;
+use crate::data::scrypto::model::*;
+use crate::data::scrypto::*;
 use crate::math::{Decimal, PreciseDecimal};
 use sbor::value_kind::*;
 use sbor::*;

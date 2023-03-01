@@ -1,6 +1,6 @@
-use crate::data::model::ComponentAddress;
-use crate::data::model::PackageAddress;
-use crate::data::model::ResourceAddress;
+use crate::data::scrypto::model::ComponentAddress;
+use crate::data::scrypto::model::PackageAddress;
+use crate::data::scrypto::model::ResourceAddress;
 
 /// A unique identifier used in the addressing of Resource Addresses.
 pub const RESOURCE_ADDRESS_ENTITY_ID: u8 = 0x00;

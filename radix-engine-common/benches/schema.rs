@@ -1,5 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use radix_engine_common::data::{scrypto_encode, ScryptoCustomTypeExtension};
+use radix_engine_common::data::scrypto::{scrypto_encode, ScryptoCustomTypeExtension};
 use radix_engine_common::*;
 use sbor::rust::prelude::*;
 use sbor::*;
