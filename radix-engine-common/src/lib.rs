@@ -26,12 +26,6 @@ pub use macros::*;
 extern crate sbor;
 pub use sbor::{Categorize, Decode, Encode, Sbor};
 
-// Re-export Engine derive.
-extern crate radix_engine_derive;
-pub use radix_engine_derive::{
-    NonFungibleData, ScryptoCategorize, ScryptoDecode, ScryptoDescribe, ScryptoEncode, ScryptoSbor,
-};
-
 // This is to make derives work within this crate.
 // See: https://users.rust-lang.org/t/how-can-i-use-my-derive-macro-from-the-crate-that-declares-the-trait/60502
 pub extern crate self as radix_engine_common;
