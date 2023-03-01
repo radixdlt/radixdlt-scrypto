@@ -18,36 +18,18 @@ pub mod events;
 mod macros;
 pub use macros::*;
 
-// Re-export common
+// Re-export scrypto schema
 pub mod schema {
     pub use scrypto_schema::*;
 }
-pub mod address {
-    pub use radix_engine_common::address::*;
-}
-pub mod crypto {
-    pub use radix_engine_common::crypto::*;
-}
-pub mod data {
-    pub use radix_engine_common::data::*;
-}
-pub mod math {
-    pub use radix_engine_common::math::*;
-}
-pub mod network {
-    pub use radix_engine_common::network::*;
-}
-pub mod time {
-    pub use radix_engine_common::time::*;
-}
+
+// Re-export radix engine common.
+pub extern crate radix_engine_common;
+pub use radix_engine_common::*;
 
 // Re-export SBOR derive.
 pub extern crate sbor;
 pub use sbor::{Categorize, Decode, Encode, Sbor};
-
-// Re-export Engine derive.
-pub extern crate radix_engine_common;
-pub use radix_engine_common::*;
 
 // This is to make derives work within this crate.
 // See: https://users.rust-lang.org/t/how-can-i-use-my-derive-macro-from-the-crate-that-declares-the-trait/60502

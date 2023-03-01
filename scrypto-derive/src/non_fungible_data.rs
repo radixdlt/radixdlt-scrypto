@@ -75,7 +75,7 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
                 let m_types = m.iter().map(|f| &f.ty);
 
                 quote! {
-                    impl ::scrypto::resource::NonFungibleData for #ident {
+                    impl ::scrypto::prelude::NonFungibleData for #ident {
                         fn decode(immutable_data: &[u8], mutable_data: &[u8]) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{value_kind::*, *};
                             let mut decoder_nm = ::scrypto::data::scrypto::ScryptoDecoder::new(immutable_data, ::scrypto::data::scrypto::SCRYPTO_SBOR_V1_MAX_DEPTH);
@@ -182,7 +182,7 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl ::scrypto::resource::NonFungibleData for MyStruct {
+                impl ::scrypto::prelude::NonFungibleData for MyStruct {
                     fn decode(immutable_data: &[u8], mutable_data: &[u8]) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{value_kind::*, *};
                         let mut decoder_nm = ::scrypto::data::scrypto::ScryptoDecoder::new(immutable_data, ::scrypto::data::scrypto::SCRYPTO_SBOR_V1_MAX_DEPTH);

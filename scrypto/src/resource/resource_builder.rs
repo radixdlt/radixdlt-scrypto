@@ -1,4 +1,5 @@
 use crate::engine::scrypto_env::ScryptoEnv;
+use radix_engine_interface::api::types::NonFungibleData;
 use radix_engine_interface::api::ClientPackageApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
@@ -10,8 +11,6 @@ use sbor::rust::collections::*;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-
-use super::NonFungibleData;
 
 /// Not divisible.
 pub const DIVISIBILITY_NONE: u8 = 0;

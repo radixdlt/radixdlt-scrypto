@@ -1,7 +1,6 @@
 mod auth_zone;
 mod bucket;
 mod non_fungible;
-mod non_fungible_data;
 mod proof;
 mod proof_rule;
 mod resource_builder;
@@ -12,7 +11,6 @@ mod vault;
 pub use auth_zone::*;
 pub use bucket::*;
 pub use non_fungible::*;
-pub use non_fungible_data::*;
 pub use proof::*;
 pub use proof_rule::*;
 pub use resource_builder::{

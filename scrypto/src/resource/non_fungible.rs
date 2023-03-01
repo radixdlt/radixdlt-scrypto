@@ -1,3 +1,4 @@
+use radix_engine_interface::api::types::NonFungibleData;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::*;

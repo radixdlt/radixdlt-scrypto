@@ -1,4 +1,5 @@
 use crate::resource::{ComponentAuthZone, NonFungible, ScryptoProof};
+use radix_engine_interface::api::types::NonFungibleData;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::{ClientComponentApi, ClientPackageApi};
 use radix_engine_interface::blueprints::resource::*;
@@ -10,8 +11,6 @@ use radix_engine_interface::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 use scrypto::engine::scrypto_env::ScryptoEnv;
-
-use super::NonFungibleData;
 
 pub trait ScryptoBucket {
     fn new(resource_address: ResourceAddress) -> Self;

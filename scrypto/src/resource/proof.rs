@@ -1,3 +1,4 @@
+use radix_engine_interface::api::types::NonFungibleData;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::{ClientComponentApi, ClientPackageApi};
 use radix_engine_interface::blueprints::resource::*;
