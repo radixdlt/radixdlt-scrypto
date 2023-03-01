@@ -71,7 +71,7 @@ fn can_burn_non_fungible() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .withdraw_all_from_account(account, resource_address)
+        .withdraw_from_account(account, resource_address, 1.into())
         .burn_non_fungible(non_fungible_global_id.clone())
         .call_function(
             package,
@@ -307,7 +307,7 @@ fn test_mint_update_and_withdraw() {
     // transfer
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .withdraw_all_from_account(account, nft_resource_address)
+        .withdraw_from_account(account, nft_resource_address, 1.into())
         .call_method(
             account,
             "deposit_batch",
@@ -552,7 +552,7 @@ fn cant_burn_non_fungible_with_wrong_non_fungible_local_id_type() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .withdraw_all_from_account(account, resource_address)
+        .withdraw_from_account(account, resource_address, 1.into())
         .burn_non_fungible(non_fungible_global_id.clone())
         .build();
     let receipt = test_runner.execute_manifest(

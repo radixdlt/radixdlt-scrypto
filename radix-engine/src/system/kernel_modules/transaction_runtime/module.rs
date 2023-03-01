@@ -1,4 +1,4 @@
-use crate::kernel::actor::ResolvedActor;
+use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
@@ -44,7 +44,7 @@ impl KernelModule for TransactionRuntimeModule {
 
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
-        _actor: &Option<ResolvedActor>,
+        _actor: &Option<Actor>,
         call_frame_update: &mut CallFrameUpdate,
         _args: &ScryptoValue,
     ) -> Result<(), RuntimeError> {

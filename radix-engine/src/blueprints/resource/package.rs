@@ -321,6 +321,23 @@ impl ResourceManagerNativePackage {
                 ))?;
                 VaultBlueprint::unlock_non_fungibles(receiver, input, api)
             }
+            PROOF_DROP_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
+                if receiver.is_some() {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    ));
+                }
+
+                // TODO: Remove decode/encode mess
+                let input: ProofDropInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+                    .map_err(|_| {
+                        RuntimeError::InterpreterError(InterpreterError::InvalidInvocation)
+                    })?;
+
+                ProofBlueprint::drop(input.proof, api)
+            }
             PROOF_CLONE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
 
@@ -352,6 +369,17 @@ impl ResourceManagerNativePackage {
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 ProofBlueprint::get_resource_address(receiver, input, api)
+            }
+            BUCKET_DROP_EMPTY_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
+                if receiver.is_some() {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    ));
+                }
+
+                BucketBlueprint::drop_empty(input, api)
             }
             BUCKET_PUT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
@@ -440,6 +468,17 @@ impl ResourceManagerNativePackage {
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 BucketBlueprint::unlock_non_fungibles(receiver, input, api)
+            }
+            WORKTOP_DROP_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+
+                if receiver.is_some() {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    ));
+                }
+
+                WorktopBlueprint::drop(input, api)
             }
             WORKTOP_PUT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;

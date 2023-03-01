@@ -1454,7 +1454,7 @@ impl AccessControllerTestRunner {
         // Creating the access controller component
         let manifest = ManifestBuilder::new()
             .lock_fee(account_component, 10.into())
-            .withdraw_all_from_account(account_component, controlled_asset)
+            .withdraw_from_account(account_component, controlled_asset, 1.into())
             .take_from_worktop(controlled_asset, |builder, bucket| {
                 builder.create_access_controller(
                     bucket,

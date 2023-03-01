@@ -1,7 +1,7 @@
-use crate::blueprints::resource::WorktopSubstate;
+use crate::blueprints::resource::{WorktopBlueprint, WorktopSubstate};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::actor::ResolvedActor;
+use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{
     ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, TemporaryResolvedInvocation,
@@ -77,8 +77,8 @@ pub enum InstructionOutput {
 impl<'a> Invocation for TransactionProcessorRunInvocation<'a> {
     type Output = Vec<InstructionOutput>;
 
-    fn identifier(&self) -> InvocationIdentifier {
-        InvocationIdentifier::Transaction
+    fn debug_identifier(&self) -> InvocationDebugIdentifier {
+        InvocationDebugIdentifier::Transaction
     }
 }
 
@@ -271,7 +271,7 @@ impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
         call_frame_update.add_ref(RENodeId::GlobalResourceManager(ECDSA_SECP256K1_TOKEN));
         call_frame_update.add_ref(RENodeId::GlobalResourceManager(EDDSA_ED25519_TOKEN));
 
-        let actor = ResolvedActor::function(FnIdentifier {
+        let actor = Actor::function(FnIdentifier {
             package_address: PACKAGE_LOADER,
             blueprint_name: TRANSACTION_PROCESSOR_BLUEPRINT.to_string(),
             ident: "run".to_string(),
@@ -747,7 +747,14 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
             outputs.push(result);
         }
 
-        api.kernel_drop_node(worktop_node_id)?;
+        WorktopBlueprint::drop(
+            IndexedScryptoValue::from_typed(&WorktopDropInput {}).into(),
+            api,
+        )?;
+        // Can't use native-sdk yet since there is no way to express moving the worktop
+        /*
+        Worktop::sys_drop(api)?;
+         */
 
         Ok((outputs, CallFrameUpdate::empty()))
     }

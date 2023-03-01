@@ -62,7 +62,7 @@ impl FeeTable {
             CostingEntry::DropNode { size } => FIXED_MEDIUM_FEE + (100 * size) as u32,
 
             CostingEntry::LockSubstate => FIXED_LOW_FEE,
-            CostingEntry::ReadSubstate { size } => FIXED_LOW_FEE + 100 * size,
+            CostingEntry::ReadSubstate { size } => FIXED_LOW_FEE + 10 * size,
             CostingEntry::WriteSubstate { size } => FIXED_LOW_FEE + 1000 * size,
             CostingEntry::DropLock => FIXED_LOW_FEE,
         }

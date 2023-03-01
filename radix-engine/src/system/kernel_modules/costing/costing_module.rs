@@ -1,6 +1,6 @@
 use super::*;
 use super::{CostingReason, FeeReserveError, FeeTable, SystemLoanFeeReserve};
-use crate::kernel::actor::ResolvedActor;
+use crate::kernel::actor::{Actor, ActorIdentifier};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
@@ -18,7 +18,7 @@ use radix_engine_interface::api::package::{
 };
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
-    ComponentAddress, InvocationIdentifier, LockHandle, MethodReceiver, NodeModuleId,
+    ComponentAddress, InvocationDebugIdentifier, LockHandle, MethodIdentifier, NodeModuleId,
     RoyaltyOffset, SubstateOffset, VaultId, VaultOffset,
 };
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
@@ -92,7 +92,7 @@ fn apply_royalty_cost<Y: KernelModuleApi<RuntimeError>>(
 impl KernelModule for CostingModule {
     fn before_invoke<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        _identifier: &InvocationIdentifier,
+        _identifier: &InvocationDebugIdentifier,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
         let current_depth = api.kernel_get_current_depth();
@@ -121,18 +121,18 @@ impl KernelModule for CostingModule {
 
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        callee: &Option<ResolvedActor>,
+        callee: &Option<Actor>,
         _nodes_and_refs: &mut CallFrameUpdate,
         _args: &ScryptoValue,
     ) -> Result<(), RuntimeError> {
         // Identify the function, and optional component address
         let (fn_identifier, optional_component) = match &callee {
-            Some(ResolvedActor {
-                receiver,
+            Some(Actor {
                 identifier,
+                fn_identifier,
             }) => {
-                let maybe_component = match &receiver {
-                    Some(MethodReceiver(node_id, ..))
+                let maybe_component = match &identifier {
+                    ActorIdentifier::Method(MethodIdentifier(node_id, ..))
                         if matches!(
                             node_id,
                             RENodeId::Component(..)
@@ -144,7 +144,7 @@ impl KernelModule for CostingModule {
                     _ => None,
                 };
 
-                (identifier, maybe_component)
+                (fn_identifier, maybe_component)
             }
             _ => {
                 return Ok(());
@@ -159,7 +159,6 @@ impl KernelModule for CostingModule {
             || package_address == CLOCK_PACKAGE
             || package_address == ACCOUNT_PACKAGE
             || package_address == ACCESS_CONTROLLER_PACKAGE
-            || package_address == LOGGER_PACKAGE
             || package_address == TRANSACTION_RUNTIME_PACKAGE
             || package_address == AUTH_ZONE_PACKAGE
             || package_address == METADATA_PACKAGE
