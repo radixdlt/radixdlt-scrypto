@@ -10,7 +10,7 @@ use crate::types::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::{
-    AuthZoneStackOffset, NonFungibleStoreOffset, PackageOffset, ResourceManagerOffset,
+    AuthZoneStackOffset, NonFungibleStoreOffset, PackageOffset,
     SubstateOffset, VaultOffset, WorktopOffset,
 };
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
@@ -100,14 +100,13 @@ pub enum RENodeInit {
         PackageCodeTypeSubstate,
         PackageCodeSubstate,
     ),
-    ResourceManager(ResourceManagerSubstate),
+    Object(BTreeMap<SubstateOffset, RuntimeSubstate>),
     FungibleVault(VaultInfoSubstate, LiquidFungibleResource),
     NonFungibleVault(VaultInfoSubstate, LiquidNonFungibleResource),
     AuthZoneStack(AuthZoneStackSubstate),
     Worktop(WorktopSubstate),
     KeyValueStore,
     NonFungibleStore(NonFungibleStore),
-    Object(BTreeMap<SubstateOffset, RuntimeSubstate>),
     TransactionRuntime(TransactionRuntimeSubstate),
     Logger(LoggerSubstate),
 }
@@ -176,12 +175,6 @@ impl RENodeInit {
                     code_type.into(),
                 );
                 substates.insert(SubstateOffset::Package(PackageOffset::Code), code.into());
-            }
-            RENodeInit::ResourceManager(resource_manager) => {
-                substates.insert(
-                    SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
-                    resource_manager.into(),
-                );
             }
             RENodeInit::NonFungibleStore(non_fungible_store) => {
                 for (id, non_fungible) in non_fungible_store.loaded_non_fungibles {

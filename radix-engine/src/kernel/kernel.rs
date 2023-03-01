@@ -678,7 +678,6 @@ where
             (RENodeId::GlobalResourceManager(..), RENodeInit::GlobalObject(..)) => {}
             (RENodeId::GlobalPackage(..), RENodeInit::GlobalPackage(..)) => {}
             (RENodeId::Object(..), RENodeInit::Object(..)) => {}
-            (RENodeId::Object(..), RENodeInit::ResourceManager(..)) => {}
             (RENodeId::Vault(..), RENodeInit::FungibleVault(..)) => {}
             (RENodeId::Vault(..), RENodeInit::NonFungibleVault(..)) => {}
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}

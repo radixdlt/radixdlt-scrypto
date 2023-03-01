@@ -248,7 +248,9 @@ where
                         })?;
 
                     let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
-                    (node_id, RENodeInit::ResourceManager(substate))
+                    (node_id, RENodeInit::Object(btreemap!(
+                        SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => RuntimeSubstate::ResourceManager(substate)
+                    )))
                 }
                 PROOF_BLUEPRINT => {
                     let substate_bytes_0 = app_states.remove(&0u8).ok_or(
