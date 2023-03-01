@@ -36,7 +36,7 @@ fn test_struct_with_skip() {
     let c = TestStructUnit;
 
     let mut bytes = Vec::with_capacity(512);
-    let mut encoder = BasicEncoder::new(&mut bytes);
+    let mut encoder = BasicEncoder::new(&mut bytes, 255);
     encoder.encode(&a).unwrap();
     encoder.encode(&b).unwrap();
     encoder.encode(&c).unwrap();
@@ -58,7 +58,7 @@ fn test_struct_with_skip() {
         bytes
     );
 
-    let mut decoder = BasicDecoder::new(&bytes);
+    let mut decoder = BasicDecoder::new(&bytes, 255);
     let a = decoder.decode::<TestStructNamed>().unwrap();
     let b = decoder.decode::<TestStructUnnamed>().unwrap();
     let c = decoder.decode::<TestStructUnit>().unwrap();
@@ -75,7 +75,7 @@ fn test_enum_with_skip() {
     let c = TestEnum::C;
 
     let mut bytes = Vec::with_capacity(512);
-    let mut encoder = BasicEncoder::new(&mut bytes);
+    let mut encoder = BasicEncoder::new(&mut bytes, 255);
     encoder.encode(&a).unwrap();
     encoder.encode(&b).unwrap();
     encoder.encode(&c).unwrap();
@@ -100,7 +100,7 @@ fn test_enum_with_skip() {
         bytes
     );
 
-    let mut decoder = BasicDecoder::new(&bytes);
+    let mut decoder = BasicDecoder::new(&bytes, 255);
     let a = decoder.decode::<TestEnum>().unwrap();
     let b = decoder.decode::<TestEnum>().unwrap();
     let c = decoder.decode::<TestEnum>().unwrap();

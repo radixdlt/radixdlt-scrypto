@@ -50,9 +50,9 @@ pub trait Describe<C: CustomTypeKind<GlobalTypeId>> {
     /// then the algorithm should be:
     ///
     /// - Step 1: For each (possibly customised) type dependency needed directly by this type:
-    ///   - Create a new mutated `mutated_type_ref` for the underlying type plus its mutation
-    ///   - Use `mutated_type_ref` in the relevant place/s in `get_local_type_data`
-    ///   - In `add_all_dependencies` add a line `aggregator.add_child_type(mutated_type_ref, mutated_local_type_data)`
+    ///   - Create a new mutated `mutated_type_index` for the underlying type plus its mutation
+    ///   - Use `mutated_type_index` in the relevant place/s in `get_local_type_data`
+    ///   - In `add_all_dependencies` add a line `aggregator.add_child_type(mutated_type_index, mutated_local_type_data)`
     ///
     /// - Step 2: For each (base/unmutated) type dependency `D`:
     ///   - In `add_all_dependencies` add a line `aggregator.add_schema_descendents::<D>()`

@@ -11,13 +11,16 @@ mod deep_struct {
             Self { deep_object: None }.instantiate().globalize()
         }
 
-        pub fn set_depth(&mut self, resource_address: ResourceAddress, exceed_depth: u8) {
+        pub fn set_depth(&mut self, resource_address: ResourceAddress, exceed_depth: usize) {
             self.deep_object = Some(generate_deep_access_rules(resource_address, exceed_depth));
         }
     }
 }
 
-fn generate_deep_access_rules(resource_address: ResourceAddress, exceed_depth: u8) -> AccessRules {
+fn generate_deep_access_rules(
+    resource_address: ResourceAddress,
+    exceed_depth: usize,
+) -> AccessRules {
     let mut access_rule_node = AccessRuleNode::ProofRule(ProofRule::Require(
         SoftResourceOrNonFungible::StaticResource(resource_address),
     ));

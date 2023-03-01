@@ -20,5 +20,5 @@ lazy_static = "1.4.0"
 # You should enable either `std` or `alloc`
 default = ["std"]
 std = ["sbor/std", "radix-engine-interface/std", "hex/std", "ed25519-dalek/std", "secp256k1/std", "utils/std", "transaction-data/std"]
-alloc = ["sbor/alloc", "radix-engine-interface/alloc", "hex/alloc", "ed25519-dalek/alloc", "secp256k1/alloc", "utils/alloc", "transaction-data/alloc"]
+alloc = ["sbor/alloc", "radix-engine-interface/alloc", "hex/alloc", "ed25519-dalek/alloc", "secp256k1/alloc", "utils/alloc", "transaction-data/alloc", "lazy_static/spin_no_std"]
 serde = ["serde/derive"]

@@ -40,7 +40,7 @@ fn test_decode_struct() {
         0,  // number of fields
     ];
 
-    let mut decoder = BasicDecoder::new(&bytes);
+    let mut decoder = BasicDecoder::new(&bytes, 255);
     let a = decoder.decode::<TestStructNamed>().unwrap();
     let b = decoder.decode::<TestStructUnnamed>().unwrap();
     let c = decoder.decode::<TestStructUnit>().unwrap();
@@ -70,7 +70,7 @@ fn test_decode_enum() {
         0,  // number of fields
     ];
 
-    let mut decoder = BasicDecoder::new(&bytes);
+    let mut decoder = BasicDecoder::new(&bytes, 255);
     let a = decoder.decode::<TestEnum>().unwrap();
     let b = decoder.decode::<TestEnum>().unwrap();
     let c = decoder.decode::<TestEnum>().unwrap();
@@ -92,7 +92,7 @@ fn test_decode_empty_enum() {
         9, 3, 0, 0, 0, // field value
     ];
 
-    let mut decoder = BasicDecoder::new(&bytes);
+    let mut decoder = BasicDecoder::new(&bytes, 255);
     let result = decoder.decode::<EmptyEnum>();
 
     assert!(matches!(result, Err(DecodeError::UnknownDiscriminator(_))));

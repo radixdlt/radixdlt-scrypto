@@ -4,6 +4,7 @@ use sbor::*;
 
 pub type ScryptoTypeKind<L> = TypeKind<ScryptoCustomValueKind, ScryptoCustomTypeKind<L>, L>;
 pub type ScryptoSchema = Schema<ScryptoCustomTypeExtension>;
+pub type ScryptoTypeData<L> = TypeData<ScryptoCustomTypeKind<L>, L>;
 
 /// A schema for the values that a codec can decode / views as valid
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
@@ -35,9 +36,13 @@ impl CustomTypeValidation for ScryptoCustomTypeValidation {}
 pub enum ScryptoCustomTypeExtension {}
 
 impl CustomTypeExtension for ScryptoCustomTypeExtension {
+    const MAX_DEPTH: usize = SCRYPTO_SBOR_V1_MAX_DEPTH;
+    const PAYLOAD_PREFIX: u8 = SCRYPTO_SBOR_V1_PAYLOAD_PREFIX;
+
     type CustomValueKind = ScryptoCustomValueKind;
     type CustomTypeKind<L: SchemaTypeLink> = ScryptoCustomTypeKind<L>;
     type CustomTypeValidation = ScryptoCustomTypeValidation;
+    type CustomTraversal = ScryptoCustomTraversal;
 
     fn linearize_type_kind(
         type_kind: Self::CustomTypeKind<GlobalTypeId>,
@@ -54,8 +59,8 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
                 key_type,
                 value_type,
             } => ScryptoCustomTypeKind::KeyValueStore {
-                key_type: resolve_local_type_ref(type_indices, &key_type),
-                value_type: resolve_local_type_ref(type_indices, &value_type),
+                key_type: resolve_local_type_index(type_indices, &key_type),
+                value_type: resolve_local_type_index(type_indices, &value_type),
             },
 
             ScryptoCustomTypeKind::Decimal => ScryptoCustomTypeKind::Decimal,
@@ -64,10 +69,10 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
         }
     }
 
-    fn resolve_custom_well_known_type(
+    fn resolve_well_known_type(
         well_known_index: u8,
-    ) -> Option<TypeData<Self::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>> {
-        resolve_scrypto_custom_well_known_type(well_known_index)
+    ) -> Option<&'static TypeData<Self::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>> {
+        resolve_scrypto_well_known_type(well_known_index)
     }
 
     fn validate_type_kind(
@@ -146,6 +151,49 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
                 // - which isn't valid.
                 return Err(SchemaValidationError::TypeValidationMismatch);
             }
+        }
+    }
+
+    // FIXME: this is insufficient, especially for address validation.
+    fn custom_type_kind_matches_value_kind<L: SchemaTypeLink>(
+        custom_type_kind: &Self::CustomTypeKind<L>,
+        value_kind: ValueKind<Self::CustomValueKind>,
+    ) -> bool {
+        match custom_type_kind {
+            ScryptoCustomTypeKind::Address => matches!(
+                value_kind,
+                ValueKind::Custom(ScryptoCustomValueKind::Address)
+            ),
+            ScryptoCustomTypeKind::PackageAddress => matches!(
+                value_kind,
+                ValueKind::Custom(ScryptoCustomValueKind::Address)
+            ),
+            ScryptoCustomTypeKind::ComponentAddress => matches!(
+                value_kind,
+                ValueKind::Custom(ScryptoCustomValueKind::Address)
+            ),
+            ScryptoCustomTypeKind::ResourceAddress => matches!(
+                value_kind,
+                ValueKind::Custom(ScryptoCustomValueKind::Address)
+            ),
+            ScryptoCustomTypeKind::Own => {
+                matches!(value_kind, ValueKind::Custom(ScryptoCustomValueKind::Own))
+            }
+            ScryptoCustomTypeKind::KeyValueStore { .. } => {
+                matches!(value_kind, ValueKind::Custom(ScryptoCustomValueKind::Own))
+            }
+            ScryptoCustomTypeKind::Decimal => matches!(
+                value_kind,
+                ValueKind::Custom(ScryptoCustomValueKind::Decimal)
+            ),
+            ScryptoCustomTypeKind::PreciseDecimal => matches!(
+                value_kind,
+                ValueKind::Custom(ScryptoCustomValueKind::PreciseDecimal)
+            ),
+            ScryptoCustomTypeKind::NonFungibleLocalId => matches!(
+                value_kind,
+                ValueKind::Custom(ScryptoCustomValueKind::NonFungibleLocalId)
+            ),
         }
     }
 }
