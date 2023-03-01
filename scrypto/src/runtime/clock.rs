@@ -5,7 +5,7 @@ use radix_engine_interface::blueprints::clock::{
     CLOCK_COMPARE_CURRENT_TIME_IDENT, CLOCK_GET_CURRENT_TIME_IDENT,
 };
 use radix_engine_interface::constants::CLOCK;
-use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
+use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::time::*;
 use sbor::rust::fmt::Debug;
 use scrypto::engine::scrypto_env::ScryptoEnv;

@@ -1,4 +1,5 @@
-use radix_engine_interface::api::types::*;
+use radix_engine_interface::data::scrypto::model::*;
+use radix_engine_interface::*;
 use sbor::rust::collections::HashMap;
 
 use crate::resource::*;

@@ -16,36 +16,14 @@ compile_error!("Either feature `std` or `alloc` must be enabled for this crate."
 #[cfg(all(feature = "std", feature = "alloc"))]
 compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
-/// Scrypto blueprint ABI.
-pub mod abi {
-    pub use scrypto_abi::*;
-}
 /// Scrypto component abstraction.
 pub mod component;
-/// Scrypto runtime abstraction.
-pub mod runtime;
-/// Scrypto data model.
-pub mod data {
-    pub use radix_engine_interface::data::*;
-}
-/// Scrypto math library.
-pub mod math {
-    pub use radix_engine_interface::math::*;
-}
-pub mod model {
-    pub use radix_engine_interface::api::component::ComponentAddress;
-    pub use radix_engine_interface::api::package::PackageAddress;
-    pub use radix_engine_interface::api::types::RoyaltyConfig;
-    pub use radix_engine_interface::blueprints::resource::*;
-}
-/// Scrypto crypto library
-pub mod crypto {
-    pub use radix_engine_interface::crypto::*;
-}
 /// Scrypto engine abstraction.
 pub mod engine;
 /// Scrypto resource abstraction.
 pub mod resource;
+/// Scrypto runtime abstraction.
+pub mod runtime;
 
 /// Scrypto preludes.
 #[cfg(feature = "prelude")]
@@ -55,22 +33,17 @@ pub mod prelude;
 mod macros;
 pub use macros::*;
 
-// Re-export radix engine derives
-pub extern crate radix_engine_derive;
-pub use radix_engine_derive::{
-    LegacyDescribe, NonFungibleData, ScryptoCategorize, ScryptoDecode, ScryptoEncode, ScryptoSbor,
-};
-
 // Re-export Scrypto derive.
 extern crate scrypto_derive;
-pub use scrypto_derive::{blueprint, import};
+pub use scrypto_derive::{blueprint, NonFungibleData};
 
+// Re-export Engine derive.
 pub extern crate radix_engine_interface;
-pub extern crate scrypto_abi;
+pub use radix_engine_interface::*;
 
 // This is to make derives work within this crate.
 // See: https://users.rust-lang.org/t/how-can-i-use-my-derive-macro-from-the-crate-that-declares-the-trait/60502
-extern crate self as scrypto;
+pub extern crate self as scrypto;
 
 /// Sets up panic hook.
 pub fn set_up_panic_hook() {

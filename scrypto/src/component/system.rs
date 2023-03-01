@@ -2,7 +2,8 @@ use crate::component::*;
 use crate::engine::scrypto_env::ScryptoEnv;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientComponentApi;
-use radix_engine_interface::data::scrypto_encode;
+use radix_engine_interface::data::scrypto::model::*;
+use radix_engine_interface::data::scrypto::scrypto_encode;
 use sbor::rust::collections::*;
 
 /// Represents the Radix Engine component subsystem.

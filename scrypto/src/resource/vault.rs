@@ -1,14 +1,18 @@
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientComponentApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::model::Own;
-use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoCustomValueKind};
+use radix_engine_interface::data::scrypto::model::Own;
+use radix_engine_interface::data::scrypto::model::*;
+use radix_engine_interface::data::scrypto::{
+    scrypto_decode, scrypto_encode, ScryptoCustomValueKind,
+};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::Categorize;
+use radix_engine_interface::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
+use sbor::*;
 use scrypto::engine::scrypto_env::ScryptoEnv;
-use scrypto_abi::Type;
 
 use crate::resource::*;
 use crate::*;
@@ -49,12 +53,6 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for V
             Own::Vault(vault_id) => Ok(Self(vault_id)),
             _ => Err(DecodeError::InvalidCustomValue),
         }
-    }
-}
-
-impl scrypto_abi::LegacyDescribe for Vault {
-    fn describe() -> scrypto_abi::Type {
-        Type::Vault
     }
 }
 

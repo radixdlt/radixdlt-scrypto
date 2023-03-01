@@ -4,13 +4,11 @@ use radix_engine_interface::api::types::{
     KeyValueStoreId, KeyValueStoreOffset, RENodeId, SubstateOffset,
 };
 use radix_engine_interface::api::{ClientComponentApi, ClientSubstateApi};
-use radix_engine_interface::data::model::Own;
-use radix_engine_interface::data::*;
-use sbor::rust::boxed::Box;
+use radix_engine_interface::data::scrypto::model::*;
+use radix_engine_interface::data::scrypto::*;
 use sbor::rust::marker::PhantomData;
 use sbor::*;
 
-use crate::abi::*;
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::{DataRef, DataRefMut, OriginalData};
 
@@ -168,19 +166,6 @@ impl<
                 value: PhantomData,
             }),
             _ => Err(DecodeError::InvalidCustomValue),
-        }
-    }
-}
-
-impl<
-        K: ScryptoEncode + ScryptoDecode + LegacyDescribe,
-        V: ScryptoEncode + ScryptoDecode + LegacyDescribe,
-    > LegacyDescribe for KeyValueStore<K, V>
-{
-    fn describe() -> scrypto_abi::Type {
-        Type::KeyValueStore {
-            key_type: Box::new(K::describe()),
-            value_type: Box::new(V::describe()),
         }
     }
 }

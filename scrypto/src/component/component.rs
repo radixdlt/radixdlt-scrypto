@@ -1,6 +1,4 @@
-use crate::abi::*;
 use crate::engine::scrypto_env::ScryptoEnv;
-use crate::runtime::*;
 use crate::*;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesAddAccessCheckInput, AccessRulesGetLengthInput, ACCESS_RULES_ADD_ACCESS_CHECK_IDENT,
@@ -16,15 +14,17 @@ use radix_engine_interface::api::node_modules::royalty::{
 use radix_engine_interface::api::types::{ComponentId, RENodeId};
 use radix_engine_interface::api::{types::*, ClientComponentApi};
 use radix_engine_interface::blueprints::resource::{
-    require, AccessRule, AccessRules, Bucket, MethodKey,
+    require, AccessRule, AccessRules, Bucket, MethodKey, NonFungibleGlobalId,
 };
-use radix_engine_interface::data::{
+use radix_engine_interface::data::scrypto::model::*;
+use radix_engine_interface::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
 };
 use radix_engine_interface::rule;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
+use sbor::*;
 
 use super::ComponentAccessRules;
 
@@ -312,11 +312,5 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for O
             Own::Component(component_id) => Ok(Self(component_id)),
             _ => Err(DecodeError::InvalidCustomValue),
         }
-    }
-}
-
-impl scrypto_abi::LegacyDescribe for OwnedComponent {
-    fn describe() -> scrypto_abi::Type {
-        Type::Component
     }
 }

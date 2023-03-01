@@ -1,20 +1,19 @@
 use crate::engine::scrypto_env::ScryptoEnv;
-use radix_engine_derive::LegacyDescribe;
 use radix_engine_derive::*;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetMethodAccessRuleInput, AccessRulesSetMethodMutabilityInput,
     ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT, ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
 };
-use radix_engine_interface::api::types::{
-    ComponentAddress, ComponentId, NodeModuleId, RENodeId, ToString,
-};
+use radix_engine_interface::api::types::{ComponentId, NodeModuleId, RENodeId};
 use radix_engine_interface::api::ClientComponentApi;
 use radix_engine_interface::blueprints::resource::{AccessRule, AccessRuleEntry, MethodKey};
-use radix_engine_interface::data::scrypto_encode;
+use radix_engine_interface::data::scrypto::model::*;
+use radix_engine_interface::data::scrypto::scrypto_encode;
+use radix_engine_interface::*;
 
 // TODO: Should `Encode` and `Decode` be removed so that `ComponentAccessRules` can not be passed
 // between components?
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, LegacyDescribe)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ComponentAccessRules {
     component: ComponentIdentifier,
     index: u32,
@@ -71,7 +70,7 @@ impl ComponentAccessRules {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, LegacyDescribe)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ComponentIdentifier {
     RENodeId(ComponentId),
     Address(ComponentAddress),
@@ -100,7 +99,7 @@ impl From<ComponentIdentifier> for RENodeId {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor, LegacyDescribe)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
 pub enum Mutability {
     LOCKED,
     MUTABLE(AccessRule),

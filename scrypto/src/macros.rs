@@ -9,7 +9,7 @@
 #[macro_export]
 macro_rules! error {
     ($($args: expr),+) => {{
-        ::scrypto::runtime::Logger::log_message(radix_engine_interface::blueprints::logger::Level::Error, ::sbor::rust::format!($($args),+));
+        $crate::runtime::Logger::log_message(radix_engine_interface::blueprints::logger::Level::Error, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -24,7 +24,7 @@ macro_rules! error {
 #[macro_export]
 macro_rules! warn {
     ($($args: expr),+) => {{
-        ::scrypto::runtime::Logger::log_message(radix_engine_interface::blueprints::logger::Level::Warn, ::sbor::rust::format!($($args),+));
+        $crate::runtime::Logger::log_message(radix_engine_interface::blueprints::logger::Level::Warn, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -39,7 +39,7 @@ macro_rules! warn {
 #[macro_export]
 macro_rules! info {
     ($($args: expr),+) => {{
-        ::scrypto::runtime::Logger::log_message(radix_engine_interface::blueprints::logger::Level::Info, ::sbor::rust::format!($($args),+));
+        $crate::runtime::Logger::log_message(radix_engine_interface::blueprints::logger::Level::Info, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -54,7 +54,7 @@ macro_rules! info {
 #[macro_export]
 macro_rules! debug {
     ($($args: expr),+) => {{
-        ::scrypto::runtime::Logger::log_message(radix_engine_interface::blueprints::logger::Level::Debug, ::sbor::rust::format!($($args),+));
+        $crate::runtime::Logger::log_message(radix_engine_interface::blueprints::logger::Level::Debug, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -69,7 +69,7 @@ macro_rules! debug {
 #[macro_export]
 macro_rules! trace {
     ($($args: expr),+) => {{
-        ::scrypto::runtime::Logger::log_message(radix_engine_interface::blueprints::logger::Level::Trace, ::sbor::rust::format!($($args),+));
+        $crate::runtime::Logger::log_message(radix_engine_interface::blueprints::logger::Level::Trace, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -167,7 +167,7 @@ macro_rules! include_abi {
 ///     }
 /// }
 ///
-/// #[derive(Sbor, LegacyDescribe)]
+/// #[derive(Sbor)]
 /// enum DepositResult {
 ///     Success,
 ///     Failure
@@ -203,16 +203,16 @@ macro_rules! external_blueprint {
         }
     ) => {
 
-        #[derive(ScryptoSbor, LegacyDescribe)]
+        #[derive(ScryptoSbor)]
         struct $blueprint_ident {
-            package_address: ::scrypto::model::PackageAddress,
+            package_address: $crate::data::scrypto::model:::PackageAddress,
             blueprint_name: ::sbor::rust::string::String,
         }
 
         // We allow dead code because it's used for importing interfaces, and not all the interface might be used
         #[allow(dead_code, unused_imports)]
         impl $blueprint_ident {
-            fn at<S>(package_address: ::scrypto::model::PackageAddress, blueprint_name: S) -> Self
+            fn at<S>(package_address: $crate::data::scrypto::model:::PackageAddress, blueprint_name: S) -> Self
             where
                 S: Into<::sbor::rust::string::String>
             {
@@ -222,13 +222,13 @@ macro_rules! external_blueprint {
                 }
             }
 
-            ::scrypto::external_blueprint_members!(
+            $crate::external_blueprint_members!(
                 $($blueprint_contents)*
             );
         }
 
-        impl From<$blueprint_ident> for ::scrypto::model::PackageAddress {
-            fn from(a: $blueprint_ident) -> ::scrypto::model::PackageAddress {
+        impl From<$blueprint_ident> for $crate::data::scrypto::model:::PackageAddress {
+            fn from(a: $blueprint_ident) -> $crate::data::scrypto::model:::PackageAddress {
                 a.package_address
             }
         }
@@ -279,29 +279,29 @@ macro_rules! external_blueprint_members {
         $($rest:tt)*
     ) => {
         pub fn $func_name(&self, $($func_args: $func_types),*) -> $func_output {
-            ::scrypto::runtime::Runtime::call_function(
+            $crate::runtime::Runtime::call_function(
                 self.package_address,
                 &self.blueprint_name,
                 stringify!($func_name),
                 scrypto_args!($($func_args),*)
             )
         }
-        ::scrypto::external_blueprint_members!($($rest)*);
+        $crate::external_blueprint_members!($($rest)*);
     };
     (
         fn $func_name:ident($($func_args:ident: $func_types:ty),*);
         $($rest:tt)*
     ) => {
         pub fn $func_name(&self, $($func_args: $func_types),*) {
-            use ::scrypto::rust::str::FromStr;
-            ::scrypto::runtime::Runtime::call_function(
+            use $crate::rust::str::FromStr;
+            $crate::runtime::Runtime::call_function(
                 self.package_address,
                 &self.blueprint_name,
                 stringify!($func_name),
                 scrypto_args!($($func_args),*)
             )
         }
-        ::scrypto::external_blueprint_members!($($rest)*);
+        $crate::external_blueprint_members!($($rest)*);
     };
     () => {}
 }
@@ -312,7 +312,7 @@ macro_rules! external_blueprint_members {
 /// ```no_run
 /// use scrypto::prelude::*;
 ///
-/// #[derive(Sbor, LegacyDescribe)]
+/// #[derive(Sbor)]
 /// enum DepositResult {
 ///     Success,
 ///     Failure
@@ -343,33 +343,33 @@ macro_rules! external_component {
             $($component_methods:tt)*
         }
     ) => {
-        #[derive(ScryptoSbor, LegacyDescribe)]
+        #[derive(ScryptoSbor)]
         struct $component_ident {
-            component_address: ::scrypto::model::ComponentAddress,
+            component_address: $crate::data::scrypto::model:::ComponentAddress,
         }
 
         // We allow dead code because it's used for importing interfaces, and not all the interface might be used
         #[allow(dead_code, unused_imports)]
         impl $component_ident {
-            fn at(component_address: ::scrypto::model::ComponentAddress) -> Self {
+            fn at(component_address: $crate::data::scrypto::model:::ComponentAddress) -> Self {
                 Self {
                     component_address,
                 }
             }
 
-            ::scrypto::external_component_members!($($component_methods)*);
+            $crate::external_component_members!($($component_methods)*);
         }
 
-        impl From<::scrypto::model::ComponentAddress> for $component_ident {
-            fn from(component_address: ::scrypto::model::ComponentAddress) -> Self {
+        impl From<$crate::data::scrypto::model:::ComponentAddress> for $component_ident {
+            fn from(component_address: $crate::data::scrypto::model:::ComponentAddress) -> Self {
                 Self {
                     component_address
                 }
             }
         }
 
-        impl From<$component_ident> for ::scrypto::model::ComponentAddress {
-            fn from(a: $component_ident) -> ::scrypto::model::ComponentAddress {
+        impl From<$component_ident> for $crate::data::scrypto::model:::ComponentAddress {
+            fn from(a: $component_ident) -> $crate::data::scrypto::model:::ComponentAddress {
                 a.component_address
             }
         }
@@ -384,52 +384,52 @@ macro_rules! external_component_members {
         $($rest:tt)*
     ) => {
         pub fn $method_name(&self $(, $method_args: $method_types)*) -> $method_output {
-            ::scrypto::runtime::Runtime::call_method(
+            $crate::runtime::Runtime::call_method(
                 self.component_address,
                 stringify!($method_name),
                 scrypto_args!($($method_args),*)
             )
         }
-        ::scrypto::external_component_members!($($rest)*);
+        $crate::external_component_members!($($rest)*);
     };
     (
         fn $method_name:ident(&self$(, $method_args:ident: $method_types:ty)*);
         $($rest:tt)*
     ) => {
         pub fn $method_name(&self $(, $method_args: $method_types)*) {
-            ::scrypto::runtime::Runtime::call_method(
+            $crate::runtime::Runtime::call_method(
                 self.component_address,
                 stringify!($method_name),
                 scrypto_args!($($method_args),*)
             )
         }
-        ::scrypto::external_component_members!($($rest)*);
+        $crate::external_component_members!($($rest)*);
     };
     (
         fn $method_name:ident(&mut self$(, $method_args:ident: $method_types:ty)*) -> $method_output:ty;
         $($rest:tt)*
     ) => {
         pub fn $method_name(&mut self $(, $method_args: $method_types)*) -> $method_output {
-            ::scrypto::runtime::Runtime::call_method(
+            $crate::runtime::Runtime::call_method(
                 self.component_address,
                 stringify!($method_name),
                 scrypto_args!($($method_args),*)
             )
         }
-        ::scrypto::external_component_members!($($rest)*);
+        $crate::external_component_members!($($rest)*);
     };
     (
         fn $method_name:ident(&mut self$(, $method_args:ident: $method_types:ty)*);
         $($rest:tt)*
     ) => {
         pub fn $method_name(&mut self $(, $method_args: $method_types)*) {
-            ::scrypto::runtime::Runtime::call_method(
+            $crate::runtime::Runtime::call_method(
                 self.component_address,
                 stringify!($method_name),
                 scrypto_args!($($method_args),*)
             )
         }
-        ::scrypto::external_component_members!($($rest)*);
+        $crate::external_component_members!($($rest)*);
     };
     (
         fn $method_name:ident(self$(, $method_args:ident: $method_types:ty)*) -> $method_output:ty;

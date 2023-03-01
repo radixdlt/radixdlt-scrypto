@@ -1,20 +1,10 @@
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::data::scrypto::model::*;
+use radix_engine_interface::*;
 use sbor::rust::marker::PhantomData;
 
 use crate::borrow_resource_manager;
 use crate::resource::*;
-
-pub trait ScryptoNonFungibleLocalId {
-    /// Creates a non-fungible ID from some uuid.
-    fn random() -> Self;
-}
-
-impl ScryptoNonFungibleLocalId for NonFungibleLocalId {
-    fn random() -> Self {
-        let uuid = crate::runtime::Runtime::generate_uuid();
-        Self::uuid(uuid).unwrap()
-    }
-}
 
 /// Represents a non-fungible unit.
 #[derive(Debug)]
