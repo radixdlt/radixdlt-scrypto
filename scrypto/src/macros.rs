@@ -205,14 +205,14 @@ macro_rules! external_blueprint {
 
         #[derive(ScryptoSbor)]
         struct $blueprint_ident {
-            package_address: $crate::data::scrypto::model:::PackageAddress,
+            package_address: $crate::data::scrypto::model::PackageAddress,
             blueprint_name: ::sbor::rust::string::String,
         }
 
         // We allow dead code because it's used for importing interfaces, and not all the interface might be used
         #[allow(dead_code, unused_imports)]
         impl $blueprint_ident {
-            fn at<S>(package_address: $crate::data::scrypto::model:::PackageAddress, blueprint_name: S) -> Self
+            fn at<S>(package_address: $crate::data::scrypto::model::PackageAddress, blueprint_name: S) -> Self
             where
                 S: Into<::sbor::rust::string::String>
             {
@@ -227,8 +227,8 @@ macro_rules! external_blueprint {
             );
         }
 
-        impl From<$blueprint_ident> for $crate::data::scrypto::model:::PackageAddress {
-            fn from(a: $blueprint_ident) -> $crate::data::scrypto::model:::PackageAddress {
+        impl From<$blueprint_ident> for $crate::data::scrypto::model::PackageAddress {
+            fn from(a: $blueprint_ident) -> $crate::data::scrypto::model::PackageAddress {
                 a.package_address
             }
         }
@@ -345,13 +345,13 @@ macro_rules! external_component {
     ) => {
         #[derive(ScryptoSbor)]
         struct $component_ident {
-            component_address: $crate::data::scrypto::model:::ComponentAddress,
+            component_address: $crate::data::scrypto::model::ComponentAddress,
         }
 
         // We allow dead code because it's used for importing interfaces, and not all the interface might be used
         #[allow(dead_code, unused_imports)]
         impl $component_ident {
-            fn at(component_address: $crate::data::scrypto::model:::ComponentAddress) -> Self {
+            fn at(component_address: $crate::data::scrypto::model::ComponentAddress) -> Self {
                 Self {
                     component_address,
                 }
@@ -360,16 +360,16 @@ macro_rules! external_component {
             $crate::external_component_members!($($component_methods)*);
         }
 
-        impl From<$crate::data::scrypto::model:::ComponentAddress> for $component_ident {
-            fn from(component_address: $crate::data::scrypto::model:::ComponentAddress) -> Self {
+        impl From<$crate::data::scrypto::model::ComponentAddress> for $component_ident {
+            fn from(component_address: $crate::data::scrypto::model::ComponentAddress) -> Self {
                 Self {
                     component_address
                 }
             }
         }
 
-        impl From<$component_ident> for $crate::data::scrypto::model:::ComponentAddress {
-            fn from(a: $component_ident) -> $crate::data::scrypto::model:::ComponentAddress {
+        impl From<$component_ident> for $crate::data::scrypto::model::ComponentAddress {
+            fn from(a: $component_ident) -> $crate::data::scrypto::model::ComponentAddress {
                 a.component_address
             }
         }
