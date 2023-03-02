@@ -5,8 +5,6 @@ use criterion::{BenchmarkId, Criterion};
 use ethnum::I256 as EthnumI256;
 use num_bigint::BigInt;
 use num_integer::Roots;
-use num_traits::Pow;
-use radix_engine_common::math::integer::{NthRoot, I256, I512};
 use rug::{ops::Pow as RugPow, Integer};
 
 use crate::macros::QUICK;
@@ -97,28 +95,6 @@ const FROM_STRING_OPERANDS: [&str; 4] = [
     "12379879872423987123123123",
     "9",
 ];
-
-ops_fn!(I256, pow, u32);
-ops_root_fn!(I256, nth_root);
-bench_ops!(I256, "add");
-bench_ops!(I256, "sub");
-bench_ops!(I256, "mul");
-bench_ops!(I256, "div");
-bench_ops!(I256, "root", u32);
-bench_ops!(I256, "pow", u32);
-bench_ops!(I256, "to_string");
-bench_ops!(I256, "from_string");
-
-ops_fn!(I512, pow, u32);
-ops_root_fn!(I512, nth_root);
-bench_ops!(I512, "add");
-bench_ops!(I512, "sub");
-bench_ops!(I512, "mul");
-bench_ops!(I512, "div");
-bench_ops!(I512, "root", u32);
-bench_ops!(I512, "pow", u32);
-bench_ops!(I512, "to_string");
-bench_ops!(I512, "from_string");
 
 ops_fn!(BigInt, pow, u32);
 ops_root_fn!(BigInt, nth_root);

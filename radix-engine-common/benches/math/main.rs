@@ -31,28 +31,6 @@ criterion_group!(
     bench_precisedecimal_to_string,
 );
 criterion_group!(
-    bench_i256,
-    bench_i256_add,
-    bench_i256_sub,
-    bench_i256_mul,
-    bench_i256_div,
-    bench_i256_root,
-    bench_i256_pow,
-    bench_i256_from_string,
-    bench_i256_to_string,
-);
-criterion_group!(
-    bench_i512,
-    bench_i512_add,
-    bench_i512_sub,
-    bench_i512_mul,
-    bench_i512_div,
-    bench_i512_root,
-    bench_i512_pow,
-    bench_i512_from_string,
-    bench_i512_to_string,
-);
-criterion_group!(
     bench_bigint,
     bench_bigint_add,
     bench_bigint_sub,
@@ -91,7 +69,7 @@ criterion_group!(
     bench_ethnumi256_sub,
     bench_ethnumi256_mul,
     bench_ethnumi256_div,
-    //    bench_ethnumi256_root,
+    // bench_ethnumi256_root,
     bench_ethnumi256_pow,
     bench_ethnumi256_from_string,
     bench_ethnumi256_to_string,

@@ -19,6 +19,7 @@ use sbor::rust::vec::Vec;
 pub mod bits;
 pub mod convert;
 pub mod test;
+pub mod test_macros;
 
 macro_rules! types {
     ($($t:ident, $wrap:ty),*) => {
