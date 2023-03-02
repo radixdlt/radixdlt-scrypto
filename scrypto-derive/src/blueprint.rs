@@ -111,11 +111,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 use ::scrypto::schema::BlueprintSchema;
                 use ::sbor::rust::prelude::*;
 
-                let return_data = BlueprintSchema {
-                    substates: BTreeMap::new(),
-                    functions: BTreeMap::new()
-                };
-
+                let return_data = BlueprintSchema::default();
                 return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
             }
         }
@@ -634,10 +630,7 @@ mod tests {
                     use ::scrypto::schema::BlueprintSchema;
                     use ::sbor::rust::prelude::*;
 
-                    let return_data = BlueprintSchema {
-                        substates: BTreeMap::new(),
-                        functions: BTreeMap::new()
-                    };
+                    let return_data = BlueprintSchema::default();
                     return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
                 }
 
@@ -782,10 +775,7 @@ mod tests {
                     use ::scrypto::schema::BlueprintSchema;
                     use ::sbor::rust::prelude::*;
 
-                    let return_data = BlueprintSchema {
-                        substates: BTreeMap::new(),
-                        functions: BTreeMap::new()
-                    };
+                    let return_data = BlueprintSchema::default();
                     return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
                 }
 
@@ -924,10 +914,7 @@ mod tests {
                     use ::scrypto::schema::BlueprintSchema;
                     use ::sbor::rust::prelude::*;
 
-                    let return_data = BlueprintSchema {
-                        substates: BTreeMap::new(),
-                        functions: BTreeMap::new()
-                    };
+                    let return_data = BlueprintSchema::default();
                     return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
                 }
 

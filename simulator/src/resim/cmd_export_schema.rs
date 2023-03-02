@@ -5,23 +5,34 @@ use crate::resim::*;
 
 /// Export the ABI of a blueprint
 #[derive(Parser, Debug)]
-pub struct ExportPackageSchema {
+pub struct ExportSchema {
     /// The package ID
     pub package_address: SimulatorPackageAddress,
+
+    // The blueprint name
+    pub blueprint_name: String,
+
+    /// The output file
+    pub output: PathBuf,
 
     /// Turn on tracing.
     #[clap(short, long)]
     pub trace: bool,
 }
 
-impl ExportPackageSchema {
+impl ExportSchema {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        match export_package_schema(self.package_address.0) {
+        match export_blueprint_schema(self.package_address.0, &self.blueprint_name) {
             Ok(schema) => {
+                fs::write(
+                    &self.output,
+                    scrypto_encode(&schema).map_err(Error::SborEncodeError)?,
+                )
+                .map_err(Error::IOError)?;
                 writeln!(
                     out,
-                    "{}",
-                    serde_json::to_string_pretty(&schema).map_err(Error::JSONError)?
+                    "Blueprint schema exported to {}",
+                    self.output.to_str().unwrap()
                 )
                 .map_err(Error::IOError)?;
                 Ok(())

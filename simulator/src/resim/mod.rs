@@ -1,7 +1,7 @@
 mod addressing;
 mod cmd_call_function;
 mod cmd_call_method;
-mod cmd_export_package_schema;
+mod cmd_export_schema;
 mod cmd_generate_key_pair;
 mod cmd_mint;
 mod cmd_new_account;
@@ -26,7 +26,7 @@ mod error;
 pub use addressing::*;
 pub use cmd_call_function::*;
 pub use cmd_call_method::*;
-pub use cmd_export_package_schema::*;
+pub use cmd_export_schema::*;
 pub use cmd_generate_key_pair::*;
 pub use cmd_mint::*;
 pub use cmd_new_account::*;
@@ -65,7 +65,7 @@ use radix_engine::wasm::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::network::NetworkDefinition;
-use radix_engine_interface::schema::PackageSchema;
+use radix_engine_interface::schema::BlueprintSchema;
 use radix_engine_stores::rocks_db::RadixEngineDB;
 use std::env;
 use std::fs;
@@ -97,7 +97,7 @@ impl ResimCli {
 pub enum Command {
     CallFunction(CallFunction),
     CallMethod(CallMethod),
-    ExportPackageSchema(ExportPackageSchema),
+    ExportSchema(ExportSchema),
     GenerateKeyPair(GenerateKeyPair),
     Mint(crate::resim::cmd_mint::Mint),
     NewAccount(NewAccount),
@@ -126,7 +126,7 @@ pub fn run() -> Result<(), Error> {
     match cli.command {
         Command::CallFunction(cmd) => cmd.run(&mut out),
         Command::CallMethod(cmd) => cmd.run(&mut out),
-        Command::ExportPackageSchema(cmd) => cmd.run(&mut out),
+        Command::ExportSchema(cmd) => cmd.run(&mut out),
         Command::GenerateKeyPair(cmd) => cmd.run(&mut out),
         Command::Mint(cmd) => cmd.run(&mut out),
         Command::NewAccount(cmd) => cmd.run(&mut out),
@@ -299,7 +299,10 @@ pub fn get_signing_keys(
 }
 
 #[allow(unused_variables)]
-pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageSchema, Error> {
+pub fn export_blueprint_schema(
+    package_address: PackageAddress,
+    string: &str,
+) -> Result<BlueprintSchema, Error> {
     todo!()
 }
 

@@ -58,7 +58,7 @@ impl Publish {
         let schema = scrypto_decode(
             &fs::read(&abi_path).map_err(|err| Error::IOErrorAtPath(err, abi_path))?,
         )
-        .map_err(Error::DataError)?;
+        .map_err(Error::SborDecodeError)?;
 
         if let Some(package_address) = self.package_address.clone() {
             let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();

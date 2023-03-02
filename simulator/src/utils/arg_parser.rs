@@ -5,12 +5,10 @@
 
 use radix_engine::types::*;
 use radix_engine_interface::math::ParseDecimalError;
-use radix_engine_interface::schema::PackageSchema;
+use radix_engine_interface::schema::BlueprintSchema;
 use transaction::builder::ManifestBuilder;
 
 pub struct ArgParsingContext {
-    pub account: Option<ComponentAddress>,
-    pub package_schema: PackageSchema,
     pub package_address: PackageAddress,
     pub blueprint_name: String,
 }
@@ -36,7 +34,8 @@ pub fn add_call_function_instruction_with_abi<'a>(
     blueprint_name: &str,
     function: &str,
     args: Vec<String>,
-    context: ArgParsingContext,
+    account: Option<ComponentAddress>,
+    blueprint_schema: &BlueprintSchema,
 ) -> Result<&'a mut ManifestBuilder, BuildCallWithAbiError> {
     todo!()
 }
@@ -55,7 +54,8 @@ pub fn add_call_method_instruction_with_abi<'a>(
     component_address: ComponentAddress,
     method_name: &str,
     args: Vec<String>,
-    context: ArgParsingContext,
+    account: Option<ComponentAddress>,
+    blueprint_schema: &BlueprintSchema,
 ) -> Result<&'a mut ManifestBuilder, BuildCallWithAbiError> {
     todo!()
 }

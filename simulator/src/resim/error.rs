@@ -23,19 +23,15 @@ pub enum Error {
 
     HomeDirUnknown,
 
-    ConfigDecodingError(sbor::DecodeError),
-
     IOError(io::Error),
 
     IOErrorAtPath(io::Error, PathBuf),
 
-    DataError(DecodeError),
+    SborDecodeError(DecodeError),
 
-    JSONError(serde_json::Error),
+    SborEncodeError(EncodeError),
 
     BuildError(BuildError),
-
-    PackageAddressNotFound,
 
     ExtractAbiError(ExtractAbiError),
 

@@ -72,12 +72,8 @@ impl CallMethod {
                     self.component_address.0,
                     &self.method_name,
                     self.arguments.clone(),
-                    ArgParsingContext {
-                        account: Some(default_account),
-                        package_schema: export_package_schema(package_address)?,
-                        package_address,
-                        blueprint_name,
-                    },
+                    Some(default_account),
+                    &export_blueprint_schema(package_address, &blueprint_name)?,
                 )
                 .map_err(Error::TransactionConstructionError)?;
                 Ok(builder)

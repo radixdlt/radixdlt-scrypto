@@ -72,12 +72,8 @@ impl CallFunction {
                     &self.blueprint_name,
                     &self.function_name,
                     self.arguments.clone(),
-                    ArgParsingContext {
-                        account: Some(default_account),
-                        package_schema: export_package_schema(self.package_address.0)?,
-                        package_address: self.package_address.0,
-                        blueprint_name: self.blueprint_name.clone(),
-                    },
+                    Some(default_account),
+                    &export_blueprint_schema(self.package_address.0, &self.blueprint_name)?,
                 )
                 .map_err(Error::TransactionConstructionError)?;
                 Ok(builder)
