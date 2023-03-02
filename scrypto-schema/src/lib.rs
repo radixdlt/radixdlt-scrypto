@@ -29,17 +29,16 @@ pub struct BlueprintSchema {
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub struct FunctionSchema {
-    pub receiver: Option<FunctionReceiver>,
+    pub receiver: Option<Receiver>,
     pub input: LocalTypeIndex,
     pub output: LocalTypeIndex,
     pub export_name: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-pub enum FunctionReceiver {
-    Immutable,
-
-    Mutable,
+pub enum Receiver {
+    SelfRef,
+    SelfRefMut,
 }
 
 impl Default for BlueprintSchema {

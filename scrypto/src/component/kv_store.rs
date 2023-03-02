@@ -5,6 +5,7 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::api::{ClientComponentApi, ClientSubstateApi};
 use radix_engine_interface::data::scrypto::model::*;
+use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::OWN_KEY_VALUE_STORE_ID;
 use radix_engine_interface::data::scrypto::*;
 use sbor::rust::marker::PhantomData;
 use sbor::*;
@@ -168,4 +169,10 @@ impl<
             _ => Err(DecodeError::InvalidCustomValue),
         }
     }
+}
+
+impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode>
+    Describe<ScryptoCustomTypeKind<GlobalTypeId>> for KeyValueStore<K, V>
+{
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown([OWN_KEY_VALUE_STORE_ID]);
 }
