@@ -99,7 +99,7 @@ jobs:
       run: cargo test
       working-directory: scrypto
     - name: Run tests (no_std)
-      run: cargo test --no-default-features --features alloc,prelude
+      run: cargo test --no-default-features --features alloc
       working-directory: scrypto
     - name: Run abi tests
       run: cargo test

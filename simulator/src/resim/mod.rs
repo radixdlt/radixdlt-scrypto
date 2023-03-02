@@ -66,6 +66,7 @@ use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::schema::BlueprintSchema;
+use radix_engine_interface::schema::PackageSchema;
 use radix_engine_stores::rocks_db::RadixEngineDB;
 use std::env;
 use std::fs;
@@ -299,10 +300,17 @@ pub fn get_signing_keys(
 }
 
 #[allow(unused_variables)]
+pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageSchema, Error> {
+    // FIXME schema - implement
+    todo!()
+}
+
+#[allow(unused_variables)]
 pub fn export_blueprint_schema(
     package_address: PackageAddress,
-    string: &str,
+    blueprint_name: &str,
 ) -> Result<BlueprintSchema, Error> {
+    // FIXME schema - implement
     todo!()
 }
 

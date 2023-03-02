@@ -9,9 +9,6 @@ pub struct ExportSchema {
     /// The package ID
     pub package_address: SimulatorPackageAddress,
 
-    // The blueprint name
-    pub blueprint_name: String,
-
     /// The output file
     pub output: PathBuf,
 
@@ -22,7 +19,7 @@ pub struct ExportSchema {
 
 impl ExportSchema {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        match export_blueprint_schema(self.package_address.0, &self.blueprint_name) {
+        match export_package_schema(self.package_address.0) {
             Ok(schema) => {
                 fs::write(
                     &self.output,
