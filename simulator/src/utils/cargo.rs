@@ -62,7 +62,7 @@ fn run_cargo_build(
         features.push("scrypto/trace".to_owned());
     }
     if no_abi_gen {
-        features.push("scrypto/no-abi-gen".to_owned());
+        features.push("scrypto/no-schema".to_owned());
     }
     if !features.is_empty() {
         features.insert(0, "--features".to_owned());
