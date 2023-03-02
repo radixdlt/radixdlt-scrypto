@@ -1,3 +1,4 @@
+use sbor::*;
 use scrypto::prelude::*;
 use scrypto::schema::*;
 
@@ -28,187 +29,172 @@ pub extern "C" fn AbiComponent2_invalid_output(_input: u64) -> Slice {
 }
 
 #[no_mangle]
-pub extern "C" fn AbiComponent2_valid_output(_input: u64) -> Slice {
+pub extern "C" fn dummy_export(_input: u64) -> Slice {
     ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&()).unwrap())
 }
 
 #[no_mangle]
 pub extern "C" fn AbiComponent2_abi() -> Slice {
-    let structure = Type::Struct {
-        name: "AbiComponent2".to_string(),
-        fields: Fields::Unit,
-    };
-    let abi = BlueprintAbi {
-        structure,
-        fns: vec![
-            Fn {
-                ident: "invalid_output".to_string(),
-                mutability: None,
-                input: Type::Tuple {
-                    element_types: vec![],
-                },
-                output: Type::U8,
-                export_name: "AbiComponent2_invalid_output".to_string(),
-            },
-            Fn {
-                ident: "unit".to_string(),
-                mutability: None,
-                input: Type::Tuple {
-                    element_types: vec![],
-                },
-                output: Type::Tuple {
-                    element_types: vec![],
-                },
-                export_name: "AbiComponent2_valid_output".to_string(),
-            },
-            Fn {
-                ident: "bool".to_string(),
-                mutability: None,
-                input: Type::Bool,
-                output: Type::Tuple {
-                    element_types: vec![],
-                },
-                export_name: "AbiComponent2_valid_output".to_string(),
-            },
-            Fn {
-                ident: "i8".to_string(),
-                mutability: None,
-                input: Type::I8,
-                output: Type::Tuple {
-                    element_types: vec![],
-                },
-                export_name: "AbiComponent2_valid_output".to_string(),
-            },
-            Fn {
-                ident: "i16".to_string(),
-                mutability: None,
-                input: Type::I16,
-                output: Type::Tuple {
-                    element_types: vec![],
-                },
-                export_name: "AbiComponent2_valid_output".to_string(),
-            },
-            Fn {
-                ident: "i32".to_string(),
-                mutability: None,
-                input: Type::I32,
-                output: Type::Tuple {
-                    element_types: vec![],
-                },
-                export_name: "AbiComponent2_valid_output".to_string(),
-            },
-            Fn {
-                ident: "i64".to_string(),
-                mutability: None,
-                input: Type::I64,
-                output: Type::Tuple {
-                    element_types: vec![],
-                },
-                export_name: "AbiComponent2_valid_output".to_string(),
-            },
-            Fn {
-                ident: "i128".to_string(),
-                mutability: None,
-                input: Type::I128,
-                output: Type::Tuple {
-                    element_types: vec![],
-                },
-                export_name: "AbiComponent2_valid_output".to_string(),
-            },
-            Fn {
-                ident: "u8".to_string(),
-                mutability: None,
-                input: Type::U8,
-                output: Type::Tuple {
-                    element_types: vec![],
-                },
-                export_name: "AbiComponent2_valid_output".to_string(),
-            },
-            Fn {
-                ident: "u16".to_string(),
-                mutability: None,
-                input: Type::U16,
-                output: Type::Tuple {
-                    element_types: vec![],
-                },
-                export_name: "AbiComponent2_valid_output".to_string(),
-            },
-            Fn {
-                ident: "u32".to_string(),
-                mutability: None,
-                input: Type::U32,
-                output: Type::Tuple {
-                    element_types: vec![],
-                },
-                export_name: "AbiComponent2_valid_output".to_string(),
-            },
-            Fn {
-                ident: "u64".to_string(),
-                mutability: None,
-                input: Type::U64,
-                output: Type::Tuple {
-                    element_types: vec![],
-                },
-                export_name: "AbiComponent2_valid_output".to_string(),
-            },
-            Fn {
-                ident: "u128".to_string(),
-                mutability: None,
-                input: Type::U128,
-                output: Type::Tuple {
-                    element_types: vec![],
-                },
-                export_name: "AbiComponent2_valid_output".to_string(),
-            },
-            Fn {
-                ident: "result".to_string(),
-                mutability: None,
-                input: Type::Result {
-                    okay_type: Box::new(Type::Tuple {
-                        element_types: vec![],
-                    }),
-                    err_type: Box::new(Type::Tuple {
-                        element_types: vec![],
-                    }),
-                },
-                output: Type::Tuple {
-                    element_types: vec![],
-                },
-                export_name: "AbiComponent2_valid_output".to_string(),
-            },
-            Fn {
-                ident: "tree_map".to_string(),
-                mutability: None,
-                input: Type::TreeMap {
-                    key_type: Box::new(Type::Tuple {
-                        element_types: vec![],
-                    }),
-                    value_type: Box::new(Type::Tuple {
-                        element_types: vec![],
-                    }),
-                },
-                output: Type::Tuple {
-                    element_types: vec![],
-                },
-                export_name: "AbiComponent2_valid_output".to_string(),
-            },
-            Fn {
-                ident: "hash_set".to_string(),
-                mutability: None,
-                input: Type::HashSet {
-                    element_type: Box::new(Type::Tuple {
-                        element_types: vec![],
-                    }),
-                },
-                output: Type::Tuple {
-                    element_types: vec![],
-                },
-                export_name: "AbiComponent2_valid_output".to_string(),
-            },
-        ],
+    let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind<_>>::new();
+    let mut substates = BTreeMap::new();
+    substates.insert(0u8, aggregator.add_child_type_and_descendents::<()>());
+
+    let mut functions = BTreeMap::new();
+
+    functions.insert(
+        "invalid_output".to_string(),
+        FunctionSchema {
+            receiver: None,
+            input: aggregator.add_child_type_and_descendents::<()>(),
+            output: aggregator.add_child_type_and_descendents::<u8>(),
+            export_name: "dummy_export".to_string(),
+        },
+    );
+    functions.insert(
+        "unit".to_string(),
+        FunctionSchema {
+            receiver: None,
+            input: aggregator.add_child_type_and_descendents::<()>(),
+            output: aggregator.add_child_type_and_descendents::<()>(),
+            export_name: "dummy_export".to_string(),
+        },
+    );
+    functions.insert(
+        "bool".to_string(),
+        FunctionSchema {
+            receiver: None,
+            input: aggregator.add_child_type_and_descendents::<bool>(),
+            output: aggregator.add_child_type_and_descendents::<()>(),
+            export_name: "dummy_export".to_string(),
+        },
+    );
+    functions.insert(
+        "i8".to_string(),
+        FunctionSchema {
+            receiver: None,
+            input: aggregator.add_child_type_and_descendents::<i8>(),
+            output: aggregator.add_child_type_and_descendents::<()>(),
+            export_name: "dummy_export".to_string(),
+        },
+    );
+    functions.insert(
+        "i16".to_string(),
+        FunctionSchema {
+            receiver: None,
+            input: aggregator.add_child_type_and_descendents::<i16>(),
+            output: aggregator.add_child_type_and_descendents::<()>(),
+            export_name: "dummy_export".to_string(),
+        },
+    );
+    functions.insert(
+        "i32".to_string(),
+        FunctionSchema {
+            receiver: None,
+            input: aggregator.add_child_type_and_descendents::<i32>(),
+            output: aggregator.add_child_type_and_descendents::<()>(),
+            export_name: "dummy_export".to_string(),
+        },
+    );
+    functions.insert(
+        "i64".to_string(),
+        FunctionSchema {
+            receiver: None,
+            input: aggregator.add_child_type_and_descendents::<i64>(),
+            output: aggregator.add_child_type_and_descendents::<()>(),
+            export_name: "dummy_export".to_string(),
+        },
+    );
+    functions.insert(
+        "i128".to_string(),
+        FunctionSchema {
+            receiver: None,
+            input: aggregator.add_child_type_and_descendents::<i128>(),
+            output: aggregator.add_child_type_and_descendents::<()>(),
+            export_name: "dummy_export".to_string(),
+        },
+    );
+    functions.insert(
+        "u8".to_string(),
+        FunctionSchema {
+            receiver: None,
+            input: aggregator.add_child_type_and_descendents::<u8>(),
+            output: aggregator.add_child_type_and_descendents::<()>(),
+            export_name: "dummy_export".to_string(),
+        },
+    );
+    functions.insert(
+        "u16".to_string(),
+        FunctionSchema {
+            receiver: None,
+            input: aggregator.add_child_type_and_descendents::<u16>(),
+            output: aggregator.add_child_type_and_descendents::<()>(),
+            export_name: "dummy_export".to_string(),
+        },
+    );
+    functions.insert(
+        "u32".to_string(),
+        FunctionSchema {
+            receiver: None,
+            input: aggregator.add_child_type_and_descendents::<u32>(),
+            output: aggregator.add_child_type_and_descendents::<()>(),
+            export_name: "dummy_export".to_string(),
+        },
+    );
+    functions.insert(
+        "u64".to_string(),
+        FunctionSchema {
+            receiver: None,
+            input: aggregator.add_child_type_and_descendents::<u64>(),
+            output: aggregator.add_child_type_and_descendents::<()>(),
+            export_name: "dummy_export".to_string(),
+        },
+    );
+    functions.insert(
+        "u128".to_string(),
+        FunctionSchema {
+            receiver: None,
+            input: aggregator.add_child_type_and_descendents::<u128>(),
+            output: aggregator.add_child_type_and_descendents::<()>(),
+            export_name: "dummy_export".to_string(),
+        },
+    );
+    functions.insert(
+        "result".to_string(),
+        FunctionSchema {
+            receiver: None,
+            input: aggregator.add_child_type_and_descendents::<Result<(), ()>>(),
+            output: aggregator.add_child_type_and_descendents::<()>(),
+            export_name: "dummy_export".to_string(),
+        },
+    );
+    functions.insert(
+        "tree_map".to_string(),
+        FunctionSchema {
+            receiver: None,
+            input: aggregator.add_child_type_and_descendents::<BTreeMap<(), ()>>(),
+            output: aggregator.add_child_type_and_descendents::<()>(),
+            export_name: "dummy_export".to_string(),
+        },
+    );
+    functions.insert(
+        "hash_set".to_string(),
+        FunctionSchema {
+            receiver: None,
+            input: aggregator.add_child_type_and_descendents::<HashSet<()>>(),
+            output: aggregator.add_child_type_and_descendents::<()>(),
+            export_name: "dummy_export".to_string(),
+        },
+    );
+
+    let schema = BlueprintSchema {
+        schema: generate_full_schema(aggregator),
+        substates,
+        functions,
     };
 
-    ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&abi).unwrap())
+    ::scrypto::engine::wasm_api::forget_vec(
+        ::scrypto::data::scrypto::scrypto_encode(&schema).unwrap(),
+    )
 }
 
 #[blueprint]
