@@ -98,7 +98,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                     SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
                 ))
                 .map(|s| s.substate)
-                .map(|s| s.to_runtime().access_rules_chain().clone())
+                .map(|s| s.to_runtime().method_access_rules().clone())
                 .ok_or(DisplayError::ComponentNotFound)?;
             let state: ComponentStateSubstate = substate_store
                 .get_substate(&SubstateId(
@@ -191,7 +191,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                     SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
                 ))
                 .map(|s| s.substate)
-                .map(|s| s.to_runtime().access_rules_chain().clone())
+                .map(|s| s.to_runtime().method_access_rules().clone())
                 .ok_or(DisplayError::ComponentNotFound)?;
 
             // Getting the vaults in the key-value store of the account
@@ -242,7 +242,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                     SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
                 ))
                 .map(|s| s.substate)
-                .map(|s| s.to_runtime().access_rules_chain().clone())
+                .map(|s| s.to_runtime().method_access_rules().clone())
                 .ok_or(DisplayError::ComponentNotFound)?;
 
             ComponentStateDump {
@@ -271,7 +271,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                     SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
                 ))
                 .map(|s| s.substate)
-                .map(|s| s.to_runtime().access_rules_chain().clone())
+                .map(|s| s.to_runtime().method_access_rules().clone())
                 .ok_or(DisplayError::ComponentNotFound)?;
 
             ComponentStateDump {
