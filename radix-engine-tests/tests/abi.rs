@@ -150,36 +150,6 @@ fn test_export_abi() {
     );
 }
 
-#[test]
-#[ignore]
-fn test_invalid_access_rule_methods() {
-    // Arrange
-    let mut test_runner = TestRunner::builder().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/abi");
-
-    // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(
-            package_address,
-            "AbiComponent",
-            "create_invalid_abi_component",
-            manifest_args!(),
-        )
-        .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
-
-    // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(
-                AccessRulesChainError::BlueprintFunctionNotFound(..)
-            ))
-        )
-    })
-}
-
 enum ExpectedResult {
     Success,
     InvalidInput,
