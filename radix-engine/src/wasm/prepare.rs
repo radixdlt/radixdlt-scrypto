@@ -774,6 +774,8 @@ impl WasmModule {
 mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
+    use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema};
+    use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
     use wabt::wat2wasm;
 
     macro_rules! assert_invalid_wasm {
@@ -927,7 +929,27 @@ mod tests {
 
     #[test]
     fn test_blueprint_constraints() {
-        let package_schema = PackageSchema::default();
+        let mut package_schema = PackageSchema::default();
+        package_schema.blueprints.insert(
+            "Test".to_string(),
+            BlueprintSchema {
+                schema: ScryptoSchema {
+                    type_kinds: vec![],
+                    type_metadata: vec![],
+                    type_validations: vec![],
+                },
+                substates: btreemap!(),
+                functions: btreemap!(
+                    "f".to_string() => FunctionSchema {
+                        receiver: Option::None,
+                        input: LocalTypeIndex::WellKnown(ANY_ID),
+                        output: LocalTypeIndex::WellKnown(UNIT_ID),
+                        export_name: "Test_f".to_string(),
+                    }
+                ),
+            },
+        );
+
         assert_invalid_wasm!(
             r#"
             (module

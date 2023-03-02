@@ -39,11 +39,12 @@ use radix_engine_interface::data::manifest::manifest_encode;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
-use radix_engine_interface::schema::PackageSchema;
+use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
 use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
+use sbor::basic_well_known_types::ANY_ID;
 use scrypto::prelude::*;
 use transaction::builder::ManifestBuilder;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
@@ -1186,11 +1187,28 @@ pub fn get_cargo_target_directory(manifest_path: impl AsRef<OsStr>) -> String {
     }
 }
 
-pub fn generate_single_function_abi(_blueprint_name: &str, _function_name: &str) -> PackageSchema {
-    // FIXME implement this
-    PackageSchema {
-        blueprints: BTreeMap::new(),
-    }
+pub fn generate_single_function_abi(blueprint_name: &str, function_name: &str) -> PackageSchema {
+    let mut package_schema = PackageSchema::default();
+    package_schema.blueprints.insert(
+        blueprint_name.to_string(),
+        BlueprintSchema {
+            schema: ScryptoSchema {
+                type_kinds: vec![],
+                type_metadata: vec![],
+                type_validations: vec![],
+            },
+            substates: btreemap!(),
+            functions: btreemap!(
+                function_name.to_string() => FunctionSchema {
+                    receiver: Option::None,
+                    input: LocalTypeIndex::WellKnown(ANY_ID),
+                    output: LocalTypeIndex::WellKnown(ANY_ID),
+                    export_name: format!("{}_{}", blueprint_name, function_name),
+                }
+            ),
+        },
+    );
+    package_schema
 }
 
 #[derive(NonFungibleData)]
