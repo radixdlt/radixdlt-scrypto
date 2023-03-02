@@ -52,6 +52,7 @@ pub enum PrepareError {
 pub enum InvalidImport {
     /// The import is not allowed
     ImportNotAllowed,
+    InvalidFunctionType(String),
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Sbor)]
@@ -133,6 +134,7 @@ pub enum WasmRuntimeError {
     InvalidMetadata(DecodeError),
     /// Invalid component id
     InvalidComponentId(DecodeError),
+    InvalidValue(DecodeError),
     /// Invalid component address
     InvalidLockFlags,
     /// Costing error

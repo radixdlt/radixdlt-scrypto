@@ -448,12 +448,10 @@ pub fn generate_instruction(
         }
         ast::Instruction::SetMethodAccessRule {
             entity_address,
-            index,
             key,
             rule,
         } => Instruction::SetMethodAccessRule {
             entity_address: generate_address(entity_address, bech32_decoder)?,
-            index: generate_typed_value(index, resolver, bech32_decoder, blobs)?,
             key: generate_typed_value(key, resolver, bech32_decoder, blobs)?,
             rule: generate_typed_value(rule, resolver, bech32_decoder, blobs)?,
         },

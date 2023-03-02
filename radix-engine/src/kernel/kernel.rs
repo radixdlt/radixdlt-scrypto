@@ -12,13 +12,17 @@ use crate::system::node_properties::VisibilityProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::component::TypeInfoSubstate;
+use native_sdk::access_rules::AccessRulesObject;
+use native_sdk::metadata::Metadata;
+use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
+use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
+use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
 use radix_engine_interface::api::package::{PackageCodeSubstate, PACKAGE_LOADER_BLUEPRINT};
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::{ClientComponentApi, ClientPackageApi};
 // TODO: clean this up!
 use crate::kernel::kernel_api::TemporaryResolvedInvocation;
-use crate::system::node_modules::access_rules::MethodAccessRulesChainSubstate;
+use crate::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine_interface::api::types::{
     LockHandle, ProofOffset, RENodeId, SubstateId, SubstateOffset,
 };
@@ -140,6 +144,16 @@ where
         global_node_id: RENodeId,
         non_fungible_global_id: NonFungibleGlobalId,
     ) -> Result<(), RuntimeError> {
+        // TODO: This should move into the appropriate place once virtual manager is implemented
+        self.current_frame.add_ref(
+            RENodeId::GlobalResourceManager(ECDSA_SECP256K1_TOKEN),
+            RENodeVisibilityOrigin::Normal,
+        );
+        self.current_frame.add_ref(
+            RENodeId::GlobalResourceManager(EDDSA_ED25519_TOKEN),
+            RENodeVisibilityOrigin::Normal,
+        );
+
         // TODO: Replace with trusted IndexedScryptoValue
         let access_rule = rule!(require(non_fungible_global_id));
         let component_id = {
@@ -150,21 +164,6 @@ where
                 node_id
             };
 
-            let access_rules = {
-                let mut access_rules = AccessRules::new();
-                access_rules.set_access_rule_and_mutability(
-                    MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_IDENT.to_string()),
-                    AccessRule::AllowAll,
-                    AccessRule::DenyAll,
-                );
-                access_rules.set_access_rule_and_mutability(
-                    MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_BATCH_IDENT.to_string()),
-                    AccessRule::AllowAll,
-                    AccessRule::DenyAll,
-                );
-                access_rules.default(access_rule.clone(), access_rule)
-            };
-
             let node_id = {
                 let mut node_modules = BTreeMap::new();
                 node_modules.insert(
@@ -172,13 +171,6 @@ where
                     RENodeModuleInit::Metadata(MetadataSubstate {
                         metadata: BTreeMap::new(),
                     }),
-                );
-                let access_rules_substate = MethodAccessRulesChainSubstate {
-                    access_rules_chain: vec![access_rules],
-                };
-                node_modules.insert(
-                    NodeModuleId::AccessRules,
-                    RENodeModuleInit::ObjectAccessRulesChain(access_rules_substate),
                 );
                 let account_substate = AccountSubstate {
                     vaults: Own::KeyValueStore(kv_store_id.into()),
@@ -192,7 +184,33 @@ where
             node_id
         };
 
-        self.globalize_with_address(component_id, global_node_id.into())?;
+        let access_rules = {
+            let mut access_rules = AccessRules::new();
+            access_rules.set_access_rule_and_mutability(
+                MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_IDENT.to_string()),
+                AccessRule::AllowAll,
+                AccessRule::DenyAll,
+            );
+            access_rules.set_access_rule_and_mutability(
+                MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_BATCH_IDENT.to_string()),
+                AccessRule::AllowAll,
+                AccessRule::DenyAll,
+            );
+            access_rules.default(access_rule.clone(), access_rule)
+        };
+
+        let access_rules = AccessRulesObject::sys_new(access_rules, self)?;
+
+        let metadata = Metadata::sys_new(self)?;
+
+        self.globalize_with_address(
+            component_id,
+            btreemap!(
+                NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
+                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
+            ),
+            global_node_id.into(),
+        )?;
 
         Ok(())
     }
@@ -202,10 +220,30 @@ where
         global_node_id: RENodeId,
         non_fungible_global_id: NonFungibleGlobalId,
     ) -> Result<(), RuntimeError> {
-        let access_rule = rule!(require(non_fungible_global_id));
-        let local_id = Identity::create(access_rule, self)?;
+        // TODO: This should move into the appropriate place once virtual manager is implemented
+        self.current_frame.add_ref(
+            RENodeId::GlobalResourceManager(ECDSA_SECP256K1_TOKEN),
+            RENodeVisibilityOrigin::Normal,
+        );
+        self.current_frame.add_ref(
+            RENodeId::GlobalResourceManager(EDDSA_ED25519_TOKEN),
+            RENodeVisibilityOrigin::Normal,
+        );
 
-        self.globalize_with_address(local_id, global_node_id.into())?;
+        let access_rule = rule!(require(non_fungible_global_id));
+        let (local_id, access_rules) = Identity::create(access_rule, self)?;
+
+        let access_rules = AccessRulesObject::sys_new(access_rules, self)?;
+        let metadata = Metadata::sys_new(self)?;
+
+        self.globalize_with_address(
+            local_id,
+            btreemap!(
+                NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
+                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
+            ),
+            global_node_id.into(),
+        )?;
 
         Ok(())
     }
@@ -659,12 +697,43 @@ where
             (RENodeId::Component(..), RENodeInit::Component(..)) => {}
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
             (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
+            (RENodeId::Component(..), RENodeInit::Metadata(..)) => {
+                module_init.insert(
+                    NodeModuleId::TypeInfo,
+                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                        package_address: METADATA_PACKAGE,
+                        blueprint_name: METADATA_BLUEPRINT.to_string(),
+                        global: false,
+                    }),
+                );
+            }
+            (RENodeId::Component(..), RENodeInit::ComponentRoyalty(..)) => {
+                module_init.insert(
+                    NodeModuleId::TypeInfo,
+                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                        package_address: ROYALTY_PACKAGE,
+                        blueprint_name: COMPONENT_ROYALTY_BLUEPRINT.to_string(),
+                        global: false,
+                    }),
+                );
+            }
+            (RENodeId::Component(..), RENodeInit::AccessRules(..)) => {
+                module_init.insert(
+                    NodeModuleId::TypeInfo,
+                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                        package_address: ACCESS_RULES_PACKAGE,
+                        blueprint_name: ACCESS_RULES_BLUEPRINT.to_string(),
+                        global: false,
+                    }),
+                );
+            }
             (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {
                 module_init.insert(
                     NodeModuleId::TypeInfo,
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: AUTH_ZONE_PACKAGE,
                         blueprint_name: AUTH_ZONE_BLUEPRINT.to_string(),
+                        global: false,
                     }),
                 );
             }
@@ -674,6 +743,7 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: TRANSACTION_RUNTIME_PACKAGE,
                         blueprint_name: TRANSACTION_RUNTIME_BLUEPRINT.to_string(),
+                        global: false,
                     }),
                 );
             }
@@ -683,6 +753,7 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: RESOURCE_MANAGER_PACKAGE,
                         blueprint_name: WORKTOP_BLUEPRINT.to_string(),
+                        global: false,
                     }),
                 );
             }
@@ -693,6 +764,7 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: RESOURCE_MANAGER_PACKAGE,
                         blueprint_name: BUCKET_BLUEPRINT.to_string(),
+                        global: false,
                     }),
                 );
             }
@@ -703,6 +775,7 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: RESOURCE_MANAGER_PACKAGE,
                         blueprint_name: PROOF_BLUEPRINT.to_string(),
+                        global: false,
                     }),
                 );
             }
@@ -713,6 +786,7 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: RESOURCE_MANAGER_PACKAGE,
                         blueprint_name: VAULT_BLUEPRINT.to_string(),
+                        global: false,
                     }),
                 );
             }
@@ -722,6 +796,7 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: PACKAGE_LOADER,
                         blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+                        global: true,
                     }),
                 );
             }
@@ -731,6 +806,7 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: RESOURCE_MANAGER_PACKAGE,
                         blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                        global: true,
                     }),
                 );
             }
@@ -740,6 +816,7 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: EPOCH_MANAGER_PACKAGE,
                         blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
+                        global: false,
                     }),
                 );
             }
@@ -749,6 +826,7 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: EPOCH_MANAGER_PACKAGE,
                         blueprint_name: VALIDATOR_BLUEPRINT.to_string(),
+                        global: false,
                     }),
                 );
             }
@@ -758,6 +836,7 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: CLOCK_PACKAGE,
                         blueprint_name: CLOCK_BLUEPRINT.to_string(),
+                        global: false,
                     }),
                 );
             }
@@ -767,6 +846,7 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: IDENTITY_PACKAGE,
                         blueprint_name: IDENTITY_BLUEPRINT.to_string(),
+                        global: false,
                     }),
                 );
             }
@@ -776,6 +856,7 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: ACCESS_CONTROLLER_PACKAGE,
                         blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
+                        global: false,
                     }),
                 );
             }
@@ -785,6 +866,7 @@ where
                     RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                         package_address: ACCOUNT_PACKAGE,
                         blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
+                        global: false,
                     }),
                 );
             }

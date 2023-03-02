@@ -12,12 +12,12 @@ use sbor::rust::string::ToString;
 use super::AccessRule;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub struct FunctionKey {
+pub struct FnKey {
     pub blueprint: String,
     pub ident: String,
 }
 
-impl FunctionKey {
+impl FnKey {
     pub fn new(blueprint: String, ident: String) -> Self {
         Self { blueprint, ident }
     }

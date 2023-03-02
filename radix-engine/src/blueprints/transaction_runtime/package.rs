@@ -32,7 +32,7 @@ impl TransactionRuntimeNativePackage {
     {
         match export_name {
             TRANSACTION_RUNTIME_GET_HASH_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -41,7 +41,7 @@ impl TransactionRuntimeNativePackage {
                 Self::get_hash(receiver, input, api)
             }
             TRANSACTION_RUNTIME_GENERATE_UUID_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),

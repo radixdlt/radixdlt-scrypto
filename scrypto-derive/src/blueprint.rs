@@ -414,34 +414,23 @@ fn generate_stubs(
             fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
                 self.component.call(method, args)
             }
-            fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
-                self.component.set_metadata(name, value);
-            }
-            fn add_access_check(&self, access_rules: ::scrypto::prelude::AccessRules) {
-                self.component.add_access_check(access_rules);
-            }
-            fn set_royalty_config(&self, royalty_config: ::scrypto::prelude::RoyaltyConfig) {
-                self.component.set_royalty_config(royalty_config);
-            }
-            fn claim_royalty(&self) -> Bucket {
-                self.component.claim_royalty()
-            }
-
             fn package_address(&self) -> ::scrypto::prelude::PackageAddress {
                 self.component.package_address()
             }
             fn blueprint_name(&self) -> String {
                 self.component.blueprint_name()
             }
-            fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
-                self.component.access_rules_chain()
-            }
         }
 
 
         impl ::scrypto::component::LocalComponent for #component_ident {
-            fn globalize(self) -> ComponentAddress {
-                self.component.globalize()
+            fn globalize_with_modules(
+                self,
+                access_rules: AccessRules,
+                metadata: BTreeMap<String, String>,
+                royalty_config: RoyaltyConfig,
+            ) -> ComponentAddress {
+                self.component.globalize_with_modules(access_rules, metadata, royalty_config)
             }
         }
 
@@ -468,31 +457,27 @@ fn generate_stubs(
             fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
                 self.component.call(method, args)
             }
-            fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
-                self.component.set_metadata(name, value);
-            }
-            fn add_access_check(&self, access_rules: ::scrypto::prelude::AccessRules) {
-                self.component.add_access_check(access_rules);
-            }
-            fn set_royalty_config(&self, royalty_config: ::scrypto::prelude::RoyaltyConfig) {
-                self.component.set_royalty_config(royalty_config);
-            }
-            fn claim_royalty(&self) -> Bucket {
-                self.component.claim_royalty()
-            }
-
             fn package_address(&self) -> ::scrypto::prelude::PackageAddress {
                 self.component.package_address()
             }
             fn blueprint_name(&self) -> String {
                 self.component.blueprint_name()
             }
-            fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
-                self.component.access_rules_chain()
-            }
         }
 
         impl #component_ref_ident {
+            pub fn access_rules(&self) -> ComponentAccessRules {
+                self.component.access_rules()
+            }
+
+            pub fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
+                self.component.set_metadata(name, value);
+            }
+
+            pub fn claim_royalty(&self) -> Bucket {
+                self.component.claim_royalty()
+            }
+
             #(#methods)*
         }
     };
@@ -637,33 +622,22 @@ mod tests {
                     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
                         self.component.call(method, args)
                     }
-                    fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
-                        self.component.set_metadata(name, value);
-                    }
-                    fn add_access_check(&self, access_rules: ::scrypto::prelude::AccessRules) {
-                        self.component.add_access_check(access_rules);
-                    }
-                    fn set_royalty_config(&self, royalty_config: ::scrypto::prelude::RoyaltyConfig) {
-                        self.component.set_royalty_config(royalty_config);
-                    }
-                    fn claim_royalty(&self) -> Bucket {
-                        self.component.claim_royalty()
-                    }
-
                     fn package_address(&self) -> ::scrypto::prelude::PackageAddress {
                         self.component.package_address()
                     }
                     fn blueprint_name(&self) -> String {
                         self.component.blueprint_name()
                     }
-                    fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
-                        self.component.access_rules_chain()
-                    }
                 }
 
                 impl ::scrypto::component::LocalComponent for TestComponent {
-                    fn globalize(self) -> ComponentAddress {
-                        self.component.globalize()
+                    fn globalize_with_modules(
+                        self,
+                        access_rules: AccessRules,
+                        metadata: BTreeMap<String, String>,
+                        royalty_config: RoyaltyConfig,
+                    ) -> ComponentAddress {
+                        self.component.globalize_with_modules(access_rules, metadata, royalty_config)
                     }
                 }
 
@@ -694,31 +668,27 @@ mod tests {
                     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
                         self.component.call(method, args)
                     }
-                    fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
-                        self.component.set_metadata(name, value);
-                    }
-                    fn add_access_check(&self, access_rules: ::scrypto::prelude::AccessRules) {
-                        self.component.add_access_check(access_rules);
-                    }
-                    fn set_royalty_config(&self, royalty_config: ::scrypto::prelude::RoyaltyConfig) {
-                        self.component.set_royalty_config(royalty_config);
-                    }
-                    fn claim_royalty(&self) -> Bucket {
-                        self.component.claim_royalty()
-                    }
-
                     fn package_address(&self) -> ::scrypto::prelude::PackageAddress {
                         self.component.package_address()
                     }
                     fn blueprint_name(&self) -> String {
                         self.component.blueprint_name()
                     }
-                    fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
-                        self.component.access_rules_chain()
-                    }
                 }
 
                 impl TestGlobalComponentRef {
+                    pub fn access_rules(&self) -> ComponentAccessRules {
+                        self.component.access_rules()
+                    }
+
+                    pub fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
+                        self.component.set_metadata(name, value);
+                    }
+
+                    pub fn claim_royalty(&self) -> Bucket {
+                        self.component.claim_royalty()
+                    }
+
                     pub fn x(&self, arg0: u32) -> u32 {
                         self.component.call("x", scrypto_args!(arg0))
                     }
@@ -782,33 +752,22 @@ mod tests {
                     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
                         self.component.call(method, args)
                     }
-                    fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
-                        self.component.set_metadata(name, value);
-                    }
-                    fn add_access_check(&self, access_rules: ::scrypto::prelude::AccessRules) {
-                        self.component.add_access_check(access_rules);
-                    }
-                    fn set_royalty_config(&self, royalty_config: ::scrypto::prelude::RoyaltyConfig) {
-                        self.component.set_royalty_config(royalty_config);
-                    }
-                    fn claim_royalty(&self) -> Bucket {
-                        self.component.claim_royalty()
-                    }
-
                     fn package_address(&self) -> ::scrypto::prelude::PackageAddress {
                         self.component.package_address()
                     }
                     fn blueprint_name(&self) -> String {
                         self.component.blueprint_name()
                     }
-                    fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
-                        self.component.access_rules_chain()
-                    }
                 }
 
                 impl ::scrypto::component::LocalComponent for TestComponent {
-                    fn globalize(self) -> ComponentAddress {
-                        self.component.globalize()
+                    fn globalize_with_modules(
+                        self,
+                        access_rules: AccessRules,
+                        metadata: BTreeMap<String, String>,
+                        royalty_config: RoyaltyConfig,
+                    ) -> ComponentAddress {
+                        self.component.globalize_with_modules(access_rules, metadata, royalty_config)
                     }
                 }
 
@@ -832,31 +791,26 @@ mod tests {
                     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
                         self.component.call(method, args)
                     }
-                    fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
-                        self.component.set_metadata(name, value);
-                    }
-                    fn add_access_check(&self, access_rules: ::scrypto::prelude::AccessRules) {
-                        self.component.add_access_check(access_rules);
-                    }
-                    fn set_royalty_config(&self, royalty_config: ::scrypto::prelude::RoyaltyConfig) {
-                        self.component.set_royalty_config(royalty_config);
-                    }
-                    fn claim_royalty(&self) -> Bucket {
-                        self.component.claim_royalty()
-                    }
-
                     fn package_address(&self) -> ::scrypto::prelude::PackageAddress {
                         self.component.package_address()
                     }
                     fn blueprint_name(&self) -> String {
                         self.component.blueprint_name()
                     }
-                    fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
-                        self.component.access_rules_chain()
-                    }
                 }
 
                 impl TestGlobalComponentRef {
+                    pub fn access_rules(&self) -> ComponentAccessRules {
+                        self.component.access_rules()
+                    }
+
+                    pub fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
+                        self.component.set_metadata(name, value);
+                    }
+
+                    pub fn claim_royalty(&self) -> Bucket {
+                        self.component.claim_royalty()
+                    }
                 }
             },
         );
@@ -921,33 +875,22 @@ mod tests {
                     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
                         self.component.call(method, args)
                     }
-                    fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
-                        self.component.set_metadata(name, value);
-                    }
-                    fn add_access_check(&self, access_rules: ::scrypto::prelude::AccessRules) {
-                        self.component.add_access_check(access_rules);
-                    }
-                    fn set_royalty_config(&self, royalty_config: ::scrypto::prelude::RoyaltyConfig) {
-                        self.component.set_royalty_config(royalty_config);
-                    }
-                    fn claim_royalty(&self) -> Bucket {
-                        self.component.claim_royalty()
-                    }
-
                     fn package_address(&self) -> ::scrypto::prelude::PackageAddress {
                         self.component.package_address()
                     }
                     fn blueprint_name(&self) -> String {
                         self.component.blueprint_name()
                     }
-                    fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
-                        self.component.access_rules_chain()
-                    }
                 }
 
                 impl ::scrypto::component::LocalComponent for TestComponent {
-                    fn globalize(self) -> ComponentAddress {
-                        self.component.globalize()
+                    fn globalize_with_modules(
+                        self,
+                        access_rules: AccessRules,
+                        metadata: BTreeMap<String, String>,
+                        royalty_config: RoyaltyConfig,
+                    ) -> ComponentAddress {
+                        self.component.globalize_with_modules(access_rules, metadata, royalty_config)
                     }
                 }
 
@@ -971,18 +914,6 @@ mod tests {
                     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
                         self.component.call(method, args)
                     }
-                    fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
-                        self.component.set_metadata(name, value);
-                    }
-                    fn add_access_check(&self, access_rules: ::scrypto::prelude::AccessRules) {
-                        self.component.add_access_check(access_rules);
-                    }
-                    fn set_royalty_config(&self, royalty_config: ::scrypto::prelude::RoyaltyConfig) {
-                        self.component.set_royalty_config(royalty_config);
-                    }
-                    fn claim_royalty(&self) -> Bucket {
-                        self.component.claim_royalty()
-                    }
 
                     fn package_address(&self) -> ::scrypto::prelude::PackageAddress {
                         self.component.package_address()
@@ -990,12 +921,20 @@ mod tests {
                     fn blueprint_name(&self) -> String {
                         self.component.blueprint_name()
                     }
-                    fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
-                        self.component.access_rules_chain()
-                    }
                 }
 
                 impl TestGlobalComponentRef {
+                    pub fn access_rules(&self) -> ComponentAccessRules {
+                        self.component.access_rules()
+                    }
+
+                    pub fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
+                        self.component.set_metadata(name, value);
+                    }
+
+                    pub fn claim_royalty(&self) -> Bucket {
+                        self.component.claim_royalty()
+                    }
                 }
             },
         );

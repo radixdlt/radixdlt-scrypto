@@ -44,14 +44,12 @@ pub trait WasmRuntime {
         &mut self,
         blueprint_ident: Vec<u8>,
         app_states: Vec<u8>,
-        access_rules_chain: Vec<u8>,
-        royalty_config: Vec<u8>,
-        metadata: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn globalize_component(
         &mut self,
         component_id: Vec<u8>,
+        access_rules: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn new_key_value_store(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;

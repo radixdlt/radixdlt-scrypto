@@ -19,6 +19,12 @@ pub enum Own {
 }
 
 impl Own {
+    pub fn component_id(&self) -> [u8; 36] {
+        match self {
+            Own::Component(v) => *v,
+            _ => panic!("Not a component ownership"),
+        }
+    }
     pub fn vault_id(&self) -> [u8; 36] {
         match self {
             Own::Vault(v) => *v,

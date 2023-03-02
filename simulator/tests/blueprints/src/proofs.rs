@@ -32,10 +32,9 @@ mod proofs {
                 .default(rule!(deny_all), rule!(deny_all));
 
             let local_component = Self {}.instantiate();
-            local_component.add_access_check(access_rules);
 
             (
-                local_component.globalize(),
+                local_component.globalize_with_access_rules(access_rules),
                 vec![supervisor_badge, admin_badge, superadmin_badge, token],
             )
         }

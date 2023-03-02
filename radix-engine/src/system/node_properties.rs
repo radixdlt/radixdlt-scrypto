@@ -2,6 +2,9 @@ use super::node::{RENodeInit, RENodeModuleInit};
 use crate::errors::{KernelError, RuntimeError};
 use crate::kernel::actor::{Actor, ActorIdentifier, ExecutionMode};
 use crate::types::*;
+use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
+use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
+use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLUEPRINT;
@@ -26,6 +29,7 @@ impl VisibilityProperties {
                 // TODO: Remove
                 RENodeId::Account(..) => true,
                 RENodeId::Identity(..) => true,
+                RENodeId::Component(..) => true,
                 _ => false,
             },
             ExecutionMode::KernelModule => match node_id {
@@ -139,6 +143,17 @@ impl VisibilityProperties {
                     package_address.eq(&ACCESS_CONTROLLER_PACKAGE)
                         && blueprint_name.eq(ACCESS_CONTROLLER_BLUEPRINT)
                 }
+                RENodeInit::Metadata(..) => {
+                    package_address.eq(&METADATA_PACKAGE) && blueprint_name.eq(METADATA_BLUEPRINT)
+                }
+                RENodeInit::ComponentRoyalty(..) => {
+                    package_address.eq(&ROYALTY_PACKAGE)
+                        && blueprint_name.eq(COMPONENT_ROYALTY_BLUEPRINT)
+                }
+                RENodeInit::AccessRules(..) => {
+                    package_address.eq(&ACCESS_RULES_PACKAGE)
+                        && blueprint_name.eq(ACCESS_RULES_BLUEPRINT)
+                }
                 RENodeInit::KeyValueStore => true,
                 RENodeInit::GlobalComponent(..) => true,
                 _ => false,
@@ -195,7 +210,7 @@ impl VisibilityProperties {
                 SubstateOffset::Component(ComponentOffset::State0) => read_only,
                 SubstateOffset::PackageAccessRules => read_only,
                 SubstateOffset::TypeInfo(_) => read_only,
-                SubstateOffset::AccessRulesChain(_) => read_only,
+                SubstateOffset::AccessRules(_) => read_only,
                 SubstateOffset::Royalty(_) => true,
                 _ => false,
             },
@@ -403,7 +418,7 @@ impl SubstateProperties {
             SubstateOffset::AuthZoneStack(..) => false,
             SubstateOffset::Component(..) => true,
             SubstateOffset::Royalty(..) => true,
-            SubstateOffset::AccessRulesChain(..) => true,
+            SubstateOffset::AccessRules(..) => true,
             SubstateOffset::Metadata(..) => true,
             SubstateOffset::Package(..) => true,
             SubstateOffset::ResourceManager(..) => true,

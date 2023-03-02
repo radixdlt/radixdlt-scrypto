@@ -67,12 +67,12 @@ fn test_basic_transfer() {
     // Or you can run just this test with the below:
     // (cd radix-engine && cargo test --test metering -- test_basic_transfer)
     assert_eq!(
-        10000 /* CreateNode */
-        + 59000 /* DropLock */
-        + 10000 /* DropNode */
+        12500 /* CreateNode */
+        + 65000 /* DropLock */
+        + 12500 /* DropNode */
         + 10000 /* Invoke */
-        + 59500 /* LockSubstate */
-        + 39500 /* ReadSubstate */
+        + 65500 /* LockSubstate */
+        + 45500 /* ReadSubstate */
         + 65000 /* RunPrecompiled */
         + 0 /* RunWasm */
         + 50000 /* TxBaseCost */
@@ -199,12 +199,12 @@ fn test_radiswap() {
     // Or you can run just this test with the below:
     // (cd radix-engine && cargo test --test metering -- test_radiswap)
     assert_eq!(
-        15000 /* CreateNode */
-        + 170500 /* DropLock */
-        + 12500 /* DropNode */
+        17500 /* CreateNode */
+        + 185500 /* DropLock */
+        + 15000 /* DropNode */
         + 24330 /* Invoke */
-        + 172000 /* LockSubstate */
-        + 2546460 /* ReadSubstate */
+        + 187500 /* LockSubstate */
+        + 135000 /* ReadSubstate */
         + 147500 /* RunPrecompiled */
         + 1627335 /* RunWasm */
         + 50000 /* TxBaseCost */
@@ -308,12 +308,12 @@ fn test_flash_loan() {
     // Or you can run just this test with the below:
     // (cd radix-engine && cargo test --test metering -- test_flash_loan)
     assert_eq!(
-        22500 /* CreateNode */
-        + 259000 /* DropLock */
-        + 22500 /* DropNode */
+        25000 /* CreateNode */
+        + 283500 /* DropLock */
+        + 25000 /* DropNode */
         + 45210 /* Invoke */
-        + 266500 /* LockSubstate */
-        + 5110120 /* ReadSubstate */
+        + 292000 /* LockSubstate */
+        + 201000 /* ReadSubstate */
         + 240000 /* RunPrecompiled */
         + 1400515 /* RunWasm */
         + 50000 /* TxBaseCost */

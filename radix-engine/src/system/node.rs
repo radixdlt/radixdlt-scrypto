@@ -6,6 +6,7 @@ use crate::blueprints::resource::*;
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::system::node_modules::access_rules::*;
 use crate::system::node_modules::metadata::MetadataSubstate;
+use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::*;
 use crate::system::type_info::PackageCodeTypeSubstate;
 use crate::types::*;
@@ -29,7 +30,7 @@ pub enum RENodeModuleInit {
     Metadata(MetadataSubstate),
 
     /* Access rules */
-    ObjectAccessRulesChain(MethodAccessRulesChainSubstate),
+    ObjectAccessRulesChain(MethodAccessRulesSubstate),
     PackageAccessRules(FunctionAccessRulesSubstate),
 
     /* Royalty */
@@ -55,7 +56,7 @@ impl RENodeModuleInit {
             }
             RENodeModuleInit::ObjectAccessRulesChain(access_rules) => {
                 substates.insert(
-                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
                     access_rules.into(),
                 );
             }
@@ -125,6 +126,12 @@ pub enum RENodeInit {
     TransactionRuntime(TransactionRuntimeSubstate),
     AccessController(AccessControllerSubstate),
     Account(AccountSubstate),
+    Metadata(MetadataSubstate),
+    ComponentRoyalty(
+        ComponentRoyaltyConfigSubstate,
+        ComponentRoyaltyAccumulatorSubstate,
+    ),
+    AccessRules(MethodAccessRulesSubstate),
 }
 
 impl RENodeInit {
@@ -303,6 +310,28 @@ impl RENodeInit {
                 substates.insert(
                     SubstateOffset::AccessController(AccessControllerOffset::AccessController),
                     access_controller.into(),
+                );
+            }
+            RENodeInit::Metadata(metadata) => {
+                substates.insert(
+                    SubstateOffset::Metadata(MetadataOffset::Metadata),
+                    metadata.into(),
+                );
+            }
+            RENodeInit::ComponentRoyalty(config, accumulator) => {
+                substates.insert(
+                    SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
+                    config.into(),
+                );
+                substates.insert(
+                    SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
+                    accumulator.into(),
+                );
+            }
+            RENodeInit::AccessRules(access_rules) => {
+                substates.insert(
+                    SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
+                    access_rules.into(),
                 );
             }
         };

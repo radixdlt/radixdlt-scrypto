@@ -1,5 +1,5 @@
 use super::node_modules::access_rules::AuthZoneStackSubstate;
-use super::node_modules::access_rules::MethodAccessRulesChainSubstate;
+use super::node_modules::access_rules::MethodAccessRulesSubstate;
 use super::node_modules::metadata::MetadataSubstate;
 use super::type_info::PackageCodeTypeSubstate;
 use crate::blueprints::access_controller::AccessControllerSubstate;
@@ -19,6 +19,7 @@ use crate::blueprints::resource::WorktopSubstate;
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::errors::*;
 use crate::system::node_modules::access_rules::FunctionAccessRulesSubstate;
+use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::package::*;
@@ -53,7 +54,7 @@ pub enum PersistedSubstate {
     TypeInfo(TypeInfoSubstate),
 
     /* Access rules */
-    AccessRulesChain(MethodAccessRulesChainSubstate),
+    AccessRulesChain(MethodAccessRulesSubstate),
     PackageAccessRules(FunctionAccessRulesSubstate),
 
     /* Metadata */
@@ -254,7 +255,7 @@ pub enum RuntimeSubstate {
     TypeInfo(TypeInfoSubstate),
 
     /* Access rules */
-    AccessRulesChain(MethodAccessRulesChainSubstate),
+    AccessRulesChain(MethodAccessRulesSubstate),
     PackageAccessRules(FunctionAccessRulesSubstate),
 
     /* Metadata */
@@ -634,7 +635,7 @@ impl RuntimeSubstate {
         }
     }
 
-    pub fn access_rules_chain(&self) -> &MethodAccessRulesChainSubstate {
+    pub fn access_rules_chain(&self) -> &MethodAccessRulesSubstate {
         if let RuntimeSubstate::AccessRulesChain(access_rules_chain) = self {
             access_rules_chain
         } else {
@@ -651,7 +652,7 @@ impl RuntimeSubstate {
     }
 }
 
-impl Into<RuntimeSubstate> for MethodAccessRulesChainSubstate {
+impl Into<RuntimeSubstate> for MethodAccessRulesSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::AccessRulesChain(self)
     }
@@ -992,8 +993,8 @@ impl Into<NonFungibleProof> for RuntimeSubstate {
     }
 }
 
-impl Into<MethodAccessRulesChainSubstate> for RuntimeSubstate {
-    fn into(self) -> MethodAccessRulesChainSubstate {
+impl Into<MethodAccessRulesSubstate> for RuntimeSubstate {
+    fn into(self) -> MethodAccessRulesSubstate {
         if let RuntimeSubstate::AccessRulesChain(substate) = self {
             substate
         } else {
@@ -1075,7 +1076,7 @@ pub enum SubstateRef<'a> {
     ValidatorSet(&'a ValidatorSetSubstate),
     Validator(&'a ValidatorSubstate),
     CurrentTimeRoundedToMinutes(&'a CurrentTimeRoundedToMinutesSubstate),
-    AccessRulesChain(&'a MethodAccessRulesChainSubstate),
+    AccessRulesChain(&'a MethodAccessRulesSubstate),
     PackageAccessRules(&'a FunctionAccessRulesSubstate),
     Metadata(&'a MetadataSubstate),
     TransactionRuntime(&'a TransactionRuntimeSubstate),
@@ -1312,7 +1313,7 @@ impl<'a> From<SubstateRef<'a>> for &'a PackageCodeTypeSubstate {
     }
 }
 
-impl<'a> From<SubstateRef<'a>> for &'a MethodAccessRulesChainSubstate {
+impl<'a> From<SubstateRef<'a>> for &'a MethodAccessRulesSubstate {
     fn from(value: SubstateRef<'a>) -> Self {
         match value {
             SubstateRef::AccessRulesChain(value) => value,
@@ -1561,7 +1562,7 @@ pub enum SubstateRefMut<'a> {
     ValidatorSet(&'a mut ValidatorSetSubstate),
     Validator(&'a mut ValidatorSubstate),
     CurrentTimeRoundedToMinutes(&'a mut CurrentTimeRoundedToMinutesSubstate),
-    AccessRulesChain(&'a mut MethodAccessRulesChainSubstate),
+    AccessRulesChain(&'a mut MethodAccessRulesSubstate),
     Metadata(&'a mut MetadataSubstate),
     ProofInfo(&'a mut ProofInfoSubstate),
     FungibleProof(&'a mut FungibleProof),
@@ -1709,7 +1710,7 @@ impl<'a> From<SubstateRefMut<'a>> for &'a mut TransactionRuntimeSubstate {
     }
 }
 
-impl<'a> From<SubstateRefMut<'a>> for &'a mut MethodAccessRulesChainSubstate {
+impl<'a> From<SubstateRefMut<'a>> for &'a mut MethodAccessRulesSubstate {
     fn from(value: SubstateRefMut<'a>) -> Self {
         match value {
             SubstateRefMut::AccessRulesChain(value) => value,

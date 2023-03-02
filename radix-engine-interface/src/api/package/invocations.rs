@@ -21,10 +21,10 @@ pub struct PackageLoaderPublishWasmInput {
     pub access_rules: AccessRules,
 }
 
-pub const PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT: &str = "publish_precompiled";
+pub const PACKAGE_LOADER_PUBLISH_NATIVE_IDENT: &str = "publish_native";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct PackageLoaderPublishPrecompiledInput {
+pub struct PackageLoaderPublishNativeInput {
     pub package_address: Option<[u8; 26]>, // TODO: Clean this up
     pub native_package_code_id: u8,
     pub schema: PackageSchema,
@@ -33,7 +33,7 @@ pub struct PackageLoaderPublishPrecompiledInput {
     pub metadata: BTreeMap<String, String>,
     pub access_rules: AccessRules,
 
-    pub package_access_rules: BTreeMap<FunctionKey, AccessRule>,
+    pub package_access_rules: BTreeMap<FnKey, AccessRule>,
     pub default_package_access_rule: AccessRule,
 }
 

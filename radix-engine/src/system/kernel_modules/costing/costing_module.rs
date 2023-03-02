@@ -131,8 +131,7 @@ impl KernelModule for CostingModule {
                     ActorIdentifier::Method(MethodIdentifier(node_id, ..))
                         if matches!(
                             node_id,
-                            RENodeId::Component(..)
-                                | RENodeId::GlobalComponent(ComponentAddress::Normal(..))
+                            RENodeId::GlobalComponent(ComponentAddress::Normal(..))
                         ) =>
                     {
                         Some(node_id)
@@ -373,7 +372,7 @@ impl KernelModule for CostingModule {
             api,
             match reason {
                 ClientCostingReason::RunWasm => CostingReason::RunWasm,
-                ClientCostingReason::RunPrecompiled => CostingReason::RunPrecompiled,
+                ClientCostingReason::RunNative => CostingReason::RunPrecompiled,
             },
             |_| units,
             5,

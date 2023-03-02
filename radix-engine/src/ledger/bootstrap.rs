@@ -2,6 +2,9 @@ use crate::blueprints::clock::ClockNativePackage;
 use crate::blueprints::epoch_manager::EpochManagerNativePackage;
 use crate::kernel::interpreters::ScryptoInterpreter;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
+use crate::system::node_modules::access_rules::AccessRulesNativePackage;
+use crate::system::node_modules::metadata::MetadataNativePackage;
+use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::transaction::{
     execute_transaction, ExecutionConfig, FeeReserveConfig, TransactionReceipt,
 };
@@ -10,7 +13,7 @@ use crate::wasm::WasmEngine;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::package::{
-    PackageLoaderPublishPrecompiledInput, PackageLoaderPublishWasmInput,
+    PackageLoaderPublishNativeInput, PackageLoaderPublishWasmInput,
 };
 use radix_engine_interface::blueprints::clock::{
     ClockCreateInput, CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT,
@@ -55,8 +58,8 @@ pub fn create_genesis(
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
+            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: METADATA_CODE_ID,
                 schema: PackageSchema::default(),
@@ -64,7 +67,7 @@ pub fn create_genesis(
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
-                package_access_rules: BTreeMap::new(),
+                package_access_rules: MetadataNativePackage::function_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
             })
             .unwrap(),
@@ -79,16 +82,16 @@ pub fn create_genesis(
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
+            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: ROYALTY_CODE_ID,
                 schema: PackageSchema::default(),
-                dependent_resources: vec![],
+                dependent_resources: vec![RADIX_TOKEN],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
-                package_access_rules: BTreeMap::new(),
+                package_access_rules: RoyaltyNativePackage::function_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
             })
             .unwrap(),
@@ -102,8 +105,8 @@ pub fn create_genesis(
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
+            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: ACCESS_RULES_CODE_ID,
                 schema: PackageSchema::default(),
@@ -111,7 +114,7 @@ pub fn create_genesis(
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
-                package_access_rules: BTreeMap::new(),
+                package_access_rules: AccessRulesNativePackage::function_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
             })
             .unwrap(),
@@ -125,8 +128,8 @@ pub fn create_genesis(
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
+            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: RESOURCE_MANAGER_PACKAGE_CODE_ID,
                 schema: PackageSchema::default(),
@@ -200,8 +203,8 @@ pub fn create_genesis(
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
+            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: PackageSchema::default(),
                 dependent_resources: vec![],
@@ -223,14 +226,14 @@ pub fn create_genesis(
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
+            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: PackageSchema::default(),
                 native_package_code_id: EPOCH_MANAGER_PACKAGE_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
-                dependent_resources: vec![RADIX_TOKEN, PACKAGE_TOKEN],
+                dependent_resources: vec![RADIX_TOKEN, PACKAGE_TOKEN, SYSTEM_TOKEN],
                 dependent_components: vec![],
                 package_access_rules: EpochManagerNativePackage::package_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
@@ -246,14 +249,14 @@ pub fn create_genesis(
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
+            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: PackageSchema::default(),
                 native_package_code_id: CLOCK_PACKAGE_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
-                dependent_resources: vec![],
+                dependent_resources: vec![SYSTEM_TOKEN],
                 dependent_components: vec![],
                 package_access_rules: ClockNativePackage::package_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
@@ -269,8 +272,8 @@ pub fn create_genesis(
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
+            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: PackageSchema::default(),
                 native_package_code_id: ACCOUNT_PACKAGE_CODE_ID,
@@ -285,21 +288,21 @@ pub fn create_genesis(
         });
     }
 
-    // AccessRules Package
+    // AccessController Package
     {
         pre_allocated_ids.insert(RENodeId::GlobalPackage(ACCESS_CONTROLLER_PACKAGE));
         let package_address = ACCESS_CONTROLLER_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
+            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: PackageSchema::default(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
                 native_package_code_id: ACCESS_CONTROLLER_PACKAGE_CODE_ID,
-                dependent_resources: vec![],
+                dependent_resources: vec![PACKAGE_TOKEN],
                 dependent_components: vec![CLOCK],
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
@@ -315,8 +318,8 @@ pub fn create_genesis(
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
+            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: PackageSchema::default(),
                 metadata: BTreeMap::new(),
@@ -338,8 +341,8 @@ pub fn create_genesis(
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishPrecompiledInput {
+            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: PackageSchema::default(),
                 metadata: BTreeMap::new(),

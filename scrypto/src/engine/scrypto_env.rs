@@ -27,14 +27,8 @@ impl ClientComponentApi<ClientApiError> for ScryptoEnv {
         &mut self,
         blueprint_ident: &str,
         app_states: BTreeMap<u8, Vec<u8>>,
-        access_rules_chain: Vec<AccessRules>,
-        royalty_config: RoyaltyConfig,
-        metadata: BTreeMap<String, String>,
     ) -> Result<ComponentId, ClientApiError> {
         let app_states = scrypto_encode(&app_states).unwrap();
-        let access_rules_chain = scrypto_encode(&access_rules_chain).unwrap();
-        let royalty_config = scrypto_encode(&royalty_config).unwrap();
-        let metadata = scrypto_encode(&metadata).unwrap();
 
         let bytes = copy_buffer(unsafe {
             new_component(
@@ -42,36 +36,46 @@ impl ClientComponentApi<ClientApiError> for ScryptoEnv {
                 blueprint_ident.len(),
                 app_states.as_ptr(),
                 app_states.len(),
-                access_rules_chain.as_ptr(),
-                access_rules_chain.len(),
-                royalty_config.as_ptr(),
-                royalty_config.len(),
-                metadata.as_ptr(),
-                metadata.len(),
             )
         });
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
-    fn globalize(&mut self, node_id: RENodeId) -> Result<ComponentAddress, ClientApiError> {
+    fn globalize(
+        &mut self,
+        node_id: RENodeId,
+        modules: BTreeMap<NodeModuleId, Vec<u8>>,
+    ) -> Result<ComponentAddress, ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
+        let modules = scrypto_encode(&modules).unwrap();
 
-        let bytes = copy_buffer(unsafe { globalize_component(node_id.as_ptr(), node_id.len()) });
+        let bytes = copy_buffer(unsafe {
+            globalize_component(
+                node_id.as_ptr(),
+                node_id.len(),
+                modules.as_ptr(),
+                modules.len(),
+            )
+        });
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
     fn globalize_with_address(
         &mut self,
         node_id: RENodeId,
+        modules: BTreeMap<NodeModuleId, Vec<u8>>,
         address: Address,
     ) -> Result<ComponentAddress, ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
+        let modules = scrypto_encode(&modules).unwrap();
         let address = scrypto_encode(&address).unwrap();
 
         let bytes = copy_buffer(unsafe {
             globalize_with_address(
                 node_id.as_ptr(),
                 node_id.len(),
+                modules.as_ptr(),
+                modules.len(),
                 address.as_ptr(),
                 address.len(),
             )

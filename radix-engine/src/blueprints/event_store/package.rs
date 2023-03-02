@@ -19,7 +19,7 @@ impl EventStoreNativePackage {
         Y: KernelModuleApi<RuntimeError> + ClientUnsafeApi<RuntimeError> + KernelInternalApi,
     {
         // Costing event emission.
-        api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+        api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
         // Construct the event type identifier based on the current actor
         let event_type_id = match api.kernel_get_current_actor() {

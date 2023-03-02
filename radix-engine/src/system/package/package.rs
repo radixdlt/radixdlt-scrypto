@@ -4,7 +4,7 @@ use crate::system::kernel_modules::costing::FIXED_HIGH_FEE;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::{
-    FunctionAccessRulesSubstate, MethodAccessRulesChainSubstate,
+    FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::type_info::PackageCodeTypeSubstate;
@@ -39,8 +39,8 @@ impl Package {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         match export_name {
-            PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT => {
-                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunPrecompiled)?;
+            PACKAGE_LOADER_PUBLISH_NATIVE_IDENT => {
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
                     return Err(RuntimeError::InterpreterError(
@@ -48,10 +48,10 @@ impl Package {
                     ));
                 }
 
-                Self::publish_precompiled(input, api)
+                Self::publish_native(input, api)
             }
             PACKAGE_LOADER_PUBLISH_WASM_IDENT => {
-                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
                     return Err(RuntimeError::InterpreterError(
@@ -67,22 +67,22 @@ impl Package {
         }
     }
 
-    pub(crate) fn publish_precompiled<Y>(
+    pub(crate) fn publish_native<Y>(
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: PackageLoaderPublishPrecompiledInput =
+        let input: PackageLoaderPublishNativeInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let metadata_substate = MetadataSubstate {
             metadata: input.metadata,
         };
-        let access_rules = MethodAccessRulesChainSubstate {
-            access_rules_chain: vec![input.access_rules],
+        let access_rules = MethodAccessRulesSubstate {
+            access_rules: input.access_rules,
         };
 
         let mut node_modules = BTreeMap::new();
@@ -107,7 +107,7 @@ impl Package {
             dependent_resources: input.dependent_resources.into_iter().collect(),
             dependent_components: input.dependent_components.into_iter().collect(),
         };
-        let code_type = PackageCodeTypeSubstate::Precompiled;
+        let code_type = PackageCodeTypeSubstate::Native;
         let code = PackageCodeSubstate {
             code: vec![input.native_package_code_id],
         };
@@ -166,8 +166,8 @@ impl Package {
         let metadata_substate = MetadataSubstate {
             metadata: input.metadata,
         };
-        let access_rules = MethodAccessRulesChainSubstate {
-            access_rules_chain: vec![input.access_rules],
+        let access_rules = MethodAccessRulesSubstate {
+            access_rules: input.access_rules,
         };
 
         // TODO: Can we trust developers enough to add protection for

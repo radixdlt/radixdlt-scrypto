@@ -35,7 +35,7 @@ impl AuthZoneNativePackage {
     {
         match export_name {
             AUTH_ZONE_POP_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -43,7 +43,7 @@ impl AuthZoneNativePackage {
                 AuthZoneBlueprint::pop(receiver, input, api)
             }
             AUTH_ZONE_PUSH_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -51,7 +51,7 @@ impl AuthZoneNativePackage {
                 AuthZoneBlueprint::push(receiver, input, api)
             }
             AUTH_ZONE_CREATE_PROOF_IDENT => {
-                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -59,7 +59,7 @@ impl AuthZoneNativePackage {
                 AuthZoneBlueprint::create_proof(receiver, input, api)
             }
             AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_IDENT => {
-                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -67,7 +67,7 @@ impl AuthZoneNativePackage {
                 AuthZoneBlueprint::create_proof_by_amount(receiver, input, api)
             }
             AUTH_ZONE_CREATE_PROOF_BY_IDS_IDENT => {
-                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -75,7 +75,7 @@ impl AuthZoneNativePackage {
                 AuthZoneBlueprint::create_proof_by_ids(receiver, input, api)
             }
             AUTH_ZONE_CLEAR_IDENT => {
-                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -83,7 +83,7 @@ impl AuthZoneNativePackage {
                 AuthZoneBlueprint::clear(receiver, input, api)
             }
             AUTH_ZONE_DRAIN_IDENT => {
-                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -91,7 +91,7 @@ impl AuthZoneNativePackage {
                 AuthZoneBlueprint::drain(receiver, input, api)
             }
             AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT => {
-                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -343,7 +343,7 @@ impl AuthZoneBlueprint {
         let authorization = convert_contextless(&input.access_rule);
 
         // Authorization check
-        if !auth_zone_stack.check_auth(false, &[authorization], api)? {
+        if !auth_zone_stack.check_auth(false, &authorization, api)? {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::AuthZoneError(AuthZoneError::AssertAccessRuleFailed),
             ));

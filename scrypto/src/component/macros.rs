@@ -1,6 +1,5 @@
 use crate::component::*;
 use crate::engine::scrypto_env::ScryptoEnv;
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientComponentApi;
 use radix_engine_interface::data::scrypto::scrypto_encode;
 use sbor::rust::collections::*;
@@ -31,9 +30,6 @@ pub fn create_component<T: ComponentState<C>, C: Component + LocalComponent>(
             btreemap!(
                 0 => scrypto_encode(&state).unwrap()
             ),
-            Vec::new(),
-            RoyaltyConfigBuilder::new().default(0),
-            BTreeMap::new(),
         )
         .unwrap();
     OwnedComponent(node_id.into())

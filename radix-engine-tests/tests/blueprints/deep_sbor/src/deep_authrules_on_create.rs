@@ -10,11 +10,10 @@ mod deep_auth_rules_on_create {
             access_rules_depth: usize,
         ) -> ComponentAddress {
             let component = Self {}.instantiate();
-            component.add_access_check(generate_deep_access_rules(
+            component.globalize_with_access_rules(generate_deep_access_rules(
                 resource_address,
                 access_rules_depth,
-            ));
-            component.globalize()
+            ))
         }
     }
 }

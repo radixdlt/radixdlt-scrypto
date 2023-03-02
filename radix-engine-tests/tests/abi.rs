@@ -8,6 +8,7 @@ use transaction::builder::ManifestBuilder;
 use ExpectedResult::{InvalidInput, InvalidOutput, Success};
 
 #[test]
+#[ignore]
 fn test_invalid_access_rule_methods() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();

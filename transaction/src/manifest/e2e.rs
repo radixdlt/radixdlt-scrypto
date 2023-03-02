@@ -259,7 +259,6 @@ SET_METADATA
             r##"
 SET_METHOD_ACCESS_RULE
     Address("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum")
-    0u32
     Tuple(Enum(0u8), "test")
     Enum(0u8);
 "##,

@@ -3,10 +3,9 @@ use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node::RENodeInit;
-use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::access_rules::MethodAccessRulesChainSubstate;
-use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
+use native_sdk::access_rules::AccessRulesObject;
+use native_sdk::metadata::Metadata;
 use native_sdk::resource::{ResourceManager, SysBucket, Vault};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::{
@@ -462,7 +461,6 @@ impl ValidatorBlueprint {
             NodeModuleId::AccessRules,
             ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
             scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                index: 0u32,
                 key: MethodKey::new(NodeModuleId::SELF, VALIDATOR_STAKE_IDENT.to_string()),
                 rule,
             })
@@ -660,20 +658,6 @@ impl ValidatorCreator {
         let (liquidity_token, liquidity_bucket) =
             Self::create_liquidity_token_with_initial_amount(initial_liquidity_amount, api)?;
 
-        let mut node_modules = BTreeMap::new();
-        node_modules.insert(
-            NodeModuleId::Metadata,
-            RENodeModuleInit::Metadata(MetadataSubstate {
-                metadata: BTreeMap::new(),
-            }),
-        );
-        node_modules.insert(
-            NodeModuleId::AccessRules,
-            RENodeModuleInit::ObjectAccessRulesChain(MethodAccessRulesChainSubstate {
-                access_rules_chain: vec![Self::build_access_rules(owner_access_rule)],
-            }),
-        );
-
         let node = RENodeInit::Validator(ValidatorSubstate {
             manager,
             key,
@@ -685,8 +669,20 @@ impl ValidatorCreator {
             is_registered,
         });
 
-        api.kernel_create_node(node_id, node, node_modules)?;
-        let address = api.globalize_with_address(node_id, address.into())?;
+        api.kernel_create_node(node_id, node, BTreeMap::new())?;
+
+        let access_rules = Self::build_access_rules(owner_access_rule);
+        let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
+        let metadata = Metadata::sys_new(api)?;
+
+        let address = api.globalize_with_address(
+            node_id,
+            btreemap!(
+                NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
+                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
+            ),
+            address.into(),
+        )?;
         Ok((address, liquidity_bucket))
     }
 
@@ -707,19 +703,6 @@ impl ValidatorCreator {
         let unstake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
         let unstake_nft = Self::create_unstake_nft(api)?;
         let liquidity_token = Self::create_liquidity_token(api)?;
-        let mut node_modules = BTreeMap::new();
-        node_modules.insert(
-            NodeModuleId::Metadata,
-            RENodeModuleInit::Metadata(MetadataSubstate {
-                metadata: BTreeMap::new(),
-            }),
-        );
-        node_modules.insert(
-            NodeModuleId::AccessRules,
-            RENodeModuleInit::ObjectAccessRulesChain(MethodAccessRulesChainSubstate {
-                access_rules_chain: vec![Self::build_access_rules(owner_access_rule)],
-            }),
-        );
 
         let node = RENodeInit::Validator(ValidatorSubstate {
             manager,
@@ -732,9 +715,20 @@ impl ValidatorCreator {
             is_registered,
         });
 
-        api.kernel_create_node(node_id, node, node_modules)?;
+        api.kernel_create_node(node_id, node, BTreeMap::new())?;
 
-        let address = api.globalize_with_address(node_id, address.into())?;
+        let access_rules = Self::build_access_rules(owner_access_rule);
+        let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
+        let metadata = Metadata::sys_new(api)?;
+
+        let address = api.globalize_with_address(
+            node_id,
+            btreemap!(
+                NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
+                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
+            ),
+            address.into(),
+        )?;
         Ok(address)
     }
 }

@@ -215,8 +215,8 @@ pub enum AuthZoneStackOffset {
 }
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum AccessRulesChainOffset {
-    AccessRulesChain,
+pub enum AccessRulesOffset {
+    AccessRules,
 }
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -348,7 +348,7 @@ pub enum SubstateOffset {
     // Node modules
     // TODO: align with module ID allocation?
     TypeInfo(TypeInfoOffset),
-    AccessRulesChain(AccessRulesChainOffset),
+    AccessRules(AccessRulesOffset),
     PackageAccessRules,
     Metadata(MetadataOffset),
     Royalty(RoyaltyOffset),

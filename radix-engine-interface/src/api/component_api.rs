@@ -1,5 +1,4 @@
 use crate::api::types::*;
-use crate::blueprints::resource::AccessRules;
 use crate::data::scrypto::model::*;
 use sbor::rust::collections::*;
 use sbor::rust::vec::Vec;
@@ -10,18 +9,20 @@ pub trait ClientComponentApi<E> {
         &mut self,
         blueprint_ident: &str,
         app_states: BTreeMap<u8, Vec<u8>>,
-        access_rules_chain: Vec<AccessRules>,
-        royalty_config: RoyaltyConfig,
-        metadata: BTreeMap<String, String>,
     ) -> Result<ComponentId, E>;
 
     fn new_key_value_store(&mut self) -> Result<KeyValueStoreId, E>;
 
-    fn globalize(&mut self, node_id: RENodeId) -> Result<ComponentAddress, E>;
+    fn globalize(
+        &mut self,
+        node_id: RENodeId,
+        modules: BTreeMap<NodeModuleId, Vec<u8>>,
+    ) -> Result<ComponentAddress, E>;
 
     fn globalize_with_address(
         &mut self,
         node_id: RENodeId,
+        modules: BTreeMap<NodeModuleId, Vec<u8>>,
         address: Address,
     ) -> Result<ComponentAddress, E>;
 

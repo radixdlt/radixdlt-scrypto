@@ -2,9 +2,9 @@ use crate::errors::{InterpreterError, RuntimeError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE};
 use crate::system::node::RENodeInit;
-use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::access_rules::MethodAccessRulesChainSubstate;
 use crate::types::*;
+use native_sdk::access_rules::AccessRulesObject;
+use native_sdk::metadata::Metadata;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
@@ -12,9 +12,7 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::clock::ClockCreateInput;
 use radix_engine_interface::blueprints::clock::TimePrecision;
 use radix_engine_interface::blueprints::clock::*;
-use radix_engine_interface::blueprints::resource::MethodKey;
-use radix_engine_interface::blueprints::resource::{require, AccessRule};
-use radix_engine_interface::blueprints::resource::{AccessRules, FunctionKey};
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use radix_engine_interface::time::*;
 
@@ -29,10 +27,10 @@ const MINUTES_TO_MS_FACTOR: i64 = SECONDS_TO_MS_FACTOR * MINUTES_TO_SECONDS_FACT
 
 pub struct ClockNativePackage;
 impl ClockNativePackage {
-    pub fn package_access_rules() -> BTreeMap<FunctionKey, AccessRule> {
+    pub fn package_access_rules() -> BTreeMap<FnKey, AccessRule> {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(
-            FunctionKey::new(CLOCK_BLUEPRINT.to_string(), CLOCK_CREATE_IDENT.to_string()),
+            FnKey::new(CLOCK_BLUEPRINT.to_string(), CLOCK_CREATE_IDENT.to_string()),
             rule!(require(AuthAddresses::system_role())),
         );
         access_rules
@@ -49,7 +47,7 @@ impl ClockNativePackage {
     {
         match export_name {
             CLOCK_CREATE_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
                     return Err(RuntimeError::InterpreterError(
@@ -59,7 +57,7 @@ impl ClockNativePackage {
                 Self::create(input, api)
             }
             CLOCK_GET_CURRENT_TIME_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -67,7 +65,7 @@ impl ClockNativePackage {
                 Self::get_current_time(receiver, input, api)
             }
             CLOCK_SET_CURRENT_TIME_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -75,7 +73,7 @@ impl ClockNativePackage {
                 Self::set_current_time(receiver, input, api)
             }
             CLOCK_COMPARE_CURRENT_TIME_IDENT => {
-                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -96,7 +94,14 @@ impl ClockNativePackage {
         let input: ClockCreateInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let underlying_node_id = api.kernel_allocate_node_id(RENodeType::Clock)?;
+        let node_id = api.kernel_allocate_node_id(RENodeType::Clock)?;
+        api.kernel_create_node(
+            node_id,
+            RENodeInit::Clock(CurrentTimeRoundedToMinutesSubstate {
+                current_time_rounded_to_minutes_ms: 0,
+            }),
+            BTreeMap::new(),
+        )?;
 
         let mut access_rules = AccessRules::new();
         access_rules.set_method_access_rule(
@@ -115,24 +120,18 @@ impl ClockNativePackage {
             rule!(allow_all),
         );
 
-        let mut node_modules = BTreeMap::new();
-        node_modules.insert(
-            NodeModuleId::AccessRules,
-            RENodeModuleInit::ObjectAccessRulesChain(MethodAccessRulesChainSubstate {
-                access_rules_chain: vec![access_rules],
-            }),
-        );
-
-        api.kernel_create_node(
-            underlying_node_id,
-            RENodeInit::Clock(CurrentTimeRoundedToMinutesSubstate {
-                current_time_rounded_to_minutes_ms: 0,
-            }),
-            node_modules,
-        )?;
+        let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
+        let metadata = Metadata::sys_new(api)?;
 
         let address = ComponentAddress::Clock(input.component_address);
-        api.globalize_with_address(underlying_node_id, address.into())?;
+        api.globalize_with_address(
+            node_id,
+            btreemap!(
+                NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
+                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
+            ),
+            address.into(),
+        )?;
         Ok(IndexedScryptoValue::from_typed(&address))
     }
 
