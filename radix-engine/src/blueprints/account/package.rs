@@ -249,7 +249,7 @@ impl AccountNativePackage {
             )?
         };
 
-        Ok(IndexedScryptoValue::from_typed(&Own::Component(account_id)))
+        Ok(IndexedScryptoValue::from_typed(&Own::Object(account_id)))
     }
 
     fn lock_fee_internal<Y>(

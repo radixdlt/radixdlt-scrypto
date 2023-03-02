@@ -141,7 +141,7 @@ mod tests {
             Own::Bucket([1u8; 36]),
             Own::Proof([2u8; 36]),
             Own::Vault([3u8; 36]),
-            Own::Component([4u8; 36]),
+            Own::Object([4u8; 36]),
             Own::KeyValueStore([5u8; 36]),
         );
         let bytes = scrypto_encode(&values).unwrap();
@@ -177,7 +177,7 @@ mod tests {
                         value: ScryptoCustomValue::Own(Own::Vault([3u8; 36])),
                     },
                     ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Own(Own::Component([4u8; 36])),
+                        value: ScryptoCustomValue::Own(Own::Object([4u8; 36])),
                     },
                     ScryptoValue::Custom {
                         value: ScryptoCustomValue::Own(Own::KeyValueStore([5u8; 36])),

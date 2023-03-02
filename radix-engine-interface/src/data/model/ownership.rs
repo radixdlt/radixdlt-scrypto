@@ -15,17 +15,21 @@ pub enum Own {
     Bucket(ObjectId),
     Proof(ObjectId),
     Vault(ObjectId),
-    Component(ObjectId),
+    Object(ObjectId),
     KeyValueStore(KeyValueStoreId),
 }
 
 impl Own {
-    pub fn component_id(&self) -> ObjectId {
+    pub fn id(&self) -> ObjectId {
         match self {
-            Own::Component(v) => *v,
-            _ => panic!("Not a component ownership"),
+            Own::Bucket(v)
+            | Own::Object(v)
+            | Own::Proof(v)
+            | Own::Vault(v)
+            | Own::KeyValueStore(v) => *v,
         }
     }
+
     pub fn vault_id(&self) -> ObjectId {
         match self {
             Own::Vault(v) => *v,
@@ -76,7 +80,7 @@ impl Own {
                 encoder.write_byte(2)?;
                 encoder.write_slice(v)?;
             }
-            Own::Component(v) => {
+            Own::Object(v) => {
                 encoder.write_byte(3)?;
                 encoder.write_slice(v)?;
             }
@@ -95,7 +99,7 @@ impl Own {
             0 => Ok(Self::Bucket(copy_u8_array(decoder.read_slice(36)?))),
             1 => Ok(Self::Proof(copy_u8_array(decoder.read_slice(36)?))),
             2 => Ok(Self::Vault(copy_u8_array(decoder.read_slice(36)?))),
-            3 => Ok(Self::Component(copy_u8_array(decoder.read_slice(36)?))),
+            3 => Ok(Self::Object(copy_u8_array(decoder.read_slice(36)?))),
             4 => Ok(Self::KeyValueStore(copy_u8_array(decoder.read_slice(36)?))),
             _ => Err(DecodeError::InvalidCustomValue),
         }

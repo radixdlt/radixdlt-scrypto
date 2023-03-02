@@ -32,6 +32,8 @@ use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate,
     KeyValueStoreEntrySubstate,
 };
+use radix_engine_interface::api::node_modules::auth::*;
+use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::substate_api::LockFlags;
@@ -743,8 +745,22 @@ where
                         RuntimeError::SystemError(SystemError::InvalidAccessRules(e))
                     })?;
 
-                    let component_id = access_rules.component_id();
-                    let mut node = self.kernel_drop_node(RENodeId::Object(component_id))?;
+                    let object_id = access_rules.id();
+                    let node_id = RENodeId::Object(object_id);
+                    let (package_address, blueprint) = self.get_object_type_info(node_id)?;
+                    if !matches!(
+                        (package_address, blueprint.as_str()),
+                        (ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT)
+                    ) {
+                        return Err(RuntimeError::SystemError(SystemError::InvalidModuleType {
+                            expected_package: ACCESS_RULES_PACKAGE,
+                            expected_blueprint: ACCOUNT_BLUEPRINT.to_string(),
+                            actual_package: package_address,
+                            actual_blueprint: blueprint,
+                        }));
+                    }
+
+                    let mut node = self.kernel_drop_node(RENodeId::Object(object_id))?;
 
                     let access_rules = node
                         .substates
@@ -762,8 +778,22 @@ where
                     let metadata: Own = scrypto_decode(&init)
                         .map_err(|e| RuntimeError::SystemError(SystemError::InvalidMetadata(e)))?;
 
-                    let component_id = metadata.component_id();
-                    let mut node = self.kernel_drop_node(RENodeId::Object(component_id))?;
+                    let object_id = metadata.id();
+                    let node_id = RENodeId::Object(object_id);
+                    let (package_address, blueprint) = self.get_object_type_info(node_id)?;
+                    if !matches!(
+                        (package_address, blueprint.as_str()),
+                        (METADATA_PACKAGE, METADATA_BLUEPRINT)
+                    ) {
+                        return Err(RuntimeError::SystemError(SystemError::InvalidModuleType {
+                            expected_package: METADATA_PACKAGE,
+                            expected_blueprint: METADATA_BLUEPRINT.to_string(),
+                            actual_package: package_address,
+                            actual_blueprint: blueprint,
+                        }));
+                    }
+
+                    let mut node = self.kernel_drop_node(node_id)?;
 
                     let metadata = node
                         .substates
@@ -782,8 +812,22 @@ where
                         RuntimeError::SystemError(SystemError::InvalidRoyaltyConfig(e))
                     })?;
 
-                    let component_id = royalty.component_id();
-                    let mut node = self.kernel_drop_node(RENodeId::Object(component_id))?;
+                    let object_id = royalty.id();
+                    let node_id = RENodeId::Object(object_id);
+                    let (package_address, blueprint) = self.get_object_type_info(node_id)?;
+                    if !matches!(
+                        (package_address, blueprint.as_str()),
+                        (ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT)
+                    ) {
+                        return Err(RuntimeError::SystemError(SystemError::InvalidModuleType {
+                            expected_package: ROYALTY_PACKAGE,
+                            expected_blueprint: COMPONENT_ROYALTY_BLUEPRINT.to_string(),
+                            actual_package: package_address,
+                            actual_blueprint: blueprint,
+                        }));
+                    }
+
+                    let mut node = self.kernel_drop_node(node_id)?;
 
                     let config = node
                         .substates

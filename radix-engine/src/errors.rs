@@ -208,6 +208,12 @@ pub enum SystemError {
     InvalidAccessRules(DecodeError),
     InvalidMetadata(DecodeError),
     InvalidRoyaltyConfig(DecodeError),
+    InvalidModuleType {
+        expected_package: PackageAddress,
+        expected_blueprint: String,
+        actual_package: PackageAddress,
+        actual_blueprint: String,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

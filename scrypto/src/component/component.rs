@@ -284,7 +284,7 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for O
 
     #[inline]
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        Own::Component(self.0).encode_body(encoder)
+        Own::Object(self.0).encode_body(encoder)
     }
 }
 
@@ -295,7 +295,7 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for O
     ) -> Result<Self, DecodeError> {
         let o = Own::decode_body_with_value_kind(decoder, value_kind)?;
         match o {
-            Own::Component(component_id) => Ok(Self(component_id)),
+            Own::Object(component_id) => Ok(Self(component_id)),
             _ => Err(DecodeError::InvalidCustomValue),
         }
     }
