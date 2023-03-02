@@ -12,7 +12,7 @@ mod abi_component {
             component.globalize()
         }
 
-        pub fn create_invalid_abi_component() -> ComponentAddress {
+        pub fn create_invalid_schema_component() -> ComponentAddress {
             let component = Self {}.instantiate();
             component.globalize_with_access_rules(
                 AccessRules::new()
@@ -34,7 +34,7 @@ pub extern "C" fn dummy_export(_input: u64) -> Slice {
 }
 
 #[no_mangle]
-pub extern "C" fn AbiComponent2_abi() -> Slice {
+pub extern "C" fn AbiComponent2_schema() -> Slice {
     let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind<_>>::new();
     let mut substates = BTreeMap::new();
     substates.insert(0u8, aggregator.add_child_type_and_descendents::<()>());

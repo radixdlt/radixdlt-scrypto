@@ -1,4 +1,4 @@
-use radix_engine::errors::{ApplicationError, KernelError, RuntimeError};
+use radix_engine::errors::{ApplicationError, InterpreterError, RuntimeError};
 use radix_engine::system::node_modules::access_rules::AccessRulesChainError;
 use radix_engine::types::*;
 use scrypto_unit::*;
@@ -18,7 +18,7 @@ fn test_invalid_access_rule_methods() {
         .call_function(
             package_address,
             "AbiComponent",
-            "create_invalid_abi_component",
+            "create_invalid_schema_component",
             manifest_args!(),
         )
         .build();
@@ -59,13 +59,22 @@ fn test_arg(method_name: &str, args: Vec<u8>, expected_result: ExpectedResult) {
             receipt.expect_commit_success();
         }
         InvalidInput => {
-            receipt.expect_specific_failure(|e| matches!(e, RuntimeError::InterpreterError(_)));
+            receipt.expect_specific_failure(|e| {
+                matches!(
+                    e,
+                    RuntimeError::InterpreterError(
+                        InterpreterError::ScryptoInputSchemaNotMatch { .. }
+                    )
+                )
+            });
         }
         InvalidOutput => {
             receipt.expect_specific_failure(|e| {
                 matches!(
                     e,
-                    RuntimeError::KernelError(KernelError::InvalidScryptoFnOutput { .. })
+                    RuntimeError::InterpreterError(
+                        InterpreterError::ScryptoOutputSchemaNotMatch { .. }
+                    )
                 )
             });
         }

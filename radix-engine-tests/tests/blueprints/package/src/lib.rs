@@ -23,7 +23,7 @@ pub extern "C" fn ZeroReturnSize_f(_args: u64) -> Slice {
 }
 
 #[no_mangle]
-pub extern "C" fn LargeReturnSize_abi() -> Slice {
+pub extern "C" fn LargeReturnSize_schema() -> Slice {
     let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind<_>>::new();
 
     let mut substates = BTreeMap::new();
@@ -52,7 +52,7 @@ pub extern "C" fn LargeReturnSize_abi() -> Slice {
 }
 
 #[no_mangle]
-pub extern "C" fn MaxReturnSize_abi() -> Slice {
+pub extern "C" fn MaxReturnSize_schema() -> Slice {
     let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind<_>>::new();
     let mut substates = BTreeMap::new();
     substates.insert(0u8, aggregator.add_child_type_and_descendents::<()>());
@@ -80,7 +80,7 @@ pub extern "C" fn MaxReturnSize_abi() -> Slice {
 }
 
 #[no_mangle]
-pub extern "C" fn ZeroReturnSize_abi() -> Slice {
+pub extern "C" fn ZeroReturnSize_schema() -> Slice {
     let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind<_>>::new();
 
     let mut substates = BTreeMap::new();

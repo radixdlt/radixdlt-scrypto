@@ -122,12 +122,7 @@ pub enum KernelError {
 
     // invocation
     WasmRuntimeError(WasmRuntimeError),
-
-    InvalidReferenceWrite(Address),
-
     RENodeNotFound(RENodeId),
-
-    InvalidScryptoFnOutput,
 
     // ID allocation
     IdAllocationError(IdAllocationError),

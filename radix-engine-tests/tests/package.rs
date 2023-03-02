@@ -3,7 +3,8 @@ use radix_engine::system::package::PackageError;
 use radix_engine::types::*;
 use radix_engine::wasm::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::PackageSchema;
+use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
+use sbor::basic_well_known_types::ANY_ID;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -138,15 +139,33 @@ fn test_basic_package() {
 fn test_basic_package_missing_export() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
-    let schema = PackageSchema::default();
-
+    let mut package_schema = PackageSchema::default();
+    package_schema.blueprints.insert(
+        "Test".to_string(),
+        BlueprintSchema {
+            schema: ScryptoSchema {
+                type_kinds: vec![],
+                type_metadata: vec![],
+                type_validations: vec![],
+            },
+            substates: btreemap!(),
+            functions: btreemap!(
+                "f".to_string() => FunctionSchema {
+                    receiver: Option::None,
+                    input: LocalTypeIndex::WellKnown(ANY_ID),
+                    output: LocalTypeIndex::WellKnown(ANY_ID),
+                    export_name: "not_exist".to_string(),
+                }
+            ),
+        },
+    );
     // Act
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .publish_package(
             code,
-            schema,
+            package_schema,
             BTreeMap::new(),
             BTreeMap::new(),
             AccessRules::new(),
