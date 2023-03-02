@@ -2,6 +2,8 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientComponentApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::scrypto::model::*;
+use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::OWN_VAULT_ID;
+use radix_engine_interface::data::scrypto::ScryptoCustomTypeKind;
 use radix_engine_interface::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoCustomValueKind,
 };
@@ -53,6 +55,10 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for V
             _ => Err(DecodeError::InvalidCustomValue),
         }
     }
+}
+
+impl Describe<ScryptoCustomTypeKind<GlobalTypeId>> for Vault {
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown([OWN_VAULT_ID]);
 }
 
 pub trait ScryptoVault {

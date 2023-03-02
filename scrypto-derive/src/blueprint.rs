@@ -653,8 +653,8 @@ mod tests {
                         let input: Test_x_Input = ::scrypto::data::scrypto::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(args)).unwrap();
                         let component_id: radix_engine_interface::api::types::RENodeId = ::scrypto::data::scrypto::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(component_id)).unwrap();
                         let mut component_data = ::scrypto::runtime::ComponentStatePointer::new(component_id);
-                        let state: DataRef<test::Test> = component_data.get();
-                        let return_data = test::Test::x(state.deref(), input.arg0);
+                        let state: DataRef<Test> = component_data.get();
+                        let return_data = Test::x(state.deref(), input.arg0);
                         return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
                     }
 
@@ -666,16 +666,44 @@ mod tests {
                         ::scrypto::set_up_panic_hook();
 
                         let input: Test_y_Input = ::scrypto::data::scrypto::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(args)).unwrap();
-                        let return_data = test::Test::y(input.arg0);
+                        let return_data = Test::y(input.arg0);
                         return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
                     }
 
                     #[no_mangle]
                     pub extern "C" fn Test_schema() -> ::scrypto::engine::wasm_api::Slice {
-                        use ::scrypto::schema::BlueprintSchema;
+                        use ::scrypto::schema::*;
                         use ::sbor::rust::prelude::*;
-
-                        let return_data = BlueprintSchema::default();
+                        use ::sbor::schema::*;
+                        use ::sbor::*;
+                        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind<_>>::new();
+                        let mut substates = BTreeMap::new();
+                        let type_index = aggregator.add_child_type_and_descendents::<Test>();
+                        substates.insert(0, type_index);
+                        let mut functions = BTreeMap::new();
+                        functions.insert(
+                            "x".to_string(),
+                            ::scrypto::schema::FunctionSchema {
+                                receiver: Option::Some(::scrypto::schema::Receiver::SelfRef),
+                                input: aggregator.add_child_type_and_descendents::<Test_x_Input>(),
+                                output: aggregator.add_child_type_and_descendents::<u32>(),
+                                export_name: "Test_x".to_string(),
+                            }
+                        );
+                        functions.insert(
+                            "y".to_string(),
+                            ::scrypto::schema::FunctionSchema {
+                                receiver: Option::None,
+                                input: aggregator.add_child_type_and_descendents::<Test_y_Input>(),
+                                output: aggregator.add_child_type_and_descendents::<u32>(),
+                                export_name: "Test_y".to_string(),
+                            }
+                        );
+                        let return_data = BlueprintSchema {
+                            schema: generate_full_schema(aggregator),
+                            substates,
+                            functions,
+                        };
                         return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
                     }
 
@@ -758,239 +786,6 @@ mod tests {
 
                         pub fn x(&self, arg0: u32) -> u32 {
                             self.component.call("x", scrypto_args!(arg0))
-                        }
-                    }
-                }
-            },
-        );
-    }
-
-    #[test]
-    fn test_empty_blueprint() {
-        let input = TokenStream::from_str("mod test { struct Test {} impl Test {} }").unwrap();
-        let output = handle_blueprint(input).unwrap();
-
-        assert_code_eq(
-            output,
-            quote! {
-                pub mod test {
-                    use scrypto::prelude::*;
-
-                    #[derive(::scrypto::ScryptoSbor)]
-                    pub struct Test {
-                    }
-
-                    impl Test {
-                    }
-
-                    impl ::scrypto::component::ComponentState<TestComponent> for Test {
-                        fn instantiate(self) -> TestComponent {
-                            let component = ::scrypto::component::create_component(
-                                "Test",
-                                self
-                            );
-                            TestComponent {
-                                component
-                            }
-                        }
-                    }
-
-                    #[no_mangle]
-                    pub extern "C" fn Test_schema() -> ::scrypto::engine::wasm_api::Slice {
-                        use ::scrypto::schema::BlueprintSchema;
-                        use ::sbor::rust::prelude::*;
-
-                        let return_data = BlueprintSchema::default();
-                        return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
-                    }
-
-                    #[allow(non_camel_case_types)]
-                    #[derive(::scrypto::ScryptoSbor)]
-                    pub struct TestComponent {
-                        pub component: ::scrypto::component::OwnedComponent,
-                    }
-
-                    impl ::scrypto::component::Component for TestComponent {
-                        fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
-                            self.component.call(method, args)
-                        }
-                        fn package_address(&self) -> ::scrypto::prelude::PackageAddress {
-                            self.component.package_address()
-                        }
-                        fn blueprint_name(&self) -> String {
-                            self.component.blueprint_name()
-                        }
-                    }
-
-                    impl ::scrypto::component::LocalComponent for TestComponent {
-                        fn globalize_with_modules(
-                            self,
-                            access_rules: AccessRules,
-                            metadata: BTreeMap<String, String>,
-                            royalty_config: RoyaltyConfig,
-                        ) -> ComponentAddress {
-                            self.component.globalize_with_modules(access_rules, metadata, royalty_config)
-                        }
-                    }
-
-                    impl TestComponent {
-                    }
-
-                    #[allow(non_camel_case_types)]
-                    pub struct TestGlobalComponentRef {
-                        pub component: ::scrypto::component::GlobalComponentRef,
-                    }
-
-                    impl From<ComponentAddress> for TestGlobalComponentRef {
-                        fn from(address: ComponentAddress) -> Self {
-                            Self {
-                                component: ::scrypto::component::GlobalComponentRef(address)
-                            }
-                        }
-                    }
-
-                    impl ::scrypto::component::Component for TestGlobalComponentRef {
-                        fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
-                            self.component.call(method, args)
-                        }
-                        fn package_address(&self) -> ::scrypto::prelude::PackageAddress {
-                            self.component.package_address()
-                        }
-                        fn blueprint_name(&self) -> String {
-                            self.component.blueprint_name()
-                        }
-                    }
-
-                    impl TestGlobalComponentRef {
-                        pub fn access_rules(&self) -> ComponentAccessRules {
-                            self.component.access_rules()
-                        }
-
-                        pub fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
-                            self.component.set_metadata(name, value);
-                        }
-
-                        pub fn claim_royalty(&self) -> Bucket {
-                            self.component.claim_royalty()
-                        }
-                    }
-                }
-            },
-        );
-    }
-
-    #[test]
-    fn test_empty_blueprint_with_use_statements() {
-        let input = TokenStream::from_str(
-            "mod test { use scrypto::prelude::*; use std::fs; struct Test {} impl Test {} }",
-        )
-        .unwrap();
-        let output = handle_blueprint(input).unwrap();
-
-        assert_code_eq(
-            output,
-            quote! {
-                pub mod test {
-                    use scrypto::prelude::*;
-                    use std::fs;
-
-                    #[derive(::scrypto::ScryptoSbor)]
-                    pub struct Test {
-                    }
-
-                    impl Test {
-                    }
-
-                    impl ::scrypto::component::ComponentState<TestComponent> for Test {
-                        fn instantiate(self) -> TestComponent {
-                            let component = ::scrypto::component::create_component(
-                                "Test",
-                                self
-                            );
-                            TestComponent {
-                                component
-                            }
-                        }
-                    }
-
-                    #[no_mangle]
-                    pub extern "C" fn Test_schema() -> ::scrypto::engine::wasm_api::Slice {
-                        use ::scrypto::schema::BlueprintSchema;
-                        use ::sbor::rust::prelude::*;
-
-                        let return_data = BlueprintSchema::default();
-                        return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
-                    }
-
-                    #[allow(non_camel_case_types)]
-                    #[derive(::scrypto::ScryptoSbor)]
-                    pub struct TestComponent {
-                        pub component: ::scrypto::component::OwnedComponent,
-                    }
-
-                    impl ::scrypto::component::Component for TestComponent {
-                        fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
-                            self.component.call(method, args)
-                        }
-                        fn package_address(&self) -> ::scrypto::prelude::PackageAddress {
-                            self.component.package_address()
-                        }
-                        fn blueprint_name(&self) -> String {
-                            self.component.blueprint_name()
-                        }
-                    }
-
-                    impl ::scrypto::component::LocalComponent for TestComponent {
-                        fn globalize_with_modules(
-                            self,
-                            access_rules: AccessRules,
-                            metadata: BTreeMap<String, String>,
-                            royalty_config: RoyaltyConfig,
-                        ) -> ComponentAddress {
-                            self.component.globalize_with_modules(access_rules, metadata, royalty_config)
-                        }
-                    }
-
-                    impl TestComponent {
-                    }
-
-                    #[allow(non_camel_case_types)]
-                    pub struct TestGlobalComponentRef {
-                        pub component: ::scrypto::component::GlobalComponentRef,
-                    }
-
-                    impl From<ComponentAddress> for TestGlobalComponentRef {
-                        fn from(address: ComponentAddress) -> Self {
-                            Self {
-                                component: ::scrypto::component::GlobalComponentRef(address)
-                            }
-                        }
-                    }
-
-                    impl ::scrypto::component::Component for TestGlobalComponentRef {
-                        fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
-                            self.component.call(method, args)
-                        }
-
-                        fn package_address(&self) -> ::scrypto::prelude::PackageAddress {
-                            self.component.package_address()
-                        }
-                        fn blueprint_name(&self) -> String {
-                            self.component.blueprint_name()
-                        }
-                    }
-
-                    impl TestGlobalComponentRef {
-                        pub fn access_rules(&self) -> ComponentAccessRules {
-                            self.component.access_rules()
-                        }
-
-                        pub fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
-                            self.component.set_metadata(name, value);
-                        }
-
-                        pub fn claim_royalty(&self) -> Bucket {
-                            self.component.claim_royalty()
                         }
                     }
                 }

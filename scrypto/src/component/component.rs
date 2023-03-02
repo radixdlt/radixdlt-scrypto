@@ -18,7 +18,8 @@ use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRules, Bucket, MethodKey, NonFungibleGlobalId,
 };
 use radix_engine_interface::constants::{ACCESS_RULES_PACKAGE, METADATA_PACKAGE, ROYALTY_PACKAGE};
-use radix_engine_interface::data::scrypto::model::*;
+use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::OWN_COMPONENT_ID;
+use radix_engine_interface::data::scrypto::{model::*, ScryptoCustomTypeKind};
 use radix_engine_interface::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
 };
@@ -297,4 +298,8 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for O
             _ => Err(DecodeError::InvalidCustomValue),
         }
     }
+}
+
+impl Describe<ScryptoCustomTypeKind<GlobalTypeId>> for OwnedComponent {
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown([OWN_COMPONENT_ID]);
 }

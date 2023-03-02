@@ -40,4 +40,4 @@ pub use radix_engine_interface::time::*;
 //=======
 
 pub use sbor::rust::prelude::*;
-pub use sbor::{Categorize, Decode, DecodeError, Encode};
+pub use sbor::{Categorize, Decode, DecodeError, Encode, Sbor};
