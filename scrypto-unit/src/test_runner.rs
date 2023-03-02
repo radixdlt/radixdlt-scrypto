@@ -44,8 +44,7 @@ use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
 use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
-use scrypto::component::Mutability;
-use scrypto::component::Mutability::*;
+use scrypto::prelude::*;
 use transaction::builder::ManifestBuilder;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::{AuthZoneParams, PreviewIntent, TestTransaction};
@@ -1194,22 +1193,5 @@ pub fn generate_single_function_abi(_blueprint_name: &str, _function_name: &str)
     }
 }
 
-#[derive(ScryptoSbor)]
+#[derive(NonFungibleData)]
 struct EmptyNonFungibleData {}
-
-impl NonFungibleData for EmptyNonFungibleData {
-    fn decode(_immutable_data: &[u8], _mutable_data: &[u8]) -> Result<Self, DecodeError>
-    where
-        Self: Sized,
-    {
-        Ok(Self {})
-    }
-
-    fn immutable_data(&self) -> Result<Vec<u8>, EncodeError> {
-        scrypto_encode(self)
-    }
-
-    fn mutable_data(&self) -> Result<Vec<u8>, EncodeError> {
-        scrypto_encode(self)
-    }
-}
