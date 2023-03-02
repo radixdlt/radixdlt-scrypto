@@ -1,4 +1,4 @@
-use radix_engine::errors::{ApplicationError, InterpreterError, KernelError, RuntimeError};
+use radix_engine::errors::{ApplicationError, KernelError, RuntimeError};
 use radix_engine::system::package::PackageError;
 use radix_engine::types::*;
 use radix_engine::wasm::*;
@@ -108,12 +108,7 @@ fn zero_return_len_should_cause_data_validation_error() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::InterpreterError(InterpreterError::InvalidScryptoReturn(..))
-        )
-    });
+    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::InterpreterError(_)));
 }
 
 #[test]

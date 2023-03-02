@@ -35,23 +35,63 @@ use radix_engine_interface::schema::BlueprintSchema;
 
 // FIXME add validation!
 
-#[allow(unused_variables)]
 fn validate_input(
-    schema: &BlueprintSchema,
+    blueprint_schema: &BlueprintSchema,
     fn_ident: &str,
-    is_method: bool,
+    with_receiver: bool,
     input: &ScryptoValue,
 ) -> Result<String, RuntimeError> {
-    Ok("todo!".to_string())
+    let function_schema =
+        blueprint_schema
+            .functions
+            .get(fn_ident)
+            .ok_or(RuntimeError::InterpreterError(
+                InterpreterError::ScryptoFunctionNotFound(fn_ident.to_string()),
+            ))?;
+
+    if function_schema.receiver.is_some() != with_receiver {
+        return Err(RuntimeError::InterpreterError(
+            InterpreterError::ScryptoReceiverNotMatch(fn_ident.to_string()),
+        ));
+    }
+
+    let bytes = scrypto_encode(input).expect("Failed to encode ScryptoValue");
+
+    validate_payload_against_schema(&bytes, &blueprint_schema.schema, function_schema.input)
+        .map_err(|_| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputSchemaNotMatch(
+                fn_ident.to_string(),
+            ))
+        })?;
+
+    Ok(function_schema.export_name.clone())
 }
 
-#[allow(unused_variables)]
 fn validate_output(
-    schema: &BlueprintSchema,
+    blueprint_schema: &BlueprintSchema,
     fn_ident: &str,
-    output: &ScryptoValue,
-) -> Result<(), RuntimeError> {
-    Ok(())
+    output: Vec<u8>,
+) -> Result<IndexedScryptoValue, RuntimeError> {
+    let value = IndexedScryptoValue::from_vec(output)
+        .map_err(|e| RuntimeError::InterpreterError(InterpreterError::ScryptoMalformedOutput(e)))?;
+
+    let function_schema = blueprint_schema
+        .functions
+        .get(fn_ident)
+        .expect("Checked by `validate_input`");
+
+    validate_payload_against_schema(
+        value.as_slice(),
+        &blueprint_schema.schema,
+        function_schema.output,
+    )
+    .map_err(|_| {
+        RuntimeError::InterpreterError(InterpreterError::ScryptoOutputSchemaNotMatch(
+            fn_ident.to_string(),
+        ))
+    })?;
+
+    Ok(value)
 }
 
 impl ExecutableInvocation for MethodInvocation {
@@ -63,7 +103,9 @@ impl ExecutableInvocation for MethodInvocation {
     ) -> Result<TemporaryResolvedInvocation<Self::Exec>, RuntimeError> {
         let (_, value, nodes_to_move, mut node_refs_to_copy) =
             IndexedScryptoValue::from_slice(&self.args)
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?
+                .map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?
                 .unpack();
         // Pass the component ref
         node_refs_to_copy.insert(self.identifier.0);
@@ -168,7 +210,9 @@ impl ExecutableInvocation for FunctionInvocation {
     ) -> Result<TemporaryResolvedInvocation<Self::Exec>, RuntimeError> {
         let (_, value, nodes_to_move, mut node_refs_to_copy) =
             IndexedScryptoValue::from_slice(&self.args)
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?
+                .map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?
                 .unpack();
 
         let actor = Actor::function(self.fn_identifier.clone());
@@ -321,7 +365,10 @@ impl Executor for ScryptoExecutor {
                             .blueprints
                             .get(&self.fn_identifier.blueprint_name)
                             .ok_or(RuntimeError::InterpreterError(
-                                InterpreterError::InvalidInvocation,
+                                InterpreterError::ScryptoBlueprintNotFound(
+                                    self.fn_identifier.package_address,
+                                    self.fn_identifier.blueprint_name.clone(),
+                                ),
                             ))?
                             .clone();
                         api.kernel_drop_lock(handle)?;
@@ -375,15 +422,9 @@ impl Executor for ScryptoExecutor {
 
                         instance.invoke_export(&export_name, input, &mut runtime)?
                     };
-                    let output = IndexedScryptoValue::from_vec(output).map_err(|e| {
-                        RuntimeError::InterpreterError(InterpreterError::InvalidScryptoReturn(e))
-                    })?;
 
-                    validate_output(
-                        &schema,
-                        &self.fn_identifier.blueprint_name,
-                        output.as_value(),
-                    )?;
+                    let output =
+                        validate_output(&schema, &self.fn_identifier.blueprint_name, output)?;
 
                     api.update_wasm_memory_usage(instance.consumed_memory()?)?;
 

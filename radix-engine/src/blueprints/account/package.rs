@@ -177,7 +177,9 @@ impl AccountNativePackage {
     {
         // TODO: Remove decode/encode mess
         let input: AccountCreateGlobalInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            .map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         // Creating the key-value-store where the vaults will be held. This is a KVStore of
         // [`ResourceAddress`] and [`Own`]ed vaults.
@@ -228,7 +230,9 @@ impl AccountNativePackage {
     {
         // TODO: Remove decode/encode mess
         let _input: AccountCreateLocalInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            .map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         // Creating the key-value-store where the vaults will be held. This is a KVStore of
         // [`ResourceAddress`] and [`Own`]ed vaults.
@@ -325,8 +329,10 @@ impl AccountNativePackage {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
-        let input: AccountLockFeeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+        let input: AccountLockFeeInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         Self::lock_fee_internal(receiver, input.amount, false, api)?;
 
@@ -343,7 +349,9 @@ impl AccountNativePackage {
     {
         // TODO: Remove decode/encode mess
         let input: AccountLockContingentFeeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            .map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         Self::lock_fee_internal(receiver, input.amount, true, api)?;
 
@@ -359,8 +367,10 @@ impl AccountNativePackage {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
-        let input: AccountDepositInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+        let input: AccountDepositInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let resource_address = input.bucket.sys_resource_address(api)?;
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
@@ -429,7 +439,9 @@ impl AccountNativePackage {
     {
         // TODO: Remove decode/encode mess
         let input: AccountDepositBatchInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            .map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let handle = api.sys_lock_substate(
             receiver,
@@ -562,7 +574,9 @@ impl AccountNativePackage {
     {
         // TODO: Remove decode/encode mess
         let input: AccountWithdrawInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            .map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let bucket = Self::get_vault(
             receiver,
@@ -584,8 +598,9 @@ impl AccountNativePackage {
     {
         // TODO: Remove decode/encode mess
         let input: AccountWithdrawNonFungiblesInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let bucket = Self::get_vault(
             receiver,
@@ -607,8 +622,9 @@ impl AccountNativePackage {
     {
         // TODO: Remove decode/encode mess
         let input: AccountLockFeeAndWithdrawInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         Self::lock_fee_internal(receiver, input.amount_to_lock, false, api)?;
 
@@ -632,8 +648,9 @@ impl AccountNativePackage {
     {
         // TODO: Remove decode/encode mess
         let input: AccountLockFeeAndWithdrawNonFungiblesInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         Self::lock_fee_internal(receiver, input.amount_to_lock, false, api)?;
 
@@ -657,7 +674,9 @@ impl AccountNativePackage {
     {
         // TODO: Remove decode/encode mess
         let input: AccountCreateProofInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            .map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let proof = Self::get_vault(
             receiver,
@@ -679,8 +698,9 @@ impl AccountNativePackage {
     {
         // TODO: Remove decode/encode mess
         let input: AccountCreateProofByAmountInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let proof = Self::get_vault(
             receiver,
@@ -702,7 +722,9 @@ impl AccountNativePackage {
     {
         // TODO: Remove decode/encode mess
         let input: AccountCreateProofByIdsInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            .map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let proof = Self::get_vault(
             receiver,

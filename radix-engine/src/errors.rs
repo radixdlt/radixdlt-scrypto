@@ -188,13 +188,6 @@ pub enum CallFrameError {
     MovingLockedRENode(RENodeId),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-pub enum ScryptoFnResolvingError {
-    BlueprintNotFound,
-    MethodNotFound,
-    InvalidInput,
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemError {
     InvalidLockFlags,
@@ -212,10 +205,14 @@ pub enum InterpreterError {
     NativeExportDoesNotExist(String),
     NativeInvalidCodeId(u8),
 
-    InvalidInvocation,
+    ScryptoBlueprintNotFound(PackageAddress, String),
+    ScryptoFunctionNotFound(String),
+    ScryptoReceiverNotMatch(String),
+    ScryptoInputSchemaNotMatch(String),
+    ScryptoInputDecodeError(DecodeError),
 
-    InvalidScryptoInvocation(FnIdentifier, ScryptoFnResolvingError),
-    InvalidScryptoReturn(DecodeError),
+    ScryptoMalformedOutput(DecodeError),
+    ScryptoOutputSchemaNotMatch(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

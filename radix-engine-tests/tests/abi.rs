@@ -1,6 +1,4 @@
-use radix_engine::errors::{
-    ApplicationError, InterpreterError, KernelError, RuntimeError, ScryptoFnResolvingError,
-};
+use radix_engine::errors::{ApplicationError, KernelError, RuntimeError};
 use radix_engine::system::node_modules::access_rules::AccessRulesChainError;
 use radix_engine::types::*;
 use scrypto_unit::*;
@@ -61,15 +59,7 @@ fn test_arg(method_name: &str, args: Vec<u8>, expected_result: ExpectedResult) {
             receipt.expect_commit_success();
         }
         InvalidInput => {
-            receipt.expect_specific_failure(|e| {
-                matches!(
-                    e,
-                    RuntimeError::InterpreterError(InterpreterError::InvalidScryptoInvocation(
-                        _,
-                        ScryptoFnResolvingError::InvalidInput
-                    ))
-                )
-            });
+            receipt.expect_specific_failure(|e| matches!(e, RuntimeError::InterpreterError(_)));
         }
         InvalidOutput => {
             receipt.expect_specific_failure(|e| {

@@ -207,8 +207,10 @@ impl ProofBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
-        let _input: ProofCloneInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+        let _input: ProofCloneInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let proof_info = ProofInfoSubstate::of(receiver, api)?;
         let node_id = if proof_info.resource_type.is_fungible() {
@@ -263,7 +265,9 @@ impl ProofBlueprint {
     {
         // TODO: Remove decode/encode mess
         let _input: ProofGetAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            .map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let proof_info = ProofInfoSubstate::of(receiver, api)?;
         let amount = if proof_info.resource_type.is_fungible() {
@@ -300,8 +304,9 @@ impl ProofBlueprint {
     {
         // TODO: Remove decode/encode mess
         let _input: ProofGetNonFungibleLocalIdsInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let proof_info = ProofInfoSubstate::of(receiver, api)?;
         if proof_info.resource_type.is_fungible() {
@@ -331,7 +336,9 @@ impl ProofBlueprint {
     {
         // TODO: Remove decode/encode mess
         let _input: ProofGetResourceAddressInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            .map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let proof_info = ProofInfoSubstate::of(receiver, api)?;
         Ok(IndexedScryptoValue::from_typed(

@@ -22,7 +22,7 @@ impl Runtime {
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         // FIXME support event emission
-        todo!()
+        Ok(())
     }
 
     pub fn sys_current_epoch<Y, E>(api: &mut Y) -> Result<u64, E>

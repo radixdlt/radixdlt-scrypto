@@ -61,7 +61,9 @@ impl ValidatorBlueprint {
     {
         // TODO: Remove decode/encode mess
         let _input: ValidatorRegisterInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            .map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
         let handle = api.sys_lock_substate(receiver, offset.clone(), LockFlags::MUTABLE)?;
@@ -114,7 +116,9 @@ impl ValidatorBlueprint {
     {
         // TODO: Remove decode/encode mess
         let _input: ValidatorUnregisterInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            .map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
         let handle = api.sys_lock_substate(receiver, offset.clone(), LockFlags::MUTABLE)?;
@@ -158,8 +162,10 @@ impl ValidatorBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
-        let input: ValidatorStakeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+        let input: ValidatorStakeInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         // Prepare the event and emit it once the operations succeed
         let event = {
@@ -231,7 +237,9 @@ impl ValidatorBlueprint {
     {
         // TODO: Remove decode/encode mess
         let input: ValidatorUnstakeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            .map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         // Prepare event and emit it once operations finish
         let event = {
@@ -332,7 +340,9 @@ impl ValidatorBlueprint {
     {
         // TODO: Remove decode/encode mess
         let input: ValidatorClaimXrdInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            .map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let handle = api.sys_lock_substate(
             receiver,
@@ -401,7 +411,9 @@ impl ValidatorBlueprint {
     {
         // TODO: Remove decode/encode mess
         let input: ValidatorUpdateKeyInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            .map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let handle = api.sys_lock_substate(
             receiver,
@@ -447,8 +459,9 @@ impl ValidatorBlueprint {
     {
         // TODO: Remove decode/encode mess
         let input: ValidatorUpdateAcceptDelegatedStakeInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let rule = if input.accept_delegated_stake {
             AccessRuleEntry::AccessRule(AccessRule::AllowAll)

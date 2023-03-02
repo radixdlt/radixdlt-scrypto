@@ -330,8 +330,8 @@ impl ResourceManagerNativePackage {
 
                 // TODO: Remove decode/encode mess
                 let input: ProofDropInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-                    .map_err(|_| {
-                        RuntimeError::InterpreterError(InterpreterError::InvalidInvocation)
+                    .map_err(|e| {
+                        RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                     })?;
 
                 ProofBlueprint::drop(input.proof, api)

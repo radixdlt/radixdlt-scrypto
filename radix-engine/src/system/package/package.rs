@@ -75,8 +75,9 @@ impl Package {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: PackageLoaderPublishNativeInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let metadata_substate = MetadataSubstate {
             metadata: input.metadata,
@@ -138,7 +139,9 @@ impl Package {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: PackageLoaderPublishWasmInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            .map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let royalty_vault_id = ResourceManager(RADIX_TOKEN).new_vault(api)?.vault_id();
 
@@ -149,6 +152,8 @@ impl Package {
                     PackageError::InvalidWasm(e),
                 ))
             })?;
+
+        // FIXME schema - validate schema consistency!
 
         let code_type_substate = PackageCodeTypeSubstate::Wasm;
         let wasm_code_substate = PackageCodeSubstate { code: input.code };
