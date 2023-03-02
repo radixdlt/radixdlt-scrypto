@@ -986,7 +986,7 @@ mod tests {
     #[test]
     fn test_integer_encoding() {
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = ScryptoEncoder::new(&mut bytes);
+        let mut enc = ScryptoEncoder::new(&mut bytes, SCRYPTO_SBOR_V1_MAX_DEPTH);
         encode_integers(&mut enc).unwrap();
 
         assert_eq!(
@@ -1009,10 +1009,10 @@ mod tests {
     #[test]
     fn test_integer_decoding() {
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = ScryptoEncoder::new(&mut bytes);
+        let mut enc = ScryptoEncoder::new(&mut bytes, SCRYPTO_SBOR_V1_MAX_DEPTH);
         encode_integers(&mut enc).unwrap();
 
-        let mut decoder = ScryptoDecoder::new(&bytes);
+        let mut decoder = ScryptoDecoder::new(&bytes, SCRYPTO_SBOR_V1_MAX_DEPTH);
         assert_eq!(I8::by(1i8), decoder.decode::<I8>().unwrap());
         assert_eq!(I16::by(1i8), decoder.decode::<I16>().unwrap());
         assert_eq!(I32::by(1i8), decoder.decode::<I32>().unwrap());
