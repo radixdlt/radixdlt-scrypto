@@ -1,11 +1,9 @@
+use crate::borrow_resource_manager;
 use radix_engine_interface::api::types::NonFungibleData;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::*;
 use sbor::rust::marker::PhantomData;
-
-use crate::borrow_resource_manager;
-use crate::resource::*;
 
 /// Represents a non-fungible unit.
 #[derive(Debug)]

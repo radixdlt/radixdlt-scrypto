@@ -78,7 +78,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
             impl ::scrypto::component::ComponentState<#component_ident> for #bp_ident {
                 fn instantiate(self) -> #component_ident {
-                    let component = ::scrypto::component::component_system().create_component(
+                    let component = ::scrypto::component::create_component(
                         #bp_name,
                         self
                     );
@@ -283,9 +283,9 @@ fn generate_dispatcher(
                                 // Set up panic hook
                                 ::scrypto::set_up_panic_hook();
 
-                                // Set up component and resource subsystems;
-                                ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
-                                ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
+
+
+
 
                                 #(#stmts)*
                             }
@@ -299,9 +299,9 @@ fn generate_dispatcher(
                                 // Set up panic hook
                                 ::scrypto::set_up_panic_hook();
 
-                                // Set up component and resource subsystems;
-                                ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
-                                ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
+
+
+
 
                                 #(#stmts)*
                             }
@@ -569,7 +569,7 @@ mod tests {
 
                     impl ::scrypto::component::ComponentState<TestComponent> for Test {
                         fn instantiate(self) -> TestComponent {
-                            let component = ::scrypto::component::component_system().create_component(
+                            let component = ::scrypto::component::create_component(
                                 "Test",
                                 self
                             );
@@ -597,10 +597,6 @@ mod tests {
                     // Set up panic hook
                     ::scrypto::set_up_panic_hook();
 
-                    // Set up component and resource subsystems;
-                    ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
-                    ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
-
                     let input: Test_x_Input = ::scrypto::data::scrypto::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(args)).unwrap();
                     let component_id: radix_engine_interface::api::types::RENodeId = ::scrypto::data::scrypto::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(component_id)).unwrap();
                     let mut component_data = ::scrypto::runtime::ComponentStatePointer::new(component_id);
@@ -615,10 +611,6 @@ mod tests {
 
                     // Set up panic hook
                     ::scrypto::set_up_panic_hook();
-
-                    // Set up component and resource subsystems;
-                    ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
-                    ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
                     let input: Test_y_Input = ::scrypto::data::scrypto::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(args)).unwrap();
                     let return_data = test::Test::y(input.arg0);
@@ -759,7 +751,7 @@ mod tests {
 
                     impl ::scrypto::component::ComponentState<TestComponent> for Test {
                         fn instantiate(self) -> TestComponent {
-                            let component = ::scrypto::component::component_system().create_component(
+                            let component = ::scrypto::component::create_component(
                                 "Test",
                                 self
                             );
@@ -898,7 +890,7 @@ mod tests {
 
                     impl ::scrypto::component::ComponentState<TestComponent> for Test {
                         fn instantiate(self) -> TestComponent {
-                            let component = ::scrypto::component::component_system().create_component(
+                            let component = ::scrypto::component::create_component(
                                 "Test",
                                 self
                             );
