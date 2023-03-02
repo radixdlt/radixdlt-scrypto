@@ -1,5 +1,6 @@
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
+use sbor::rust::prelude::*;
 use sbor::*;
 use utils::copy_u8_array;
 

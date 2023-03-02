@@ -2,6 +2,7 @@ use super::*;
 use crate::data::scrypto::model::*;
 use crate::*;
 use sbor::rust::fmt;
+use sbor::rust::prelude::*;
 
 // TODO: Remove when better type system implemented
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor)]

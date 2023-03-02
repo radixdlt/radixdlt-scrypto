@@ -1,8 +1,7 @@
 use crate::api::types::*;
 use crate::blueprints::resource::AccessRules;
 use crate::data::scrypto::model::*;
-use sbor::rust::collections::BTreeMap;
-use sbor::rust::vec::Vec;
+use sbor::rust::prelude::*;
 use scrypto_schema::PackageSchema;
 
 pub trait ClientPackageApi<E> {

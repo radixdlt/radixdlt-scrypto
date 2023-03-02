@@ -1,6 +1,7 @@
 use crate::address::Bech32Encoder;
 use crate::data::scrypto::*;
 use sbor::rust::fmt;
+use sbor::rust::prelude::*;
 use utils::ContextualDisplay;
 
 #[derive(Clone, Copy, Debug)]

@@ -127,13 +127,13 @@ macro_rules! include_code {
 /// use scrypto::prelude::*;
 ///
 /// // This package
-/// let abi1 = include_abi!("bin_name");
+/// let abi1 = include_schema!("bin_name");
 ///
 /// // Another package
-/// let abi2 = include_abi!("/path/to/package", "bin_name");
+/// let abi2 = include_schema!("/path/to/package", "bin_name");
 /// ```
 #[macro_export]
-macro_rules! include_abi {
+macro_rules! include_schema {
     ($bin_name: expr) => {
         include_bytes!(concat!(
             env!("CARGO_MANIFEST_DIR"),

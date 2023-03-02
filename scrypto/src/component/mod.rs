@@ -6,7 +6,7 @@ mod package;
 
 pub use component::*;
 pub use component_access_rules::Mutability::*;
-pub use component_access_rules::{ComponentAccessRules, Mutability};
+pub use component_access_rules::*;
 pub use kv_store::*;
 pub use macros::*;
-pub use package::BorrowedPackage;
+pub use package::*;

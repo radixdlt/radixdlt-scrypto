@@ -10,6 +10,7 @@ use radix_engine_interface::blueprints::resource::{AccessRule, AccessRuleEntry, 
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::scrypto_encode;
 use radix_engine_interface::*;
+use sbor::rust::prelude::*;
 
 // TODO: Should `Encode` and `Decode` be removed so that `ComponentAccessRules` can not be passed
 // between components?

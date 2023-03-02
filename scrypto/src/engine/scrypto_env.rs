@@ -9,9 +9,7 @@ use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::model::{Address, ComponentAddress, PackageAddress};
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::*;
-use sbor::rust::collections::*;
-use sbor::rust::fmt::Debug;
-use sbor::rust::vec::Vec;
+use sbor::rust::prelude::*;
 use sbor::*;
 use scrypto_schema::PackageSchema;
 

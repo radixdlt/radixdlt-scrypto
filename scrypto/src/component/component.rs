@@ -24,10 +24,7 @@ use radix_engine_interface::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
 };
 use radix_engine_interface::rule;
-use sbor::rust::borrow::ToOwned;
-use sbor::rust::collections::BTreeMap;
-use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
+use sbor::rust::prelude::*;
 use sbor::*;
 
 use super::ComponentAccessRules;

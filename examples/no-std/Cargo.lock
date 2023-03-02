@@ -233,6 +233,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "radix-engine-common"
+version = "0.9.0"
+dependencies = [
+ "bech32",
+ "blake2",
+ "bnum",
+ "hex",
+ "lazy_static",
+ "num-bigint",
+ "num-integer",
+ "num-traits",
+ "paste",
+ "radix-engine-derive",
+ "sbor",
+ "utils",
+]
+
+[[package]]
 name = "radix-engine-derive"
 version = "0.9.0"
 dependencies = [
@@ -246,21 +264,13 @@ dependencies = [
 name = "radix-engine-interface"
 version = "0.9.0"
 dependencies = [
- "bech32",
  "bitflags",
- "blake2",
- "bnum",
  "hex",
- "lazy_static",
- "num-bigint",
- "num-integer",
- "num-traits",
- "paste",
+ "radix-engine-common",
  "radix-engine-derive",
  "sbor",
  "scrypto-schema",
  "strum",
- "transaction-data",
  "utils",
 ]
 
@@ -318,18 +328,10 @@ dependencies = [
  "radix-engine-derive",
  "radix-engine-interface",
  "sbor",
- "scrypto-schema",
  "scrypto-derive",
+ "scrypto-schema",
  "strum",
  "utils",
-]
-
-[[package]]
-name = "scrypto-schema"
-version = "0.9.0"
-dependencies = [
- "sbor",
- "serde",
 ]
 
 [[package]]
@@ -342,6 +344,15 @@ dependencies = [
  "serde",
  "serde_json",
  "syn",
+]
+
+[[package]]
+name = "scrypto-schema"
+version = "0.9.0"
+dependencies = [
+ "radix-engine-common",
+ "sbor",
+ "serde",
 ]
 
 [[package]]
@@ -418,26 +429,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
-]
-
-[[package]]
-name = "transaction-data"
-version = "0.9.0"
-dependencies = [
- "hex",
- "sbor",
- "transaction-derive",
- "utils",
-]
-
-[[package]]
-name = "transaction-derive"
-version = "0.8.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "sbor-derive-common",
- "syn",
 ]
 
 [[package]]

@@ -1,6 +1,7 @@
 use crate::api::types::*;
 use crate::data::scrypto::model::*;
 use sbor::rust::collections::*;
+use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
 
 pub trait ClientComponentApi<E> {

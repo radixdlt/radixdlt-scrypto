@@ -7,10 +7,9 @@ pub use crate::engine::*;
 pub use crate::resource::*;
 pub use crate::runtime::*;
 pub use crate::{
-    access_and_or, access_rule_node, blueprint, borrow_component, borrow_package,
-    borrow_resource_manager, debug, dec, error, external_blueprint, external_component, i,
-    include_abi, include_code, info, pdec, resource_list, rule, scrypto_args, this_package, trace,
-    warn, NonFungibleData, ScryptoCategorize, ScryptoDecode, ScryptoEncode, ScryptoSbor,
+    blueprint, borrow_component, borrow_package, borrow_resource_manager, debug, error,
+    external_blueprint, external_component, include_code, include_schema, info, resource_list,
+    this_package, trace, warn, NonFungibleData,
 };
 
 //=========================
@@ -34,6 +33,10 @@ pub use radix_engine_interface::math::integer::{
 pub use radix_engine_interface::math::*;
 pub use radix_engine_interface::radix_engine_common;
 pub use radix_engine_interface::time::*;
+pub use radix_engine_interface::{
+    access_and_or, access_rule_node, dec, i, pdec, rule, scrypto_args, ScryptoCategorize,
+    ScryptoDecode, ScryptoEncode, ScryptoSbor,
+};
 
 //=======
 // SBOR

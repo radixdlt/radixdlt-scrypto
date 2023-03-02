@@ -3,9 +3,9 @@ use crate::data::scrypto::model::Own;
 use crate::data::scrypto::model::*;
 use crate::schema::*;
 use crate::*;
-use sbor::rust::collections::*;
 use sbor::rust::fmt;
 use sbor::rust::fmt::{Debug, Formatter};
+use sbor::rust::prelude::*;
 
 pub const NATIVE_PACKAGE_CODE_ID: u8 = 0u8;
 pub const RESOURCE_MANAGER_PACKAGE_CODE_ID: u8 = 1u8;

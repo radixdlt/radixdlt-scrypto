@@ -1,7 +1,7 @@
 use crate::data::scrypto::model::*;
 use crate::math::*;
 use crate::*;
-use sbor::rust::collections::*;
+use sbor::rust::prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ResourceError {

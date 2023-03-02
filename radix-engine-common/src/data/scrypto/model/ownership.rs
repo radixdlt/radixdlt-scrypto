@@ -3,7 +3,7 @@ use crate::data::scrypto::{ScryptoCustomValueKind, ScryptoEncoder};
 use crate::*;
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
-use sbor::rust::fmt::Debug;
+use sbor::rust::prelude::*;
 use sbor::*;
 use utils::copy_u8_array;
 
