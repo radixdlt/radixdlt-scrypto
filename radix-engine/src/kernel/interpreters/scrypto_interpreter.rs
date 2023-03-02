@@ -377,7 +377,7 @@ impl Executor for ScryptoExecutor {
 
                     let export_name = validate_input(
                         &schema,
-                        &self.fn_identifier.blueprint_name,
+                        &self.fn_identifier.ident,
                         self.receiver.is_some(),
                         &args,
                     )?;
@@ -423,12 +423,9 @@ impl Executor for ScryptoExecutor {
                         instance.invoke_export(&export_name, input, &mut runtime)?
                     };
 
-                    let output =
-                        validate_output(&schema, &self.fn_identifier.blueprint_name, output)?;
-
                     api.update_wasm_memory_usage(instance.consumed_memory()?)?;
 
-                    output
+                    validate_output(&schema, &self.fn_identifier.ident, output)?
                 }
             };
 
