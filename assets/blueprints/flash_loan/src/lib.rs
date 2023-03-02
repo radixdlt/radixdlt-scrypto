@@ -7,6 +7,8 @@ pub struct LoanDue {
 
 #[blueprint]
 mod basic_flash_loan {
+    use super::LoanDue;
+
     struct BasicFlashLoan {
         loan_vault: Vault,
         auth_vault: Vault,

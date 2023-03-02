@@ -24,7 +24,7 @@ pub enum BuildError {
 
     CargoFailure(ExitStatus),
 
-    AbiExtractionError(ExtractAbiError),
+    AbiExtractionError(ExtractSchemaError),
 
     AbiEncodeError(sbor::EncodeError),
 

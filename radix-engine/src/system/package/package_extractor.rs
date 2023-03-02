@@ -8,20 +8,19 @@ use crate::types::*;
 use crate::wasm::*;
 
 #[derive(Debug)]
-pub enum ExtractAbiError {
+pub enum ExtractSchemaError {
     InvalidWasm(PrepareError),
-    FailedToExportBlueprintAbi(InvokeError<WasmRuntimeError>),
-    AbiDecodeError(DecodeError),
-    InvalidBlueprintAbi,
+    RunSchemaGenError(InvokeError<WasmRuntimeError>),
+    DecodeError(DecodeError),
 }
 
-pub fn extract_schema(code: &[u8]) -> Result<PackageSchema, ExtractAbiError> {
+pub fn extract_schema(code: &[u8]) -> Result<PackageSchema, ExtractSchemaError> {
     let function_exports = WasmModule::init(code)
         .and_then(WasmModule::to_bytes)
-        .map_err(ExtractAbiError::InvalidWasm)?
+        .map_err(ExtractSchemaError::InvalidWasm)?
         .1
         .into_iter()
-        .filter(|s| s.ends_with("_abi"));
+        .filter(|s| s.ends_with("_schema"));
 
     let wasm_engine = DefaultWasmEngine::default();
     let wasm_instrumenter = WasmInstrumenter::default();
@@ -37,11 +36,11 @@ pub fn extract_schema(code: &[u8]) -> Result<PackageSchema, ExtractAbiError> {
     for function_export in function_exports {
         let rtn = instance
             .invoke_export(&function_export, vec![], &mut runtime)
-            .map_err(ExtractAbiError::FailedToExportBlueprintAbi)?;
+            .map_err(ExtractSchemaError::RunSchemaGenError)?;
 
-        let name = function_export.replace("_abi", "").to_string();
+        let name = function_export.replace("_schema", "").to_string();
         let schema: BlueprintSchema =
-            scrypto_decode(rtn.as_slice()).map_err(ExtractAbiError::AbiDecodeError)?;
+            scrypto_decode(rtn.as_slice()).map_err(ExtractSchemaError::DecodeError)?;
 
         blueprints.insert(name, schema);
     }
