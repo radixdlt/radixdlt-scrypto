@@ -1,8 +1,8 @@
-use radix_engine_interface::api::substate_api::LockFlags;
+use scrypto::api::substate_api::LockFlags;
+use scrypto::api::ClientComponentApi;
+use scrypto::api::ClientSubstateApi;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
-use scrypto::radix_engine_interface::api::ClientComponentApi;
-use scrypto::radix_engine_interface::api::ClientSubstateApi;
 
 #[blueprint]
 mod data_access {

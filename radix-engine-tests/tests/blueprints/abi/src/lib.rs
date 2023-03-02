@@ -1,5 +1,5 @@
-use scrypto::abi::{BlueprintAbi, Fields, Fn, Type};
 use scrypto::prelude::*;
+use scrypto::schema::*;
 
 #[blueprint]
 mod abi_component {
@@ -24,12 +24,12 @@ mod abi_component {
 
 #[no_mangle]
 pub extern "C" fn AbiComponent2_invalid_output(_input: u64) -> Slice {
-    ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&()).unwrap())
+    ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&()).unwrap())
 }
 
 #[no_mangle]
 pub extern "C" fn AbiComponent2_valid_output(_input: u64) -> Slice {
-    ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&()).unwrap())
+    ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&()).unwrap())
 }
 
 #[no_mangle]
@@ -208,7 +208,7 @@ pub extern "C" fn AbiComponent2_abi() -> Slice {
         ],
     };
 
-    ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&abi).unwrap())
+    ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&abi).unwrap())
 }
 
 #[blueprint]

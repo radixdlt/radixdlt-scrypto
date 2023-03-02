@@ -1,5 +1,5 @@
-use radix_engine_interface::api::ClientComponentApi;
-use radix_engine_interface::blueprints::epoch_manager::*;
+use scrypto::api::ClientComponentApi;
+use scrypto::blueprints::epoch_manager::*;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 

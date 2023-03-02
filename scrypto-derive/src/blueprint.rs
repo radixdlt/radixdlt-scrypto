@@ -52,9 +52,18 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             .iter()
             .map(|x| quote! { #(#x) }.to_string())
             .any(|x| x.contains("scrypto :: prelude :: *"));
-
         if !contains_prelude_import {
             let item: ItemUse = parse_quote! { use scrypto::prelude::*; };
+            use_statements.push(item);
+        }
+
+        // TODO: remove
+        let contains_super_import = use_statements
+            .iter()
+            .map(|x| quote! { #(#x) }.to_string())
+            .any(|x| x.contains("super :: *"));
+        if !contains_super_import {
+            let item: ItemUse = parse_quote! { use super::*; };
             use_statements.push(item);
         }
 
@@ -607,6 +616,7 @@ mod tests {
 
                 pub mod test {
                     use scrypto::prelude::*;
+                    use super::*;
 
                     #[derive(::scrypto::prelude::ScryptoSbor)]
                     pub struct Test {

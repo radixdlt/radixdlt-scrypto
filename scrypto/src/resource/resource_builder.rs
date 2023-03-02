@@ -81,13 +81,13 @@ impl ResourceBuilder {
 ///     .mint_initial_supply(5);
 /// ```
 #[must_use]
-pub struct InProgressResourceBuilder<T: ResourceType, A: ConfiguredAuth> {
+pub struct InProgressResourceBuilder<T: AnyResourceType, A: ConfiguredAuth> {
     resource_type: T,
     metadata: BTreeMap<String, String>,
     auth: A,
 }
 
-impl<T: ResourceType> Default for InProgressResourceBuilder<T, NoAuth> {
+impl<T: AnyResourceType> Default for InProgressResourceBuilder<T, NoAuth> {
     fn default() -> Self {
         Self {
             resource_type: T::default(),
@@ -124,12 +124,12 @@ impl ConfiguredAuth for OwnerBadgeAuth {
 }
 
 // Various types for ResourceType
-pub trait ResourceType: Default {}
+pub trait AnyResourceType: Default {}
 
 pub struct FungibleResourceType {
     divisibility: u8,
 }
-impl ResourceType for FungibleResourceType {}
+impl AnyResourceType for FungibleResourceType {}
 impl Default for FungibleResourceType {
     fn default() -> Self {
         Self {
@@ -139,7 +139,7 @@ impl Default for FungibleResourceType {
 }
 
 pub struct NonFungibleResourceType<T: IsNonFungibleLocalId>(PhantomData<T>);
-impl<T: IsNonFungibleLocalId> ResourceType for NonFungibleResourceType<T> {}
+impl<T: IsNonFungibleLocalId> AnyResourceType for NonFungibleResourceType<T> {}
 impl<T: IsNonFungibleLocalId> Default for NonFungibleResourceType<T> {
     fn default() -> Self {
         Self(PhantomData)
@@ -714,7 +714,7 @@ fn map_entries<T: IntoIterator<Item = (Y, V)>, V: NonFungibleData, Y: IsNonFungi
         .collect()
 }
 
-impl<T: ResourceType, A: ConfiguredAuth> private::CanAddMetadata
+impl<T: AnyResourceType, A: ConfiguredAuth> private::CanAddMetadata
     for InProgressResourceBuilder<T, A>
 {
     type OutputBuilder = Self;
@@ -725,7 +725,7 @@ impl<T: ResourceType, A: ConfiguredAuth> private::CanAddMetadata
     }
 }
 
-impl<T: ResourceType> private::CanAddAuth for InProgressResourceBuilder<T, NoAuth> {
+impl<T: AnyResourceType> private::CanAddAuth for InProgressResourceBuilder<T, NoAuth> {
     type OutputBuilder = InProgressResourceBuilder<T, AccessRuleAuth>;
 
     fn add_auth(
@@ -742,7 +742,7 @@ impl<T: ResourceType> private::CanAddAuth for InProgressResourceBuilder<T, NoAut
     }
 }
 
-impl<T: ResourceType> private::CanAddAuth for InProgressResourceBuilder<T, AccessRuleAuth> {
+impl<T: AnyResourceType> private::CanAddAuth for InProgressResourceBuilder<T, AccessRuleAuth> {
     type OutputBuilder = Self;
 
     fn add_auth(
@@ -756,7 +756,7 @@ impl<T: ResourceType> private::CanAddAuth for InProgressResourceBuilder<T, Acces
     }
 }
 
-impl<T: ResourceType> private::CanAddOwner for InProgressResourceBuilder<T, NoAuth> {
+impl<T: AnyResourceType> private::CanAddOwner for InProgressResourceBuilder<T, NoAuth> {
     type OutputBuilder = InProgressResourceBuilder<T, OwnerBadgeAuth>;
 
     fn set_owner(self, owner_badge: NonFungibleGlobalId) -> Self::OutputBuilder {

@@ -1,6 +1,6 @@
+use scrypto::api::ClientComponentApi;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
-use scrypto::radix_engine_interface::api::ClientComponentApi;
 
 #[blueprint]
 mod reentrant_component {

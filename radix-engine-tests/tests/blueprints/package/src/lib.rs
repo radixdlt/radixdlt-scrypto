@@ -41,7 +41,7 @@ pub extern "C" fn LargeReturnSize_abi() -> Slice {
             export_name: "LargeReturnSize_f".to_string(),
         }],
     };
-    ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&abi).unwrap())
+    ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&abi).unwrap())
 }
 
 #[no_mangle]
@@ -66,7 +66,7 @@ pub extern "C" fn MaxReturnSize_abi() -> Slice {
         }],
     };
 
-    ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&abi).unwrap())
+    ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&abi).unwrap())
 }
 
 #[no_mangle]
@@ -91,5 +91,5 @@ pub extern "C" fn ZeroReturnSize_abi() -> Slice {
         }],
     };
 
-    ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&abi).unwrap())
+    ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&abi).unwrap())
 }

@@ -15,7 +15,7 @@ use sbor::rust::vec::Vec;
 
 /// Represents a published package.
 #[derive(Debug)]
-pub struct BorrowedPackage(pub(crate) PackageAddress);
+pub struct BorrowedPackage(pub PackageAddress);
 
 impl BorrowedPackage {
     /// Invokes a function on this package.

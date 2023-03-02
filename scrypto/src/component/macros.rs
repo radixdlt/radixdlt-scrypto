@@ -7,7 +7,7 @@ use sbor::rust::collections::*;
 #[macro_export]
 macro_rules! borrow_package {
     ($address:expr) => {
-        $crate::component::Package($address.clone())
+        $crate::component::BorrowedPackage($address.clone())
     };
 }
 
