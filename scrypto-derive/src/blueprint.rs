@@ -62,7 +62,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     };
 
     let output_original_code = quote! {
-        #[derive(::scrypto::ScryptoSbor)]
+        #[derive(::scrypto::prelude::ScryptoSbor)]
         pub struct #bp_ident #bp_fields #bp_semi_token
 
         impl #bp_ident {
@@ -189,7 +189,7 @@ fn generate_method_input_structs(bp_ident: &Ident, items: &[ImplItem]) -> Vec<It
 
             let method_input_struct: ItemStruct = parse_quote! {
                 #[allow(non_camel_case_types)]
-                #[derive(::scrypto::ScryptoSbor)]
+                #[derive(::scrypto::prelude::ScryptoSbor)]
                 pub struct #input_struct_ident {
                     #(#args),*
                 }
@@ -260,7 +260,7 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Token
                 if let Some(stmt) = get_state {
                     trace!("Generated stmt: {}", quote! { #stmt });
                     stmts.push(parse_quote! {
-                        let component_id: radix_engine_interface::api::types::RENodeId = ::scrypto::data::scrypto::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(component_id)).unwrap();
+                        let component_id: ::scrypto::prelude::RENodeId = ::scrypto::data::scrypto::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(component_id)).unwrap();
                     });
                     stmts.push(parse_quote! {
                         let mut component_data = ::scrypto::runtime::ComponentStatePointer::new(component_id);
@@ -405,7 +405,7 @@ fn generate_stubs(
 
     let output = quote! {
         #[allow(non_camel_case_types)]
-        #[derive(::scrypto::ScryptoSbor)]
+        #[derive(::scrypto::prelude::ScryptoSbor)]
         pub struct #component_ident {
             pub component: ::scrypto::component::OwnedComponent,
         }
@@ -608,7 +608,7 @@ mod tests {
                 pub mod test {
                     use scrypto::prelude::*;
 
-                    #[derive(::scrypto::ScryptoSbor)]
+                    #[derive(::scrypto::prelude::ScryptoSbor)]
                     pub struct Test {
                         a: u32,
                         admin: ResourceManager
@@ -636,11 +636,11 @@ mod tests {
                     }
 
                     #[allow(non_camel_case_types)]
-                    #[derive(::scrypto::ScryptoSbor)]
+                    #[derive(::scrypto::prelude::ScryptoSbor)]
                     pub struct Test_x_Input { arg0 : u32 }
 
                     #[allow(non_camel_case_types)]
-                    #[derive(::scrypto::ScryptoSbor)]
+                    #[derive(::scrypto::prelude::ScryptoSbor)]
                     pub struct Test_y_Input { arg0 : u32 }
 
                     #[no_mangle]
@@ -651,7 +651,7 @@ mod tests {
                         ::scrypto::set_up_panic_hook();
 
                         let input: Test_x_Input = ::scrypto::data::scrypto::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(args)).unwrap();
-                        let component_id: radix_engine_interface::api::types::RENodeId = ::scrypto::data::scrypto::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(component_id)).unwrap();
+                        let component_id: ::scrypto::prelude::RENodeId = ::scrypto::data::scrypto::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(component_id)).unwrap();
                         let mut component_data = ::scrypto::runtime::ComponentStatePointer::new(component_id);
                         let state: DataRef<Test> = component_data.get();
                         let return_data = Test::x(state.deref(), input.arg0);
@@ -708,7 +708,7 @@ mod tests {
                     }
 
                     #[allow(non_camel_case_types)]
-                    #[derive(::scrypto::ScryptoSbor)]
+                    #[derive(::scrypto::prelude::ScryptoSbor)]
                     pub struct TestComponent {
                         pub component: ::scrypto::component::OwnedComponent,
                     }

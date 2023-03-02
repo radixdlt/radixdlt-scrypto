@@ -1,4 +1,3 @@
-use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto::prelude::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;

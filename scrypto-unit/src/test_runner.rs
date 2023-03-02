@@ -46,7 +46,6 @@ use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
 use scrypto::component::Mutability;
 use scrypto::component::Mutability::*;
-use scrypto::NonFungibleData;
 use transaction::builder::ManifestBuilder;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::{AuthZoneParams, PreviewIntent, TestTransaction};
@@ -866,9 +865,9 @@ impl TestRunner {
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
 
         let mut entries = BTreeMap::new();
-        entries.insert(NonFungibleLocalId::integer(1), SampleNonFungibleData {});
-        entries.insert(NonFungibleLocalId::integer(2), SampleNonFungibleData {});
-        entries.insert(NonFungibleLocalId::integer(3), SampleNonFungibleData {});
+        entries.insert(NonFungibleLocalId::integer(1), EmptyNonFungibleData {});
+        entries.insert(NonFungibleLocalId::integer(2), EmptyNonFungibleData {});
+        entries.insert(NonFungibleLocalId::integer(3), EmptyNonFungibleData {});
 
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
@@ -1195,5 +1194,22 @@ pub fn generate_single_function_abi(_blueprint_name: &str, _function_name: &str)
     }
 }
 
-#[derive(NonFungibleData)]
-struct SampleNonFungibleData {}
+#[derive(ScryptoSbor)]
+struct EmptyNonFungibleData {}
+
+impl NonFungibleData for EmptyNonFungibleData {
+    fn decode(_immutable_data: &[u8], _mutable_data: &[u8]) -> Result<Self, DecodeError>
+    where
+        Self: Sized,
+    {
+        Ok(Self {})
+    }
+
+    fn immutable_data(&self) -> Result<Vec<u8>, EncodeError> {
+        scrypto_encode(self)
+    }
+
+    fn mutable_data(&self) -> Result<Vec<u8>, EncodeError> {
+        scrypto_encode(self)
+    }
+}

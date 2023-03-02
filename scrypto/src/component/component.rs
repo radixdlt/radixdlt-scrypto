@@ -1,5 +1,4 @@
 use crate::engine::scrypto_env::ScryptoEnv;
-use crate::*;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesCreateInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
 };
