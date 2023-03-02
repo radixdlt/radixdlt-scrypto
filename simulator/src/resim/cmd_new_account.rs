@@ -94,6 +94,19 @@ impl NewAccount {
             )
             .map_err(Error::IOError)?;
 
+            let nf_global_id = NewSimpleBadge {
+                symbol: None,
+                name: Some("Owner badge".to_string()),
+                description: None,
+                url: None,
+                icon_url: None,
+                network: None,
+                manifest: None,
+                signing_keys: None,
+                trace: false,
+            }
+            .run(out)?;
+
             let mut configs = get_configs()?;
             if configs.default_account.is_none()
                 || configs.default_private_key.is_none()
@@ -101,20 +114,6 @@ impl NewAccount {
             {
                 configs.default_account = Some(account);
                 configs.default_private_key = Some(hex::encode(private_key.to_bytes()));
-                set_configs(&configs)?;
-
-                let nf_global_id = NewSimpleBadge {
-                    symbol: None,
-                    name: Some("Owner badge".to_string()),
-                    description: None,
-                    url: None,
-                    icon_url: None,
-                    network: None,
-                    manifest: None,
-                    signing_keys: None,
-                    trace: false,
-                }
-                .run(out)?;
                 configs.default_owner_badge = Some(nf_global_id.unwrap());
                 set_configs(&configs)?;
 
