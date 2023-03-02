@@ -3,8 +3,9 @@ use super::state_machine::*;
 use crate::errors::{ApplicationError, InterpreterError, RuntimeError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
-use crate::system::node::{RENodeInit, RENodeModuleInit};
-use crate::system::node_modules::access_rules::MethodAccessRulesChainSubstate;
+use crate::system::node::RENodeInit;
+use native_sdk::access_rules::AccessRulesObject;
+use native_sdk::metadata::Metadata;
 use native_sdk::resource::{SysBucket, Vault};
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::substate_api::LockFlags;
@@ -129,7 +130,7 @@ impl AccessControllerNativePackage {
     {
         match export_name {
             ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
                     return Err(RuntimeError::InterpreterError(
@@ -139,7 +140,7 @@ impl AccessControllerNativePackage {
                 Self::create_global(input, api)
             }
             ACCESS_CONTROLLER_CREATE_PROOF_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -147,7 +148,7 @@ impl AccessControllerNativePackage {
                 Self::create_proof(receiver, input, api)
             }
             ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -155,7 +156,7 @@ impl AccessControllerNativePackage {
                 Self::initiate_recovery_as_primary(receiver, input, api)
             }
             ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -163,7 +164,7 @@ impl AccessControllerNativePackage {
                 Self::initiate_recovery_as_recovery(receiver, input, api)
             }
             ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -171,7 +172,7 @@ impl AccessControllerNativePackage {
                 Self::quick_confirm_primary_role_recovery_proposal(receiver, input, api)
             }
             ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -179,7 +180,7 @@ impl AccessControllerNativePackage {
                 Self::quick_confirm_recovery_role_recovery_proposal(receiver, input, api)
             }
             ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -187,7 +188,7 @@ impl AccessControllerNativePackage {
                 Self::timed_confirm_recovery(receiver, input, api)
             }
             ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -195,7 +196,7 @@ impl AccessControllerNativePackage {
                 Self::cancel_primary_role_recovery_proposal(receiver, input, api)
             }
             ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -203,7 +204,7 @@ impl AccessControllerNativePackage {
                 Self::cancel_recovery_role_recovery_proposal(receiver, input, api)
             }
             ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -211,7 +212,7 @@ impl AccessControllerNativePackage {
                 Self::lock_primary_role(receiver, input, api)
             }
             ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -219,7 +220,7 @@ impl AccessControllerNativePackage {
                 Self::unlock_primary_role(receiver, input, api)
             }
             ACCESS_CONTROLLER_STOP_TIMED_RECOVERY => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -255,14 +256,6 @@ impl AccessControllerNativePackage {
             vault
         };
 
-        let mut node_modules = BTreeMap::new();
-        node_modules.insert(
-            NodeModuleId::AccessRules,
-            RENodeModuleInit::ObjectAccessRulesChain(MethodAccessRulesChainSubstate {
-                access_rules_chain: [access_rules_from_rule_set(input.rule_set)].into(),
-            }),
-        );
-
         // Constructing the Access Controller RENode and Substates
         let access_controller = RENodeInit::AccessController(AccessControllerSubstate::new(
             vault.0,
@@ -271,10 +264,21 @@ impl AccessControllerNativePackage {
 
         // Allocating an RENodeId and creating the access controller RENode
         let node_id = api.kernel_allocate_node_id(RENodeType::AccessController)?;
-        api.kernel_create_node(node_id, access_controller, node_modules)?;
+        api.kernel_create_node(node_id, access_controller, BTreeMap::new())?;
+
+        let access_rules = access_rules_from_rule_set(input.rule_set);
+        let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
+        let metadata = Metadata::sys_new(api)?;
 
         // Creating a global component address for the access controller RENode
-        let address = api.globalize(node_id)?;
+        let address = api.globalize(
+            node_id,
+            btreemap!(
+                NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
+                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
+            ),
+        )?;
+
         Ok(IndexedScryptoValue::from_typed(&address))
     }
 
@@ -792,7 +796,6 @@ where
             NodeModuleId::AccessRules,
             ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
             scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
-                index: 0,
                 name: group_name.into(),
                 rule: access_rule.clone(),
             })
@@ -807,7 +810,6 @@ where
                     NodeModuleId::AccessRules,
                     ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                     scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                        index: 0,
                         key: method_key.clone(),
                         rule: AccessRuleEntry::AccessRule(access_rule.clone()),
                     })

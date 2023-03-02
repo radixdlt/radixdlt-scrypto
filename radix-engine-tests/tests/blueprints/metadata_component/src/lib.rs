@@ -7,8 +7,9 @@ mod metadata_component {
     impl MetadataComponent {
         pub fn new() -> ComponentAddress {
             let component = MetadataComponent {}.instantiate();
-            component.set_metadata("key", "value");
-            component.globalize()
+            let component_address = component.globalize();
+            borrow_component!(component_address).set_metadata("key", "value");
+            component_address
         }
     }
 }

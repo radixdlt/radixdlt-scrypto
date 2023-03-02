@@ -20,14 +20,12 @@ mod royalty_test {
         pub fn create_component_with_royalty_enabled() -> ComponentAddress {
             let local_component = Self {}.instantiate();
 
-            local_component.set_royalty_config(
-                RoyaltyConfigBuilder::new()
-                    .add_rule("paid_method", 1)
-                    .add_rule("paid_method_panic", 1)
-                    .default(0),
-            );
+            let config = RoyaltyConfigBuilder::new()
+                .add_rule("paid_method", 1)
+                .add_rule("paid_method_panic", 1)
+                .default(0);
 
-            local_component.globalize()
+            local_component.globalize_with_royalty_config(config)
         }
 
         pub fn enable_royalty_for_this_package() {

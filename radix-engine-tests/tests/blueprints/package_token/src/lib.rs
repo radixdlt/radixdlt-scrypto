@@ -20,9 +20,8 @@ mod factory {
                     LOCKED,
                 )
                 .default(rule!(deny_all), LOCKED);
-            component.add_access_check(access_rules);
 
-            component.globalize()
+            component.globalize_with_access_rules(access_rules)
         }
 
         pub fn create() -> ComponentAddress {
@@ -38,9 +37,8 @@ mod factory {
                     LOCKED,
                 )
                 .default(rule!(deny_all), LOCKED);
-            component.add_access_check(access_rules);
 
-            let component_address = component.globalize();
+            let component_address = component.globalize_with_access_rules(access_rules);
             let component_ref: FactoryGlobalComponentRef = component_address.into();
             component_ref.set_address(component_address);
 

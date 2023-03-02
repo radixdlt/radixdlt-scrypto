@@ -196,7 +196,6 @@ impl Parser {
             },
             TokenKind::SetMethodAccessRule => Instruction::SetMethodAccessRule {
                 entity_address: self.parse_value()?,
-                index: self.parse_value()?,
                 key: self.parse_value()?,
                 rule: self.parse_value()?,
             },

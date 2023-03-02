@@ -19,20 +19,6 @@ mod secret {
             Self { secret }.instantiate()
         }
 
-        pub fn try_to_read_local_component_with_auth(
-            some_non_fungible: NonFungibleGlobalId,
-        ) -> ComponentAddress {
-            let local_component = Self::new(12345);
-            local_component.add_access_check(
-                AccessRules::new().default(rule!(require(some_non_fungible)), rule!(deny_all)),
-            );
-
-            let rtn = local_component.get_secret();
-            assert_eq!(12345, rtn);
-
-            local_component.globalize()
-        }
-
         pub fn read_local_component() -> ComponentAddress {
             let local_component = Self::new(12345);
 

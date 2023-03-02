@@ -2,9 +2,9 @@ use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node::RENodeInit;
-use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::access_rules::MethodAccessRulesChainSubstate;
 use crate::types::*;
+use native_sdk::access_rules::AccessRulesObject;
+use native_sdk::metadata::Metadata;
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
@@ -18,7 +18,6 @@ use radix_engine_interface::blueprints::resource::AccessRules;
 use radix_engine_interface::blueprints::resource::MethodKey;
 
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
-use crate::system::node_modules::metadata::MetadataSubstate;
 use native_sdk::resource::{SysBucket, Vault};
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::data::ScryptoValue;
@@ -59,7 +58,7 @@ impl AccountNativePackage {
     {
         match export_name {
             ACCOUNT_CREATE_GLOBAL_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
                     return Err(RuntimeError::InterpreterError(
@@ -69,7 +68,7 @@ impl AccountNativePackage {
                 Self::create_global(input, api)
             }
             ACCOUNT_CREATE_LOCAL_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
                     return Err(RuntimeError::InterpreterError(
@@ -79,7 +78,7 @@ impl AccountNativePackage {
                 Self::create_local(input, api)
             }
             ACCOUNT_LOCK_FEE_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -87,7 +86,7 @@ impl AccountNativePackage {
                 Self::lock_fee(receiver, input, api)
             }
             ACCOUNT_LOCK_CONTINGENT_FEE_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -95,7 +94,7 @@ impl AccountNativePackage {
                 Self::lock_contingent_fee(receiver, input, api)
             }
             ACCOUNT_DEPOSIT_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -103,7 +102,7 @@ impl AccountNativePackage {
                 Self::deposit(receiver, input, api)
             }
             ACCOUNT_DEPOSIT_BATCH_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -111,7 +110,7 @@ impl AccountNativePackage {
                 Self::deposit_batch(receiver, input, api)
             }
             ACCOUNT_WITHDRAW_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -119,7 +118,7 @@ impl AccountNativePackage {
                 Self::withdraw(receiver, input, api)
             }
             ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -127,7 +126,7 @@ impl AccountNativePackage {
                 Self::withdraw_non_fungibles(receiver, input, api)
             }
             ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -135,7 +134,7 @@ impl AccountNativePackage {
                 Self::lock_fee_and_withdraw(receiver, input, api)
             }
             ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -143,7 +142,7 @@ impl AccountNativePackage {
                 Self::lock_fee_and_withdraw_non_fungibles(receiver, input, api)
             }
             ACCOUNT_CREATE_PROOF_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -151,7 +150,7 @@ impl AccountNativePackage {
                 Self::create_proof(receiver, input, api)
             }
             ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -159,7 +158,7 @@ impl AccountNativePackage {
                 Self::create_proof_by_amount(receiver, input, api)
             }
             ACCOUNT_CREATE_PROOF_BY_IDS_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -192,37 +191,30 @@ impl AccountNativePackage {
             node_id
         };
 
-        // Creating [`AccessRules`] from the passed withdraw access rule.
-        let access_rules = access_rules_from_withdraw_rule(input.withdraw_rule);
-
         // Creating the Account substates and RENode
         let node_id = {
-            let mut node_modules = BTreeMap::new();
-            node_modules.insert(
-                NodeModuleId::Metadata,
-                RENodeModuleInit::Metadata(MetadataSubstate {
-                    metadata: BTreeMap::new(),
-                }),
-            );
-            let access_rules_substate = MethodAccessRulesChainSubstate {
-                access_rules_chain: [access_rules].into(),
-            };
-            node_modules.insert(
-                NodeModuleId::AccessRules,
-                RENodeModuleInit::ObjectAccessRulesChain(access_rules_substate),
-            );
-
             let account_substate = AccountSubstate {
                 vaults: Own::KeyValueStore(kv_store_id.into()),
             };
 
             let node_id = api.kernel_allocate_node_id(RENodeType::Account)?;
             let node = RENodeInit::Account(account_substate);
-            api.kernel_create_node(node_id, node, node_modules)?;
+            api.kernel_create_node(node_id, node, BTreeMap::new())?;
             node_id
         };
 
-        let address = api.globalize(node_id)?;
+        // Creating [`AccessRules`] from the passed withdraw access rule.
+        let access_rules = access_rules_from_withdraw_rule(input.withdraw_rule);
+        let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
+        let metadata = Metadata::sys_new(api)?;
+
+        let address = api.globalize(
+            node_id,
+            btreemap!(
+                NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
+                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
+            ),
+        )?;
 
         Ok(IndexedScryptoValue::from_typed(&address))
     }
@@ -238,7 +230,7 @@ impl AccountNativePackage {
             + ClientNodeApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
-        let input: AccountCreateLocalInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+        let _input: AccountCreateLocalInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         // Creating the key-value-store where the vaults will be held. This is a KVStore of
@@ -250,32 +242,15 @@ impl AccountNativePackage {
             node_id
         };
 
-        // Creating [`AccessRules`] from the passed withdraw access rule.
-        let access_rules = access_rules_from_withdraw_rule(input.withdraw_rule);
-
         // Creating the Account substates and RENode
         let node_id = {
-            let mut node_modules = BTreeMap::new();
-            node_modules.insert(
-                NodeModuleId::Metadata,
-                RENodeModuleInit::Metadata(MetadataSubstate {
-                    metadata: BTreeMap::new(),
-                }),
-            );
-            let access_rules_substate = MethodAccessRulesChainSubstate {
-                access_rules_chain: [access_rules].into(),
-            };
-            node_modules.insert(
-                NodeModuleId::AccessRules,
-                RENodeModuleInit::ObjectAccessRulesChain(access_rules_substate),
-            );
             let account_substate = AccountSubstate {
                 vaults: Own::KeyValueStore(kv_store_id.into()),
             };
 
             let node_id = api.kernel_allocate_node_id(RENodeType::Account)?;
             let node = RENodeInit::Account(account_substate);
-            api.kernel_create_node(node_id, node, node_modules)?;
+            api.kernel_create_node(node_id, node, BTreeMap::new())?;
             node_id
         };
 

@@ -202,6 +202,10 @@ pub enum ScryptoFnResolvingError {
 pub enum SystemError {
     InvalidLockFlags,
     CannotGlobalize,
+    InvalidModule,
+    InvalidAccessRules(DecodeError),
+    InvalidMetadata(DecodeError),
+    InvalidRoyaltyConfig(DecodeError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

@@ -14,8 +14,7 @@ mod cross_component {
                 auth_vault: None,
             }
             .instantiate();
-            component.add_access_check(access_rules);
-            component.globalize()
+            component.globalize_with_access_rules(access_rules)
         }
 
         pub fn create_component() -> ComponentAddress {

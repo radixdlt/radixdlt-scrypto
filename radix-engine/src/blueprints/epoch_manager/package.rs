@@ -9,16 +9,16 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::epoch_manager::*;
-use radix_engine_interface::blueprints::resource::{require, AccessRule, FunctionKey};
+use radix_engine_interface::blueprints::resource::{require, AccessRule, FnKey};
 use radix_engine_interface::data::ScryptoValue;
 
 pub struct EpochManagerNativePackage;
 
 impl EpochManagerNativePackage {
-    pub fn package_access_rules() -> BTreeMap<FunctionKey, AccessRule> {
+    pub fn package_access_rules() -> BTreeMap<FnKey, AccessRule> {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(
-            FunctionKey::new(
+            FnKey::new(
                 EPOCH_MANAGER_BLUEPRINT.to_string(),
                 EPOCH_MANAGER_CREATE_IDENT.to_string(),
             ),
@@ -38,7 +38,7 @@ impl EpochManagerNativePackage {
     {
         match export_name {
             EPOCH_MANAGER_CREATE_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
                     return Err(RuntimeError::InterpreterError(
@@ -48,7 +48,7 @@ impl EpochManagerNativePackage {
                 EpochManagerBlueprint::create(input, api)
             }
             EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -56,7 +56,7 @@ impl EpochManagerNativePackage {
                 EpochManagerBlueprint::get_current_epoch(receiver, input, api)
             }
             EPOCH_MANAGER_SET_EPOCH_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -64,7 +64,7 @@ impl EpochManagerNativePackage {
                 EpochManagerBlueprint::set_epoch(receiver, input, api)
             }
             EPOCH_MANAGER_NEXT_ROUND_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -72,7 +72,7 @@ impl EpochManagerNativePackage {
                 EpochManagerBlueprint::next_round(receiver, input, api)
             }
             EPOCH_MANAGER_CREATE_VALIDATOR_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -80,7 +80,7 @@ impl EpochManagerNativePackage {
                 EpochManagerBlueprint::create_validator(receiver, input, api)
             }
             EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -88,7 +88,7 @@ impl EpochManagerNativePackage {
                 EpochManagerBlueprint::update_validator(receiver, input, api)
             }
             VALIDATOR_REGISTER_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -96,7 +96,7 @@ impl EpochManagerNativePackage {
                 ValidatorBlueprint::register(receiver, input, api)
             }
             VALIDATOR_UNREGISTER_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -104,7 +104,7 @@ impl EpochManagerNativePackage {
                 ValidatorBlueprint::unregister(receiver, input, api)
             }
             VALIDATOR_STAKE_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -112,7 +112,7 @@ impl EpochManagerNativePackage {
                 ValidatorBlueprint::stake(receiver, input, api)
             }
             VALIDATOR_UNSTAKE_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -120,7 +120,7 @@ impl EpochManagerNativePackage {
                 ValidatorBlueprint::unstake(receiver, input, api)
             }
             VALIDATOR_CLAIM_XRD_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -128,7 +128,7 @@ impl EpochManagerNativePackage {
                 ValidatorBlueprint::claim_xrd(receiver, input, api)
             }
             VALIDATOR_UPDATE_KEY_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
@@ -136,7 +136,7 @@ impl EpochManagerNativePackage {
                 ValidatorBlueprint::update_key(receiver, input, api)
             }
             VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),

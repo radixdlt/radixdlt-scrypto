@@ -162,9 +162,7 @@ pub const ACCOUNT_CREATE_LOCAL_IDENT: &str = "create_local";
     ManifestDecode,
     LegacyDescribe,
 )]
-pub struct AccountCreateLocalInput {
-    pub withdraw_rule: AccessRule,
-}
+pub struct AccountCreateLocalInput {}
 
 pub type AccountCreateLocalOutput = Own;
 

@@ -4,10 +4,9 @@ use crate::kernel::kernel_api::KernelNodeApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::system::node::RENodeInit;
-use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::access_rules::MethodAccessRulesChainSubstate;
-use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::types::*;
+use native_sdk::access_rules::AccessRulesObject;
+use native_sdk::metadata::Metadata;
 use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
@@ -29,7 +28,7 @@ impl IdentityNativePackage {
     {
         match export_name {
             IDENTITY_CREATE_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
                     return Err(RuntimeError::InterpreterError(
@@ -52,8 +51,16 @@ impl IdentityNativePackage {
         let input: IdentityCreateInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let node_id = Identity::create(input.access_rule, api)?;
-        let address = api.globalize(node_id)?;
+        let (node_id, access_rules) = Identity::create(input.access_rule, api)?;
+        let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
+        let metadata = Metadata::sys_new(api)?;
+        let address = api.globalize(
+            node_id,
+            btreemap!(
+                NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
+                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
+            ),
+        )?;
         Ok(IndexedScryptoValue::from_typed(&address))
     }
 }
@@ -61,7 +68,10 @@ impl IdentityNativePackage {
 pub struct Identity;
 
 impl Identity {
-    pub fn create<Y>(access_rule: AccessRule, api: &mut Y) -> Result<RENodeId, RuntimeError>
+    pub fn create<Y>(
+        access_rule: AccessRule,
+        api: &mut Y,
+    ) -> Result<(RENodeId, AccessRules), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
@@ -79,22 +89,8 @@ impl Identity {
             AccessRule::DenyAll,
         );
 
-        let mut node_modules = BTreeMap::new();
-        node_modules.insert(
-            NodeModuleId::Metadata,
-            RENodeModuleInit::Metadata(MetadataSubstate {
-                metadata: BTreeMap::new(),
-            }),
-        );
-        node_modules.insert(
-            NodeModuleId::AccessRules,
-            RENodeModuleInit::ObjectAccessRulesChain(MethodAccessRulesChainSubstate {
-                access_rules_chain: vec![access_rules],
-            }),
-        );
+        api.kernel_create_node(underlying_node_id, RENodeInit::Identity(), BTreeMap::new())?;
 
-        api.kernel_create_node(underlying_node_id, RENodeInit::Identity(), node_modules)?;
-
-        Ok(underlying_node_id)
+        Ok((underlying_node_id, access_rules))
     }
 }

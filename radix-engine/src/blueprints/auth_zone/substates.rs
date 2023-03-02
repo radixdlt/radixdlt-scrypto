@@ -29,7 +29,7 @@ impl AuthZoneStackSubstate {
     pub fn check_auth<Y: ClientComponentApi<RuntimeError>>(
         &self,
         is_barrier: bool,
-        method_auths: &[MethodAuthorization],
+        method_auth: &MethodAuthorization,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         let mut barrier_crossings_allowed = 1u32;
@@ -37,15 +37,13 @@ impl AuthZoneStackSubstate {
             barrier_crossings_allowed -= 1;
         }
 
-        for method_auth in method_auths {
-            if !AuthVerification::verify_method_auth(
-                barrier_crossings_allowed,
-                method_auth,
-                &self,
-                api,
-            )? {
-                return Ok(false);
-            }
+        if !AuthVerification::verify_method_auth(
+            barrier_crossings_allowed,
+            method_auth,
+            &self,
+            api,
+        )? {
+            return Ok(false);
         }
 
         Ok(true)

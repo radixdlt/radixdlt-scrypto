@@ -16,11 +16,11 @@ use crate::kernel::kernel_api::{
 use crate::system::node_modules::access_rules::{AccessRulesNativePackage, AuthZoneNativePackage};
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
+use crate::system::node_modules::type_info::TypeInfoBlueprint;
 use crate::system::package::Package;
 use crate::system::type_info::PackageCodeTypeSubstate;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
-use radix_engine_interface::api::component::TypeInfoSubstate;
 use radix_engine_interface::api::node_modules::auth::{
     ACCESS_RULES_BLUEPRINT, FUNCTION_ACCESS_RULES_BLUEPRINT,
 };
@@ -53,19 +53,7 @@ impl ExecutableInvocation for MethodInvocation {
         node_refs_to_copy.insert(self.identifier.0);
 
         let (package_address, blueprint_name) = match self.identifier.1 {
-            NodeModuleId::SELF => {
-                let handle = api.kernel_lock_substate(
-                    self.identifier.0,
-                    NodeModuleId::TypeInfo,
-                    SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-                    LockFlags::read_only(),
-                )?;
-                let type_info: &TypeInfoSubstate = api.kernel_get_substate_ref(handle)?;
-                let object_info = (type_info.package_address, type_info.blueprint_name.clone());
-                api.kernel_drop_lock(handle)?;
-
-                object_info
-            }
+            NodeModuleId::SELF => TypeInfoBlueprint::get_type(self.identifier.0, api)?,
             NodeModuleId::Metadata => {
                 // TODO: Check if type has metadata
                 (METADATA_PACKAGE, METADATA_BLUEPRINT.to_string())
@@ -98,95 +86,44 @@ impl ExecutableInvocation for MethodInvocation {
         );
         let actor = Actor::method(fn_identifier.clone(), self.identifier.clone());
 
-        let code_type = if package_address.eq(&PACKAGE_LOADER) {
-            // TODO: Remove this weirdness
-            node_refs_to_copy.insert(RENodeId::GlobalResourceManager(RADIX_TOKEN));
-            PackageCodeTypeSubstate::Precompiled
-        } else {
-            let handle = api.kernel_lock_substate(
-                RENodeId::GlobalPackage(package_address),
-                NodeModuleId::SELF,
-                SubstateOffset::Package(PackageOffset::CodeType),
-                LockFlags::read_only(),
-            )?;
-            let code_type: &PackageCodeTypeSubstate = api.kernel_get_substate_ref(handle)?;
-            let code_type = code_type.clone();
-            api.kernel_drop_lock(handle)?;
-            code_type
-        };
+        // TODO: Remove this weirdness or move to a kernel module if we still want to support this
+        {
+            if package_address.eq(&PACKAGE_LOADER) {
+                node_refs_to_copy.insert(RENodeId::GlobalResourceManager(RADIX_TOKEN));
+            } else {
+                let handle = api.kernel_lock_substate(
+                    RENodeId::GlobalPackage(fn_identifier.package_address),
+                    NodeModuleId::SELF,
+                    SubstateOffset::Package(PackageOffset::CodeType),
+                    LockFlags::read_only(),
+                )?;
+                let code_type: &PackageCodeTypeSubstate = api.kernel_get_substate_ref(handle)?;
+                let code_type = code_type.clone();
+                api.kernel_drop_lock(handle)?;
 
-        let export_name =
-            match code_type {
-                PackageCodeTypeSubstate::Precompiled => {
-                    // TODO: Do we need to check against the abi? Probably not since we should be able to verify this
-                    // TODO: in the native package itself.
-                    self.identifier.2.to_string() // TODO: Clean this up
-                }
-                PackageCodeTypeSubstate::Wasm => {
-                    node_refs_to_copy.insert(RENodeId::GlobalComponent(EPOCH_MANAGER));
-                    node_refs_to_copy.insert(RENodeId::GlobalComponent(CLOCK));
-                    node_refs_to_copy.insert(RENodeId::GlobalResourceManager(RADIX_TOKEN));
-                    node_refs_to_copy.insert(RENodeId::GlobalResourceManager(PACKAGE_TOKEN));
-                    node_refs_to_copy
-                        .insert(RENodeId::GlobalResourceManager(ECDSA_SECP256K1_TOKEN));
-                    node_refs_to_copy.insert(RENodeId::GlobalResourceManager(EDDSA_ED25519_TOKEN));
-
-                    let handle = api.kernel_lock_substate(
-                        RENodeId::GlobalPackage(package_address),
-                        NodeModuleId::SELF,
-                        SubstateOffset::Package(PackageOffset::Info),
-                        LockFlags::read_only(),
-                    )?;
-                    let info: &PackageInfoSubstate = api.kernel_get_substate_ref(handle)?;
-                    for dependent_resource in &info.dependent_resources {
+                match code_type {
+                    PackageCodeTypeSubstate::Wasm => {
+                        node_refs_to_copy.insert(RENodeId::GlobalComponent(EPOCH_MANAGER));
+                        node_refs_to_copy.insert(RENodeId::GlobalComponent(CLOCK));
+                        node_refs_to_copy.insert(RENodeId::GlobalResourceManager(RADIX_TOKEN));
+                        node_refs_to_copy.insert(RENodeId::GlobalResourceManager(PACKAGE_TOKEN));
                         node_refs_to_copy
-                            .insert(RENodeId::GlobalResourceManager(*dependent_resource));
+                            .insert(RENodeId::GlobalResourceManager(ECDSA_SECP256K1_TOKEN));
+                        node_refs_to_copy
+                            .insert(RENodeId::GlobalResourceManager(EDDSA_ED25519_TOKEN));
                     }
-
-                    // Find the abi
-                    let abi = info.blueprint_abi(&blueprint_name).ok_or(
-                        RuntimeError::InterpreterError(InterpreterError::InvalidScryptoInvocation(
-                            fn_identifier.clone(),
-                            ScryptoFnResolvingError::BlueprintNotFound,
-                        )),
-                    )?;
-                    let fn_abi = abi.get_fn_abi(&self.identifier.2).ok_or(
-                        RuntimeError::InterpreterError(InterpreterError::InvalidScryptoInvocation(
-                            fn_identifier.clone(),
-                            ScryptoFnResolvingError::MethodNotFound,
-                        )),
-                    )?;
-
-                    if !fn_abi.mutability.is_some() {
-                        return Err(RuntimeError::InterpreterError(
-                            InterpreterError::InvalidInvocation,
-                        ));
-                    }
-
-                    if !match_schema_with_value(&fn_abi.input, &value) {
-                        return Err(RuntimeError::InterpreterError(
-                            InterpreterError::InvalidScryptoInvocation(
-                                fn_identifier.clone(),
-                                ScryptoFnResolvingError::InvalidInput,
-                            ),
-                        ));
-                    }
-
-                    let export_name = fn_abi.export_name.clone();
-                    api.kernel_drop_lock(handle)?;
-
-                    export_name
+                    _ => {}
                 }
-            };
+            }
+
+            // TODO: remove? currently needed for `Runtime::package_address()` API.
+            node_refs_to_copy.insert(RENodeId::GlobalPackage(package_address));
+        }
 
         let executor = ScryptoExecutor {
-            package_address,
-            export_name,
+            fn_identifier,
             receiver: Some(self.identifier),
         };
-
-        // TODO: remove? currently needed for `Runtime::package_address()` API.
-        node_refs_to_copy.insert(RENodeId::GlobalPackage(package_address));
 
         let resolved = TemporaryResolvedInvocation {
             resolved_actor: actor,
@@ -220,95 +157,44 @@ impl ExecutableInvocation for FunctionInvocation {
 
         let actor = Actor::function(self.fn_identifier.clone());
 
-        let code_type = if self.fn_identifier.package_address.eq(&PACKAGE_LOADER) {
-            // TODO: Remove this weirdness
-            node_refs_to_copy.insert(RENodeId::GlobalResourceManager(RADIX_TOKEN));
-            PackageCodeTypeSubstate::Precompiled
-        } else {
-            let handle = api.kernel_lock_substate(
-                RENodeId::GlobalPackage(self.fn_identifier.package_address),
-                NodeModuleId::SELF,
-                SubstateOffset::Package(PackageOffset::CodeType),
-                LockFlags::read_only(),
-            )?;
-            let code_type: &PackageCodeTypeSubstate = api.kernel_get_substate_ref(handle)?;
-            let code_type = code_type.clone();
-            api.kernel_drop_lock(handle)?;
-            code_type
-        };
-
-        let export_name = match code_type {
-            PackageCodeTypeSubstate::Precompiled => {
-                // TODO: Do we need to check against the abi? Probably not since we should be able to verify this
-                // TODO: in the native package itself.
-                self.fn_identifier.ident.to_string() // TODO: Clean this up
-            }
-            PackageCodeTypeSubstate::Wasm => {
-                node_refs_to_copy.insert(RENodeId::GlobalComponent(EPOCH_MANAGER));
-                node_refs_to_copy.insert(RENodeId::GlobalComponent(CLOCK));
+        // TODO: Remove this weirdness or move to a kernel module if we still want to support this
+        {
+            if self.fn_identifier.package_address.eq(&PACKAGE_LOADER) {
                 node_refs_to_copy.insert(RENodeId::GlobalResourceManager(RADIX_TOKEN));
-                node_refs_to_copy.insert(RENodeId::GlobalResourceManager(PACKAGE_TOKEN));
-                node_refs_to_copy.insert(RENodeId::GlobalResourceManager(ECDSA_SECP256K1_TOKEN));
-                node_refs_to_copy.insert(RENodeId::GlobalResourceManager(EDDSA_ED25519_TOKEN));
-
-                let package_global = RENodeId::GlobalPackage(self.fn_identifier.package_address);
+            } else {
                 let handle = api.kernel_lock_substate(
-                    package_global,
+                    RENodeId::GlobalPackage(self.fn_identifier.package_address),
                     NodeModuleId::SELF,
-                    SubstateOffset::Package(PackageOffset::Info),
+                    SubstateOffset::Package(PackageOffset::CodeType),
                     LockFlags::read_only(),
                 )?;
-                let info: &PackageInfoSubstate = api.kernel_get_substate_ref(handle)?;
-                for dependent_resource in &info.dependent_resources {
-                    node_refs_to_copy.insert(RENodeId::GlobalResourceManager(*dependent_resource));
-                }
-
-                // Find the abi
-                let abi = info
-                    .blueprint_abi(&self.fn_identifier.blueprint_name)
-                    .ok_or(RuntimeError::InterpreterError(
-                        InterpreterError::InvalidScryptoInvocation(
-                            self.fn_identifier.clone(),
-                            ScryptoFnResolvingError::BlueprintNotFound,
-                        ),
-                    ))?;
-                let fn_abi = abi.get_fn_abi(&self.fn_identifier.ident).ok_or(
-                    RuntimeError::InterpreterError(InterpreterError::InvalidScryptoInvocation(
-                        self.fn_identifier.clone(),
-                        ScryptoFnResolvingError::MethodNotFound,
-                    )),
-                )?;
-
-                if fn_abi.mutability.is_some() {
-                    return Err(RuntimeError::InterpreterError(
-                        InterpreterError::InvalidInvocation,
-                    ));
-                }
-
-                if !match_schema_with_value(&fn_abi.input, &value) {
-                    return Err(RuntimeError::InterpreterError(
-                        InterpreterError::InvalidScryptoInvocation(
-                            self.fn_identifier.clone(),
-                            ScryptoFnResolvingError::InvalidInput,
-                        ),
-                    ));
-                }
-
-                let export_name = fn_abi.export_name.clone();
+                let code_type: &PackageCodeTypeSubstate = api.kernel_get_substate_ref(handle)?;
+                let code_type = code_type.clone();
                 api.kernel_drop_lock(handle)?;
 
-                export_name
+                match code_type {
+                    PackageCodeTypeSubstate::Wasm => {
+                        node_refs_to_copy.insert(RENodeId::GlobalComponent(EPOCH_MANAGER));
+                        node_refs_to_copy.insert(RENodeId::GlobalComponent(CLOCK));
+                        node_refs_to_copy.insert(RENodeId::GlobalResourceManager(RADIX_TOKEN));
+                        node_refs_to_copy.insert(RENodeId::GlobalResourceManager(PACKAGE_TOKEN));
+                        node_refs_to_copy
+                            .insert(RENodeId::GlobalResourceManager(ECDSA_SECP256K1_TOKEN));
+                        node_refs_to_copy
+                            .insert(RENodeId::GlobalResourceManager(EDDSA_ED25519_TOKEN));
+                    }
+                    _ => {}
+                }
             }
-        };
+
+            // TODO: remove? currently needed for `Runtime::package_address()` API.
+            node_refs_to_copy.insert(RENodeId::GlobalPackage(self.fn_identifier.package_address));
+        }
 
         let executor = ScryptoExecutor {
-            package_address: self.fn_identifier.package_address,
-            export_name,
+            fn_identifier: self.fn_identifier.clone(),
             receiver: None,
         };
-
-        // TODO: remove? currently needed for `Runtime::package_address()` API.
-        node_refs_to_copy.insert(RENodeId::GlobalPackage(self.fn_identifier.package_address));
 
         let resolved = TemporaryResolvedInvocation {
             resolved_actor: actor,
@@ -329,8 +215,7 @@ impl ExecutableInvocation for FunctionInvocation {
 }
 
 pub struct ScryptoExecutor {
-    pub package_address: PackageAddress,
-    pub export_name: String,
+    pub fn_identifier: FnIdentifier,
     pub receiver: Option<MethodIdentifier>,
 }
 
@@ -346,18 +231,63 @@ impl Executor for ScryptoExecutor {
         Y: KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + ClientApi<RuntimeError>,
         W: WasmEngine,
     {
-        let output = if self.package_address.eq(&PACKAGE_LOADER) {
+        let export_name = {
+            let code_type = if self.fn_identifier.package_address.eq(&PACKAGE_LOADER) {
+                PackageCodeTypeSubstate::Native
+            } else {
+                Package::get_code_type(
+                    RENodeId::GlobalPackage(self.fn_identifier.package_address),
+                    api,
+                )?
+            };
+
+            match code_type {
+                PackageCodeTypeSubstate::Native => {
+                    // TODO: Do we need to check against the abi? Probably not since we should be able to verify this
+                    // TODO: in the native package itself.
+                    self.fn_identifier.ident.to_string() // TODO: Clean this up
+                }
+                PackageCodeTypeSubstate::Wasm => {
+                    let fn_abi = Package::get_fn_abi(
+                        RENodeId::GlobalPackage(self.fn_identifier.package_address),
+                        PackageGetFnAbiInput {
+                            fn_key: self.fn_identifier.fn_key(),
+                        },
+                        api,
+                    )?;
+
+                    if fn_abi.mutability.is_some() != self.receiver.is_some() {
+                        return Err(RuntimeError::InterpreterError(
+                            InterpreterError::InvalidInvocation,
+                        ));
+                    }
+
+                    if !match_schema_with_value(&fn_abi.input, &args) {
+                        return Err(RuntimeError::InterpreterError(
+                            InterpreterError::InvalidScryptoInvocation(
+                                self.fn_identifier.clone(),
+                                ScryptoFnResolvingError::InvalidInput,
+                            ),
+                        ));
+                    }
+
+                    fn_abi.export_name
+                }
+            }
+        };
+
+        let output = if self.fn_identifier.package_address.eq(&PACKAGE_LOADER) {
             NativeVm::invoke_native_package(
                 NATIVE_PACKAGE_CODE_ID,
                 self.receiver,
-                &self.export_name,
+                &export_name,
                 args,
                 api,
             )?
         } else {
             // Make dependent resources/components visible
             let handle = api.kernel_lock_substate(
-                RENodeId::GlobalPackage(self.package_address),
+                RENodeId::GlobalPackage(self.fn_identifier.package_address),
                 NodeModuleId::SELF,
                 SubstateOffset::Package(PackageOffset::Info),
                 LockFlags::read_only(),
@@ -366,7 +296,7 @@ impl Executor for ScryptoExecutor {
 
             let code_type = {
                 let handle = api.kernel_lock_substate(
-                    RENodeId::GlobalPackage(self.package_address),
+                    RENodeId::GlobalPackage(self.fn_identifier.package_address),
                     NodeModuleId::SELF,
                     SubstateOffset::Package(PackageOffset::CodeType),
                     LockFlags::read_only(),
@@ -378,9 +308,9 @@ impl Executor for ScryptoExecutor {
             };
 
             let output = match code_type {
-                PackageCodeTypeSubstate::Precompiled => {
+                PackageCodeTypeSubstate::Native => {
                     let handle = api.kernel_lock_substate(
-                        RENodeId::GlobalPackage(self.package_address),
+                        RENodeId::GlobalPackage(self.fn_identifier.package_address),
                         NodeModuleId::SELF,
                         SubstateOffset::Package(PackageOffset::Code),
                         LockFlags::read_only(),
@@ -391,7 +321,7 @@ impl Executor for ScryptoExecutor {
                     NativeVm::invoke_native_package(
                         native_package_code_id,
                         self.receiver,
-                        &self.export_name,
+                        &export_name,
                         args,
                         api,
                     )?
@@ -399,7 +329,7 @@ impl Executor for ScryptoExecutor {
                 PackageCodeTypeSubstate::Wasm => {
                     let rtn_type = {
                         let handle = api.kernel_lock_substate(
-                            RENodeId::GlobalPackage(self.package_address),
+                            RENodeId::GlobalPackage(self.fn_identifier.package_address),
                             NodeModuleId::SELF,
                             SubstateOffset::Package(PackageOffset::Info),
                             LockFlags::read_only(),
@@ -407,7 +337,7 @@ impl Executor for ScryptoExecutor {
                         let package_info: &PackageInfoSubstate =
                             api.kernel_get_substate_ref(handle)?;
                         let fn_abi = package_info
-                            .fn_abi(&self.export_name)
+                            .fn_abi(&export_name)
                             .expect("TODO: Remove this expect");
                         let rtn_type = fn_abi.output.clone();
                         api.kernel_drop_lock(handle)?;
@@ -416,13 +346,15 @@ impl Executor for ScryptoExecutor {
 
                     let mut instance = {
                         let handle = api.kernel_lock_substate(
-                            RENodeId::GlobalPackage(self.package_address),
+                            RENodeId::GlobalPackage(self.fn_identifier.package_address),
                             NodeModuleId::SELF,
                             SubstateOffset::Package(PackageOffset::Code),
                             LockFlags::read_only(),
                         )?;
-                        let wasm_instance =
-                            api.kernel_create_wasm_instance(self.package_address, handle)?;
+                        let wasm_instance = api.kernel_create_wasm_instance(
+                            self.fn_identifier.package_address,
+                            handle,
+                        )?;
                         api.kernel_drop_lock(handle)?;
 
                         wasm_instance
@@ -450,7 +382,7 @@ impl Executor for ScryptoExecutor {
                                 .expect("Failed to allocate buffer"),
                         );
 
-                        instance.invoke_export(&self.export_name, input, &mut runtime)?
+                        instance.invoke_export(&export_name, input, &mut runtime)?
                     };
                     let output = IndexedScryptoValue::from_vec(output).map_err(|e| {
                         RuntimeError::InterpreterError(InterpreterError::InvalidScryptoReturn(e))

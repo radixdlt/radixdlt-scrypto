@@ -139,7 +139,6 @@ pub enum Instruction {
 
     SetMethodAccessRule {
         entity_address: Value,
-        index: Value,
         key: Value,
         rule: Value,
     },

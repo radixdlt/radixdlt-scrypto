@@ -15,8 +15,7 @@ mod chess {
             );
 
             let component = Self { players }.instantiate();
-            component.add_access_check(access_rules);
-            component.globalize()
+            component.globalize_with_access_rules(access_rules)
         }
 
         pub fn make_move(&mut self) {

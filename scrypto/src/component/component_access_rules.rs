@@ -17,23 +17,17 @@ use radix_engine_interface::data::scrypto_encode;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, LegacyDescribe)]
 pub struct ComponentAccessRules {
     component: ComponentIdentifier,
-    index: u32,
 }
 
 impl ComponentAccessRules {
-    pub(crate) fn new<T: Into<ComponentIdentifier>>(component: T, index: u32) -> Self {
+    pub(crate) fn new<T: Into<ComponentIdentifier>>(component: T) -> Self {
         Self {
             component: component.into(),
-            index,
         }
     }
 
     pub fn component_identifier(&self) -> &ComponentIdentifier {
         &self.component
-    }
-
-    pub fn index(&self) -> u32 {
-        self.index
     }
 
     pub fn set_method_auth(&mut self, method_name: &str, access_rule: AccessRule) {
@@ -44,7 +38,6 @@ impl ComponentAccessRules {
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                    index: self.index,
                     key: MethodKey::new(NodeModuleId::SELF, method_name.to_string()),
                     rule: AccessRuleEntry::AccessRule(access_rule),
                 })
@@ -61,7 +54,6 @@ impl ComponentAccessRules {
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
-                    index: self.index,
                     key: MethodKey::new(NodeModuleId::SELF, method_name.to_string()),
                     mutability: AccessRule::DenyAll,
                 })

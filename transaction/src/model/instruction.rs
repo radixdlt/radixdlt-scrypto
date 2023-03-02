@@ -139,7 +139,6 @@ pub enum Instruction {
 
     SetMethodAccessRule {
         entity_address: ManifestAddress,
-        index: u32,
         key: MethodKey,
         rule: AccessRule,
     },

@@ -3,9 +3,9 @@ use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node::RENodeInit;
-use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::access_rules::MethodAccessRulesChainSubstate;
 use crate::types::*;
+use native_sdk::access_rules::AccessRulesObject;
+use native_sdk::metadata::Metadata;
 use native_sdk::resource::{ResourceManager, SysBucket};
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::substate_api::LockFlags;
@@ -146,6 +146,15 @@ impl EpochManagerBlueprint {
             epoch: input.initial_epoch + 1,
             validator_set: validator_set.clone(),
         };
+        api.kernel_create_node(
+            underlying_node_id,
+            RENodeInit::EpochManager(
+                epoch_manager,
+                current_validator_set,
+                preparing_validator_set,
+            ),
+            BTreeMap::new(),
+        )?;
 
         api.emit_event(EpochChangeEvent {
             epoch: input.initial_epoch,
@@ -192,25 +201,17 @@ impl EpochManagerBlueprint {
             rule!(require(AuthAddresses::system_role())), // Set epoch only used for debugging
         );
 
-        let mut node_modules = BTreeMap::new();
-        node_modules.insert(
-            NodeModuleId::AccessRules,
-            RENodeModuleInit::ObjectAccessRulesChain(MethodAccessRulesChainSubstate {
-                access_rules_chain: vec![access_rules],
-            }),
-        );
+        let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
+        let metadata = Metadata::sys_new(api)?;
 
-        api.kernel_create_node(
+        api.globalize_with_address(
             underlying_node_id,
-            RENodeInit::EpochManager(
-                epoch_manager,
-                current_validator_set,
-                preparing_validator_set,
+            btreemap!(
+                NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
+                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
             ),
-            node_modules,
+            address.into(),
         )?;
-
-        api.globalize_with_address(underlying_node_id, address.into())?;
 
         Ok(IndexedScryptoValue::from_typed(&address))
     }

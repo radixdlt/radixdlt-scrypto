@@ -4,7 +4,7 @@ use crate::blueprints::resource::LiquidFungibleResource;
 #[derive(Clone, Copy, Debug)]
 pub enum ClientCostingReason {
     RunWasm,
-    RunPrecompiled,
+    RunNative,
 }
 
 /// Unsafe APIs for interacting with kernel modules.

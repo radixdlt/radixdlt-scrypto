@@ -54,9 +54,6 @@ impl ComponentSystem {
                 btreemap!(
                     0 => scrypto_encode(&state).unwrap()
                 ),
-                Vec::new(),
-                RoyaltyConfigBuilder::new().default(0),
-                BTreeMap::new(),
             )
             .unwrap();
         OwnedComponent(node_id.into())

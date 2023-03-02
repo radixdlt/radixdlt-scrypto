@@ -498,13 +498,11 @@ pub fn decompile_instruction<F: fmt::Write>(
         }
         Instruction::SetMethodAccessRule {
             entity_address,
-            index,
             key,
             rule,
         } => {
             f.write_str("SET_METHOD_ACCESS_RULE")?;
             format_typed_value(f, context, entity_address)?;
-            format_typed_value(f, context, index)?;
             format_typed_value(f, context, key)?;
             format_typed_value(f, context, rule)?;
             f.write_str(";")?;

@@ -9,7 +9,7 @@ mod auth_component {
     impl AuthComponent {
         pub fn create_component(some_non_fungible: NonFungibleGlobalId) -> ComponentAddress {
             let component = Self { some_non_fungible }.instantiate();
-            component.add_access_check(
+            component.globalize_with_access_rules(
                 AccessRules::new()
                     .method(
                         "get_secret",
@@ -17,8 +17,7 @@ mod auth_component {
                         rule!(deny_all),
                     )
                     .default(rule!(allow_all), AccessRule::DenyAll),
-            );
-            component.globalize()
+            )
         }
 
         pub fn get_secret(&self) -> String {

@@ -222,12 +222,6 @@ fn new_component(
     blueprint_ident_len: u32,
     app_states_ptr: u32,
     app_states_len: u32,
-    access_rules_ptr: u32,
-    access_rules_len: u32,
-    royalty_config_ptr: u32,
-    royalty_config_len: u32,
-    metadata_ptr: u32,
-    metadata_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
@@ -245,19 +239,6 @@ fn new_component(
                 app_states_ptr,
                 app_states_len,
             )?,
-            read_memory(
-                caller.as_context_mut(),
-                memory,
-                access_rules_ptr,
-                access_rules_len,
-            )?,
-            read_memory(
-                caller.as_context_mut(),
-                memory,
-                royalty_config_ptr,
-                royalty_config_len,
-            )?,
-            read_memory(caller.as_context_mut(), memory, metadata_ptr, metadata_len)?,
         )
         .map(|buffer| buffer.0)
 }
@@ -274,16 +255,26 @@ fn globalize_component(
     mut caller: Caller<'_, HostState>,
     component_id_ptr: u32,
     component_id_len: u32,
+    access_rules_ptr: u32,
+    access_rules_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
     runtime
-        .globalize_component(read_memory(
-            caller.as_context_mut(),
-            memory,
-            component_id_ptr,
-            component_id_len,
-        )?)
+        .globalize_component(
+            read_memory(
+                caller.as_context_mut(),
+                memory,
+                component_id_ptr,
+                component_id_len,
+            )?,
+            read_memory(
+                caller.as_context_mut(),
+                memory,
+                access_rules_ptr,
+                access_rules_len,
+            )?,
+        )
         .map(|buffer| buffer.0)
 }
 
@@ -547,13 +538,7 @@ impl WasmiModule {
              blueprint_ident_ptr: u32,
              blueprint_ident_len: u32,
              app_states_ptr: u32,
-             app_states_len: u32,
-             access_rules_ptr: u32,
-             access_rules_len: u32,
-             royalty_config_ptr: u32,
-             royalty_config_len: u32,
-             metadata_ptr: u32,
-             metadata_len: u32|
+             app_states_len: u32|
              -> Result<u64, Trap> {
                 new_component(
                     caller,
@@ -561,12 +546,6 @@ impl WasmiModule {
                     blueprint_ident_len,
                     app_states_ptr,
                     app_states_len,
-                    access_rules_ptr,
-                    access_rules_len,
-                    royalty_config_ptr,
-                    royalty_config_len,
-                    metadata_ptr,
-                    metadata_len,
                 )
                 .map_err(|e| e.into())
             },
@@ -583,10 +562,18 @@ impl WasmiModule {
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
              component_id_ptr: u32,
-             component_id_len: u32|
+             component_id_len: u32,
+             access_rules_ptr: u32,
+             access_rules_len: u32|
              -> Result<u64, Trap> {
-                globalize_component(caller, component_id_ptr, component_id_len)
-                    .map_err(|e| e.into())
+                globalize_component(
+                    caller,
+                    component_id_ptr,
+                    component_id_len,
+                    access_rules_ptr,
+                    access_rules_len,
+                )
+                .map_err(|e| e.into())
             },
         );
 

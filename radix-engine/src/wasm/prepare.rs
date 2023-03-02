@@ -184,6 +184,12 @@ impl WasmModule {
                                 ) {
                                     continue;
                                 }
+
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        CONSUME_BUFFER_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
                             }
                         }
                         CALL_METHOD_FUNCTION_NAME => {
@@ -204,6 +210,12 @@ impl WasmModule {
                                 ) {
                                     continue;
                                 }
+
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        CALL_METHOD_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
                             }
                         }
                         CALL_FUNCTION_FUNCTION_NAME => {
@@ -225,6 +237,12 @@ impl WasmModule {
                                 ) {
                                     continue;
                                 }
+
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        CALL_METHOD_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
                             }
                         }
                         DROP_NODE_FUNCTION_NAME => {
@@ -237,6 +255,12 @@ impl WasmModule {
                                 ) {
                                     continue;
                                 }
+
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        DROP_NODE_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
                             }
                         }
                         LOCK_SUBSTATE_FUNCTION_NAME => {
@@ -255,6 +279,12 @@ impl WasmModule {
                                 ) {
                                     continue;
                                 }
+
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        LOCK_SUBSTATE_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
                             }
                         }
                         READ_SUBSTATE_FUNCTION_NAME => {
@@ -267,6 +297,12 @@ impl WasmModule {
                                 ) {
                                     continue;
                                 }
+
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        READ_SUBSTATE_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
                             }
                         }
                         WRITE_SUBSTATE_FUNCTION_NAME => {
@@ -279,6 +315,12 @@ impl WasmModule {
                                 ) {
                                     continue;
                                 }
+
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        WRITE_SUBSTATE_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
                             }
                         }
                         DROP_LOCK_FUNCTION_NAME => {
@@ -291,6 +333,12 @@ impl WasmModule {
                                 ) {
                                     continue;
                                 }
+
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        DROP_LOCK_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
                             }
                         }
                         GET_ACTOR_FUNCTION_NAME => {
@@ -303,6 +351,12 @@ impl WasmModule {
                                 ) {
                                     continue;
                                 }
+
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        GET_ACTOR_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
                             }
                         }
                         NEW_PACKAGE_FUNCTION_NAME => {
@@ -326,6 +380,12 @@ impl WasmModule {
                                 ) {
                                     continue;
                                 }
+
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        NEW_PACKAGE_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
                             }
                         }
                         NEW_COMPONENT_FUNCTION_NAME => {
@@ -338,8 +398,25 @@ impl WasmModule {
                                         ValueType::I32,
                                         ValueType::I32,
                                         ValueType::I32,
-                                        ValueType::I32,
-                                        ValueType::I32,
+                                    ],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        NEW_COMPONENT_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
+                            }
+                        }
+                        GLOBALIZE_COMPONENT_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![
                                         ValueType::I32,
                                         ValueType::I32,
                                         ValueType::I32,
@@ -349,18 +426,11 @@ impl WasmModule {
                                 ) {
                                     continue;
                                 }
-                            }
-                        }
-                        GLOBALIZE_COMPONENT_FUNCTION_NAME => {
-                            if let External::Function(type_index) = entry.external() {
-                                if Self::function_type_matches(
-                                    &self.module,
-                                    *type_index as usize,
-                                    vec![ValueType::I32, ValueType::I32],
-                                    vec![ValueType::I64],
-                                ) {
-                                    continue;
-                                }
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        GLOBALIZE_COMPONENT_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
                             }
                         }
                         NEW_KEY_VALUE_STORE_FUNCTION_NAME => {
@@ -373,6 +443,11 @@ impl WasmModule {
                                 ) {
                                     continue;
                                 }
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        NEW_KEY_VALUE_STORE_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
                             }
                         }
                         GET_COMPONENT_TYPE_INFO_FUNCTION_NAME => {
@@ -385,6 +460,11 @@ impl WasmModule {
                                 ) {
                                     continue;
                                 }
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        GET_COMPONENT_TYPE_INFO_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
                             }
                         }
                         EMIT_EVENT_FUNCTION_NAME => {

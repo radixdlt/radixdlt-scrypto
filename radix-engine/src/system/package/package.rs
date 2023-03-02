@@ -1,10 +1,10 @@
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::kernel_modules::costing::FIXED_HIGH_FEE;
+use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_MEDIUM_FEE};
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::{
-    FunctionAccessRulesSubstate, MethodAccessRulesChainSubstate,
+    FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::type_info::PackageCodeTypeSubstate;
@@ -16,7 +16,7 @@ use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::data::ScryptoValue;
 
@@ -42,8 +42,8 @@ impl Package {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         match export_name {
-            PACKAGE_LOADER_PUBLISH_PRECOMPILED_IDENT => {
-                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunPrecompiled)?;
+            PACKAGE_LOADER_PUBLISH_NATIVE_IDENT => {
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
                     return Err(RuntimeError::InterpreterError(
@@ -51,10 +51,10 @@ impl Package {
                     ));
                 }
 
-                Self::publish_precompiled(input, api)
+                Self::publish_native(input, api)
             }
             PACKAGE_LOADER_PUBLISH_WASM_IDENT => {
-                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunPrecompiled)?;
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
                     return Err(RuntimeError::InterpreterError(
@@ -64,28 +64,42 @@ impl Package {
 
                 Self::publish_wasm(input, api)
             }
+            PACKAGE_GET_FN_ABI_IDENT => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+
+                let input: PackageGetFnAbiInput = scrypto_decode(&scrypto_encode(&input).unwrap())
+                    .map_err(|_| {
+                        RuntimeError::InterpreterError(InterpreterError::InvalidInvocation)
+                    })?;
+
+                Self::get_fn_abi(receiver, input, api).map(|r| IndexedScryptoValue::from_typed(&r))
+            }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
             )),
         }
     }
 
-    pub(crate) fn publish_precompiled<Y>(
+    pub(crate) fn publish_native<Y>(
         input: ScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: PackageLoaderPublishPrecompiledInput =
+        let input: PackageLoaderPublishNativeInput =
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
         let metadata_substate = MetadataSubstate {
             metadata: input.metadata,
         };
-        let access_rules = MethodAccessRulesChainSubstate {
-            access_rules_chain: vec![input.access_rules],
+        let access_rules = MethodAccessRulesSubstate {
+            access_rules: input.access_rules,
         };
 
         let mut node_modules = BTreeMap::new();
@@ -95,11 +109,11 @@ impl Package {
         );
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::ObjectAccessRulesChain(access_rules),
+            RENodeModuleInit::MethodAccessRules(access_rules),
         );
         node_modules.insert(
             NodeModuleId::FunctionAccessRules,
-            RENodeModuleInit::PackageAccessRules(FunctionAccessRulesSubstate {
+            RENodeModuleInit::FunctionAccessRules(FunctionAccessRulesSubstate {
                 access_rules: input.package_access_rules,
                 default_auth: input.default_package_access_rule,
             }),
@@ -110,7 +124,7 @@ impl Package {
             dependent_components: input.dependent_components.into_iter().collect(),
             blueprint_abis: input.abi,
         };
-        let code_type = PackageCodeTypeSubstate::Precompiled;
+        let code_type = PackageCodeTypeSubstate::Native;
         let code = PackageCodeSubstate {
             code: vec![input.native_package_code_id],
         };
@@ -169,8 +183,8 @@ impl Package {
         let metadata_substate = MetadataSubstate {
             metadata: input.metadata,
         };
-        let access_rules = MethodAccessRulesChainSubstate {
-            access_rules_chain: vec![input.access_rules],
+        let access_rules = MethodAccessRulesSubstate {
+            access_rules: input.access_rules,
         };
 
         // TODO: Can we trust developers enough to add protection for
@@ -190,11 +204,11 @@ impl Package {
         );
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::ObjectAccessRulesChain(access_rules),
+            RENodeModuleInit::MethodAccessRules(access_rules),
         );
         node_modules.insert(
             NodeModuleId::FunctionAccessRules,
-            RENodeModuleInit::PackageAccessRules(FunctionAccessRulesSubstate {
+            RENodeModuleInit::FunctionAccessRules(FunctionAccessRulesSubstate {
                 access_rules: BTreeMap::new(),
                 default_auth: AccessRule::AllowAll,
             }),
@@ -220,5 +234,69 @@ impl Package {
         let package_address: PackageAddress = node_id.into();
 
         Ok(IndexedScryptoValue::from_typed(&package_address))
+    }
+
+    pub(crate) fn get_code_type<Y>(
+        receiver: RENodeId,
+        api: &mut Y,
+    ) -> Result<PackageCodeTypeSubstate, RuntimeError>
+    where
+        Y: KernelSubstateApi,
+    {
+        let handle = api.kernel_lock_substate(
+            receiver,
+            NodeModuleId::SELF,
+            SubstateOffset::Package(PackageOffset::CodeType),
+            LockFlags::read_only(),
+        )?;
+        let code_type: &PackageCodeTypeSubstate = api.kernel_get_substate_ref(handle)?;
+        let code_type = code_type.clone();
+        api.kernel_drop_lock(handle)?;
+        Ok(code_type)
+    }
+
+    pub(crate) fn get_fn_abi<Y>(
+        receiver: RENodeId,
+        input: PackageGetFnAbiInput,
+        api: &mut Y,
+    ) -> Result<Fn, RuntimeError>
+    where
+        Y: KernelSubstateApi,
+    {
+        let handle = api.kernel_lock_substate(
+            receiver,
+            NodeModuleId::SELF,
+            SubstateOffset::Package(PackageOffset::Info),
+            LockFlags::read_only(),
+        )?;
+        let info: &PackageInfoSubstate = api.kernel_get_substate_ref(handle)?;
+
+        // Find the abi
+        let abi =
+            info.blueprint_abi(&input.fn_key.blueprint)
+                .ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::InvalidScryptoInvocation(
+                        FnIdentifier::new(
+                            receiver.into(),
+                            input.fn_key.blueprint.clone(),
+                            input.fn_key.ident.clone(),
+                        ),
+                        ScryptoFnResolvingError::BlueprintNotFound,
+                    ),
+                ))?;
+        let fn_abi = abi
+            .get_fn_abi(&input.fn_key.ident)
+            .ok_or(RuntimeError::InterpreterError(
+                InterpreterError::InvalidScryptoInvocation(
+                    FnIdentifier::new(
+                        receiver.into(),
+                        input.fn_key.blueprint.clone(),
+                        input.fn_key.ident.clone(),
+                    ),
+                    ScryptoFnResolvingError::MethodNotFound,
+                ),
+            ))?;
+
+        Ok(fn_abi.clone())
     }
 }

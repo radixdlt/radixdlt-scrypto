@@ -14,8 +14,7 @@ mod auth_list_component {
             access_rules: AccessRules,
         ) -> ComponentAddress {
             let component = Self { count, auth }.instantiate();
-            component.add_access_check(access_rules);
-            component.globalize()
+            component.globalize_with_access_rules(access_rules)
         }
 
         pub fn update_count(&mut self, count: u8) {
