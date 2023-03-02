@@ -32,7 +32,6 @@ pub enum RENodeType {
     Clock,
     Identity,
     TransactionRuntime,
-    Logger,
     Account,
     AccessController,
 }
@@ -56,7 +55,6 @@ pub enum RENodeId {
     Proof(ProofId),
     AuthZoneStack,
     Worktop,
-    Logger,
     TransactionRuntime,
     GlobalComponent(ComponentAddress),
     GlobalResourceManager(ResourceAddress),
@@ -80,7 +78,6 @@ impl fmt::Debug for RENodeId {
             Self::Proof(id) => f.debug_tuple("Proof").field(&hex::encode(id)).finish(),
             Self::AuthZoneStack => write!(f, "AuthZoneStack"),
             Self::Worktop => write!(f, "Worktop"),
-            Self::Logger => write!(f, "Logger"),
             Self::TransactionRuntime => write!(f, "TransactionRuntime"),
             Self::GlobalComponent(address) => {
                 f.debug_tuple("GlobalComponent").field(address).finish()
@@ -131,9 +128,8 @@ impl Into<[u8; 36]> for RENodeId {
             RENodeId::Proof(id) => id,
             RENodeId::Bucket(id) => id,
             RENodeId::Worktop => [3u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
-            RENodeId::Logger => [4u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
-            RENodeId::TransactionRuntime => [5u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
-            RENodeId::AuthZoneStack => [6u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
+            RENodeId::TransactionRuntime => [4u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
+            RENodeId::AuthZoneStack => [5u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
             _ => panic!("Not a stored id: {:?}", self),
         }
     }
@@ -341,11 +337,6 @@ pub enum WorktopOffset {
 }
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum LoggerOffset {
-    Logger,
-}
-
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ClockOffset {
     CurrentTimeRoundedToMinutes,
 }
@@ -380,7 +371,6 @@ pub enum SubstateOffset {
     Bucket(BucketOffset),
     Proof(ProofOffset),
     Worktop(WorktopOffset),
-    Logger(LoggerOffset),
     Clock(ClockOffset),
     TransactionRuntime(TransactionRuntimeOffset),
     Account(AccountOffset),

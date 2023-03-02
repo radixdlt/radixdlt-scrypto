@@ -67,12 +67,12 @@ fn test_basic_transfer() {
     // Or you can run just this test with the below:
     // (cd radix-engine && cargo test --test metering -- test_basic_transfer)
     assert_eq!(
-        12500 /* CreateNode */
-        + 65000 /* DropLock */
-        + 12500 /* DropNode */
+        10000 /* CreateNode */
+        + 64500 /* DropLock */
+        + 10000 /* DropNode */
         + 10000 /* Invoke */
-        + 65500 /* LockSubstate */
-        + 45500 /* ReadSubstate */
+        + 65000 /* LockSubstate */
+        + 45000 /* ReadSubstate */
         + 65000 /* RunPrecompiled */
         + 0 /* RunWasm */
         + 50000 /* TxBaseCost */
@@ -199,14 +199,14 @@ fn test_radiswap() {
     // Or you can run just this test with the below:
     // (cd radix-engine && cargo test --test metering -- test_radiswap)
     assert_eq!(
-        17500 /* CreateNode */
-        + 185500 /* DropLock */
-        + 15000 /* DropNode */
+        15000 /* CreateNode */
+        + 185000 /* DropLock */
+        + 12500 /* DropNode */
         + 24330 /* Invoke */
-        + 187500 /* LockSubstate */
-        + 135000 /* ReadSubstate */
+        + 187000 /* LockSubstate */
+        + 2667220 /* ReadSubstate */
         + 147500 /* RunPrecompiled */
-        + 1631635 /* RunWasm */
+        + 1629825 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1705 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
@@ -308,14 +308,14 @@ fn test_flash_loan() {
     // Or you can run just this test with the below:
     // (cd radix-engine && cargo test --test metering -- test_flash_loan)
     assert_eq!(
-        25000 /* CreateNode */
-        + 283500 /* DropLock */
-        + 25000 /* DropNode */
+        22500 /* CreateNode */
+        + 283000 /* DropLock */
+        + 22500 /* DropNode */
         + 45210 /* Invoke */
-        + 292000 /* LockSubstate */
-        + 201000 /* ReadSubstate */
+        + 291500 /* LockSubstate */
+        + 5347760 /* ReadSubstate */
         + 240000 /* RunPrecompiled */
-        + 1408860 /* RunWasm */
+        + 1406175 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2475 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */

@@ -392,6 +392,21 @@ fn emit_event(
 
     runtime.emit_event(schema_hash, event_data)
 }
+
+fn log_message(
+    mut caller: Caller<'_, HostState>,
+    level_ptr: u32,
+    level_len: u32,
+    message_ptr: u32,
+    message_len: u32,
+) -> Result<(), InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let level = read_memory(caller.as_context_mut(), memory, level_ptr, level_len)?;
+    let message = read_memory(caller.as_context_mut(), memory, message_ptr, message_len)?;
+
+    runtime.log_message(level, message)
+}
 // native functions ends
 
 macro_rules! linker_define {
@@ -662,6 +677,19 @@ impl WasmiModule {
             },
         );
 
+        let host_log = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             level_ptr: u32,
+             level_len: u32,
+             message_ptr: u32,
+             message_len: u32|
+             -> Result<(), Trap> {
+                log_message(caller, level_ptr, level_len, message_ptr, message_len)
+                    .map_err(|e| e.into())
+            },
+        );
+
         let mut linker = <Linker<HostState>>::new();
         linker_define!(linker, CONSUME_BUFFER_FUNCTION_NAME, host_consume_buffer);
         linker_define!(linker, CALL_METHOD_FUNCTION_NAME, host_call_method);
@@ -695,6 +723,7 @@ impl WasmiModule {
             host_consume_cost_units
         );
         linker_define!(linker, EMIT_EVENT_FUNCTION_NAME, host_emit_event);
+        linker_define!(linker, LOG_FUNCTION_NAME, host_log);
 
         linker.instantiate(store.as_context_mut(), &module)
     }

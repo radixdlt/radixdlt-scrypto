@@ -135,7 +135,6 @@ impl AuthModule {
                 | RENodeId::Bucket(..)
                 | RENodeId::Component(..)
                 | RENodeId::Worktop
-                | RENodeId::Logger
                 | RENodeId::TransactionRuntime
                 | RENodeId::AuthZoneStack,
                 ..,

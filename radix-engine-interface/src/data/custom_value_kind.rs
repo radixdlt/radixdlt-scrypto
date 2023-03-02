@@ -1,10 +1,10 @@
 use sbor::*;
 
 pub const VALUE_KIND_ADDRESS: u8 = 0x80;
-pub const VALUE_KIND_OWN: u8 = 0x81;
-pub const VALUE_KIND_DECIMAL: u8 = 0x85;
-pub const VALUE_KIND_PRECISE_DECIMAL: u8 = 0x86;
-pub const VALUE_KIND_NON_FUNGIBLE_LOCAL_ID: u8 = 0x87;
+pub const VALUE_KIND_OWN: u8 = 0x90;
+pub const VALUE_KIND_DECIMAL: u8 = 0xa0;
+pub const VALUE_KIND_PRECISE_DECIMAL: u8 = 0xb0;
+pub const VALUE_KIND_NON_FUNGIBLE_LOCAL_ID: u8 = 0xc0;
 
 #[cfg_attr(
     feature = "serde",

@@ -160,7 +160,7 @@ fn account_to_bucket_to_virtual_account() {
 
 fn assert_resource_changes_for_transfer(
     resource_changes: &Vec<ResourceChange>,
-    _resource_address: ResourceAddress,
+    resource_address: ResourceAddress,
     target_account: ComponentAddress,
     transfer_amount: Decimal,
 ) {
@@ -169,6 +169,7 @@ fn assert_resource_changes_for_transfer(
     assert_eq!(2, resource_changes.len()); // Two transfers (withdraw + fee, deposit)
     assert!(resource_changes
         .iter()
-        .any(|r| r.node_id == RENodeId::GlobalComponent(target_account)
+        .any(|r| r.resource_address == resource_address
+            && r.node_id == RENodeId::GlobalComponent(target_account)
             && r.amount == Decimal::from(transfer_amount)));
 }

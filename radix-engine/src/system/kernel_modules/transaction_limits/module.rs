@@ -21,12 +21,16 @@ pub enum TransactionLimitsError {
     /// Retruned when one instance WASM memory consumed during transaction execution exceeds defined limit,
     /// as parameter memory consumed by that instave is returned.
     MaxWasmInstanceMemoryExceeded(usize),
-    /// Returned when substate reads count during transaction execution
+    /// Returned when substate read count during transaction execution
     /// exceeds defined limit just after read occurs.
-    MaxSubstateReadsCountExceeded,
-    /// Returned when substate writes count during transaction execution
+    MaxSubstateReadCountExceeded,
+    /// Returned when substate write count during transaction execution
     /// exceeds defined limit just after write occurs.
-    MaxSubstateWritesCountExceeded,
+    MaxSubstateWriteCountExceeded,
+    /// Returned when substate read size exceeds defined limit just after read occurs.
+    MaxSubstateReadSizeExceeded(usize),
+    /// Returned when substate write size exceeds defined limit just after write occurs.
+    MaxSubstateWriteSizeExceeded(usize),
     /// Returned when function or method invocation payload size exceeds defined limit,
     /// as parameter actual payload size is returned.
     MaxInvokePayloadSizeExceeded(usize),
@@ -45,9 +49,11 @@ pub struct TransactionLimitsConfig {
     /// Maximum WASM memory which can be consumed in one call frame.
     pub max_wasm_memory_per_call_frame: usize,
     /// Maximum Substates reads for a transaction.
-    pub max_substate_reads: usize,
+    pub max_substate_read_count: usize,
     /// Maximum Substates writes for a transaction.
-    pub max_substate_writes: usize,
+    pub max_substate_write_count: usize,
+    /// Maximum Substate read and write size.
+    pub max_substate_size: usize,
     /// Maximum Invoke payload size.
     pub max_invoke_payload_size: usize,
 }
@@ -61,9 +67,9 @@ pub struct TransactionLimitsModule {
     /// Internal stack of data for each call frame.
     call_frames_stack: Vec<CallFrameLimitInfo>,
     /// Substate store read count.
-    substate_store_read: usize,
+    substate_store_read_count: usize,
     /// Substate store write count.
-    substate_store_write: usize,
+    substate_store_write_count: usize,
 }
 
 impl TransactionLimitsModule {
@@ -71,8 +77,8 @@ impl TransactionLimitsModule {
         TransactionLimitsModule {
             limits_config,
             call_frames_stack: Vec::with_capacity(8),
-            substate_store_read: 0,
-            substate_store_write: 0,
+            substate_store_read_count: 0,
+            substate_store_write_count: 0,
         }
     }
 
@@ -115,18 +121,41 @@ impl TransactionLimitsModule {
         }
     }
 
-    /// Checks if substate reads count is in the limit.
-    fn validate_substates(&self) -> Result<(), RuntimeError> {
-        if self.substate_store_read > self.limits_config.max_substate_reads {
+    /// Checks if substate reads/writes count and size is in the limit.
+    fn validate_substates(
+        &self,
+        read_size: Option<usize>,
+        write_size: Option<usize>,
+    ) -> Result<(), RuntimeError> {
+        if let Some(size) = read_size {
+            if size > self.limits_config.max_substate_size {
+                return Err(RuntimeError::ModuleError(
+                    ModuleError::TransactionLimitsError(
+                        TransactionLimitsError::MaxSubstateReadSizeExceeded(size),
+                    ),
+                ));
+            }
+        }
+        if let Some(size) = write_size {
+            if size > self.limits_config.max_substate_size {
+                return Err(RuntimeError::ModuleError(
+                    ModuleError::TransactionLimitsError(
+                        TransactionLimitsError::MaxSubstateWriteSizeExceeded(size),
+                    ),
+                ));
+            }
+        }
+
+        if self.substate_store_read_count > self.limits_config.max_substate_read_count {
             Err(RuntimeError::ModuleError(
                 ModuleError::TransactionLimitsError(
-                    TransactionLimitsError::MaxSubstateReadsCountExceeded,
+                    TransactionLimitsError::MaxSubstateReadCountExceeded,
                 ),
             ))
-        } else if self.substate_store_write > self.limits_config.max_substate_writes {
+        } else if self.substate_store_write_count > self.limits_config.max_substate_write_count {
             Err(RuntimeError::ModuleError(
                 ModuleError::TransactionLimitsError(
-                    TransactionLimitsError::MaxSubstateWritesCountExceeded,
+                    TransactionLimitsError::MaxSubstateWriteCountExceeded,
                 ),
             ))
         } else {
@@ -184,29 +213,29 @@ impl KernelModule for TransactionLimitsModule {
     fn on_read_substate<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         _lock_handle: LockHandle,
-        _size: usize,
+        size: usize,
     ) -> Result<(), RuntimeError> {
         let tlimit = &mut api.kernel_get_module_state().transaction_limits;
 
         // Increase read coutner.
-        tlimit.substate_store_read += 1;
+        tlimit.substate_store_read_count += 1;
 
         // Validate
-        tlimit.validate_substates()
+        tlimit.validate_substates(Some(size), None)
     }
 
     fn on_write_substate<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         _lock_handle: LockHandle,
-        _size: usize,
+        size: usize,
     ) -> Result<(), RuntimeError> {
         let tlimit = &mut api.kernel_get_module_state().transaction_limits;
 
         // Increase write coutner.
-        tlimit.substate_store_write += 1;
+        tlimit.substate_store_write_count += 1;
 
         // Validate
-        tlimit.validate_substates()
+        tlimit.validate_substates(None, Some(size))
     }
 
     // This event handler is called from two places:

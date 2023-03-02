@@ -8,7 +8,6 @@ use crate::blueprints::clock::CurrentTimeRoundedToMinutesSubstate;
 use crate::blueprints::epoch_manager::EpochManagerSubstate;
 use crate::blueprints::epoch_manager::ValidatorSetSubstate;
 use crate::blueprints::epoch_manager::ValidatorSubstate;
-use crate::blueprints::logger::LoggerSubstate;
 use crate::blueprints::resource::BucketInfoSubstate;
 use crate::blueprints::resource::FungibleProof;
 use crate::blueprints::resource::NonFungibleProof;
@@ -231,7 +230,6 @@ pub enum RuntimeSubstate {
     PackageCodeType(PackageCodeTypeSubstate),
     AuthZoneStack(AuthZoneStackSubstate),
     Worktop(WorktopSubstate),
-    Logger(LoggerSubstate),
     TransactionRuntime(TransactionRuntimeSubstate),
     Account(AccountSubstate),
     AccessController(AccessControllerSubstate),
@@ -345,7 +343,6 @@ impl RuntimeSubstate {
             | RuntimeSubstate::FungibleProof(..)
             | RuntimeSubstate::NonFungibleProof(..)
             | RuntimeSubstate::Worktop(..)
-            | RuntimeSubstate::Logger(..)
             | RuntimeSubstate::TransactionRuntime(..) => {
                 panic!("Should not get here");
             }
@@ -415,7 +412,6 @@ impl RuntimeSubstate {
             | RuntimeSubstate::FungibleProof(..)
             | RuntimeSubstate::NonFungibleProof(..)
             | RuntimeSubstate::Worktop(..)
-            | RuntimeSubstate::Logger(..)
             | RuntimeSubstate::TransactionRuntime(..) => {
                 panic!("Should not get here");
             }
@@ -514,7 +510,6 @@ impl RuntimeSubstate {
             RuntimeSubstate::KeyValueStoreEntry(value) => SubstateRefMut::KeyValueStoreEntry(value),
             RuntimeSubstate::AuthZoneStack(value) => SubstateRefMut::AuthZoneStack(value),
             RuntimeSubstate::Worktop(value) => SubstateRefMut::Worktop(value),
-            RuntimeSubstate::Logger(value) => SubstateRefMut::Logger(value),
             RuntimeSubstate::TransactionRuntime(value) => SubstateRefMut::TransactionRuntime(value),
             RuntimeSubstate::Account(value) => SubstateRefMut::Account(value),
             RuntimeSubstate::AccessController(value) => SubstateRefMut::AccessController(value),
@@ -579,7 +574,6 @@ impl RuntimeSubstate {
             RuntimeSubstate::KeyValueStoreEntry(value) => SubstateRef::KeyValueStoreEntry(value),
             RuntimeSubstate::AuthZoneStack(value) => SubstateRef::AuthZoneStack(value),
             RuntimeSubstate::Worktop(value) => SubstateRef::Worktop(value),
-            RuntimeSubstate::Logger(value) => SubstateRef::Logger(value),
             RuntimeSubstate::TransactionRuntime(value) => SubstateRef::TransactionRuntime(value),
             RuntimeSubstate::Account(value) => SubstateRef::Account(value),
             RuntimeSubstate::AccessController(value) => SubstateRef::AccessController(value),
@@ -793,16 +787,6 @@ impl Into<RuntimeSubstate> for AccountSubstate {
 impl Into<RuntimeSubstate> for AccessControllerSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::AccessController(self)
-    }
-}
-
-impl Into<LoggerSubstate> for RuntimeSubstate {
-    fn into(self) -> LoggerSubstate {
-        if let RuntimeSubstate::Logger(logger) = self {
-            logger
-        } else {
-            panic!("Not a logger");
-        }
     }
 }
 
@@ -1064,7 +1048,6 @@ pub enum SubstateRef<'a> {
     TypeInfo(&'a TypeInfoSubstate),
     AuthZoneStack(&'a AuthZoneStackSubstate),
     Worktop(&'a WorktopSubstate),
-    Logger(&'a LoggerSubstate),
     ComponentInfo(&'a TypeInfoSubstate),
     ComponentState(&'a ComponentStateSubstate),
     ComponentRoyaltyConfig(&'a ComponentRoyaltyConfigSubstate),
@@ -1394,15 +1377,6 @@ impl<'a> From<SubstateRef<'a>> for &'a AuthZoneStackSubstate {
     }
 }
 
-impl<'a> From<SubstateRef<'a>> for &'a LoggerSubstate {
-    fn from(value: SubstateRef<'a>) -> Self {
-        match value {
-            SubstateRef::Logger(value) => value,
-            _ => panic!("Not a logger"),
-        }
-    }
-}
-
 impl<'a> SubstateRef<'a> {
     pub fn to_scrypto_value(&self) -> IndexedScryptoValue {
         match self {
@@ -1595,7 +1569,6 @@ pub enum SubstateRefMut<'a> {
     FungibleProof(&'a mut FungibleProof),
     NonFungibleProof(&'a mut NonFungibleProof),
     Worktop(&'a mut WorktopSubstate),
-    Logger(&'a mut LoggerSubstate),
     TransactionRuntime(&'a mut TransactionRuntimeSubstate),
     AuthZoneStack(&'a mut AuthZoneStackSubstate),
     AuthZone(&'a mut AuthZoneStackSubstate),
@@ -1734,15 +1707,6 @@ impl<'a> From<SubstateRefMut<'a>> for &'a mut TransactionRuntimeSubstate {
         match value {
             SubstateRefMut::TransactionRuntime(value) => value,
             _ => panic!("Not a transaction runtime"),
-        }
-    }
-}
-
-impl<'a> From<SubstateRefMut<'a>> for &'a mut LoggerSubstate {
-    fn from(value: SubstateRefMut<'a>) -> Self {
-        match value {
-            SubstateRefMut::Logger(value) => value,
-            _ => panic!("Not a logger"),
         }
     }
 }

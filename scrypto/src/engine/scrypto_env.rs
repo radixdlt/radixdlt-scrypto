@@ -1,9 +1,10 @@
 use crate::engine::wasm_api::*;
 use radix_engine_interface::api::package::{PackageCodeSubstate, PackageInfoSubstate};
-use radix_engine_interface::api::{types::*, ClientEventApi, LockFlags};
+use radix_engine_interface::api::{types::*, ClientEventApi, ClientLoggerApi, LockFlags};
 use radix_engine_interface::api::{
     ClientActorApi, ClientComponentApi, ClientNodeApi, ClientPackageApi, ClientSubstateApi,
 };
+use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::blueprints::resource::AccessRules;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoEncode};
@@ -306,6 +307,16 @@ impl ClientEventApi<ClientApiError> for ScryptoEnv {
                 event_data.len(),
             )
         };
+        Ok(())
+    }
+}
+
+impl ClientLoggerApi<ClientApiError> for ScryptoEnv {
+    fn log_message(&mut self, level: Level, message: String) -> Result<(), ClientApiError> {
+        let level = scrypto_encode(&level).unwrap();
+        let message = scrypto_encode(&message).unwrap();
+
+        unsafe { log_message(level.as_ptr(), level.len(), message.as_ptr(), message.len()) }
         Ok(())
     }
 }

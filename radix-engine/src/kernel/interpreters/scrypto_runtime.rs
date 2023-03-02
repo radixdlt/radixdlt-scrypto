@@ -7,10 +7,12 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientEventApi;
+use radix_engine_interface::api::ClientLoggerApi;
 use radix_engine_interface::api::{
     ClientActorApi, ClientComponentApi, ClientNodeApi, ClientPackageApi, ClientSubstateApi,
     ClientUnsafeApi,
 };
+use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::blueprints::resource::AccessRules;
 use sbor::rust::vec::Vec;
 use utils::copy_u8_array;
@@ -56,7 +58,8 @@ where
         + ClientPackageApi<RuntimeError>
         + ClientComponentApi<RuntimeError>
         + ClientActorApi<RuntimeError>
-        + ClientEventApi<RuntimeError>,
+        + ClientEventApi<RuntimeError>
+        + ClientLoggerApi<RuntimeError>,
 {
     fn allocate_buffer(
         &mut self,
@@ -291,6 +294,18 @@ where
             .emit_raw_event(Hash(copy_u8_array(&schema_hash)), event)?;
         Ok(())
     }
+
+    fn log_message(
+        &mut self,
+        level: Vec<u8>,
+        message: Vec<u8>,
+    ) -> Result<(), InvokeError<WasmRuntimeError>> {
+        self.api.log_message(
+            scrypto_decode::<Level>(&level).expect("Failed to decode level"),
+            scrypto_decode::<String>(&message).expect("Failed to decode message"),
+        )?;
+        Ok(())
+    }
 }
 
 /// A `Nop` runtime accepts any external function calls by doing nothing and returning void.
@@ -428,6 +443,14 @@ impl WasmRuntime for NopWasmRuntime {
         &mut self,
         schema_hash: Vec<u8>,
         event: Vec<u8>,
+    ) -> Result<(), InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn log_message(
+        &mut self,
+        level: Vec<u8>,
+        message: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }

@@ -13,8 +13,8 @@ pub use type_validation::*;
 /// Combines all data about a Type:
 /// * `kind` - The type's [`TypeKind`] - this is essentially the definition of the structure of the type,
 ///   and includes the type's `ValueKind` as well as the [`TypeKind`] of any child types.
-/// * `metadata` - The type's [`TypeMetadata`] including the name of the type and any of its fields or variants.
-/// * `validation` - The type's [`TypeValidation`] including extra information about validation the kind.
+/// * `metadata` - The type's [`TypeMetadata`] which includes the name of the type and any of its fields or variants.
+/// * `validation` - The type's [`TypeValidation`] which includes extra validation instructions for the type.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TypeData<C: CustomTypeKind<L>, L: SchemaTypeLink> {
     pub kind: TypeKind<C::CustomValueKind, C, L>,
@@ -49,12 +49,12 @@ impl<C: CustomTypeKind<L>, L: SchemaTypeLink + Categorize<C::CustomValueKind>> T
         name: &'static str,
         schema: TypeKind<C::CustomValueKind, C, L>,
     ) -> Self {
-        Self::new(TypeMetadata::named_no_child_names(name), schema)
+        Self::new(TypeMetadata::no_child_names(name), schema)
     }
 
     pub fn named_unit(name: &'static str) -> Self {
         Self::new(
-            TypeMetadata::named_no_child_names(name),
+            TypeMetadata::no_child_names(name),
             TypeKind::Tuple {
                 field_types: crate::rust::vec![],
             },
@@ -63,7 +63,7 @@ impl<C: CustomTypeKind<L>, L: SchemaTypeLink + Categorize<C::CustomValueKind>> T
 
     pub fn named_tuple(name: &'static str, field_types: Vec<L>) -> Self {
         Self::new(
-            TypeMetadata::named_no_child_names(name),
+            TypeMetadata::unnamed_fields(name),
             TypeKind::Tuple { field_types },
         )
     }
@@ -71,7 +71,7 @@ impl<C: CustomTypeKind<L>, L: SchemaTypeLink + Categorize<C::CustomValueKind>> T
     pub fn named_fields_tuple(name: &'static str, fields: Vec<(&'static str, L)>) -> Self {
         let (field_names, field_types): (Vec<_>, _) = fields.into_iter().unzip();
         Self::new(
-            TypeMetadata::named_with_fields(name, &field_names),
+            TypeMetadata::named_fields(name, &field_names),
             TypeKind::Tuple { field_types },
         )
     }
@@ -88,7 +88,7 @@ impl<C: CustomTypeKind<L>, L: SchemaTypeLink + Categorize<C::CustomValueKind>> T
             })
             .unzip();
         Self::new(
-            TypeMetadata::named_with_variants(name, variant_naming),
+            TypeMetadata::enum_variants(name, variant_naming),
             TypeKind::Enum {
                 variants: variant_tuple_schemas,
             },

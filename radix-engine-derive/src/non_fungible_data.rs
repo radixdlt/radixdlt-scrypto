@@ -49,12 +49,12 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
                     impl radix_engine_interface::blueprints::resource::NonFungibleData for #ident {
                         fn decode(immutable_data: &[u8], mutable_data: &[u8]) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{value_kind::*, *};
-                            let mut decoder_nm = radix_engine_interface::data::ScryptoDecoder::new(immutable_data);
+                            let mut decoder_nm = radix_engine_interface::data::ScryptoDecoder::new(immutable_data, radix_engine_interface::data::SCRYPTO_SBOR_V1_MAX_DEPTH);
                             decoder_nm.read_and_check_payload_prefix(radix_engine_interface::data::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
                             decoder_nm.read_and_check_value_kind(radix_engine_interface::data::ScryptoValueKind::Tuple)?;
                             decoder_nm.read_and_check_size(#im_n)?;
 
-                            let mut decoder_m = radix_engine_interface::data::ScryptoDecoder::new(mutable_data);
+                            let mut decoder_m = radix_engine_interface::data::ScryptoDecoder::new(mutable_data, radix_engine_interface::data::SCRYPTO_SBOR_V1_MAX_DEPTH);
                             decoder_m.read_and_check_payload_prefix(radix_engine_interface::data::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
                             decoder_m.read_and_check_value_kind(radix_engine_interface::data::ScryptoValueKind::Tuple)?;
                             decoder_m.read_and_check_size(#m_n)?;
@@ -74,7 +74,7 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
                             use ::sbor::{value_kind::*, *};
 
                             let mut bytes = Vec::with_capacity(512);
-                            let mut encoder = radix_engine_interface::data::ScryptoEncoder::new(&mut bytes);
+                            let mut encoder = radix_engine_interface::data::ScryptoEncoder::new(&mut bytes, radix_engine_interface::data::SCRYPTO_SBOR_V1_MAX_DEPTH);
                             encoder.write_payload_prefix(radix_engine_interface::data::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
                             encoder.write_value_kind(radix_engine_interface::data::ScryptoValueKind::Tuple)?;
                             encoder.write_size(#im_n)?;
@@ -90,7 +90,7 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
                             use ::sbor::rust::vec::Vec;
 
                             let mut bytes = Vec::with_capacity(512);
-                            let mut encoder = radix_engine_interface::data::ScryptoEncoder::new(&mut bytes);
+                            let mut encoder = radix_engine_interface::data::ScryptoEncoder::new(&mut bytes, radix_engine_interface::data::SCRYPTO_SBOR_V1_MAX_DEPTH);
                             encoder.write_payload_prefix(radix_engine_interface::data::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
                             encoder.write_value_kind(radix_engine_interface::data::ScryptoValueKind::Tuple)?;
                             encoder.write_size(#m_n)?;
@@ -182,11 +182,11 @@ mod tests {
                 impl radix_engine_interface::blueprints::resource::NonFungibleData for MyStruct {
                     fn decode(immutable_data: &[u8], mutable_data: &[u8]) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{value_kind::*, *};
-                        let mut decoder_nm = radix_engine_interface::data::ScryptoDecoder::new(immutable_data);
+                        let mut decoder_nm = radix_engine_interface::data::ScryptoDecoder::new(immutable_data, radix_engine_interface::data::SCRYPTO_SBOR_V1_MAX_DEPTH);
                         decoder_nm.read_and_check_payload_prefix(radix_engine_interface::data::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
                         decoder_nm.read_and_check_value_kind(radix_engine_interface::data::ScryptoValueKind::Tuple)?;
                         decoder_nm.read_and_check_size(1)?;
-                        let mut decoder_m = radix_engine_interface::data::ScryptoDecoder::new(mutable_data);
+                        let mut decoder_m = radix_engine_interface::data::ScryptoDecoder::new(mutable_data, radix_engine_interface::data::SCRYPTO_SBOR_V1_MAX_DEPTH);
                         decoder_m.read_and_check_payload_prefix(radix_engine_interface::data::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
                         decoder_m.read_and_check_value_kind(radix_engine_interface::data::ScryptoValueKind::Tuple)?;
                         decoder_m.read_and_check_size(1)?;
@@ -201,7 +201,7 @@ mod tests {
                     fn immutable_data(&self) -> Result<::sbor::rust::vec::Vec<u8>, ::sbor::EncodeError> {
                         use ::sbor::{value_kind::*, *};
                         let mut bytes = Vec::with_capacity(512);
-                        let mut encoder = radix_engine_interface::data::ScryptoEncoder::new(&mut bytes);
+                        let mut encoder = radix_engine_interface::data::ScryptoEncoder::new(&mut bytes, radix_engine_interface::data::SCRYPTO_SBOR_V1_MAX_DEPTH);
                         encoder.write_payload_prefix(radix_engine_interface::data::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
                         encoder.write_value_kind(radix_engine_interface::data::ScryptoValueKind::Tuple)?;
                         encoder.write_size(1)?;
@@ -212,7 +212,7 @@ mod tests {
                         use ::sbor::{value_kind::*, *};
                         use ::sbor::rust::vec::Vec;
                         let mut bytes = Vec::with_capacity(512);
-                        let mut encoder = radix_engine_interface::data::ScryptoEncoder::new(&mut bytes);
+                        let mut encoder = radix_engine_interface::data::ScryptoEncoder::new(&mut bytes, radix_engine_interface::data::SCRYPTO_SBOR_V1_MAX_DEPTH);
                         encoder.write_payload_prefix(radix_engine_interface::data::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
                         encoder.write_value_kind(radix_engine_interface::data::ScryptoValueKind::Tuple)?;
                         encoder.write_size(1)?;

@@ -47,9 +47,7 @@ pub struct NotarizedTransaction {
     derive(serde::Serialize, serde::Deserialize),
     serde(tag = "type", content = "signature")
 )]
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, ManifestCategorize, ManifestEncode, ManifestDecode,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sbor)]
 pub enum Signature {
     EcdsaSecp256k1(EcdsaSecp256k1Signature),
     EddsaEd25519(EddsaEd25519Signature),
@@ -61,9 +59,7 @@ pub enum Signature {
     derive(serde::Serialize, serde::Deserialize),
     serde(tag = "type")
 )]
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, ManifestCategorize, ManifestEncode, ManifestDecode,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sbor)]
 pub enum SignatureWithPublicKey {
     EcdsaSecp256k1 {
         signature: EcdsaSecp256k1Signature,

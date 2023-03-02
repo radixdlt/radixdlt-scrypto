@@ -86,7 +86,7 @@ impl TransactionValidator<NotarizedTransaction> for NotarizedTransactionValidato
         let header = &intent.header;
 
         Ok(Executable::new(
-            &intent.manifest.instructions,
+            intent.manifest.instructions.clone(),
             &intent.manifest.blobs,
             ExecutionContext {
                 transaction_hash,
@@ -150,7 +150,7 @@ impl NotarizedTransactionValidator {
         };
 
         Ok(Executable::new(
-            &manifest.instructions,
+            manifest.instructions.clone(),
             &manifest.blobs,
             ExecutionContext {
                 transaction_hash,

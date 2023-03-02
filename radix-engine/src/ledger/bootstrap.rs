@@ -28,7 +28,6 @@ use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerAbi, ManifestValidatorInit, EPOCH_MANAGER_BLUEPRINT, EPOCH_MANAGER_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::identity::IdentityAbi;
-use radix_engine_interface::blueprints::logger::LoggerAbi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_runtime::TransactionRuntimeAbi;
 use radix_engine_interface::data::*;
@@ -321,29 +320,6 @@ pub fn create_genesis(
         });
     }
 
-    // Logger Package
-    {
-        pre_allocated_ids.insert(RENodeId::GlobalPackage(LOGGER_PACKAGE));
-        let package_address = LOGGER_PACKAGE.to_array_without_entity_id();
-        instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE_LOADER,
-            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishNativeInput {
-                package_address: Some(package_address), // TODO: Clean this up
-                abi: TransactionRuntimeAbi::blueprint_abis(),
-                metadata: BTreeMap::new(),
-                access_rules: AccessRules::new(),
-                native_package_code_id: LOGGER_CODE_ID,
-                dependent_resources: vec![],
-                dependent_components: vec![],
-                package_access_rules: BTreeMap::new(),
-                default_package_access_rule: AccessRule::AllowAll,
-            })
-            .unwrap(),
-        });
-    }
-
     // TransactionRuntime Package
     {
         pre_allocated_ids.insert(RENodeId::GlobalPackage(TRANSACTION_RUNTIME_PACKAGE));
@@ -354,7 +330,7 @@ pub fn create_genesis(
             function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                abi: LoggerAbi::blueprint_abis(),
+                abi: TransactionRuntimeAbi::blueprint_abis(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
                 native_package_code_id: TRANSACTION_RUNTIME_CODE_ID,
@@ -681,6 +657,11 @@ mod tests {
         println!("{:?}", transaction_receipt);
 
         transaction_receipt.expect_commit_success();
+        let commit_result = transaction_receipt.expect_commit();
+        commit_result
+            .next_epoch
+            .as_ref()
+            .expect("There should be a new epoch.");
 
         let genesis_receipt = genesis_result(&transaction_receipt);
         assert_eq!(genesis_receipt.faucet_component, FAUCET_COMPONENT);

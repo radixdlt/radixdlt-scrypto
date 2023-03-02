@@ -324,7 +324,7 @@ impl NonFungibleLocalId {
 
     pub fn to_vec(&self) -> Vec<u8> {
         let mut buffer = Vec::new();
-        let mut encoder = ScryptoEncoder::new(&mut buffer);
+        let mut encoder = ScryptoEncoder::new(&mut buffer, 1);
         self.encode_body_common(&mut encoder).unwrap();
         buffer
     }
