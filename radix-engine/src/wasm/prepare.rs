@@ -616,8 +616,43 @@ impl WasmModule {
         Ok(self)
     }
 
-    pub fn enforce_export_constraints(self, _schema: &PackageSchema) -> Result<Self, PrepareError> {
-        // FIXME restore schema validation!
+    pub fn enforce_export_constraints(self, schema: &PackageSchema) -> Result<Self, PrepareError> {
+        let exports = self
+            .module
+            .export_section()
+            .ok_or(PrepareError::NoExportSection)?;
+        for (_, blueprint_schema) in &schema.blueprints {
+            for func in blueprint_schema.functions.values() {
+                let func_name = &func.export_name;
+                if !exports.entries().iter().any(|x| {
+                    x.field().eq(func_name) && {
+                        if let Internal::Function(func_index) = x.internal() {
+                            if func.receiver.is_some() {
+                                Self::function_matches(
+                                    &self.module,
+                                    *func_index as usize,
+                                    vec![ValueType::I64, ValueType::I64],
+                                    vec![ValueType::I64],
+                                )
+                            } else {
+                                Self::function_matches(
+                                    &self.module,
+                                    *func_index as usize,
+                                    vec![ValueType::I64],
+                                    vec![ValueType::I64],
+                                )
+                            }
+                        } else {
+                            false
+                        }
+                    }
+                }) {
+                    return Err(PrepareError::MissingExport {
+                        export_name: func_name.to_string(),
+                    });
+                }
+            }
+        }
 
         Ok(self)
     }
@@ -662,7 +697,7 @@ impl WasmModule {
     }
 
     pub fn ensure_compilable(self) -> Result<Self, PrepareError> {
-        // TODO: Understand WASM JIT compilability
+        // TODO: Understand WASM JIT compilschemality
         //
         // Can we make the assumption that all "prepared" modules are compilable,
         // if machine resource is "sufficient"?
