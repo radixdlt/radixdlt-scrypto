@@ -144,8 +144,13 @@ impl EpochManagerBlueprint {
 
         let preparing_validator_set = ValidatorSetSubstate {
             epoch: input.initial_epoch + 1,
-            validator_set,
+            validator_set: validator_set.clone(),
         };
+
+        api.emit_event(EpochChangeEvent {
+            epoch: input.initial_epoch,
+            validators: validator_set,
+        })?;
 
         let mut access_rules = AccessRules::new();
         access_rules.set_method_access_rule(

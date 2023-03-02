@@ -603,7 +603,8 @@ impl<'s> FinalizingTrack<'s> {
                 .iter()
                 .find(|(identifier, _)| match identifier {
                     EventTypeIdentifier(
-                        RENodeId::GlobalComponent(ComponentAddress::EpochManager(..)),
+                        RENodeId::GlobalPackage(EPOCH_MANAGER_PACKAGE)
+                        | RENodeId::GlobalComponent(ComponentAddress::EpochManager(..)),
                         NodeModuleId::SELF,
                         schema_hash,
                     ) if *schema_hash == expected_schema_hash => true,
