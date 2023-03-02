@@ -24,14 +24,21 @@ impl TypeMetadata {
         }
     }
 
-    pub fn named_no_child_names(name: &'static str) -> Self {
+    pub fn no_child_names(name: &'static str) -> Self {
         Self {
             type_name: Cow::Borrowed(name),
             children: Children::None,
         }
     }
 
-    pub fn named_with_fields(name: &'static str, field_names: &[&'static str]) -> Self {
+    pub fn unnamed_fields(name: &'static str) -> Self {
+        Self {
+            type_name: Cow::Borrowed(name),
+            children: Children::UnnamedFields,
+        }
+    }
+
+    pub fn named_fields(name: &'static str, field_names: &[&'static str]) -> Self {
         let field_names = field_names
             .iter()
             .map(|field_name| FieldMetadata {
@@ -40,17 +47,14 @@ impl TypeMetadata {
             .collect();
         Self {
             type_name: Cow::Borrowed(name),
-            children: Children::Fields(field_names),
+            children: Children::NamedFields(field_names),
         }
     }
 
-    pub fn named_with_variants(
-        name: &'static str,
-        variant_naming: BTreeMap<u8, TypeMetadata>,
-    ) -> Self {
+    pub fn enum_variants(name: &'static str, variant_naming: BTreeMap<u8, TypeMetadata>) -> Self {
         Self {
             type_name: Cow::Borrowed(name),
-            children: Children::Variants(variant_naming),
+            children: Children::EnumVariants(variant_naming),
         }
     }
 }
@@ -59,8 +63,9 @@ impl TypeMetadata {
 pub enum Children {
     #[default]
     None,
-    Fields(Vec<FieldMetadata>),
-    Variants(BTreeMap<u8, TypeMetadata>),
+    UnnamedFields,
+    NamedFields(Vec<FieldMetadata>),
+    EnumVariants(BTreeMap<u8, TypeMetadata>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default, Sbor)]

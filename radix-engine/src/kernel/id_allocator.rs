@@ -72,7 +72,6 @@ impl IdAllocator {
             RENodeType::AuthZoneStack => Ok(RENodeId::AuthZoneStack),
             RENodeType::TransactionRuntime => Ok(RENodeId::TransactionRuntime),
             RENodeType::Worktop => Ok(RENodeId::Worktop),
-            RENodeType::Logger => Ok(RENodeId::Logger),
             RENodeType::KeyValueStore => {
                 self.new_kv_store_id().map(|id| RENodeId::KeyValueStore(id))
             }

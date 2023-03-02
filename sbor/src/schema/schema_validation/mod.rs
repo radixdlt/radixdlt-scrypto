@@ -1,4 +1,3 @@
-use crate::rust::collections::IndexSet;
 use crate::rust::string::String;
 use crate::*;
 
@@ -10,14 +9,16 @@ pub use type_kind_validation::*;
 pub use type_metadata_validation::*;
 pub use type_validation_validation::*;
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SchemaValidationError {
     MetadataLengthMismatch,
     ValidationsLengthMismatch,
-    DuplicateTypeHash,
+    TypeKindTupleTooLong { max_size: usize },
+    TypeKindEnumVariantTooLong { max_size: usize },
     TypeKindInvalidSchemaLocalIndex,
     TypeKindInvalidWellKnownIndex,
     TypeMetadataContainedUnexpectedChildNames,
-    TypeMetadataContainedWrongNumberOfChildNames,
+    TypeMetadataContainedWrongNumberOfChildren,
     TypeMetadataForFieldsContainedEnumVariantChildNames,
     TypeMetadataForEnumIsNotEnumVariantChildNames,
     TypeMetadataHasMismatchingEnumDiscriminator,
@@ -43,28 +44,13 @@ pub fn validate_schema<E: CustomTypeExtension>(
     if type_validations.len() != types_len {
         return Err(SchemaValidationError::ValidationsLengthMismatch);
     }
-
-    let unique_type_hashes = type_metadata
-        .iter()
-        .map(|m| m.type_hash)
-        .collect::<IndexSet<_>>()
-        .len();
-
-    if unique_type_hashes != types_len {
-        return Err(SchemaValidationError::DuplicateTypeHash);
-    }
-
     let context = TypeValidationContext {
         local_types_len: types_len,
     };
 
     for i in 0..types_len {
-        let NovelTypeMetadata {
-            type_hash: _, // We have already validated that the type hashes are distinct at the parent level
-            type_metadata: this_type_metadata,
-        } = &type_metadata[i];
         validate_type_kind::<E>(&context, &type_kinds[i])?;
-        validate_type_metadata_with_type_kind::<E>(&context, &type_kinds[i], this_type_metadata)?;
+        validate_type_metadata_with_type_kind::<E>(&context, &type_kinds[i], &type_metadata[i])?;
         validate_type_validation_with_type_kind::<E>(
             &context,
             &type_kinds[i],

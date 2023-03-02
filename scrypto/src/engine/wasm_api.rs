@@ -151,6 +151,17 @@ extern "C" {
         event_data_ptr: *const u8,
         event_data_len: usize,
     );
+
+    //===============
+    // Logger API
+    //===============
+
+    pub fn log_message(
+        level_ptr: *const u8,
+        level_len: usize,
+        message_ptr: *const u8,
+        message_len: usize,
+    );
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -286,6 +297,16 @@ pub unsafe fn emit_event(
     _schema_hash_len: usize,
     _event_data_ptr: *const u8,
     _event_data_len: usize,
+) {
+    todo!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn log_message(
+    _level_ptr: *const u8,
+    _level_len: usize,
+    _message_ptr: *const u8,
+    _message_len: usize,
 ) {
     todo!()
 }

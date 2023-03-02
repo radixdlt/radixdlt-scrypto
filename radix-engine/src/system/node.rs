@@ -1,4 +1,3 @@
-use crate::blueprints::logger::LoggerSubstate;
 use crate::blueprints::resource::*;
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::system::node_modules::access_rules::*;
@@ -22,8 +21,8 @@ pub enum RENodeModuleInit {
     Metadata(MetadataSubstate),
 
     /* Access rules */
-    ObjectAccessRulesChain(MethodAccessRulesSubstate),
-    PackageAccessRules(FunctionAccessRulesSubstate),
+    MethodAccessRules(MethodAccessRulesSubstate),
+    FunctionAccessRules(FunctionAccessRulesSubstate),
 
     /* Royalty */
     ComponentRoyalty(
@@ -46,13 +45,13 @@ impl RENodeModuleInit {
                     metadata.into(),
                 );
             }
-            RENodeModuleInit::ObjectAccessRulesChain(access_rules) => {
+            RENodeModuleInit::MethodAccessRules(access_rules) => {
                 substates.insert(
                     SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
                     access_rules.into(),
                 );
             }
-            RENodeModuleInit::PackageAccessRules(access_rules) => {
+            RENodeModuleInit::FunctionAccessRules(access_rules) => {
                 substates.insert(SubstateOffset::PackageAccessRules, access_rules.into());
             }
             RENodeModuleInit::TypeInfo(type_info) => {
@@ -101,7 +100,6 @@ pub enum RENodeInit {
     KeyValueStore,
     NonFungibleStore(NonFungibleStore),
     TransactionRuntime(TransactionRuntimeSubstate),
-    Logger(LoggerSubstate),
 }
 
 impl RENodeInit {
@@ -122,12 +120,6 @@ impl RENodeInit {
                 substates.insert(
                     SubstateOffset::Worktop(WorktopOffset::Worktop),
                     RuntimeSubstate::Worktop(worktop),
-                );
-            }
-            RENodeInit::Logger(logger) => {
-                substates.insert(
-                    SubstateOffset::Logger(LoggerOffset::Logger),
-                    RuntimeSubstate::Logger(logger),
                 );
             }
             RENodeInit::GlobalPackage(package_info, code_type, code) => {

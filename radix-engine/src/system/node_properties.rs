@@ -118,7 +118,6 @@ impl VisibilityProperties {
                             || package_address.eq(&EPOCH_MANAGER_PACKAGE)
                             || package_address.eq(&CLOCK_PACKAGE)
                             || package_address.eq(&ACCOUNT_PACKAGE)
-                            || package_address.eq(&LOGGER_PACKAGE)
                             || package_address.eq(&ACCESS_CONTROLLER_PACKAGE)
                             || package_address.eq(&TRANSACTION_RUNTIME_PACKAGE)
                             || package_address.eq(&AUTH_ZONE_PACKAGE)
@@ -235,7 +234,6 @@ impl VisibilityProperties {
                             || package_address.eq(&IDENTITY_PACKAGE)
                             || package_address.eq(&ACCESS_CONTROLLER_PACKAGE)
                             || package_address.eq(&CLOCK_PACKAGE)
-                            || package_address.eq(&LOGGER_PACKAGE)
                             || package_address.eq(&EPOCH_MANAGER_PACKAGE)
                             || package_address.eq(&TRANSACTION_RUNTIME_PACKAGE)
                             || package_address.eq(&AUTH_ZONE_PACKAGE)
@@ -320,7 +318,6 @@ impl SubstateProperties {
             SubstateOffset::Bucket(..) => false,
             SubstateOffset::Proof(..) => false,
             SubstateOffset::Worktop(..) => false,
-            SubstateOffset::Logger(..) => false,
             SubstateOffset::Clock(..) => true,
             SubstateOffset::TransactionRuntime(..) => false,
             SubstateOffset::Account(..) => true,

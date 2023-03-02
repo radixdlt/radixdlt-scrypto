@@ -5,6 +5,7 @@ use crate::blueprints::epoch_manager::{
     EpochManagerSubstate, ValidatorSetSubstate, ValidatorSubstate,
 };
 use crate::blueprints::event_store::EventStoreNativePackage;
+use crate::blueprints::logger::LoggerNativePackage;
 use crate::blueprints::resource::{
     BucketInfoSubstate, FungibleProof, NonFungibleProof, NonFungibleSubstate, ProofInfoSubstate,
     ResourceManagerSubstate, VaultInfoSubstate,
@@ -34,9 +35,9 @@ use radix_engine_interface::api::component::{
 use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientEventApi;
+use radix_engine_interface::api::{types::*, ClientLoggerApi};
 use radix_engine_interface::api::{
     ClientActorApi, ClientApi, ClientNodeApi, ClientObjectApi, ClientPackageApi, ClientSubstateApi,
     ClientUnsafeApi,
@@ -45,6 +46,7 @@ use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::identity::*;
+use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::model::Own;
 use radix_engine_interface::data::*;
@@ -466,7 +468,7 @@ where
                 (
                     node_id,
                     RENodeInit::Object(btreemap!(
-                        SubstateOffset::AccessRules(AccessRulesOffset::AccessRules) => RuntimeSubstate::AccessRulesChain(substate)
+                        SubstateOffset::AccessRules(AccessRulesOffset::AccessRules) => RuntimeSubstate::MethodAccessRules(substate)
                     )),
                 )
             }
@@ -753,10 +755,8 @@ where
                         .unwrap();
                     let access_rules: MethodAccessRulesSubstate = access_rules.into();
 
-                    module_init.insert(
-                        module_id,
-                        RENodeModuleInit::ObjectAccessRulesChain(access_rules),
-                    );
+                    module_init
+                        .insert(module_id, RENodeModuleInit::MethodAccessRules(access_rules));
                 }
                 NodeModuleId::Metadata => {
                     let metadata: Own = scrypto_decode(&init)
@@ -907,6 +907,15 @@ where
         event_data: Vec<u8>,
     ) -> Result<(), RuntimeError> {
         EventStoreNativePackage::emit_raw_event(schema_hash, event_data, self)
+    }
+}
+
+impl<'g, 's, W> ClientLoggerApi<RuntimeError> for Kernel<'g, 's, W>
+where
+    W: WasmEngine,
+{
+    fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
+        LoggerNativePackage::log_message(level, message, self)
     }
 }
 

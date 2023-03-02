@@ -10,7 +10,7 @@ use sbor::rust::fmt::Debug;
 use utils::copy_u8_array;
 
 // TODO: it's still up to debate whether this should be an enum OR dedicated types for each variant.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Own {
     Bucket(ObjectId),
     Proof(ObjectId),
@@ -103,7 +103,7 @@ impl Own {
 
     pub fn to_vec(&self) -> Vec<u8> {
         let mut buffer = Vec::new();
-        let mut encoder = ScryptoEncoder::new(&mut buffer);
+        let mut encoder = ScryptoEncoder::new(&mut buffer, 1);
         self.encode_body_common(&mut encoder).unwrap();
         buffer
     }

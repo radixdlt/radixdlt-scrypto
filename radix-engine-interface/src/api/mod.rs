@@ -2,6 +2,7 @@ pub mod actor_api;
 pub mod component;
 pub mod component_api;
 pub mod events_api;
+pub mod logger_api;
 pub mod node_api;
 pub mod node_modules;
 pub mod package;
@@ -14,6 +15,7 @@ pub mod unsafe_api;
 pub use actor_api::ClientActorApi;
 pub use component_api::ClientObjectApi;
 pub use events_api::ClientEventApi;
+pub use logger_api::ClientLoggerApi;
 pub use node_api::ClientNodeApi;
 pub use package_api::ClientPackageApi;
 pub use substate_api::ClientSubstateApi;
@@ -31,5 +33,6 @@ pub trait ClientApi<E: sbor::rust::fmt::Debug>:
     + ClientSubstateApi<E>
     + ClientUnsafeApi<E>
     + ClientEventApi<E>
+    + ClientLoggerApi<E>
 {
 }

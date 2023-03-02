@@ -4,7 +4,6 @@ use crate::api::types::*;
 use crate::blueprints::resource::*;
 use crate::data::ScryptoCustomTypeKind;
 use crate::data::ScryptoCustomValueKind;
-use crate::data::ScryptoEncoder;
 use crate::*;
 use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
@@ -23,18 +22,7 @@ impl Address {
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        match self {
-            Address::Package(v) => {
-                encoder.write_slice(&v.to_vec())?;
-            }
-            Address::Component(v) => {
-                encoder.write_slice(&v.to_vec())?;
-            }
-            Address::Resource(v) => {
-                encoder.write_slice(&v.to_vec())?;
-            }
-        }
-        Ok(())
+        encoder.write_slice(&self.to_vec())
     }
 
     pub fn decode_body_common<X: CustomValueKind, D: Decoder<X>>(
@@ -49,10 +37,11 @@ impl Address {
     }
 
     pub fn to_vec(&self) -> Vec<u8> {
-        let mut buffer = Vec::new();
-        let mut encoder = ScryptoEncoder::new(&mut buffer);
-        self.encode_body_common(&mut encoder).unwrap();
-        buffer
+        match self {
+            Address::Package(inner) => inner.to_vec(),
+            Address::Component(inner) => inner.to_vec(),
+            Address::Resource(inner) => inner.to_vec(),
+        }
     }
 }
 

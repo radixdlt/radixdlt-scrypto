@@ -8,6 +8,7 @@ sbor-derive = { path = "../sbor-derive" }
 hashbrown = { version = "0.13.2", optional = true }
 serde = { version = "1.0.137", default-features = false, optional = true, features=["derive"] }
 const-sha1 = { git = "https://github.com/radixdlt/const-sha1", default-features = false } # Chosen because of its small size and 0 transitive dependencies
+lazy_static = "1.4.0"
 
 # INDEXMAP:
 # The v1 version doesn't play well with no-std (or CLion) due to the autocfg build.rs - https://github.com/bluss/indexmap/blob/indexmap-1.x/build.rs
@@ -18,7 +19,7 @@ indexmap = { git = "https://github.com/bluss/indexmap", rev = "eedabaca9f84e520e
 # You should enable either `std` or `alloc`
 default = ["std"]
 std = ["serde?/std", "indexmap/std"]
-alloc = ["hashbrown", "serde?/alloc"]
+alloc = ["hashbrown", "serde?/alloc", "lazy_static/spin_no_std"]
 
 # Enable serde derives for SBOR value and type models
 serde = ["dep:serde"]

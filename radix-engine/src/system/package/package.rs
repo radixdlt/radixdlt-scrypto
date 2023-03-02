@@ -118,11 +118,11 @@ impl Package {
         );
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::ObjectAccessRulesChain(access_rules),
+            RENodeModuleInit::MethodAccessRules(access_rules),
         );
         node_modules.insert(
             NodeModuleId::FunctionAccessRules,
-            RENodeModuleInit::PackageAccessRules(FunctionAccessRulesSubstate {
+            RENodeModuleInit::FunctionAccessRules(FunctionAccessRulesSubstate {
                 access_rules: input.package_access_rules,
                 default_auth: input.default_package_access_rule,
             }),
@@ -221,11 +221,11 @@ impl Package {
         );
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::ObjectAccessRulesChain(access_rules),
+            RENodeModuleInit::MethodAccessRules(access_rules),
         );
         node_modules.insert(
             NodeModuleId::FunctionAccessRules,
-            RENodeModuleInit::PackageAccessRules(FunctionAccessRulesSubstate {
+            RENodeModuleInit::FunctionAccessRules(FunctionAccessRulesSubstate {
                 access_rules: BTreeMap::new(),
                 default_auth: AccessRule::AllowAll,
             }),

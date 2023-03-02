@@ -105,8 +105,9 @@ impl KernelModuleMixer {
             transaction_limits: TransactionLimitsModule::new(TransactionLimitsConfig {
                 max_wasm_memory: execution_config.max_wasm_mem_per_transaction,
                 max_wasm_memory_per_call_frame: execution_config.max_wasm_mem_per_call_frame,
-                max_substate_reads: execution_config.max_substate_reads_per_transaction,
-                max_substate_writes: execution_config.max_substate_writes_per_transaction,
+                max_substate_read_count: execution_config.max_substate_reads_per_transaction,
+                max_substate_write_count: execution_config.max_substate_writes_per_transaction,
+                max_substate_size: execution_config.max_substate_size,
                 max_invoke_payload_size: execution_config.max_invoke_input_size,
             }),
             execution_trace: ExecutionTraceModule::new(

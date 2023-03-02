@@ -65,18 +65,25 @@ pub fn validate_fields_child_names(
 ) -> Result<(), SchemaValidationError> {
     match child_names {
         Children::None => {
-            // None can apply to any field count
-        }
-        Children::Fields(fields_matadata) => {
-            if fields_matadata.len() != field_count {
-                return Err(SchemaValidationError::TypeMetadataContainedWrongNumberOfChildNames);
+            if field_count != 0 {
+                return Err(SchemaValidationError::TypeMetadataContainedWrongNumberOfChildren);
             }
-            for field_metadata in fields_matadata.iter() {
+        }
+        Children::UnnamedFields => {
+            if field_count == 0 {
+                return Err(SchemaValidationError::TypeMetadataContainedWrongNumberOfChildren);
+            }
+        }
+        Children::NamedFields(fields_metadata) => {
+            if field_count == 0 || fields_metadata.len() != field_count {
+                return Err(SchemaValidationError::TypeMetadataContainedWrongNumberOfChildren);
+            }
+            for field_metadata in fields_metadata.iter() {
                 let FieldMetadata { field_name } = field_metadata;
                 validate_field_name(field_name)?;
             }
         }
-        Children::Variants(_) => {
+        Children::EnumVariants(_) => {
             return Err(SchemaValidationError::TypeMetadataForFieldsContainedEnumVariantChildNames)
         }
     }
@@ -94,12 +101,12 @@ pub fn validate_enum_metadata(
     validate_type_name(type_name.as_ref())?;
 
     match &children {
-        Children::None | Children::Fields(_) => {
+        Children::None | Children::UnnamedFields | Children::NamedFields(_) => {
             return Err(SchemaValidationError::TypeMetadataForEnumIsNotEnumVariantChildNames)
         }
-        Children::Variants(variants_metadata) => {
+        Children::EnumVariants(variants_metadata) => {
             if variants_metadata.len() != variants.len() {
-                return Err(SchemaValidationError::TypeMetadataContainedWrongNumberOfChildNames);
+                return Err(SchemaValidationError::TypeMetadataContainedWrongNumberOfChildren);
             }
             for (discriminator, variant_metadata) in variants_metadata.iter() {
                 let Some(child_types) = variants.get(discriminator) else {
