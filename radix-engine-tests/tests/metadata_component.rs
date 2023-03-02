@@ -20,7 +20,12 @@ fn can_set_component_metadata() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let component_address = receipt.new_component_addresses()[0];
 
     // Assert
     receipt.expect_commit_success();
+    let value = test_runner
+        .get_metadata(component_address.into(), "key")
+        .expect("Should exist");
+    assert_eq!(value, "value");
 }

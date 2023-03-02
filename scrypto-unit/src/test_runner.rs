@@ -226,7 +226,7 @@ impl TestRunner {
         )
     }
 
-    pub fn get_metadata(&mut self, address: Address) -> BTreeMap<String, String> {
+    pub fn get_metadata(&mut self, address: Address, key: &str) -> Option<String> {
         let metadata = self
             .substate_store
             .get_substate(&SubstateId(
@@ -238,7 +238,7 @@ impl TestRunner {
             .unwrap();
 
         let metadata: MetadataSubstate = metadata.into();
-        metadata.metadata
+        metadata.metadata.get(key).cloned()
     }
 
     pub fn inspect_component_royalty(

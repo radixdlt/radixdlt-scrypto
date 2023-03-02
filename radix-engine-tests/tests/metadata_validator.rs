@@ -50,8 +50,10 @@ fn can_set_validator_metadata_with_owner() {
 
     // Assert
     receipt.expect_commit_success();
-    let metadata = test_runner.get_metadata(Address::Component(component_address));
-    assert_eq!(metadata.get("name").unwrap(), "best package ever!");
+    let value = test_runner
+        .get_metadata(component_address.into(), "name")
+        .expect("Should exist");
+    assert_eq!(value, "best package ever!");
 }
 
 #[test]

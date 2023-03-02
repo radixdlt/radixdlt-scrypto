@@ -42,8 +42,8 @@ fn cannot_set_package_metadata_with_no_owner() {
             RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized { .. }))
         )
     });
-    let metadata = test_runner.get_metadata(Address::Package(package_address));
-    assert!(metadata.get("name").is_none());
+    let value = test_runner.get_metadata(package_address.into(), "name");
+    assert_eq!(value, None);
 }
 
 #[test]
@@ -84,8 +84,10 @@ fn can_set_package_metadata_with_owner() {
 
     // Assert
     receipt.expect_commit_success();
-    let metadata = test_runner.get_metadata(Address::Package(package_address));
-    assert_eq!(metadata.get("name").unwrap(), "best package ever!");
+    let value = test_runner
+        .get_metadata(package_address.into(), "name")
+        .expect("Should exist");
+    assert_eq!(value, "best package ever!");
 }
 
 #[test]
@@ -147,6 +149,6 @@ fn can_lock_package_metadata_with_owner() {
             RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized { .. }))
         )
     });
-    let metadata = test_runner.get_metadata(Address::Package(package_address));
-    assert!(metadata.get("name").is_none());
+    let value = test_runner.get_metadata(package_address.into(), "name");
+    assert_eq!(value, None);
 }
