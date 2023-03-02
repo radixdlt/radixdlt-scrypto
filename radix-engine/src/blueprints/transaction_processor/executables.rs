@@ -112,8 +112,8 @@ fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFra
             method_name,
         } => {
             update.add_ref(RENodeId::GlobalComponent(*component_address));
-            let value: ManifestValue =
-                manifest_decode(args).expect(format!("Invalid CALL_METHOD arguments to {}", method_name).as_str());
+            let value: ManifestValue = manifest_decode(args)
+                .expect(format!("Invalid CALL_METHOD arguments to {}", method_name).as_str());
             extract_refs_from_value(&value, update);
         }
 
