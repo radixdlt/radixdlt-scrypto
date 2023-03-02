@@ -240,7 +240,7 @@ impl AuthModule {
         key: MethodKey,
         api: &mut Y,
     ) -> Result<Vec<MethodAuthorization>, RuntimeError> {
-        let schema = {
+        let (blueprint_schema, index) = {
             let handle = api.kernel_lock_substate(
                 receiver,
                 NodeModuleId::TypeInfo,
@@ -259,15 +259,19 @@ impl AuthModule {
                 LockFlags::read_only(),
             )?;
             let package: &PackageInfoSubstate = api.kernel_get_substate_ref(handle)?;
-
             let schema = package
                 .schema
                 .blueprints
                 .get(&blueprint_ident)
-                .expect("Blueprint not found for existing component")
+                .expect("Blueprint schema not found")
+                .clone();
+            let index = schema
+                .substates
+                .get(&0)
+                .expect("Substate schema [offset: 0] not found")
                 .clone();
             api.kernel_drop_lock(handle)?;
-            schema
+            (schema, index)
         };
 
         let state = {
@@ -297,7 +301,7 @@ impl AuthModule {
 
         for auth in &access_rules.access_rules_chain {
             let method_auth = auth.get(&key);
-            let authorization = convert(&schema, &state, method_auth);
+            let authorization = convert(&blueprint_schema.schema, index, &state, method_auth);
             authorizations.push(authorization);
         }
 

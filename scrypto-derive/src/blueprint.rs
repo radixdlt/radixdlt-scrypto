@@ -112,8 +112,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 use ::sbor::rust::prelude::*;
 
                 let return_data = BlueprintSchema {
-                    substate_schemas: BTreeMap::new(),
-                    function_schemas: BTreeMap::new()
+                    substates: BTreeMap::new(),
+                    functions: BTreeMap::new()
                 };
 
                 return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
@@ -635,8 +635,8 @@ mod tests {
                     use ::sbor::rust::prelude::*;
 
                     let return_data = BlueprintSchema {
-                        substate_schemas: BTreeMap::new(),
-                        function_schemas: BTreeMap::new()
+                        substates: BTreeMap::new(),
+                        functions: BTreeMap::new()
                     };
                     return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
                 }
@@ -783,8 +783,8 @@ mod tests {
                     use ::sbor::rust::prelude::*;
 
                     let return_data = BlueprintSchema {
-                        substate_schemas: BTreeMap::new(),
-                        function_schemas: BTreeMap::new()
+                        substates: BTreeMap::new(),
+                        functions: BTreeMap::new()
                     };
                     return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
                 }
@@ -925,8 +925,8 @@ mod tests {
                     use ::sbor::rust::prelude::*;
 
                     let return_data = BlueprintSchema {
-                        substate_schemas: BTreeMap::new(),
-                        function_schemas: BTreeMap::new()
+                        substates: BTreeMap::new(),
+                        functions: BTreeMap::new()
                     };
                     return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
                 }
