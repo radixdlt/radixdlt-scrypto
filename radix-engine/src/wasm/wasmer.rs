@@ -239,8 +239,8 @@ impl WasmerModule {
             env: &WasmerInstanceEnv,
             code_ptr: u32,
             code_len: u32,
-            abi_ptr: u32,
-            abi_len: u32,
+            schema_ptr: u32,
+            schema_len: u32,
             access_rules_ptr: u32,
             access_rules_len: u32,
             royalty_config_ptr: u32,
@@ -253,7 +253,7 @@ impl WasmerModule {
             let buffer = runtime
                 .new_package(
                     read_memory(&instance, code_ptr, code_len)?,
-                    read_memory(&instance, abi_ptr, abi_len)?,
+                    read_memory(&instance, schema_ptr, schema_len)?,
                     read_memory(&instance, access_rules_ptr, access_rules_len)?,
                     read_memory(&instance, royalty_config_ptr, royalty_config_len)?,
                     read_memory(&instance, metadata_ptr, metadata_len)?,

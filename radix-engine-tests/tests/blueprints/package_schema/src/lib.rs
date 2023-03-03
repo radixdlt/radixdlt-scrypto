@@ -3,10 +3,10 @@ use scrypto::prelude::*;
 use scrypto::schema::*;
 
 #[blueprint]
-mod abi_component {
-    struct AbiComponent {}
+mod schema_component {
+    struct SchemaComponent {}
 
-    impl AbiComponent {
+    impl SchemaComponent {
         pub fn create_component() -> ComponentAddress {
             let component = Self {}.instantiate();
             component.globalize()
@@ -24,7 +24,7 @@ mod abi_component {
 }
 
 #[no_mangle]
-pub extern "C" fn AbiComponent2_invalid_output(_input: u64) -> Slice {
+pub extern "C" fn SchemaComponent2_invalid_output(_input: u64) -> Slice {
     ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&()).unwrap())
 }
 
@@ -34,7 +34,7 @@ pub extern "C" fn dummy_export(_input: u64) -> Slice {
 }
 
 #[no_mangle]
-pub extern "C" fn AbiComponent2_schema() -> Slice {
+pub extern "C" fn SchemaComponent2_schema() -> Slice {
     let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
     let mut substates = BTreeMap::new();
     substates.insert(0u8, aggregator.add_child_type_and_descendents::<()>());

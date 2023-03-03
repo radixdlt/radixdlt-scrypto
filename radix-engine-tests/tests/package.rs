@@ -123,7 +123,7 @@ fn test_basic_package() {
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .publish_package(
             code,
-            generate_single_function_abi("Test", "f"),
+            single_function_package_schema("Test", "f"),
             BTreeMap::new(),
             BTreeMap::new(),
             AccessRules::new(),

@@ -15,7 +15,7 @@ fn cannot_set_package_metadata_with_no_owner() {
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .publish_package(
             code,
-            generate_single_function_abi("Test", "f"),
+            single_function_package_schema("Test", "f"),
             BTreeMap::new(),
             BTreeMap::new(),
             AccessRules::new(),
@@ -59,7 +59,7 @@ fn can_set_package_metadata_with_owner() {
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .publish_package_with_owner(
             code,
-            generate_single_function_abi("Test", "f"),
+            single_function_package_schema("Test", "f"),
             owner_badge_addr,
         )
         .build();
@@ -101,7 +101,7 @@ fn can_lock_package_metadata_with_owner() {
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .publish_package_with_owner(
             code,
-            generate_single_function_abi("Test", "f"),
+            single_function_package_schema("Test", "f"),
             owner_badge_addr,
         )
         .build();

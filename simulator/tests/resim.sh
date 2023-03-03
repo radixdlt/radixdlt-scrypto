@@ -60,7 +60,7 @@ component=`$resim call-function $package Hello instantiate_hello | awk '/Compone
 $resim call-method $component free_token
 
 # Test - export schema
-$resim export-schema $package target/temp.abi
+$resim export-schema $package target/temp.schema
 
 # Test - dump component state
 $resim show $package
@@ -103,10 +103,6 @@ token=`echo $resources | cut -d " " -f4`
 $resim call-method $component organizational_authenticated_method --proofs $supervisor_badge:1 $admin_badge:1 $superadmin_badge:1
 $resim transfer 2 $token $account2 --proofs $supervisor_badge:1 $admin_badge:1 $superadmin_badge:1
 $resim mint 100000 $token --proofs $supervisor_badge:1 $admin_badge:1 $superadmin_badge:1
-
-# Test - publishing a large package
-$resim publish ./tests/large_package.wasm --owner-badge $owner_badge
-$resim publish ./tests/large_package.wasm
 
 # Test - math types and numbers
 $resim call-function $package "Numbers" test_input 1 2

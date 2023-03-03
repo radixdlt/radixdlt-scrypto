@@ -3,7 +3,7 @@ use radix_engine::types::*;
 
 use crate::resim::*;
 
-/// Export the ABI of a blueprint
+/// Export the schema of a package
 #[derive(Parser, Debug)]
 pub struct ExportSchema {
     /// The package ID

@@ -30,5 +30,5 @@ trace = ["scrypto-derive/trace"]
 # Enable serde derives
 serde = ["sbor/serde", "scrypto-schema/serde", "serde/derive", "radix-engine-interface/serde"]
 
-# Disable ABI gen in the output WASM.
+# Disable schema gen in the output WASM.
 no-schema = ["scrypto-derive/no-schema"]

@@ -38,5 +38,5 @@ alloc = [
 # Enable trace
 trace = []
 
-# Disable ABI gen in the output WASM.
+# Disable schema gen in the output WASM.
 no-schema = []

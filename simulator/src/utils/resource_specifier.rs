@@ -1,5 +1,5 @@
 //! This module implements a number of useful utility functions used to prepare instructions for
-//! calling methods and functions when a known ABI is provided. This module implements all of the
+//! calling methods and functions when a known schema is provided. This module implements all of the
 //! parsing logic as well as the logic needed ot add these instructions to the original manifest
 //! builder that is being used.
 

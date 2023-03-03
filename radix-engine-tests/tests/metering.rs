@@ -97,7 +97,7 @@ fn test_radiswap() {
     // Publish package
     let package_address = test_runner.publish_package(
         include_bytes!("../../assets/radiswap.wasm").to_vec(),
-        scrypto_decode(include_bytes!("../../assets/radiswap.abi")).unwrap(),
+        scrypto_decode(include_bytes!("../../assets/radiswap.schema")).unwrap(),
         btreemap!(
             "Radiswap".to_owned() => RoyaltyConfigBuilder::new()
                 .add_rule("instantiate_pool", 5)
@@ -204,7 +204,7 @@ fn test_radiswap() {
         + 12500 /* DropNode */
         + 24330 /* Invoke */
         + 171500 /* LockSubstate */
-        + 2591150 /* ReadSubstate */
+        + 2591310 /* ReadSubstate */
         + 147500 /* RunPrecompiled */
         + 1616865 /* RunWasm */
         + 50000 /* TxBaseCost */
@@ -230,7 +230,7 @@ fn test_flash_loan() {
     // Publish package
     let package_address = test_runner.publish_package(
         include_bytes!("../../assets/flash_loan.wasm").to_vec(),
-        scrypto_decode(include_bytes!("../../assets/flash_loan.abi")).unwrap(),
+        scrypto_decode(include_bytes!("../../assets/flash_loan.schema")).unwrap(),
         btreemap!(
             "BasicFlashLoan".to_owned() => RoyaltyConfigBuilder::new()
                 .add_rule("instantiate_default", 5)
@@ -313,7 +313,7 @@ fn test_flash_loan() {
         + 22500 /* DropNode */
         + 45210 /* Invoke */
         + 265500 /* LockSubstate */
-        + 5198920 /* ReadSubstate */
+        + 5199240 /* ReadSubstate */
         + 240000 /* RunPrecompiled */
         + 1374650 /* RunWasm */
         + 50000 /* TxBaseCost */

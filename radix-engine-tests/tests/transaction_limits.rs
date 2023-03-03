@@ -21,7 +21,7 @@ fn transaction_limit_call_frame_memory_exceeded() {
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", &grow_value.to_string()));
     let package_address = test_runner.publish_package(
         code,
-        generate_single_function_abi("Test", "f"),
+        single_function_package_schema("Test", "f"),
         BTreeMap::new(),
         BTreeMap::new(),
         AccessRules::new(),

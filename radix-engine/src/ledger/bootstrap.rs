@@ -429,7 +429,7 @@ pub fn create_genesis(
 
     {
         let faucet_code = include_bytes!("../../../assets/faucet.wasm").to_vec();
-        let faucet_abi = include_bytes!("../../../assets/faucet.abi").to_vec();
+        let faucet_abi = include_bytes!("../../../assets/faucet.schema").to_vec();
         let package_address = FAUCET_PACKAGE.to_array_without_entity_id();
         pre_allocated_ids.insert(RENodeId::GlobalPackage(FAUCET_PACKAGE));
         instructions.push(Instruction::CallFunction {

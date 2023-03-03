@@ -91,16 +91,16 @@ impl Compile {
         path.push(wasm_name);
         path.set_extension("wasm");
 
-        // Extract ABI
+        // Extract schema
         let code = fs::read(&path).unwrap_or_else(|err| {
             panic!(
                 "Failed to read built WASM from path {:?} - {:?}",
                 &path, err
             )
         });
-        let abi = extract_schema(&code).unwrap();
+        let schema = extract_schema(&code).unwrap();
 
-        (code, abi)
+        (code, schema)
     }
 
     // Naive pattern matching to find the crate name.
@@ -562,10 +562,10 @@ impl TestRunner {
     }
 
     pub fn compile_and_publish<P: AsRef<Path>>(&mut self, package_dir: P) -> PackageAddress {
-        let (code, abi) = Compile::compile(package_dir);
+        let (code, schema) = Compile::compile(package_dir);
         self.publish_package(
             code,
-            abi,
+            schema,
             BTreeMap::new(),
             BTreeMap::new(),
             AccessRules::new(),
@@ -577,8 +577,8 @@ impl TestRunner {
         package_dir: P,
         owner_badge: NonFungibleGlobalId,
     ) -> PackageAddress {
-        let (code, abi) = Compile::compile(package_dir);
-        self.publish_package_with_owner(code, abi, owner_badge)
+        let (code, schema) = Compile::compile(package_dir);
+        self.publish_package_with_owner(code, schema, owner_badge)
     }
 
     pub fn execute_manifest_ignoring_fee(
@@ -1187,7 +1187,7 @@ pub fn get_cargo_target_directory(manifest_path: impl AsRef<OsStr>) -> String {
     }
 }
 
-pub fn generate_single_function_abi(blueprint_name: &str, function_name: &str) -> PackageSchema {
+pub fn single_function_package_schema(blueprint_name: &str, function_name: &str) -> PackageSchema {
     let mut package_schema = PackageSchema::default();
     package_schema.blueprints.insert(
         blueprint_name.to_string(),

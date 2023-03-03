@@ -10,7 +10,7 @@ use ExpectedResult::{InvalidInput, InvalidOutput, Success};
 fn test_invalid_access_rule_methods() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/abi");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/package_schema");
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -44,7 +44,7 @@ enum ExpectedResult {
 fn test_arg(method_name: &str, args: Vec<u8>, expected_result: ExpectedResult) {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/abi");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/package_schema");
 
     // Act
     let manifest = ManifestBuilder::new()

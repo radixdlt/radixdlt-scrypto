@@ -116,7 +116,7 @@ macro_rules! include_code {
     };
 }
 
-/// Includes the ABI file of a Scrypto package.
+/// Includes the schema file of a Scrypto package.
 ///
 /// Notes:
 /// * This macro will NOT compile the package;
@@ -127,10 +127,10 @@ macro_rules! include_code {
 /// use scrypto::prelude::*;
 ///
 /// // This package
-/// let abi1 = include_schema!("bin_name");
+/// let schema1 = include_schema!("bin_name");
 ///
 /// // Another package
-/// let abi2 = include_schema!("/path/to/package", "bin_name");
+/// let schema2 = include_schema!("/path/to/package", "bin_name");
 /// ```
 #[macro_export]
 macro_rules! include_schema {
@@ -139,7 +139,7 @@ macro_rules! include_schema {
             env!("CARGO_MANIFEST_DIR"),
             "/target/wasm32-unknown-unknown/release/",
             $bin_name,
-            ".abi"
+            ".schema"
         ))
     };
     ($package_dir: expr, $bin_name: expr) => {
@@ -147,7 +147,7 @@ macro_rules! include_schema {
             $package_dir,
             "/target/wasm32-unknown-unknown/release/",
             $bin_name,
-            ".abi"
+            ".schema"
         ))
     };
 }
@@ -193,7 +193,7 @@ macro_rules! include_schema {
 ///
 /// # Related
 ///
-/// - Replaces the import! macro for importing an abi, using a more concise, readable syntax.
+/// - Replaces the import! macro for importing an schema, using a more concise, readable syntax.
 /// - Similar to the `external_component` macro, which is used for making cross-component calls to an already-instantiated component.
 #[macro_export]
 macro_rules! external_blueprint {
