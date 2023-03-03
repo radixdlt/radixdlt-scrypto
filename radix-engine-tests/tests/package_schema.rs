@@ -5,6 +5,7 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use ExpectedResult::{InvalidInput, InvalidOutput, Success};
 
+// FIXME: schema - re-enable this test!
 #[test]
 #[ignore]
 fn test_invalid_access_rule_methods() {
