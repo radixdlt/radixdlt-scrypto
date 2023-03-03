@@ -22,6 +22,7 @@ pub mod abi {
 }
 /// Scrypto component abstraction.
 pub mod component;
+pub mod modules;
 /// Scrypto runtime abstraction.
 pub mod runtime;
 /// Scrypto data model.

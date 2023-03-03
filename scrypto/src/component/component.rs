@@ -5,7 +5,7 @@ use crate::*;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesCreateInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
 };
-use radix_engine_interface::api::node_modules::metadata::{MetadataSetInput, METADATA_BLUEPRINT, METADATA_GET_IDENT, METADATA_SET_IDENT, MetadataCreateWithDataInput, METADATA_CREATE_WITH_DATA_IDENT};
+use radix_engine_interface::api::node_modules::metadata::{MetadataSetInput, METADATA_GET_IDENT, METADATA_SET_IDENT};
 use radix_engine_interface::api::node_modules::royalty::{
     ComponentClaimRoyaltyInput, ComponentRoyaltyCreateInput, ComponentSetRoyaltyConfigInput,
     COMPONENT_ROYALTY_BLUEPRINT, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
@@ -16,7 +16,7 @@ use radix_engine_interface::api::{types::*, ClientObjectApi, ClientPackageApi};
 use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRules, Bucket, MethodKey,
 };
-use radix_engine_interface::constants::{ACCESS_RULES_PACKAGE, METADATA_PACKAGE, ROYALTY_PACKAGE};
+use radix_engine_interface::constants::{ACCESS_RULES_PACKAGE, ROYALTY_PACKAGE};
 use radix_engine_interface::data::{
     scrypto_decode, scrypto_encode, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
 };
@@ -25,6 +25,7 @@ use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
+use scrypto::modules::Metadata;
 
 use super::ComponentAccessRules;
 
@@ -150,18 +151,14 @@ impl LocalComponent for OwnedComponent {
     fn globalize_with_modules(
         self,
         access_rules: AccessRules,
-        metadata: BTreeMap<String, String>,
+        metadata_init: BTreeMap<String, String>,
         config: RoyaltyConfig,
     ) -> ComponentAddress {
-        let rtn = ScryptoEnv
-            .call_function(
-                METADATA_PACKAGE,
-                METADATA_BLUEPRINT,
-                METADATA_CREATE_WITH_DATA_IDENT,
-                scrypto_encode(&MetadataCreateWithDataInput { data: metadata }).unwrap(),
-            )
-            .unwrap();
-        let metadata: Own = scrypto_decode(&rtn).unwrap();
+        let metadata = Metadata::new();
+        for (key, value) in metadata_init {
+            metadata.set(key, value);
+        }
+        let metadata: Own = Own::Object(metadata.0);
 
         let rtn = ScryptoEnv
             .call_function(
