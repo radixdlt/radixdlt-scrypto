@@ -1,15 +1,15 @@
-use crate::blueprints::event_store::EventStoreNativePackage;
-use crate::blueprints::logger::LoggerNativePackage;
 use crate::blueprints::resource::NonFungibleSubstate;
-use crate::errors::RuntimeError;
+use crate::errors::{ApplicationError, RuntimeError};
 use crate::errors::{KernelError, SystemError};
-use crate::kernel::actor::ActorIdentifier;
+use crate::kernel::actor::{Actor, ActorIdentifier};
 use crate::kernel::kernel::Kernel;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::{Invokable, KernelInternalApi};
 use crate::kernel::module::KernelModule;
 use crate::kernel::module_mixer::KernelModuleMixer;
+use crate::system::events::EventError;
+use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::MethodAccessRulesSubstate;
@@ -24,14 +24,16 @@ use radix_engine_interface::api::component::{
 };
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
+use radix_engine_interface::api::ClientUnsafeApi;
 use radix_engine_interface::api::{package::*, ClientEventApi};
 use radix_engine_interface::api::{types::*, ClientLoggerApi};
 use radix_engine_interface::api::{
     ClientActorApi, ClientApi, ClientComponentApi, ClientNodeApi, ClientPackageApi,
-    ClientSubstateApi, ClientUnsafeApi,
+    ClientSubstateApi,
 };
 use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::events::EventTypeIdentifier;
 use radix_engine_interface::schema::PackageSchema;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
@@ -441,7 +443,45 @@ where
         schema_hash: Hash,
         event_data: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        EventStoreNativePackage::emit_raw_event(schema_hash, event_data, self)
+        // Costing event emission.
+        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+        // Construct the event type identifier based on the current actor
+        let event_type_id = match self.kernel_get_current_actor() {
+            Some(Actor {
+                identifier: ActorIdentifier::Method(MethodIdentifier(node_id, node_module_id, ..)),
+                ..
+            }) => Ok(EventTypeIdentifier(node_id, node_module_id, schema_hash)),
+            Some(Actor {
+                identifier:
+                    ActorIdentifier::Function(FnIdentifier {
+                        package_address, ..
+                    }),
+                ..
+            }) => Ok(EventTypeIdentifier(
+                RENodeId::GlobalPackage(package_address),
+                NodeModuleId::SELF,
+                schema_hash,
+            )),
+            _ => Err(RuntimeError::ApplicationError(
+                ApplicationError::EventError(EventError::InvalidActor),
+            )),
+        }?;
+
+        // TODO: Validate that the event schema matches that given by the event schema hash.
+        // Need to wait for David's PR for schema validation and move away from LegacyDescribe
+        // over to new Describe.
+
+        // NOTE: We need to ensure that the event being emitted is an SBOR struct or an enum,
+        // this is not done here, this should be done at event registration time. Thus, if the
+        // event has been successfully registered, it can be emitted (from a schema POV).
+
+        // Adding the event to the event store
+        self.kernel_get_module_state()
+            .events
+            .add_event(event_type_id, event_data);
+
+        Ok(())
     }
 }
 
@@ -450,7 +490,10 @@ where
     W: WasmEngine,
 {
     fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
-        LoggerNativePackage::log_message(level, message, self)
+        self.kernel_get_module_state()
+            .logger
+            .add_log(level, message);
+        Ok(())
     }
 }
 
