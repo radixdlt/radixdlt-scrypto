@@ -147,11 +147,11 @@ impl EpochManagerBlueprint {
 
         let epoch_manager_id = api.new_object(
             EPOCH_MANAGER_BLUEPRINT,
-            btreemap!(
-                0 => scrypto_encode(&epoch_manager).unwrap(),
-                1 => scrypto_encode(&current_validator_set).unwrap(),
-                2 => scrypto_encode(&preparing_validator_set).unwrap(),
-            ),
+            vec![
+                scrypto_encode(&epoch_manager).unwrap(),
+                scrypto_encode(&current_validator_set).unwrap(),
+                scrypto_encode(&preparing_validator_set).unwrap(),
+            ],
         )?;
 
         api.emit_event(EpochChangeEvent {

@@ -88,7 +88,7 @@ impl Identity {
             AccessRule::DenyAll,
         );
 
-        let component_id = api.new_object(IDENTITY_BLUEPRINT, btreemap!())?;
+        let component_id = api.new_object(IDENTITY_BLUEPRINT, vec![])?;
 
         Ok((RENodeId::Object(component_id), access_rules))
     }

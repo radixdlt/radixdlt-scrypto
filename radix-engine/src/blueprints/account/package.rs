@@ -195,9 +195,7 @@ impl AccountNativePackage {
             };
             api.new_object(
                 ACCOUNT_BLUEPRINT,
-                btreemap!(
-                    0 => scrypto_encode(&account_substate).unwrap()
-                ),
+                vec![scrypto_encode(&account_substate).unwrap()],
             )?
         };
 
@@ -243,9 +241,7 @@ impl AccountNativePackage {
             };
             api.new_object(
                 ACCOUNT_BLUEPRINT,
-                btreemap!(
-                    0 => scrypto_encode(&account_substate).unwrap()
-                ),
+                vec![scrypto_encode(&account_substate).unwrap()],
             )?
         };
 

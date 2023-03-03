@@ -7,7 +7,7 @@ pub trait ClientObjectApi<E> {
     fn new_object(
         &mut self,
         blueprint_ident: &str,
-        app_states: BTreeMap<u8, Vec<u8>>,
+        app_states: Vec<Vec<u8>>,
     ) -> Result<ObjectId, E>;
 
     fn new_key_value_store(&mut self) -> Result<KeyValueStoreId, E>;

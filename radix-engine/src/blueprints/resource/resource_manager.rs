@@ -123,10 +123,10 @@ where
         };
         let bucket_id = api.new_object(
             BUCKET_BLUEPRINT,
-            btreemap!(
-                0 => scrypto_encode(&info).unwrap(),
-                1 => scrypto_encode(&LiquidNonFungibleResource::new(ids)).unwrap()
-            ),
+            vec![
+                scrypto_encode(&info).unwrap(),
+                scrypto_encode(&LiquidNonFungibleResource::new(ids)).unwrap(),
+            ],
         )?;
 
         Bucket(bucket_id)
@@ -174,11 +174,13 @@ where
             resource_type: ResourceType::Fungible { divisibility },
         };
         let liquid_resource = LiquidFungibleResource::new(initial_supply);
-        let app_states = btreemap!(
-            0u8 => scrypto_encode(&bucket_info).unwrap(),
-            1u8 => scrypto_encode(&liquid_resource).unwrap(),
-        );
-        let bucket_id = api.new_object(BUCKET_BLUEPRINT, app_states)?;
+        let bucket_id = api.new_object(
+            BUCKET_BLUEPRINT,
+            vec![
+                scrypto_encode(&bucket_info).unwrap(),
+                scrypto_encode(&liquid_resource).unwrap(),
+            ],
+        )?;
 
         Bucket(bucket_id)
     };
@@ -450,9 +452,7 @@ where
 
     let object_id = api.new_object(
         RESOURCE_MANAGER_BLUEPRINT,
-        btreemap!(
-            0 => scrypto_encode(&resource_manager_substate).unwrap()
-        ),
+        vec![scrypto_encode(&resource_manager_substate).unwrap()],
     )?;
 
     let (resman_access_rules, vault_access_rules) = build_access_rules(access_rules);
@@ -560,9 +560,7 @@ impl ResourceManagerBlueprint {
 
         let object_id = api.new_object(
             RESOURCE_MANAGER_BLUEPRINT,
-            btreemap!(
-                0 => scrypto_encode(&resource_manager_substate).unwrap()
-            ),
+            vec![scrypto_encode(&resource_manager_substate).unwrap()],
         )?;
 
         let (resman_access_rules, vault_access_rules) = build_access_rules(input.access_rules);
@@ -615,9 +613,7 @@ impl ResourceManagerBlueprint {
 
         let object_id = api.new_object(
             RESOURCE_MANAGER_BLUEPRINT,
-            btreemap!(
-                0 => scrypto_encode(&resource_manager_substate).unwrap()
-            ),
+            vec![scrypto_encode(&resource_manager_substate).unwrap()],
         )?;
 
         let (resman_access_rules, vault_access_rules) = build_access_rules(input.access_rules);
@@ -686,9 +682,7 @@ impl ResourceManagerBlueprint {
 
         let object_id = api.new_object(
             RESOURCE_MANAGER_BLUEPRINT,
-            btreemap!(
-                0 => scrypto_encode(&resource_manager_substate).unwrap()
-            ),
+            vec![scrypto_encode(&resource_manager_substate).unwrap()],
         )?;
 
         let (resman_access_rules, vault_access_rules) = build_access_rules(input.access_rules);
@@ -735,9 +729,7 @@ impl ResourceManagerBlueprint {
 
         let object_id = api.new_object(
             RESOURCE_MANAGER_BLUEPRINT,
-            btreemap!(
-                0 => scrypto_encode(&resource_manager_substate).unwrap()
-            ),
+            vec![scrypto_encode(&resource_manager_substate).unwrap()],
         )?;
 
         let (resman_access_rules, vault_access_rules) = build_access_rules(input.access_rules);
@@ -851,10 +843,10 @@ impl ResourceManagerBlueprint {
             };
             let bucket_id = api.new_object(
                 BUCKET_BLUEPRINT,
-                btreemap!(
-                    0 => scrypto_encode(&info).unwrap(),
-                    1 => scrypto_encode(&LiquidNonFungibleResource::new(ids)).unwrap()
-                ),
+                vec![
+                    scrypto_encode(&info).unwrap(),
+                    scrypto_encode(&LiquidNonFungibleResource::new(ids)).unwrap(),
+                ],
             )?;
 
             (bucket_id, non_fungibles)
@@ -976,10 +968,10 @@ impl ResourceManagerBlueprint {
             };
             let bucket_id = api.new_object(
                 BUCKET_BLUEPRINT,
-                btreemap!(
-                    0 => scrypto_encode(&info).unwrap(),
-                    1 => scrypto_encode(&LiquidNonFungibleResource::new(ids.clone())).unwrap()
-                ),
+                vec![
+                    scrypto_encode(&info).unwrap(),
+                    scrypto_encode(&LiquidNonFungibleResource::new(ids.clone())).unwrap(),
+                ],
             )?;
 
             (bucket_id, ids)
@@ -1041,10 +1033,10 @@ impl ResourceManagerBlueprint {
                 let liquid_resource = LiquidFungibleResource::new(input.amount);
                 let bucket_id = api.new_object(
                     BUCKET_BLUEPRINT,
-                    btreemap!(
-                        0 => scrypto_encode(&bucket_info).unwrap(),
-                        1 => scrypto_encode(&liquid_resource).unwrap()
-                    ),
+                    vec![
+                        scrypto_encode(&bucket_info).unwrap(),
+                        scrypto_encode(&liquid_resource).unwrap(),
+                    ],
                 )?;
 
                 bucket_id
@@ -1167,23 +1159,25 @@ impl ResourceManagerBlueprint {
         let bucket_id = match resource_manager.resource_type {
             ResourceType::Fungible { divisibility } => api.new_object(
                 BUCKET_BLUEPRINT,
-                btreemap!(
-                    0 => scrypto_encode(&BucketInfoSubstate {
+                vec![
+                    scrypto_encode(&BucketInfoSubstate {
                         resource_address,
                         resource_type: ResourceType::Fungible { divisibility },
-                    }).unwrap(),
-                    1 => scrypto_encode(&LiquidFungibleResource::new_empty()).unwrap()
-                ),
+                    })
+                    .unwrap(),
+                    scrypto_encode(&LiquidFungibleResource::new_empty()).unwrap(),
+                ],
             )?,
             ResourceType::NonFungible { id_type } => api.new_object(
                 BUCKET_BLUEPRINT,
-                btreemap!(
-                    0 => scrypto_encode(&BucketInfoSubstate {
+                vec![
+                    scrypto_encode(&BucketInfoSubstate {
                         resource_address,
                         resource_type: ResourceType::NonFungible { id_type },
-                    }).unwrap(),
-                    1 => scrypto_encode(&LiquidNonFungibleResource::new_empty()).unwrap()
-                ),
+                    })
+                    .unwrap(),
+                    scrypto_encode(&LiquidNonFungibleResource::new_empty()).unwrap(),
+                ],
             )?,
         };
 
@@ -1219,10 +1213,10 @@ impl ResourceManagerBlueprint {
                 };
                 api.new_object(
                     VAULT_BLUEPRINT,
-                    btreemap!(
-                        0 => scrypto_encode(&info).unwrap(),
-                        1 => scrypto_encode(&LiquidFungibleResource::new_empty()).unwrap(),
-                    ),
+                    vec![
+                        scrypto_encode(&info).unwrap(),
+                        scrypto_encode(&LiquidFungibleResource::new_empty()).unwrap(),
+                    ],
                 )?
             }
             ResourceType::NonFungible { id_type } => {
@@ -1232,10 +1226,10 @@ impl ResourceManagerBlueprint {
                 };
                 api.new_object(
                     VAULT_BLUEPRINT,
-                    btreemap!(
-                        0 => scrypto_encode(&info).unwrap(),
-                        1 => scrypto_encode(&LiquidNonFungibleResource::new_empty()).unwrap(),
-                    ),
+                    vec![
+                        scrypto_encode(&info).unwrap(),
+                        scrypto_encode(&LiquidNonFungibleResource::new_empty()).unwrap(),
+                    ],
                 )?
             }
         };
@@ -1446,9 +1440,7 @@ where
 
     let object_id = api.new_object(
         RESOURCE_MANAGER_BLUEPRINT,
-        btreemap!(
-            0 => scrypto_encode(&resource_manager_substate).unwrap()
-        ),
+        vec![scrypto_encode(&resource_manager_substate).unwrap()],
     )?;
 
     let (resman_access_rules, vault_access_rules) = build_access_rules(access_rules);

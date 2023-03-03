@@ -664,9 +664,7 @@ impl ValidatorCreator {
 
         let validator_id = api.new_object(
             VALIDATOR_BLUEPRINT,
-            btreemap!(
-                0 => scrypto_encode(&substate).unwrap()
-            ),
+            vec![scrypto_encode(&substate).unwrap()],
         )?;
 
         let access_rules = Self::build_access_rules(owner_access_rule);
@@ -714,9 +712,7 @@ impl ValidatorCreator {
 
         let validator_id = api.new_object(
             VALIDATOR_BLUEPRINT,
-            btreemap!(
-                0 => scrypto_encode(&substate).unwrap()
-            ),
+            vec![scrypto_encode(&substate).unwrap()],
         )?;
 
         let access_rules = Self::build_access_rules(owner_access_rule);

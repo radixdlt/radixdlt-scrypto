@@ -258,9 +258,7 @@ impl AccessControllerNativePackage {
             AccessControllerSubstate::new(vault.0, input.timed_recovery_delay_in_minutes);
         let object_id = api.new_object(
             ACCESS_CONTROLLER_BLUEPRINT,
-            btreemap!(
-                0 => scrypto_encode(&substate).unwrap()
-            ),
+            vec![scrypto_encode(&substate).unwrap()],
         )?;
 
         let access_rules = access_rules_from_rule_set(input.rule_set);

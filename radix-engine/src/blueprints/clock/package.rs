@@ -100,11 +100,10 @@ impl ClockNativePackage {
 
         let clock_id = api.new_object(
             CLOCK_BLUEPRINT,
-            btreemap!(
-                0 => scrypto_encode(&CurrentTimeRoundedToMinutesSubstate {
-                    current_time_rounded_to_minutes_ms: 0,
-                }).unwrap()
-            ),
+            vec![scrypto_encode(&CurrentTimeRoundedToMinutesSubstate {
+                current_time_rounded_to_minutes_ms: 0,
+            })
+            .unwrap()],
         )?;
 
         let mut access_rules = AccessRules::new();

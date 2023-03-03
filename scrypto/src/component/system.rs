@@ -49,12 +49,7 @@ impl ComponentSystem {
     ) -> OwnedComponent {
         let mut env = ScryptoEnv;
         let node_id = env
-            .new_object(
-                blueprint_name,
-                btreemap!(
-                    0 => scrypto_encode(&state).unwrap()
-                ),
-            )
+            .new_object(blueprint_name, vec![scrypto_encode(&state).unwrap()])
             .unwrap();
         OwnedComponent(node_id.into())
     }

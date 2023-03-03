@@ -165,7 +165,7 @@ where
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let blueprint_ident =
             String::from_utf8(blueprint_ident).map_err(|_| WasmRuntimeError::InvalidIdent)?;
-        let app_states = scrypto_decode::<BTreeMap<u8, Vec<u8>>>(&app_states)
+        let app_states = scrypto_decode::<Vec<Vec<u8>>>(&app_states)
             .map_err(WasmRuntimeError::InvalidAppStates)?;
 
         let component_id = self.api.new_object(blueprint_ident.as_ref(), app_states)?;

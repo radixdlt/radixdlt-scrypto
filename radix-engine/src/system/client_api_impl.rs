@@ -236,8 +236,48 @@ where
     fn new_object(
         &mut self,
         blueprint_ident: &str,
-        mut app_states: BTreeMap<u8, Vec<u8>>,
+        mut app_states: Vec<Vec<u8>>,
     ) -> Result<ObjectId, RuntimeError> {
+        struct SubstateSchemaParser<'a> {
+            next_index: usize,
+            app_states: &'a Vec<Vec<u8>>,
+        }
+
+        impl<'a> SubstateSchemaParser<'a> {
+            fn new(app_states: &'a Vec<Vec<u8>>) -> Self {
+                Self {
+                    next_index: 0,
+                    app_states,
+                }
+            }
+
+            fn decode_next<S: ScryptoDecode>(&mut self) -> Result<S, RuntimeError> {
+                if let Some(substate_bytes) = self.app_states.get(self.next_index) {
+                    let decoded = scrypto_decode(substate_bytes).map_err(|e| {
+                        RuntimeError::SystemError(SystemError::SubstateDecodeNotMatchSchema(e))
+                    })?;
+
+                    self.next_index = self.next_index + 1;
+
+                    Ok(decoded)
+                } else {
+                    return Err(RuntimeError::SystemError(
+                        SystemError::ObjectDoesNotMatchSchema,
+                    ));
+                }
+            }
+
+            fn end(self) -> Result<(), RuntimeError> {
+                if self.app_states.get(self.next_index).is_some() {
+                    return Err(RuntimeError::SystemError(
+                        SystemError::ObjectDoesNotMatchSchema,
+                    ));
+                }
+
+                Ok(())
+            }
+        }
+
         // Create component RENode
         // FIXME: support native blueprints
         let package_address = self
@@ -246,14 +286,13 @@ where
             .fn_identifier
             .package_address();
 
+        let mut parser = SubstateSchemaParser::new(&mut app_states);
+
         let (node_id, node_init) = match package_address {
             RESOURCE_MANAGER_PACKAGE => match blueprint_ident {
                 RESOURCE_MANAGER_BLUEPRINT => {
-                    let substate_bytes = app_states.into_iter().next().unwrap().1;
-                    let substate: ResourceManagerSubstate = scrypto_decode(&substate_bytes)
-                        .map_err(|_| {
-                            RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
-                        })?;
+                    let substate: ResourceManagerSubstate = parser.decode_next()?;
+                    parser.end()?;
 
                     let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
                     (
@@ -264,65 +303,38 @@ where
                     )
                 }
                 PROOF_BLUEPRINT => {
-                    let substate_bytes_0 = app_states.remove(&0u8).ok_or(
-                        RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema),
-                    )?;
-                    let substate_bytes_1 = app_states.remove(&1u8).ok_or(
-                        RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema),
-                    )?;
-                    let proof_info_substate: ProofInfoSubstate = scrypto_decode(&substate_bytes_0)
-                        .map_err(|_| {
-                            RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
-                        })?;
+                    let proof_info_substate: ProofInfoSubstate = parser.decode_next()?;
 
                     let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
-
                     let node_init = match proof_info_substate.resource_type {
                         ResourceType::NonFungible { .. } => {
-                            let non_fungible_proof: NonFungibleProof =
-                                scrypto_decode(&substate_bytes_1).map_err(|_| {
-                                    RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
-                                })?;
-
+                            let non_fungible_proof: NonFungibleProof = parser.decode_next()?;
                             RENodeInit::Object(btreemap!(
                                 SubstateOffset::Proof(ProofOffset::Info) => RuntimeSubstate::ProofInfo(proof_info_substate),
                                 SubstateOffset::Proof(ProofOffset::NonFungible) => RuntimeSubstate::NonFungibleProof(non_fungible_proof),
                             ))
                         }
                         ResourceType::Fungible { .. } => {
-                            let fungible_proof: FungibleProof = scrypto_decode(&substate_bytes_1)
-                                .map_err(|_| {
-                                RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
-                            })?;
+                            let fungible_proof: FungibleProof = parser.decode_next()?;
                             RENodeInit::Object(btreemap!(
                                 SubstateOffset::Proof(ProofOffset::Info) => RuntimeSubstate::ProofInfo(proof_info_substate),
                                 SubstateOffset::Proof(ProofOffset::Fungible) => RuntimeSubstate::FungibleProof(fungible_proof),
                             ))
                         }
                     };
+                    parser.end()?;
 
                     (node_id, node_init)
                 }
                 BUCKET_BLUEPRINT => {
-                    let substate_bytes_0 = app_states.remove(&0u8).ok_or(
-                        RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema),
-                    )?;
-                    let substate_bytes_1 = app_states.remove(&1u8).ok_or(
-                        RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema),
-                    )?;
-                    let bucket_info_substate: BucketInfoSubstate =
-                        scrypto_decode(&substate_bytes_0).map_err(|_| {
-                            RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
-                        })?;
+                    let bucket_info_substate: BucketInfoSubstate = parser.decode_next()?;
 
                     let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
 
                     let node_init = match bucket_info_substate.resource_type {
                         ResourceType::NonFungible { .. } => {
                             let liquid_resource: LiquidNonFungibleResource =
-                                scrypto_decode(&substate_bytes_1).map_err(|_| {
-                                    RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
-                                })?;
+                                parser.decode_next()?;
 
                             RENodeInit::Object(btreemap!(
                                 SubstateOffset::Bucket(BucketOffset::Info) => RuntimeSubstate::BucketInfo(bucket_info_substate),
@@ -331,10 +343,7 @@ where
                             ))
                         }
                         ResourceType::Fungible { .. } => {
-                            let liquid_resource: LiquidFungibleResource =
-                                scrypto_decode(&substate_bytes_1).map_err(|_| {
-                                    RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
-                                })?;
+                            let liquid_resource: LiquidFungibleResource = parser.decode_next()?;
 
                             RENodeInit::Object(btreemap!(
                                 SubstateOffset::Bucket(BucketOffset::Info) => RuntimeSubstate::BucketInfo(bucket_info_substate),
@@ -343,29 +352,19 @@ where
                             ))
                         }
                     };
+                    parser.end()?;
 
                     (node_id, node_init)
                 }
                 VAULT_BLUEPRINT => {
-                    let substate_bytes_0 = app_states.remove(&0u8).ok_or(
-                        RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema),
-                    )?;
-                    let substate_bytes_1 = app_states.remove(&1u8).ok_or(
-                        RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema),
-                    )?;
-                    let vault_info_substate: VaultInfoSubstate = scrypto_decode(&substate_bytes_0)
-                        .map_err(|_| {
-                            RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
-                        })?;
+                    let vault_info_substate: VaultInfoSubstate = parser.decode_next()?;
 
                     let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
 
                     let node_init = match vault_info_substate.resource_type {
                         ResourceType::NonFungible { .. } => {
                             let liquid_resource: LiquidNonFungibleResource =
-                                scrypto_decode(&substate_bytes_1).map_err(|_| {
-                                    RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
-                                })?;
+                                parser.decode_next()?;
 
                             RENodeInit::Object(btreemap!(
                                 SubstateOffset::Vault(VaultOffset::Info) => RuntimeSubstate::VaultInfo(vault_info_substate),
@@ -374,10 +373,7 @@ where
                             ))
                         }
                         ResourceType::Fungible { .. } => {
-                            let liquid_resource: LiquidFungibleResource =
-                                scrypto_decode(&substate_bytes_1).map_err(|_| {
-                                    RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
-                                })?;
+                            let liquid_resource: LiquidFungibleResource = parser.decode_next()?;
 
                             RENodeInit::Object(btreemap!(
                                 SubstateOffset::Vault(VaultOffset::Info) => RuntimeSubstate::VaultInfo(vault_info_substate),
@@ -386,26 +382,15 @@ where
                             ))
                         }
                     };
+                    parser.end()?;
 
                     (node_id, node_init)
                 }
                 _ => return Err(RuntimeError::SystemError(SystemError::BlueprintNotFound)),
             },
             METADATA_PACKAGE => {
-                let substate_bytes_0 = app_states.remove(&0u8).ok_or(RuntimeError::SystemError(
-                    SystemError::ObjectDoesNotMatchSchema,
-                ))?;
-
-                if !app_states.is_empty() {
-                    return Err(RuntimeError::SystemError(
-                        SystemError::ObjectDoesNotMatchSchema,
-                    ));
-                }
-
-                let substate: MetadataSubstate =
-                    scrypto_decode(&substate_bytes_0).map_err(|_| {
-                        RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
-                    })?;
+                let substate: MetadataSubstate = parser.decode_next()?;
+                parser.end()?;
 
                 let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
                 (
@@ -417,27 +402,10 @@ where
             }
             ROYALTY_PACKAGE => match blueprint_ident {
                 COMPONENT_ROYALTY_BLUEPRINT => {
-                    let substate_bytes_0 = app_states.remove(&0u8).ok_or(
-                        RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema),
-                    )?;
-                    let substate_bytes_1 = app_states.remove(&1u8).ok_or(
-                        RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema),
-                    )?;
-
-                    if !app_states.is_empty() {
-                        return Err(RuntimeError::SystemError(
-                            SystemError::ObjectDoesNotMatchSchema,
-                        ));
-                    }
-
-                    let config_substate: ComponentRoyaltyConfigSubstate =
-                        scrypto_decode(&substate_bytes_0).map_err(|_| {
-                            RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
-                        })?;
+                    let config_substate: ComponentRoyaltyConfigSubstate = parser.decode_next()?;
                     let accumulator_substate: ComponentRoyaltyAccumulatorSubstate =
-                        scrypto_decode(&substate_bytes_1).map_err(|_| {
-                            RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
-                        })?;
+                        parser.decode_next()?;
+                    parser.end()?;
 
                     let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
                     (
@@ -451,20 +419,8 @@ where
                 _ => return Err(RuntimeError::SystemError(SystemError::BlueprintNotFound)),
             },
             ACCESS_RULES_PACKAGE => {
-                let substate_bytes_0 = app_states.remove(&0u8).ok_or(RuntimeError::SystemError(
-                    SystemError::ObjectDoesNotMatchSchema,
-                ))?;
-
-                if !app_states.is_empty() {
-                    return Err(RuntimeError::SystemError(
-                        SystemError::ObjectDoesNotMatchSchema,
-                    ));
-                }
-
-                let substate: MethodAccessRulesSubstate = scrypto_decode(&substate_bytes_0)
-                    .map_err(|_| {
-                        RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
-                    })?;
+                let substate: MethodAccessRulesSubstate = parser.decode_next()?;
+                parser.end()?;
 
                 let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
                 (
@@ -476,20 +432,8 @@ where
             }
             EPOCH_MANAGER_PACKAGE => match blueprint_ident {
                 VALIDATOR_BLUEPRINT => {
-                    let substate_bytes_0 = app_states.remove(&0u8).ok_or(
-                        RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema),
-                    )?;
-
-                    if !app_states.is_empty() {
-                        return Err(RuntimeError::SystemError(
-                            SystemError::ObjectDoesNotMatchSchema,
-                        ));
-                    }
-
-                    let substate: ValidatorSubstate =
-                        scrypto_decode(&substate_bytes_0).map_err(|_| {
-                            RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
-                        })?;
+                    let substate: ValidatorSubstate = parser.decode_next()?;
+                    parser.end()?;
 
                     let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
                     (
@@ -500,34 +444,10 @@ where
                     )
                 }
                 EPOCH_MANAGER_BLUEPRINT => {
-                    let substate_bytes_0 = app_states.remove(&0u8).ok_or(
-                        RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema),
-                    )?;
-                    let substate_bytes_1 = app_states.remove(&1u8).ok_or(
-                        RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema),
-                    )?;
-                    let substate_bytes_2 = app_states.remove(&2u8).ok_or(
-                        RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema),
-                    )?;
-
-                    if !app_states.is_empty() {
-                        return Err(RuntimeError::SystemError(
-                            SystemError::ObjectDoesNotMatchSchema,
-                        ));
-                    }
-
-                    let epoch_mgr_substate: EpochManagerSubstate =
-                        scrypto_decode(&substate_bytes_0).map_err(|_| {
-                            RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
-                        })?;
-                    let validator_set_substate_0: ValidatorSetSubstate =
-                        scrypto_decode(&substate_bytes_1).map_err(|_| {
-                            RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
-                        })?;
-                    let validator_set_substate_1: ValidatorSetSubstate =
-                        scrypto_decode(&substate_bytes_2).map_err(|_| {
-                            RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
-                        })?;
+                    let epoch_mgr_substate: EpochManagerSubstate = parser.decode_next()?;
+                    let validator_set_substate_0: ValidatorSetSubstate = parser.decode_next()?;
+                    let validator_set_substate_1: ValidatorSetSubstate = parser.decode_next()?;
+                    parser.end()?;
 
                     let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
                     (
@@ -542,19 +462,8 @@ where
                 _ => return Err(RuntimeError::SystemError(SystemError::BlueprintNotFound)),
             },
             ACCESS_CONTROLLER_PACKAGE => {
-                let substate_bytes_0 = app_states.remove(&0u8).ok_or(RuntimeError::SystemError(
-                    SystemError::ObjectDoesNotMatchSchema,
-                ))?;
-                let substate: AccessControllerSubstate = scrypto_decode(&substate_bytes_0)
-                    .map_err(|_| {
-                        RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
-                    })?;
-
-                if !app_states.is_empty() {
-                    return Err(RuntimeError::SystemError(
-                        SystemError::ObjectDoesNotMatchSchema,
-                    ));
-                }
+                let substate: AccessControllerSubstate = parser.decode_next()?;
+                parser.end()?;
 
                 let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
                 (
@@ -566,28 +475,14 @@ where
                 )
             }
             IDENTITY_PACKAGE => {
-                if !app_states.is_empty() {
-                    return Err(RuntimeError::SystemError(
-                        SystemError::ObjectDoesNotMatchSchema,
-                    ));
-                }
+                parser.end()?;
 
                 let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
                 (node_id, RENodeInit::Object(btreemap!()))
             }
             ACCOUNT_PACKAGE => {
-                let substate_bytes_0 = app_states.remove(&0u8).ok_or(RuntimeError::SystemError(
-                    SystemError::ObjectDoesNotMatchSchema,
-                ))?;
-                if !app_states.is_empty() {
-                    return Err(RuntimeError::SystemError(
-                        SystemError::ObjectDoesNotMatchSchema,
-                    ));
-                }
-                let substate: AccountSubstate =
-                    scrypto_decode(&substate_bytes_0).map_err(|_| {
-                        RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
-                    })?;
+                let substate: AccountSubstate = parser.decode_next()?;
+                parser.end()?;
 
                 let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
                 (
@@ -599,18 +494,8 @@ where
                 )
             }
             CLOCK_PACKAGE => {
-                let substate_bytes_0 = app_states.remove(&0u8).ok_or(RuntimeError::SystemError(
-                    SystemError::ObjectDoesNotMatchSchema,
-                ))?;
-                if !app_states.is_empty() {
-                    return Err(RuntimeError::SystemError(
-                        SystemError::ObjectDoesNotMatchSchema,
-                    ));
-                }
-                let substate: CurrentTimeRoundedToMinutesSubstate =
-                    scrypto_decode(&substate_bytes_0).map_err(|_| {
-                        RuntimeError::SystemError(SystemError::ObjectDoesNotMatchSchema)
-                    })?;
+                let substate: CurrentTimeRoundedToMinutesSubstate = parser.decode_next()?;
+                parser.end()?;
 
                 let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
                 (
@@ -628,18 +513,8 @@ where
                     self,
                 )?;
 
-                let substate_bytes_0 = app_states.remove(&0u8).ok_or(RuntimeError::SystemError(
-                    SystemError::ObjectDoesNotMatchSchema,
-                ))?;
-
-                if !app_states.is_empty() {
-                    return Err(RuntimeError::SystemError(
-                        SystemError::ObjectDoesNotMatchSchema,
-                    ));
-                }
-
-                let substate: ScryptoValue = scrypto_decode(&substate_bytes_0)
-                    .map_err(|e| RuntimeError::SystemError(SystemError::InvalidScryptoValue(e)))?;
+                let substate: ScryptoValue = parser.decode_next()?;
+                parser.end()?;
 
                 if !match_schema_with_value(&abi.structure, &substate) {
                     return Err(RuntimeError::SystemError(
@@ -654,7 +529,7 @@ where
                     node_id,
                     RENodeInit::Object(btreemap!(
                         SubstateOffset::Component(ComponentOffset::State0)
-                        => RuntimeSubstate::ComponentState(ComponentStateSubstate::new(substate_bytes_0))
+                        => RuntimeSubstate::ComponentState(ComponentStateSubstate::new(app_states.pop().unwrap()))
                     )),
                 )
             }
