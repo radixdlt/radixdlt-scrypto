@@ -526,7 +526,7 @@ fn generate_stubs(
             fn globalize_with_modules(
                 self,
                 access_rules: AccessRules,
-                metadata: BTreeMap<String, String>,
+                metadata: Metadata,
                 royalty_config: RoyaltyConfig,
             ) -> ComponentAddress {
                 self.component.globalize_with_modules(access_rules, metadata, royalty_config)
@@ -762,7 +762,7 @@ mod tests {
                     fn globalize_with_modules(
                         self,
                         access_rules: AccessRules,
-                        metadata: BTreeMap<String, String>,
+                        metadata: Metadata,
                         royalty_config: RoyaltyConfig,
                     ) -> ComponentAddress {
                         self.component.globalize_with_modules(access_rules, metadata, royalty_config)
@@ -898,7 +898,7 @@ mod tests {
                     fn globalize_with_modules(
                         self,
                         access_rules: AccessRules,
-                        metadata: BTreeMap<String, String>,
+                        metadata: Metadata,
                         royalty_config: RoyaltyConfig,
                     ) -> ComponentAddress {
                         self.component.globalize_with_modules(access_rules, metadata, royalty_config)
@@ -1027,7 +1027,7 @@ mod tests {
                     fn globalize_with_modules(
                         self,
                         access_rules: AccessRules,
-                        metadata: BTreeMap<String, String>,
+                        metadata: Metadata,
                         royalty_config: RoyaltyConfig,
                     ) -> ComponentAddress {
                         self.component.globalize_with_modules(access_rules, metadata, royalty_config)

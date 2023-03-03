@@ -22,7 +22,6 @@ use radix_engine_interface::data::{
 };
 use radix_engine_interface::rule;
 use sbor::rust::borrow::ToOwned;
-use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use scrypto::modules::Metadata;
@@ -50,7 +49,7 @@ pub trait LocalComponent: Sized {
     fn globalize_with_modules(
         self,
         access_rules: AccessRules,
-        metadata: BTreeMap<String, String>,
+        metadata: Metadata,
         config: RoyaltyConfig,
     ) -> ComponentAddress;
 
@@ -58,12 +57,12 @@ pub trait LocalComponent: Sized {
     fn globalize(self) -> ComponentAddress {
         self.globalize_with_modules(
             AccessRules::new().default(AccessRule::AllowAll, AccessRule::DenyAll),
-            BTreeMap::new(),
+            Metadata::new(),
             RoyaltyConfig::default(),
         )
     }
 
-    fn globalize_with_metadata(self, metadata: BTreeMap<String, String>) -> ComponentAddress {
+    fn globalize_with_metadata(self, metadata: Metadata) -> ComponentAddress {
         self.globalize_with_modules(
             AccessRules::new().default(AccessRule::AllowAll, AccessRule::DenyAll),
             metadata,
@@ -74,13 +73,13 @@ pub trait LocalComponent: Sized {
     fn globalize_with_royalty_config(self, config: RoyaltyConfig) -> ComponentAddress {
         self.globalize_with_modules(
             AccessRules::new().default(AccessRule::AllowAll, AccessRule::DenyAll),
-            BTreeMap::new(),
+            Metadata::new(),
             config,
         )
     }
 
     fn globalize_with_access_rules(self, access_rules: AccessRules) -> ComponentAddress {
-        self.globalize_with_modules(access_rules, BTreeMap::new(), RoyaltyConfig::default())
+        self.globalize_with_modules(access_rules, Metadata::new(), RoyaltyConfig::default())
     }
 
     fn globalize_with_owner_badge(
@@ -117,7 +116,7 @@ pub trait LocalComponent: Sized {
             rule!(require(owner_badge.clone())),
         );
 
-        self.globalize_with_modules(access_rules, BTreeMap::new(), royalty_config)
+        self.globalize_with_modules(access_rules, Metadata::new(), royalty_config)
     }
 }
 
@@ -151,13 +150,9 @@ impl LocalComponent for OwnedComponent {
     fn globalize_with_modules(
         self,
         access_rules: AccessRules,
-        metadata_init: BTreeMap<String, String>,
+        metadata: Metadata,
         config: RoyaltyConfig,
     ) -> ComponentAddress {
-        let metadata = Metadata::new();
-        for (key, value) in metadata_init {
-            metadata.set(key, value);
-        }
         let metadata: Own = Own::Object(metadata.0);
 
         let rtn = ScryptoEnv

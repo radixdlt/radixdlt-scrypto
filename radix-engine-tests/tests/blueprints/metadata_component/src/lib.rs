@@ -7,8 +7,8 @@ mod metadata_component {
     impl MetadataComponent {
         pub fn new(key: String, value: String) -> ComponentAddress {
             let component = MetadataComponent {}.instantiate();
-            let mut metadata = BTreeMap::new();
-            metadata.insert(key, value);
+            let metadata = Metadata::new();
+            metadata.set(key, value);
             let component_address = component.globalize_with_metadata(metadata);
             component_address
         }
