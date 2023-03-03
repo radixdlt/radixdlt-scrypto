@@ -29,9 +29,7 @@ mod node_create {
             ScryptoEnv
                 .new_object(
                     "invalid_blueprint",
-                    btreemap!(
-                        0 => scrypto_encode(&NodeCreate {}).unwrap()
-                    ),
+                    vec![scrypto_encode(&NodeCreate {}).unwrap()],
                 )
                 .unwrap();
         }

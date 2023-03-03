@@ -1,5 +1,6 @@
 use crate::abi::*;
 use crate::engine::scrypto_env::ScryptoEnv;
+use crate::modules::AttachedMetadata;
 use crate::runtime::*;
 use crate::*;
 use radix_engine_interface::api::node_modules::auth::{
@@ -13,7 +14,9 @@ use radix_engine_interface::api::node_modules::royalty::{
 };
 use radix_engine_interface::api::types::{ObjectId, RENodeId};
 use radix_engine_interface::api::{types::*, ClientObjectApi, ClientPackageApi};
-use radix_engine_interface::blueprints::resource::{require, AccessRule, AccessRules, Bucket, MethodKey, AccessRuleEntry};
+use radix_engine_interface::blueprints::resource::{
+    require, AccessRule, AccessRuleEntry, AccessRules, Bucket, MethodKey,
+};
 use radix_engine_interface::constants::{ACCESS_RULES_PACKAGE, ROYALTY_PACKAGE};
 use radix_engine_interface::data::{
     scrypto_decode, scrypto_encode, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
@@ -21,7 +24,6 @@ use radix_engine_interface::data::{
 use radix_engine_interface::rule;
 use sbor::rust::vec::Vec;
 use scrypto::modules::Metadata;
-use crate::modules::AttachedMetadata;
 
 use super::ComponentAccessRules;
 
@@ -49,44 +51,37 @@ pub trait LocalComponent: Sized {
         config: RoyaltyConfig,
     ) -> ComponentAddress;
 
-
     fn globalize(self) -> ComponentAddress {
         let mut access_rules = AccessRules::new();
         access_rules.set_method_access_rule(
-            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()), AccessRuleEntry::AccessRule(AccessRule::DenyAll));
+            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
+            AccessRuleEntry::AccessRule(AccessRule::DenyAll),
+        );
         let access_rules = access_rules.default(AccessRule::AllowAll, AccessRule::DenyAll);
 
-        self.globalize_with_modules(
-            access_rules,
-            Metadata::new(),
-            RoyaltyConfig::default(),
-        )
+        self.globalize_with_modules(access_rules, Metadata::new(), RoyaltyConfig::default())
     }
 
     fn globalize_with_metadata(self, metadata: Metadata) -> ComponentAddress {
         let mut access_rules = AccessRules::new();
         access_rules.set_method_access_rule(
-            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()), AccessRuleEntry::AccessRule(AccessRule::DenyAll));
+            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
+            AccessRuleEntry::AccessRule(AccessRule::DenyAll),
+        );
         let access_rules = access_rules.default(AccessRule::AllowAll, AccessRule::DenyAll);
 
-        self.globalize_with_modules(
-            access_rules,
-            metadata,
-            RoyaltyConfig::default(),
-        )
+        self.globalize_with_modules(access_rules, metadata, RoyaltyConfig::default())
     }
 
     fn globalize_with_royalty_config(self, config: RoyaltyConfig) -> ComponentAddress {
         let mut access_rules = AccessRules::new();
         access_rules.set_method_access_rule(
-            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()), AccessRuleEntry::AccessRule(AccessRule::DenyAll));
+            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
+            AccessRuleEntry::AccessRule(AccessRule::DenyAll),
+        );
         let access_rules = access_rules.default(AccessRule::AllowAll, AccessRule::DenyAll);
 
-        self.globalize_with_modules(
-            access_rules,
-            Metadata::new(),
-            config,
-        )
+        self.globalize_with_modules(access_rules, Metadata::new(), config)
     }
 
     fn globalize_with_access_rules(self, access_rules: AccessRules) -> ComponentAddress {
@@ -193,9 +188,9 @@ impl LocalComponent for OwnedComponent {
             .globalize(
                 RENodeId::Object(self.0),
                 btreemap!(
-                    NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
-                    NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
-                    NodeModuleId::ComponentRoyalty => scrypto_encode(&royalty).unwrap()
+                    NodeModuleId::AccessRules => access_rules.id(),
+                    NodeModuleId::Metadata => metadata.id(),
+                    NodeModuleId::ComponentRoyalty => royalty.id(),
                 ),
             )
             .unwrap();

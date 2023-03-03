@@ -664,9 +664,7 @@ impl ValidatorCreator {
 
         let validator_id = api.new_object(
             VALIDATOR_BLUEPRINT,
-            btreemap!(
-                0 => scrypto_encode(&substate).unwrap()
-            ),
+            vec![scrypto_encode(&substate).unwrap()],
         )?;
 
         let access_rules = Self::build_access_rules(owner_access_rule);
@@ -676,8 +674,8 @@ impl ValidatorCreator {
         let address = api.globalize_with_address(
             RENodeId::Object(validator_id),
             btreemap!(
-                NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
-                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
+                NodeModuleId::AccessRules => access_rules.id(),
+                NodeModuleId::Metadata => metadata.id(),
             ),
             address.into(),
         )?;
@@ -714,9 +712,7 @@ impl ValidatorCreator {
 
         let validator_id = api.new_object(
             VALIDATOR_BLUEPRINT,
-            btreemap!(
-                0 => scrypto_encode(&substate).unwrap()
-            ),
+            vec![scrypto_encode(&substate).unwrap()],
         )?;
 
         let access_rules = Self::build_access_rules(owner_access_rule);
@@ -726,8 +722,8 @@ impl ValidatorCreator {
         let address = api.globalize_with_address(
             RENodeId::Object(validator_id),
             btreemap!(
-                NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
-                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
+                NodeModuleId::AccessRules => access_rules.id(),
+                NodeModuleId::Metadata => metadata.id(),
             ),
             address.into(),
         )?;

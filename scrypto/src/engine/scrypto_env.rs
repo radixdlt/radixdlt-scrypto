@@ -24,7 +24,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     fn new_object(
         &mut self,
         blueprint_ident: &str,
-        app_states: BTreeMap<u8, Vec<u8>>,
+        app_states: Vec<Vec<u8>>,
     ) -> Result<ObjectId, ClientApiError> {
         let app_states = scrypto_encode(&app_states).unwrap();
 
@@ -42,7 +42,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     fn globalize(
         &mut self,
         node_id: RENodeId,
-        modules: BTreeMap<NodeModuleId, Vec<u8>>,
+        modules: BTreeMap<NodeModuleId, ObjectId>,
     ) -> Result<Address, ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
         let modules = scrypto_encode(&modules).unwrap();
@@ -61,7 +61,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     fn globalize_with_address(
         &mut self,
         node_id: RENodeId,
-        modules: BTreeMap<NodeModuleId, Vec<u8>>,
+        modules: BTreeMap<NodeModuleId, ObjectId>,
         address: Address,
     ) -> Result<Address, ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();

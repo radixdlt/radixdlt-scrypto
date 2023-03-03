@@ -195,9 +195,7 @@ impl AccountNativePackage {
             };
             api.new_object(
                 ACCOUNT_BLUEPRINT,
-                btreemap!(
-                    0 => scrypto_encode(&account_substate).unwrap()
-                ),
+                vec![scrypto_encode(&account_substate).unwrap()],
             )?
         };
 
@@ -209,8 +207,8 @@ impl AccountNativePackage {
         let address = api.globalize(
             RENodeId::Object(account_id),
             btreemap!(
-                NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
-                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
+                NodeModuleId::AccessRules => access_rules.id(),
+                NodeModuleId::Metadata => metadata.id(),
             ),
         )?;
 
@@ -243,9 +241,7 @@ impl AccountNativePackage {
             };
             api.new_object(
                 ACCOUNT_BLUEPRINT,
-                btreemap!(
-                    0 => scrypto_encode(&account_substate).unwrap()
-                ),
+                vec![scrypto_encode(&account_substate).unwrap()],
             )?
         };
 

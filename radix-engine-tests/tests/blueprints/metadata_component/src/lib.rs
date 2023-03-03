@@ -18,7 +18,7 @@ mod metadata_component {
         pub fn new2(key: String, value: String) {
             let component = MetadataComponent {}.instantiate();
             let component_address = component.globalize_with_access_rules(
-                AccessRules::new().default(AccessRule::AllowAll, AccessRule::DenyAll)
+                AccessRules::new().default(AccessRule::AllowAll, AccessRule::DenyAll),
             );
 
             let global: MetadataComponentGlobalComponentRef = component_address.into();

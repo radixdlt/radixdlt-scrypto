@@ -56,9 +56,9 @@ mod component_module {
                 .globalize(
                     RENodeId::Object(component.component.0),
                     btreemap!(
-                        NodeModuleId::AccessRules => scrypto_encode(&metadata).unwrap(),
-                        NodeModuleId::Metadata => scrypto_encode(&royalty).unwrap(),
-                        NodeModuleId::ComponentRoyalty => scrypto_encode(&access_rules).unwrap()
+                        NodeModuleId::AccessRules => metadata.id(),
+                        NodeModuleId::Metadata => royalty.id(),
+                        NodeModuleId::ComponentRoyalty => access_rules.id(),
                     ),
                 )
                 .unwrap();

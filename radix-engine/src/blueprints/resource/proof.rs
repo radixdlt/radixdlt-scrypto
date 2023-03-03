@@ -225,10 +225,10 @@ impl ProofBlueprint {
 
             let proof_id = api.new_object(
                 PROOF_BLUEPRINT,
-                btreemap!(
-                    0 => scrypto_encode(&proof_info).unwrap(),
-                    1 => scrypto_encode(&clone).unwrap()
-                ),
+                vec![
+                    scrypto_encode(&proof_info).unwrap(),
+                    scrypto_encode(&clone).unwrap(),
+                ],
             )?;
 
             RENodeId::Object(proof_id)
@@ -245,10 +245,10 @@ impl ProofBlueprint {
 
             let proof_id = api.new_object(
                 PROOF_BLUEPRINT,
-                btreemap!(
-                    0 => scrypto_encode(&proof_info).unwrap(),
-                    1 => scrypto_encode(&clone).unwrap()
-                ),
+                vec![
+                    scrypto_encode(&proof_info).unwrap(),
+                    scrypto_encode(&clone).unwrap(),
+                ],
             )?;
 
             RENodeId::Object(proof_id)

@@ -202,6 +202,7 @@ pub enum SystemError {
     InvalidLockFlags,
     CannotGlobalize,
     InvalidModule,
+    SubstateDecodeNotMatchSchema(DecodeError),
     ObjectDoesNotMatchSchema,
     BlueprintNotFound,
     InvalidScryptoValue(DecodeError),

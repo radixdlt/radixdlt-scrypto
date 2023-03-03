@@ -7,7 +7,7 @@ pub trait ClientObjectApi<E> {
     fn new_object(
         &mut self,
         blueprint_ident: &str,
-        app_states: BTreeMap<u8, Vec<u8>>,
+        app_states: Vec<Vec<u8>>,
     ) -> Result<ObjectId, E>;
 
     fn new_key_value_store(&mut self) -> Result<KeyValueStoreId, E>;
@@ -15,13 +15,13 @@ pub trait ClientObjectApi<E> {
     fn globalize(
         &mut self,
         node_id: RENodeId,
-        modules: BTreeMap<NodeModuleId, Vec<u8>>,
+        modules: BTreeMap<NodeModuleId, ObjectId>,
     ) -> Result<Address, E>;
 
     fn globalize_with_address(
         &mut self,
         node_id: RENodeId,
-        modules: BTreeMap<NodeModuleId, Vec<u8>>,
+        modules: BTreeMap<NodeModuleId, ObjectId>,
         address: Address,
     ) -> Result<Address, E>;
 

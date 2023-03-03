@@ -2,9 +2,7 @@ use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetGroupAccessRuleInput, AccessRulesSetMethodAccessRuleInput,
 };
-use radix_engine_interface::api::node_modules::metadata::{
-    METADATA_SET_IDENT,
-};
+use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::types::{NodeModuleId, RENodeId};
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
@@ -15,8 +13,8 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 
-use crate::*;
 use crate::modules::AttachedMetadata;
+use crate::*;
 
 /// Represents a resource manager.
 #[derive(Debug)]

@@ -88,7 +88,6 @@ fn can_remove_metadata() {
 
     // Assert
     receipt.expect_commit_success();
-    let value = test_runner
-        .get_metadata(component_address.into(), "key");
+    let value = test_runner.get_metadata(component_address.into(), "key");
     assert_eq!(value, None);
 }

@@ -1,4 +1,5 @@
 use crate::engine::scrypto_env::ScryptoEnv;
+use crate::modules::AttachedMetadata;
 use crate::runtime::*;
 use radix_engine_interface::api::node_modules::royalty::{
     PackageClaimRoyaltyInput, PackageSetRoyaltyConfigInput, PACKAGE_ROYALTY_CLAIM_ROYALTY_IDENT,
@@ -12,7 +13,6 @@ use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use crate::modules::AttachedMetadata;
 
 /// Represents a published package.
 #[derive(Debug)]

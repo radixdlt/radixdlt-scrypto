@@ -165,7 +165,7 @@ where
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let blueprint_ident =
             String::from_utf8(blueprint_ident).map_err(|_| WasmRuntimeError::InvalidIdent)?;
-        let app_states = scrypto_decode::<BTreeMap<u8, Vec<u8>>>(&app_states)
+        let app_states = scrypto_decode::<Vec<Vec<u8>>>(&app_states)
             .map_err(WasmRuntimeError::InvalidAppStates)?;
 
         let component_id = self.api.new_object(blueprint_ident.as_ref(), app_states)?;
@@ -182,7 +182,7 @@ where
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let component_id = scrypto_decode::<RENodeId>(&component_id)
             .map_err(WasmRuntimeError::InvalidComponentId)?;
-        let modules = scrypto_decode::<BTreeMap<NodeModuleId, Vec<u8>>>(&modules)
+        let modules = scrypto_decode::<BTreeMap<NodeModuleId, ObjectId>>(&modules)
             .map_err(WasmRuntimeError::InvalidValue)?;
 
         let component_address = self.api.globalize(component_id, modules)?;

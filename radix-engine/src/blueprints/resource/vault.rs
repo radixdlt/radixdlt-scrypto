@@ -575,13 +575,14 @@ impl VaultBlueprint {
             // Create node
             let bucket_id = api.new_object(
                 BUCKET_BLUEPRINT,
-                btreemap!(
-                    0 => scrypto_encode(&BucketInfoSubstate {
+                vec![
+                    scrypto_encode(&BucketInfoSubstate {
                         resource_address: info.resource_address,
                         resource_type: info.resource_type,
-                    }).unwrap(),
-                    1 => scrypto_encode(&taken).unwrap()
-                ),
+                    })
+                    .unwrap(),
+                    scrypto_encode(&taken).unwrap(),
+                ],
             )?;
 
             RENodeId::Object(bucket_id)
@@ -592,13 +593,14 @@ impl VaultBlueprint {
             // Create node
             let bucket_id = api.new_object(
                 BUCKET_BLUEPRINT,
-                btreemap!(
-                    0 => scrypto_encode(&BucketInfoSubstate {
+                vec![
+                    scrypto_encode(&BucketInfoSubstate {
                         resource_address: info.resource_address,
                         resource_type: info.resource_type,
-                    }).unwrap(),
-                    1 => scrypto_encode(&taken).unwrap()
-                ),
+                    })
+                    .unwrap(),
+                    scrypto_encode(&taken).unwrap(),
+                ],
             )?;
 
             RENodeId::Object(bucket_id)
@@ -636,13 +638,14 @@ impl VaultBlueprint {
             // Create node
             let bucket_id = api.new_object(
                 BUCKET_BLUEPRINT,
-                btreemap!(
-                    0 => scrypto_encode(&BucketInfoSubstate {
+                vec![
+                    scrypto_encode(&BucketInfoSubstate {
                         resource_address: info.resource_address,
                         resource_type: info.resource_type,
-                    }).unwrap(),
-                    1 => scrypto_encode(&taken).unwrap()
-                ),
+                    })
+                    .unwrap(),
+                    scrypto_encode(&taken).unwrap(),
+                ],
             )?;
 
             Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
@@ -852,13 +855,14 @@ impl VaultBlueprint {
             let taken = FungibleVault::take(receiver, input.amount, api)?;
             let bucket_id = api.new_object(
                 BUCKET_BLUEPRINT,
-                btreemap!(
-                    0 => scrypto_encode(&BucketInfoSubstate {
+                vec![
+                    scrypto_encode(&BucketInfoSubstate {
                         resource_address: info.resource_address,
                         resource_type: info.resource_type,
-                    }).unwrap(),
-                    1 => scrypto_encode(&taken).unwrap()
-                ),
+                    })
+                    .unwrap(),
+                    scrypto_encode(&taken).unwrap(),
+                ],
             )?;
 
             RENodeId::Object(bucket_id)
@@ -866,13 +870,14 @@ impl VaultBlueprint {
             let taken = NonFungibleVault::take(receiver, input.amount, api)?;
             let bucket_id = api.new_object(
                 BUCKET_BLUEPRINT,
-                btreemap!(
-                    0 => scrypto_encode(&BucketInfoSubstate {
+                vec![
+                    scrypto_encode(&BucketInfoSubstate {
                         resource_address: info.resource_address,
                         resource_type: info.resource_type,
-                    }).unwrap(),
-                    1 => scrypto_encode(&taken).unwrap()
-                ),
+                    })
+                    .unwrap(),
+                    scrypto_encode(&taken).unwrap(),
+                ],
             )?;
 
             RENodeId::Object(bucket_id)
@@ -909,13 +914,14 @@ impl VaultBlueprint {
 
             let bucket_id = api.new_object(
                 BUCKET_BLUEPRINT,
-                btreemap!(
-                    0 => scrypto_encode(&BucketInfoSubstate {
+                vec![
+                    scrypto_encode(&BucketInfoSubstate {
                         resource_address: info.resource_address,
                         resource_type: info.resource_type,
-                    }).unwrap(),
-                    1 => scrypto_encode(&taken).unwrap()
-                ),
+                    })
+                    .unwrap(),
+                    scrypto_encode(&taken).unwrap(),
+                ],
             )?;
 
             api.emit_event(RecallResourceEvent::Ids(input.non_fungible_local_ids))?;
@@ -952,10 +958,10 @@ impl VaultBlueprint {
 
             let proof_id = api.new_object(
                 PROOF_BLUEPRINT,
-                btreemap!(
-                    0 => scrypto_encode(&proof_info).unwrap(),
-                    1 => scrypto_encode(&proof).unwrap()
-                ),
+                vec![
+                    scrypto_encode(&proof_info).unwrap(),
+                    scrypto_encode(&proof).unwrap(),
+                ],
             )?;
 
             RENodeId::Object(proof_id)
@@ -972,10 +978,10 @@ impl VaultBlueprint {
 
             let proof_id = api.new_object(
                 PROOF_BLUEPRINT,
-                btreemap!(
-                    0 => scrypto_encode(&proof_info).unwrap(),
-                    1 => scrypto_encode(&proof).unwrap()
-                ),
+                vec![
+                    scrypto_encode(&proof_info).unwrap(),
+                    scrypto_encode(&proof).unwrap(),
+                ],
             )?;
 
             RENodeId::Object(proof_id)
@@ -1015,10 +1021,10 @@ impl VaultBlueprint {
             let proof = FungibleVault::lock_amount(receiver, input.amount, api)?;
             let proof_id = api.new_object(
                 PROOF_BLUEPRINT,
-                btreemap!(
-                    0 => scrypto_encode(&proof_info).unwrap(),
-                    1 => scrypto_encode(&proof).unwrap()
-                ),
+                vec![
+                    scrypto_encode(&proof_info).unwrap(),
+                    scrypto_encode(&proof).unwrap(),
+                ],
             )?;
 
             RENodeId::Object(proof_id)
@@ -1031,10 +1037,10 @@ impl VaultBlueprint {
             let proof = NonFungibleVault::lock_amount(receiver, input.amount, api)?;
             let proof_id = api.new_object(
                 PROOF_BLUEPRINT,
-                btreemap!(
-                    0 => scrypto_encode(&proof_info).unwrap(),
-                    1 => scrypto_encode(&proof).unwrap()
-                ),
+                vec![
+                    scrypto_encode(&proof_info).unwrap(),
+                    scrypto_encode(&proof).unwrap(),
+                ],
             )?;
 
             RENodeId::Object(proof_id)
@@ -1073,10 +1079,10 @@ impl VaultBlueprint {
             let proof = NonFungibleVault::lock_non_fungibles(receiver, input.ids, api)?;
             let proof_id = api.new_object(
                 PROOF_BLUEPRINT,
-                btreemap!(
-                    0 => scrypto_encode(&proof_info).unwrap(),
-                    1 => scrypto_encode(&proof).unwrap()
-                ),
+                vec![
+                    scrypto_encode(&proof_info).unwrap(),
+                    scrypto_encode(&proof).unwrap(),
+                ],
             )?;
             Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
         }

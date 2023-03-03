@@ -547,10 +547,10 @@ impl BucketBlueprint {
             // Create node
             let bucket_id = api.new_object(
                 BUCKET_BLUEPRINT,
-                btreemap!(
-                    0 => scrypto_encode(&info).unwrap(),
-                    1 => scrypto_encode(&taken).unwrap()
-                ),
+                vec![
+                    scrypto_encode(&info).unwrap(),
+                    scrypto_encode(&taken).unwrap(),
+                ],
             )?;
 
             RENodeId::Object(bucket_id)
@@ -561,10 +561,10 @@ impl BucketBlueprint {
             // Create node
             let bucket_id = api.new_object(
                 BUCKET_BLUEPRINT,
-                btreemap!(
-                    0 => scrypto_encode(&info).unwrap(),
-                    1 => scrypto_encode(&taken).unwrap()
-                ),
+                vec![
+                    scrypto_encode(&info).unwrap(),
+                    scrypto_encode(&taken).unwrap(),
+                ],
             )?;
 
             RENodeId::Object(bucket_id)
@@ -603,10 +603,10 @@ impl BucketBlueprint {
             // Create node
             let bucket_id = api.new_object(
                 BUCKET_BLUEPRINT,
-                btreemap!(
-                    0 => scrypto_encode(&info).unwrap(),
-                    1 => scrypto_encode(&taken).unwrap()
-                ),
+                vec![
+                    scrypto_encode(&info).unwrap(),
+                    scrypto_encode(&taken).unwrap(),
+                ],
             )?;
 
             Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
@@ -760,10 +760,10 @@ impl BucketBlueprint {
 
             let proof_id = api.new_object(
                 PROOF_BLUEPRINT,
-                btreemap!(
-                    0 => scrypto_encode(&proof_info).unwrap(),
-                    1 => scrypto_encode(&proof).unwrap()
-                ),
+                vec![
+                    scrypto_encode(&proof_info).unwrap(),
+                    scrypto_encode(&proof).unwrap(),
+                ],
             )?;
             RENodeId::Object(proof_id)
         } else {
@@ -778,10 +778,10 @@ impl BucketBlueprint {
             let proof = NonFungibleBucket::lock_amount(receiver, amount, api)?;
             let proof_id = api.new_object(
                 PROOF_BLUEPRINT,
-                btreemap!(
-                    0 => scrypto_encode(&proof_info).unwrap(),
-                    1 => scrypto_encode(&proof).unwrap()
-                ),
+                vec![
+                    scrypto_encode(&proof_info).unwrap(),
+                    scrypto_encode(&proof).unwrap(),
+                ],
             )?;
             RENodeId::Object(proof_id)
         };

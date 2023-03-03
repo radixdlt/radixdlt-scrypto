@@ -1,13 +1,17 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::*;
 use crate::*;
-use radix_engine_interface::api::node_modules::metadata::{MetadataSetInput, METADATA_BLUEPRINT, METADATA_SET_IDENT, MetadataCreateInput, METADATA_CREATE_IDENT, METADATA_GET_IDENT, MetadataGetInput, METADATA_REMOVE_IDENT, MetadataRemoveInput};
+use radix_engine_interface::api::node_modules::metadata::{
+    MetadataCreateInput, MetadataGetInput, MetadataRemoveInput, MetadataSetInput,
+    METADATA_BLUEPRINT, METADATA_CREATE_IDENT, METADATA_GET_IDENT, METADATA_REMOVE_IDENT,
+    METADATA_SET_IDENT,
+};
 use radix_engine_interface::api::types::{NodeModuleId, ObjectId, RENodeId};
 use radix_engine_interface::api::{ClientObjectApi, ClientPackageApi};
 use radix_engine_interface::constants::METADATA_PACKAGE;
-use radix_engine_interface::data::{
-    scrypto_decode, scrypto_encode,
-};
+use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
+use sbor::rust::string::String;
+use sbor::rust::prelude::ToOwned;
 
 #[derive(PartialEq, Eq, Hash, Clone)]
 pub struct Metadata(pub ObjectId);
@@ -56,11 +60,11 @@ pub trait MetadataObject {
                 scrypto_encode(&MetadataSetInput {
                     key: name.as_ref().to_owned(),
                     value: value.as_ref().to_owned(),
-                }).unwrap(),
+                })
+                .unwrap(),
             )
             .unwrap();
     }
-
 
     fn get<K: AsRef<str>>(&self, name: K) -> Option<String> {
         let (node_id, module_id) = self.self_id();
@@ -72,7 +76,8 @@ pub trait MetadataObject {
                 METADATA_GET_IDENT,
                 scrypto_encode(&MetadataGetInput {
                     key: name.as_ref().to_owned(),
-                }).unwrap(),
+                })
+                .unwrap(),
             )
             .unwrap();
 
@@ -89,7 +94,8 @@ pub trait MetadataObject {
                 METADATA_REMOVE_IDENT,
                 scrypto_encode(&MetadataRemoveInput {
                     key: name.as_ref().to_owned(),
-                }).unwrap(),
+                })
+                .unwrap(),
             )
             .unwrap();
 
