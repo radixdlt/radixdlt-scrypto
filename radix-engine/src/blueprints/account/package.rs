@@ -46,7 +46,7 @@ pub struct AccountNativePackage;
 
 impl AccountNativePackage {
     pub fn schema() -> PackageSchema {
-        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind<_>>::new();
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut substates = BTreeMap::new();
         substates.insert(

@@ -24,7 +24,7 @@ impl Runtime {
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         // FIXME: schema - replace this placeholder implementation
-        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind<_>>::new();
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
         let type_index = aggregator.add_child_type_and_descendents::<T>();
         let schema = generate_full_schema(aggregator);
         let metadata = schema.resolve_type_metadata(type_index);

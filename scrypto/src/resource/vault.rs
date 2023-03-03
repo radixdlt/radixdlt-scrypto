@@ -57,7 +57,7 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for V
     }
 }
 
-impl Describe<ScryptoCustomTypeKind<GlobalTypeId>> for Vault {
+impl Describe<ScryptoCustomTypeKind> for Vault {
     const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown([OWN_VAULT_ID]);
 }
 

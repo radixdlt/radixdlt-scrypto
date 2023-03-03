@@ -166,7 +166,7 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for O
     }
 }
 
-impl Describe<ScryptoCustomTypeKind<GlobalTypeId>> for Own {
+impl Describe<ScryptoCustomTypeKind> for Own {
     const TYPE_ID: GlobalTypeId =
         GlobalTypeId::well_known(crate::data::scrypto::well_known_scrypto_custom_types::OWN_ID);
 }

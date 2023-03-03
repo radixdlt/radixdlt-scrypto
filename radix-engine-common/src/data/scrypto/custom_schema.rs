@@ -3,13 +3,13 @@ use crate::*;
 use sbor::rust::collections::*;
 use sbor::*;
 
-pub type ScryptoTypeKind<L> = TypeKind<ScryptoCustomValueKind, ScryptoCustomTypeKind<L>, L>;
+pub type ScryptoTypeKind<L> = TypeKind<ScryptoCustomValueKind, ScryptoCustomTypeKind, L>;
 pub type ScryptoSchema = Schema<ScryptoCustomTypeExtension>;
-pub type ScryptoTypeData<L> = TypeData<ScryptoCustomTypeKind<L>, L>;
+pub type ScryptoTypeData<L> = TypeData<ScryptoCustomTypeKind, L>;
 
 /// A schema for the values that a codec can decode / views as valid
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-pub enum ScryptoCustomTypeKind<L: SchemaTypeLink> {
+pub enum ScryptoCustomTypeKind {
     Address, /* any */
     PackageAddress,
     ComponentAddress,
@@ -18,14 +18,15 @@ pub enum ScryptoCustomTypeKind<L: SchemaTypeLink> {
     Own, /* any */
     Bucket,
     Proof,
-    KeyValueStore { key_type: L, value_type: L },
+    Vault,
+    KeyValueStore,
 
     Decimal,
     PreciseDecimal,
     NonFungibleLocalId,
 }
 
-impl<L: SchemaTypeLink> CustomTypeKind<L> for ScryptoCustomTypeKind<L> {
+impl<L: SchemaTypeLink> CustomTypeKind<L> for ScryptoCustomTypeKind {
     type CustomValueKind = ScryptoCustomValueKind;
     type CustomTypeExtension = ScryptoCustomTypeExtension;
 }
@@ -43,13 +44,13 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
     const PAYLOAD_PREFIX: u8 = SCRYPTO_SBOR_V1_PAYLOAD_PREFIX;
 
     type CustomValueKind = ScryptoCustomValueKind;
-    type CustomTypeKind<L: SchemaTypeLink> = ScryptoCustomTypeKind<L>;
+    type CustomTypeKind<L: SchemaTypeLink> = ScryptoCustomTypeKind;
     type CustomTypeValidation = ScryptoCustomTypeValidation;
     type CustomTraversal = ScryptoCustomTraversal;
 
     fn linearize_type_kind(
         type_kind: Self::CustomTypeKind<GlobalTypeId>,
-        type_indices: &IndexSet<TypeHash>,
+        _type_indices: &IndexSet<TypeHash>,
     ) -> Self::CustomTypeKind<LocalTypeIndex> {
         match type_kind {
             ScryptoCustomTypeKind::Address => ScryptoCustomTypeKind::Address,
@@ -60,13 +61,8 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             ScryptoCustomTypeKind::Own => ScryptoCustomTypeKind::Own,
             ScryptoCustomTypeKind::Bucket => ScryptoCustomTypeKind::Bucket,
             ScryptoCustomTypeKind::Proof => ScryptoCustomTypeKind::Proof,
-            ScryptoCustomTypeKind::KeyValueStore {
-                key_type,
-                value_type,
-            } => ScryptoCustomTypeKind::KeyValueStore {
-                key_type: resolve_local_type_index(type_indices, &key_type),
-                value_type: resolve_local_type_index(type_indices, &value_type),
-            },
+            ScryptoCustomTypeKind::Vault => ScryptoCustomTypeKind::Vault,
+            ScryptoCustomTypeKind::KeyValueStore => ScryptoCustomTypeKind::KeyValueStore,
 
             ScryptoCustomTypeKind::Decimal => ScryptoCustomTypeKind::Decimal,
             ScryptoCustomTypeKind::PreciseDecimal => ScryptoCustomTypeKind::PreciseDecimal,
@@ -81,7 +77,7 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
     }
 
     fn validate_type_kind(
-        context: &TypeValidationContext,
+        _context: &TypeValidationContext,
         type_kind: &SchemaCustomTypeKind<Self>,
     ) -> Result<(), SchemaValidationError> {
         match type_kind {
@@ -92,17 +88,12 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             | ScryptoCustomTypeKind::Own
             | ScryptoCustomTypeKind::Bucket
             | ScryptoCustomTypeKind::Proof
+            | ScryptoCustomTypeKind::Vault
+            | ScryptoCustomTypeKind::KeyValueStore
             | ScryptoCustomTypeKind::Decimal
             | ScryptoCustomTypeKind::PreciseDecimal
             | ScryptoCustomTypeKind::NonFungibleLocalId => {
                 // No validations
-            }
-            ScryptoCustomTypeKind::KeyValueStore {
-                key_type,
-                value_type,
-            } => {
-                validate_index::<Self>(context, key_type)?;
-                validate_index::<Self>(context, value_type)?;
             }
         }
         Ok(())
@@ -123,6 +114,7 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             | ScryptoCustomTypeKind::Own
             | ScryptoCustomTypeKind::Bucket
             | ScryptoCustomTypeKind::Proof
+            | ScryptoCustomTypeKind::Vault
             | ScryptoCustomTypeKind::KeyValueStore { .. }
             | ScryptoCustomTypeKind::Decimal
             | ScryptoCustomTypeKind::PreciseDecimal
@@ -153,6 +145,7 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             | ScryptoCustomTypeKind::Own
             | ScryptoCustomTypeKind::Bucket
             | ScryptoCustomTypeKind::Proof
+            | ScryptoCustomTypeKind::Vault
             | ScryptoCustomTypeKind::KeyValueStore { .. }
             | ScryptoCustomTypeKind::Decimal
             | ScryptoCustomTypeKind::PreciseDecimal
@@ -194,6 +187,9 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
                 matches!(value_kind, ValueKind::Custom(ScryptoCustomValueKind::Own))
             }
             ScryptoCustomTypeKind::Proof => {
+                matches!(value_kind, ValueKind::Custom(ScryptoCustomValueKind::Own))
+            }
+            ScryptoCustomTypeKind::Vault => {
                 matches!(value_kind, ValueKind::Custom(ScryptoCustomValueKind::Own))
             }
             ScryptoCustomTypeKind::KeyValueStore { .. } => {

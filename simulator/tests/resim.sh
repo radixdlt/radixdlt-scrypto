@@ -47,12 +47,10 @@ token_address=`$resim new-token-mutable $minter_badge | awk '/Resource:/ {print 
 # Test - transfer non fungible
 non_fungible_create_receipt=`$resim new-simple-badge --name 'TestNonFungible'`
 non_fungible_global_id=`echo "$non_fungible_create_receipt" | awk '/NonFungibleGlobalId:/ {print $NF}'`
-# The below line looks like this: U32#1,resource_address
-# You can put multiple ids into a bucket like so: resource_address:id1,id2,id3
 $resim call-method $account2 deposit "$non_fungible_global_id"
 
 # Test - mint and transfer (Mintable that requires a `ResourceAddress`)
-$resim mint 777 $token_address --proofs 1,$minter_badge
+$resim mint 777 $token_address --proofs $minter_badge:1
 $resim transfer 111 $token_address $account2
 
 # Test - publish, call-function and call-method and non-fungibles
@@ -62,7 +60,7 @@ component=`$resim call-function $package Hello instantiate_hello | awk '/Compone
 $resim call-method $component free_token
 
 # Test - export schema
-$resim export-schema $package Hello target/temp.abi
+$resim export-schema $package target/temp.abi
 
 # Test - dump component state
 $resim show $package
@@ -102,9 +100,9 @@ admin_badge=`echo $resources | cut -d " " -f2`
 superadmin_badge=`echo $resources | cut -d " " -f3`
 token=`echo $resources | cut -d " " -f4`
 
-$resim call-method $component organizational_authenticated_method --proofs 1,$supervisor_badge 1,$admin_badge 1,$superadmin_badge
-$resim transfer 2 $token $account2 --proofs 1,$supervisor_badge 1,$admin_badge 1,$superadmin_badge
-$resim mint 100000 $token --proofs 1,$supervisor_badge 1,$admin_badge 1,$superadmin_badge
+$resim call-method $component organizational_authenticated_method --proofs $supervisor_badge:1 $admin_badge:1 $superadmin_badge:1
+$resim transfer 2 $token $account2 --proofs $supervisor_badge:1 $admin_badge:1 $superadmin_badge:1
+$resim mint 100000 $token --proofs $supervisor_badge:1 $admin_badge:1 $superadmin_badge:1
 
 # Test - publishing a large package
 $resim publish ./tests/large_package.wasm --owner-badge $owner_badge

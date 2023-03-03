@@ -57,8 +57,8 @@ impl<T: for<'a> Decode<ScryptoCustomValueKind, ScryptoDecoder<'a>>> ScryptoDecod
 pub trait ScryptoEncode: for<'a> Encode<ScryptoCustomValueKind, ScryptoEncoder<'a>> {}
 impl<T: for<'a> Encode<ScryptoCustomValueKind, ScryptoEncoder<'a>> + ?Sized> ScryptoEncode for T {}
 
-pub trait ScryptoDescribe: Describe<ScryptoCustomTypeKind<GlobalTypeId>> {}
-impl<T: Describe<ScryptoCustomTypeKind<GlobalTypeId>>> ScryptoDescribe for T {}
+pub trait ScryptoDescribe: Describe<ScryptoCustomTypeKind> {}
+impl<T: Describe<ScryptoCustomTypeKind>> ScryptoDescribe for T {}
 
 pub trait ScryptoSbor: ScryptoCategorize + ScryptoDecode + ScryptoEncode + ScryptoDescribe {}
 impl<T: ScryptoCategorize + ScryptoDecode + ScryptoEncode + ScryptoDescribe> ScryptoSbor for T {}

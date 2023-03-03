@@ -172,7 +172,7 @@ impl<
 }
 
 impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode>
-    Describe<ScryptoCustomTypeKind<GlobalTypeId>> for KeyValueStore<K, V>
+    Describe<ScryptoCustomTypeKind> for KeyValueStore<K, V>
 {
     const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown([OWN_KEY_VALUE_STORE_ID]);
 }

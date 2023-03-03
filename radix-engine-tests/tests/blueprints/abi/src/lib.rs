@@ -35,7 +35,7 @@ pub extern "C" fn dummy_export(_input: u64) -> Slice {
 
 #[no_mangle]
 pub extern "C" fn AbiComponent2_schema() -> Slice {
-    let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind<_>>::new();
+    let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
     let mut substates = BTreeMap::new();
     substates.insert(0u8, aggregator.add_child_type_and_descendents::<()>());
 

@@ -133,7 +133,7 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for P
     }
 }
 
-impl Describe<ScryptoCustomTypeKind<GlobalTypeId>> for Proof {
+impl Describe<ScryptoCustomTypeKind> for Proof {
     const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(
         crate::data::scrypto::well_known_scrypto_custom_types::OWN_PROOF_ID,
     );

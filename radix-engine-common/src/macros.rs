@@ -108,10 +108,7 @@ macro_rules! well_known_scrypto_custom_type {
             }
         }
 
-        impl
-            sbor::Describe<$crate::data::scrypto::ScryptoCustomTypeKind<sbor::schema::GlobalTypeId>>
-            for $t
-        {
+        impl sbor::Describe<$crate::data::scrypto::ScryptoCustomTypeKind> for $t {
             const TYPE_ID: sbor::schema::GlobalTypeId = sbor::schema::GlobalTypeId::well_known(
                 $crate::data::scrypto::well_known_scrypto_custom_types::$well_known_id,
             );

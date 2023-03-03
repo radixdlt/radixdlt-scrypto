@@ -449,7 +449,7 @@ impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D>
     }
 }
 
-impl Describe<ScryptoCustomTypeKind<GlobalTypeId>> for NonFungibleLocalId {
+impl Describe<ScryptoCustomTypeKind> for NonFungibleLocalId {
     const TYPE_ID: GlobalTypeId =
         GlobalTypeId::well_known(well_known_scrypto_custom_types::NON_FUNGIBLE_LOCAL_ID_ID);
 }
