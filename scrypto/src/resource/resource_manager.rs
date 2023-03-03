@@ -3,7 +3,7 @@ use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetGroupAccessRuleInput, AccessRulesSetMethodAccessRuleInput,
 };
 use radix_engine_interface::api::node_modules::metadata::{
-    MetadataGetInput, MetadataSetInput, METADATA_GET_IDENT, METADATA_SET_IDENT,
+    METADATA_SET_IDENT,
 };
 use radix_engine_interface::api::types::{NodeModuleId, RENodeId};
 use radix_engine_interface::api::ClientObjectApi;
@@ -11,40 +11,20 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeMap;
-use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 
 use crate::*;
+use crate::modules::AttachedMetadata;
 
 /// Represents a resource manager.
 #[derive(Debug)]
 pub struct ResourceManager(pub(crate) ResourceAddress);
 
 impl ResourceManager {
-    pub fn set_metadata(&mut self, key: String, value: String) {
-        ScryptoEnv
-            .call_module_method(
-                RENodeId::GlobalResourceManager(self.0),
-                NodeModuleId::Metadata,
-                METADATA_SET_IDENT,
-                scrypto_encode(&MetadataSetInput { key, value }).unwrap(),
-            )
-            .unwrap();
-    }
-
-    pub fn get_metadata(&mut self, key: String) -> Option<String> {
-        let rtn = ScryptoEnv
-            .call_module_method(
-                RENodeId::GlobalResourceManager(self.0),
-                NodeModuleId::Metadata,
-                METADATA_GET_IDENT,
-                scrypto_encode(&MetadataGetInput { key }).unwrap(),
-            )
-            .unwrap();
-
-        scrypto_decode(&rtn).unwrap()
+    pub fn metadata(&self) -> AttachedMetadata {
+        AttachedMetadata(self.0.into())
     }
 
     pub fn set_mintable(&mut self, access_rule: AccessRule) {
