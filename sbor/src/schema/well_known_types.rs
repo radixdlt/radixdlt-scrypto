@@ -16,9 +16,9 @@ pub mod basic_well_known_types {
     pub const U64_ID: u8 = VALUE_KIND_U64;
     pub const U128_ID: u8 = VALUE_KIND_U128;
     pub const STRING_ID: u8 = VALUE_KIND_STRING;
-    pub const ANY_ID: u8 = 0x40;
-    pub const BYTES_ID: u8 = 0x41; // Alias for `Vec<u8>`
-    pub const UNIT_ID: u8 = 0x42; // Alias for `()`
+    pub const ANY_ID: u8 = 0x40; // Any type
+    pub const BYTES_ID: u8 = 0x41; // `Vec<u8>`
+    pub const UNIT_ID: u8 = 0x42; // `()`
 }
 
 #[macro_export]

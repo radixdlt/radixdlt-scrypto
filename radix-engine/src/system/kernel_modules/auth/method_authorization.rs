@@ -4,30 +4,30 @@ use radix_engine_interface::blueprints::resource::NonFungibleGlobalId;
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
 pub enum HardDecimal {
     Amount(Decimal),
-    InvalidSchemaPath,
-    DisallowedValueType,
+    InvalidPath,
+    NotDecimal,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Sbor)]
 pub enum HardCount {
     Count(u8),
-    InvalidSchemaPath,
-    DisallowedValueType,
+    InvalidPath,
+    NotU8,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
 pub enum HardResourceOrNonFungible {
     NonFungible(NonFungibleGlobalId),
     Resource(ResourceAddress),
-    InvalidSchemaPath,
-    DisallowedValueType,
+    InvalidPath,
+    NotResourceAddressOrNonFungibleGlobalId,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
 pub enum HardProofRuleResourceList {
     List(Vec<HardResourceOrNonFungible>),
-    InvalidSchemaPath,
-    DisallowedValueType,
+    InvalidPath,
+    NotResourceAddressOrNonFungibleGlobalIdArray,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]

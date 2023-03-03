@@ -58,31 +58,6 @@ impl From<&str> for SoftCount {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub enum SoftResource {
-    Static(ResourceAddress),
-    Dynamic(SchemaPath),
-}
-
-impl From<ResourceAddress> for SoftResource {
-    fn from(resource_address: ResourceAddress) -> Self {
-        SoftResource::Static(resource_address)
-    }
-}
-
-impl From<SchemaPath> for SoftResource {
-    fn from(path: SchemaPath) -> Self {
-        SoftResource::Dynamic(path)
-    }
-}
-
-impl From<&str> for SoftResource {
-    fn from(path: &str) -> Self {
-        let schema_path: SchemaPath = path.parse().expect("Could not decode path");
-        SoftResource::Dynamic(schema_path)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum SoftResourceOrNonFungible {
     StaticNonFungible(NonFungibleGlobalId),
     StaticResource(ResourceAddress),
@@ -146,7 +121,7 @@ where
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum ProofRule {
     Require(SoftResourceOrNonFungible),
-    AmountOf(SoftDecimal, SoftResource),
+    AmountOf(SoftDecimal, SoftResourceOrNonFungible),
     CountOf(SoftCount, SoftResourceOrNonFungibleList),
     AllOf(SoftResourceOrNonFungibleList),
     AnyOf(SoftResourceOrNonFungibleList),
@@ -219,7 +194,7 @@ where
 pub fn require_amount<D, T>(amount: D, resource: T) -> ProofRule
 where
     D: Into<SoftDecimal>,
-    T: Into<SoftResource>,
+    T: Into<SoftResourceOrNonFungible>,
 {
     ProofRule::AmountOf(amount.into(), resource.into())
 }

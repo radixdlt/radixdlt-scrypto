@@ -8,6 +8,9 @@ use sbor::*;
 use self::SchemaSubPath::{Field, Index};
 use crate::*;
 
+use super::ScryptoSchema;
+use super::ScryptoTypeKind;
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Sbor, Ord, PartialOrd)]
 pub enum SchemaSubPath {
     Index(usize),
@@ -49,6 +52,58 @@ impl SchemaPath {
     pub fn index(&mut self, index: usize) -> &Self {
         self.0.push(SchemaSubPath::Index(index));
         self
+    }
+
+    pub fn to_sbor_path(
+        &self,
+        schema: &ScryptoSchema,
+        type_index: LocalTypeIndex,
+    ) -> Option<(SborPath, ScryptoTypeKind<LocalTypeIndex>)> {
+        let mut sbor_path: Vec<usize> = vec![];
+        let mut cur_type = type_index;
+
+        for sub_path in &self.0 {
+            match sub_path {
+                SchemaSubPath::Index(index) => match schema.resolve_type_kind(cur_type) {
+                    Some(TypeKind::Array { element_type }) => {
+                        cur_type = element_type.clone();
+                        sbor_path.push(*index);
+                    }
+                    _ => return None,
+                },
+                SchemaSubPath::Field(field) => match (
+                    schema.resolve_type_kind(cur_type),
+                    schema.resolve_type_metadata(cur_type),
+                ) {
+                    (
+                        Some(TypeKind::Tuple { field_types }),
+                        Some(TypeMetadata { children, .. }),
+                    ) => match children {
+                        Children::NamedFields(fields) => {
+                            if let Some(index) = fields.iter().position(|f| f.field_name.eq(field))
+                            {
+                                cur_type = field_types
+                                    .get(index)
+                                    .cloned()
+                                    .expect("Inconsistent schema");
+                                sbor_path.push(index);
+                            } else {
+                                return None;
+                            }
+                        }
+                        _ => return None,
+                    },
+                    _ => return None,
+                },
+            }
+        }
+
+        let type_kind = schema
+            .resolve_type_kind(cur_type)
+            .cloned()
+            .expect("Inconsistent schema");
+
+        Some((SborPath::new(sbor_path), type_kind))
     }
 }
 
