@@ -33,7 +33,7 @@ if [[ ${account_dump} != *"XRD"* ]];then
     echo "XRD not present!"
     exit 1
 fi
-if [[ ${account_dump} != *"Owner badge"* ]];then
+if [[ ${account_dump} != *"Owner Badge"* ]];then
     echo "Owner badge not present!"
     exit 1
 fi

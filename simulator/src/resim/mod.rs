@@ -55,7 +55,6 @@ pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
 use clap::{Parser, Subcommand};
 use radix_engine::kernel::interpreters::ScryptoInterpreter;
 use radix_engine::ledger::ReadableSubstateStore;
-use radix_engine::system::node_substates::RuntimeSubstate;
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::CommitResult;
 use radix_engine::transaction::TransactionOutcome;
@@ -305,16 +304,15 @@ pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageS
     let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
     let substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
 
-    let package_value: RuntimeSubstate = substate_store
+    let output = substate_store
         .get_substate(&SubstateId(
             RENodeId::GlobalPackage(package_address),
             NodeModuleId::SELF,
             SubstateOffset::Package(PackageOffset::Info),
         ))
-        .map(|s| s.substate.to_runtime())
         .ok_or(Error::PackageNotFound(package_address))?;
 
-    let schema = package_value.package_info().schema.clone();
+    let schema = output.substate.package_info().schema.clone();
     Ok(schema)
 }
 
@@ -336,14 +334,17 @@ pub fn export_blueprint_schema(
 pub fn get_blueprint(
     component_address: ComponentAddress,
 ) -> Result<(PackageAddress, String), Error> {
-    match component_address {
-        ComponentAddress::Account(..)
-        | ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
-        | ComponentAddress::EddsaEd25519VirtualAccount(..)
-        | ComponentAddress::Normal(..) => {
-            todo!()
-        }
+    let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
+    let substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
 
-        _ => todo!("Unsupported native ABI."),
-    }
+    let output = substate_store
+        .get_substate(&SubstateId(
+            RENodeId::GlobalComponent(component_address),
+            NodeModuleId::TypeInfo,
+            SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+        ))
+        .ok_or(Error::ComponentNotFound(component_address))?;
+    let type_info = output.substate.type_info();
+
+    Ok((type_info.package_address, type_info.blueprint_name.clone()))
 }

@@ -120,6 +120,22 @@ impl PersistedSubstate {
         }
     }
 
+    pub fn package_info(&self) -> &PackageInfoSubstate {
+        if let PersistedSubstate::PackageInfo(info) = self {
+            info
+        } else {
+            panic!("Not a package royalty accumulator");
+        }
+    }
+
+    pub fn type_info(&self) -> &TypeInfoSubstate {
+        if let PersistedSubstate::TypeInfo(info) = self {
+            info
+        } else {
+            panic!("Not a package royalty accumulator");
+        }
+    }
+
     pub fn resource_manager(&self) -> &ResourceManagerSubstate {
         if let PersistedSubstate::ResourceManager(state) = self {
             state

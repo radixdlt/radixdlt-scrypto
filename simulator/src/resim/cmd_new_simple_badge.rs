@@ -80,14 +80,6 @@ impl NewSimpleBadge {
             metadata.insert("icon_url".to_string(), icon_url);
         };
 
-        let mut resource_auth = BTreeMap::new();
-        resource_auth.insert(
-            ResourceMethodAuthKey::Withdraw,
-            (rule!(allow_all), rule!(deny_all)),
-        );
-        let mut initial_supply = BTreeMap::new();
-        initial_supply.insert(NonFungibleLocalId::integer(1), EmptyStruct {});
-
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100.into())
             .add_instruction(Instruction::CallFunction {
@@ -98,14 +90,15 @@ impl NewSimpleBadge {
                 args: manifest_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
                     id_type: NonFungibleIdType::Integer,
                     metadata,
-                    access_rules: resource_auth,
-                    entries: BTreeMap::from([(
-                        NonFungibleLocalId::integer(1),
-                        (
+                    access_rules: btreemap!(
+                        ResourceMethodAuthKey::Withdraw => (rule!(allow_all), rule!(deny_all))
+                    ),
+                    entries: btreemap!(
+                        NonFungibleLocalId::integer(1) => (
                             scrypto_encode(&EmptyStruct).unwrap(),
                             scrypto_encode(&EmptyStruct).unwrap(),
                         ),
-                    )]),
+                    ),
                 })
                 .unwrap(),
             })
