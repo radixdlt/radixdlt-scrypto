@@ -58,8 +58,8 @@ impl IdentityNativePackage {
         let address = api.globalize(
             node_id,
             btreemap!(
-                NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
-                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
+                NodeModuleId::AccessRules => access_rules.id(),
+                NodeModuleId::Metadata => metadata.id(),
             ),
         )?;
         Ok(IndexedScryptoValue::from_typed(&address))

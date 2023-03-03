@@ -269,8 +269,8 @@ impl AccessControllerNativePackage {
         let address = api.globalize(
             RENodeId::Object(object_id),
             btreemap!(
-                NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
-                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
+                NodeModuleId::AccessRules => access_rules.id(),
+                NodeModuleId::Metadata => metadata.id(),
             ),
         )?;
 

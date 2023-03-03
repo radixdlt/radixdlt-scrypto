@@ -15,13 +15,13 @@ pub trait ClientObjectApi<E> {
     fn globalize(
         &mut self,
         node_id: RENodeId,
-        modules: BTreeMap<NodeModuleId, Vec<u8>>,
+        modules: BTreeMap<NodeModuleId, ObjectId>,
     ) -> Result<Address, E>;
 
     fn globalize_with_address(
         &mut self,
         node_id: RENodeId,
-        modules: BTreeMap<NodeModuleId, Vec<u8>>,
+        modules: BTreeMap<NodeModuleId, ObjectId>,
         address: Address,
     ) -> Result<Address, E>;
 

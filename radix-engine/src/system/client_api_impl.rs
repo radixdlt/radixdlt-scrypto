@@ -50,7 +50,6 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::model::Own;
 use radix_engine_interface::data::*;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
@@ -551,7 +550,7 @@ where
     fn globalize(
         &mut self,
         node_id: RENodeId,
-        modules: BTreeMap<NodeModuleId, Vec<u8>>,
+        modules: BTreeMap<NodeModuleId, ObjectId>,
     ) -> Result<Address, RuntimeError> {
         let node_type = match node_id {
             RENodeId::Object(..) => {
@@ -576,7 +575,7 @@ where
     fn globalize_with_address(
         &mut self,
         node_id: RENodeId,
-        modules: BTreeMap<NodeModuleId, Vec<u8>>,
+        modules: BTreeMap<NodeModuleId, ObjectId>,
         address: Address,
     ) -> Result<Address, RuntimeError> {
         let node = self.kernel_drop_node(node_id)?;
@@ -607,7 +606,7 @@ where
 
         // TODO: Check node type matches modules provided
 
-        for (module_id, init) in modules {
+        for (module_id, object_id) in modules {
             match module_id {
                 NodeModuleId::SELF
                 | NodeModuleId::TypeInfo
@@ -616,11 +615,6 @@ where
                     return Err(RuntimeError::SystemError(SystemError::InvalidModule))
                 }
                 NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {
-                    let access_rules: Own = scrypto_decode(&init).map_err(|e| {
-                        RuntimeError::SystemError(SystemError::InvalidAccessRules(e))
-                    })?;
-
-                    let object_id = access_rules.id();
                     let node_id = RENodeId::Object(object_id);
                     let (package_address, blueprint) = self.get_object_type_info(node_id)?;
                     if !matches!(
@@ -650,10 +644,6 @@ where
                         .insert(module_id, RENodeModuleInit::MethodAccessRules(access_rules));
                 }
                 NodeModuleId::Metadata => {
-                    let metadata: Own = scrypto_decode(&init)
-                        .map_err(|e| RuntimeError::SystemError(SystemError::InvalidMetadata(e)))?;
-
-                    let object_id = metadata.id();
                     let node_id = RENodeId::Object(object_id);
                     let (package_address, blueprint) = self.get_object_type_info(node_id)?;
                     if !matches!(
@@ -683,11 +673,6 @@ where
                         .insert(NodeModuleId::Metadata, RENodeModuleInit::Metadata(metadata));
                 }
                 NodeModuleId::ComponentRoyalty => {
-                    let royalty: Own = scrypto_decode(&init).map_err(|e| {
-                        RuntimeError::SystemError(SystemError::InvalidRoyaltyConfig(e))
-                    })?;
-
-                    let object_id = royalty.id();
                     let node_id = RENodeId::Object(object_id);
                     let (package_address, blueprint) = self.get_object_type_info(node_id)?;
                     if !matches!(

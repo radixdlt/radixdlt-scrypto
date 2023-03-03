@@ -463,9 +463,9 @@ where
     api.globalize_with_address(
         RENodeId::Object(object_id),
         btreemap!(
-            NodeModuleId::AccessRules => scrypto_encode(&resman_access_rules).unwrap(),
-            NodeModuleId::AccessRules1 => scrypto_encode(&vault_access_rules).unwrap(),
-            NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap()
+            NodeModuleId::AccessRules => resman_access_rules.id(),
+            NodeModuleId::AccessRules1 => vault_access_rules.id(),
+            NodeModuleId::Metadata => metadata.id(),
         ),
         resource_address.into(),
     )?;
@@ -571,9 +571,9 @@ impl ResourceManagerBlueprint {
         api.globalize_with_address(
             RENodeId::Object(object_id),
             btreemap!(
-                NodeModuleId::AccessRules => scrypto_encode(&resman_access_rules).unwrap(),
-                NodeModuleId::AccessRules1 => scrypto_encode(&vault_access_rules).unwrap(),
-                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap()
+                NodeModuleId::AccessRules => resman_access_rules.id(),
+                NodeModuleId::AccessRules1 => vault_access_rules.id(),
+                NodeModuleId::Metadata => metadata.id(),
             ),
             resource_address.into(),
         )?;
@@ -624,9 +624,9 @@ impl ResourceManagerBlueprint {
         api.globalize_with_address(
             RENodeId::Object(object_id),
             btreemap!(
-                NodeModuleId::AccessRules => scrypto_encode(&resman_access_rules).unwrap(),
-                NodeModuleId::AccessRules1 => scrypto_encode(&vault_access_rules).unwrap(),
-                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap()
+                NodeModuleId::AccessRules => resman_access_rules.id(),
+                NodeModuleId::AccessRules1 => vault_access_rules.id(),
+                NodeModuleId::Metadata => metadata.id(),
             ),
             resource_address.into(),
         )?;
@@ -693,9 +693,9 @@ impl ResourceManagerBlueprint {
         api.globalize_with_address(
             RENodeId::Object(object_id),
             btreemap!(
-                NodeModuleId::AccessRules => scrypto_encode(&resman_access_rules).unwrap(),
-                NodeModuleId::AccessRules1 => scrypto_encode(&vault_access_rules).unwrap(),
-                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap()
+                NodeModuleId::AccessRules => resman_access_rules.id(),
+                NodeModuleId::AccessRules1 => vault_access_rules.id(),
+                NodeModuleId::Metadata => metadata.id(),
             ),
             resource_address.into(),
         )?;
@@ -740,9 +740,9 @@ impl ResourceManagerBlueprint {
         api.globalize_with_address(
             RENodeId::Object(object_id),
             btreemap!(
-                NodeModuleId::AccessRules => scrypto_encode(&resman_access_rules).unwrap(),
-                NodeModuleId::AccessRules1 => scrypto_encode(&vault_access_rules).unwrap(),
-                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap()
+                NodeModuleId::AccessRules => resman_access_rules.id(),
+                NodeModuleId::AccessRules1 => vault_access_rules.id(),
+                NodeModuleId::Metadata => metadata.id(),
             ),
             resource_address.into(),
         )?;
@@ -1451,9 +1451,9 @@ where
     api.globalize_with_address(
         RENodeId::Object(object_id),
         btreemap!(
-            NodeModuleId::AccessRules => scrypto_encode(&resman_access_rules).unwrap(),
-            NodeModuleId::AccessRules1 => scrypto_encode(&vault_access_rules).unwrap(),
-            NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap()
+            NodeModuleId::AccessRules => resman_access_rules.id(),
+            NodeModuleId::AccessRules1 => vault_access_rules.id(),
+            NodeModuleId::Metadata => metadata.id(),
         ),
         resource_address.into(),
     )?;

@@ -674,8 +674,8 @@ impl ValidatorCreator {
         let address = api.globalize_with_address(
             RENodeId::Object(validator_id),
             btreemap!(
-                NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
-                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
+                NodeModuleId::AccessRules => access_rules.id(),
+                NodeModuleId::Metadata => metadata.id(),
             ),
             address.into(),
         )?;
@@ -722,8 +722,8 @@ impl ValidatorCreator {
         let address = api.globalize_with_address(
             RENodeId::Object(validator_id),
             btreemap!(
-                NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
-                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
+                NodeModuleId::AccessRules => access_rules.id(),
+                NodeModuleId::Metadata => metadata.id(),
             ),
             address.into(),
         )?;

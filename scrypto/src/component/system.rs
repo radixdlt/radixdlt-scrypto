@@ -4,6 +4,7 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::data::scrypto_encode;
 use sbor::rust::collections::*;
+use sbor::rust::vec;
 
 /// Represents the Radix Engine component subsystem.
 ///

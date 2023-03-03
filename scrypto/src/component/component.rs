@@ -184,9 +184,9 @@ impl LocalComponent for OwnedComponent {
             .globalize(
                 RENodeId::Object(self.0),
                 btreemap!(
-                    NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
-                    NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
-                    NodeModuleId::ComponentRoyalty => scrypto_encode(&royalty).unwrap()
+                    NodeModuleId::AccessRules => access_rules.id(),
+                    NodeModuleId::Metadata => metadata.id(),
+                    NodeModuleId::ComponentRoyalty => royalty.id(),
                 ),
             )
             .unwrap();
