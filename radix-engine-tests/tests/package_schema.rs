@@ -17,7 +17,7 @@ fn test_invalid_access_rule_methods() {
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
-            "AbiComponent",
+            "SchemaComponent",
             "create_invalid_schema_component",
             manifest_args!(),
         )
@@ -49,7 +49,7 @@ fn test_arg(method_name: &str, args: Vec<u8>, expected_result: ExpectedResult) {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function(package_address, "AbiComponent2", method_name, args)
+        .call_function(package_address, "SchemaComponent2", method_name, args)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
