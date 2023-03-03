@@ -16,6 +16,8 @@ pub enum ScryptoCustomTypeKind<L: SchemaTypeLink> {
     ResourceAddress,
 
     Own, /* any */
+    Bucket,
+    Proof,
     KeyValueStore { key_type: L, value_type: L },
 
     Decimal,
@@ -56,6 +58,8 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             ScryptoCustomTypeKind::ResourceAddress => ScryptoCustomTypeKind::ResourceAddress,
 
             ScryptoCustomTypeKind::Own => ScryptoCustomTypeKind::Own,
+            ScryptoCustomTypeKind::Bucket => ScryptoCustomTypeKind::Bucket,
+            ScryptoCustomTypeKind::Proof => ScryptoCustomTypeKind::Proof,
             ScryptoCustomTypeKind::KeyValueStore {
                 key_type,
                 value_type,
@@ -86,6 +90,8 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             | ScryptoCustomTypeKind::ComponentAddress
             | ScryptoCustomTypeKind::ResourceAddress
             | ScryptoCustomTypeKind::Own
+            | ScryptoCustomTypeKind::Bucket
+            | ScryptoCustomTypeKind::Proof
             | ScryptoCustomTypeKind::Decimal
             | ScryptoCustomTypeKind::PreciseDecimal
             | ScryptoCustomTypeKind::NonFungibleLocalId => {
@@ -115,6 +121,8 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             | ScryptoCustomTypeKind::ComponentAddress
             | ScryptoCustomTypeKind::ResourceAddress
             | ScryptoCustomTypeKind::Own
+            | ScryptoCustomTypeKind::Bucket
+            | ScryptoCustomTypeKind::Proof
             | ScryptoCustomTypeKind::KeyValueStore { .. }
             | ScryptoCustomTypeKind::Decimal
             | ScryptoCustomTypeKind::PreciseDecimal
@@ -143,6 +151,8 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             | ScryptoCustomTypeKind::ComponentAddress
             | ScryptoCustomTypeKind::ResourceAddress
             | ScryptoCustomTypeKind::Own
+            | ScryptoCustomTypeKind::Bucket
+            | ScryptoCustomTypeKind::Proof
             | ScryptoCustomTypeKind::KeyValueStore { .. }
             | ScryptoCustomTypeKind::Decimal
             | ScryptoCustomTypeKind::PreciseDecimal
@@ -178,6 +188,12 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
                 ValueKind::Custom(ScryptoCustomValueKind::Address)
             ),
             ScryptoCustomTypeKind::Own => {
+                matches!(value_kind, ValueKind::Custom(ScryptoCustomValueKind::Own))
+            }
+            ScryptoCustomTypeKind::Bucket => {
+                matches!(value_kind, ValueKind::Custom(ScryptoCustomValueKind::Own))
+            }
+            ScryptoCustomTypeKind::Proof => {
                 matches!(value_kind, ValueKind::Custom(ScryptoCustomValueKind::Own))
             }
             ScryptoCustomTypeKind::KeyValueStore { .. } => {

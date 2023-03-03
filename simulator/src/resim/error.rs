@@ -22,7 +22,7 @@ pub enum Error {
     NoDefaultOwnerBadge,
 
     HomeDirUnknown,
-    
+
     PackageNotFound(PackageAddress),
     BlueprintNotFound(PackageAddress, String),
 
@@ -40,7 +40,7 @@ pub enum Error {
 
     InvalidPackage(PrepareError),
 
-    TransactionConstructionError(BuildCallWithAbiError),
+    TransactionConstructionError(BuildCallInstructionError),
 
     TransactionValidationError(TransactionValidationError),
 
@@ -64,7 +64,7 @@ pub enum Error {
 
     NonFungibleGlobalIdError(ParseNonFungibleGlobalIdError),
 
-    FailedToBuildArgs(BuildArgsError),
+    FailedToBuildArguments(BuildCallArgumentError),
 
     ParseNetworkError(ParseNetworkError),
 

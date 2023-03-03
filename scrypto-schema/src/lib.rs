@@ -54,3 +54,22 @@ impl Default for BlueprintSchema {
         }
     }
 }
+
+impl BlueprintSchema {
+    pub fn find_function(&self, ident: &str) -> Option<FunctionSchema> {
+        if let Some(x) = self.functions.get(ident) {
+            if x.receiver.is_none() {
+                return Some(x.clone());
+            }
+        }
+        None
+    }
+    pub fn find_method(&self, ident: &str) -> Option<FunctionSchema> {
+        if let Some(x) = self.functions.get(ident) {
+            if x.receiver.is_some() {
+                return Some(x.clone());
+            }
+        }
+        None
+    }
+}
