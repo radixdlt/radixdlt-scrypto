@@ -2,8 +2,6 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod metadata_component {
-    use scrypto::prelude::*;
-
     struct MetadataComponent {}
 
     impl MetadataComponent {
@@ -27,6 +25,11 @@ mod metadata_component {
             global.metadata().set(key.clone(), value.clone());
 
             assert_eq!(global.metadata().get(key), Some(value));
+        }
+
+        pub fn remove_metadata(address: ComponentAddress, key: String) {
+            let global = GlobalComponentRef(address);
+            global.metadata().remove(key);
         }
     }
 }

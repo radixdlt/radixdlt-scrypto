@@ -1,7 +1,7 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::*;
 use crate::*;
-use radix_engine_interface::api::node_modules::metadata::{MetadataSetInput, METADATA_BLUEPRINT, METADATA_SET_IDENT, MetadataCreateInput, METADATA_CREATE_IDENT, METADATA_GET_IDENT, MetadataGetInput};
+use radix_engine_interface::api::node_modules::metadata::{MetadataSetInput, METADATA_BLUEPRINT, METADATA_SET_IDENT, MetadataCreateInput, METADATA_CREATE_IDENT, METADATA_GET_IDENT, MetadataGetInput, METADATA_REMOVE_IDENT, MetadataRemoveInput};
 use radix_engine_interface::api::types::{NodeModuleId, ObjectId, RENodeId};
 use radix_engine_interface::api::{ClientObjectApi, ClientPackageApi};
 use radix_engine_interface::constants::METADATA_PACKAGE;
@@ -71,6 +71,23 @@ pub trait MetadataObject {
                 module_id,
                 METADATA_GET_IDENT,
                 scrypto_encode(&MetadataGetInput {
+                    key: name.as_ref().to_owned(),
+                }).unwrap(),
+            )
+            .unwrap();
+
+        scrypto_decode(&rtn).unwrap()
+    }
+
+    fn remove<K: AsRef<str>>(&self, name: K) -> bool {
+        let (node_id, module_id) = self.self_id();
+
+        let rtn = ScryptoEnv
+            .call_module_method(
+                node_id,
+                module_id,
+                METADATA_REMOVE_IDENT,
+                scrypto_encode(&MetadataRemoveInput {
                     key: name.as_ref().to_owned(),
                 }).unwrap(),
             )
