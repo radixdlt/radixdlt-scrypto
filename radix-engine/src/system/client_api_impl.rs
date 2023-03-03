@@ -297,7 +297,7 @@ where
 
                     module_init.insert(
                         NodeModuleId::AccessRules,
-                        RENodeModuleInit::ObjectAccessRulesChain(access_rules),
+                        RENodeModuleInit::MethodAccessRules(access_rules),
                     );
                 }
                 NodeModuleId::Metadata => {

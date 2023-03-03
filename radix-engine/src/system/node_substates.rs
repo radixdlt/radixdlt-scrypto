@@ -54,8 +54,8 @@ pub enum PersistedSubstate {
     TypeInfo(TypeInfoSubstate),
 
     /* Access rules */
-    AccessRulesChain(MethodAccessRulesSubstate),
-    PackageAccessRules(FunctionAccessRulesSubstate),
+    MethodAccessRules(MethodAccessRulesSubstate),
+    FunctionAccessRules(FunctionAccessRulesSubstate),
 
     /* Metadata */
     Metadata(MetadataSubstate),
@@ -195,9 +195,11 @@ impl PersistedSubstate {
 
             /* Node module starts */
             PersistedSubstate::TypeInfo(value) => RuntimeSubstate::TypeInfo(value),
-            PersistedSubstate::AccessRulesChain(value) => RuntimeSubstate::AccessRulesChain(value),
-            PersistedSubstate::PackageAccessRules(value) => {
-                RuntimeSubstate::PackageAccessRules(value)
+            PersistedSubstate::MethodAccessRules(value) => {
+                RuntimeSubstate::MethodAccessRules(value)
+            }
+            PersistedSubstate::FunctionAccessRules(value) => {
+                RuntimeSubstate::FunctionAccessRules(value)
             }
             PersistedSubstate::Metadata(value) => RuntimeSubstate::Metadata(value),
             PersistedSubstate::PackageRoyaltyConfig(value) => {
@@ -255,8 +257,8 @@ pub enum RuntimeSubstate {
     TypeInfo(TypeInfoSubstate),
 
     /* Access rules */
-    AccessRulesChain(MethodAccessRulesSubstate),
-    PackageAccessRules(FunctionAccessRulesSubstate),
+    MethodAccessRules(MethodAccessRulesSubstate),
+    FunctionAccessRules(FunctionAccessRulesSubstate),
 
     /* Metadata */
     Metadata(MetadataSubstate),
@@ -310,11 +312,11 @@ impl RuntimeSubstate {
 
             /* Node module starts */
             RuntimeSubstate::TypeInfo(value) => PersistedSubstate::TypeInfo(value.clone()),
-            RuntimeSubstate::AccessRulesChain(value) => {
-                PersistedSubstate::AccessRulesChain(value.clone())
+            RuntimeSubstate::MethodAccessRules(value) => {
+                PersistedSubstate::MethodAccessRules(value.clone())
             }
-            RuntimeSubstate::PackageAccessRules(value) => {
-                PersistedSubstate::PackageAccessRules(value.clone())
+            RuntimeSubstate::FunctionAccessRules(value) => {
+                PersistedSubstate::FunctionAccessRules(value.clone())
             }
             RuntimeSubstate::Metadata(value) => PersistedSubstate::Metadata(value.clone()),
             RuntimeSubstate::ComponentRoyaltyConfig(value) => {
@@ -383,9 +385,11 @@ impl RuntimeSubstate {
 
             /* Node module starts */
             RuntimeSubstate::TypeInfo(value) => PersistedSubstate::TypeInfo(value),
-            RuntimeSubstate::AccessRulesChain(value) => PersistedSubstate::AccessRulesChain(value),
-            RuntimeSubstate::PackageAccessRules(value) => {
-                PersistedSubstate::PackageAccessRules(value)
+            RuntimeSubstate::MethodAccessRules(value) => {
+                PersistedSubstate::MethodAccessRules(value)
+            }
+            RuntimeSubstate::FunctionAccessRules(value) => {
+                PersistedSubstate::FunctionAccessRules(value)
             }
             RuntimeSubstate::Metadata(value) => PersistedSubstate::Metadata(value),
             RuntimeSubstate::ComponentRoyaltyConfig(value) => {
@@ -455,7 +459,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::CurrentTimeRoundedToMinutes(value) => {
                 SubstateRefMut::CurrentTimeRoundedToMinutes(value)
             }
-            RuntimeSubstate::AccessRulesChain(value) => SubstateRefMut::AccessRulesChain(value),
+            RuntimeSubstate::MethodAccessRules(value) => SubstateRefMut::MethodAccessRules(value),
             RuntimeSubstate::Metadata(value) => SubstateRefMut::Metadata(value),
             RuntimeSubstate::ResourceManager(value) => SubstateRefMut::ResourceManager(value),
             RuntimeSubstate::TypeInfo(value) => SubstateRefMut::TypeInfo(value),
@@ -467,7 +471,9 @@ impl RuntimeSubstate {
                 SubstateRefMut::ComponentRoyaltyAccumulator(value)
             }
             RuntimeSubstate::PackageInfo(value) => SubstateRefMut::PackageInfo(value),
-            RuntimeSubstate::PackageAccessRules(value) => SubstateRefMut::PackageAccessRules(value),
+            RuntimeSubstate::FunctionAccessRules(value) => {
+                SubstateRefMut::PackageAccessRules(value)
+            }
             RuntimeSubstate::PackageCodeType(value) => SubstateRefMut::PackageCodeType(value),
             RuntimeSubstate::PackageCode(value) => SubstateRefMut::PackageCode(value),
             RuntimeSubstate::PackageRoyaltyConfig(value) => {
@@ -524,7 +530,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::CurrentTimeRoundedToMinutes(value) => {
                 SubstateRef::CurrentTimeRoundedToMinutes(value)
             }
-            RuntimeSubstate::AccessRulesChain(value) => SubstateRef::AccessRulesChain(value),
+            RuntimeSubstate::MethodAccessRules(value) => SubstateRef::MethodAccessRules(value),
             RuntimeSubstate::Metadata(value) => SubstateRef::Metadata(value),
             RuntimeSubstate::ResourceManager(value) => SubstateRef::ResourceManager(value),
             RuntimeSubstate::ComponentState(value) => SubstateRef::ComponentState(value),
@@ -536,7 +542,7 @@ impl RuntimeSubstate {
             }
             RuntimeSubstate::PackageInfo(value) => SubstateRef::PackageInfo(value),
             RuntimeSubstate::PackageCodeType(value) => SubstateRef::PackageCodeType(value),
-            RuntimeSubstate::PackageAccessRules(value) => SubstateRef::PackageAccessRules(value),
+            RuntimeSubstate::FunctionAccessRules(value) => SubstateRef::PackageAccessRules(value),
             RuntimeSubstate::PackageCode(value) => SubstateRef::PackageCode(value),
             RuntimeSubstate::PackageRoyaltyConfig(value) => {
                 SubstateRef::PackageRoyaltyConfig(value)
@@ -635,9 +641,9 @@ impl RuntimeSubstate {
         }
     }
 
-    pub fn access_rules_chain(&self) -> &MethodAccessRulesSubstate {
-        if let RuntimeSubstate::AccessRulesChain(access_rules_chain) = self {
-            access_rules_chain
+    pub fn method_access_rules(&self) -> &MethodAccessRulesSubstate {
+        if let RuntimeSubstate::MethodAccessRules(method_access_rules) = self {
+            method_access_rules
         } else {
             panic!("Not an access rules chain");
         }
@@ -654,7 +660,7 @@ impl RuntimeSubstate {
 
 impl Into<RuntimeSubstate> for MethodAccessRulesSubstate {
     fn into(self) -> RuntimeSubstate {
-        RuntimeSubstate::AccessRulesChain(self)
+        RuntimeSubstate::MethodAccessRules(self)
     }
 }
 
@@ -701,7 +707,7 @@ impl Into<RuntimeSubstate> for PackageCodeTypeSubstate {
 }
 impl Into<RuntimeSubstate> for FunctionAccessRulesSubstate {
     fn into(self) -> RuntimeSubstate {
-        RuntimeSubstate::PackageAccessRules(self)
+        RuntimeSubstate::FunctionAccessRules(self)
     }
 }
 
@@ -995,7 +1001,7 @@ impl Into<NonFungibleProof> for RuntimeSubstate {
 
 impl Into<MethodAccessRulesSubstate> for RuntimeSubstate {
     fn into(self) -> MethodAccessRulesSubstate {
-        if let RuntimeSubstate::AccessRulesChain(substate) = self {
+        if let RuntimeSubstate::MethodAccessRules(substate) = self {
             substate
         } else {
             panic!("Not access rules");
@@ -1076,7 +1082,7 @@ pub enum SubstateRef<'a> {
     ValidatorSet(&'a ValidatorSetSubstate),
     Validator(&'a ValidatorSubstate),
     CurrentTimeRoundedToMinutes(&'a CurrentTimeRoundedToMinutesSubstate),
-    AccessRulesChain(&'a MethodAccessRulesSubstate),
+    MethodAccessRules(&'a MethodAccessRulesSubstate),
     PackageAccessRules(&'a FunctionAccessRulesSubstate),
     Metadata(&'a MetadataSubstate),
     TransactionRuntime(&'a TransactionRuntimeSubstate),
@@ -1316,7 +1322,7 @@ impl<'a> From<SubstateRef<'a>> for &'a PackageCodeTypeSubstate {
 impl<'a> From<SubstateRef<'a>> for &'a MethodAccessRulesSubstate {
     fn from(value: SubstateRef<'a>) -> Self {
         match value {
-            SubstateRef::AccessRulesChain(value) => value,
+            SubstateRef::MethodAccessRules(value) => value,
             _ => panic!("Not access rules chain"),
         }
     }
@@ -1398,7 +1404,7 @@ impl<'a> SubstateRef<'a> {
             }
             SubstateRef::NonFungible(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::KeyValueStoreEntry(value) => IndexedScryptoValue::from_typed(*value),
-            SubstateRef::AccessRulesChain(value) => IndexedScryptoValue::from_typed(*value),
+            SubstateRef::MethodAccessRules(value) => IndexedScryptoValue::from_typed(*value),
             _ => panic!("Unsupported scrypto value"),
         }
     }
@@ -1475,7 +1481,7 @@ impl<'a> SubstateRef<'a> {
                 owned_nodes.push(RENodeId::Vault(substate.pending_xrd_withdraw_vault_id));
                 (references, owned_nodes)
             }
-            SubstateRef::AccessRulesChain(substate) => {
+            SubstateRef::MethodAccessRules(substate) => {
                 let (_, _, owns, refs) = IndexedScryptoValue::from_typed(&substate).unpack();
                 (refs, owns)
             }
@@ -1562,7 +1568,7 @@ pub enum SubstateRefMut<'a> {
     ValidatorSet(&'a mut ValidatorSetSubstate),
     Validator(&'a mut ValidatorSubstate),
     CurrentTimeRoundedToMinutes(&'a mut CurrentTimeRoundedToMinutesSubstate),
-    AccessRulesChain(&'a mut MethodAccessRulesSubstate),
+    MethodAccessRules(&'a mut MethodAccessRulesSubstate),
     Metadata(&'a mut MetadataSubstate),
     ProofInfo(&'a mut ProofInfoSubstate),
     FungibleProof(&'a mut FungibleProof),
@@ -1713,7 +1719,7 @@ impl<'a> From<SubstateRefMut<'a>> for &'a mut TransactionRuntimeSubstate {
 impl<'a> From<SubstateRefMut<'a>> for &'a mut MethodAccessRulesSubstate {
     fn from(value: SubstateRefMut<'a>) -> Self {
         match value {
-            SubstateRefMut::AccessRulesChain(value) => value,
+            SubstateRefMut::MethodAccessRules(value) => value,
             _ => panic!("Not a logger"),
         }
     }

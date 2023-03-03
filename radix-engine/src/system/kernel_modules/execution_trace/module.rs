@@ -41,6 +41,7 @@ pub struct ExecutionTraceModule {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ResourceChange {
+    pub resource_address: ResourceAddress,
     pub node_id: RENodeId,
     pub vault_id: VaultId,
     pub amount: Decimal,
@@ -53,9 +54,9 @@ pub struct ExecutionTraceReceipt {
 
 #[derive(Debug, Clone)]
 pub enum VaultOp {
-    Create(Decimal), // TODO: add trace of vault creation
-    Put(Decimal),    // TODO: add non-fungible support
-    Take(Decimal),
+    Create(Decimal),               // TODO: add trace of vault creation
+    Put(ResourceAddress, Decimal), // TODO: add non-fungible support
+    Take(ResourceAddress, Decimal),
     LockFee,
 }
 
@@ -559,7 +560,7 @@ impl ExecutionTraceModule {
             self.vault_ops.push((
                 actor.clone(),
                 vault_id.clone(),
-                VaultOp::Put(resource.amount()),
+                VaultOp::Put(resource.resource_address(), resource.amount()),
             ));
         }
     }
@@ -587,7 +588,7 @@ impl ExecutionTraceModule {
             self.vault_ops.push((
                 actor.clone(),
                 vault_id.clone(),
-                VaultOp::Take(resource.amount()),
+                VaultOp::Take(resource.resource_address(), resource.amount()),
             ));
         }
     }
@@ -604,7 +605,8 @@ impl ExecutionTraceReceipt {
     ) -> Self {
         // TODO: Might want to change the key from being a ComponentId to being an enum to
         //       accommodate for accounts
-        let mut vault_changes = index_map_new::<RENodeId, IndexMap<VaultId, Decimal>>();
+        let mut vault_changes =
+            index_map_new::<RENodeId, IndexMap<VaultId, (ResourceAddress, Decimal)>>();
         let mut vault_locked_by = index_map_new::<VaultId, RENodeId>();
         for (actor, vault_id, vault_op) in ops {
             if let TraceActor::Actor(Actor {
@@ -614,26 +616,29 @@ impl ExecutionTraceReceipt {
             {
                 match vault_op {
                     VaultOp::Create(_) => todo!("Not supported yet!"),
-                    VaultOp::Put(amount) => {
-                        *vault_changes
+                    VaultOp::Put(resource_address, amount) => {
+                        vault_changes
                             .entry(method.0)
                             .or_default()
                             .entry(vault_id)
-                            .or_default() += amount;
+                            .or_insert((resource_address, Decimal::zero()))
+                            .1 += amount;
                     }
-                    VaultOp::Take(amount) => {
-                        *vault_changes
+                    VaultOp::Take(resource_address, amount) => {
+                        vault_changes
                             .entry(method.0)
                             .or_default()
                             .entry(vault_id)
-                            .or_default() -= amount;
+                            .or_insert((resource_address, Decimal::zero()))
+                            .1 -= amount;
                     }
                     VaultOp::LockFee => {
-                        *vault_changes
+                        vault_changes
                             .entry(method.0)
                             .or_default()
                             .entry(vault_id)
-                            .or_default() -= 0;
+                            .or_insert((RADIX_TOKEN, Decimal::zero()))
+                            .1 -= 0;
 
                         // Hack: Additional check to avoid second `lock_fee` attempts (runtime failure) from
                         // polluting the `vault_locked_by` index.
@@ -647,7 +652,7 @@ impl ExecutionTraceReceipt {
 
         let mut resource_changes = Vec::<ResourceChange>::new();
         for (node_id, map) in vault_changes {
-            for (vault_id, delta) in map {
+            for (vault_id, (resource_address, delta)) in map {
                 // Amount = put/take amount - fee_amount
                 let fee_amount = actual_fee_payments
                     .get(&vault_id)
@@ -662,6 +667,7 @@ impl ExecutionTraceReceipt {
                 // Add a resource change log if non-zero
                 if !amount.is_zero() {
                     resource_changes.push(ResourceChange {
+                        resource_address,
                         node_id,
                         vault_id,
                         amount,

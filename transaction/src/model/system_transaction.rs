@@ -28,7 +28,7 @@ impl SystemTransaction {
         };
 
         Executable::new(
-            &self.instructions,
+            self.instructions.clone(),
             &self.blobs,
             ExecutionContext {
                 transaction_hash,

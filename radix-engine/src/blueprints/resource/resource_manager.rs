@@ -463,11 +463,11 @@ where
     );
     node_modules.insert(
         NodeModuleId::AccessRules,
-        RENodeModuleInit::ObjectAccessRulesChain(access_rules_substate),
+        RENodeModuleInit::MethodAccessRules(access_rules_substate),
     );
     node_modules.insert(
         NodeModuleId::AccessRules1,
-        RENodeModuleInit::ObjectAccessRulesChain(vault_rules_substate),
+        RENodeModuleInit::MethodAccessRules(vault_rules_substate),
     );
 
     api.kernel_create_node(
@@ -578,11 +578,11 @@ impl ResourceManagerBlueprint {
         );
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::ObjectAccessRulesChain(access_rules_substate),
+            RENodeModuleInit::MethodAccessRules(access_rules_substate),
         );
         node_modules.insert(
             NodeModuleId::AccessRules1,
-            RENodeModuleInit::ObjectAccessRulesChain(vault_substate),
+            RENodeModuleInit::MethodAccessRules(vault_substate),
         );
 
         api.kernel_create_node(
@@ -636,11 +636,11 @@ impl ResourceManagerBlueprint {
         );
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::ObjectAccessRulesChain(access_rules_substate),
+            RENodeModuleInit::MethodAccessRules(access_rules_substate),
         );
         node_modules.insert(
             NodeModuleId::AccessRules1,
-            RENodeModuleInit::ObjectAccessRulesChain(vault_substate),
+            RENodeModuleInit::MethodAccessRules(vault_substate),
         );
 
         api.kernel_create_node(
@@ -711,11 +711,11 @@ impl ResourceManagerBlueprint {
         );
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::ObjectAccessRulesChain(access_rules_substate),
+            RENodeModuleInit::MethodAccessRules(access_rules_substate),
         );
         node_modules.insert(
             NodeModuleId::AccessRules1,
-            RENodeModuleInit::ObjectAccessRulesChain(vault_substate),
+            RENodeModuleInit::MethodAccessRules(vault_substate),
         );
 
         api.kernel_create_node(
@@ -763,11 +763,11 @@ impl ResourceManagerBlueprint {
         );
         node_modules.insert(
             NodeModuleId::AccessRules,
-            RENodeModuleInit::ObjectAccessRulesChain(access_rules_substate),
+            RENodeModuleInit::MethodAccessRules(access_rules_substate),
         );
         node_modules.insert(
             NodeModuleId::AccessRules1,
-            RENodeModuleInit::ObjectAccessRulesChain(vault_substate),
+            RENodeModuleInit::MethodAccessRules(vault_substate),
         );
 
         api.kernel_create_node(
@@ -1504,11 +1504,11 @@ where
     );
     node_modules.insert(
         NodeModuleId::AccessRules,
-        RENodeModuleInit::ObjectAccessRulesChain(access_rules_substate),
+        RENodeModuleInit::MethodAccessRules(access_rules_substate),
     );
     node_modules.insert(
         NodeModuleId::AccessRules1,
-        RENodeModuleInit::ObjectAccessRulesChain(vault_substate),
+        RENodeModuleInit::MethodAccessRules(vault_substate),
     );
 
     api.kernel_create_node(

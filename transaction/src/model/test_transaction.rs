@@ -31,7 +31,7 @@ impl TestTransaction {
         let transaction_hash = hash(payload);
 
         Executable::new(
-            &self.manifest.instructions,
+            self.manifest.instructions.clone(),
             &self.manifest.blobs,
             ExecutionContext {
                 transaction_hash,

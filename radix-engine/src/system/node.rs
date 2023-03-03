@@ -30,8 +30,8 @@ pub enum RENodeModuleInit {
     Metadata(MetadataSubstate),
 
     /* Access rules */
-    ObjectAccessRulesChain(MethodAccessRulesSubstate),
-    PackageAccessRules(FunctionAccessRulesSubstate),
+    MethodAccessRules(MethodAccessRulesSubstate),
+    FunctionAccessRules(FunctionAccessRulesSubstate),
 
     /* Royalty */
     ComponentRoyalty(
@@ -54,13 +54,13 @@ impl RENodeModuleInit {
                     metadata.into(),
                 );
             }
-            RENodeModuleInit::ObjectAccessRulesChain(access_rules) => {
+            RENodeModuleInit::MethodAccessRules(access_rules) => {
                 substates.insert(
                     SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
                     access_rules.into(),
                 );
             }
-            RENodeModuleInit::PackageAccessRules(access_rules) => {
+            RENodeModuleInit::FunctionAccessRules(access_rules) => {
                 substates.insert(SubstateOffset::PackageAccessRules, access_rules.into());
             }
             RENodeModuleInit::TypeInfo(type_info) => {

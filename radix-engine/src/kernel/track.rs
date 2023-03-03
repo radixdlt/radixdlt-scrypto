@@ -599,7 +599,8 @@ impl<'s> FinalizingTrack<'s> {
                 .iter()
                 .find(|(identifier, raw)| match identifier {
                     EventTypeIdentifier(
-                        RENodeId::GlobalComponent(ComponentAddress::EpochManager(..)),
+                        RENodeId::GlobalPackage(EPOCH_MANAGER_PACKAGE)
+                        | RENodeId::GlobalComponent(ComponentAddress::EpochManager(..)),
                         NodeModuleId::SELF,
                         ..,
                     ) => {

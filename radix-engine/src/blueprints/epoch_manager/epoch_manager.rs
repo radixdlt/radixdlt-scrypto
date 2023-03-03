@@ -145,7 +145,7 @@ impl EpochManagerBlueprint {
 
         let preparing_validator_set = ValidatorSetSubstate {
             epoch: input.initial_epoch + 1,
-            validator_set,
+            validator_set: validator_set.clone(),
         };
         api.kernel_create_node(
             underlying_node_id,
@@ -155,6 +155,14 @@ impl EpochManagerBlueprint {
                 preparing_validator_set,
             ),
             BTreeMap::new(),
+        )?;
+
+        Runtime::emit_event(
+            api,
+            EpochChangeEvent {
+                epoch: input.initial_epoch,
+                validators: validator_set,
+            },
         )?;
 
         let mut access_rules = AccessRules::new();
