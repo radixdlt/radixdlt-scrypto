@@ -1,9 +1,8 @@
-use sbor::value_kind::*;
-use sbor::*;
-
 use crate::data::manifest::model::*;
 use crate::data::manifest::*;
 use crate::*;
+use sbor::value_kind::*;
+use sbor::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ManifestCustomValue {

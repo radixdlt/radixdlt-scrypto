@@ -697,7 +697,7 @@ impl WasmModule {
     }
 
     pub fn ensure_compilable(self) -> Result<Self, PrepareError> {
-        // TODO: Understand WASM JIT compilschemality
+        // TODO: Understand WASM JIT compilability
         //
         // Can we make the assumption that all "prepared" modules are compilable,
         // if machine resource is "sufficient"?
@@ -727,8 +727,6 @@ impl WasmModule {
         Ok((code, function_exports))
     }
 
-    #[allow(unused_variables)]
-    #[allow(dead_code)]
     fn function_matches(
         module: &Module,
         func_index: usize,

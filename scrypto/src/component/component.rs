@@ -296,6 +296,7 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for O
     }
 }
 
+// TODO: generics support for Scrypto components?
 impl Describe<ScryptoCustomTypeKind> for OwnedComponent {
     const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown([OWN_ID]);
 }

@@ -206,7 +206,7 @@ pub enum InterpreterError {
     ScryptoInputSchemaNotMatch(String),
     ScryptoInputDecodeError(DecodeError),
 
-    ScryptoMalformedOutput(DecodeError),
+    ScryptoOutputDecodeError(DecodeError),
     ScryptoOutputSchemaNotMatch(String),
 }
 

@@ -70,8 +70,9 @@ fn validate_output(
     fn_ident: &str,
     output: Vec<u8>,
 ) -> Result<IndexedScryptoValue, RuntimeError> {
-    let value = IndexedScryptoValue::from_vec(output)
-        .map_err(|e| RuntimeError::InterpreterError(InterpreterError::ScryptoMalformedOutput(e)))?;
+    let value = IndexedScryptoValue::from_vec(output).map_err(|e| {
+        RuntimeError::InterpreterError(InterpreterError::ScryptoOutputDecodeError(e))
+    })?;
 
     let function_schema = blueprint_schema
         .functions
