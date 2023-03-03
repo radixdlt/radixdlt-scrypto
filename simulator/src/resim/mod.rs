@@ -54,6 +54,8 @@ pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
 
 use clap::{Parser, Subcommand};
 use radix_engine::kernel::interpreters::ScryptoInterpreter;
+use radix_engine::ledger::ReadableSubstateStore;
+use radix_engine::system::node_substates::RuntimeSubstate;
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::CommitResult;
 use radix_engine::transaction::TransactionOutcome;
@@ -299,19 +301,36 @@ pub fn get_signing_keys(
     Ok(private_keys)
 }
 
-#[allow(unused_variables)]
 pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageSchema, Error> {
-    // FIXME: schema - implement
-    todo!()
+    let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
+    let substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
+
+    let package_value: RuntimeSubstate = substate_store
+        .get_substate(&SubstateId(
+            RENodeId::GlobalPackage(package_address),
+            NodeModuleId::SELF,
+            SubstateOffset::Package(PackageOffset::Info),
+        ))
+        .map(|s| s.substate.to_runtime())
+        .ok_or(Error::PackageNotFound(package_address))?;
+
+    let schema = package_value.package_info().schema.clone();
+    Ok(schema)
 }
 
-#[allow(unused_variables)]
 pub fn export_blueprint_schema(
     package_address: PackageAddress,
     blueprint_name: &str,
 ) -> Result<BlueprintSchema, Error> {
-    // FIXME: schema - implement
-    todo!()
+    let schema = export_package_schema(package_address)?
+        .blueprints
+        .get(blueprint_name)
+        .cloned()
+        .ok_or(Error::BlueprintNotFound(
+            package_address,
+            blueprint_name.to_string(),
+        ))?;
+    Ok(schema)
 }
 
 pub fn get_blueprint(

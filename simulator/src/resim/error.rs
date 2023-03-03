@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use radix_engine::errors::{RejectionError, RuntimeError};
 use radix_engine::system::package::ExtractSchemaError;
 use radix_engine::transaction::AbortReason;
-use radix_engine::types::AddressError;
+use radix_engine::types::{AddressError, PackageAddress};
 use radix_engine::wasm::PrepareError;
 use radix_engine_interface::blueprints::resource::ParseNonFungibleGlobalIdError;
 use radix_engine_interface::network::ParseNetworkError;
@@ -22,6 +22,9 @@ pub enum Error {
     NoDefaultOwnerBadge,
 
     HomeDirUnknown,
+    
+    PackageNotFound(PackageAddress),
+    BlueprintNotFound(PackageAddress, String),
 
     IOError(io::Error),
 
