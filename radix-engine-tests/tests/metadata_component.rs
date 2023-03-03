@@ -16,7 +16,7 @@ fn can_set_component_metadata() {
             package_address,
             "MetadataComponent",
             "new",
-            manifest_args!(),
+            manifest_args!("key".to_string(), "value".to_string()),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

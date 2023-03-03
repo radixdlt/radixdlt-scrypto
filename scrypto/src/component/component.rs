@@ -5,10 +5,7 @@ use crate::*;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesCreateInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
 };
-use radix_engine_interface::api::node_modules::metadata::{
-    MetadataCreateInput, MetadataSetInput, METADATA_BLUEPRINT, METADATA_CREATE_IDENT,
-    METADATA_GET_IDENT, METADATA_SET_IDENT,
-};
+use radix_engine_interface::api::node_modules::metadata::{MetadataSetInput, METADATA_BLUEPRINT, METADATA_GET_IDENT, METADATA_SET_IDENT, MetadataCreateWithDataInput, METADATA_CREATE_WITH_DATA_IDENT};
 use radix_engine_interface::api::node_modules::royalty::{
     ComponentClaimRoyaltyInput, ComponentRoyaltyCreateInput, ComponentSetRoyaltyConfigInput,
     COMPONENT_ROYALTY_BLUEPRINT, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
@@ -56,10 +53,19 @@ pub trait LocalComponent: Sized {
         config: RoyaltyConfig,
     ) -> ComponentAddress;
 
+
     fn globalize(self) -> ComponentAddress {
         self.globalize_with_modules(
             AccessRules::new().default(AccessRule::AllowAll, AccessRule::DenyAll),
             BTreeMap::new(),
+            RoyaltyConfig::default(),
+        )
+    }
+
+    fn globalize_with_metadata(self, metadata: BTreeMap<String, String>) -> ComponentAddress {
+        self.globalize_with_modules(
+            AccessRules::new().default(AccessRule::AllowAll, AccessRule::DenyAll),
+            metadata,
             RoyaltyConfig::default(),
         )
     }
@@ -144,15 +150,15 @@ impl LocalComponent for OwnedComponent {
     fn globalize_with_modules(
         self,
         access_rules: AccessRules,
-        _metadata: BTreeMap<String, String>,
+        metadata: BTreeMap<String, String>,
         config: RoyaltyConfig,
     ) -> ComponentAddress {
         let rtn = ScryptoEnv
             .call_function(
                 METADATA_PACKAGE,
                 METADATA_BLUEPRINT,
-                METADATA_CREATE_IDENT,
-                scrypto_encode(&MetadataCreateInput {}).unwrap(),
+                METADATA_CREATE_WITH_DATA_IDENT,
+                scrypto_encode(&MetadataCreateWithDataInput { data: metadata }).unwrap(),
             )
             .unwrap();
         let metadata: Own = scrypto_decode(&rtn).unwrap();
