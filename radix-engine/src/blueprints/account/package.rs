@@ -14,6 +14,7 @@ use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::blueprints::resource::AccessRules;
 use radix_engine_interface::blueprints::resource::MethodKey;
+use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver};
 
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use native_sdk::resource::{SysBucket, Vault};
@@ -44,6 +45,168 @@ impl From<AccountError> for RuntimeError {
 pub struct AccountNativePackage;
 
 impl AccountNativePackage {
+    pub fn schema() -> PackageSchema {
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind<_>>::new();
+
+        let mut substates = BTreeMap::new();
+        substates.insert(
+            0,
+            aggregator.add_child_type_and_descendents::<AccountSubstate>(),
+        );
+
+        let mut functions = BTreeMap::new();
+        functions.insert(
+            ACCOUNT_CREATE_GLOBAL_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<AccountCreateGlobalInput>(),
+                output: aggregator.add_child_type_and_descendents::<AccountCreateGlobalOutput>(),
+                export_name: ACCOUNT_CREATE_GLOBAL_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_CREATE_LOCAL_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<AccountCreateLocalInput>(),
+                output: aggregator.add_child_type_and_descendents::<AccountCreateLocalOutput>(),
+                export_name: ACCOUNT_CREATE_LOCAL_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_LOCK_FEE_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRef),
+                input: aggregator.add_child_type_and_descendents::<AccountCreateGlobalInput>(),
+                output: aggregator.add_child_type_and_descendents::<AccountCreateGlobalOutput>(),
+                export_name: ACCOUNT_LOCK_FEE_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_LOCK_CONTINGENT_FEE_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRef),
+                input: aggregator.add_child_type_and_descendents::<AccountLockContingentFeeInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccountLockContingentFeeOutput>(),
+                export_name: ACCOUNT_LOCK_CONTINGENT_FEE_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_DEPOSIT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRef),
+                input: aggregator.add_child_type_and_descendents::<AccountDepositInput>(),
+                output: aggregator.add_child_type_and_descendents::<AccountDepositOutput>(),
+                export_name: ACCOUNT_DEPOSIT_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_DEPOSIT_BATCH_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRef),
+                input: aggregator.add_child_type_and_descendents::<AccountDepositBatchInput>(),
+                output: aggregator.add_child_type_and_descendents::<AccountDepositBatchOutput>(),
+                export_name: ACCOUNT_DEPOSIT_BATCH_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_WITHDRAW_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRef),
+                input: aggregator.add_child_type_and_descendents::<AccountWithdrawInput>(),
+                output: aggregator.add_child_type_and_descendents::<AccountWithdrawOutput>(),
+                export_name: ACCOUNT_WITHDRAW_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRef),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccountWithdrawNonFungiblesInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccountWithdrawNonFungiblesOutput>(),
+                export_name: ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRef),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccountLockFeeAndWithdrawInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccountLockFeeAndWithdrawOutput>(),
+                export_name: ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRef),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccountLockFeeAndWithdrawNonFungiblesInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccountLockFeeAndWithdrawNonFungiblesOutput>(
+                    ),
+                export_name: ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_CREATE_PROOF_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRef),
+                input: aggregator.add_child_type_and_descendents::<AccountCreateProofInput>(),
+                output: aggregator.add_child_type_and_descendents::<AccountCreateProofOutput>(),
+                export_name: ACCOUNT_CREATE_PROOF_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRef),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccountCreateProofByAmountInput>(),
+                output: aggregator.add_child_type_and_descendents::<AccountCreateGlobalOutput>(),
+                export_name: ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_CREATE_PROOF_BY_IDS_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRef),
+                input: aggregator.add_child_type_and_descendents::<AccountCreateProofByIdsInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccountCreateProofByIdsOutput>(),
+                export_name: ACCOUNT_CREATE_PROOF_BY_IDS_IDENT.to_string(),
+            },
+        );
+
+        let schema = generate_full_schema(aggregator);
+        PackageSchema {
+            blueprints: btreemap!(
+                ACCOUNT_BLUEPRINT.to_string() => BlueprintSchema {
+                    schema,
+                    substates,
+                    functions
+                }
+            ),
+        }
+    }
+
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<RENodeId>,

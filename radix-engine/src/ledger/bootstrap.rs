@@ -1,3 +1,4 @@
+use crate::blueprints::account::AccountNativePackage;
 use crate::blueprints::clock::ClockNativePackage;
 use crate::blueprints::epoch_manager::EpochManagerNativePackage;
 use crate::kernel::interpreters::ScryptoInterpreter;
@@ -50,6 +51,10 @@ pub fn create_genesis(
     let mut id_allocator = ManifestIdAllocator::new();
     let mut instructions = Vec::new();
     let mut pre_allocated_ids = BTreeSet::new();
+
+    // FIXME: schema - add schema for native packages
+    // Dev tools, mainly resim, use schema to construct call arguments from string.
+    // They should be able to do so for native blueprints.
 
     // Metadata Package
     {
@@ -275,7 +280,7 @@ pub fn create_genesis(
             function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                schema: PackageSchema::default(),
+                schema: AccountNativePackage::schema(),
                 native_package_code_id: ACCOUNT_PACKAGE_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
