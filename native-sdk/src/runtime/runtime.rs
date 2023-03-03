@@ -21,7 +21,7 @@ impl Runtime {
         Y: ClientEventApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        // FIXME support event emission
+        // FIXME: schema - support event emission
         Ok(())
     }
 

@@ -7,7 +7,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::BlueprintSchema;
 use sbor::basic_well_known_types::UNIT_ID;
 
-// FIXME: support schema path!
+// FIXME: schema - support schema path!
 
 #[allow(unused_variables)]
 fn soft_to_hard_decimal(

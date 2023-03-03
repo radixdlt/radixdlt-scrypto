@@ -8,10 +8,7 @@ use radix_engine_interface::math::ParseDecimalError;
 use radix_engine_interface::schema::BlueprintSchema;
 use transaction::builder::ManifestBuilder;
 
-pub struct ArgParsingContext {
-    pub package_address: PackageAddress,
-    pub blueprint_name: String,
-}
+// FIXME: schema - support new schema
 
 #[derive(Debug, PartialEq, Eq)]
 enum ResourceSpecifier {

@@ -33,8 +33,6 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::schema::BlueprintSchema;
 
-// FIXME add validation!
-
 fn validate_input(
     blueprint_schema: &BlueprintSchema,
     fn_ident: &str,

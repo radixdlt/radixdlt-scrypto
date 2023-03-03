@@ -115,6 +115,6 @@ impl Runtime {
 
     /// Emits an application event
     pub fn emit_event<T: ScryptoEncode + ScryptoDescribe>(_event: T) {
-        // FIXME support event emission
+        // FIXME: schema - support event emission
     }
 }

@@ -604,7 +604,7 @@ impl<'s> FinalizingTrack<'s> {
                         NodeModuleId::SELF,
                         ..,
                     ) => {
-                        // FIXME use type hash or local type index
+                        // FIXME: schema - use type hash or local type index
                         scrypto_decode::<EpochChangeEvent>(raw).is_ok()
                     }
                     _ => false,

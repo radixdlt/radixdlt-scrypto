@@ -153,7 +153,7 @@ impl Package {
                 ))
             })?;
 
-        // FIXME schema - validate schema consistency!
+        // FIXME: schema - validate schema consistency!
 
         let code_type_substate = PackageCodeTypeSubstate::Wasm;
         let wasm_code_substate = PackageCodeSubstate { code: input.code };

@@ -301,7 +301,7 @@ pub fn get_signing_keys(
 
 #[allow(unused_variables)]
 pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageSchema, Error> {
-    // FIXME schema - implement
+    // FIXME: schema - implement
     todo!()
 }
 
@@ -310,7 +310,7 @@ pub fn export_blueprint_schema(
     package_address: PackageAddress,
     blueprint_name: &str,
 ) -> Result<BlueprintSchema, Error> {
-    // FIXME schema - implement
+    // FIXME: schema - implement
     todo!()
 }
 
