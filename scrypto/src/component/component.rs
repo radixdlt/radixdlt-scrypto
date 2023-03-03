@@ -5,7 +5,7 @@ use crate::*;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesCreateInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
 };
-use radix_engine_interface::api::node_modules::metadata::{MetadataSetInput, METADATA_GET_IDENT, METADATA_SET_IDENT};
+use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
 use radix_engine_interface::api::node_modules::royalty::{
     ComponentClaimRoyaltyInput, ComponentRoyaltyCreateInput, ComponentSetRoyaltyConfigInput,
     COMPONENT_ROYALTY_BLUEPRINT, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
@@ -13,18 +13,15 @@ use radix_engine_interface::api::node_modules::royalty::{
 };
 use radix_engine_interface::api::types::{ObjectId, RENodeId};
 use radix_engine_interface::api::{types::*, ClientObjectApi, ClientPackageApi};
-use radix_engine_interface::blueprints::resource::{
-    require, AccessRule, AccessRules, Bucket, MethodKey,
-};
+use radix_engine_interface::blueprints::resource::{require, AccessRule, AccessRules, Bucket, MethodKey, AccessRuleEntry};
 use radix_engine_interface::constants::{ACCESS_RULES_PACKAGE, ROYALTY_PACKAGE};
 use radix_engine_interface::data::{
     scrypto_decode, scrypto_encode, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
 };
 use radix_engine_interface::rule;
-use sbor::rust::borrow::ToOwned;
-use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use scrypto::modules::Metadata;
+use crate::modules::AttachedMetadata;
 
 use super::ComponentAccessRules;
 
@@ -42,7 +39,6 @@ pub trait Component {
     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T;
     fn package_address(&self) -> PackageAddress;
     fn blueprint_name(&self) -> String;
-    // TODO: fn metadata<K: AsRef<str>>(&self, name: K) -> Option<String>;
 }
 
 pub trait LocalComponent: Sized {
@@ -55,24 +51,39 @@ pub trait LocalComponent: Sized {
 
 
     fn globalize(self) -> ComponentAddress {
+        let mut access_rules = AccessRules::new();
+        access_rules.set_method_access_rule(
+            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()), AccessRuleEntry::AccessRule(AccessRule::DenyAll));
+        let access_rules = access_rules.default(AccessRule::AllowAll, AccessRule::DenyAll);
+
         self.globalize_with_modules(
-            AccessRules::new().default(AccessRule::AllowAll, AccessRule::DenyAll),
+            access_rules,
             Metadata::new(),
             RoyaltyConfig::default(),
         )
     }
 
     fn globalize_with_metadata(self, metadata: Metadata) -> ComponentAddress {
+        let mut access_rules = AccessRules::new();
+        access_rules.set_method_access_rule(
+            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()), AccessRuleEntry::AccessRule(AccessRule::DenyAll));
+        let access_rules = access_rules.default(AccessRule::AllowAll, AccessRule::DenyAll);
+
         self.globalize_with_modules(
-            AccessRules::new().default(AccessRule::AllowAll, AccessRule::DenyAll),
+            access_rules,
             metadata,
             RoyaltyConfig::default(),
         )
     }
 
     fn globalize_with_royalty_config(self, config: RoyaltyConfig) -> ComponentAddress {
+        let mut access_rules = AccessRules::new();
+        access_rules.set_method_access_rule(
+            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()), AccessRuleEntry::AccessRule(AccessRule::DenyAll));
+        let access_rules = access_rules.default(AccessRule::AllowAll, AccessRule::DenyAll);
+
         self.globalize_with_modules(
-            AccessRules::new().default(AccessRule::AllowAll, AccessRule::DenyAll),
+            access_rules,
             Metadata::new(),
             config,
         )
@@ -201,6 +212,10 @@ impl GlobalComponentRef {
         ComponentAccessRules::new(self.0)
     }
 
+    pub fn metadata(&self) -> AttachedMetadata {
+        AttachedMetadata(self.0.into())
+    }
+
     pub fn set_royalty_config(&self, royalty_config: RoyaltyConfig) {
         ScryptoEnv
             .call_module_method(
@@ -222,21 +237,6 @@ impl GlobalComponentRef {
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()
-    }
-
-    pub fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
-        ScryptoEnv
-            .call_module_method(
-                RENodeId::GlobalComponent(self.0),
-                NodeModuleId::Metadata,
-                METADATA_SET_IDENT,
-                scrypto_encode(&MetadataSetInput {
-                    key: name.as_ref().to_owned(),
-                    value: value.as_ref().to_owned(),
-                })
-                .unwrap(),
-            )
-            .unwrap();
     }
 }
 

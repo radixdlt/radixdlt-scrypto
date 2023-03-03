@@ -569,8 +569,8 @@ fn generate_stubs(
                 self.component.access_rules()
             }
 
-            pub fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
-                self.component.set_metadata(name, value);
+            pub fn metadata(&self) -> AttachedMetadata {
+                self.component.metadata()
             }
 
             pub fn claim_royalty(&self) -> Bucket {
@@ -809,8 +809,8 @@ mod tests {
                         self.component.access_rules()
                     }
 
-                    pub fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
-                        self.component.set_metadata(name, value);
+                    pub fn metadata(&self) -> AttachedMetadata {
+                        self.component.metadata()
                     }
 
                     pub fn claim_royalty(&self) -> Bucket {
@@ -938,8 +938,8 @@ mod tests {
                         self.component.access_rules()
                     }
 
-                    pub fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
-                        self.component.set_metadata(name, value);
+                    pub fn metadata(&self) -> AttachedMetadata {
+                        self.component.metadata()
                     }
 
                     pub fn claim_royalty(&self) -> Bucket {
@@ -1068,8 +1068,8 @@ mod tests {
                         self.component.access_rules()
                     }
 
-                    pub fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
-                        self.component.set_metadata(name, value);
+                    pub fn metadata(&self) -> AttachedMetadata {
+                        self.component.metadata()
                     }
 
                     pub fn claim_royalty(&self) -> Bucket {
