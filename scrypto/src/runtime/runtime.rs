@@ -1,6 +1,6 @@
 use radix_engine_interface::api::types::FnIdentifier;
-use radix_engine_interface::api::ClientActorApi;
 use radix_engine_interface::api::{types::*, ClientComponentApi, ClientPackageApi};
+use radix_engine_interface::api::{ClientActorApi, ClientEventApi};
 use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerGetCurrentEpochInput, EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
 };
@@ -10,14 +10,14 @@ use radix_engine_interface::blueprints::transaction_runtime::{
     TRANSACTION_RUNTIME_GENERATE_UUID_IDENT, TRANSACTION_RUNTIME_GET_HASH_IDENT,
 };
 use radix_engine_interface::constants::{EPOCH_MANAGER, PACKAGE_TOKEN};
-use radix_engine_interface::crypto::Hash;
-use radix_engine_interface::data::scrypto::model::*;
+use radix_engine_interface::crypto::{hash, Hash};
+use radix_engine_interface::data::scrypto::{model::*, ScryptoCustomTypeKind};
 use radix_engine_interface::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoDescribe, ScryptoEncode,
 };
 use radix_engine_interface::*;
-use sbor::rust::fmt::Debug;
-use sbor::rust::vec::Vec;
+use sbor::rust::prelude::*;
+use sbor::{generate_full_schema, TypeAggregator, TypeMetadata};
 use scrypto::engine::scrypto_env::ScryptoEnv;
 
 /// The transaction runtime.
@@ -114,7 +114,18 @@ impl Runtime {
     }
 
     /// Emits an application event
-    pub fn emit_event<T: ScryptoEncode + ScryptoDescribe>(_event: T) {
-        // FIXME: schema - support event emission
+    pub fn emit_event<T: ScryptoEncode + ScryptoDescribe>(event: T) {
+        // FIXME: schema - replace this placeholder implementation
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind<_>>::new();
+        let type_index = aggregator.add_child_type_and_descendents::<T>();
+        let schema = generate_full_schema(aggregator);
+        let metadata = schema.resolve_type_metadata(type_index);
+        let type_hash = match metadata {
+            Some(TypeMetadata { type_name, .. }) => hash(type_name.as_ref()),
+            None => todo!(),
+        };
+        ScryptoEnv
+            .emit_raw_event(type_hash, scrypto_encode(&event).unwrap())
+            .unwrap();
     }
 }

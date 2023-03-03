@@ -6,9 +6,7 @@ use transaction::builder::ManifestBuilder;
 // TODO: In the future, the ClientAPI should only be able to add events to the event store. It
 // should not be able to have full control over it.
 
-// FIXME: schema - re-enable after new schema event integration
 #[test]
-#[ignore]
 fn can_emit_basic_event_from_scrypto() {
     // Arrange
     let mut test_runner = TestRunner::builder().without_trace().build();
@@ -36,7 +34,7 @@ fn can_emit_basic_event_from_scrypto() {
             EventTypeIdentifier(
                 RENodeId::GlobalPackage(package_address),
                 NodeModuleId::SELF,
-                hash(""),
+                hash("CustomEvent"),
             ),
             scrypto_encode(&CustomEvent { number: 12 }).unwrap(),
         )];

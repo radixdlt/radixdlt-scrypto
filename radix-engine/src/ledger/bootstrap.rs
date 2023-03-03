@@ -645,13 +645,12 @@ mod tests {
         #[cfg(not(feature = "alloc"))]
         println!("{:?}", transaction_receipt);
 
-        // FIXME: schema - enable after new schema event integration
-        // transaction_receipt.expect_commit_success();
-        // let commit_result = transaction_receipt.expect_commit();
-        // commit_result
-        //     .next_epoch
-        //     .as_ref()
-        //     .expect("There should be a new epoch.");
+        transaction_receipt.expect_commit_success();
+        let commit_result = transaction_receipt.expect_commit();
+        commit_result
+            .next_epoch
+            .as_ref()
+            .expect("There should be a new epoch.");
 
         let genesis_receipt = genesis_result(&transaction_receipt);
         assert_eq!(genesis_receipt.faucet_component, FAUCET_COMPONENT);

@@ -29,8 +29,9 @@ impl AuthVerification {
                 let proof_resource_address = proof.sys_resource_address(api)?;
                 Ok(proof_resource_address == *resource_address)
             }
-            HardResourceOrNonFungible::InvalidSchemaPath
-            | HardResourceOrNonFungible::DisallowedValueType => Ok(false),
+            // TODO: I believe team wants to propagate these error codes?
+            HardResourceOrNonFungible::InvalidPath
+            | HardResourceOrNonFungible::NotResourceAddressOrNonFungibleGlobalId => Ok(false),
         }
     }
 
