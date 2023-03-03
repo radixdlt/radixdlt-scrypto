@@ -7,12 +7,14 @@ mod metadata_component {
     struct MetadataComponent {}
 
     impl MetadataComponent {
-        pub fn new(key: String, value: String) -> ComponentAddress {
+        pub fn new(key: String, value: String) {
             let component = MetadataComponent {}.instantiate();
             let metadata = Metadata::new();
-            metadata.set(key, value);
+            metadata.set(key.clone(), value.clone());
             let component_address = component.globalize_with_metadata(metadata);
-            component_address
+            let global: MetadataComponentGlobalComponentRef = component_address.into();
+
+            assert_eq!(global.metadata().get(key), Some(value));
         }
 
         pub fn new2(key: String, value: String) {
@@ -22,7 +24,9 @@ mod metadata_component {
             );
 
             let global: MetadataComponentGlobalComponentRef = component_address.into();
-            global.metadata().set(key, value);
+            global.metadata().set(key.clone(), value.clone());
+
+            assert_eq!(global.metadata().get(key), Some(value));
         }
     }
 }
