@@ -1,6 +1,5 @@
 use super::node_modules::access_rules::AuthZoneStackSubstate;
 use super::node_modules::access_rules::MethodAccessRulesSubstate;
-use super::node_modules::metadata::MetadataSubstate;
 use super::type_info::PackageCodeTypeSubstate;
 use crate::blueprints::access_controller::AccessControllerSubstate;
 use crate::blueprints::account::AccountSubstate;
@@ -57,9 +56,6 @@ pub enum PersistedSubstate {
     /* Access rules */
     MethodAccessRules(MethodAccessRulesSubstate),
     FunctionAccessRules(FunctionAccessRulesSubstate),
-
-    /* Metadata */
-    Metadata(MetadataSubstate),
 
     /* Royalty */
     ComponentRoyaltyConfig(ComponentRoyaltyConfigSubstate),
@@ -202,7 +198,6 @@ impl PersistedSubstate {
             PersistedSubstate::FunctionAccessRules(value) => {
                 RuntimeSubstate::FunctionAccessRules(value)
             }
-            PersistedSubstate::Metadata(value) => RuntimeSubstate::Metadata(value),
             PersistedSubstate::PackageRoyaltyConfig(value) => {
                 RuntimeSubstate::PackageRoyaltyConfig(value)
             }
@@ -261,9 +256,6 @@ pub enum RuntimeSubstate {
     MethodAccessRules(MethodAccessRulesSubstate),
     FunctionAccessRules(FunctionAccessRulesSubstate),
 
-    /* Metadata */
-    Metadata(MetadataSubstate),
-
     /* Royalty */
     ComponentRoyaltyConfig(ComponentRoyaltyConfigSubstate),
     ComponentRoyaltyAccumulator(ComponentRoyaltyAccumulatorSubstate),
@@ -319,7 +311,6 @@ impl RuntimeSubstate {
             RuntimeSubstate::FunctionAccessRules(value) => {
                 PersistedSubstate::FunctionAccessRules(value.clone())
             }
-            RuntimeSubstate::Metadata(value) => PersistedSubstate::Metadata(value.clone()),
             RuntimeSubstate::ComponentRoyaltyConfig(value) => {
                 PersistedSubstate::ComponentRoyaltyConfig(value.clone())
             }
@@ -392,7 +383,6 @@ impl RuntimeSubstate {
             RuntimeSubstate::FunctionAccessRules(value) => {
                 PersistedSubstate::FunctionAccessRules(value)
             }
-            RuntimeSubstate::Metadata(value) => PersistedSubstate::Metadata(value),
             RuntimeSubstate::ComponentRoyaltyConfig(value) => {
                 PersistedSubstate::ComponentRoyaltyConfig(value)
             }
@@ -461,7 +451,6 @@ impl RuntimeSubstate {
                 SubstateRefMut::CurrentTimeRoundedToMinutes(value)
             }
             RuntimeSubstate::MethodAccessRules(value) => SubstateRefMut::MethodAccessRules(value),
-            RuntimeSubstate::Metadata(value) => SubstateRefMut::Metadata(value),
             RuntimeSubstate::ResourceManager(value) => SubstateRefMut::ResourceManager(value),
             RuntimeSubstate::TypeInfo(value) => SubstateRefMut::TypeInfo(value),
             RuntimeSubstate::ComponentState(value) => SubstateRefMut::ComponentState(value),
@@ -532,7 +521,6 @@ impl RuntimeSubstate {
                 SubstateRef::CurrentTimeRoundedToMinutes(value)
             }
             RuntimeSubstate::MethodAccessRules(value) => SubstateRef::MethodAccessRules(value),
-            RuntimeSubstate::Metadata(value) => SubstateRef::Metadata(value),
             RuntimeSubstate::ResourceManager(value) => SubstateRef::ResourceManager(value),
             RuntimeSubstate::ComponentState(value) => SubstateRef::ComponentState(value),
             RuntimeSubstate::ComponentRoyaltyConfig(value) => {
@@ -618,14 +606,6 @@ impl RuntimeSubstate {
         }
     }
 
-    pub fn metadata(&self) -> &MetadataSubstate {
-        if let RuntimeSubstate::Metadata(metadata) = self {
-            metadata
-        } else {
-            panic!("Not metadata");
-        }
-    }
-
     pub fn validator_set(&self) -> &ValidatorSetSubstate {
         if let RuntimeSubstate::ValidatorSet(validator_set) = self {
             validator_set
@@ -662,12 +642,6 @@ impl RuntimeSubstate {
 impl Into<RuntimeSubstate> for MethodAccessRulesSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::MethodAccessRules(self)
-    }
-}
-
-impl Into<RuntimeSubstate> for MetadataSubstate {
-    fn into(self) -> RuntimeSubstate {
-        RuntimeSubstate::Metadata(self)
     }
 }
 
@@ -1010,16 +984,6 @@ impl Into<MethodAccessRulesSubstate> for RuntimeSubstate {
     }
 }
 
-impl Into<MetadataSubstate> for RuntimeSubstate {
-    fn into(self) -> MetadataSubstate {
-        if let RuntimeSubstate::Metadata(substate) = self {
-            substate
-        } else {
-            panic!("Not metadata");
-        }
-    }
-}
-
 impl Into<ValidatorSetSubstate> for RuntimeSubstate {
     fn into(self) -> ValidatorSetSubstate {
         if let RuntimeSubstate::ValidatorSet(substate) = self {
@@ -1085,7 +1049,6 @@ pub enum SubstateRef<'a> {
     CurrentTimeRoundedToMinutes(&'a CurrentTimeRoundedToMinutesSubstate),
     MethodAccessRules(&'a MethodAccessRulesSubstate),
     PackageAccessRules(&'a FunctionAccessRulesSubstate),
-    Metadata(&'a MetadataSubstate),
     TransactionRuntime(&'a TransactionRuntimeSubstate),
     Account(&'a AccountSubstate),
     AccessController(&'a AccessControllerSubstate),
@@ -1329,15 +1292,6 @@ impl<'a> From<SubstateRef<'a>> for &'a MethodAccessRulesSubstate {
     }
 }
 
-impl<'a> From<SubstateRef<'a>> for &'a MetadataSubstate {
-    fn from(value: SubstateRef<'a>) -> Self {
-        match value {
-            SubstateRef::Metadata(value) => value,
-            _ => panic!("Not global"),
-        }
-    }
-}
-
 impl<'a> From<SubstateRef<'a>> for &'a TransactionRuntimeSubstate {
     fn from(value: SubstateRef<'a>) -> Self {
         match value {
@@ -1570,7 +1524,6 @@ pub enum SubstateRefMut<'a> {
     Validator(&'a mut ValidatorSubstate),
     CurrentTimeRoundedToMinutes(&'a mut CurrentTimeRoundedToMinutesSubstate),
     MethodAccessRules(&'a mut MethodAccessRulesSubstate),
-    Metadata(&'a mut MetadataSubstate),
     ProofInfo(&'a mut ProofInfoSubstate),
     FungibleProof(&'a mut FungibleProof),
     NonFungibleProof(&'a mut NonFungibleProof),
@@ -1722,15 +1675,6 @@ impl<'a> From<SubstateRefMut<'a>> for &'a mut MethodAccessRulesSubstate {
         match value {
             SubstateRefMut::MethodAccessRules(value) => value,
             _ => panic!("Not a logger"),
-        }
-    }
-}
-
-impl<'a> From<SubstateRefMut<'a>> for &'a mut MetadataSubstate {
-    fn from(value: SubstateRefMut<'a>) -> Self {
-        match value {
-            SubstateRefMut::Metadata(value) => value,
-            _ => panic!("Not metadata"),
         }
     }
 }

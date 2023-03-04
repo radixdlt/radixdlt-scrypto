@@ -14,7 +14,6 @@ use radix_engine::kernel::track::Track;
 use radix_engine::ledger::*;
 use radix_engine::system::kernel_modules::costing::FeeTable;
 use radix_engine::system::kernel_modules::costing::SystemLoanFeeReserve;
-use radix_engine::system::node_modules::metadata::MetadataSubstate;
 use radix_engine::system::package::*;
 use radix_engine::transaction::{
     execute_preview, execute_transaction, ExecutionConfig, FeeReserveConfig, PreviewError,
@@ -23,6 +22,7 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_constants::*;
+use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::types::{RENodeId, VaultOffset};
 use radix_engine_interface::api::ClientPackageApi;
@@ -36,6 +36,7 @@ use radix_engine_interface::blueprints::epoch_manager::{
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{EPOCH_MANAGER, FAUCET_COMPONENT};
+use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
@@ -227,18 +228,25 @@ impl TestRunner {
     }
 
     pub fn get_metadata(&mut self, address: Address, key: &str) -> Option<String> {
-        let metadata = self
+        let metadata_entry = self
             .substate_store
             .get_substate(&SubstateId(
                 address.into(),
                 NodeModuleId::Metadata,
-                SubstateOffset::Metadata(MetadataOffset::Metadata),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                    scrypto_encode(key).unwrap(),
+                )),
             ))
-            .map(|s| s.substate.to_runtime())
-            .unwrap();
+            .map(|s| s.substate.to_runtime())?;
 
-        let metadata: MetadataSubstate = metadata.into();
-        metadata.metadata.get(key).cloned()
+        let metadata_entry: KeyValueStoreEntrySubstate = metadata_entry.into();
+        let metadata_entry = match metadata_entry {
+            KeyValueStoreEntrySubstate::Some(_, ScryptoValue::String { value }) => Some(value),
+            KeyValueStoreEntrySubstate::None => None,
+            _ => panic!("Unexpected"),
+        };
+
+        metadata_entry
     }
 
     pub fn inspect_component_royalty(

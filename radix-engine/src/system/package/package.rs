@@ -6,13 +6,14 @@ use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::{
     FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
-use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::system::node_substates::RuntimeSubstate;
 use crate::system::type_info::PackageCodeTypeSubstate;
 use crate::types::*;
 use crate::wasm::{PrepareError, WasmValidator};
 use core::fmt::Debug;
 use native_sdk::resource::ResourceManager;
+use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::types::*;
@@ -96,12 +97,22 @@ impl Package {
             scrypto_decode(&scrypto_encode(&input).unwrap())
                 .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let metadata_substate = MetadataSubstate {
-            metadata: input.metadata,
-        };
         let access_rules = MethodAccessRulesSubstate {
             access_rules: input.access_rules,
         };
+
+        let mut metadata_substates = BTreeMap::new();
+        for (key, value) in input.metadata {
+            metadata_substates.insert(
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                    scrypto_encode(&key).unwrap(),
+                )),
+                RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::Some(
+                    ScryptoValue::String { value: key },
+                    ScryptoValue::String { value },
+                )),
+            );
+        }
 
         let mut node_modules = BTreeMap::new();
         node_modules.insert(
@@ -114,7 +125,7 @@ impl Package {
         );
         node_modules.insert(
             NodeModuleId::Metadata,
-            RENodeModuleInit::Metadata(metadata_substate),
+            RENodeModuleInit::Metadata(metadata_substates),
         );
         node_modules.insert(
             NodeModuleId::AccessRules,
@@ -189,9 +200,20 @@ impl Package {
         let package_royalty_accumulator = PackageRoyaltyAccumulatorSubstate {
             royalty: Own::Vault(royalty_vault_id),
         };
-        let metadata_substate = MetadataSubstate {
-            metadata: input.metadata,
-        };
+
+        let mut metadata_substates = BTreeMap::new();
+        for (key, value) in input.metadata {
+            metadata_substates.insert(
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                    scrypto_encode(&key).unwrap(),
+                )),
+                RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::Some(
+                    ScryptoValue::String { value: key },
+                    ScryptoValue::String { value },
+                )),
+            );
+        }
+
         let access_rules = MethodAccessRulesSubstate {
             access_rules: input.access_rules,
         };
@@ -217,7 +239,7 @@ impl Package {
         );
         node_modules.insert(
             NodeModuleId::Metadata,
-            RENodeModuleInit::Metadata(metadata_substate),
+            RENodeModuleInit::Metadata(metadata_substates),
         );
         node_modules.insert(
             NodeModuleId::AccessRules,

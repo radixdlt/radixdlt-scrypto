@@ -22,7 +22,6 @@ use crate::kernel::module_mixer::KernelModuleMixer;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::MethodAccessRulesSubstate;
-use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::system::node_substates::RuntimeSubstate;
 use crate::system::package::Package;
@@ -388,16 +387,10 @@ where
                 _ => return Err(RuntimeError::SystemError(SystemError::BlueprintNotFound)),
             },
             METADATA_PACKAGE => {
-                let substate: MetadataSubstate = parser.decode_next()?;
                 parser.end()?;
 
                 let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
-                (
-                    node_id,
-                    RENodeInit::Object(btreemap!(
-                        SubstateOffset::Metadata(MetadataOffset::Metadata) => RuntimeSubstate::Metadata(substate),
-                    )),
-                )
+                (node_id, RENodeInit::Object(btreemap!()))
             }
             ROYALTY_PACKAGE => match blueprint_ident {
                 COMPONENT_ROYALTY_BLUEPRINT => {
@@ -658,19 +651,19 @@ where
                         }));
                     }
 
-                    let mut node = self.kernel_drop_node(node_id)?;
+                    let node = self.kernel_drop_node(node_id)?;
 
-                    let metadata = node
-                        .substates
-                        .remove(&(
-                            NodeModuleId::SELF,
-                            SubstateOffset::Metadata(MetadataOffset::Metadata),
-                        ))
-                        .unwrap();
-                    let metadata: MetadataSubstate = metadata.into();
+                    let mut substates = BTreeMap::new();
+                    for ((module_id, offset), substate) in node.substates {
+                        if let NodeModuleId::SELF = module_id {
+                            substates.insert(offset, substate);
+                        }
+                    }
 
-                    module_init
-                        .insert(NodeModuleId::Metadata, RENodeModuleInit::Metadata(metadata));
+                    module_init.insert(
+                        NodeModuleId::Metadata,
+                        RENodeModuleInit::Metadata(substates),
+                    );
                 }
                 NodeModuleId::ComponentRoyalty => {
                     let node_id = RENodeId::Object(object_id);

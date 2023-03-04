@@ -10,8 +10,8 @@ use radix_engine_interface::api::types::{NodeModuleId, ObjectId, RENodeId};
 use radix_engine_interface::api::{ClientObjectApi, ClientPackageApi};
 use radix_engine_interface::constants::METADATA_PACKAGE;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
-use sbor::rust::string::String;
 use sbor::rust::prelude::ToOwned;
+use sbor::rust::string::String;
 
 #[derive(PartialEq, Eq, Hash, Clone)]
 pub struct Metadata(pub ObjectId);

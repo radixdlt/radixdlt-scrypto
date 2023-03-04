@@ -307,7 +307,6 @@ impl SubstateProperties {
             SubstateOffset::Component(..) => true,
             SubstateOffset::Royalty(..) => true,
             SubstateOffset::AccessRules(..) => true,
-            SubstateOffset::Metadata(..) => true,
             SubstateOffset::Package(..) => true,
             SubstateOffset::ResourceManager(..) => true,
             SubstateOffset::KeyValueStore(..) => true,

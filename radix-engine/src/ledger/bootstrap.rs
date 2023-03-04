@@ -690,6 +690,7 @@ mod tests {
             &genesis_transaction.get_executable(vec![AuthAddresses::system_role()]),
         );
 
+        transaction_receipt.expect_commit_success();
         let commit_result = transaction_receipt.result.expect_commit();
         commit_result.state_updates.commit(&mut substate_store);
 
