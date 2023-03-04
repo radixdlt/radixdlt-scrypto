@@ -1,7 +1,7 @@
 use radix_engine_interface::api::substate_api::LockFlags;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
-use scrypto::radix_engine_interface::api::ClientComponentApi;
+use scrypto::radix_engine_interface::api::ClientObjectApi;
 use scrypto::radix_engine_interface::api::ClientSubstateApi;
 
 #[blueprint]
@@ -38,7 +38,7 @@ mod data_access {
         pub fn create_component_and_read_info() {
             let component_address = Self {}.instantiate().globalize();
             ScryptoEnv
-                .get_component_type_info(RENodeId::GlobalComponent(component_address))
+                .get_object_type_info(RENodeId::GlobalComponent(component_address))
                 .unwrap();
         }
     }

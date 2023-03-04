@@ -2,7 +2,6 @@ use crate::blueprints::epoch_manager::EpochManagerSubstate;
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::node::RENodeInit;
 use crate::types::*;
 use native_sdk::access_rules::AccessRulesObject;
 use native_sdk::metadata::Metadata;
@@ -33,8 +32,8 @@ pub struct ValidatorSubstate {
 
     pub unstake_nft: ResourceAddress,
     pub liquidity_token: ResourceAddress,
-    pub stake_xrd_vault_id: VaultId,
-    pub pending_xrd_withdraw_vault_id: VaultId,
+    pub stake_xrd_vault_id: ObjectId,
+    pub pending_xrd_withdraw_vault_id: ObjectId,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -481,7 +480,7 @@ impl ValidatorCreator {
         api: &mut Y,
     ) -> Result<(ResourceAddress, Bucket), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let mut liquidity_token_auth = BTreeMap::new();
         let non_fungible_id =
@@ -515,7 +514,7 @@ impl ValidatorCreator {
 
     fn create_liquidity_token<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let mut liquidity_token_auth = BTreeMap::new();
         let non_fungible_local_id =
@@ -544,7 +543,7 @@ impl ValidatorCreator {
 
     fn create_unstake_nft<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let mut unstake_token_auth = BTreeMap::new();
         let non_fungible_local_id =
@@ -640,9 +639,8 @@ impl ValidatorCreator {
         api: &mut Y,
     ) -> Result<(ComponentAddress, Bucket), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let node_id = api.kernel_allocate_node_id(RENodeType::Validator)?;
         let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalValidator)?;
         let address: ComponentAddress = global_node_id.into();
         let initial_liquidity_amount = initial_stake.sys_amount(api)?;
@@ -653,7 +651,7 @@ impl ValidatorCreator {
         let (liquidity_token, liquidity_bucket) =
             Self::create_liquidity_token_with_initial_amount(initial_liquidity_amount, api)?;
 
-        let node = RENodeInit::Validator(ValidatorSubstate {
+        let substate = ValidatorSubstate {
             manager,
             key,
             address,
@@ -662,23 +660,26 @@ impl ValidatorCreator {
             stake_xrd_vault_id: stake_vault.0,
             pending_xrd_withdraw_vault_id: unstake_vault.0,
             is_registered,
-        });
+        };
 
-        api.kernel_create_node(node_id, node, BTreeMap::new())?;
+        let validator_id = api.new_object(
+            VALIDATOR_BLUEPRINT,
+            vec![scrypto_encode(&substate).unwrap()],
+        )?;
 
         let access_rules = Self::build_access_rules(owner_access_rule);
         let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
-        let metadata = Metadata::sys_new(api)?;
+        let metadata = Metadata::sys_create(api)?;
 
         let address = api.globalize_with_address(
-            node_id,
+            RENodeId::Object(validator_id),
             btreemap!(
-                NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
-                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
+                NodeModuleId::AccessRules => access_rules.id(),
+                NodeModuleId::Metadata => metadata.id(),
             ),
             address.into(),
         )?;
-        Ok((address, liquidity_bucket))
+        Ok((address.into(), liquidity_bucket))
     }
 
     pub fn create<Y>(
@@ -689,9 +690,8 @@ impl ValidatorCreator {
         api: &mut Y,
     ) -> Result<ComponentAddress, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let node_id = api.kernel_allocate_node_id(RENodeType::Validator)?;
         let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalValidator)?;
         let address: ComponentAddress = global_node_id.into();
         let stake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
@@ -699,7 +699,7 @@ impl ValidatorCreator {
         let unstake_nft = Self::create_unstake_nft(api)?;
         let liquidity_token = Self::create_liquidity_token(api)?;
 
-        let node = RENodeInit::Validator(ValidatorSubstate {
+        let substate = ValidatorSubstate {
             manager,
             key,
             address,
@@ -708,22 +708,25 @@ impl ValidatorCreator {
             stake_xrd_vault_id: stake_vault.0,
             pending_xrd_withdraw_vault_id: unstake_vault.0,
             is_registered,
-        });
+        };
 
-        api.kernel_create_node(node_id, node, BTreeMap::new())?;
+        let validator_id = api.new_object(
+            VALIDATOR_BLUEPRINT,
+            vec![scrypto_encode(&substate).unwrap()],
+        )?;
 
         let access_rules = Self::build_access_rules(owner_access_rule);
         let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
-        let metadata = Metadata::sys_new(api)?;
+        let metadata = Metadata::sys_create(api)?;
 
         let address = api.globalize_with_address(
-            node_id,
+            RENodeId::Object(validator_id),
             btreemap!(
-                NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
-                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
+                NodeModuleId::AccessRules => access_rules.id(),
+                NodeModuleId::Metadata => metadata.id(),
             ),
             address.into(),
         )?;
-        Ok(address)
+        Ok(address.into())
     }
 }

@@ -131,6 +131,7 @@ pub enum KernelError {
     RENodeNotFound(RENodeId),
 
     InvalidScryptoFnOutput,
+    InvalidDirectAccess,
 
     // ID allocation
     IdAllocationError(IdAllocationError),
@@ -151,7 +152,7 @@ pub enum KernelError {
 
     // Substate Constraints
     InvalidOffset(SubstateOffset),
-    InvalidOwnership(SubstateOffset, RENodeId),
+    InvalidOwnership(SubstateOffset, PackageAddress, String),
     InvalidOverwrite,
     InvalidId(RENodeId),
 
@@ -160,10 +161,8 @@ pub enum KernelError {
         mode: ExecutionMode,
         actor: Actor,
         node_id: RENodeId,
-    },
-    InvalidCreateNodeAccess {
-        mode: ExecutionMode,
-        actor: Actor,
+        package_address: PackageAddress,
+        blueprint_name: String,
     },
     InvalidSubstateAccess {
         mode: ExecutionMode,
@@ -203,9 +202,19 @@ pub enum SystemError {
     InvalidLockFlags,
     CannotGlobalize,
     InvalidModule,
+    SubstateDecodeNotMatchSchema(DecodeError),
+    ObjectDoesNotMatchSchema,
+    BlueprintNotFound,
+    InvalidScryptoValue(DecodeError),
     InvalidAccessRules(DecodeError),
     InvalidMetadata(DecodeError),
     InvalidRoyaltyConfig(DecodeError),
+    InvalidModuleType {
+        expected_package: PackageAddress,
+        expected_blueprint: String,
+        actual_package: PackageAddress,
+        actual_blueprint: String,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

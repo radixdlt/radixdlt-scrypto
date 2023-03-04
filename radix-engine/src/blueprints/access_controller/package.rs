@@ -3,7 +3,6 @@ use super::state_machine::*;
 use crate::errors::{ApplicationError, InterpreterError, RuntimeError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
-use crate::system::node::RENodeInit;
 use native_sdk::access_rules::AccessRulesObject;
 use native_sdk::metadata::Metadata;
 use native_sdk::resource::{SysBucket, Vault};
@@ -20,12 +19,12 @@ use radix_engine_interface::data::{
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::*;
 use radix_engine_interface::{api::*, rule};
-use sbor::rust::collections::BTreeMap;
+use sbor::rust::vec;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct AccessControllerSubstate {
     /// A vault where the asset controlled by the access controller lives.
-    pub controlled_asset: VaultId,
+    pub controlled_asset: ObjectId,
 
     /// The amount of time (in minutes) that it takes for timed recovery to be done. Maximum is
     /// 4,294,967,295 minutes which is 8171.5511700913 years. When this is [`None`], then timed
@@ -41,7 +40,7 @@ pub struct AccessControllerSubstate {
 }
 
 impl AccessControllerSubstate {
-    pub fn new(controlled_asset: VaultId, timed_recovery_delay_in_minutes: Option<u32>) -> Self {
+    pub fn new(controlled_asset: ObjectId, timed_recovery_delay_in_minutes: Option<u32>) -> Self {
         Self {
             controlled_asset,
             timed_recovery_delay_in_minutes,
@@ -238,7 +237,7 @@ impl AccessControllerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: AccessControllerCreateGlobalInput =
@@ -256,26 +255,23 @@ impl AccessControllerNativePackage {
             vault
         };
 
-        // Constructing the Access Controller RENode and Substates
-        let access_controller = RENodeInit::AccessController(AccessControllerSubstate::new(
-            vault.0,
-            input.timed_recovery_delay_in_minutes,
-        ));
-
-        // Allocating an RENodeId and creating the access controller RENode
-        let node_id = api.kernel_allocate_node_id(RENodeType::AccessController)?;
-        api.kernel_create_node(node_id, access_controller, BTreeMap::new())?;
+        let substate =
+            AccessControllerSubstate::new(vault.0, input.timed_recovery_delay_in_minutes);
+        let object_id = api.new_object(
+            ACCESS_CONTROLLER_BLUEPRINT,
+            vec![scrypto_encode(&substate).unwrap()],
+        )?;
 
         let access_rules = access_rules_from_rule_set(input.rule_set);
         let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
-        let metadata = Metadata::sys_new(api)?;
+        let metadata = Metadata::sys_create(api)?;
 
         // Creating a global component address for the access controller RENode
         let address = api.globalize(
-            node_id,
+            RENodeId::Object(object_id),
             btreemap!(
-                NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
-                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
+                NodeModuleId::AccessRules => access_rules.id(),
+                NodeModuleId::Metadata => metadata.id(),
             ),
         )?;
 

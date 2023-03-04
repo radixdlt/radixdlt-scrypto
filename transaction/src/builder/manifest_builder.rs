@@ -1,5 +1,4 @@
 use radix_engine_interface::abi::*;
-use radix_engine_interface::api::types::VaultId;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::access_controller::{
     RuleSet, ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
@@ -727,7 +726,7 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn recall(&mut self, vault_id: VaultId, amount: Decimal) -> &mut Self {
+    pub fn recall(&mut self, vault_id: ObjectId, amount: Decimal) -> &mut Self {
         self.add_instruction(Instruction::RecallResource { vault_id, amount });
         self
     }

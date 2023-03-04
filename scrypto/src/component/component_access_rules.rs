@@ -6,9 +6,9 @@ use radix_engine_interface::api::node_modules::auth::{
     ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT, ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
 };
 use radix_engine_interface::api::types::{
-    ComponentAddress, ComponentId, NodeModuleId, RENodeId, ToString,
+    ComponentAddress, NodeModuleId, ObjectId, RENodeId, ToString,
 };
-use radix_engine_interface::api::ClientComponentApi;
+use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::{AccessRule, AccessRuleEntry, MethodKey};
 use radix_engine_interface::data::scrypto_encode;
 
@@ -65,12 +65,12 @@ impl ComponentAccessRules {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, LegacyDescribe)]
 pub enum ComponentIdentifier {
-    RENodeId(ComponentId),
+    RENodeId(ObjectId),
     Address(ComponentAddress),
 }
 
-impl From<ComponentId> for ComponentIdentifier {
-    fn from(value: ComponentId) -> Self {
+impl From<ObjectId> for ComponentIdentifier {
+    fn from(value: ObjectId) -> Self {
         ComponentIdentifier::RENodeId(value)
     }
 }
@@ -84,7 +84,7 @@ impl From<ComponentAddress> for ComponentIdentifier {
 impl From<ComponentIdentifier> for RENodeId {
     fn from(value: ComponentIdentifier) -> Self {
         match value {
-            ComponentIdentifier::RENodeId(node_id) => RENodeId::Component(node_id),
+            ComponentIdentifier::RENodeId(node_id) => RENodeId::Object(node_id),
             ComponentIdentifier::Address(component_address) => {
                 RENodeId::GlobalComponent(component_address)
             }

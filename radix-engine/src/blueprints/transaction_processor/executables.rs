@@ -6,7 +6,8 @@ use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{
     ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, TemporaryResolvedInvocation,
 };
-use crate::system::node::RENodeInit;
+use crate::system::node::{RENodeInit, RENodeModuleInit};
+use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::package::PackageError;
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -25,7 +26,7 @@ use radix_engine_interface::api::node_modules::royalty::{
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::api::ClientComponentApi;
+use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{IndexedScryptoValue, ScryptoValue};
 use sbor::rust::borrow::Cow;
@@ -127,7 +128,7 @@ fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFra
             // TODO: This needs to be cleaned up
             // TODO: How does this relate to newly created vaults in the transaction frame?
             // TODO: Will probably want different spacing for refed vs. owned nodes
-            update.add_ref(RENodeId::Vault(*vault_id));
+            update.add_ref(RENodeId::Object(*vault_id));
         }
 
         Instruction::SetPackageRoyaltyConfig {
@@ -311,7 +312,13 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
         api.kernel_create_node(
             worktop_node_id,
             RENodeInit::Worktop(WorktopSubstate::new()),
-            BTreeMap::new(),
+            btreemap!(
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                    package_address: RESOURCE_MANAGER_PACKAGE,
+                    blueprint_name: WORKTOP_BLUEPRINT.to_string(),
+                    global: false,
+                })
+            ),
         )?;
 
         let instructions: Vec<Instruction> = manifest_decode(&self.instructions).unwrap();
@@ -593,7 +600,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 }
                 Instruction::RecallResource { vault_id, amount } => {
                     let rtn = api.call_method(
-                        RENodeId::Vault(vault_id),
+                        RENodeId::Object(vault_id),
                         VAULT_RECALL_IDENT,
                         scrypto_encode(&VaultRecallInput { amount }).unwrap(),
                     )?;
@@ -759,8 +766,8 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 }
 
 struct TransactionProcessor<'blob> {
-    proof_id_mapping: HashMap<ManifestProof, ProofId>,
-    bucket_id_mapping: HashMap<ManifestBucket, BucketId>,
+    proof_id_mapping: HashMap<ManifestProof, ObjectId>,
+    bucket_id_mapping: HashMap<ManifestBucket, ObjectId>,
     id_allocator: ManifestIdAllocator,
     blobs_by_hash: HashMap<Hash, &'blob Vec<u8>>,
 }
@@ -862,12 +869,14 @@ impl<'blob> TransactionProcessor<'blob> {
     {
         // Auto move into worktop & auth_zone
         for owned_node in value.owned_node_ids() {
-            match owned_node {
-                RENodeId::Bucket(bucket_id) => {
-                    Worktop::sys_put(Bucket(*bucket_id), api)?;
+            let (package_address, blueprint) = api.get_object_type_info(*owned_node)?;
+            match (package_address, blueprint.as_str()) {
+                (RESOURCE_MANAGER_PACKAGE, BUCKET_BLUEPRINT) => {
+                    let bucket = Bucket(owned_node.clone().into());
+                    Worktop::sys_put(bucket, api)?;
                 }
-                RENodeId::Proof(proof_id) => {
-                    let proof = Proof(*proof_id);
+                (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
+                    let proof = Proof(owned_node.clone().into());
                     ComponentAuthZone::sys_push(proof, api)?;
                 }
                 _ => {}
@@ -882,7 +891,7 @@ impl<'blob> TransactionProcessor<'blob> {
         env: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: ClientComponentApi<RuntimeError>,
+        Y: ClientObjectApi<RuntimeError>,
     {
         let should_skip_assertion = request.skip_assertion;
         match &request.validation {

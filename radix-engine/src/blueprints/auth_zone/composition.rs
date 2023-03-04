@@ -2,6 +2,7 @@ use crate::blueprints::resource::*;
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::node::RENodeInit;
+use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::ClientApi;
@@ -25,8 +26,14 @@ pub enum ComposedProof {
 impl From<ComposedProof> for RENodeInit {
     fn from(value: ComposedProof) -> Self {
         match value {
-            ComposedProof::Fungible(info, proof) => RENodeInit::FungibleProof(info, proof),
-            ComposedProof::NonFungible(info, proof) => RENodeInit::NonFungibleProof(info, proof),
+            ComposedProof::Fungible(info, proof) => RENodeInit::Object(btreemap!(
+                SubstateOffset::Proof(ProofOffset::Info) => RuntimeSubstate::ProofInfo(info),
+                SubstateOffset::Proof(ProofOffset::Fungible) => RuntimeSubstate::FungibleProof(proof),
+            )),
+            ComposedProof::NonFungible(info, proof) => RENodeInit::Object(btreemap!(
+                SubstateOffset::Proof(ProofOffset::Info) => RuntimeSubstate::ProofInfo(info),
+                SubstateOffset::Proof(ProofOffset::NonFungible) => RuntimeSubstate::NonFungibleProof(proof),
+            )),
         }
     }
 }
@@ -139,7 +146,7 @@ fn max_amount_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
     let mut max = BTreeMap::<LocalRef, Decimal>::new();
     for proof in proofs {
         let handle = api.sys_lock_substate(
-            RENodeId::Proof(proof.0),
+            RENodeId::Object(proof.0),
             SubstateOffset::Proof(ProofOffset::Info),
             LockFlags::read_only(),
         )?;
@@ -148,7 +155,7 @@ fn max_amount_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
             api.sys_drop_lock(handle)?;
 
             let handle = api.sys_lock_substate(
-                RENodeId::Proof(proof.0),
+                RENodeId::Object(proof.0),
                 SubstateOffset::Proof(ProofOffset::Fungible),
                 LockFlags::read_only(),
             )?;
@@ -189,7 +196,7 @@ fn max_ids_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
     let mut max = HashMap::<LocalRef, BTreeSet<NonFungibleLocalId>>::new();
     for proof in proofs {
         let handle = api.sys_lock_substate(
-            RENodeId::Proof(proof.0),
+            RENodeId::Object(proof.0),
             SubstateOffset::Proof(ProofOffset::Info),
             LockFlags::read_only(),
         )?;
@@ -198,7 +205,7 @@ fn max_ids_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
             api.sys_drop_lock(handle)?;
 
             let handle = api.sys_lock_substate(
-                RENodeId::Proof(proof.0),
+                RENodeId::Object(proof.0),
                 SubstateOffset::Proof(ProofOffset::NonFungible),
                 LockFlags::read_only(),
             )?;
@@ -246,7 +253,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
     let mut remaining = amount.clone();
     'outer: for proof in proofs {
         let handle = api.sys_lock_substate(
-            RENodeId::Proof(proof.0),
+            RENodeId::Object(proof.0),
             SubstateOffset::Proof(ProofOffset::Fungible),
             LockFlags::read_only(),
         )?;
@@ -329,7 +336,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
     let mut remaining = ids.clone();
     'outer: for proof in proofs {
         let handle = api.sys_lock_substate(
-            RENodeId::Proof(proof.0),
+            RENodeId::Object(proof.0),
             SubstateOffset::Proof(ProofOffset::NonFungible),
             LockFlags::read_only(),
         )?;

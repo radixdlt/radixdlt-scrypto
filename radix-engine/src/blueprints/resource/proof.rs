@@ -1,6 +1,5 @@
 use crate::errors::{ApplicationError, InterpreterError, RuntimeError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::node::RENodeInit;
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{ProofOffset, RENodeId, SubstateOffset};
@@ -11,15 +10,15 @@ use radix_engine_interface::data::ScryptoValue;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, ScryptoSbor)]
 pub enum LocalRef {
-    Bucket(BucketId),
-    Vault(VaultId),
+    Bucket(ObjectId),
+    Vault(ObjectId),
 }
 
 impl LocalRef {
     pub fn to_re_node_id(&self) -> RENodeId {
         match self {
-            LocalRef::Bucket(id) => RENodeId::Bucket(id.clone()),
-            LocalRef::Vault(id) => RENodeId::Vault(id.clone()),
+            LocalRef::Bucket(id) => RENodeId::Object(id.clone()),
+            LocalRef::Vault(id) => RENodeId::Object(id.clone()),
         }
     }
 }
@@ -70,7 +69,7 @@ impl ProofInfoSubstate {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct FungibleProof {
     pub total_locked: Decimal,
     /// The supporting containers.
@@ -131,7 +130,7 @@ impl FungibleProof {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct NonFungibleProof {
     /// The total locked amount or non-fungible ids.
     pub total_locked: BTreeSet<NonFungibleLocalId>,
@@ -224,13 +223,15 @@ impl ProofBlueprint {
             let clone = proof.clone_proof(api)?;
             api.sys_drop_lock(handle)?;
 
-            let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
-            api.kernel_create_node(
-                node_id,
-                RENodeInit::FungibleProof(proof_info, clone),
-                BTreeMap::new(),
+            let proof_id = api.new_object(
+                PROOF_BLUEPRINT,
+                vec![
+                    scrypto_encode(&proof_info).unwrap(),
+                    scrypto_encode(&clone).unwrap(),
+                ],
             )?;
-            node_id
+
+            RENodeId::Object(proof_id)
         } else {
             let handle = api.sys_lock_substate(
                 receiver,
@@ -242,13 +243,15 @@ impl ProofBlueprint {
             let clone = proof.clone_proof(api)?;
             api.sys_drop_lock(handle)?;
 
-            let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
-            api.kernel_create_node(
-                node_id,
-                RENodeInit::NonFungibleProof(proof_info, clone),
-                BTreeMap::new(),
+            let proof_id = api.new_object(
+                PROOF_BLUEPRINT,
+                vec![
+                    scrypto_encode(&proof_info).unwrap(),
+                    scrypto_encode(&clone).unwrap(),
+                ],
             )?;
-            node_id
+
+            RENodeId::Object(proof_id)
         };
 
         let proof_id = node_id.into();
@@ -345,7 +348,7 @@ impl ProofBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let mut heap_node = api.kernel_drop_node(RENodeId::Proof(proof.0))?;
+        let mut heap_node = api.kernel_drop_node(RENodeId::Object(proof.0))?;
         let proof_info: ProofInfoSubstate = heap_node
             .substates
             .remove(&(NodeModuleId::SELF, SubstateOffset::Proof(ProofOffset::Info)))

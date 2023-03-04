@@ -6,7 +6,7 @@ use radix_engine_interface::api::node_modules::metadata::{
     MetadataGetInput, MetadataSetInput, METADATA_GET_IDENT, METADATA_SET_IDENT,
 };
 use radix_engine_interface::api::types::{NodeModuleId, RENodeId};
-use radix_engine_interface::api::ClientComponentApi;
+use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::math::Decimal;

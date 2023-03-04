@@ -39,6 +39,11 @@ fn test_bucket_internal(method_name: &str, args: Vec<u8>, expect_success: bool) 
 }
 
 #[test]
+fn test_drop_bucket() {
+    test_bucket_internal("drop_bucket", manifest_args!(), false);
+}
+
+#[test]
 fn test_bucket_drop_empty() {
     test_bucket_internal("drop_empty", manifest_args!(0u32), true);
 }

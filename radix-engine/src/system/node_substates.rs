@@ -1416,7 +1416,7 @@ impl<'a> SubstateRef<'a> {
                 let nodes = worktop
                     .resources
                     .values()
-                    .map(|o| RENodeId::Bucket(o.bucket_id()))
+                    .map(|o| RENodeId::Object(o.bucket_id()))
                     .collect();
                 (HashSet::new(), nodes)
             }
@@ -1478,8 +1478,8 @@ impl<'a> SubstateRef<'a> {
                 references.insert(RENodeId::GlobalComponent(substate.address));
                 references.insert(RENodeId::GlobalResourceManager(substate.unstake_nft));
                 references.insert(RENodeId::GlobalResourceManager(substate.liquidity_token));
-                owned_nodes.push(RENodeId::Vault(substate.stake_xrd_vault_id));
-                owned_nodes.push(RENodeId::Vault(substate.pending_xrd_withdraw_vault_id));
+                owned_nodes.push(RENodeId::Object(substate.stake_xrd_vault_id));
+                owned_nodes.push(RENodeId::Object(substate.pending_xrd_withdraw_vault_id));
                 (references, owned_nodes)
             }
             SubstateRef::MethodAccessRules(substate) => {
@@ -1488,12 +1488,12 @@ impl<'a> SubstateRef<'a> {
             }
             SubstateRef::AccessController(substate) => {
                 let mut owned_nodes = Vec::new();
-                owned_nodes.push(RENodeId::Vault(substate.controlled_asset));
+                owned_nodes.push(RENodeId::Object(substate.controlled_asset));
                 (HashSet::new(), owned_nodes)
             }
             SubstateRef::PackageRoyaltyAccumulator(substate) => {
                 let mut owned_nodes = Vec::new();
-                owned_nodes.push(RENodeId::Vault(substate.royalty.vault_id()));
+                owned_nodes.push(RENodeId::Object(substate.royalty.vault_id()));
                 (HashSet::new(), owned_nodes)
             }
             SubstateRef::ComponentState(substate) => {
@@ -1504,7 +1504,7 @@ impl<'a> SubstateRef<'a> {
             }
             SubstateRef::ComponentRoyaltyAccumulator(substate) => {
                 let mut owned_nodes = Vec::new();
-                owned_nodes.push(RENodeId::Vault(substate.royalty.vault_id()));
+                owned_nodes.push(RENodeId::Object(substate.royalty.vault_id()));
                 (HashSet::new(), owned_nodes)
             }
             SubstateRef::KeyValueStoreEntry(substate) => {
@@ -1532,7 +1532,7 @@ impl<'a> SubstateRef<'a> {
             SubstateRef::AuthZoneStack(substate) => {
                 let mut owned_nodes = Vec::new();
                 for p in substate.all_proofs() {
-                    owned_nodes.push(RENodeId::Proof(p.0));
+                    owned_nodes.push(RENodeId::Object(p.0));
                 }
                 (HashSet::new(), owned_nodes)
             }

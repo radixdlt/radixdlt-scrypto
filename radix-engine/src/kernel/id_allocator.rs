@@ -2,8 +2,7 @@ use crate::errors::{IdAllocationError, KernelError, RuntimeError};
 use radix_engine_interface::address::EntityType;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
-    AccessControllerId, BucketId, ComponentId, KeyValueStoreId, NonFungibleStoreId, ProofId,
-    RENodeId, RENodeType, ValidatorId, VaultId,
+    KeyValueStoreId, NonFungibleStoreId, ObjectId, RENodeId, RENodeType,
 };
 use radix_engine_interface::crypto::{hash, Hash};
 use sbor::rust::collections::{BTreeMap, BTreeSet};
@@ -71,28 +70,15 @@ impl IdAllocator {
     pub fn allocate_node_id(&mut self, node_type: RENodeType) -> Result<RENodeId, RuntimeError> {
         let node_id = match node_type {
             RENodeType::AuthZoneStack => Ok(RENodeId::AuthZoneStack),
-            RENodeType::Bucket => self.new_bucket_id().map(|id| RENodeId::Bucket(id)),
-            RENodeType::Proof => self.new_proof_id().map(|id| RENodeId::Proof(id)),
             RENodeType::TransactionRuntime => Ok(RENodeId::TransactionRuntime),
             RENodeType::Worktop => Ok(RENodeId::Worktop),
-            RENodeType::Vault => self.new_vault_id().map(|id| RENodeId::Vault(id)),
             RENodeType::KeyValueStore => {
                 self.new_kv_store_id().map(|id| RENodeId::KeyValueStore(id))
             }
             RENodeType::NonFungibleStore => self
                 .new_nf_store_id()
                 .map(|id| RENodeId::NonFungibleStore(id)),
-            RENodeType::Component => self.new_component_id().map(|id| RENodeId::Component(id)),
-            RENodeType::EpochManager => {
-                self.new_component_id().map(|id| RENodeId::EpochManager(id))
-            }
-            RENodeType::Validator => self.new_validator_id().map(|id| RENodeId::Validator(id)),
-            RENodeType::Clock => self.new_component_id().map(|id| RENodeId::Clock(id)),
-            RENodeType::AccessController => self
-                .new_access_controller_id()
-                .map(|id| RENodeId::AccessController(id)),
-            RENodeType::Identity => self.new_component_id().map(|id| RENodeId::Identity(id)),
-            RENodeType::Account => self.new_component_id().map(|id| RENodeId::Account(id)),
+            RENodeType::Object => self.new_object_id().map(|id| RENodeId::Object(id)),
             RENodeType::GlobalPackage => self
                 .new_package_address()
                 .map(|address| RENodeId::GlobalPackage(address)),
@@ -101,9 +87,6 @@ impl IdAllocator {
                 .map(|address| RENodeId::GlobalComponent(address)),
             RENodeType::GlobalValidator => self
                 .new_validator_address()
-                .map(|address| RENodeId::GlobalComponent(address)),
-            RENodeType::GlobalClock => self
-                .new_clock_address()
                 .map(|address| RENodeId::GlobalComponent(address)),
             RENodeType::GlobalResourceManager => self
                 .new_resource_address()
@@ -232,26 +215,7 @@ impl IdAllocator {
         Ok(ResourceAddress::Normal(hash(data).lower_26_bytes()))
     }
 
-    /// Creates a new bucket ID.
-    pub fn new_bucket_id(&mut self) -> Result<BucketId, IdAllocationError> {
-        self.next_id()
-    }
-
-    /// Creates a new proof ID.
-    pub fn new_proof_id(&mut self) -> Result<ProofId, IdAllocationError> {
-        self.next_id()
-    }
-
-    /// Creates a new vault ID.
-    pub fn new_vault_id(&mut self) -> Result<VaultId, IdAllocationError> {
-        self.next_id()
-    }
-
-    pub fn new_component_id(&mut self) -> Result<ComponentId, IdAllocationError> {
-        self.next_id()
-    }
-
-    pub fn new_validator_id(&mut self) -> Result<ValidatorId, IdAllocationError> {
+    pub fn new_object_id(&mut self) -> Result<ObjectId, IdAllocationError> {
         self.next_id()
     }
 
@@ -262,10 +226,6 @@ impl IdAllocator {
 
     /// Creates a new non-fungible store ID.
     pub fn new_nf_store_id(&mut self) -> Result<NonFungibleStoreId, IdAllocationError> {
-        self.next_id()
-    }
-
-    pub fn new_access_controller_id(&mut self) -> Result<AccessControllerId, IdAllocationError> {
         self.next_id()
     }
 }

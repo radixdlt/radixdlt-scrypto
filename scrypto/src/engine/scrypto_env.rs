@@ -2,7 +2,7 @@ use crate::engine::wasm_api::*;
 use radix_engine_interface::api::package::{PackageCodeSubstate, PackageInfoSubstate};
 use radix_engine_interface::api::{types::*, ClientEventApi, ClientLoggerApi, LockFlags};
 use radix_engine_interface::api::{
-    ClientActorApi, ClientComponentApi, ClientNodeApi, ClientPackageApi, ClientSubstateApi,
+    ClientActorApi, ClientNodeApi, ClientObjectApi, ClientPackageApi, ClientSubstateApi,
 };
 use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::blueprints::resource::AccessRules;
@@ -20,12 +20,12 @@ pub enum ClientApiError {
 
 pub struct ScryptoEnv;
 
-impl ClientComponentApi<ClientApiError> for ScryptoEnv {
-    fn new_component(
+impl ClientObjectApi<ClientApiError> for ScryptoEnv {
+    fn new_object(
         &mut self,
         blueprint_ident: &str,
-        app_states: BTreeMap<u8, Vec<u8>>,
-    ) -> Result<ComponentId, ClientApiError> {
+        app_states: Vec<Vec<u8>>,
+    ) -> Result<ObjectId, ClientApiError> {
         let app_states = scrypto_encode(&app_states).unwrap();
 
         let bytes = copy_buffer(unsafe {
@@ -42,8 +42,8 @@ impl ClientComponentApi<ClientApiError> for ScryptoEnv {
     fn globalize(
         &mut self,
         node_id: RENodeId,
-        modules: BTreeMap<NodeModuleId, Vec<u8>>,
-    ) -> Result<ComponentAddress, ClientApiError> {
+        modules: BTreeMap<NodeModuleId, ObjectId>,
+    ) -> Result<Address, ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
         let modules = scrypto_encode(&modules).unwrap();
 
@@ -61,9 +61,9 @@ impl ClientComponentApi<ClientApiError> for ScryptoEnv {
     fn globalize_with_address(
         &mut self,
         node_id: RENodeId,
-        modules: BTreeMap<NodeModuleId, Vec<u8>>,
+        modules: BTreeMap<NodeModuleId, ObjectId>,
         address: Address,
-    ) -> Result<ComponentAddress, ClientApiError> {
+    ) -> Result<Address, ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
         let modules = scrypto_encode(&modules).unwrap();
         let address = scrypto_encode(&address).unwrap();
@@ -114,7 +114,7 @@ impl ClientComponentApi<ClientApiError> for ScryptoEnv {
         Ok(return_data)
     }
 
-    fn get_component_type_info(
+    fn get_object_type_info(
         &mut self,
         node_id: RENodeId,
     ) -> Result<(PackageAddress, String), ClientApiError> {

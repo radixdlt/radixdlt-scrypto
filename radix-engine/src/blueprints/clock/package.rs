@@ -1,7 +1,6 @@
 use crate::errors::{InterpreterError, RuntimeError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE};
-use crate::system::node::RENodeInit;
 use crate::types::*;
 use native_sdk::access_rules::AccessRulesObject;
 use native_sdk::metadata::Metadata;
@@ -93,19 +92,18 @@ impl ClockNativePackage {
 
     fn create<Y>(input: ScryptoValue, api: &mut Y) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: ClockCreateInput = scrypto_decode(&scrypto_encode(&input).unwrap())
             .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
 
-        let node_id = api.kernel_allocate_node_id(RENodeType::Clock)?;
-        api.kernel_create_node(
-            node_id,
-            RENodeInit::Clock(CurrentTimeRoundedToMinutesSubstate {
+        let clock_id = api.new_object(
+            CLOCK_BLUEPRINT,
+            vec![scrypto_encode(&CurrentTimeRoundedToMinutesSubstate {
                 current_time_rounded_to_minutes_ms: 0,
-            }),
-            BTreeMap::new(),
+            })
+            .unwrap()],
         )?;
 
         let mut access_rules = AccessRules::new();
@@ -124,19 +122,18 @@ impl ClockNativePackage {
             ),
             rule!(allow_all),
         );
-
         let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
-        let metadata = Metadata::sys_new(api)?;
-
+        let metadata = Metadata::sys_create(api)?;
         let address = ComponentAddress::Clock(input.component_address);
         api.globalize_with_address(
-            node_id,
+            RENodeId::Object(clock_id),
             btreemap!(
-                NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
-                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
+                NodeModuleId::AccessRules => access_rules.id(),
+                NodeModuleId::Metadata => metadata.id(),
             ),
             address.into(),
         )?;
+
         Ok(IndexedScryptoValue::from_typed(&address))
     }
 

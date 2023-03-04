@@ -7,41 +7,25 @@ use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::node::{RENodeInit, RENodeModuleInit};
-use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_properties::VisibilityProperties;
-use crate::system::node_substates::{SubstateRef, SubstateRefMut};
+use crate::system::node_substates::{RuntimeSubstate, SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::access_rules::AccessRulesObject;
 use native_sdk::metadata::Metadata;
-use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
-use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
-use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
-use radix_engine_interface::api::package::{PackageCodeSubstate, PACKAGE_LOADER_BLUEPRINT};
+use radix_engine_interface::api::package::PackageCodeSubstate;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::{ClientComponentApi, ClientPackageApi};
+use radix_engine_interface::api::{ClientObjectApi, ClientPackageApi};
 // TODO: clean this up!
 use crate::kernel::kernel_api::TemporaryResolvedInvocation;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine_interface::api::types::{
     LockHandle, ProofOffset, RENodeId, SubstateId, SubstateOffset,
 };
-use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLUEPRINT;
 use radix_engine_interface::blueprints::account::{
     ACCOUNT_BLUEPRINT, ACCOUNT_DEPOSIT_BATCH_IDENT, ACCOUNT_DEPOSIT_IDENT,
 };
-use radix_engine_interface::blueprints::auth_zone::AUTH_ZONE_BLUEPRINT;
-use radix_engine_interface::blueprints::clock::CLOCK_BLUEPRINT;
-use radix_engine_interface::blueprints::epoch_manager::{
-    EPOCH_MANAGER_BLUEPRINT, VALIDATOR_BLUEPRINT,
-};
-use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
-use radix_engine_interface::blueprints::resource::{
-    require, AccessRule, AccessRules, LiquidFungibleResource, LiquidNonFungibleResource, MethodKey,
-    Proof, ProofDropInput, ResourceType, BUCKET_BLUEPRINT, PROOF_BLUEPRINT, PROOF_DROP_IDENT,
-    RESOURCE_MANAGER_BLUEPRINT, VAULT_BLUEPRINT, WORKTOP_BLUEPRINT,
-};
-use radix_engine_interface::blueprints::transaction_runtime::TRANSACTION_RUNTIME_BLUEPRINT;
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use sbor::rust::mem;
 
@@ -154,7 +138,6 @@ where
             RENodeVisibilityOrigin::Normal,
         );
 
-        // TODO: Replace with trusted IndexedScryptoValue
         let access_rule = rule!(require(non_fungible_global_id));
         let component_id = {
             let kv_store_id = {
@@ -165,19 +148,22 @@ where
             };
 
             let node_id = {
-                let mut node_modules = BTreeMap::new();
-                node_modules.insert(
-                    NodeModuleId::Metadata,
-                    RENodeModuleInit::Metadata(MetadataSubstate {
-                        metadata: BTreeMap::new(),
-                    }),
+                let node_modules = btreemap!(
+                    NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                        package_address: ACCOUNT_PACKAGE,
+                        blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
+                        global: false
+                    })
                 );
+
                 let account_substate = AccountSubstate {
                     vaults: Own::KeyValueStore(kv_store_id.into()),
                 };
 
-                let node_id = self.kernel_allocate_node_id(RENodeType::Account)?;
-                let node = RENodeInit::Account(account_substate);
+                let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
+                let node = RENodeInit::Object(btreemap!(
+                    SubstateOffset::Account(AccountOffset::Account) => RuntimeSubstate::Account(account_substate)
+                ));
                 self.kernel_create_node(node_id, node, node_modules)?;
                 node_id
             };
@@ -201,13 +187,13 @@ where
 
         let access_rules = AccessRulesObject::sys_new(access_rules, self)?;
 
-        let metadata = Metadata::sys_new(self)?;
+        let metadata = Metadata::sys_create(self)?;
 
         self.globalize_with_address(
             component_id,
             btreemap!(
-                NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
-                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
+                NodeModuleId::AccessRules => access_rules.id(),
+                NodeModuleId::Metadata => metadata.id(),
             ),
             global_node_id.into(),
         )?;
@@ -231,16 +217,16 @@ where
         );
 
         let access_rule = rule!(require(non_fungible_global_id));
-        let (local_id, access_rules) = Identity::create(access_rule, self)?;
+        let (local_id, access_rules) = Identity::create_virtual(access_rule, self)?;
 
         let access_rules = AccessRulesObject::sys_new(access_rules, self)?;
-        let metadata = Metadata::sys_new(self)?;
+        let metadata = Metadata::sys_create(self)?;
 
         self.globalize_with_address(
             local_id,
             btreemap!(
-                NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
-                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
+                NodeModuleId::AccessRules => access_rules.id(),
+                NodeModuleId::Metadata => metadata.id(),
             ),
             global_node_id.into(),
         )?;
@@ -302,18 +288,10 @@ where
 
     fn drop_node_internal(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError> {
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::DropNode, |api| match node_id {
-            RENodeId::Proof(..)
-            | RENodeId::AuthZoneStack
+            RENodeId::AuthZoneStack
             | RENodeId::Worktop
             | RENodeId::TransactionRuntime
-            | RENodeId::Bucket(..)
-            | RENodeId::Clock(..)
-            | RENodeId::EpochManager(..)
-            | RENodeId::Account(..)
-            | RENodeId::Validator(..)
-            | RENodeId::Component(..)
-            | RENodeId::AccessController(..)
-            | RENodeId::Identity(..) => api.current_frame.remove_node(&mut api.heap, node_id),
+            | RENodeId::Object(..) => api.current_frame.remove_node(&mut api.heap, node_id),
             _ => Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
                 node_id,
             ))),
@@ -324,23 +302,29 @@ where
         let owned_nodes = self.current_frame.owned_nodes();
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AutoDrop, |api| {
             for node_id in owned_nodes {
-                match node_id {
-                    RENodeId::Proof(proof_id) => {
-                        api.call_function(
-                            RESOURCE_MANAGER_PACKAGE,
-                            PROOF_BLUEPRINT,
-                            PROOF_DROP_IDENT,
-                            scrypto_encode(&ProofDropInput {
-                                proof: Proof(proof_id),
-                            })
-                            .unwrap(),
-                        )?;
+                if let Ok((package_address, blueprint)) = api.get_object_type_info(node_id) {
+                    match (package_address, blueprint.as_str()) {
+                        (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
+                            api.call_function(
+                                RESOURCE_MANAGER_PACKAGE,
+                                PROOF_BLUEPRINT,
+                                PROOF_DROP_IDENT,
+                                scrypto_encode(&ProofDropInput {
+                                    proof: Proof(node_id.into()),
+                                })
+                                .unwrap(),
+                            )?;
+                        }
+                        _ => {
+                            return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
+                                node_id,
+                            )))
+                        }
                     }
-                    _ => {
-                        return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
-                            node_id,
-                        )))
-                    }
+                } else {
+                    return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
+                        node_id,
+                    )));
                 }
             }
 
@@ -570,18 +554,35 @@ where
                                 .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
                         }
                     }
-                    RENodeId::Vault(..) => {
+                    RENodeId::Object(..) => {
                         if self.current_frame.get_node_visibility(node_id).is_none() {
-                            let offset = SubstateOffset::Vault(VaultOffset::Info);
+                            let offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
                             self.track
                                 .acquire_lock(
-                                    SubstateId(*node_id, NodeModuleId::SELF, offset.clone()),
+                                    SubstateId(*node_id, NodeModuleId::TypeInfo, offset.clone()),
                                     LockFlags::read_only(),
                                 )
                                 .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
+
+                            let substate_ref =
+                                self.track
+                                    .get_substate(*node_id, NodeModuleId::TypeInfo, &offset);
+                            let type_substate: &TypeInfoSubstate = substate_ref.into();
+                            if !matches!(
+                                (
+                                    type_substate.package_address,
+                                    type_substate.blueprint_name.as_str()
+                                ),
+                                (RESOURCE_MANAGER_PACKAGE, VAULT_BLUEPRINT)
+                            ) {
+                                return Err(RuntimeError::KernelError(
+                                    KernelError::InvalidDirectAccess,
+                                ));
+                            }
+
                             self.track
                                 .release_lock(
-                                    SubstateId(*node_id, NodeModuleId::SELF, offset),
+                                    SubstateId(*node_id, NodeModuleId::TypeInfo, offset),
                                     false,
                                 )
                                 .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
@@ -635,13 +636,22 @@ where
         let current_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        if let Some(actor) = &self.current_frame.actor {
-            if !VisibilityProperties::check_drop_node_visibility(current_mode, actor, node_id) {
+        // TODO: Move this into the system layer
+        if let Some(actor) = self.current_frame.actor.clone() {
+            let (package_address, blueprint_name) = self.get_object_type_info(node_id)?;
+            if !VisibilityProperties::check_drop_node_visibility(
+                current_mode,
+                &actor,
+                package_address,
+                blueprint_name.as_str(),
+            ) {
                 return Err(RuntimeError::KernelError(
                     KernelError::InvalidDropNodeAccess {
                         mode: current_mode,
                         actor: actor.clone(),
                         node_id,
+                        package_address,
+                        blueprint_name,
                     },
                 ));
             }
@@ -667,225 +677,37 @@ where
     fn kernel_create_node(
         &mut self,
         node_id: RENodeId,
-        re_node: RENodeInit,
-        mut module_init: BTreeMap<NodeModuleId, RENodeModuleInit>,
+        init: RENodeInit,
+        module_init: BTreeMap<NodeModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError> {
-        KernelModuleMixer::before_create_node(self, &node_id, &re_node, &module_init)?;
+        KernelModuleMixer::before_create_node(self, &node_id, &init, &module_init)?;
 
         // Change to kernel mode
         let current_mode = self.execution_mode;
         self.execution_mode = ExecutionMode::Kernel;
 
-        if let Some(actor) = &self.current_frame.actor {
-            if !VisibilityProperties::check_create_node_access(
-                current_mode,
-                actor,
-                &re_node,
-                &module_init,
-            ) {
-                return Err(RuntimeError::KernelError(
-                    KernelError::InvalidCreateNodeAccess {
-                        mode: current_mode,
-                        actor: actor.clone(),
-                    },
-                ));
-            }
-        }
-
-        match (node_id, &re_node) {
-            (RENodeId::GlobalComponent(..), RENodeInit::GlobalComponent(..)) => {}
-            (RENodeId::Component(..), RENodeInit::Component(..)) => {}
+        match (node_id, &init) {
+            (RENodeId::GlobalComponent(..), RENodeInit::GlobalObject(..)) => {}
+            (RENodeId::GlobalResourceManager(..), RENodeInit::GlobalObject(..)) => {}
+            (RENodeId::GlobalPackage(..), RENodeInit::GlobalPackage(..)) => {}
+            (RENodeId::Object(..), RENodeInit::Object(..)) => {}
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
             (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
-            (RENodeId::Component(..), RENodeInit::Metadata(..)) => {
-                module_init.insert(
-                    NodeModuleId::TypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: METADATA_PACKAGE,
-                        blueprint_name: METADATA_BLUEPRINT.to_string(),
-                        global: false,
-                    }),
-                );
-            }
-            (RENodeId::Component(..), RENodeInit::ComponentRoyalty(..)) => {
-                module_init.insert(
-                    NodeModuleId::TypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: ROYALTY_PACKAGE,
-                        blueprint_name: COMPONENT_ROYALTY_BLUEPRINT.to_string(),
-                        global: false,
-                    }),
-                );
-            }
-            (RENodeId::Component(..), RENodeInit::AccessRules(..)) => {
-                module_init.insert(
-                    NodeModuleId::TypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: ACCESS_RULES_PACKAGE,
-                        blueprint_name: ACCESS_RULES_BLUEPRINT.to_string(),
-                        global: false,
-                    }),
-                );
-            }
-            (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {
-                module_init.insert(
-                    NodeModuleId::TypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: AUTH_ZONE_PACKAGE,
-                        blueprint_name: AUTH_ZONE_BLUEPRINT.to_string(),
-                        global: false,
-                    }),
-                );
-            }
-            (RENodeId::TransactionRuntime, RENodeInit::TransactionRuntime(..)) => {
-                module_init.insert(
-                    NodeModuleId::TypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: TRANSACTION_RUNTIME_PACKAGE,
-                        blueprint_name: TRANSACTION_RUNTIME_BLUEPRINT.to_string(),
-                        global: false,
-                    }),
-                );
-            }
-            (RENodeId::Worktop, RENodeInit::Worktop(..)) => {
-                module_init.insert(
-                    NodeModuleId::TypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: RESOURCE_MANAGER_PACKAGE,
-                        blueprint_name: WORKTOP_BLUEPRINT.to_string(),
-                        global: false,
-                    }),
-                );
-            }
-            (RENodeId::Bucket(..), RENodeInit::FungibleBucket(..))
-            | (RENodeId::Bucket(..), RENodeInit::NonFungibleBucket(..)) => {
-                module_init.insert(
-                    NodeModuleId::TypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: RESOURCE_MANAGER_PACKAGE,
-                        blueprint_name: BUCKET_BLUEPRINT.to_string(),
-                        global: false,
-                    }),
-                );
-            }
-            (RENodeId::Proof(..), RENodeInit::FungibleProof(..))
-            | (RENodeId::Proof(..), RENodeInit::NonFungibleProof(..)) => {
-                module_init.insert(
-                    NodeModuleId::TypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: RESOURCE_MANAGER_PACKAGE,
-                        blueprint_name: PROOF_BLUEPRINT.to_string(),
-                        global: false,
-                    }),
-                );
-            }
-            (RENodeId::Vault(..), RENodeInit::FungibleVault(..))
-            | (RENodeId::Vault(..), RENodeInit::NonFungibleVault(..)) => {
-                module_init.insert(
-                    NodeModuleId::TypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: RESOURCE_MANAGER_PACKAGE,
-                        blueprint_name: VAULT_BLUEPRINT.to_string(),
-                        global: false,
-                    }),
-                );
-            }
-            (RENodeId::GlobalPackage(..), RENodeInit::GlobalPackage(..)) => {
-                module_init.insert(
-                    NodeModuleId::TypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: PACKAGE_LOADER,
-                        blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-                        global: true,
-                    }),
-                );
-            }
-            (RENodeId::GlobalResourceManager(..), RENodeInit::GlobalResourceManager(..)) => {
-                module_init.insert(
-                    NodeModuleId::TypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: RESOURCE_MANAGER_PACKAGE,
-                        blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                        global: true,
-                    }),
-                );
-            }
-            (RENodeId::EpochManager(..), RENodeInit::EpochManager(..)) => {
-                module_init.insert(
-                    NodeModuleId::TypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: EPOCH_MANAGER_PACKAGE,
-                        blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
-                        global: false,
-                    }),
-                );
-            }
-            (RENodeId::Validator(..), RENodeInit::Validator(..)) => {
-                module_init.insert(
-                    NodeModuleId::TypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: EPOCH_MANAGER_PACKAGE,
-                        blueprint_name: VALIDATOR_BLUEPRINT.to_string(),
-                        global: false,
-                    }),
-                );
-            }
-            (RENodeId::Clock(..), RENodeInit::Clock(..)) => {
-                module_init.insert(
-                    NodeModuleId::TypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: CLOCK_PACKAGE,
-                        blueprint_name: CLOCK_BLUEPRINT.to_string(),
-                        global: false,
-                    }),
-                );
-            }
-            (RENodeId::Identity(..), RENodeInit::Identity(..)) => {
-                module_init.insert(
-                    NodeModuleId::TypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: IDENTITY_PACKAGE,
-                        blueprint_name: IDENTITY_BLUEPRINT.to_string(),
-                        global: false,
-                    }),
-                );
-            }
-            (RENodeId::AccessController(..), RENodeInit::AccessController(..)) => {
-                module_init.insert(
-                    NodeModuleId::TypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: ACCESS_CONTROLLER_PACKAGE,
-                        blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
-                        global: false,
-                    }),
-                );
-            }
-            (RENodeId::Account(..), RENodeInit::Account(..)) => {
-                module_init.insert(
-                    NodeModuleId::TypeInfo,
-                    RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: ACCOUNT_PACKAGE,
-                        blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
-                        global: false,
-                    }),
-                );
-            }
+            (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {}
+            (RENodeId::TransactionRuntime, RENodeInit::TransactionRuntime(..)) => {}
+            (RENodeId::Worktop, RENodeInit::Worktop(..)) => {}
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id))),
         }
 
-        // TODO: For Scrypto components, check state against blueprint schema
-
-        let push_to_store = match re_node {
-            RENodeInit::GlobalComponent(..)
-            | RENodeInit::GlobalPackage(..)
-            | RENodeInit::GlobalResourceManager(..) => true,
+        let push_to_store = match init {
+            RENodeInit::GlobalObject(..) | RENodeInit::GlobalPackage(..) => true,
             _ => false,
         };
 
         self.id_allocator.take_node_id(node_id)?;
         self.current_frame.create_node(
             node_id,
-            re_node,
+            init,
             module_init,
             &mut self.heap,
             &mut self.track,
@@ -925,9 +747,9 @@ where
         self.current_frame.actor.clone()
     }
 
-    fn kernel_read_bucket(&mut self, bucket_id: BucketId) -> Option<BucketSnapshot> {
+    fn kernel_read_bucket(&mut self, bucket_id: ObjectId) -> Option<BucketSnapshot> {
         if let Ok(substate) = self.heap.get_substate(
-            RENodeId::Bucket(bucket_id),
+            RENodeId::Object(bucket_id),
             NodeModuleId::SELF,
             &SubstateOffset::Bucket(BucketOffset::Info),
         ) {
@@ -939,7 +761,7 @@ where
                     let substate = self
                         .heap
                         .get_substate(
-                            RENodeId::Bucket(bucket_id),
+                            RENodeId::Object(bucket_id),
                             NodeModuleId::SELF,
                             &SubstateOffset::Bucket(BucketOffset::LiquidFungible),
                         )
@@ -956,7 +778,7 @@ where
                     let substate = self
                         .heap
                         .get_substate(
-                            RENodeId::Bucket(bucket_id),
+                            RENodeId::Object(bucket_id),
                             NodeModuleId::SELF,
                             &SubstateOffset::Bucket(BucketOffset::LiquidNonFungible),
                         )
@@ -975,9 +797,9 @@ where
         }
     }
 
-    fn kernel_read_proof(&mut self, proof_id: BucketId) -> Option<ProofSnapshot> {
+    fn kernel_read_proof(&mut self, proof_id: ObjectId) -> Option<ProofSnapshot> {
         if let Ok(substate) = self.heap.get_substate(
-            RENodeId::Proof(proof_id),
+            RENodeId::Object(proof_id),
             NodeModuleId::SELF,
             &SubstateOffset::Proof(ProofOffset::Info),
         ) {
@@ -989,7 +811,7 @@ where
                     let substate = self
                         .heap
                         .get_substate(
-                            RENodeId::Proof(proof_id),
+                            RENodeId::Object(proof_id),
                             NodeModuleId::SELF,
                             &SubstateOffset::Proof(ProofOffset::Fungible),
                         )
@@ -1007,7 +829,7 @@ where
                     let substate = self
                         .heap
                         .get_substate(
-                            RENodeId::Proof(proof_id),
+                            RENodeId::Object(proof_id),
                             NodeModuleId::SELF,
                             &SubstateOffset::Proof(ProofOffset::NonFungible),
                         )

@@ -7,6 +7,7 @@ use crate::system::node_modules::access_rules::{
     FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
 use crate::system::node_modules::metadata::MetadataSubstate;
+use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::type_info::PackageCodeTypeSubstate;
 use crate::types::*;
 use crate::wasm::{PrepareError, WasmValidator};
@@ -25,7 +26,7 @@ pub enum PackageError {
     InvalidRequestData(DecodeError),
     InvalidAbi(DecodeError),
     InvalidWasm(PrepareError),
-    BlueprintNotFound,
+    BlueprintNotFound(PackageAddress, String),
     MethodNotFound(String),
     CouldNotEncodePackageAddress,
 }
@@ -103,6 +104,14 @@ impl Package {
         };
 
         let mut node_modules = BTreeMap::new();
+        node_modules.insert(
+            NodeModuleId::TypeInfo,
+            RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                package_address: PACKAGE_LOADER,
+                blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+                global: true,
+            }),
+        );
         node_modules.insert(
             NodeModuleId::Metadata,
             RENodeModuleInit::Metadata(metadata_substate),
@@ -195,6 +204,14 @@ impl Package {
 
         let mut node_modules = BTreeMap::new();
         node_modules.insert(
+            NodeModuleId::TypeInfo,
+            RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                package_address: PACKAGE_LOADER,
+                blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+                global: true,
+            }),
+        );
+        node_modules.insert(
             NodeModuleId::PackageRoyalty,
             RENodeModuleInit::PackageRoyalty(package_royalty_config, package_royalty_accumulator),
         );
@@ -253,6 +270,34 @@ impl Package {
         let code_type = code_type.clone();
         api.kernel_drop_lock(handle)?;
         Ok(code_type)
+    }
+
+    pub(crate) fn get_blueprint_abi<Y>(
+        receiver: RENodeId,
+        blueprint_name: String,
+        api: &mut Y,
+    ) -> Result<BlueprintAbi, RuntimeError>
+    where
+        Y: KernelSubstateApi,
+    {
+        let handle = api.kernel_lock_substate(
+            receiver,
+            NodeModuleId::SELF,
+            SubstateOffset::Package(PackageOffset::Info),
+            LockFlags::read_only(),
+        )?;
+        let info: &PackageInfoSubstate = api.kernel_get_substate_ref(handle)?;
+
+        // Find the abi
+        let abi = info
+            .blueprint_abi(&blueprint_name)
+            .ok_or(RuntimeError::ApplicationError(
+                ApplicationError::PackageError(PackageError::BlueprintNotFound(
+                    receiver.into(),
+                    blueprint_name,
+                )),
+            ))?;
+        Ok(abi.clone())
     }
 
     pub(crate) fn get_fn_abi<Y>(

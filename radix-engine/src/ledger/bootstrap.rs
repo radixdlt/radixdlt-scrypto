@@ -452,6 +452,7 @@ pub fn create_genesis(
         });
     }
 
+    // Clock Component
     {
         let component_address = CLOCK.to_array_without_entity_id();
         pre_allocated_ids.insert(RENodeId::GlobalComponent(CLOCK));

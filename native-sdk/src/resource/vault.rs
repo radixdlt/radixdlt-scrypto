@@ -1,7 +1,5 @@
-use radix_engine_interface::api::types::{RENodeId, VaultId};
-use radix_engine_interface::api::{
-    ClientApi, ClientComponentApi, ClientNodeApi, ClientSubstateApi,
-};
+use radix_engine_interface::api::types::{ObjectId, RENodeId};
+use radix_engine_interface::api::{ClientApi, ClientNodeApi, ClientObjectApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::model::Own;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode};
@@ -9,7 +7,7 @@ use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 
-pub struct Vault(pub VaultId); // native stub
+pub struct Vault(pub ObjectId); // native stub
 
 impl Vault {
     pub fn sys_new<Y, E: Debug + ScryptoDecode>(
@@ -17,7 +15,7 @@ impl Vault {
         api: &mut Y,
     ) -> Result<Self, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientComponentApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
             RENodeId::GlobalResourceManager(resource_address),
@@ -35,10 +33,10 @@ impl Vault {
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientComponentApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::Vault(self.0),
+            RENodeId::Object(self.0),
             VAULT_PUT_IDENT,
             scrypto_encode(&VaultPutInput { bucket }).unwrap(),
         )?;
@@ -52,10 +50,10 @@ impl Vault {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientComponentApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::Vault(self.0),
+            RENodeId::Object(self.0),
             VAULT_TAKE_IDENT,
             scrypto_encode(&VaultTakeInput { amount }).unwrap(),
         )?;
@@ -65,12 +63,12 @@ impl Vault {
 
     pub fn sys_take_all<Y, E: Debug + ScryptoDecode>(&mut self, api: &mut Y) -> Result<Bucket, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientComponentApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         // TODO: Replace with actual take all blueprint method
         let amount = self.sys_amount(api)?;
         let rtn = api.call_method(
-            RENodeId::Vault(self.0),
+            RENodeId::Object(self.0),
             VAULT_TAKE_IDENT,
             scrypto_encode(&VaultTakeInput { amount }).unwrap(),
         )?;
@@ -84,10 +82,10 @@ impl Vault {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientComponentApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::Vault(self.0),
+            RENodeId::Object(self.0),
             VAULT_TAKE_NON_FUNGIBLES_IDENT,
             scrypto_encode(&VaultTakeNonFungiblesInput {
                 non_fungible_local_ids,
@@ -100,10 +98,10 @@ impl Vault {
 
     pub fn sys_amount<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Decimal, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientComponentApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::Vault(self.0),
+            RENodeId::Object(self.0),
             VAULT_GET_AMOUNT_IDENT,
             scrypto_encode(&VaultGetAmountInput {}).unwrap(),
         )?;
@@ -114,10 +112,10 @@ impl Vault {
     pub fn sys_create_proof<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Proof, E>
     where
         E: Debug + ScryptoDecode,
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientComponentApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::Vault(self.0),
+            RENodeId::Object(self.0),
             VAULT_CREATE_PROOF_IDENT,
             scrypto_encode(&VaultCreateProofInput {}).unwrap(),
         )?;
@@ -134,7 +132,7 @@ impl Vault {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::Vault(self.0),
+            RENodeId::Object(self.0),
             VAULT_CREATE_PROOF_BY_AMOUNT_IDENT,
             scrypto_encode(&VaultCreateProofByAmountInput { amount }).unwrap(),
         )?;
@@ -151,7 +149,7 @@ impl Vault {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::Vault(self.0),
+            RENodeId::Object(self.0),
             VAULT_CREATE_PROOF_BY_IDS_IDENT,
             scrypto_encode(&VaultCreateProofByIdsInput { ids }).unwrap(),
         )?;
@@ -165,10 +163,10 @@ impl Vault {
         amount: Decimal,
     ) -> Result<(), E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientComponentApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::Vault(self.0),
+            RENodeId::Object(self.0),
             VAULT_LOCK_FEE_IDENT,
             scrypto_encode(&VaultLockFeeInput {
                 amount,
@@ -185,10 +183,10 @@ impl Vault {
         amount: Decimal,
     ) -> Result<(), E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientComponentApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::Vault(self.0),
+            RENodeId::Object(self.0),
             VAULT_LOCK_FEE_IDENT,
             scrypto_encode(&VaultLockFeeInput {
                 amount,
@@ -204,10 +202,10 @@ impl Vault {
         api: &mut Y,
     ) -> Result<ResourceAddress, E>
     where
-        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientComponentApi<E>,
+        Y: ClientNodeApi<E> + ClientSubstateApi<E> + ClientObjectApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::Vault(self.0),
+            RENodeId::Object(self.0),
             VAULT_GET_RESOURCE_ADDRESS_IDENT,
             scrypto_encode(&VaultGetResourceAddressInput {}).unwrap(),
         )?;

@@ -10,8 +10,6 @@ use transaction_data::*;
 // TODO: Remove when better type system implemented
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor)]
 pub enum RENodeType {
-    Bucket,
-    Proof,
     AuthZoneStack,
     Worktop,
     GlobalAccount,
@@ -20,20 +18,12 @@ pub enum RENodeType {
     GlobalPackage,
     GlobalEpochManager,
     GlobalValidator,
-    GlobalClock,
     GlobalAccessController,
     GlobalIdentity,
     KeyValueStore,
     NonFungibleStore,
-    Component,
-    Vault,
-    EpochManager,
-    Validator,
-    Clock,
-    Identity,
+    Object,
     TransactionRuntime,
-    Account,
-    AccessController,
 }
 
 #[derive(
@@ -51,8 +41,6 @@ pub enum RENodeType {
     LegacyDescribe,
 )]
 pub enum RENodeId {
-    Bucket(BucketId),
-    Proof(ProofId),
     AuthZoneStack,
     Worktop,
     TransactionRuntime,
@@ -61,21 +49,12 @@ pub enum RENodeId {
     GlobalPackage(PackageAddress),
     KeyValueStore(KeyValueStoreId),
     NonFungibleStore(NonFungibleStoreId),
-    Component(ComponentId),
-    Vault(VaultId),
-    EpochManager(EpochManagerId),
-    Identity(IdentityId),
-    Clock(ClockId),
-    Validator(ValidatorId),
-    Account(AccountId),
-    AccessController(AccessControllerId),
+    Object(ObjectId),
 }
 
 impl fmt::Debug for RENodeId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Bucket(id) => f.debug_tuple("Bucket").field(&hex::encode(id)).finish(),
-            Self::Proof(id) => f.debug_tuple("Proof").field(&hex::encode(id)).finish(),
             Self::AuthZoneStack => write!(f, "AuthZoneStack"),
             Self::Worktop => write!(f, "Worktop"),
             Self::TransactionRuntime => write!(f, "TransactionRuntime"),
@@ -90,24 +69,11 @@ impl fmt::Debug for RENodeId {
                 .debug_tuple("NonFungibleStore")
                 .field(&hex::encode(id))
                 .finish(),
-            Self::Component(id) => f.debug_tuple("Component").field(&hex::encode(id)).finish(),
-            Self::Vault(id) => f.debug_tuple("Vault").field(&hex::encode(id)).finish(),
+            Self::Object(id) => f.debug_tuple("Object").field(&hex::encode(id)).finish(),
             Self::GlobalResourceManager(address) => {
                 f.debug_tuple("ResourceManager").field(&address).finish()
             }
             Self::GlobalPackage(address) => f.debug_tuple("GlobalPackage").field(&address).finish(),
-            Self::EpochManager(id) => f
-                .debug_tuple("EpochManager")
-                .field(&hex::encode(id))
-                .finish(),
-            Self::Identity(id) => f.debug_tuple("Identity").field(&hex::encode(id)).finish(),
-            Self::Clock(id) => f.debug_tuple("Clock").field(&hex::encode(id)).finish(),
-            Self::Validator(id) => f.debug_tuple("Validator").field(&hex::encode(id)).finish(),
-            Self::Account(id) => f.debug_tuple("Account").field(&hex::encode(id)).finish(),
-            Self::AccessController(id) => f
-                .debug_tuple("AccessController")
-                .field(&hex::encode(id))
-                .finish(),
         }
     }
 }
@@ -117,16 +83,7 @@ impl Into<[u8; 36]> for RENodeId {
         match self {
             RENodeId::KeyValueStore(id) => id,
             RENodeId::NonFungibleStore(id) => id,
-            RENodeId::Vault(id) => id,
-            RENodeId::Component(id) => id,
-            RENodeId::EpochManager(id) => id,
-            RENodeId::Identity(id) => id,
-            RENodeId::Validator(id) => id,
-            RENodeId::Clock(id) => id,
-            RENodeId::Account(id) => id,
-            RENodeId::AccessController(id) => id,
-            RENodeId::Proof(id) => id,
-            RENodeId::Bucket(id) => id,
+            RENodeId::Object(id) => id,
             RENodeId::Worktop => [3u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
             RENodeId::TransactionRuntime => [4u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
             RENodeId::AuthZoneStack => [5u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now

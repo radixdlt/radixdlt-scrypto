@@ -1,5 +1,5 @@
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::ClientComponentApi;
+use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::model::Own;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoCustomValueKind};
@@ -14,7 +14,7 @@ use crate::resource::*;
 use crate::*;
 
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub struct Vault(pub VaultId); // scrypto stub
+pub struct Vault(pub ObjectId); // scrypto stub
 
 //========
 // binary
@@ -99,7 +99,7 @@ impl ScryptoVault for Vault {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                RENodeId::Vault(self.0),
+                RENodeId::Object(self.0),
                 VAULT_GET_AMOUNT_IDENT,
                 scrypto_encode(&VaultGetAmountInput {}).unwrap(),
             )
@@ -123,7 +123,7 @@ impl ScryptoVault for Vault {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                RENodeId::Vault(self.0),
+                RENodeId::Object(self.0),
                 VAULT_TAKE_IDENT,
                 scrypto_encode(&VaultTakeInput { amount }).unwrap(),
             )
@@ -135,7 +135,7 @@ impl ScryptoVault for Vault {
         let mut env = ScryptoEnv;
         let _rtn = env
             .call_method(
-                RENodeId::Vault(self.0),
+                RENodeId::Object(self.0),
                 VAULT_LOCK_FEE_IDENT,
                 scrypto_encode(&VaultLockFeeInput {
                     amount,
@@ -150,7 +150,7 @@ impl ScryptoVault for Vault {
         let mut env = ScryptoEnv;
         let _rtn = env
             .call_method(
-                RENodeId::Vault(self.0),
+                RENodeId::Object(self.0),
                 VAULT_LOCK_FEE_IDENT,
                 scrypto_encode(&VaultLockFeeInput {
                     amount,
@@ -168,7 +168,7 @@ impl ScryptoVault for Vault {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                RENodeId::Vault(self.0),
+                RENodeId::Object(self.0),
                 VAULT_TAKE_NON_FUNGIBLES_IDENT,
                 scrypto_encode(&VaultTakeNonFungiblesInput {
                     non_fungible_local_ids: non_fungible_local_ids.clone(),
@@ -183,7 +183,7 @@ impl ScryptoVault for Vault {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                RENodeId::Vault(self.0),
+                RENodeId::Object(self.0),
                 VAULT_PUT_IDENT,
                 scrypto_encode(&VaultPutInput { bucket }).unwrap(),
             )
@@ -195,7 +195,7 @@ impl ScryptoVault for Vault {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                RENodeId::Vault(self.0),
+                RENodeId::Object(self.0),
                 VAULT_GET_RESOURCE_ADDRESS_IDENT,
                 scrypto_encode(&VaultGetResourceAddressInput {}).unwrap(),
             )
@@ -207,7 +207,7 @@ impl ScryptoVault for Vault {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                RENodeId::Vault(self.0),
+                RENodeId::Object(self.0),
                 VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
                 scrypto_encode(&VaultGetNonFungibleLocalIdsInput {}).unwrap(),
             )
@@ -219,7 +219,7 @@ impl ScryptoVault for Vault {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                RENodeId::Vault(self.0),
+                RENodeId::Object(self.0),
                 VAULT_CREATE_PROOF_IDENT,
                 scrypto_encode(&VaultCreateProofInput {}).unwrap(),
             )
@@ -231,7 +231,7 @@ impl ScryptoVault for Vault {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                RENodeId::Vault(self.0),
+                RENodeId::Object(self.0),
                 VAULT_CREATE_PROOF_BY_AMOUNT_IDENT,
                 scrypto_encode(&VaultCreateProofByAmountInput { amount }).unwrap(),
             )
@@ -243,7 +243,7 @@ impl ScryptoVault for Vault {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                RENodeId::Vault(self.0),
+                RENodeId::Object(self.0),
                 VAULT_CREATE_PROOF_BY_IDS_IDENT,
                 scrypto_encode(&VaultCreateProofByIdsInput { ids: ids.clone() }).unwrap(),
             )

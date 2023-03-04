@@ -12,40 +12,43 @@ use utils::copy_u8_array;
 // TODO: it's still up to debate whether this should be an enum OR dedicated types for each variant.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Own {
-    Bucket(BucketId),
-    Proof(ProofId),
-    Vault(VaultId),
-    Component(ComponentId),
-    Account(AccountId), // TODO: Clean this out but required for now to be able to convert to the typed RENodeId
+    Bucket(ObjectId),
+    Proof(ObjectId),
+    Vault(ObjectId),
+    Object(ObjectId),
     KeyValueStore(KeyValueStoreId),
 }
 
 impl Own {
-    pub fn component_id(&self) -> ComponentId {
+    pub fn id(&self) -> ObjectId {
         match self {
-            Own::Component(v) => *v,
-            _ => panic!("Not a component ownership"),
+            Own::Bucket(v)
+            | Own::Object(v)
+            | Own::Proof(v)
+            | Own::Vault(v)
+            | Own::KeyValueStore(v) => *v,
         }
     }
-    pub fn vault_id(&self) -> VaultId {
+
+    pub fn vault_id(&self) -> ObjectId {
         match self {
             Own::Vault(v) => *v,
             _ => panic!("Not a vault ownership"),
         }
     }
-    pub fn key_value_store_id(&self) -> VaultId {
+    pub fn key_value_store_id(&self) -> KeyValueStoreId {
         match self {
             Own::KeyValueStore(v) => *v,
             _ => panic!("Not a kv-store ownership"),
         }
     }
-    pub fn bucket_id(&self) -> BucketId {
+    pub fn bucket_id(&self) -> ObjectId {
         match self {
             Own::Bucket(v) => *v,
             _ => panic!("Not a bucket ownership"),
         }
     }
-    pub fn proof_id(&self) -> ProofId {
+    pub fn proof_id(&self) -> ObjectId {
         match self {
             Own::Proof(v) => *v,
             _ => panic!("Not a proof ownership"),
@@ -77,16 +80,12 @@ impl Own {
                 encoder.write_byte(2)?;
                 encoder.write_slice(v)?;
             }
-            Own::Component(v) => {
+            Own::Object(v) => {
                 encoder.write_byte(3)?;
                 encoder.write_slice(v)?;
             }
             Own::KeyValueStore(v) => {
                 encoder.write_byte(4)?;
-                encoder.write_slice(v)?;
-            }
-            Own::Account(v) => {
-                encoder.write_byte(5)?;
                 encoder.write_slice(v)?;
             }
         }
@@ -100,9 +99,8 @@ impl Own {
             0 => Ok(Self::Bucket(copy_u8_array(decoder.read_slice(36)?))),
             1 => Ok(Self::Proof(copy_u8_array(decoder.read_slice(36)?))),
             2 => Ok(Self::Vault(copy_u8_array(decoder.read_slice(36)?))),
-            3 => Ok(Self::Component(copy_u8_array(decoder.read_slice(36)?))),
+            3 => Ok(Self::Object(copy_u8_array(decoder.read_slice(36)?))),
             4 => Ok(Self::KeyValueStore(copy_u8_array(decoder.read_slice(36)?))),
-            5 => Ok(Self::Account(copy_u8_array(decoder.read_slice(36)?))),
             _ => Err(DecodeError::InvalidCustomValue),
         }
     }

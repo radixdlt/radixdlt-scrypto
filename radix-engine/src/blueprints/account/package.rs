@@ -10,8 +10,6 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{RENodeId, SubstateOffset};
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::api::ClientNodeApi;
-use radix_engine_interface::api::ClientSubstateApi;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::blueprints::resource::AccessRules;
@@ -176,7 +174,7 @@ impl AccountNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: AccountCreateGlobalInput = scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -191,28 +189,26 @@ impl AccountNativePackage {
             node_id
         };
 
-        // Creating the Account substates and RENode
-        let node_id = {
+        let account_id = {
             let account_substate = AccountSubstate {
                 vaults: Own::KeyValueStore(kv_store_id.into()),
             };
-
-            let node_id = api.kernel_allocate_node_id(RENodeType::Account)?;
-            let node = RENodeInit::Account(account_substate);
-            api.kernel_create_node(node_id, node, BTreeMap::new())?;
-            node_id
+            api.new_object(
+                ACCOUNT_BLUEPRINT,
+                vec![scrypto_encode(&account_substate).unwrap()],
+            )?
         };
 
         // Creating [`AccessRules`] from the passed withdraw access rule.
         let access_rules = access_rules_from_withdraw_rule(input.withdraw_rule);
         let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
-        let metadata = Metadata::sys_new(api)?;
+        let metadata = Metadata::sys_create(api)?;
 
         let address = api.globalize(
-            node_id,
+            RENodeId::Object(account_id),
             btreemap!(
-                NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
-                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
+                NodeModuleId::AccessRules => access_rules.id(),
+                NodeModuleId::Metadata => metadata.id(),
             ),
         )?;
 
@@ -224,10 +220,7 @@ impl AccountNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi
-            + KernelSubstateApi
-            + ClientSubstateApi<RuntimeError>
-            + ClientNodeApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let _input: AccountCreateLocalInput = scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -242,21 +235,17 @@ impl AccountNativePackage {
             node_id
         };
 
-        // Creating the Account substates and RENode
-        let node_id = {
+        let account_id = {
             let account_substate = AccountSubstate {
                 vaults: Own::KeyValueStore(kv_store_id.into()),
             };
-
-            let node_id = api.kernel_allocate_node_id(RENodeType::Account)?;
-            let node = RENodeInit::Account(account_substate);
-            api.kernel_create_node(node_id, node, BTreeMap::new())?;
-            node_id
+            api.new_object(
+                ACCOUNT_BLUEPRINT,
+                vec![scrypto_encode(&account_substate).unwrap()],
+            )?
         };
 
-        // TODO: Verify this is correct
-        let component_id: AccountId = node_id.into();
-        Ok(IndexedScryptoValue::from_typed(&Own::Account(component_id)))
+        Ok(IndexedScryptoValue::from_typed(&Own::Object(account_id)))
     }
 
     fn lock_fee_internal<Y>(

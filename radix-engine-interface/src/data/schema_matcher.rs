@@ -326,7 +326,7 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
         }
         Type::Component => {
             if let Value::Custom { value } = value {
-                matches!(value, ScryptoCustomValue::Own(Own::Component(_)))
+                matches!(value, ScryptoCustomValue::Own(Own::Object(_)))
             } else {
                 false
             }

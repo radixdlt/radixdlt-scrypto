@@ -258,7 +258,7 @@ impl TestRunner {
 
             self.substate_store
                 .get_substate(&SubstateId(
-                    RENodeId::Vault(royalty_vault.vault_id()),
+                    RENodeId::Object(royalty_vault.vault_id()),
                     NodeModuleId::SELF,
                     SubstateOffset::Vault(VaultOffset::LiquidFungible),
                 ))
@@ -282,7 +282,7 @@ impl TestRunner {
 
             self.substate_store
                 .get_substate(&SubstateId(
-                    RENodeId::Vault(royalty_vault.vault_id()),
+                    RENodeId::Object(royalty_vault.vault_id()),
                     NodeModuleId::SELF,
                     SubstateOffset::Vault(VaultOffset::LiquidFungible),
                 ))
@@ -316,7 +316,7 @@ impl TestRunner {
         &mut self,
         component_address: ComponentAddress,
         resource_address: ResourceAddress,
-    ) -> Vec<VaultId> {
+    ) -> Vec<ObjectId> {
         let node_id = RENodeId::GlobalComponent(component_address);
         let mut vault_finder = VaultFinder::new(resource_address);
 
@@ -328,9 +328,9 @@ impl TestRunner {
         vault_finder.to_vaults()
     }
 
-    pub fn inspect_vault_balance(&mut self, vault_id: VaultId) -> Option<Decimal> {
+    pub fn inspect_vault_balance(&mut self, vault_id: ObjectId) -> Option<Decimal> {
         if let Some(output) = self.substate_store().get_substate(&SubstateId(
-            RENodeId::Vault(vault_id),
+            RENodeId::Object(vault_id),
             NodeModuleId::SELF,
             SubstateOffset::Vault(VaultOffset::Info),
         )) {
@@ -345,10 +345,10 @@ impl TestRunner {
         }
     }
 
-    pub fn inspect_fungible_vault(&mut self, vault_id: VaultId) -> Option<Decimal> {
+    pub fn inspect_fungible_vault(&mut self, vault_id: ObjectId) -> Option<Decimal> {
         self.substate_store()
             .get_substate(&SubstateId(
-                RENodeId::Vault(vault_id),
+                RENodeId::Object(vault_id),
                 NodeModuleId::SELF,
                 SubstateOffset::Vault(VaultOffset::LiquidFungible),
             ))
@@ -357,11 +357,11 @@ impl TestRunner {
 
     pub fn inspect_non_fungible_vault(
         &mut self,
-        vault_id: VaultId,
+        vault_id: ObjectId,
     ) -> Option<BTreeSet<NonFungibleLocalId>> {
         self.substate_store()
             .get_substate(&SubstateId(
-                RENodeId::Vault(vault_id),
+                RENodeId::Object(vault_id),
                 NodeModuleId::SELF,
                 SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
             ))

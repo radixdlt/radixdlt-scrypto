@@ -1,6 +1,7 @@
 use crate::errors::{CallFrameError, KernelError, RuntimeError};
 use crate::kernel::actor::Actor;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
+use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_properties::SubstateProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
@@ -240,8 +241,21 @@ impl CallFrame {
             }
 
             for child_id in &new_children {
-                SubstateProperties::verify_can_own(&offset, *child_id)?;
                 self.take_node_internal(*child_id)?;
+
+                // TODO: Move this check into system layer
+                if let Ok(info) = heap.get_substate(
+                    *child_id,
+                    NodeModuleId::TypeInfo,
+                    &SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+                ) {
+                    let type_info: &TypeInfoSubstate = info.into();
+                    SubstateProperties::verify_can_own(
+                        &offset,
+                        type_info.package_address,
+                        type_info.blueprint_name.as_str(),
+                    )?;
+                }
             }
 
             if !heap.contains_node(&node_id) {
@@ -290,6 +304,7 @@ impl CallFrame {
 
         Ok(LockInfo {
             offset: substate_lock.offset.clone(),
+            flags: substate_lock.flags,
         })
     }
 
@@ -462,8 +477,22 @@ impl CallFrame {
             let substate_ref = substate.to_ref();
             let (_, owned) = substate_ref.references_and_owned_nodes();
             for child_id in owned {
-                SubstateProperties::verify_can_own(&offset, child_id)?;
                 self.take_node_internal(child_id)?;
+
+                // TODO: Move this logic into system layer
+                if let Ok(info) = heap.get_substate(
+                    child_id,
+                    NodeModuleId::TypeInfo,
+                    &SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+                ) {
+                    let type_info: &TypeInfoSubstate = info.into();
+                    SubstateProperties::verify_can_own(
+                        &offset,
+                        type_info.package_address,
+                        type_info.blueprint_name.as_str(),
+                    )?;
+                }
+
                 if push_to_store {
                     heap.move_node_to_store(track, child_id)?;
                 }

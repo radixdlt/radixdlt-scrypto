@@ -6,7 +6,8 @@ use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
 use crate::types::*;
 use radix_engine_interface::api::types::{ProofOffset, RENodeId, SubstateOffset};
-use radix_engine_interface::api::LockFlags;
+use radix_engine_interface::api::{ClientApi, LockFlags};
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::*;
 
@@ -20,74 +21,72 @@ pub enum NodeMoveError {
 pub struct NodeMoveModule {}
 
 impl NodeMoveModule {
-    fn prepare_move_downstream<Y: KernelModuleApi<RuntimeError>>(
+    fn prepare_move_downstream<Y: KernelModuleApi<RuntimeError> + ClientApi<RuntimeError>>(
         node_id: RENodeId,
         actor: &Option<Actor>,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
         match node_id {
-            RENodeId::Proof(..) => {
-                if let Some(Actor {
-                    identifier:
-                        ActorIdentifier::Function(FnIdentifier {
-                            package_address: RESOURCE_MANAGER_PACKAGE,
+            RENodeId::Object(..) => {
+                let (package_address, blueprint) = api.get_object_type_info(node_id)?;
+                match (package_address, blueprint.as_str()) {
+                    (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
+                        if let Some(Actor {
+                            identifier:
+                                ActorIdentifier::Function(FnIdentifier {
+                                    package_address: RESOURCE_MANAGER_PACKAGE,
+                                    ..
+                                }),
                             ..
-                        }),
-                    ..
-                }) = actor
-                {
-                    return Ok(());
+                        }) = actor
+                        {
+                            return Ok(());
+                        }
+
+                        let handle = api.kernel_lock_substate(
+                            node_id,
+                            NodeModuleId::SELF,
+                            SubstateOffset::Proof(ProofOffset::Info),
+                            LockFlags::MUTABLE,
+                        )?;
+                        let proof: &mut ProofInfoSubstate =
+                            api.kernel_get_substate_ref_mut(handle)?;
+
+                        if proof.restricted {
+                            return Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
+                                NodeMoveError::CantMoveDownstream(node_id),
+                            )));
+                        }
+
+                        // Change to restricted unless it's for auth zone.
+                        if !matches!(
+                            actor,
+                            Some(Actor {
+                                identifier: ActorIdentifier::Method(MethodIdentifier(
+                                    RENodeId::AuthZoneStack,
+                                    ..
+                                )),
+                                ..
+                            })
+                        ) {
+                            proof.change_to_restricted();
+                        }
+
+                        api.kernel_drop_lock(handle)?;
+                    }
+                    _ => {}
                 }
-
-                let handle = api.kernel_lock_substate(
-                    node_id,
-                    NodeModuleId::SELF,
-                    SubstateOffset::Proof(ProofOffset::Info),
-                    LockFlags::MUTABLE,
-                )?;
-                let proof: &mut ProofInfoSubstate = api.kernel_get_substate_ref_mut(handle)?;
-
-                if proof.restricted {
-                    return Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
-                        NodeMoveError::CantMoveDownstream(node_id),
-                    )));
-                }
-
-                // Change to restricted unless it's for auth zone.
-                if !matches!(
-                    actor,
-                    Some(Actor {
-                        identifier: ActorIdentifier::Method(MethodIdentifier(
-                            RENodeId::AuthZoneStack,
-                            ..
-                        )),
-                        ..
-                    })
-                ) {
-                    proof.change_to_restricted();
-                }
-
-                api.kernel_drop_lock(handle)?;
                 Ok(())
             }
-
-            RENodeId::Bucket(..) | RENodeId::Component(..) => Ok(()),
 
             RENodeId::TransactionRuntime
             | RENodeId::AuthZoneStack
             | RENodeId::GlobalResourceManager(..)
             | RENodeId::KeyValueStore(..)
             | RENodeId::NonFungibleStore(..)
-            | RENodeId::Vault(..)
             | RENodeId::GlobalPackage(..)
             | RENodeId::Worktop
-            | RENodeId::EpochManager(..)
-            | RENodeId::Identity(..)
-            | RENodeId::Validator(..)
-            | RENodeId::Clock(..)
-            | RENodeId::GlobalComponent(..)
-            | RENodeId::Account(..)
-            | RENodeId::AccessController(..) => Err(RuntimeError::ModuleError(
+            | RENodeId::GlobalComponent(..) => Err(RuntimeError::ModuleError(
                 ModuleError::NodeMoveError(NodeMoveError::CantMoveDownstream(node_id)),
             )),
         }
@@ -98,11 +97,7 @@ impl NodeMoveModule {
         _api: &mut Y,
     ) -> Result<(), RuntimeError> {
         match node_id {
-            RENodeId::Bucket(..)
-            | RENodeId::Proof(..)
-            | RENodeId::Component(..)
-            | RENodeId::Vault(..)
-            | RENodeId::Account(..) => Ok(()),
+            RENodeId::Object(..) => Ok(()),
 
             RENodeId::TransactionRuntime
             | RENodeId::AuthZoneStack
@@ -111,12 +106,7 @@ impl NodeMoveModule {
             | RENodeId::NonFungibleStore(..)
             | RENodeId::GlobalPackage(..)
             | RENodeId::Worktop
-            | RENodeId::EpochManager(..)
-            | RENodeId::Identity(..)
-            | RENodeId::Validator(..)
-            | RENodeId::Clock(..)
-            | RENodeId::GlobalComponent(..)
-            | RENodeId::AccessController(..) => Err(RuntimeError::ModuleError(
+            | RENodeId::GlobalComponent(..) => Err(RuntimeError::ModuleError(
                 ModuleError::NodeMoveError(NodeMoveError::CantMoveUpstream(node_id)),
             )),
         }
@@ -124,13 +114,14 @@ impl NodeMoveModule {
 }
 
 impl KernelModule for NodeMoveModule {
-    fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
+    fn before_push_frame<Y: KernelModuleApi<RuntimeError> + ClientApi<RuntimeError>>(
         api: &mut Y,
         actor: &Option<Actor>,
         call_frame_update: &mut CallFrameUpdate,
         _args: &ScryptoValue,
     ) -> Result<(), RuntimeError> {
         for node_id in &call_frame_update.nodes_to_move {
+            // TODO: Move into system layer
             Self::prepare_move_downstream(*node_id, actor, api)?;
         }
 

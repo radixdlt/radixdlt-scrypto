@@ -2,14 +2,19 @@ use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
+use crate::system::node::RENodeModuleInit;
+use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::{
     blueprints::transaction_runtime::TransactionRuntimeSubstate, errors::RuntimeError,
     system::node::RENodeInit,
 };
-use radix_engine_interface::api::types::{RENodeId, RENodeType};
+use radix_engine_interface::api::types::{NodeModuleId, RENodeId, RENodeType};
+use radix_engine_interface::blueprints::transaction_runtime::TRANSACTION_RUNTIME_BLUEPRINT;
+use radix_engine_interface::constants::TRANSACTION_RUNTIME_PACKAGE;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::ScryptoValue;
-use sbor::rust::collections::BTreeMap;
+use sbor::btreemap;
+use sbor::rust::string::ToString;
 
 #[derive(Debug, Clone)]
 pub struct TransactionRuntimeModule {
@@ -31,7 +36,13 @@ impl KernelModule for TransactionRuntimeModule {
                 hash,
                 next_id: 0u32,
             }),
-            BTreeMap::new(),
+            btreemap!(
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                        package_address: TRANSACTION_RUNTIME_PACKAGE,
+                        blueprint_name: TRANSACTION_RUNTIME_BLUEPRINT.to_string(),
+                        global: false,
+                    })
+            ),
         )?;
         Ok(())
     }
