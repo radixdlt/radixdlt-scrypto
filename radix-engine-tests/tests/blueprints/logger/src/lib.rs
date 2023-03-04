@@ -1,7 +1,7 @@
 use scrypto::prelude::*;
 
 #[blueprint]
-mod Logger {
+mod logger {
     struct Logger {
         vaults: Vec<Vault>,
     }

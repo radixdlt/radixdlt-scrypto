@@ -1,8 +1,8 @@
 use jellyfish::JellyfishMerkleTree;
 use radix_engine_interface::api::types::{NodeModuleId, RENodeId, SubstateId, SubstateOffset};
 use radix_engine_interface::crypto::{hash, Hash};
-use radix_engine_interface::data::scrypto_encode;
-use radix_engine_interface::ScryptoSbor;
+use radix_engine_interface::data::scrypto::scrypto_encode;
+use radix_engine_interface::*;
 use sbor::rust::collections::{index_map_new, IndexMap};
 use sbor::rust::vec::Vec;
 use tree_store::{

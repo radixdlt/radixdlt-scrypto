@@ -2,10 +2,8 @@ use radix_engine::errors::{InterpreterError, KernelError, RuntimeError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::SCRYPTO_SBOR_V1_MAX_DEPTH;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::data::manifest_args;
 
 #[test]
 fn deep_auth_rules_on_component_create_creation_fails() {
@@ -118,7 +116,7 @@ fn malicious_component_replying_with_large_payload_is_handled_well_by_engine() {
     receipt.expect_specific_failure(|f| {
         matches!(
             f,
-            RuntimeError::InterpreterError(InterpreterError::InvalidScryptoReturn(
+            RuntimeError::InterpreterError(InterpreterError::ScryptoOutputDecodeError(
                 DecodeError::MaxDepthExceeded(_)
             ))
         )
@@ -134,7 +132,7 @@ fn publish_wasm_with_deep_sbor_response_and_execute_it(depth: usize) -> Transact
     );
     let package_address = test_runner.publish_package(
         code,
-        generate_single_function_abi("Test", "f", Type::Any),
+        single_function_package_schema("Test", "f"),
         BTreeMap::new(),
         BTreeMap::new(),
         AccessRules::new(),

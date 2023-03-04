@@ -4,7 +4,6 @@ use radix_engine::types::*;
 use radix_engine_constants::DEFAULT_MAX_CALL_DEPTH;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::data::manifest_args;
 
 #[test]
 fn test_max_call_depth_success() {

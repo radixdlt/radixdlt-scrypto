@@ -177,8 +177,8 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
         start_offset: usize,
         container_header: ContainerHeader<T>,
     ) -> LocatedTraversalEvent<'t, 'de, T> {
-        let stack_depth_of_container = self.child_value_depth_for_next_value();
-        if stack_depth_of_container >= self.max_depth {
+        let child_depth = self.child_value_depth_for_next_value();
+        if container_header.get_child_count() > 0 && child_depth > self.max_depth {
             // We're already at the max depth, we can't add any more containers to the stack
             return self.map_error(start_offset, DecodeError::MaxDepthExceeded(self.max_depth));
         }

@@ -1,9 +1,11 @@
-use crate::abi::*;
 use crate::api::types::*;
-use crate::data::model::Own;
-use radix_engine_derive::*;
-use sbor::rust::collections::*;
+use crate::data::scrypto::model::Own;
+use crate::data::scrypto::model::*;
+use crate::schema::*;
+use crate::*;
+use sbor::rust::fmt;
 use sbor::rust::fmt::{Debug, Formatter};
+use sbor::rust::prelude::*;
 
 pub const NATIVE_PACKAGE_CODE_ID: u8 = 0u8;
 pub const RESOURCE_MANAGER_PACKAGE_CODE_ID: u8 = 1u8;
@@ -38,28 +40,9 @@ impl Debug for PackageCodeSubstate {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct PackageInfoSubstate {
-    pub blueprint_abis: BTreeMap<String, BlueprintAbi>,
+    pub schema: PackageSchema,
     pub dependent_resources: BTreeSet<ResourceAddress>,
     pub dependent_components: BTreeSet<ComponentAddress>,
-}
-
-impl PackageInfoSubstate {
-    pub fn blueprint_abi(&self, blueprint_name: &str) -> Option<&BlueprintAbi> {
-        self.blueprint_abis.get(blueprint_name)
-    }
-
-    // TODO: Reorganize structure
-    pub fn fn_abi(&self, export_name: &str) -> Option<&Fn> {
-        for (_, abi) in &self.blueprint_abis {
-            for function in &abi.fns {
-                if export_name.eq(&function.export_name) {
-                    return Some(function);
-                }
-            }
-        }
-
-        return None;
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

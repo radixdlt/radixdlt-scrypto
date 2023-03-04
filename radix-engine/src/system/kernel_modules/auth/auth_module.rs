@@ -1,3 +1,8 @@
+use super::auth_converter::convert_contextless;
+use super::method_authorization::MethodAuthorization;
+use super::HardAuthRule;
+use super::HardProofRule;
+use super::HardResourceOrNonFungible;
 use crate::blueprints::resource::VaultInfoSubstate;
 use crate::errors::*;
 use crate::kernel::actor::{Actor, ActorIdentifier};
@@ -23,14 +28,7 @@ use radix_engine_interface::api::types::{
     AuthZoneStackOffset, RENodeId, SubstateOffset, VaultOffset,
 };
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::ScryptoValue;
 use transaction::model::AuthZoneParams;
-
-use super::auth_converter::convert_contextless;
-use super::method_authorization::MethodAuthorization;
-use super::HardAuthRule;
-use super::HardProofRule;
-use super::HardResourceOrNonFungible;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
@@ -244,7 +242,7 @@ impl AuthModule {
         key: MethodKey,
         api: &mut Y,
     ) -> Result<MethodAuthorization, RuntimeError> {
-        let schema = {
+        let (blueprint_schema, index) = {
             let (package_address, blueprint_ident) = TypeInfoBlueprint::get_type(receiver, api)?;
 
             let handle = api.kernel_lock_substate(
@@ -254,14 +252,19 @@ impl AuthModule {
                 LockFlags::read_only(),
             )?;
             let package: &PackageInfoSubstate = api.kernel_get_substate_ref(handle)?;
-
             let schema = package
-                .blueprint_abi(&blueprint_ident)
-                .expect("Blueprint not found for existing component")
-                .structure
+                .schema
+                .blueprints
+                .get(&blueprint_ident)
+                .expect("Blueprint schema not found")
+                .clone();
+            let index = schema
+                .substates
+                .get(&0)
+                .expect("Substate schema [offset: 0] not found")
                 .clone();
             api.kernel_drop_lock(handle)?;
-            schema
+            (schema, index)
         };
 
         let state = {
@@ -288,7 +291,7 @@ impl AuthModule {
         let access_rules: &MethodAccessRulesSubstate = api.kernel_get_substate_ref(handle)?;
 
         let method_auth = access_rules.access_rules.get(&key);
-        let authorization = convert(&schema, &state, method_auth);
+        let authorization = convert(&blueprint_schema.schema, index, &state, method_auth);
 
         api.kernel_drop_lock(handle)?;
 

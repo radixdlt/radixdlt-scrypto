@@ -33,6 +33,5 @@ pub type DefaultWasmEngine = WasmiEngine;
 pub type DefaultWasmInstance = WasmiInstance;
 
 // TODO: expand if package is upgradable.
-use radix_engine_interface::api::types::PackageAddress;
-pub type CodeKey = PackageAddress;
+pub type CodeKey = radix_engine_interface::data::scrypto::model::PackageAddress;
 pub type MeteredCodeKey = (CodeKey, WasmMeteringConfig);

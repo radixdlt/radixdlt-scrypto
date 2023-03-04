@@ -4,11 +4,8 @@ use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use native_sdk::resource::{ResourceManager, SysBucket};
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::types::{RENodeId, SubstateOffset, WorktopOffset};
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::ScryptoValue;
 
 #[derive(Debug)]
 pub struct WorktopSubstate {
@@ -43,8 +40,10 @@ impl WorktopBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let _input: WorktopDropInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+        let _input: WorktopDropInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let mut node = api.kernel_drop_node(RENodeId::Worktop)?;
         let substate = node
@@ -71,8 +70,10 @@ impl WorktopBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: WorktopPutInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+        let input: WorktopPutInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let resource_address = input.bucket.sys_resource_address(api)?;
         let amount = input.bucket.sys_amount(api)?;
@@ -107,8 +108,10 @@ impl WorktopBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: WorktopTakeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+        let input: WorktopTakeInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let resource_address = input.resource_address;
         let amount = input.amount;
@@ -163,7 +166,9 @@ impl WorktopBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: WorktopTakeNonFungiblesInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            .map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let resource_address = input.resource_address;
         let ids = input.ids;
@@ -217,8 +222,10 @@ impl WorktopBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: WorktopTakeAllInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+        let input: WorktopTakeAllInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let worktop_handle = api.sys_lock_substate(
             receiver,
@@ -246,7 +253,9 @@ impl WorktopBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: WorktopAssertContainsInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            .map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let worktop_handle = api.sys_lock_substate(
             receiver,
@@ -277,8 +286,9 @@ impl WorktopBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: WorktopAssertContainsAmountInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let worktop_handle = api.sys_lock_substate(
             receiver,
@@ -309,8 +319,9 @@ impl WorktopBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: WorktopAssertContainsNonFungiblesInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let worktop_handle = api.sys_lock_substate(
             receiver,
@@ -341,8 +352,10 @@ impl WorktopBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let _input: WorktopDrainInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+        let _input: WorktopDrainInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let worktop_handle = api.sys_lock_substate(
             receiver,

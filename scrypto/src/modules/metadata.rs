@@ -9,7 +9,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 use radix_engine_interface::api::types::{NodeModuleId, ObjectId, RENodeId};
 use radix_engine_interface::api::{ClientObjectApi, ClientPackageApi};
 use radix_engine_interface::constants::METADATA_PACKAGE;
-use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
+use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use sbor::rust::prelude::ToOwned;
 use sbor::rust::string::String;
 

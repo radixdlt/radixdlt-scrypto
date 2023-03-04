@@ -4,15 +4,13 @@ use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::types::*;
 use crate::{
     blueprints::transaction_runtime::TransactionRuntimeSubstate, errors::RuntimeError,
     system::node::RENodeInit,
 };
-use radix_engine_interface::api::types::{NodeModuleId, RENodeId, RENodeType};
 use radix_engine_interface::blueprints::transaction_runtime::TRANSACTION_RUNTIME_BLUEPRINT;
-use radix_engine_interface::constants::TRANSACTION_RUNTIME_PACKAGE;
 use radix_engine_interface::crypto::Hash;
-use radix_engine_interface::data::ScryptoValue;
 use sbor::btreemap;
 use sbor::rust::string::ToString;
 

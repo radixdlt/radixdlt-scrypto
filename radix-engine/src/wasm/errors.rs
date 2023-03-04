@@ -1,5 +1,3 @@
-use radix_engine_interface::api::types::BufferId;
-
 use crate::errors::{CanBeAbortion, InvokeError, KernelError, RuntimeError, SelfError};
 use crate::system::kernel_modules::costing::FeeReserveError;
 use crate::transaction::AbortReason;
@@ -129,7 +127,7 @@ pub enum WasmRuntimeError {
     /// Invalid access rules
     InvalidAccessRulesChain(DecodeError),
     /// Invalid access rules
-    InvalidAbi(DecodeError),
+    InvalidSchema(DecodeError),
     /// Invalid royalty config
     InvalidRoyaltyConfig(DecodeError),
     /// Invalid metadata

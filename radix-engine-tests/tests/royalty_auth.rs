@@ -2,7 +2,6 @@ use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::data::{manifest_args, ManifestExpression};
 
 fn set_up_package_and_component() -> (
     TestRunner,
@@ -20,11 +19,11 @@ fn set_up_package_and_component() -> (
         NonFungibleGlobalId::new(owner_badge_resource, NonFungibleLocalId::integer(1));
 
     // Publish package
-    let (code, abi) = Compile::compile("./tests/blueprints/royalty-auth");
+    let (code, schema) = Compile::compile("./tests/blueprints/royalty-auth");
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 10u32.into())
-            .publish_package_with_owner(code, abi, owner_badge_addr.clone())
+            .publish_package_with_owner(code, schema, owner_badge_addr.clone())
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );

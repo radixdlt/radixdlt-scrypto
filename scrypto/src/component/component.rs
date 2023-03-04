@@ -1,4 +1,3 @@
-use crate::abi::*;
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::modules::AttachedMetadata;
 use crate::runtime::*;
@@ -15,15 +14,23 @@ use radix_engine_interface::api::node_modules::royalty::{
 use radix_engine_interface::api::types::{ObjectId, RENodeId};
 use radix_engine_interface::api::{types::*, ClientObjectApi, ClientPackageApi};
 use radix_engine_interface::blueprints::resource::{
-    require, AccessRule, AccessRuleEntry, AccessRules, Bucket, MethodKey,
+    require, AccessRule, AccessRuleEntry, AccessRules, Bucket, MethodKey, NonFungibleGlobalId,
 };
 use radix_engine_interface::constants::{ACCESS_RULES_PACKAGE, ROYALTY_PACKAGE};
-use radix_engine_interface::data::{
-    scrypto_decode, scrypto_encode, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
+use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::OWN_ID;
+use radix_engine_interface::data::scrypto::{
+    scrypto_decode, scrypto_encode, ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode,
+    ScryptoEncode,
 };
 use radix_engine_interface::rule;
 use sbor::rust::vec::Vec;
+use sbor::{
+    btreemap, Categorize, Decode, DecodeError, Decoder, Describe, Encode, EncodeError, Encoder,
+    GlobalTypeId, ValueKind,
+};
 use scrypto::modules::Metadata;
+use sbor::rust::string::String;
+use sbor::rust::string::ToString;
 
 use super::ComponentAccessRules;
 
@@ -294,8 +301,7 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for O
     }
 }
 
-impl scrypto_abi::LegacyDescribe for OwnedComponent {
-    fn describe() -> scrypto_abi::Type {
-        Type::Component
-    }
+// TODO: generics support for Scrypto components?
+impl Describe<ScryptoCustomTypeKind> for OwnedComponent {
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown([OWN_ID]);
 }

@@ -1,19 +1,40 @@
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::api::{ClientApi, ClientObjectApi};
+use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::transaction_runtime::*;
 use radix_engine_interface::constants::{CLOCK, EPOCH_MANAGER};
-use radix_engine_interface::data::{
-    scrypto_decode, scrypto_encode, ScryptoCategorize, ScryptoDecode,
-};
+use radix_engine_interface::crypto::hash;
+use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::time::*;
 use sbor::rust::fmt::Debug;
+use sbor::{generate_full_schema, TypeAggregator, TypeMetadata};
 
 #[derive(Debug)]
 pub struct Runtime {}
 
 impl Runtime {
+    /// Emits an application event
+    pub fn emit_event<T: ScryptoEncode + ScryptoDescribe, Y, E>(
+        api: &mut Y,
+        event: T,
+    ) -> Result<(), E>
+    where
+        Y: ClientEventApi<E>,
+        E: Debug + ScryptoCategorize + ScryptoDecode,
+    {
+        // FIXME: schema - replace this placeholder implementation
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+        let type_index = aggregator.add_child_type_and_descendents::<T>();
+        let schema = generate_full_schema(aggregator);
+        let metadata = schema.resolve_type_metadata(type_index);
+        let type_hash = match metadata {
+            Some(TypeMetadata { type_name, .. }) => hash(type_name.as_ref()),
+            None => todo!(),
+        };
+        api.emit_raw_event(type_hash, scrypto_encode(&event).unwrap())
+    }
+
     pub fn sys_current_epoch<Y, E>(api: &mut Y) -> Result<u64, E>
     where
         Y: ClientObjectApi<E>,

@@ -12,11 +12,11 @@ syn = { version = "1.0.93", features = ["full", "extra-traits"] }
 quote = { version = "1.0.18" }
 serde = { version = "1.0.137", default-features = false }
 serde_json = { version = "1.0.81", default-features = false }
-scrypto-abi = { path = "../scrypto-abi", default-features = false }
+scrypto-schema = { path = "../scrypto-schema", default-features = false }
 
 [features]
 # Currenlty, dependencies of procedrual macros are imported to host crates. This may accidentally 
-# enable unwanted features of host dependencies, i.e. `serde`, `serde_json`, `sbor` and `scrypto-abi`.
+# enable unwanted features of host dependencies, i.e. `serde`, `serde_json`, `sbor` and `scrypto-schema`.
 # 
 # To work around with it, we've added features `std` and `alloc` for `scrypto-derive`, even
 # though it only works under `std` environment.
@@ -28,15 +28,15 @@ scrypto-abi = { path = "../scrypto-abi", default-features = false }
 default = ["std"]
 std = [
     "serde/std", "serde_json/std", 
-    "scrypto-abi/std", "scrypto-abi/serde"
+    "scrypto-schema/std", "scrypto-schema/serde"
 ]
 alloc = [
     "serde/alloc", "serde_json/alloc", 
-    "scrypto-abi/alloc", "scrypto-abi/serde"
+    "scrypto-schema/alloc", "scrypto-schema/serde"
 ]
 
 # Enable trace
 trace = []
 
-# Disable ABI gen in the output WASM.
-no-abi-gen = []
+# Disable schema gen in the output WASM.
+no-schema = []

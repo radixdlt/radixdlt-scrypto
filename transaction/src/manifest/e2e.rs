@@ -13,7 +13,7 @@ mod tests {
             &NetworkDefinition::simulator(),
             vec![
                 include_bytes!("../../examples/package/code.blob").to_vec(),
-                include_bytes!("../../examples/package/abi.blob").to_vec(),
+                include_bytes!("../../examples/package/schema.blob").to_vec(),
             ],
             r##"
 CALL_METHOD
@@ -145,7 +145,7 @@ CALL_METHOD
             &NetworkDefinition::simulator(),
             vec![
                 include_bytes!("../../examples/package/code.blob").to_vec(),
-                include_bytes!("../../examples/package/abi.blob").to_vec(),
+                include_bytes!("../../examples/package/schema.blob").to_vec(),
             ],
             r##"
 TAKE_FROM_WORKTOP
@@ -557,7 +557,7 @@ CREATE_ACCESS_CONTROLLER
                 "a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0",
             ),
             (
-                "${abi_blob_hash}",
+                "${schema_blob_hash}",
                 "554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791",
             ),
             ("${initial_supply}", "12"),

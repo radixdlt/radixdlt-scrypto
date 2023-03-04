@@ -2,8 +2,8 @@ use crate::data::*;
 use crate::errors::*;
 use crate::model::*;
 use crate::validation::*;
+use radix_engine_common::data::scrypto::model::NonFungibleLocalId;
 use radix_engine_interface::address::{AddressError, Bech32Encoder};
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
 };
@@ -20,14 +20,13 @@ use radix_engine_interface::constants::{
     ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, EPOCH_MANAGER, IDENTITY_PACKAGE,
     RESOURCE_MANAGER_PACKAGE,
 };
+use radix_engine_interface::data::manifest::model::*;
+use radix_engine_interface::data::manifest::*;
 use radix_engine_interface::network::NetworkDefinition;
+use radix_engine_interface::*;
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
-use transaction_data::manifest_decode;
-use transaction_data::manifest_encode;
-use transaction_data::ManifestCustomValue;
-use transaction_data::ManifestEncode;
-use transaction_data::ManifestValue;
+use sbor::*;
 use utils::ContextualDisplay;
 
 #[derive(Debug, Clone)]
@@ -427,14 +426,14 @@ pub fn decompile_instruction<F: fmt::Write>(
         }
         Instruction::PublishPackage {
             code,
-            abi,
+            schema,
             royalty_config,
             metadata,
             access_rules,
         } => {
             f.write_str("PUBLISH_PACKAGE")?;
             format_typed_value(f, context, code)?;
-            format_typed_value(f, context, abi)?;
+            format_typed_value(f, context, schema)?;
             format_typed_value(f, context, royalty_config)?;
             format_typed_value(f, context, metadata)?;
             format_typed_value(f, context, access_rules)?;

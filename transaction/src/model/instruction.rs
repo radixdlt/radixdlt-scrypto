@@ -1,13 +1,14 @@
+use radix_engine_common::data::scrypto::model::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::resource::{AccessRule, AccessRules, MethodKey};
+use radix_engine_interface::data::manifest::model::*;
 use radix_engine_interface::math::Decimal;
+use radix_engine_interface::*;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
-use transaction_data::model::*;
-use transaction_data::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, ManifestCategorize, ManifestEncode, ManifestDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
 pub enum Instruction {
     /// Takes resource from worktop.
     TakeFromWorktop {
@@ -98,7 +99,7 @@ pub enum Instruction {
     /// Publish a package.
     PublishPackage {
         code: ManifestBlobRef,
-        abi: ManifestBlobRef,
+        schema: ManifestBlobRef,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
         access_rules: AccessRules,

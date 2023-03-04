@@ -1,34 +1,3 @@
-use crate::blueprints::account::AccountSubstate;
-use crate::blueprints::identity::Identity;
-use crate::blueprints::resource::{
-    BucketInfoSubstate, FungibleProof, NonFungibleProof, ProofInfoSubstate,
-};
-use crate::errors::RuntimeError;
-use crate::errors::*;
-use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
-use crate::system::node::{RENodeInit, RENodeModuleInit};
-use crate::system::node_properties::VisibilityProperties;
-use crate::system::node_substates::{RuntimeSubstate, SubstateRef, SubstateRefMut};
-use crate::types::*;
-use crate::wasm::WasmEngine;
-use native_sdk::access_rules::AccessRulesObject;
-use native_sdk::metadata::Metadata;
-use radix_engine_interface::api::package::PackageCodeSubstate;
-use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::{ClientObjectApi, ClientPackageApi};
-// TODO: clean this up!
-use crate::kernel::kernel_api::TemporaryResolvedInvocation;
-use crate::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine_interface::api::types::{
-    LockHandle, ProofOffset, RENodeId, SubstateId, SubstateOffset,
-};
-use radix_engine_interface::blueprints::account::{
-    ACCOUNT_BLUEPRINT, ACCOUNT_DEPOSIT_BATCH_IDENT, ACCOUNT_DEPOSIT_IDENT,
-};
-use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::rule;
-use sbor::rust::mem;
-
 use super::actor::{Actor, ExecutionMode};
 use super::call_frame::{CallFrame, RENodeVisibilityOrigin};
 use super::heap::{Heap, HeapRENode};
@@ -41,6 +10,35 @@ use super::kernel_api::{
 use super::module::KernelModule;
 use super::module_mixer::KernelModuleMixer;
 use super::track::{Track, TrackError};
+use crate::blueprints::account::AccountSubstate;
+use crate::blueprints::identity::Identity;
+use crate::blueprints::resource::{
+    BucketInfoSubstate, FungibleProof, NonFungibleProof, ProofInfoSubstate,
+};
+use crate::errors::RuntimeError;
+use crate::errors::*;
+use crate::kernel::kernel_api::TemporaryResolvedInvocation;
+use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
+use crate::system::node::{RENodeInit, RENodeModuleInit};
+use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::system::node_properties::VisibilityProperties;
+use crate::system::node_substates::{RuntimeSubstate, SubstateRef, SubstateRefMut};
+use crate::types::*;
+use crate::wasm::WasmEngine;
+use native_sdk::access_rules::AccessRulesObject;
+use native_sdk::metadata::Metadata;
+use radix_engine_interface::api::package::PackageCodeSubstate;
+use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::api::types::{
+    LockHandle, ProofOffset, RENodeId, SubstateId, SubstateOffset,
+};
+use radix_engine_interface::api::{ClientObjectApi, ClientPackageApi};
+use radix_engine_interface::blueprints::account::{
+    ACCOUNT_BLUEPRINT, ACCOUNT_DEPOSIT_BATCH_IDENT, ACCOUNT_DEPOSIT_IDENT,
+};
+use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::rule;
+use sbor::rust::mem;
 
 pub struct Kernel<
     'g, // Lifetime of values outliving all frames

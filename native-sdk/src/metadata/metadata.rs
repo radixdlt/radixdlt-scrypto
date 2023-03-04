@@ -4,11 +4,9 @@ use radix_engine_interface::api::node_modules::metadata::{
 };
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::constants::METADATA_PACKAGE;
-use radix_engine_interface::data::model::Own;
-use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode};
-use sbor::rust::collections::BTreeMap;
-use sbor::rust::fmt::Debug;
-use sbor::rust::string::String;
+use radix_engine_interface::data::scrypto::model::Own;
+use radix_engine_interface::data::scrypto::*;
+use sbor::rust::prelude::*;
 
 pub struct Metadata;
 

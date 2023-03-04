@@ -4,7 +4,6 @@ use radix_engine_interface::constants::FAUCET_COMPONENT;
 use scrypto::resource::DIVISIBILITY_MAXIMUM;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::data::{manifest_args, ManifestProof};
 use transaction::model::Instruction;
 
 #[test]

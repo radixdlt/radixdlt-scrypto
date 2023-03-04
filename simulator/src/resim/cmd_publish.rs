@@ -46,19 +46,19 @@ pub struct Publish {
 impl Publish {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         // Load wasm code
-        let (code_path, abi_path) = if self.path.extension() != Some(OsStr::new("wasm")) {
+        let (code_path, schema_path) = if self.path.extension() != Some(OsStr::new("wasm")) {
             build_package(&self.path, false, false).map_err(Error::BuildError)?
         } else {
             let code_path = self.path.clone();
-            let abi_path = code_path.with_extension("abi");
-            (code_path, abi_path)
+            let schema_path = code_path.with_extension("schema");
+            (code_path, schema_path)
         };
 
         let code = fs::read(code_path).map_err(Error::IOError)?;
-        let abi = scrypto_decode(
-            &fs::read(&abi_path).map_err(|err| Error::IOErrorAtPath(err, abi_path))?,
+        let schema = scrypto_decode(
+            &fs::read(&schema_path).map_err(|err| Error::IOErrorAtPath(err, schema_path))?,
         )
-        .map_err(Error::DataError)?;
+        .map_err(Error::SborDecodeError)?;
 
         if let Some(package_address) = self.package_address.clone() {
             let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
@@ -93,7 +93,7 @@ impl Publish {
             );
 
             let package_info = PackageInfoSubstate {
-                blueprint_abis: abi,
+                schema,
                 dependent_resources: BTreeSet::new(),
                 dependent_components: BTreeSet::new(),
             };
@@ -122,7 +122,7 @@ impl Publish {
 
             let manifest = ManifestBuilder::new()
                 .lock_fee(FAUCET_COMPONENT, 100u32.into())
-                .publish_package_with_owner(code, abi, owner_badge_non_fungible_global_id)
+                .publish_package_with_owner(code, schema, owner_badge_non_fungible_global_id)
                 .build();
 
             let receipt = handle_manifest(

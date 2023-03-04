@@ -9,7 +9,6 @@ use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::clock::TimePrecision;
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::TestRunner;
-use transaction::data::manifest_encode;
 use transaction::{builder::ManifestBuilder, model::TransactionManifest};
 
 #[test]

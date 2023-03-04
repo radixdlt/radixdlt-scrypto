@@ -80,8 +80,8 @@ extern "C" {
     pub fn new_package(
         code_ptr: *const u8,
         code_len: usize,
-        abi_ptr: *const u8,
-        abi_len: usize,
+        schema_ptr: *const u8,
+        schema_len: usize,
         access_rules_chain_ptr: *const u8,
         access_rules_chain: usize,
         royalty_config_ptr: *const u8,
@@ -231,8 +231,8 @@ pub unsafe fn call_method(
 pub unsafe fn new_package(
     _code_ptr: *const u8,
     _code_len: usize,
-    _abi_ptr: *const u8,
-    _abi_len: usize,
+    _schema_ptr: *const u8,
+    _schema_len: usize,
     _access_rules_chain_ptr: *const u8,
     _access_rules_chain: usize,
     _royalty_config_ptr: *const u8,

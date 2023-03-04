@@ -18,6 +18,7 @@ test_crates_features \
     scrypto-derive \
     scrypto-tests \
     radix-engine-derive \
+    radix-engine-common \
     radix-engine-interface \
     radix-engine \
     radix-engine-tests \

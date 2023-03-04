@@ -1,11 +1,12 @@
-use radix_engine::errors::{ApplicationError, InterpreterError, KernelError, RuntimeError};
+use radix_engine::errors::{ApplicationError, KernelError, RuntimeError};
 use radix_engine::system::package::PackageError;
 use radix_engine::types::*;
 use radix_engine::wasm::*;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
+use sbor::basic_well_known_types::ANY_ID;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::data::manifest_args;
 
 #[test]
 fn missing_memory_should_cause_error() {
@@ -26,7 +27,7 @@ fn missing_memory_should_cause_error() {
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .publish_package(
             code,
-            BTreeMap::new(),
+            PackageSchema::default(),
             BTreeMap::new(),
             BTreeMap::new(),
             AccessRules::new(),
@@ -108,12 +109,7 @@ fn zero_return_len_should_cause_data_validation_error() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::InterpreterError(InterpreterError::InvalidScryptoReturn(..))
-        )
-    });
+    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::InterpreterError(_)));
 }
 
 #[test]
@@ -127,7 +123,7 @@ fn test_basic_package() {
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .publish_package(
             code,
-            generate_single_function_abi("Test", "f", Type::Any),
+            single_function_package_schema("Test", "f"),
             BTreeMap::new(),
             BTreeMap::new(),
             AccessRules::new(),
@@ -143,34 +139,33 @@ fn test_basic_package() {
 fn test_basic_package_missing_export() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
-    let mut blueprints = BTreeMap::new();
-    blueprints.insert(
-        "some_blueprint".to_string(),
-        BlueprintAbi {
-            structure: Type::Tuple {
-                element_types: vec![],
+    let mut package_schema = PackageSchema::default();
+    package_schema.blueprints.insert(
+        "Test".to_string(),
+        BlueprintSchema {
+            schema: ScryptoSchema {
+                type_kinds: vec![],
+                type_metadata: vec![],
+                type_validations: vec![],
             },
-            fns: vec![Fn {
-                ident: "f".to_string(),
-                mutability: Option::None,
-                input: Type::Tuple {
-                    element_types: vec![],
-                },
-                output: Type::Tuple {
-                    element_types: vec![],
-                },
-                export_name: "f".to_string(),
-            }],
+            substates: btreemap!(),
+            functions: btreemap!(
+                "f".to_string() => FunctionSchema {
+                    receiver: Option::None,
+                    input: LocalTypeIndex::WellKnown(ANY_ID),
+                    output: LocalTypeIndex::WellKnown(ANY_ID),
+                    export_name: "not_exist".to_string(),
+                }
+            ),
         },
     );
-
     // Act
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .publish_package(
             code,
-            blueprints,
+            package_schema,
             BTreeMap::new(),
             BTreeMap::new(),
             AccessRules::new(),

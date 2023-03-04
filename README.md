@@ -98,7 +98,7 @@ scrypto test
 - `sbor`: The binary data format used by Scrypto.
 - `sbor-derive`: Derives for encoding and decoding Rust `struct` and `enum`.
 - `scrypto`: Scrypto standard library.
-- `scrypto-abi`: Scrypto blueprint ABI.
+- `scrypto-schema`: Scrypto package schema.
 - `scrypto-derive`: Derives for defining and importing Scrypto blueprints.
 - `radix-engine`: The Scrypto execution engine.
 - `simulator`: A simulator that run Scrypto code on a filesystem based ledger.

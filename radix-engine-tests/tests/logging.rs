@@ -1,7 +1,7 @@
 use radix_engine::{transaction::TransactionReceipt, types::*};
 use radix_engine_interface::blueprints::logger::Level;
 use scrypto_unit::*;
-use transaction::{builder::ManifestBuilder, data::manifest_args};
+use transaction::builder::ManifestBuilder;
 
 fn log_message<S: AsRef<str>>(message: S, panic_log: bool) -> TransactionReceipt {
     let mut test_runner = TestRunner::builder().build();

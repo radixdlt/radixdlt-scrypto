@@ -13,15 +13,12 @@ use native_sdk::resource::SysBucket;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::types::{
     NonFungibleStoreId, NonFungibleStoreOffset, RENodeId, ResourceManagerOffset, SubstateOffset,
 };
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::model::Own;
-use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;
 
@@ -485,8 +482,9 @@ impl ResourceManagerBlueprint {
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateNonFungibleInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalResourceManager)?;
         let address = create_non_fungible_resource_manager(
@@ -508,8 +506,9 @@ impl ResourceManagerBlueprint {
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateNonFungibleWithAddressInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         // If address isn't user frame allocated or pre_allocated then
         // using this node_id will fail on create_node below
@@ -535,8 +534,9 @@ impl ResourceManagerBlueprint {
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateNonFungibleWithInitialSupplyInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalResourceManager)?;
         let resource_address: ResourceAddress = global_node_id.into();
@@ -590,8 +590,9 @@ impl ResourceManagerBlueprint {
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateUuidNonFungibleWithInitialSupplyInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalResourceManager)?;
         let resource_address: ResourceAddress = global_node_id.into();
@@ -643,8 +644,9 @@ impl ResourceManagerBlueprint {
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateFungibleInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalResourceManager)?;
         let address = create_fungible_resource_manager(
@@ -666,8 +668,9 @@ impl ResourceManagerBlueprint {
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateFungibleWithInitialSupplyInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalResourceManager)?;
         let resource_address: ResourceAddress = global_node_id.into();
@@ -712,8 +715,9 @@ impl ResourceManagerBlueprint {
     {
         // TODO: Remove decode/encode mess
         let input: ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let global_node_id =
             RENodeId::GlobalResourceManager(ResourceAddress::Normal(input.resource_address));
@@ -758,8 +762,9 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: ResourceManagerBurnBucketInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         if input.bucket.sys_amount(api)?.is_zero() {
             api.kernel_drop_node(RENodeId::Object(input.bucket.0))?;
@@ -781,8 +786,9 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: ResourceManagerMintNonFungibleInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let resman_handle = api.sys_lock_substate(
             receiver,
@@ -888,9 +894,10 @@ impl ResourceManagerBlueprint {
             api.sys_drop_lock(non_fungible_handle)?;
         }
 
-        api.emit_event(MintResourceEvent::Ids(
-            input.entries.into_iter().map(|(k, _)| k).collect(),
-        ))?;
+        Runtime::emit_event(
+            api,
+            MintResourceEvent::Ids(input.entries.into_iter().map(|(k, _)| k).collect()),
+        )?;
 
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
@@ -904,8 +911,9 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: ResourceManagerMintUuidNonFungibleInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let resman_handle = api.sys_lock_substate(
             receiver,
@@ -977,7 +985,7 @@ impl ResourceManagerBlueprint {
             (bucket_id, ids)
         };
 
-        api.emit_event(MintResourceEvent::Ids(ids))?;
+        Runtime::emit_event(api, MintResourceEvent::Ids(ids))?;
 
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
@@ -991,8 +999,9 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: ResourceManagerMintFungibleInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let resman_handle = api.sys_lock_substate(
             receiver,
@@ -1049,7 +1058,7 @@ impl ResourceManagerBlueprint {
             }
         };
 
-        api.emit_event(MintResourceEvent::Amount(input.amount))?;
+        Runtime::emit_event(api, MintResourceEvent::Amount(input.amount))?;
 
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
@@ -1063,7 +1072,9 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: ResourceManagerBurnInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            .map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let resman_handle = api.sys_lock_substate(
             receiver,
@@ -1130,7 +1141,7 @@ impl ResourceManagerBlueprint {
             }
         }
 
-        api.emit_event(event)?;
+        Runtime::emit_event(api, event)?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -1144,8 +1155,9 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let _input: ResourceManagerCreateBucketInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let resman_handle = api.sys_lock_substate(
             receiver,
@@ -1193,8 +1205,9 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let _input: ResourceManagerCreateVaultInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let resman_handle = api.sys_lock_substate(
             receiver,
@@ -1234,9 +1247,12 @@ impl ResourceManagerBlueprint {
             }
         };
 
-        api.emit_event(VaultCreationEvent {
-            vault_id: RENodeId::Object(vault_id),
-        })?;
+        Runtime::emit_event(
+            api,
+            VaultCreationEvent {
+                vault_id: RENodeId::Object(vault_id),
+            },
+        )?;
 
         Ok(IndexedScryptoValue::from_typed(&Own::Vault(vault_id)))
     }
@@ -1250,8 +1266,9 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: ResourceManagerUpdateNonFungibleDataInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let resman_handle = api.sys_lock_substate(
             receiver,
@@ -1298,8 +1315,9 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: ResourceManagerNonFungibleExistsInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let resman_handle = api.sys_lock_substate(
             receiver,
@@ -1334,8 +1352,9 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let _input: ResourceManagerGetResourceTypeInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let resman_handle = api.sys_lock_substate(
             receiver,
@@ -1359,8 +1378,9 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let _input: ResourceManagerGetTotalSupplyInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
         let resman_handle = api.sys_lock_substate(
             receiver,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
@@ -1381,8 +1401,9 @@ impl ResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: ResourceManagerGetNonFungibleInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let resman_handle = api.sys_lock_substate(
             receiver,

@@ -18,14 +18,12 @@ use crate::transaction::TransactionOutcome;
 use crate::transaction::TransactionResult;
 use crate::transaction::{AbortReason, AbortResult, CommitResult};
 use crate::types::*;
-use radix_engine_interface::abi::LegacyDescribe;
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::crypto::hash;
-use radix_engine_interface::events::EventTypeIdentifier;
 use sbor::rust::collections::*;
 
 use super::event::TrackedEvent;
@@ -590,8 +588,8 @@ impl<'s> FinalizingTrack<'s> {
         // Commit/rollback application state changes
         let mut to_persist = HashMap::new();
         let next_epoch = {
-            let expected_schema_hash =
-                hash(scrypto_encode(&EpochChangeEvent::describe()).expect("Impossible Case!"));
+            // FIXME: schema - update
+            let expected_schema_hash = hash("EpochChangeEvent");
             application_events
                 .iter()
                 .find(|(identifier, _)| match identifier {

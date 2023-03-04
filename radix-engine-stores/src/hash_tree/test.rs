@@ -1,7 +1,7 @@
-use super::types::{Nibble, NibblePath, SPARSE_MERKLE_PLACEHOLDER_HASH};
+use super::types::{Nibble, NibblePath, Version, SPARSE_MERKLE_PLACEHOLDER_HASH};
 use crate::hash_tree::tree_store::{
     SerializedInMemoryTreeStore, TreeChildEntry, TreeInternalNode, TreeLeafNode, TreeNode,
-    TypedInMemoryTreeStore, Version,
+    TypedInMemoryTreeStore,
 };
 use crate::hash_tree::{put_at_next_version, SubstateHashChange};
 use itertools::Itertools;
@@ -12,7 +12,7 @@ use radix_engine_interface::api::types::{
     KeyValueStoreOffset, NodeModuleId, RENodeId, SubstateId, SubstateOffset,
 };
 use radix_engine_interface::crypto::{hash, Hash};
-use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
+use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 
 #[test]
 fn hash_of_next_version_differs_when_value_changed() {

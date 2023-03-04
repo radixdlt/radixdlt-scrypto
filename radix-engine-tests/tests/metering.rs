@@ -3,9 +3,9 @@ use radix_engine::types::*;
 use radix_engine_constants::DEFAULT_MAX_INVOKE_INPUT_SIZE;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::schema::PackageSchema;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::data::{manifest_args, ManifestExpression};
 use transaction::model::TransactionManifest;
 
 // For WASM-specific metering tests, see `wasm_metering.rs`.
@@ -68,12 +68,12 @@ fn test_basic_transfer() {
     // (cd radix-engine && cargo test --test metering -- test_basic_transfer)
     assert_eq!(
         10000 /* CreateNode */
-        + 71000 /* DropLock */
+        + 65500 /* DropLock */
         + 10000 /* DropNode */
         + 10000 /* Invoke */
-        + 71500 /* LockSubstate */
-        + 51500 /* ReadSubstate */
-        + 65000 /* RunPrecompiled */
+        + 66000 /* LockSubstate */
+        + 46000 /* ReadSubstate */
+        + 65000 /* RunNative */
         + 0 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1320 /* TxPayloadCost */
@@ -97,7 +97,7 @@ fn test_radiswap() {
     // Publish package
     let package_address = test_runner.publish_package(
         include_bytes!("../../assets/radiswap.wasm").to_vec(),
-        scrypto_decode(include_bytes!("../../assets/radiswap.abi")).unwrap(),
+        scrypto_decode(include_bytes!("../../assets/radiswap.schema")).unwrap(),
         btreemap!(
             "Radiswap".to_owned() => RoyaltyConfigBuilder::new()
                 .add_rule("instantiate_pool", 5)
@@ -200,13 +200,13 @@ fn test_radiswap() {
     // (cd radix-engine && cargo test --test metering -- test_radiswap)
     assert_eq!(
         15000 /* CreateNode */
-        + 201000 /* DropLock */
+        + 186000 /* DropLock */
         + 12500 /* DropNode */
         + 24330 /* Invoke */
-        + 203000 /* LockSubstate */
-        + 2664740 /* ReadSubstate */
-        + 147500 /* RunPrecompiled */
-        + 1629580 /* RunWasm */
+        + 187500 /* LockSubstate */
+        + 2602100 /* ReadSubstate */
+        + 147500 /* RunNative */
+        + 1619500 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1705 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
@@ -230,7 +230,7 @@ fn test_flash_loan() {
     // Publish package
     let package_address = test_runner.publish_package(
         include_bytes!("../../assets/flash_loan.wasm").to_vec(),
-        scrypto_decode(include_bytes!("../../assets/flash_loan.abi")).unwrap(),
+        scrypto_decode(include_bytes!("../../assets/flash_loan.schema")).unwrap(),
         btreemap!(
             "BasicFlashLoan".to_owned() => RoyaltyConfigBuilder::new()
                 .add_rule("instantiate_default", 5)
@@ -309,13 +309,13 @@ fn test_flash_loan() {
     // (cd radix-engine && cargo test --test metering -- test_flash_loan)
     assert_eq!(
         22500 /* CreateNode */
-        + 310000 /* DropLock */
+        + 285000 /* DropLock */
         + 22500 /* DropNode */
         + 45210 /* Invoke */
-        + 318500 /* LockSubstate */
-        + 5340580 /* ReadSubstate */
-        + 240000 /* RunPrecompiled */
-        + 1405090 /* RunWasm */
+        + 292500 /* LockSubstate */
+        + 5221740 /* ReadSubstate */
+        + 240000 /* RunNative */
+        + 1379180 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2475 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
@@ -339,14 +339,14 @@ fn test_publish_large_package() {
                 (export "memory" (memory $0))
             )
         "#,
-        "i".repeat(DEFAULT_MAX_INVOKE_INPUT_SIZE - 138) // ensure we fit within limit
+        "i".repeat(DEFAULT_MAX_INVOKE_INPUT_SIZE - 140) // ensure we fit within limit
     ));
-    assert_eq!(DEFAULT_MAX_INVOKE_INPUT_SIZE - 99, code.len());
+    assert_eq!(DEFAULT_MAX_INVOKE_INPUT_SIZE - 101, code.len());
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 100.into())
         .publish_package(
             code,
-            BTreeMap::new(),
+            PackageSchema::default(),
             BTreeMap::new(),
             BTreeMap::new(),
             AccessRules::new(),

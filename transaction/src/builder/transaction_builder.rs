@@ -1,7 +1,7 @@
 use crate::model::*;
 use crate::signing::Signer;
 use radix_engine_interface::crypto::hash;
-use transaction_data::manifest_encode;
+use radix_engine_interface::data::manifest::manifest_encode;
 
 pub struct TransactionBuilder {
     manifest: Option<TransactionManifest>,

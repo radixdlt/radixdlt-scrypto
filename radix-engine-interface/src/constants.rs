@@ -1,40 +1,37 @@
-use crate::address;
-use crate::api::component::ComponentAddress;
-use crate::api::package::PackageAddress;
-use crate::blueprints::resource::ResourceAddress;
-use crate::construct_address;
+use crate::data::scrypto::model::*;
+use crate::*;
 
 /// The XRD resource address.
-pub const RADIX_TOKEN: ResourceAddress = address!(EntityType::Resource, 0);
+pub const RADIX_TOKEN: ResourceAddress = vanity_address!(EntityType::Resource, 0);
 
 /// The ECDSA virtual resource address.
-pub const ECDSA_SECP256K1_TOKEN: ResourceAddress = address!(EntityType::Resource, 1);
+pub const ECDSA_SECP256K1_TOKEN: ResourceAddress = vanity_address!(EntityType::Resource, 1);
 
 /// The ED25519 virtual resource address.
-pub const EDDSA_ED25519_TOKEN: ResourceAddress = address!(EntityType::Resource, 2);
+pub const EDDSA_ED25519_TOKEN: ResourceAddress = vanity_address!(EntityType::Resource, 2);
 
 /// The system token which allows access to system resources (e.g. setting epoch)
-pub const SYSTEM_TOKEN: ResourceAddress = address!(EntityType::Resource, 3);
+pub const SYSTEM_TOKEN: ResourceAddress = vanity_address!(EntityType::Resource, 3);
 
-pub const PACKAGE_TOKEN: ResourceAddress = address!(EntityType::Resource, 4);
+pub const PACKAGE_TOKEN: ResourceAddress = vanity_address!(EntityType::Resource, 4);
 
-pub const OLYMPIA_VALIDATOR_TOKEN: ResourceAddress = address!(EntityType::Resource, 5);
+pub const OLYMPIA_VALIDATOR_TOKEN: ResourceAddress = vanity_address!(EntityType::Resource, 5);
 
 /// The address of the faucet package.
-pub const PACKAGE_LOADER: PackageAddress = address!(EntityType::Package, 0);
-pub const RESOURCE_MANAGER_PACKAGE: PackageAddress = address!(EntityType::Package, 1);
-pub const IDENTITY_PACKAGE: PackageAddress = address!(EntityType::Package, 2);
-pub const EPOCH_MANAGER_PACKAGE: PackageAddress = address!(EntityType::Package, 3);
-pub const CLOCK_PACKAGE: PackageAddress = address!(EntityType::Package, 4);
-pub const ACCOUNT_PACKAGE: PackageAddress = address!(EntityType::Package, 5);
-pub const ACCESS_CONTROLLER_PACKAGE: PackageAddress = address!(EntityType::Package, 6);
-pub const TRANSACTION_RUNTIME_PACKAGE: PackageAddress = address!(EntityType::Package, 8);
-pub const AUTH_ZONE_PACKAGE: PackageAddress = address!(EntityType::Package, 9);
-pub const METADATA_PACKAGE: PackageAddress = address!(EntityType::Package, 10);
-pub const ROYALTY_PACKAGE: PackageAddress = address!(EntityType::Package, 11);
-pub const ACCESS_RULES_PACKAGE: PackageAddress = address!(EntityType::Package, 12);
+pub const PACKAGE_LOADER: PackageAddress = vanity_address!(EntityType::Package, 0);
+pub const RESOURCE_MANAGER_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 1);
+pub const IDENTITY_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 2);
+pub const EPOCH_MANAGER_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 3);
+pub const CLOCK_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 4);
+pub const ACCOUNT_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 5);
+pub const ACCESS_CONTROLLER_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 6);
+pub const TRANSACTION_RUNTIME_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 8);
+pub const AUTH_ZONE_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 9);
+pub const METADATA_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 10);
+pub const ROYALTY_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 11);
+pub const ACCESS_RULES_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 12);
 
-pub const FAUCET_PACKAGE: PackageAddress = address!(EntityType::Package, 64);
+pub const FAUCET_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 64);
 pub const FAUCET_BLUEPRINT: &str = "Faucet";
 
 /// The address of the faucet component, test network only.
@@ -68,5 +65,5 @@ pub const FAUCET_COMPONENT: ComponentAddress = construct_address!(
     215
 );
 
-pub const CLOCK: ComponentAddress = address!(EntityType::Clock, 0);
-pub const EPOCH_MANAGER: ComponentAddress = address!(EntityType::EpochManager, 0);
+pub const CLOCK: ComponentAddress = vanity_address!(EntityType::Clock, 0);
+pub const EPOCH_MANAGER: ComponentAddress = vanity_address!(EntityType::EpochManager, 0);

@@ -2,7 +2,6 @@ use radix_engine::errors::{KernelError, RuntimeError};
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::data::manifest_args;
 
 #[test]
 fn should_not_be_able_to_read_component_state_after_creation() {

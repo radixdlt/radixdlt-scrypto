@@ -3,17 +3,16 @@ use colored::*;
 use radix_engine::blueprints::resource::VaultInfoSubstate;
 use radix_engine::blueprints::resource::{NonFungibleSubstate, ResourceManagerSubstate};
 use radix_engine::ledger::*;
-use radix_engine::system::node_modules::metadata::MetadataSubstate;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::types::*;
 use radix_engine_interface::address::AddressDisplayContext;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::package::PackageCodeSubstate;
+use radix_engine_interface::api::types::IndexedScryptoValue;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::blueprints::resource::{
     AccessRules, LiquidFungibleResource, LiquidNonFungibleResource,
 };
-use radix_engine_interface::data::{IndexedScryptoValue, ScryptoValueDisplayContext};
 use radix_engine_interface::network::NetworkDefinition;
 use std::collections::VecDeque;
 use utils::ContextualDisplay;
@@ -67,7 +66,6 @@ struct ComponentStateDump {
     pub package_address: Option<PackageAddress>, // Native components have no package address.
     pub blueprint_name: String,                  // All components have a blueprint, native or not.
     pub access_rules: Option<AccessRules>,       // Virtual Components don't have access rules.
-    pub metadata: Option<BTreeMap<String, String>>,
 }
 
 /// Dump a component into console.
@@ -109,21 +107,11 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().into())
                 .unwrap();
-            let metadata_substate = substate_store
-                .get_substate(&SubstateId(
-                    RENodeId::GlobalComponent(component_address),
-                    NodeModuleId::Metadata,
-                    SubstateOffset::Metadata(MetadataOffset::Metadata),
-                ))
-                .map(|s| s.substate)
-                .map(|s| s.to_runtime().metadata().clone())
-                .ok_or(DisplayError::ComponentNotFound)?;
 
             let raw_state = IndexedScryptoValue::from_slice(&state.raw).unwrap();
             let package_address = component_info_substate.package_address;
             let blueprint_name = component_info_substate.blueprint_name;
             let access_rules = access_rules_chain_substate.access_rules;
-            let metadata = metadata_substate.metadata;
 
             // Find all vaults owned by the component, assuming a tree structure.
             let mut vaults_found: HashSet<ObjectId> = raw_state
@@ -157,7 +145,6 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 raw_state: Some(raw_state),
                 blueprint_name,
                 package_address: Some(package_address),
-                metadata: Some(metadata),
                 access_rules: Some(access_rules),
                 owned_vaults: Some(vaults_found),
             }
@@ -171,7 +158,6 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 package_address: None, // No package address for native components (yet).
                 blueprint_name: "Account".into(),
                 access_rules: None,
-                metadata: None,
             }
         }
         ComponentAddress::Account(..) => {
@@ -211,7 +197,6 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 package_address: None, // No package address for native components (yet).
                 blueprint_name: "Account".into(),
                 access_rules: Some(access_rules_chain_substate.access_rules),
-                metadata: None,
             }
         }
         ComponentAddress::EcdsaSecp256k1VirtualIdentity(..)
@@ -222,19 +207,9 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 package_address: None, // No package address for native components (yet).
                 blueprint_name: "Identity".into(),
                 access_rules: None,
-                metadata: None,
             }
         }
         ComponentAddress::Identity(..) => {
-            let metadata_substate = substate_store
-                .get_substate(&SubstateId(
-                    RENodeId::GlobalComponent(component_address),
-                    NodeModuleId::Metadata,
-                    SubstateOffset::Metadata(MetadataOffset::Metadata),
-                ))
-                .map(|s| s.substate)
-                .map(|s| s.to_runtime().metadata().clone())
-                .ok_or(DisplayError::ComponentNotFound)?;
             let access_rules_chain_substate = substate_store
                 .get_substate(&SubstateId(
                     RENodeId::GlobalComponent(component_address),
@@ -251,7 +226,6 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 package_address: None, // No package address for native components (yet).
                 blueprint_name: "Identity".into(),
                 access_rules: Some(access_rules_chain_substate.access_rules),
-                metadata: Some(metadata_substate.metadata),
             }
         }
         ComponentAddress::AccessController(..) => {
@@ -259,7 +233,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 .get_substate(&SubstateId(
                     RENodeId::GlobalComponent(component_address),
                     NodeModuleId::Metadata,
-                    SubstateOffset::Metadata(MetadataOffset::Metadata),
+                    SubstateOffset::AccessController(AccessControllerOffset::AccessController),
                 ))
                 .map(|s| s.substate)
                 .map(|s| s.to_runtime().access_controller().clone())
@@ -280,7 +254,6 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 package_address: None, // No package address for native components (yet).
                 blueprint_name: "AccessController".into(),
                 access_rules: Some(access_rules_chain_substate.access_rules),
-                metadata: None,
             }
         }
         // For the time being, the above component types are the only "dump-able" ones. We should
@@ -314,10 +287,16 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
 
     if let Some(access_rules) = component_state_dump.access_rules {
         writeln!(output, "{}", "Access Rules".green().bold());
-        for (last, (k, v)) in access_rules.get_all_method_auth().iter().identify_last() {
-            writeln!(output, "{} {:?} => {:?}", list_item_prefix(last), k, v);
+        for (k, v) in access_rules.get_all_method_auth().iter() {
+            writeln!(output, "{} {:?} => {:?}", list_item_prefix(false), k, v);
         }
-        writeln!(output, "Default: {:?}", access_rules.get_default());
+        writeln!(
+            output,
+            "{} {} => {:?}",
+            list_item_prefix(true),
+            "Default",
+            access_rules.get_default()
+        );
     }
 
     if let Some(raw_state) = component_state_dump.raw_state {
@@ -329,21 +308,6 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
             "State".green().bold(),
             raw_state.display(value_display_context)
         );
-    }
-
-    if let Some(metadata) = component_state_dump.metadata {
-        if !metadata.is_empty() {
-            writeln!(output, "{}", "Metadata".green().bold());
-            for (last, (key, value)) in metadata.iter().identify_last() {
-                writeln!(
-                    output,
-                    "{} {:?} => {:?}",
-                    list_item_prefix(last),
-                    key,
-                    value
-                );
-            }
-        }
     }
 
     if let Some(vaults) = component_state_dump.owned_vaults {
@@ -429,15 +393,43 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             .map(|s| s.substate)
             .map(|s| s.to_runtime().into());
         let resource_manager = resource_manager.ok_or(DisplayError::ResourceManagerNotFound)?;
-        let metadata: Option<MetadataSubstate> = substate_store
+        let name_metadata: Option<KeyValueStoreEntrySubstate> = substate_store
             .get_substate(&SubstateId(
                 RENodeId::GlobalResourceManager(resource_address),
                 NodeModuleId::Metadata,
-                SubstateOffset::Metadata(MetadataOffset::Metadata),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                    scrypto_encode("name").unwrap(),
+                )),
             ))
             .map(|s| s.substate)
             .map(|s| s.to_runtime().into());
-        let metadata = metadata.ok_or(DisplayError::ResourceManagerNotFound)?;
+        let name_metadata = match name_metadata {
+            Some(KeyValueStoreEntrySubstate::Some(_, ScryptoValue::String { value })) => {
+                Some(value)
+            }
+            _ => None,
+        }
+        .map(|name| format!(", name: \"{}\"", name))
+        .unwrap_or(String::new());
+
+        let symbol_metadata: Option<KeyValueStoreEntrySubstate> = substate_store
+            .get_substate(&SubstateId(
+                RENodeId::GlobalResourceManager(resource_address),
+                NodeModuleId::Metadata,
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                    scrypto_encode("symbol").unwrap(),
+                )),
+            ))
+            .map(|s| s.substate)
+            .map(|s| s.to_runtime().into());
+        let symbol_metadata = match symbol_metadata {
+            Some(KeyValueStoreEntrySubstate::Some(_, ScryptoValue::String { value })) => {
+                Some(value)
+            }
+            _ => None,
+        }
+        .map(|name| format!(", symbol: \"{}\"", name))
+        .unwrap_or(String::new());
 
         // DUMP resource
         let amount = if vault_info.resource_type.is_fungible() {
@@ -465,20 +457,12 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
         };
         writeln!(
             output,
-            "{} {{ amount: {}, resource address: {}{}{} }}",
+            "{} {{ amount: {}, resource address: {}{:?}{:?} }}",
             list_item_prefix(last),
             amount,
             resource_address.display(&bech32_encoder),
-            metadata
-                .metadata
-                .get("name")
-                .map(|name| format!(", name: \"{}\"", name))
-                .unwrap_or(String::new()),
-            metadata
-                .metadata
-                .get("symbol")
-                .map(|symbol| format!(", symbol: \"{}\"", symbol))
-                .unwrap_or(String::new()),
+            name_metadata,
+            symbol_metadata,
         );
 
         // DUMP non-fungibles
@@ -543,15 +527,6 @@ pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
         .map(|s| s.substate)
         .map(|s| s.to_runtime().into());
     let resource_manager = resource_manager.ok_or(DisplayError::ResourceManagerNotFound)?;
-    let metadata: Option<MetadataSubstate> = substate_store
-        .get_substate(&SubstateId(
-            RENodeId::GlobalResourceManager(resource_address),
-            NodeModuleId::Metadata,
-            SubstateOffset::Metadata(MetadataOffset::Metadata),
-        ))
-        .map(|s| s.substate)
-        .map(|s| s.to_runtime().into());
-    let metadata = metadata.ok_or(DisplayError::ResourceManagerNotFound)?;
 
     writeln!(
         output,
@@ -559,21 +534,6 @@ pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
         "Resource Type".green().bold(),
         resource_manager.resource_type
     );
-    writeln!(
-        output,
-        "{}: {}",
-        "Metadata".green().bold(),
-        metadata.metadata.len()
-    );
-    for (last, e) in metadata.metadata.iter().identify_last() {
-        writeln!(
-            output,
-            "{} {}: {}",
-            list_item_prefix(last),
-            e.0.green().bold(),
-            e.1
-        );
-    }
     writeln!(
         output,
         "{}: {}",

@@ -4,7 +4,6 @@ use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerSetEpochInput, EPOCH_MANAGER_SET_EPOCH_IDENT,
 };
-use transaction::data::manifest_encode;
 use transaction::model::Instruction;
 
 use crate::resim::*;

@@ -1,6 +1,7 @@
 use bech32::{self, ToBase32, Variant};
-use scrypto::radix_engine_interface::address::*;
-use scrypto::radix_engine_interface::api::types::*;
+use radix_engine_common::address::*;
+use radix_engine_common::network::NetworkDefinition;
+use scrypto::prelude::*;
 
 fn generate_u8_array(entity_byte: u8) -> [u8; 27] {
     [

@@ -99,11 +99,11 @@ jobs:
       run: cargo test
       working-directory: scrypto
     - name: Run tests (no_std)
-      run: cargo test --no-default-features --features alloc,prelude
+      run: cargo test --no-default-features --features alloc
       working-directory: scrypto
     - name: Run abi tests
       run: cargo test
-      working-directory: scrypto-abi
+      working-directory: scrypto-schema
     - name: Run derive tests
       run: cargo test
       working-directory: scrypto-derive
@@ -169,6 +169,7 @@ jobs:
     - name: Run tests
       run: |
         cargo nextest run \
+          -p radix-engine-common \
           -p radix-engine-derive \
           -p radix-engine-interface \
           -p radix-engine \
@@ -231,8 +232,8 @@ jobs:
     - name: Run bench
       run: cargo bench
       working-directory: radix-engine-tests
-  radix-engine-interface-bench:
-    name: Run Radix Engine Interface benchmarks
+  radix-engine-common-bench:
+    name: Run Radix Engine common benchmarks
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -246,7 +247,7 @@ jobs:
       run: rustup target add wasm32-unknown-unknown
     - name: Run bench
       run: cargo bench
-      working-directory: radix-engine-interface
+      working-directory: radix-engine-common
   transaction:
     name: Run transaction tests
     runs-on: ${{ matrix.os }}

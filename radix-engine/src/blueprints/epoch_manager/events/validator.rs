@@ -1,28 +1,28 @@
-use native_sdk::{LegacyDescribe, ScryptoSbor};
 use radix_engine_interface::math::Decimal;
+use radix_engine_interface::*;
 
-#[derive(ScryptoSbor, LegacyDescribe)]
+#[derive(ScryptoSbor)]
 pub struct RegisterValidatorEvent;
 
-#[derive(ScryptoSbor, LegacyDescribe)]
+#[derive(ScryptoSbor)]
 pub struct UnregisterValidatorEvent;
 
-#[derive(ScryptoSbor, LegacyDescribe)]
+#[derive(ScryptoSbor)]
 pub struct StakeEvent {
     pub xrd_staked: Decimal,
 }
 
-#[derive(ScryptoSbor, LegacyDescribe)]
+#[derive(ScryptoSbor)]
 pub struct UnstakeEvent {
     pub stake_units: Decimal, // TODO: Should be stake units instead?
 }
 
-#[derive(ScryptoSbor, LegacyDescribe)]
+#[derive(ScryptoSbor)]
 pub struct ClaimXrdEvent {
     pub claimed_xrd: Decimal,
 }
 
-#[derive(ScryptoSbor, LegacyDescribe)]
+#[derive(ScryptoSbor)]
 pub struct UpdateAcceptingStakeDelegationStateEvent {
     pub accepts_delegation: bool,
 }

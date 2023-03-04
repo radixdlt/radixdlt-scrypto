@@ -2,9 +2,9 @@ use std::io;
 use std::path::PathBuf;
 
 use radix_engine::errors::{RejectionError, RuntimeError};
-use radix_engine::system::package::{ExportError, ExtractAbiError};
+use radix_engine::system::package::ExtractSchemaError;
 use radix_engine::transaction::AbortReason;
-use radix_engine::types::AddressError;
+use radix_engine::types::{AddressError, ComponentAddress, PackageAddress};
 use radix_engine::wasm::PrepareError;
 use radix_engine_interface::blueprints::resource::ParseNonFungibleGlobalIdError;
 use radix_engine_interface::network::ParseNetworkError;
@@ -23,25 +23,25 @@ pub enum Error {
 
     HomeDirUnknown,
 
-    ConfigDecodingError(sbor::DecodeError),
+    PackageNotFound(PackageAddress),
+    BlueprintNotFound(PackageAddress, String),
+    ComponentNotFound(ComponentAddress),
 
     IOError(io::Error),
 
     IOErrorAtPath(io::Error, PathBuf),
 
-    DataError(DecodeError),
+    SborDecodeError(DecodeError),
 
-    JSONError(serde_json::Error),
+    SborEncodeError(EncodeError),
 
     BuildError(BuildError),
 
-    PackageAddressNotFound,
-
-    ExtractAbiError(ExtractAbiError),
+    ExtractSchemaError(ExtractSchemaError),
 
     InvalidPackage(PrepareError),
 
-    TransactionConstructionError(BuildCallWithAbiError),
+    TransactionConstructionError(BuildCallInstructionError),
 
     TransactionValidationError(TransactionValidationError),
 
@@ -50,8 +50,6 @@ pub enum Error {
     TransactionRejected(RejectionError),
 
     TransactionAborted(AbortReason),
-
-    AbiExportError(ExportError),
 
     LedgerDumpError(DisplayError),
 
@@ -67,7 +65,7 @@ pub enum Error {
 
     NonFungibleGlobalIdError(ParseNonFungibleGlobalIdError),
 
-    FailedToBuildArgs(BuildArgsError),
+    FailedToBuildArguments(BuildCallArgumentError),
 
     ParseNetworkError(ParseNetworkError),
 

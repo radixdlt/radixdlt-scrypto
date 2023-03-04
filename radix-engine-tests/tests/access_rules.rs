@@ -11,7 +11,6 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::data::{manifest_args, *};
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::TransactionManifest;
 

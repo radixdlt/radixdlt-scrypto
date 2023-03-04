@@ -2,13 +2,9 @@ use crate::blueprints::resource::VaultInfoSubstate;
 use crate::ledger::{QueryableSubstateStore, ReadableSubstateStore};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::PersistedSubstate;
-use radix_engine_interface::api::types::{
-    AccountOffset, ComponentAddress, ComponentOffset, KeyValueStoreOffset, NodeModuleId, ObjectId,
-    RENodeId, SubstateId, SubstateOffset, TypeInfoOffset, VaultOffset,
-};
-use radix_engine_interface::blueprints::resource::*;
+use crate::types::*;
 use radix_engine_interface::blueprints::resource::{
-    LiquidFungibleResource, LiquidNonFungibleResource, ResourceType,
+    LiquidFungibleResource, LiquidNonFungibleResource, ResourceType, VAULT_BLUEPRINT,
 };
 use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 

@@ -1,39 +1,18 @@
 use crate::address::*;
-use crate::blueprints::resource::ResourceAddress;
-use crate::blueprints::resource::*;
 use crate::constants::*;
 use crate::crypto::*;
-use radix_engine_derive::*;
+use crate::data::scrypto::model::*;
+use crate::*;
 use sbor::rust::fmt;
 use sbor::rust::format;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use scrypto_abi::LegacyDescribe;
-use scrypto_abi::Type;
-use transaction_data::*;
 use utils::ContextualDisplay;
 
 /// Represents the global id of a non-fungible.
-#[derive(
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    Ord,
-    PartialOrd,
-    ScryptoSbor,
-    ManifestCategorize,
-    ManifestEncode,
-    ManifestDecode,
-)]
+#[derive(Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct NonFungibleGlobalId(ResourceAddress, NonFungibleLocalId);
-
-impl LegacyDescribe for NonFungibleGlobalId {
-    fn describe() -> scrypto_abi::Type {
-        Type::NonFungibleGlobalId
-    }
-}
 
 impl NonFungibleGlobalId {
     pub const fn new(resource_address: ResourceAddress, local_id: NonFungibleLocalId) -> Self {

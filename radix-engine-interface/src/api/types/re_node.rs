@@ -1,11 +1,8 @@
 use super::*;
-use crate::api::component::ComponentAddress;
-use crate::api::package::PackageAddress;
-use crate::blueprints::resource::NonFungibleLocalId;
-use crate::blueprints::resource::ResourceAddress;
+use crate::data::scrypto::model::*;
 use crate::*;
 use sbor::rust::fmt;
-use transaction_data::*;
+use sbor::rust::prelude::*;
 
 // TODO: Remove when better type system implemented
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor)]
@@ -26,20 +23,7 @@ pub enum RENodeType {
     TransactionRuntime,
 }
 
-#[derive(
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    Ord,
-    PartialOrd,
-    ScryptoSbor,
-    ManifestCategorize,
-    ManifestEncode,
-    ManifestDecode,
-    LegacyDescribe,
-)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum RENodeId {
     AuthZoneStack,
     Worktop,
@@ -142,21 +126,7 @@ impl Into<ResourceAddress> for RENodeId {
     }
 }
 
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    ScryptoSbor,
-    ManifestCategorize,
-    ManifestEncode,
-    ManifestDecode,
-    LegacyDescribe,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor, ManifestSbor)]
 pub enum NodeModuleId {
     SELF,
     TypeInfo,

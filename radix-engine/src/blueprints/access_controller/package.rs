@@ -3,19 +3,17 @@ use super::state_machine::*;
 use crate::errors::{ApplicationError, InterpreterError, RuntimeError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
+use crate::types::*;
 use native_sdk::access_rules::AccessRulesObject;
 use native_sdk::metadata::Metadata;
 use native_sdk::resource::{SysBucket, Vault};
+use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{ACCESS_CONTROLLER_PACKAGE, PACKAGE_TOKEN};
-use radix_engine_interface::data::{
-    scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoValue,
-};
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::*;
 use radix_engine_interface::{api::*, rule};
@@ -241,8 +239,9 @@ impl AccessControllerNativePackage {
     {
         // TODO: Remove decode/encode mess
         let input: AccessControllerCreateGlobalInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         // Creating a new vault and putting in it the controlled asset
         let vault = {
@@ -288,8 +287,9 @@ impl AccessControllerNativePackage {
     {
         // TODO: Remove decode/encode mess
         let _input: AccessControllerCreateProofInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let proof = transition(receiver, api, AccessControllerCreateProofStateMachineInput)?;
 
@@ -305,8 +305,9 @@ impl AccessControllerNativePackage {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: AccessControllerInitiateRecoveryAsPrimaryInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
         let proposal = RecoveryProposal {
             rule_set: input.rule_set,
             timed_recovery_delay_in_minutes: input.timed_recovery_delay_in_minutes,
@@ -320,10 +321,13 @@ impl AccessControllerNativePackage {
             },
         )?;
 
-        api.emit_event(InitiateRecoveryEvent {
-            proposal,
-            proposer: Proposer::Primary,
-        })?;
+        Runtime::emit_event(
+            api,
+            InitiateRecoveryEvent {
+                proposal,
+                proposer: Proposer::Primary,
+            },
+        )?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -337,8 +341,9 @@ impl AccessControllerNativePackage {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: AccessControllerInitiateRecoveryAsRecoveryInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
         let proposal = RecoveryProposal {
             rule_set: input.rule_set,
             timed_recovery_delay_in_minutes: input.timed_recovery_delay_in_minutes,
@@ -352,10 +357,13 @@ impl AccessControllerNativePackage {
             },
         )?;
 
-        api.emit_event(InitiateRecoveryEvent {
-            proposal,
-            proposer: Proposer::Recovery,
-        })?;
+        Runtime::emit_event(
+            api,
+            InitiateRecoveryEvent {
+                proposal,
+                proposer: Proposer::Recovery,
+            },
+        )?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -369,8 +377,9 @@ impl AccessControllerNativePackage {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
         let proposal = RecoveryProposal {
             rule_set: input.rule_set,
             timed_recovery_delay_in_minutes: input.timed_recovery_delay_in_minutes,
@@ -390,10 +399,13 @@ impl AccessControllerNativePackage {
             access_rules_from_rule_set(recovery_proposal.rule_set),
         )?;
 
-        api.emit_event(RuleSetUpdateEvent {
-            proposal,
-            proposer: Proposer::Primary,
-        })?;
+        Runtime::emit_event(
+            api,
+            RuleSetUpdateEvent {
+                proposal,
+                proposer: Proposer::Primary,
+            },
+        )?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -407,8 +419,9 @@ impl AccessControllerNativePackage {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
         let proposal = RecoveryProposal {
             rule_set: input.rule_set,
             timed_recovery_delay_in_minutes: input.timed_recovery_delay_in_minutes,
@@ -428,10 +441,13 @@ impl AccessControllerNativePackage {
             access_rules_from_rule_set(recovery_proposal.rule_set),
         )?;
 
-        api.emit_event(RuleSetUpdateEvent {
-            proposal,
-            proposer: Proposer::Recovery,
-        })?;
+        Runtime::emit_event(
+            api,
+            RuleSetUpdateEvent {
+                proposal,
+                proposer: Proposer::Recovery,
+            },
+        )?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -445,8 +461,9 @@ impl AccessControllerNativePackage {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: AccessControllerTimedConfirmRecoveryInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
         let proposal = RecoveryProposal {
             rule_set: input.rule_set,
             timed_recovery_delay_in_minutes: input.timed_recovery_delay_in_minutes,
@@ -467,10 +484,13 @@ impl AccessControllerNativePackage {
             access_rules_from_rule_set(recovery_proposal.rule_set),
         )?;
 
-        api.emit_event(RuleSetUpdateEvent {
-            proposal,
-            proposer: Proposer::Recovery,
-        })?;
+        Runtime::emit_event(
+            api,
+            RuleSetUpdateEvent {
+                proposal,
+                proposer: Proposer::Recovery,
+            },
+        )?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -484,8 +504,9 @@ impl AccessControllerNativePackage {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let _input: AccessControllerCancelPrimaryRoleRecoveryProposalInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         transition_mut(
             receiver,
@@ -493,9 +514,12 @@ impl AccessControllerNativePackage {
             AccessControllerCancelPrimaryRoleRecoveryProposalStateMachineInput,
         )?;
 
-        api.emit_event(CancelRecoveryProposalEvent {
-            proposer: Proposer::Primary,
-        })?;
+        Runtime::emit_event(
+            api,
+            CancelRecoveryProposalEvent {
+                proposer: Proposer::Primary,
+            },
+        )?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -509,8 +533,9 @@ impl AccessControllerNativePackage {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let _input: AccessControllerCancelRecoveryRoleRecoveryProposalInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         transition_mut(
             receiver,
@@ -518,9 +543,12 @@ impl AccessControllerNativePackage {
             AccessControllerCancelRecoveryRoleRecoveryProposalStateMachineInput,
         )?;
 
-        api.emit_event(CancelRecoveryProposalEvent {
-            proposer: Proposer::Recovery,
-        })?;
+        Runtime::emit_event(
+            api,
+            CancelRecoveryProposalEvent {
+                proposer: Proposer::Recovery,
+            },
+        )?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -534,15 +562,16 @@ impl AccessControllerNativePackage {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let _input: AccessControllerLockPrimaryRoleInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         transition_mut(
             receiver,
             api,
             AccessControllerLockPrimaryRoleStateMachineInput,
         )?;
-        api.emit_event(LockPrimaryRoleEvent {})?;
+        Runtime::emit_event(api, LockPrimaryRoleEvent {})?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -556,15 +585,16 @@ impl AccessControllerNativePackage {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let _input: AccessControllerUnlockPrimaryRoleInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         transition_mut(
             receiver,
             api,
             AccessControllerUnlockPrimaryRoleStateMachineInput,
         )?;
-        api.emit_event(UnlockPrimaryRoleEvent {})?;
+        Runtime::emit_event(api, UnlockPrimaryRoleEvent {})?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -578,8 +608,9 @@ impl AccessControllerNativePackage {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: AccessControllerStopTimedRecoveryInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         transition_mut(
             receiver,
@@ -591,7 +622,7 @@ impl AccessControllerNativePackage {
                 },
             },
         )?;
-        api.emit_event(StopTimedRecoveryEvent {})?;
+        Runtime::emit_event(api, StopTimedRecoveryEvent {})?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }

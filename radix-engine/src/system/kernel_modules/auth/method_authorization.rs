@@ -1,35 +1,34 @@
-use radix_engine_interface::api::types::*;
-use radix_engine_interface::math::Decimal;
-use radix_engine_interface::*;
-use sbor::rust::vec::Vec;
+use crate::types::*;
+use radix_engine_interface::blueprints::resource::NonFungibleGlobalId;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
 pub enum HardDecimal {
     Amount(Decimal),
-    InvalidSchemaPath,
-    DisallowdValueType,
+    InvalidPath,
+    NotDecimal,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Sbor)]
 pub enum HardCount {
     Count(u8),
-    InvalidSchemaPath,
-    DisallowdValueType,
+    InvalidPath,
+    NotU8,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
 pub enum HardResourceOrNonFungible {
     NonFungible(NonFungibleGlobalId),
     Resource(ResourceAddress),
-    InvalidSchemaPath,
-    DisallowdValueType,
+    InvalidPath,
+    NotResourceAddress,
+    NotResourceAddressOrNonFungibleGlobalId,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
 pub enum HardProofRuleResourceList {
     List(Vec<HardResourceOrNonFungible>),
-    InvalidSchemaPath,
-    DisallowdValueType,
+    InvalidPath,
+    NotResourceAddressOrNonFungibleGlobalIdArray,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]

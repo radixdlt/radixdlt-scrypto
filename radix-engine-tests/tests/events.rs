@@ -1,9 +1,6 @@
 use radix_engine::types::*;
-use radix_engine_interface::abi::LegacyDescribe;
-use radix_engine_interface::events::EventTypeIdentifier;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::data::manifest_args;
 
 // TODO: In the future, the ClientAPI should only be able to add events to the event store. It
 // should not be able to have full control over it.
@@ -36,7 +33,7 @@ fn can_emit_basic_event_from_scrypto() {
             EventTypeIdentifier(
                 RENodeId::GlobalPackage(package_address),
                 NodeModuleId::SELF,
-                hash(&scrypto_encode(&CustomEvent::describe()).unwrap()),
+                hash("CustomEvent"),
             ),
             scrypto_encode(&CustomEvent { number: 12 }).unwrap(),
         )];
@@ -45,7 +42,7 @@ fn can_emit_basic_event_from_scrypto() {
     }
 }
 
-#[derive(ScryptoEncode, LegacyDescribe)]
+#[derive(ScryptoEncode)]
 struct CustomEvent {
     number: u64,
 }

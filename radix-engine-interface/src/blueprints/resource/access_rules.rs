@@ -8,24 +8,10 @@ use sbor::rust::collections::BTreeMap;
 use sbor::rust::str;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
-use transaction_data::*;
 
 use super::AccessRule;
 
-#[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    Ord,
-    PartialOrd,
-    ScryptoSbor,
-    ManifestCategorize,
-    ManifestEncode,
-    ManifestDecode,
-    LegacyDescribe,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct FnKey {
     pub blueprint: String,
     pub ident: String,
@@ -37,20 +23,7 @@ impl FnKey {
     }
 }
 
-#[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    Ord,
-    PartialOrd,
-    ScryptoSbor,
-    ManifestCategorize,
-    ManifestEncode,
-    ManifestDecode,
-    LegacyDescribe,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct MethodKey {
     pub node_module_id: NodeModuleId,
     pub ident: String,
@@ -65,20 +38,7 @@ impl MethodKey {
     }
 }
 
-#[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    Ord,
-    PartialOrd,
-    ScryptoSbor,
-    ManifestCategorize,
-    ManifestEncode,
-    ManifestDecode,
-    LegacyDescribe,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum AccessRuleEntry {
     AccessRule(AccessRule),
     Group(String),
@@ -97,17 +57,7 @@ impl From<String> for AccessRuleEntry {
 }
 
 /// Method authorization rules for a component
-#[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    ScryptoSbor,
-    ManifestCategorize,
-    ManifestEncode,
-    ManifestDecode,
-    LegacyDescribe,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct AccessRules {
     method_auth: BTreeMap<MethodKey, AccessRuleEntry>,
     grouped_auth: BTreeMap<String, AccessRule>,

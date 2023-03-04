@@ -18,8 +18,7 @@ mod resource_test {
                 .mintable(rule!(allow_all), rule!(allow_all))
                 .create_with_no_initial_supply();
 
-            let super_admin_manager: &mut ResourceManager =
-                borrow_resource_manager!(super_admin_badge);
+            let super_admin_manager = borrow_resource_manager!(super_admin_badge);
             super_admin_manager.set_mintable(rule!(require(super_admin_badge)));
         }
 
