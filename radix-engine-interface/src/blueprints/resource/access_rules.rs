@@ -227,7 +227,7 @@ impl AccessRules {
 pub fn package_access_rules_from_owner_badge(owner_badge: &NonFungibleGlobalId) -> AccessRules {
     let mut access_rules = AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll);
     access_rules.set_access_rule_and_mutability(
-        MethodKey::new(NodeModuleId::Metadata, METADATA_GET_STRING_IDENT.to_string()),
+        MethodKey::new(NodeModuleId::Metadata, METADATA_GET_IDENT.to_string()),
         AccessRule::AllowAll,
         rule!(require(owner_badge.clone())),
     );

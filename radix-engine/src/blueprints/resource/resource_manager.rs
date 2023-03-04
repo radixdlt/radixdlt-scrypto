@@ -11,7 +11,7 @@ use native_sdk::access_rules::AccessRulesObject;
 use native_sdk::metadata::Metadata;
 use native_sdk::resource::SysBucket;
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_STRING_IDENT, METADATA_SET_IDENT};
+use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
     NonFungibleStoreId, NonFungibleStoreOffset, RENodeId, ResourceManagerOffset, SubstateOffset,
@@ -209,7 +209,7 @@ fn build_access_rules(
         update_metadata_mutability,
     );
     resman_access_rules.set_access_rule_and_mutability(
-        MethodKey::new(NodeModuleId::Metadata, METADATA_GET_STRING_IDENT.to_string()),
+        MethodKey::new(NodeModuleId::Metadata, METADATA_GET_IDENT.to_string()),
         AllowAll,
         DenyAll,
     );

@@ -16,7 +16,9 @@ use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
 };
-use radix_engine_interface::api::node_modules::metadata::{MetadataSet, METADATA_SET_IDENT, MetadataValue};
+use radix_engine_interface::api::node_modules::metadata::{
+    MetadataSet, MetadataValue, METADATA_SET_IDENT,
+};
 use radix_engine_interface::api::node_modules::royalty::{
     ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput, PackageClaimRoyaltyInput,
     PackageSetRoyaltyConfigInput, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,

@@ -5,7 +5,7 @@ use crate::*;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesCreateInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
 };
-use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_STRING_IDENT, METADATA_SET_IDENT};
+use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
 use radix_engine_interface::api::node_modules::royalty::{
     ComponentClaimRoyaltyInput, ComponentRoyaltyCreateInput, ComponentSetRoyaltyConfigInput,
     COMPONENT_ROYALTY_BLUEPRINT, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
@@ -23,14 +23,14 @@ use radix_engine_interface::data::scrypto::{
     ScryptoEncode,
 };
 use radix_engine_interface::rule;
+use sbor::rust::string::String;
+use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::{
     btreemap, Categorize, Decode, DecodeError, Decoder, Describe, Encode, EncodeError, Encoder,
     GlobalTypeId, ValueKind,
 };
 use scrypto::modules::Metadata;
-use sbor::rust::string::String;
-use sbor::rust::string::ToString;
 
 use super::ComponentAccessRules;
 
@@ -103,7 +103,7 @@ pub trait LocalComponent: Sized {
         let mut access_rules =
             AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll);
         access_rules.set_access_rule_and_mutability(
-            MethodKey::new(NodeModuleId::Metadata, METADATA_GET_STRING_IDENT.to_string()),
+            MethodKey::new(NodeModuleId::Metadata, METADATA_GET_IDENT.to_string()),
             AccessRule::AllowAll,
             rule!(require(owner_badge.clone())),
         );

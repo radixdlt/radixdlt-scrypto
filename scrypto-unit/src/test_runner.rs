@@ -23,6 +23,7 @@ use radix_engine::types::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::types::{RENodeId, VaultOffset};
 use radix_engine_interface::api::ClientPackageApi;
 use radix_engine_interface::blueprints::clock::{
@@ -42,7 +43,6 @@ use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
 use sbor::basic_well_known_types::ANY_ID;
@@ -242,9 +242,10 @@ impl TestRunner {
         let metadata_entry: KeyValueStoreEntrySubstate = metadata_entry.into();
         let metadata_entry = match metadata_entry {
             KeyValueStoreEntrySubstate::Some(_, value) => {
-                let value: MetadataValue = scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap();
+                let value: MetadataValue =
+                    scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap();
                 Some(value.to_string().unwrap())
-            },
+            }
             KeyValueStoreEntrySubstate::None => None,
         };
 

@@ -1,7 +1,11 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::*;
 use crate::*;
-use radix_engine_interface::api::node_modules::metadata::{MetadataCreateInput, MetadataGetStringInput, MetadataRemoveInput, MetadataSet, METADATA_BLUEPRINT, METADATA_CREATE_IDENT, METADATA_GET_STRING_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT, MetadataError, MetadataValue};
+use radix_engine_interface::api::node_modules::metadata::{
+    MetadataCreateInput, MetadataError, MetadataGetInput, MetadataRemoveInput, MetadataSet,
+    MetadataValue, METADATA_BLUEPRINT, METADATA_CREATE_IDENT, METADATA_GET_IDENT,
+    METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
+};
 use radix_engine_interface::api::types::{NodeModuleId, ObjectId, RENodeId};
 use radix_engine_interface::api::{ClientObjectApi, ClientPackageApi};
 use radix_engine_interface::constants::METADATA_PACKAGE;
@@ -69,15 +73,19 @@ pub trait MetadataObject {
             .call_module_method(
                 node_id,
                 module_id,
-                METADATA_GET_STRING_IDENT,
-                scrypto_encode(&MetadataGetStringInput {
+                METADATA_GET_IDENT,
+                scrypto_encode(&MetadataGetInput {
                     key: name.as_ref().to_owned(),
                 })
                 .unwrap(),
             )
             .unwrap();
 
-        scrypto_decode(&rtn).unwrap()
+        let value: Option<MetadataValue> = scrypto_decode(&rtn).unwrap();
+        match value {
+            Some(value) => value.to_string(),
+            None => Err(MetadataError::EmptyEntry),
+        }
     }
 
     fn remove<K: AsRef<str>>(&self, name: K) -> bool {
