@@ -19,6 +19,7 @@ use crate::transaction::AbortReason;
 use crate::types::*;
 use crate::wasm::WasmRuntimeError;
 use radix_engine_interface::api::substate_api::LockFlags;
+use crate::system::node_modules::metadata::MetadataPanicError;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum IdAllocationError {
@@ -308,6 +309,7 @@ impl<E: SelfError> From<InvokeError<E>> for RuntimeError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ApplicationError {
+
     TransactionProcessorError(TransactionProcessorError),
 
     PackageError(PackageError),
@@ -337,6 +339,8 @@ pub enum ApplicationError {
     AccessControllerError(AccessControllerError),
 
     EventError(EventError),
+
+    MetadataError(MetadataPanicError),
 }
 
 impl From<TransactionProcessorError> for ApplicationError {

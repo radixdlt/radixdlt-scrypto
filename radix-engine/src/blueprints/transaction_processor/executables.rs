@@ -16,7 +16,7 @@ use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
 };
-use radix_engine_interface::api::node_modules::metadata::{MetadataSetStringInput, METADATA_SET_STRING_IDENT};
+use radix_engine_interface::api::node_modules::metadata::{MetadataSet, METADATA_SET_IDENT, MetadataValue};
 use radix_engine_interface::api::node_modules::royalty::{
     ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput, PackageClaimRoyaltyInput,
     PackageSetRoyaltyConfigInput, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
@@ -615,10 +615,10 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let result = api.call_module_method(
                         receiver,
                         NodeModuleId::Metadata,
-                        METADATA_SET_STRING_IDENT,
-                        scrypto_encode(&MetadataSetStringInput {
+                        METADATA_SET_IDENT,
+                        scrypto_encode(&MetadataSet {
                             key: key.clone(),
-                            value: value.clone(),
+                            value: MetadataValue::string(value.clone()),
                         })
                         .unwrap(),
                     )?;

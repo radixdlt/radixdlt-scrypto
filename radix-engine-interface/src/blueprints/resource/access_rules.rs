@@ -232,7 +232,7 @@ pub fn package_access_rules_from_owner_badge(owner_badge: &NonFungibleGlobalId) 
         rule!(require(owner_badge.clone())),
     );
     access_rules.set_access_rule_and_mutability(
-        MethodKey::new(NodeModuleId::Metadata, METADATA_SET_STRING_IDENT.to_string()),
+        MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
     );

@@ -8,7 +8,7 @@ use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
 use native_sdk::access_rules::AccessRulesObject;
 use native_sdk::metadata::Metadata;
-use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_STRING_IDENT, METADATA_SET_STRING_IDENT};
+use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_STRING_IDENT, METADATA_SET_IDENT};
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::identity::*;
@@ -78,7 +78,7 @@ impl Identity {
     {
         let mut access_rules = AccessRules::new();
         access_rules.set_access_rule_and_mutability(
-            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_STRING_IDENT.to_string()),
+            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
             access_rule.clone(),
             access_rule,
         );
@@ -104,7 +104,7 @@ impl Identity {
 
         let mut access_rules = AccessRules::new();
         access_rules.set_access_rule_and_mutability(
-            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_STRING_IDENT.to_string()),
+            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
             access_rule.clone(),
             access_rule,
         );

@@ -3,7 +3,7 @@ use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetGroupAccessRuleInput, AccessRulesSetMethodAccessRuleInput,
 };
-use radix_engine_interface::api::node_modules::metadata::METADATA_SET_STRING_IDENT;
+use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::types::NonFungibleData;
 use radix_engine_interface::api::types::{NodeModuleId, RENodeId};
 use radix_engine_interface::api::ClientObjectApi;
@@ -113,7 +113,7 @@ impl ResourceManager {
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                    key: MethodKey::new(NodeModuleId::Metadata, METADATA_SET_STRING_IDENT.to_string()),
+                    key: MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
                     rule: AccessRuleEntry::AccessRule(access_rule),
                 })
                 .unwrap(),
@@ -179,7 +179,7 @@ impl ResourceManager {
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
-                    key: MethodKey::new(NodeModuleId::Metadata, METADATA_SET_STRING_IDENT.to_string()),
+                    key: MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
                     mutability: AccessRule::DenyAll,
                 })
                 .unwrap(),

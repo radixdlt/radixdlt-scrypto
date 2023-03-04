@@ -10,7 +10,7 @@ use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
 };
-use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_STRING_IDENT, METADATA_SET_STRING_IDENT};
+use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_STRING_IDENT, METADATA_SET_IDENT};
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::epoch_manager::*;
@@ -600,7 +600,7 @@ impl ValidatorCreator {
             AccessRule::DenyAll,
         );
         access_rules.set_method_access_rule_to_group(
-            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_STRING_IDENT.to_string()),
+            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
             "owner".to_string(),
         );
         access_rules.set_method_access_rule(
