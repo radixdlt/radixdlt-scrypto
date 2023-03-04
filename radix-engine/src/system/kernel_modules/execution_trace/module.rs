@@ -613,10 +613,10 @@ impl ExecutionTraceReceipt {
         actual_fee_payments: &BTreeMap<ObjectId, Decimal>,
         is_commit_success: bool,
     ) -> Self {
-        let mut vault_changes = IndexMap::<
+        let mut vault_changes = index_map_new::<
             usize,
             IndexMap<RENodeId, IndexMap<ObjectId, (ResourceAddress, Decimal)>>,
-        >::new();
+        >();
         let mut vault_locked_by = index_map_new::<ObjectId, RENodeId>();
         for (actor, vault_id, vault_op, instruction_index) in ops {
             if let TraceActor::Actor(Actor {
@@ -666,7 +666,7 @@ impl ExecutionTraceReceipt {
             }
         }
 
-        let mut resource_changes = IndexMap::<usize, Vec<ResourceChange>>::new();
+        let mut resource_changes = index_map_new::<usize, Vec<ResourceChange>>();
         for (instruction_index, instruction_resource_changes) in vault_changes {
             for (node_id, map) in instruction_resource_changes {
                 for (vault_id, (resource_address, delta)) in map {

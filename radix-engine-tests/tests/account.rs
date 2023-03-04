@@ -185,7 +185,7 @@ fn assert_resource_changes_for_transfer(
 fn aggregate_resource_changes(
     resource_changes: IndexMap<usize, Vec<ResourceChange>>,
 ) -> Vec<ResourceChange> {
-    let mut aggregate = IndexMap::<(RENodeId, ObjectId, ResourceAddress), Decimal>::new();
+    let mut aggregate = index_map_new::<(RENodeId, ObjectId, ResourceAddress), Decimal>();
     for ResourceChange {
         node_id,
         vault_id,
