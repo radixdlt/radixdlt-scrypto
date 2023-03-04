@@ -1,11 +1,7 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::*;
 use crate::*;
-use radix_engine_interface::api::node_modules::metadata::{
-    MetadataCreateInput, MetadataGetInput, MetadataRemoveInput, MetadataSetInput,
-    METADATA_BLUEPRINT, METADATA_CREATE_IDENT, METADATA_GET_IDENT, METADATA_REMOVE_IDENT,
-    METADATA_SET_IDENT,
-};
+use radix_engine_interface::api::node_modules::metadata::{MetadataCreateInput, MetadataGetStringInput, MetadataRemoveInput, MetadataSetStringInput, METADATA_BLUEPRINT, METADATA_CREATE_IDENT, METADATA_GET_STRING_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_STRING_IDENT, MetadataError};
 use radix_engine_interface::api::types::{NodeModuleId, ObjectId, RENodeId};
 use radix_engine_interface::api::{ClientObjectApi, ClientPackageApi};
 use radix_engine_interface::constants::METADATA_PACKAGE;
@@ -49,15 +45,15 @@ impl MetadataObject for AttachedMetadata {
 pub trait MetadataObject {
     fn self_id(&self) -> (RENodeId, NodeModuleId);
 
-    fn set<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
+    fn set_string<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
         let (node_id, module_id) = self.self_id();
 
         let _rtn = ScryptoEnv
             .call_module_method(
                 node_id,
                 module_id,
-                METADATA_SET_IDENT,
-                scrypto_encode(&MetadataSetInput {
+                METADATA_SET_STRING_IDENT,
+                scrypto_encode(&MetadataSetStringInput {
                     key: name.as_ref().to_owned(),
                     value: value.as_ref().to_owned(),
                 })
@@ -66,15 +62,15 @@ pub trait MetadataObject {
             .unwrap();
     }
 
-    fn get<K: AsRef<str>>(&self, name: K) -> Option<String> {
+    fn get_string<K: AsRef<str>>(&self, name: K) -> Result<String, MetadataError> {
         let (node_id, module_id) = self.self_id();
 
         let rtn = ScryptoEnv
             .call_module_method(
                 node_id,
                 module_id,
-                METADATA_GET_IDENT,
-                scrypto_encode(&MetadataGetInput {
+                METADATA_GET_STRING_IDENT,
+                scrypto_encode(&MetadataGetStringInput {
                     key: name.as_ref().to_owned(),
                 })
                 .unwrap(),

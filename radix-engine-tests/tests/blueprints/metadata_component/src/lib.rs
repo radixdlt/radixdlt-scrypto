@@ -8,11 +8,12 @@ mod metadata_component {
         pub fn new(key: String, value: String) {
             let component = MetadataComponent {}.instantiate();
             let metadata = Metadata::new();
-            metadata.set(key.clone(), value.clone());
+            metadata.set_string(key.clone(), value.clone());
             let component_address = component.globalize_with_metadata(metadata);
             let global: MetadataComponentGlobalComponentRef = component_address.into();
+            let metadata = global.metadata();
 
-            assert_eq!(global.metadata().get(key), Some(value));
+            assert_eq!(metadata.get_string(key).unwrap(), value);
         }
 
         pub fn new2(key: String, value: String) {
@@ -22,14 +23,16 @@ mod metadata_component {
             );
 
             let global: MetadataComponentGlobalComponentRef = component_address.into();
-            global.metadata().set(key.clone(), value.clone());
+            let metadata = global.metadata();
+            metadata.set_string(key.clone(), value.clone());
 
-            assert_eq!(global.metadata().get(key), Some(value));
+            assert_eq!(metadata.get_string(key).unwrap(), value);
         }
 
         pub fn remove_metadata(address: ComponentAddress, key: String) {
             let global = GlobalComponentRef(address);
-            global.metadata().remove(key);
+            let metadata = global.metadata();
+            metadata.remove(key);
         }
     }
 }
