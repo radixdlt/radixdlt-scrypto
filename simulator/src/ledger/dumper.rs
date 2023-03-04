@@ -314,10 +314,16 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
 
     if let Some(access_rules) = component_state_dump.access_rules {
         writeln!(output, "{}", "Access Rules".green().bold());
-        for (last, (k, v)) in access_rules.get_all_method_auth().iter().identify_last() {
-            writeln!(output, "{} {:?} => {:?}", list_item_prefix(last), k, v);
+        for (k, v) in access_rules.get_all_method_auth().iter() {
+            writeln!(output, "{} {:?} => {:?}", list_item_prefix(false), k, v);
         }
-        writeln!(output, "Default: {:?}", access_rules.get_default());
+        writeln!(
+            output,
+            "{} {} => {:?}",
+            list_item_prefix(true),
+            "Default",
+            access_rules.get_default()
+        );
     }
 
     if let Some(raw_state) = component_state_dump.raw_state {
