@@ -52,7 +52,7 @@ pub struct CommitResult {
     pub outcome: TransactionOutcome,
     pub state_updates: StateDiff,
     pub entity_changes: EntityChanges,
-    pub resource_changes: Vec<ResourceChange>,
+    pub resource_changes: IndexMap<usize, Vec<ResourceChange>>,
     pub application_logs: Vec<(Level, String)>,
     pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
     pub next_epoch: Option<(BTreeMap<ComponentAddress, Validator>, u64)>,

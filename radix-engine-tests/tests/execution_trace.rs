@@ -38,7 +38,25 @@ fn test_trace_resource_transfers() {
     /* There should be three resource changes: withdrawal from the source vault,
     deposit to the target vault and withdrawal for the fee */
     println!("{:?}", receipt.expect_commit().resource_changes);
-    assert_eq!(3, receipt.expect_commit().resource_changes.len());
+    assert_eq!(2, receipt.expect_commit().resource_changes.len()); // Two instructions
+    assert_eq!(
+        1,
+        receipt
+            .expect_commit()
+            .resource_changes
+            .get(&0)
+            .unwrap()
+            .len()
+    ); // One resource change in the first instruction (lock fee)
+    assert_eq!(
+        2,
+        receipt
+            .expect_commit()
+            .resource_changes
+            .get(&1)
+            .unwrap()
+            .len()
+    ); // One resource change in the first instruction (lock fee)
 
     let fee_summary = &receipt.execution.fee_summary;
 
@@ -50,6 +68,7 @@ fn test_trace_resource_transfers() {
         .expect_commit()
         .resource_changes
         .iter()
+        .flat_map(|(_, rc)| rc)
         .any(|r| r.node_id == RENodeId::GlobalComponent(source_component)
             && r.amount == -Decimal::from(transfer_amount)));
 
@@ -58,6 +77,7 @@ fn test_trace_resource_transfers() {
         .expect_commit()
         .resource_changes
         .iter()
+        .flat_map(|(_, rc)| rc)
         .any(|r| r.node_id == RENodeId::GlobalComponent(target_component)
             && r.amount == Decimal::from(transfer_amount)));
 
@@ -66,6 +86,7 @@ fn test_trace_resource_transfers() {
         .expect_commit()
         .resource_changes
         .iter()
+        .flat_map(|(_, rc)| rc)
         .any(|r| r.node_id == RENodeId::GlobalComponent(account)
             && r.amount == -Decimal::from(total_fee_paid)));
 }
@@ -119,7 +140,8 @@ fn test_trace_fee_payments() {
 
     assert_eq!(1, resource_changes.len());
     assert!(resource_changes
-        .iter()
+        .into_iter()
+        .flat_map(|(_, rc)| rc)
         .any(|r| r.node_id == RENodeId::GlobalComponent(funded_component)
             && r.amount == -total_fee_paid));
 }
