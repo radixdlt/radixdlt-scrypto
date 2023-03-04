@@ -1,5 +1,4 @@
 use radix_engine::types::*;
-use radix_engine_interface::events::EventTypeIdentifier;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 

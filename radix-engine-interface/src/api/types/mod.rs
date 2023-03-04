@@ -1,3 +1,4 @@
+mod event_id;
 mod indexed_value;
 mod invocation;
 mod package_code;
@@ -7,6 +8,7 @@ mod royalty_config;
 mod traits;
 mod wasm;
 
+pub use event_id::*;
 pub use indexed_value::*;
 pub use invocation::*;
 pub use package_code::*;

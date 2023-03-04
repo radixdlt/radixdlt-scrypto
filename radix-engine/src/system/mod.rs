@@ -1,5 +1,4 @@
 pub mod client_api_impl;
-pub mod events;
 pub mod kernel_modules;
 pub mod node;
 pub mod node_modules;

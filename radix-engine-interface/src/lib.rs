@@ -12,8 +12,6 @@ pub mod api;
 pub mod blueprints;
 /// RE constants
 pub mod constants;
-/// RE events.
-pub mod events;
 
 mod macros;
 pub use macros::*;
