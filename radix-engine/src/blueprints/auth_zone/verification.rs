@@ -31,6 +31,7 @@ impl AuthVerification {
             }
             // TODO: I believe team wants to propagate these error codes?
             HardResourceOrNonFungible::InvalidPath
+            | HardResourceOrNonFungible::NotResourceAddress
             | HardResourceOrNonFungible::NotResourceAddressOrNonFungibleGlobalId => Ok(false),
         }
     }

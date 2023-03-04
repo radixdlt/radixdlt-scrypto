@@ -142,6 +142,37 @@ fn soft_to_hard_resource_list(
     }
 }
 
+fn soft_to_hard_resource(
+    schema: &ScryptoSchema,
+    type_index: LocalTypeIndex,
+    soft_resource: &SoftResource,
+    value: &IndexedScryptoValue,
+) -> HardResourceOrNonFungible {
+    match soft_resource {
+        SoftResource::Dynamic(schema_path) => {
+            if let Some((sbor_path, ty)) = schema_path.to_sbor_path(schema, type_index) {
+                match &ty {
+                    TypeKind::Custom(ScryptoCustomTypeKind::ResourceAddress) => {
+                        let v = sbor_path
+                            .get_from_value(value.as_value())
+                            .expect(format!("Value missing at {:?}", schema_path).as_str());
+
+                        HardResourceOrNonFungible::Resource(
+                            scrypto_decode(&scrypto_encode(v).unwrap()).expect(
+                                format!("Unexpected value type at {:?}", schema_path).as_str(),
+                            ),
+                        )
+                    }
+                    _ => HardResourceOrNonFungible::NotResourceAddress,
+                }
+            } else {
+                HardResourceOrNonFungible::InvalidPath
+            }
+        }
+        SoftResource::Static(resource) => HardResourceOrNonFungible::Resource(resource.clone()),
+    }
+}
+
 fn soft_to_hard_resource_or_non_fungible(
     schema: &ScryptoSchema,
     type_index: LocalTypeIndex,
@@ -210,13 +241,8 @@ fn soft_to_hard_proof_rule(
             );
             HardProofRule::Require(resource)
         }
-        ProofRule::AmountOf(soft_decimal, resource_or_non_fungible) => {
-            let resource = soft_to_hard_resource_or_non_fungible(
-                schema,
-                type_index,
-                resource_or_non_fungible,
-                value,
-            );
+        ProofRule::AmountOf(soft_decimal, resource) => {
+            let resource = soft_to_hard_resource(schema, type_index, resource, value);
             let hard_decimal = soft_to_hard_decimal(schema, type_index, soft_decimal, value);
             HardProofRule::AmountOf(hard_decimal, resource)
         }

@@ -20,6 +20,7 @@ pub enum HardResourceOrNonFungible {
     NonFungible(NonFungibleGlobalId),
     Resource(ResourceAddress),
     InvalidPath,
+    NotResourceAddress,
     NotResourceAddressOrNonFungibleGlobalId,
 }
 
