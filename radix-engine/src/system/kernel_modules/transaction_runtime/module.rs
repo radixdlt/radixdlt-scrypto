@@ -14,6 +14,7 @@ use radix_engine_interface::constants::TRANSACTION_RUNTIME_PACKAGE;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::ScryptoValue;
 use sbor::btreemap;
+use sbor::rust::string::ToString;
 
 #[derive(Debug, Clone)]
 pub struct TransactionRuntimeModule {
