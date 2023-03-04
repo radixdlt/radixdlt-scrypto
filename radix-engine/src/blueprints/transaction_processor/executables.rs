@@ -17,7 +17,7 @@ use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
 };
 use radix_engine_interface::api::node_modules::metadata::{
-    MetadataSet, MetadataValue, METADATA_SET_IDENT,
+    MetadataSet, MetadataValues, METADATA_SET_IDENT,
 };
 use radix_engine_interface::api::node_modules::royalty::{
     ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput, PackageClaimRoyaltyInput,
@@ -620,7 +620,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         METADATA_SET_IDENT,
                         scrypto_encode(&MetadataSet {
                             key: key.clone(),
-                            value: MetadataValue::string(value.clone()),
+                            value: MetadataValues::string(value.clone()),
                         })
                         .unwrap(),
                     )?;

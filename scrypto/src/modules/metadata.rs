@@ -1,15 +1,11 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::*;
 use crate::*;
-use radix_engine_interface::api::node_modules::metadata::{
-    MetadataCreateInput, MetadataError, MetadataGetInput, MetadataRemoveInput, MetadataSet,
-    MetadataValue, METADATA_BLUEPRINT, METADATA_CREATE_IDENT, METADATA_GET_IDENT,
-    METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
-};
+use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::types::{NodeModuleId, ObjectId, RENodeId};
 use radix_engine_interface::api::{ClientObjectApi, ClientPackageApi};
 use radix_engine_interface::constants::METADATA_PACKAGE;
-use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
+use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoValue};
 use sbor::rust::prelude::ToOwned;
 use sbor::rust::string::String;
 
@@ -59,7 +55,7 @@ pub trait MetadataObject {
                 METADATA_SET_IDENT,
                 scrypto_encode(&MetadataSet {
                     key: name.as_ref().to_owned(),
-                    value: MetadataValue::string(value.as_ref().to_owned()),
+                    value: MetadataValues::string(value.as_ref().to_owned()),
                 })
                 .unwrap(),
             )
@@ -81,10 +77,11 @@ pub trait MetadataObject {
             )
             .unwrap();
 
-        let value: Option<MetadataValue> = scrypto_decode(&rtn).unwrap();
+        let value: Option<ScryptoValue> = scrypto_decode(&rtn).unwrap();
+
         match value {
-            Some(value) => value.to_string(),
             None => Err(MetadataError::EmptyEntry),
+            Some(value) => MetadataValues::get_string(value),
         }
     }
 

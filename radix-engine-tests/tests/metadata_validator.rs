@@ -1,6 +1,6 @@
 use radix_engine::errors::{ModuleError, RuntimeError};
 use radix_engine::system::kernel_modules::auth::AuthError;
-use radix_engine::system::node_modules::metadata::MetadataBackendValue;
+use radix_engine::system::node_modules::metadata::MetadataValue;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
@@ -54,7 +54,7 @@ fn can_set_validator_metadata_with_owner() {
     let value = test_runner
         .get_metadata(component_address.into(), "name")
         .expect("Should exist");
-    assert_eq!(value, MetadataBackendValue::String("best package ever!".to_string()));
+    assert_eq!(value, MetadataValue::String("best package ever!".to_string()));
 }
 
 #[test]

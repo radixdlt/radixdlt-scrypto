@@ -14,7 +14,7 @@ use radix_engine::kernel::track::Track;
 use radix_engine::ledger::*;
 use radix_engine::system::kernel_modules::costing::FeeTable;
 use radix_engine::system::kernel_modules::costing::SystemLoanFeeReserve;
-use radix_engine::system::node_modules::metadata::MetadataBackendValue;
+use radix_engine::system::node_modules::metadata::MetadataValue;
 use radix_engine::system::package::*;
 use radix_engine::transaction::{
     execute_preview, execute_transaction, ExecutionConfig, FeeReserveConfig, PreviewError,
@@ -227,7 +227,7 @@ impl TestRunner {
         )
     }
 
-    pub fn get_metadata(&mut self, address: Address, key: &str) -> Option<MetadataBackendValue> {
+    pub fn get_metadata(&mut self, address: Address, key: &str) -> Option<MetadataValue> {
         let metadata_entry = self
             .substate_store
             .get_substate(&SubstateId(
@@ -242,7 +242,7 @@ impl TestRunner {
         let metadata_entry: KeyValueStoreEntrySubstate = metadata_entry.into();
         let metadata_entry = match metadata_entry {
             KeyValueStoreEntrySubstate::Some(_, value) => {
-                let value: MetadataBackendValue =
+                let value: MetadataValue =
                     scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap();
                 Some(value)
             }
