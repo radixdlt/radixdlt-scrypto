@@ -1,10 +1,9 @@
+use scrypto::api::node_modules::auth::*;
+use scrypto::api::node_modules::metadata::*;
+use scrypto::api::node_modules::royalty::*;
+use scrypto::api::*;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
-use scrypto::radix_engine_interface::api::node_modules::auth::*;
-use scrypto::radix_engine_interface::api::node_modules::metadata::*;
-use scrypto::radix_engine_interface::api::node_modules::royalty::*;
-use scrypto::radix_engine_interface::api::ClientObjectApi;
-use scrypto::radix_engine_interface::api::ClientPackageApi;
 
 #[blueprint]
 mod component_module {

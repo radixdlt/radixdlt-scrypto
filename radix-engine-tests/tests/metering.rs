@@ -68,11 +68,11 @@ fn test_basic_transfer() {
     // (cd radix-engine && cargo test --test metering -- test_basic_transfer)
     assert_eq!(
         10000 /* CreateNode */
-        + 59000 /* DropLock */
+        + 65500 /* DropLock */
         + 10000 /* DropNode */
         + 10000 /* Invoke */
-        + 59500 /* LockSubstate */
-        + 39500 /* ReadSubstate */
+        + 66000 /* LockSubstate */
+        + 46000 /* ReadSubstate */
         + 65000 /* RunNative */
         + 0 /* RunWasm */
         + 50000 /* TxBaseCost */
@@ -200,13 +200,13 @@ fn test_radiswap() {
     // (cd radix-engine && cargo test --test metering -- test_radiswap)
     assert_eq!(
         15000 /* CreateNode */
-        + 170000 /* DropLock */
+        + 186000 /* DropLock */
         + 12500 /* DropNode */
         + 24330 /* Invoke */
-        + 171500 /* LockSubstate */
-        + 2591310 /* ReadSubstate */
+        + 187500 /* LockSubstate */
+        + 2554720 /* ReadSubstate */
         + 147500 /* RunNative */
-        + 1616865 /* RunWasm */
+        + 1618225 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1705 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
@@ -309,13 +309,13 @@ fn test_flash_loan() {
     // (cd radix-engine && cargo test --test metering -- test_flash_loan)
     assert_eq!(
         22500 /* CreateNode */
-        + 258000 /* DropLock */
+        + 285000 /* DropLock */
         + 22500 /* DropNode */
         + 45210 /* Invoke */
-        + 265500 /* LockSubstate */
-        + 5199240 /* ReadSubstate */
+        + 292500 /* LockSubstate */
+        + 5121840 /* ReadSubstate */
         + 240000 /* RunNative */
-        + 1374650 /* RunWasm */
+        + 1377240 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2475 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */

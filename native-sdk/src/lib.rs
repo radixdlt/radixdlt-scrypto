@@ -10,7 +10,3 @@ pub mod component;
 pub mod metadata;
 pub mod resource;
 pub mod runtime;
-
-// Export macros
-mod macros;
-pub use macros::*;
