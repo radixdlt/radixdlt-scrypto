@@ -1,4 +1,4 @@
-use scrypto::api::ClientComponentApi;
+use scrypto::api::*;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 

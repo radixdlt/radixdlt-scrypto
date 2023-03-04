@@ -1,6 +1,5 @@
 use radix_engine::errors::{KernelError, RuntimeError};
 use radix_engine::types::*;
-use radix_engine_interface::api::types::RENodeId;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -28,7 +27,8 @@ fn stored_bucket_in_committed_component_should_fail() {
             e,
             RuntimeError::KernelError(KernelError::InvalidOwnership(
                 SubstateOffset::Component(ComponentOffset::State0),
-                RENodeId::Bucket(..)
+                RESOURCE_MANAGER_PACKAGE,
+                ..
             ))
         )
     });
@@ -58,7 +58,8 @@ fn stored_bucket_in_owned_component_should_fail() {
             e,
             RuntimeError::KernelError(KernelError::InvalidOwnership(
                 SubstateOffset::Component(ComponentOffset::State0),
-                RENodeId::Bucket(..)
+                RESOURCE_MANAGER_PACKAGE,
+                ..
             ))
         )
     });

@@ -2,7 +2,6 @@ use super::{EpochChangeEvent, RoundChangeEvent, ValidatorCreator};
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::node::RENodeInit;
 use crate::types::*;
 use native_sdk::access_rules::AccessRulesObject;
 use native_sdk::metadata::Metadata;
@@ -52,7 +51,7 @@ impl EpochManagerBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
         let input: EpochManagerCreateInput = scrypto_decode(&scrypto_encode(&input).unwrap())
@@ -60,7 +59,6 @@ impl EpochManagerBlueprint {
                 RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
             })?;
 
-        let underlying_node_id = api.kernel_allocate_node_id(RENodeType::EpochManager)?;
         let address = ComponentAddress::EpochManager(input.component_address);
 
         let epoch_manager = EpochManagerSubstate {
@@ -147,14 +145,14 @@ impl EpochManagerBlueprint {
             epoch: input.initial_epoch + 1,
             validator_set: validator_set.clone(),
         };
-        api.kernel_create_node(
-            underlying_node_id,
-            RENodeInit::EpochManager(
-                epoch_manager,
-                current_validator_set,
-                preparing_validator_set,
-            ),
-            BTreeMap::new(),
+
+        let epoch_manager_id = api.new_object(
+            EPOCH_MANAGER_BLUEPRINT,
+            vec![
+                scrypto_encode(&epoch_manager).unwrap(),
+                scrypto_encode(&current_validator_set).unwrap(),
+                scrypto_encode(&preparing_validator_set).unwrap(),
+            ],
         )?;
 
         Runtime::emit_event(
@@ -206,13 +204,13 @@ impl EpochManagerBlueprint {
         );
 
         let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
-        let metadata = Metadata::sys_new(api)?;
+        let metadata = Metadata::sys_create(api)?;
 
         api.globalize_with_address(
-            underlying_node_id,
+            RENodeId::Object(epoch_manager_id),
             btreemap!(
-                NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
-                NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
+                NodeModuleId::AccessRules => access_rules.id(),
+                NodeModuleId::Metadata => metadata.id(),
             ),
             address.into(),
         )?;

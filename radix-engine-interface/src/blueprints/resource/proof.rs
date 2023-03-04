@@ -95,7 +95,7 @@ impl fmt::Display for ProofValidationError {
 }
 
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub struct Proof(pub ProofId); // scrypto stub
+pub struct Proof(pub ObjectId); // scrypto stub
 
 //========
 // binary

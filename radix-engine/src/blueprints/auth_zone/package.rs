@@ -2,6 +2,8 @@ use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::auth::convert_contextless;
 use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE};
+use crate::system::node::RENodeModuleInit;
+use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
 use native_sdk::resource::SysProof;
 use radix_engine_interface::api::node_modules::auth::*;
@@ -194,8 +196,18 @@ impl AuthZoneBlueprint {
             compose_proof_by_amount(&auth_zone.proofs, input.resource_address, None, api)?
         };
 
-        let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
-        api.kernel_create_node(node_id, composed_proof.into(), BTreeMap::new())?;
+        let node_id = api.kernel_allocate_node_id(RENodeType::Object)?;
+        api.kernel_create_node(
+            node_id,
+            composed_proof.into(),
+            btreemap!(
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                    package_address: RESOURCE_MANAGER_PACKAGE,
+                    blueprint_name: PROOF_BLUEPRINT.to_string(),
+                    global: false,
+                })
+            ),
+        )?;
         let proof_id = node_id.into();
 
         Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
@@ -232,8 +244,18 @@ impl AuthZoneBlueprint {
             )?
         };
 
-        let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
-        api.kernel_create_node(node_id, composed_proof.into(), BTreeMap::new())?;
+        let node_id = api.kernel_allocate_node_id(RENodeType::Object)?;
+        api.kernel_create_node(
+            node_id,
+            composed_proof.into(),
+            btreemap!(
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                    package_address: RESOURCE_MANAGER_PACKAGE,
+                    blueprint_name: PROOF_BLUEPRINT.to_string(),
+                    global: false,
+                })
+            ),
+        )?;
         let proof_id = node_id.into();
 
         Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))
@@ -270,8 +292,18 @@ impl AuthZoneBlueprint {
             )?
         };
 
-        let node_id = api.kernel_allocate_node_id(RENodeType::Proof)?;
-        api.kernel_create_node(node_id, composed_proof.into(), BTreeMap::new())?;
+        let node_id = api.kernel_allocate_node_id(RENodeType::Object)?;
+        api.kernel_create_node(
+            node_id,
+            composed_proof.into(),
+            btreemap!(
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                    package_address: RESOURCE_MANAGER_PACKAGE,
+                    blueprint_name: PROOF_BLUEPRINT.to_string(),
+                    global: false,
+                })
+            ),
+        )?;
         let proof_id = node_id.into();
 
         Ok(IndexedScryptoValue::from_typed(&Proof(proof_id)))

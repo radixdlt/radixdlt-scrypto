@@ -1,5 +1,5 @@
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::api::ClientComponentApi;
+use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::clock::{
     ClockCompareCurrentTimeInput, ClockGetCurrentTimeInput, TimePrecision,
     CLOCK_COMPARE_CURRENT_TIME_IDENT, CLOCK_GET_CURRENT_TIME_IDENT,

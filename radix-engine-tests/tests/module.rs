@@ -1,22 +1,22 @@
-use radix_engine::errors::{ApplicationError, RuntimeError};
-use radix_engine::system::package::PackageError;
+use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::data::manifest_args;
 
 #[test]
-fn should_not_be_able_to_node_create_with_invalid_blueprint() {
+fn mixed_up_modules_causes_type_error() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/kernel");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/module");
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
-            "NodeCreate",
-            "create_node_with_invalid_blueprint",
+            "ComponentModule",
+            "globalize_with_mixed_up_modules",
             manifest_args!(),
         )
         .build();
@@ -26,9 +26,7 @@ fn should_not_be_able_to_node_create_with_invalid_blueprint() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::PackageError(
-                PackageError::BlueprintNotFound(..)
-            ))
+            RuntimeError::SystemError(SystemError::InvalidModuleType { .. })
         )
     });
 }

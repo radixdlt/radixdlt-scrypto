@@ -1,4 +1,4 @@
-use scrypto::api::ClientComponentApi;
+use scrypto::api::*;
 use scrypto::blueprints::clock::*;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;

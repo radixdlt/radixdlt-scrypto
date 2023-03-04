@@ -1,6 +1,5 @@
 use scrypto::api::substate_api::LockFlags;
-use scrypto::api::ClientComponentApi;
-use scrypto::api::ClientSubstateApi;
+use scrypto::api::*;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 
@@ -38,7 +37,7 @@ mod data_access {
         pub fn create_component_and_read_info() {
             let component_address = Self {}.instantiate().globalize();
             ScryptoEnv
-                .get_component_type_info(RENodeId::GlobalComponent(component_address))
+                .get_object_type_info(RENodeId::GlobalComponent(component_address))
                 .unwrap();
         }
     }

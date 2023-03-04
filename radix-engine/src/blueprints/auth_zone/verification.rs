@@ -3,14 +3,14 @@ use crate::errors::RuntimeError;
 use crate::system::kernel_modules::auth::*;
 use crate::types::*;
 use native_sdk::resource::SysProof;
-use radix_engine_interface::api::ClientComponentApi;
+use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::ops::Fn;
 
 pub struct AuthVerification;
 
 impl AuthVerification {
-    fn proof_matches<Y: ClientComponentApi<RuntimeError>>(
+    fn proof_matches<Y: ClientObjectApi<RuntimeError>>(
         resource_rule: &HardResourceOrNonFungible,
         proof: &Proof,
         api: &mut Y,
@@ -43,7 +43,7 @@ impl AuthVerification {
         check: P,
     ) -> Result<bool, RuntimeError>
     where
-        Y: ClientComponentApi<RuntimeError>,
+        Y: ClientObjectApi<RuntimeError>,
         P: Fn(&AuthZone, usize, &mut Y) -> Result<bool, RuntimeError>,
     {
         for (rev_index, auth_zone) in auth_zones.auth_zones.iter().rev().enumerate() {
@@ -62,7 +62,7 @@ impl AuthVerification {
         Ok(false)
     }
 
-    fn auth_zone_stack_has_amount<Y: ClientComponentApi<RuntimeError>>(
+    fn auth_zone_stack_has_amount<Y: ClientObjectApi<RuntimeError>>(
         barrier_crossings_allowed: u32,
         resource_rule: &HardResourceOrNonFungible,
         amount: Decimal,
@@ -86,7 +86,7 @@ impl AuthVerification {
         )
     }
 
-    fn auth_zone_stack_matches_rule<Y: ClientComponentApi<RuntimeError>>(
+    fn auth_zone_stack_matches_rule<Y: ClientObjectApi<RuntimeError>>(
         barrier_crossings_allowed: u32,
         resource_rule: &HardResourceOrNonFungible,
         auth_zone: &AuthZoneStackSubstate,
@@ -134,7 +134,7 @@ impl AuthVerification {
         )
     }
 
-    pub fn verify_proof_rule<Y: ClientComponentApi<RuntimeError>>(
+    pub fn verify_proof_rule<Y: ClientObjectApi<RuntimeError>>(
         barrier_crossings_allowed: u32,
         proof_rule: &HardProofRule,
         auth_zone: &AuthZoneStackSubstate,
@@ -218,7 +218,7 @@ impl AuthVerification {
         }
     }
 
-    pub fn verify_auth_rule<Y: ClientComponentApi<RuntimeError>>(
+    pub fn verify_auth_rule<Y: ClientObjectApi<RuntimeError>>(
         barrier_crossings_allowed: u32,
         auth_rule: &HardAuthRule,
         auth_zone: &AuthZoneStackSubstate,
@@ -248,7 +248,7 @@ impl AuthVerification {
         }
     }
 
-    pub fn verify_method_auth<Y: ClientComponentApi<RuntimeError>>(
+    pub fn verify_method_auth<Y: ClientObjectApi<RuntimeError>>(
         barrier_crossings_allowed: u32,
         method_auth: &MethodAuthorization,
         auth_zone: &AuthZoneStackSubstate,

@@ -6,6 +6,7 @@ use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
+use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use sbor::rust::collections::BTreeMap;
 
@@ -44,7 +45,7 @@ pub trait KernelModule {
     }
 
     #[inline(always)]
-    fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
+    fn before_push_frame<Y: KernelModuleApi<RuntimeError> + ClientApi<RuntimeError>>(
         _api: &mut Y,
         _actor: &Option<Actor>,
         _down_movement: &mut CallFrameUpdate,
@@ -192,7 +193,7 @@ pub trait KernelModule {
     #[inline(always)]
     fn on_credit_cost_units<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
-        _vault_id: VaultId,
+        _vault_id: ObjectId,
         locked_fee: LiquidFungibleResource,
         _contingent: bool,
     ) -> Result<LiquidFungibleResource, RuntimeError> {

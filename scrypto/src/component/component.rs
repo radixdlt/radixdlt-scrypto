@@ -11,8 +11,8 @@ use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_BLUEPRINT, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
     COMPONENT_ROYALTY_CREATE_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
-use radix_engine_interface::api::types::{ComponentId, RENodeId};
-use radix_engine_interface::api::{types::*, ClientComponentApi, ClientPackageApi};
+use radix_engine_interface::api::types::{ObjectId, RENodeId};
+use radix_engine_interface::api::{types::*, ClientObjectApi, ClientPackageApi};
 use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRules, Bucket, MethodKey, NonFungibleGlobalId,
 };
@@ -112,26 +112,26 @@ pub trait LocalComponent: Sized {
 }
 
 #[derive(PartialEq, Eq, Hash, Clone)]
-pub struct OwnedComponent(pub ComponentId);
+pub struct OwnedComponent(pub ObjectId);
 
 impl Component for OwnedComponent {
     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
         let output = ScryptoEnv
-            .call_method(RENodeId::Component(self.0), method, args)
+            .call_method(RENodeId::Object(self.0), method, args)
             .unwrap();
         scrypto_decode(&output).unwrap()
     }
 
     fn package_address(&self) -> PackageAddress {
         ScryptoEnv
-            .get_component_type_info(RENodeId::Component(self.0))
+            .get_object_type_info(RENodeId::Object(self.0))
             .unwrap()
             .0
     }
 
     fn blueprint_name(&self) -> String {
         ScryptoEnv
-            .get_component_type_info(RENodeId::Component(self.0))
+            .get_object_type_info(RENodeId::Object(self.0))
             .unwrap()
             .1
     }
@@ -177,16 +177,18 @@ impl LocalComponent for OwnedComponent {
             .unwrap();
         let access_rules: Own = scrypto_decode(&rtn).unwrap();
 
-        ScryptoEnv
+        let address = ScryptoEnv
             .globalize(
-                RENodeId::Component(self.0),
+                RENodeId::Object(self.0),
                 btreemap!(
-                    NodeModuleId::AccessRules => scrypto_encode(&access_rules).unwrap(),
-                    NodeModuleId::Metadata => scrypto_encode(&metadata).unwrap(),
-                    NodeModuleId::ComponentRoyalty => scrypto_encode(&royalty).unwrap()
+                    NodeModuleId::AccessRules => access_rules.id(),
+                    NodeModuleId::Metadata => metadata.id(),
+                    NodeModuleId::ComponentRoyalty => royalty.id(),
                 ),
             )
-            .unwrap()
+            .unwrap();
+
+        address.into()
     }
 }
 
@@ -247,14 +249,14 @@ impl Component for GlobalComponentRef {
 
     fn package_address(&self) -> PackageAddress {
         ScryptoEnv
-            .get_component_type_info(RENodeId::GlobalComponent(self.0))
+            .get_object_type_info(RENodeId::GlobalComponent(self.0))
             .unwrap()
             .0
     }
 
     fn blueprint_name(&self) -> String {
         ScryptoEnv
-            .get_component_type_info(RENodeId::GlobalComponent(self.0))
+            .get_object_type_info(RENodeId::GlobalComponent(self.0))
             .unwrap()
             .1
     }
@@ -279,7 +281,7 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for O
 
     #[inline]
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        Own::Component(self.0).encode_body(encoder)
+        Own::Object(self.0).encode_body(encoder)
     }
 }
 
@@ -290,7 +292,7 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for O
     ) -> Result<Self, DecodeError> {
         let o = Own::decode_body_with_value_kind(decoder, value_kind)?;
         match o {
-            Own::Component(component_id) => Ok(Self(component_id)),
+            Own::Object(component_id) => Ok(Self(component_id)),
             _ => Err(DecodeError::InvalidCustomValue),
         }
     }

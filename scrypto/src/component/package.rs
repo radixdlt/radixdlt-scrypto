@@ -5,7 +5,7 @@ use radix_engine_interface::api::node_modules::royalty::{
     PACKAGE_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::ClientComponentApi;
+use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::Bucket;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode};
 use sbor::rust::collections::BTreeMap;

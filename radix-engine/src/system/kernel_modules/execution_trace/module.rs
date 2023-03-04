@@ -36,14 +36,14 @@ pub struct ExecutionTraceModule {
     kernel_call_traces_stacks: IndexMap<usize, Vec<KernelCallTrace>>,
 
     /// Vault operations: (Caller, Vault ID, operation)
-    vault_ops: Vec<(TraceActor, VaultId, VaultOp)>,
+    vault_ops: Vec<(TraceActor, ObjectId, VaultOp)>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ResourceChange {
     pub resource_address: ResourceAddress,
     pub node_id: RENodeId,
-    pub vault_id: VaultId,
+    pub vault_id: ObjectId,
     pub amount: Decimal,
 }
 
@@ -130,8 +130,8 @@ impl ProofSnapshot {
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct ResourceSummary {
-    pub buckets: IndexMap<BucketId, BucketSnapshot>,
-    pub proofs: IndexMap<ProofId, ProofSnapshot>,
+    pub buckets: IndexMap<ObjectId, BucketSnapshot>,
+    pub proofs: IndexMap<ObjectId, ProofSnapshot>,
 }
 
 // TODO: Clean up
@@ -181,14 +181,12 @@ impl ResourceSummary {
         let mut proofs = index_map_new();
         for node_id in &call_frame_update.nodes_to_move {
             match &node_id {
-                RENodeId::Bucket(bucket_id) => {
-                    if let Some(x) = api.kernel_read_bucket(*bucket_id) {
-                        buckets.insert(*bucket_id, x);
+                RENodeId::Object(object_id) => {
+                    if let Some(x) = api.kernel_read_bucket(*object_id) {
+                        buckets.insert(*object_id, x);
                     }
-                }
-                RENodeId::Proof(proof_id) => {
-                    if let Some(x) = api.kernel_read_proof(*proof_id) {
-                        proofs.insert(*proof_id, x);
+                    if let Some(x) = api.kernel_read_proof(*object_id) {
+                        proofs.insert(*object_id, x);
                     }
                 }
                 _ => {}
@@ -201,14 +199,12 @@ impl ResourceSummary {
         let mut buckets = index_map_new();
         let mut proofs = index_map_new();
         match node_id {
-            RENodeId::Bucket(bucket_id) => {
-                if let Some(x) = api.kernel_read_bucket(*bucket_id) {
-                    buckets.insert(*bucket_id, x);
+            RENodeId::Object(object_id) => {
+                if let Some(x) = api.kernel_read_bucket(*object_id) {
+                    buckets.insert(*object_id, x);
                 }
-            }
-            RENodeId::Proof(proof_id) => {
-                if let Some(x) = api.kernel_read_proof(*proof_id) {
-                    proofs.insert(*proof_id, x);
+                if let Some(x) = api.kernel_read_proof(*object_id) {
+                    proofs.insert(*object_id, x);
                 }
             }
             _ => {}
@@ -424,7 +420,8 @@ impl ExecutionTraceModule {
                         blueprint_name,
                         ident,
                     },
-                identifier: ActorIdentifier::Method(MethodIdentifier(RENodeId::Vault(vault_id), ..)),
+                identifier:
+                    ActorIdentifier::Method(MethodIdentifier(RENodeId::Object(vault_id), ..)),
             }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_PUT_IDENT) =>
@@ -438,7 +435,8 @@ impl ExecutionTraceModule {
                         blueprint_name,
                         ident,
                     },
-                identifier: ActorIdentifier::Method(MethodIdentifier(RENodeId::Vault(vault_id), ..)),
+                identifier:
+                    ActorIdentifier::Method(MethodIdentifier(RENodeId::Object(vault_id), ..)),
             }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_LOCK_FEE_IDENT) =>
@@ -464,7 +462,8 @@ impl ExecutionTraceModule {
                         blueprint_name,
                         ident,
                     },
-                identifier: ActorIdentifier::Method(MethodIdentifier(RENodeId::Vault(vault_id), ..)),
+                identifier:
+                    ActorIdentifier::Method(MethodIdentifier(RENodeId::Object(vault_id), ..)),
             }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_TAKE_IDENT) =>
@@ -530,7 +529,7 @@ impl ExecutionTraceModule {
         }
     }
 
-    pub fn collect_events(mut self) -> (Vec<(TraceActor, VaultId, VaultOp)>, Vec<TrackedEvent>) {
+    pub fn collect_events(mut self) -> (Vec<(TraceActor, ObjectId, VaultOp)>, Vec<TrackedEvent>) {
         let mut events = Vec::new();
         for (_, traces) in self.kernel_call_traces_stacks.drain(..) {
             // Emit an output event for each "root" kernel call trace
@@ -550,7 +549,7 @@ impl ExecutionTraceModule {
         &mut self,
         resource_summary: &ResourceSummary,
         caller: &Option<Actor>,
-        vault_id: &VaultId,
+        vault_id: &ObjectId,
     ) {
         let actor = caller
             .clone()
@@ -565,7 +564,7 @@ impl ExecutionTraceModule {
         }
     }
 
-    fn handle_vault_lock_fee_input<'s>(&mut self, caller: &Option<Actor>, vault_id: &VaultId) {
+    fn handle_vault_lock_fee_input<'s>(&mut self, caller: &Option<Actor>, vault_id: &ObjectId) {
         let actor = caller
             .clone()
             .map(|a| TraceActor::Actor(a))
@@ -578,7 +577,7 @@ impl ExecutionTraceModule {
         &mut self,
         resource_summary: &ResourceSummary,
         caller: &Option<Actor>,
-        vault_id: &VaultId,
+        vault_id: &ObjectId,
     ) {
         let actor = caller
             .clone()
@@ -599,15 +598,15 @@ impl ExecutionTraceReceipt {
     // The current approach relies on various runtime invariants.
 
     pub fn new(
-        ops: Vec<(TraceActor, VaultId, VaultOp)>,
-        actual_fee_payments: &BTreeMap<VaultId, Decimal>,
+        ops: Vec<(TraceActor, ObjectId, VaultOp)>,
+        actual_fee_payments: &BTreeMap<ObjectId, Decimal>,
         is_commit_success: bool,
     ) -> Self {
         // TODO: Might want to change the key from being a ComponentId to being an enum to
         //       accommodate for accounts
         let mut vault_changes =
-            index_map_new::<RENodeId, IndexMap<VaultId, (ResourceAddress, Decimal)>>();
-        let mut vault_locked_by = index_map_new::<VaultId, RENodeId>();
+            index_map_new::<RENodeId, IndexMap<ObjectId, (ResourceAddress, Decimal)>>();
+        let mut vault_locked_by = index_map_new::<ObjectId, RENodeId>();
         for (actor, vault_id, vault_op) in ops {
             if let TraceActor::Actor(Actor {
                 identifier: ActorIdentifier::Method(method),

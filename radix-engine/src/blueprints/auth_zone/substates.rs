@@ -2,7 +2,7 @@ use super::AuthVerification;
 use crate::errors::RuntimeError;
 use crate::system::kernel_modules::auth::*;
 use crate::types::*;
-use radix_engine_interface::api::ClientComponentApi;
+use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Clone)]
@@ -26,7 +26,7 @@ impl AuthZoneStackSubstate {
         }
     }
 
-    pub fn check_auth<Y: ClientComponentApi<RuntimeError>>(
+    pub fn check_auth<Y: ClientObjectApi<RuntimeError>>(
         &self,
         is_barrier: bool,
         method_auth: &MethodAuthorization,

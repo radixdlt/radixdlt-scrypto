@@ -1,20 +1,14 @@
-use super::node::{RENodeInit, RENodeModuleInit};
 use crate::errors::{KernelError, RuntimeError};
 use crate::kernel::actor::{Actor, ActorIdentifier, ExecutionMode};
 use crate::types::*;
 use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
 use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
-use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLUEPRINT;
-use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
-use radix_engine_interface::blueprints::clock::CLOCK_BLUEPRINT;
-use radix_engine_interface::blueprints::epoch_manager::EPOCH_MANAGER_BLUEPRINT;
-use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
-use radix_engine_interface::blueprints::resource::PROOF_BLUEPRINT;
+use radix_engine_interface::blueprints::resource::{
+    BUCKET_BLUEPRINT, PROOF_BLUEPRINT, WORKTOP_BLUEPRINT,
+};
 use radix_engine_interface::constants::*;
-use sbor::rust::collections::BTreeMap;
 
 pub struct VisibilityProperties;
 
@@ -22,143 +16,33 @@ impl VisibilityProperties {
     pub fn check_drop_node_visibility(
         mode: ExecutionMode,
         actor: &Actor,
-        node_id: RENodeId,
+        package_address: PackageAddress,
+        blueprint: &str,
     ) -> bool {
         match mode {
-            ExecutionMode::Kernel => match node_id {
-                // TODO: Remove
-                RENodeId::Account(..) => true,
-                RENodeId::Identity(..) => true,
-                RENodeId::Component(..) => true,
-                _ => false,
-            },
-            ExecutionMode::KernelModule => match node_id {
-                RENodeId::TransactionRuntime => true,
-                RENodeId::AuthZoneStack => true,
-                _ => false,
-            },
-            ExecutionMode::Client | ExecutionMode::AutoDrop => match node_id {
-                RENodeId::Worktop => match &actor.fn_identifier {
-                    FnIdentifier {
-                        package_address,
-                        blueprint_name,
-                        ..
-                    } if package_address.eq(&PACKAGE_LOADER)
-                        && blueprint_name.eq(&TRANSACTION_PROCESSOR_BLUEPRINT) =>
-                    {
-                        true
-                    }
-                    _ => false,
-                },
-                RENodeId::Bucket(..) => match &actor.fn_identifier {
-                    FnIdentifier {
-                        package_address, ..
-                    } if package_address.eq(&RESOURCE_MANAGER_PACKAGE) => true,
-                    _ => false,
-                },
-                RENodeId::Proof(..) => match &actor.fn_identifier {
-                    FnIdentifier {
-                        package_address,
-                        blueprint_name,
-                        ..
-                    } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                        && blueprint_name.eq(&PROOF_BLUEPRINT) =>
-                    {
-                        true
-                    }
-                    _ => false,
-                },
-                // TODO: CLEAN THESE UP, these are used for globalization
-                RENodeId::Clock(..) => mode.eq(&ExecutionMode::Client),
-                RENodeId::EpochManager(..) => mode.eq(&ExecutionMode::Client),
-                RENodeId::Account(..) => mode.eq(&ExecutionMode::Client),
-                RENodeId::Validator(..) => mode.eq(&ExecutionMode::Client),
-                RENodeId::Component(..) => mode.eq(&ExecutionMode::Client),
-                RENodeId::AccessController(..) => mode.eq(&ExecutionMode::Client),
-                RENodeId::Identity(..) => mode.eq(&ExecutionMode::Client),
-                _ => false,
-            },
+            ExecutionMode::Kernel => true,
+            ExecutionMode::KernelModule => true,
+            ExecutionMode::AutoDrop => {
+                if package_address.eq(&RESOURCE_MANAGER_PACKAGE) && blueprint.eq(PROOF_BLUEPRINT) {
+                    actor
+                        .fn_identifier
+                        .package_address
+                        .eq(&RESOURCE_MANAGER_PACKAGE)
+                        && actor.fn_identifier.blueprint_name.eq(PROOF_BLUEPRINT)
+                } else {
+                    false
+                }
+            }
+            ExecutionMode::Client => {
+                match (package_address, blueprint) {
+                    (RESOURCE_MANAGER_PACKAGE, WORKTOP_BLUEPRINT) => true, // TODO: Remove
+                    (METADATA_PACKAGE, METADATA_BLUEPRINT)
+                    | (ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT)
+                    | (ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT) => true, // TODO: This is required for current implementation of globalize, maybe there's a better way
+                    _ => package_address.eq(&actor.fn_identifier.package_address),
+                }
+            }
             _ => return false,
-        }
-    }
-
-    pub fn check_create_node_access(
-        mode: ExecutionMode,
-        actor: &Actor,
-        node: &RENodeInit,
-        module_init: &BTreeMap<NodeModuleId, RENodeModuleInit>,
-    ) -> bool {
-        // TODO: Cleanup and reduce to least privilege
-        match (mode, &actor.fn_identifier) {
-            (
-                ExecutionMode::Client,
-                FnIdentifier {
-                    package_address,
-                    blueprint_name,
-                    ..
-                },
-            ) => match node {
-                RENodeInit::Component(..) => {
-                    if let Some(RENodeModuleInit::TypeInfo(type_info)) =
-                        module_init.get(&NodeModuleId::TypeInfo)
-                    {
-                        blueprint_name.eq(&type_info.blueprint_name)
-                            && package_address.eq(&type_info.package_address)
-                    } else {
-                        false
-                    }
-                }
-                RENodeInit::Worktop(..) | RENodeInit::GlobalPackage(..) => {
-                    package_address.eq(&PACKAGE_LOADER)
-                }
-                RENodeInit::GlobalResourceManager(..)
-                | RENodeInit::FungibleVault(..)
-                | RENodeInit::NonFungibleVault(..)
-                | RENodeInit::FungibleBucket(..)
-                | RENodeInit::NonFungibleBucket(..)
-                | RENodeInit::NonFungibleStore(..)
-                | RENodeInit::FungibleProof(..)
-                | RENodeInit::NonFungibleProof(..) => {
-                    package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                        || package_address.eq(&AUTH_ZONE_PACKAGE)
-                } // TODO: Remove AuthZonePackage
-                RENodeInit::Identity() => {
-                    package_address.eq(&IDENTITY_PACKAGE) && blueprint_name.eq(IDENTITY_BLUEPRINT)
-                }
-                RENodeInit::EpochManager(..) => {
-                    package_address.eq(&EPOCH_MANAGER_PACKAGE)
-                        && blueprint_name.eq(EPOCH_MANAGER_BLUEPRINT)
-                }
-                RENodeInit::Validator(..) => {
-                    package_address.eq(&EPOCH_MANAGER_PACKAGE)
-                        && blueprint_name.eq(EPOCH_MANAGER_BLUEPRINT)
-                }
-                RENodeInit::Clock(..) => {
-                    package_address.eq(&CLOCK_PACKAGE) && blueprint_name.eq(CLOCK_BLUEPRINT)
-                }
-                RENodeInit::Account(..) => {
-                    package_address.eq(&ACCOUNT_PACKAGE) && blueprint_name.eq(ACCOUNT_BLUEPRINT)
-                }
-                RENodeInit::AccessController(..) => {
-                    package_address.eq(&ACCESS_CONTROLLER_PACKAGE)
-                        && blueprint_name.eq(ACCESS_CONTROLLER_BLUEPRINT)
-                }
-                RENodeInit::Metadata(..) => {
-                    package_address.eq(&METADATA_PACKAGE) && blueprint_name.eq(METADATA_BLUEPRINT)
-                }
-                RENodeInit::ComponentRoyalty(..) => {
-                    package_address.eq(&ROYALTY_PACKAGE)
-                        && blueprint_name.eq(COMPONENT_ROYALTY_BLUEPRINT)
-                }
-                RENodeInit::AccessRules(..) => {
-                    package_address.eq(&ACCESS_RULES_PACKAGE)
-                        && blueprint_name.eq(ACCESS_RULES_BLUEPRINT)
-                }
-                RENodeInit::KeyValueStore => true,
-                RENodeInit::GlobalComponent(..) => true,
-                _ => false,
-            },
-            _ => true,
         }
     }
 
@@ -174,6 +58,7 @@ impl VisibilityProperties {
         // TODO: Cleanup and reduce to least privilege
         match (mode, offset) {
             (ExecutionMode::Kernel, offset) => match offset {
+                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo) => true,
                 _ => false, // Protect ourselves!
             },
             (ExecutionMode::Resolver, offset) => match offset {
@@ -184,6 +69,7 @@ impl VisibilityProperties {
                 _ => false,
             },
             (ExecutionMode::AutoDrop, offset) => match offset {
+                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo) => true,
                 _ => false,
             },
             (ExecutionMode::DropNode, offset) => match offset {
@@ -257,7 +143,7 @@ impl VisibilityProperties {
                                 ) => read_only,
                                 // READ global substates
                                 (
-                                    RENodeId::Component(_),
+                                    RENodeId::Object(_),
                                     SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
                                 ) => read_only,
                                 // READ/WRITE KVStore entry
@@ -269,7 +155,7 @@ impl VisibilityProperties {
                                 _ => false,
                             },
                             ActorIdentifier::Method(method_identifier) => match method_identifier {
-                                MethodIdentifier(RENodeId::Component(component_address), ..) => {
+                                MethodIdentifier(RENodeId::Object(component_address), ..) => {
                                     match (node_id, offset) {
                                         // READ package code & abi
                                         (
@@ -293,7 +179,7 @@ impl VisibilityProperties {
                                         ) => true,
                                         // READ/WRITE component application state
                                         (
-                                            RENodeId::Component(addr),
+                                            RENodeId::Object(addr),
                                             SubstateOffset::Component(ComponentOffset::State0),
                                         ) => addr.eq(component_address),
                                         // Otherwise, false
@@ -368,8 +254,7 @@ impl VisibilityProperties {
                             },
 
                             ActorIdentifier::Method(method_identifier) => match method_identifier {
-                                MethodIdentifier(RENodeId::Component(component_address), ..)
-                                | MethodIdentifier(RENodeId::Account(component_address), ..) => {
+                                MethodIdentifier(RENodeId::Object(component_address), ..) => {
                                     match (node_id, offset) {
                                         (
                                             RENodeId::KeyValueStore(_),
@@ -378,7 +263,7 @@ impl VisibilityProperties {
                                             ),
                                         ) => true,
                                         (
-                                            RENodeId::Component(addr),
+                                            RENodeId::Object(addr),
                                             SubstateOffset::Component(ComponentOffset::State0),
                                         ) => addr.eq(component_address),
                                         _ => false,
@@ -439,75 +324,29 @@ impl SubstateProperties {
         }
     }
 
-    pub fn verify_can_own(offset: &SubstateOffset, node_id: RENodeId) -> Result<(), RuntimeError> {
-        match offset {
-            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))
-            | SubstateOffset::Component(ComponentOffset::State0) => match node_id {
-                RENodeId::KeyValueStore(..) | RENodeId::Component { .. } | RENodeId::Vault(..) => {
-                    Ok(())
-                }
+    pub fn verify_can_own(
+        offset: &SubstateOffset,
+        package_address: PackageAddress,
+        blueprint_name: &str,
+    ) -> Result<(), RuntimeError> {
+        match (package_address, blueprint_name) {
+            (RESOURCE_MANAGER_PACKAGE, BUCKET_BLUEPRINT) => match offset {
+                SubstateOffset::Worktop(WorktopOffset::Worktop) => Ok(()),
                 _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
                     offset.clone(),
-                    node_id,
+                    package_address,
+                    blueprint_name.to_string(),
                 ))),
             },
-            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => {
-                match node_id {
-                    RENodeId::NonFungibleStore(..) => Ok(()),
-                    _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
-                        offset.clone(),
-                        node_id,
-                    ))),
-                }
-            }
-            SubstateOffset::Worktop(WorktopOffset::Worktop) => match node_id {
-                RENodeId::Bucket(..) => Ok(()),
+            (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => match offset {
+                SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack) => Ok(()),
                 _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
                     offset.clone(),
-                    node_id,
+                    package_address,
+                    blueprint_name.to_string(),
                 ))),
             },
-            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator) => match node_id {
-                RENodeId::Vault(..) => Ok(()),
-                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
-                    offset.clone(),
-                    node_id,
-                ))),
-            },
-            SubstateOffset::AccessController(AccessControllerOffset::AccessController) => {
-                match node_id {
-                    RENodeId::Vault(..) => Ok(()),
-                    _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
-                        offset.clone(),
-                        node_id,
-                    ))),
-                }
-            }
-            SubstateOffset::Validator(ValidatorOffset::Validator) => match node_id {
-                RENodeId::Vault(..) => Ok(()),
-                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
-                    offset.clone(),
-                    node_id,
-                ))),
-            },
-            SubstateOffset::Account(AccountOffset::Account) => match node_id {
-                RENodeId::KeyValueStore(..) => Ok(()),
-                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
-                    offset.clone(),
-                    node_id,
-                ))),
-            },
-            SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack) => match node_id {
-                RENodeId::Proof(..) => Ok(()),
-                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
-                    offset.clone(),
-                    node_id,
-                ))),
-            },
-            _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
-                offset.clone(),
-                node_id,
-            ))),
+            _ => Ok(()),
         }
     }
 }

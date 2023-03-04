@@ -13,11 +13,11 @@ use crate::system::node_substates::SubstateRefMut;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::api::ClientComponentApi;
+use radix_engine_interface::api::*;
 
 pub struct LockInfo {
     pub offset: SubstateOffset,
+    pub flags: LockFlags,
 }
 
 // Following the convention of Linux Kernel API, https://www.kernel.org/doc/htmldocs/kernel-api/,
@@ -143,11 +143,11 @@ pub trait KernelInternalApi {
     fn kernel_get_current_actor(&self) -> Option<Actor>;
 
     /* Super unstable interface, specifically for `ExecutionTrace` kernel module */
-    fn kernel_read_bucket(&mut self, bucket_id: BucketId) -> Option<BucketSnapshot>;
-    fn kernel_read_proof(&mut self, proof_id: BucketId) -> Option<ProofSnapshot>;
+    fn kernel_read_bucket(&mut self, bucket_id: ObjectId) -> Option<BucketSnapshot>;
+    fn kernel_read_proof(&mut self, proof_id: ObjectId) -> Option<ProofSnapshot>;
 }
 
 pub trait KernelModuleApi<E>:
-    KernelNodeApi + KernelSubstateApi + KernelInternalApi + ClientComponentApi<E>
+    KernelNodeApi + KernelSubstateApi + KernelInternalApi + ClientObjectApi<E>
 {
 }

@@ -18,6 +18,7 @@ members = [
     "local_component",
     "local_recursion",
     "metadata_component",
+    "module",
     "non_fungible",
     "package",
     "package_schema",

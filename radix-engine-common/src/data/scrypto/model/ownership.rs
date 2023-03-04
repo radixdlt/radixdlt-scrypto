@@ -13,16 +13,18 @@ pub enum Own {
     Bucket([u8; 36]),
     Proof([u8; 36]),
     Vault([u8; 36]),
-    Component([u8; 36]),
-    Account([u8; 36]), // TODO: Clean this out but required for now to be able to convert to the typed RENodeId
+    Object([u8; 36]),
     KeyValueStore([u8; 36]),
 }
 
 impl Own {
-    pub fn component_id(&self) -> [u8; 36] {
+    pub fn id(&self) -> [u8; 36] {
         match self {
-            Own::Component(v) => *v,
-            _ => panic!("Not a component ownership"),
+            Own::Bucket(v)
+            | Own::Object(v)
+            | Own::Proof(v)
+            | Own::Vault(v)
+            | Own::KeyValueStore(v) => *v,
         }
     }
     pub fn vault_id(&self) -> [u8; 36] {
@@ -75,16 +77,12 @@ impl Own {
                 encoder.write_byte(2)?;
                 encoder.write_slice(v)?;
             }
-            Own::Component(v) => {
+            Own::Object(v) => {
                 encoder.write_byte(3)?;
                 encoder.write_slice(v)?;
             }
             Own::KeyValueStore(v) => {
                 encoder.write_byte(4)?;
-                encoder.write_slice(v)?;
-            }
-            Own::Account(v) => {
-                encoder.write_byte(5)?;
                 encoder.write_slice(v)?;
             }
         }
@@ -98,9 +96,8 @@ impl Own {
             0 => Ok(Self::Bucket(copy_u8_array(decoder.read_slice(36)?))),
             1 => Ok(Self::Proof(copy_u8_array(decoder.read_slice(36)?))),
             2 => Ok(Self::Vault(copy_u8_array(decoder.read_slice(36)?))),
-            3 => Ok(Self::Component(copy_u8_array(decoder.read_slice(36)?))),
+            3 => Ok(Self::Object(copy_u8_array(decoder.read_slice(36)?))),
             4 => Ok(Self::KeyValueStore(copy_u8_array(decoder.read_slice(36)?))),
-            5 => Ok(Self::Account(copy_u8_array(decoder.read_slice(36)?))),
             _ => Err(DecodeError::InvalidCustomValue),
         }
     }

@@ -1,4 +1,8 @@
-use crate::blueprints::resource::NonFungibleSubstate;
+use crate::blueprints::access_controller::AccessControllerSubstate;
+use crate::blueprints::account::*;
+use crate::blueprints::clock::CurrentTimeRoundedToMinutesSubstate;
+use crate::blueprints::epoch_manager::*;
+use crate::blueprints::resource::*;
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::errors::{KernelError, SystemError};
 use crate::kernel::actor::{Actor, ActorIdentifier};
@@ -22,15 +26,17 @@ use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate,
     KeyValueStoreEntrySubstate,
 };
+use radix_engine_interface::api::node_modules::auth::*;
+use radix_engine_interface::api::node_modules::metadata::*;
+use radix_engine_interface::api::node_modules::royalty::*;
+use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
-use radix_engine_interface::api::ClientUnsafeApi;
-use radix_engine_interface::api::{package::*, ClientEventApi};
-use radix_engine_interface::api::{types::*, ClientLoggerApi};
-use radix_engine_interface::api::{
-    ClientActorApi, ClientApi, ClientComponentApi, ClientNodeApi, ClientPackageApi,
-    ClientSubstateApi,
-};
+use radix_engine_interface::api::*;
+use radix_engine_interface::blueprints::access_controller::*;
+use radix_engine_interface::blueprints::account::*;
+use radix_engine_interface::blueprints::epoch_manager::*;
+use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::events::EventTypeIdentifier;
@@ -59,7 +65,11 @@ where
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
         if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
-            if !matches!(node_id, RENodeId::Vault(_)) {
+            let (package_address, blueprint) = self.get_object_type_info(node_id)?;
+            if !matches!(
+                (package_address, blueprint.as_str()),
+                (RESOURCE_MANAGER_PACKAGE, VAULT_BLUEPRINT)
+            ) {
                 return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
             }
         }
@@ -111,6 +121,9 @@ where
     }
 
     fn sys_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
+        let info = self.kernel_get_lock_info(lock_handle)?;
+        if info.flags.contains(LockFlags::MUTABLE) {}
+
         self.kernel_drop_lock(lock_handle)
     }
 }
@@ -176,17 +189,54 @@ where
     }
 }
 
-impl<'g, 's, W> ClientComponentApi<RuntimeError> for Kernel<'g, 's, W>
+impl<'g, 's, W> ClientObjectApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    fn new_component(
+    fn new_object(
         &mut self,
         blueprint_ident: &str,
-        app_states: BTreeMap<u8, Vec<u8>>,
-    ) -> Result<ComponentId, RuntimeError> {
-        // Allocate node id
-        let node_id = self.kernel_allocate_node_id(RENodeType::Component)?;
+        mut app_states: Vec<Vec<u8>>,
+    ) -> Result<ObjectId, RuntimeError> {
+        struct SubstateSchemaParser<'a> {
+            next_index: usize,
+            app_states: &'a Vec<Vec<u8>>,
+        }
+
+        impl<'a> SubstateSchemaParser<'a> {
+            fn new(app_states: &'a Vec<Vec<u8>>) -> Self {
+                Self {
+                    next_index: 0,
+                    app_states,
+                }
+            }
+
+            fn decode_next<S: ScryptoDecode>(&mut self) -> Result<S, RuntimeError> {
+                if let Some(substate_bytes) = self.app_states.get(self.next_index) {
+                    let decoded = scrypto_decode(substate_bytes).map_err(|e| {
+                        RuntimeError::SystemError(SystemError::SubstateDecodeNotMatchSchema(e))
+                    })?;
+
+                    self.next_index = self.next_index + 1;
+
+                    Ok(decoded)
+                } else {
+                    return Err(RuntimeError::SystemError(
+                        SystemError::ObjectDoesNotMatchSchema,
+                    ));
+                }
+            }
+
+            fn end(self) -> Result<(), RuntimeError> {
+                if self.app_states.get(self.next_index).is_some() {
+                    return Err(RuntimeError::SystemError(
+                        SystemError::ObjectDoesNotMatchSchema,
+                    ));
+                }
+
+                Ok(())
+            }
+        }
 
         // Create component RENode
         // FIXME: support native blueprints
@@ -196,17 +246,248 @@ where
             .fn_identifier
             .package_address();
 
-        let blueprint_ident = blueprint_ident.to_string();
-        // FIXME: generalize app substates;
-        // FIXME: remove unwrap;
-        // FIXME: support native blueprints
-        let abi_enforced_app_substate = app_states.into_iter().next().unwrap().1;
+        let mut parser = SubstateSchemaParser::new(&mut app_states);
 
-        // TODO: Check that blueprint exists here rather than in kernel
+        let (node_id, node_init) = match package_address {
+            RESOURCE_MANAGER_PACKAGE => match blueprint_ident {
+                RESOURCE_MANAGER_BLUEPRINT => {
+                    let substate: ResourceManagerSubstate = parser.decode_next()?;
+                    parser.end()?;
+
+                    let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
+                    (
+                        node_id,
+                        RENodeInit::Object(btreemap!(
+                            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => RuntimeSubstate::ResourceManager(substate)
+                        )),
+                    )
+                }
+                PROOF_BLUEPRINT => {
+                    let proof_info_substate: ProofInfoSubstate = parser.decode_next()?;
+
+                    let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
+                    let node_init = match proof_info_substate.resource_type {
+                        ResourceType::NonFungible { .. } => {
+                            let non_fungible_proof: NonFungibleProof = parser.decode_next()?;
+                            RENodeInit::Object(btreemap!(
+                                SubstateOffset::Proof(ProofOffset::Info) => RuntimeSubstate::ProofInfo(proof_info_substate),
+                                SubstateOffset::Proof(ProofOffset::NonFungible) => RuntimeSubstate::NonFungibleProof(non_fungible_proof),
+                            ))
+                        }
+                        ResourceType::Fungible { .. } => {
+                            let fungible_proof: FungibleProof = parser.decode_next()?;
+                            RENodeInit::Object(btreemap!(
+                                SubstateOffset::Proof(ProofOffset::Info) => RuntimeSubstate::ProofInfo(proof_info_substate),
+                                SubstateOffset::Proof(ProofOffset::Fungible) => RuntimeSubstate::FungibleProof(fungible_proof),
+                            ))
+                        }
+                    };
+                    parser.end()?;
+
+                    (node_id, node_init)
+                }
+                BUCKET_BLUEPRINT => {
+                    let bucket_info_substate: BucketInfoSubstate = parser.decode_next()?;
+
+                    let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
+
+                    let node_init = match bucket_info_substate.resource_type {
+                        ResourceType::NonFungible { .. } => {
+                            let liquid_resource: LiquidNonFungibleResource =
+                                parser.decode_next()?;
+
+                            RENodeInit::Object(btreemap!(
+                                SubstateOffset::Bucket(BucketOffset::Info) => RuntimeSubstate::BucketInfo(bucket_info_substate),
+                                SubstateOffset::Bucket(BucketOffset::LiquidNonFungible) => RuntimeSubstate::BucketLiquidNonFungible(liquid_resource),
+                                SubstateOffset::Bucket(BucketOffset::LockedNonFungible) => RuntimeSubstate::BucketLockedNonFungible(LockedNonFungibleResource::new_empty()),
+                            ))
+                        }
+                        ResourceType::Fungible { .. } => {
+                            let liquid_resource: LiquidFungibleResource = parser.decode_next()?;
+
+                            RENodeInit::Object(btreemap!(
+                                SubstateOffset::Bucket(BucketOffset::Info) => RuntimeSubstate::BucketInfo(bucket_info_substate),
+                                SubstateOffset::Bucket(BucketOffset::LiquidFungible) => RuntimeSubstate::BucketLiquidFungible(liquid_resource),
+                                SubstateOffset::Bucket(BucketOffset::LockedFungible) => RuntimeSubstate::BucketLockedFungible(LockedFungibleResource::new_empty()),
+                            ))
+                        }
+                    };
+                    parser.end()?;
+
+                    (node_id, node_init)
+                }
+                VAULT_BLUEPRINT => {
+                    let vault_info_substate: VaultInfoSubstate = parser.decode_next()?;
+
+                    let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
+
+                    let node_init = match vault_info_substate.resource_type {
+                        ResourceType::NonFungible { .. } => {
+                            let liquid_resource: LiquidNonFungibleResource =
+                                parser.decode_next()?;
+
+                            RENodeInit::Object(btreemap!(
+                                SubstateOffset::Vault(VaultOffset::Info) => RuntimeSubstate::VaultInfo(vault_info_substate),
+                                SubstateOffset::Vault(VaultOffset::LiquidNonFungible) => RuntimeSubstate::VaultLiquidNonFungible(liquid_resource),
+                                SubstateOffset::Vault(VaultOffset::LockedNonFungible) => RuntimeSubstate::VaultLockedNonFungible(LockedNonFungibleResource::new_empty()),
+                            ))
+                        }
+                        ResourceType::Fungible { .. } => {
+                            let liquid_resource: LiquidFungibleResource = parser.decode_next()?;
+
+                            RENodeInit::Object(btreemap!(
+                                SubstateOffset::Vault(VaultOffset::Info) => RuntimeSubstate::VaultInfo(vault_info_substate),
+                                SubstateOffset::Vault(VaultOffset::LiquidFungible) => RuntimeSubstate::VaultLiquidFungible(liquid_resource),
+                                SubstateOffset::Vault(VaultOffset::LockedFungible) => RuntimeSubstate::VaultLockedFungible(LockedFungibleResource::new_empty()),
+                            ))
+                        }
+                    };
+                    parser.end()?;
+
+                    (node_id, node_init)
+                }
+                _ => return Err(RuntimeError::SystemError(SystemError::BlueprintNotFound)),
+            },
+            METADATA_PACKAGE => {
+                let substate: MetadataSubstate = parser.decode_next()?;
+                parser.end()?;
+
+                let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
+                (
+                    node_id,
+                    RENodeInit::Object(btreemap!(
+                        SubstateOffset::Metadata(MetadataOffset::Metadata) => RuntimeSubstate::Metadata(substate),
+                    )),
+                )
+            }
+            ROYALTY_PACKAGE => match blueprint_ident {
+                COMPONENT_ROYALTY_BLUEPRINT => {
+                    let config_substate: ComponentRoyaltyConfigSubstate = parser.decode_next()?;
+                    let accumulator_substate: ComponentRoyaltyAccumulatorSubstate =
+                        parser.decode_next()?;
+                    parser.end()?;
+
+                    let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
+                    (
+                        node_id,
+                        RENodeInit::Object(btreemap!(
+                            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig) => RuntimeSubstate::ComponentRoyaltyConfig(config_substate),
+                            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator) => RuntimeSubstate::ComponentRoyaltyAccumulator(accumulator_substate)
+                        )),
+                    )
+                }
+                _ => return Err(RuntimeError::SystemError(SystemError::BlueprintNotFound)),
+            },
+            ACCESS_RULES_PACKAGE => {
+                let substate: MethodAccessRulesSubstate = parser.decode_next()?;
+                parser.end()?;
+
+                let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
+                (
+                    node_id,
+                    RENodeInit::Object(btreemap!(
+                        SubstateOffset::AccessRules(AccessRulesOffset::AccessRules) => RuntimeSubstate::MethodAccessRules(substate)
+                    )),
+                )
+            }
+            EPOCH_MANAGER_PACKAGE => match blueprint_ident {
+                VALIDATOR_BLUEPRINT => {
+                    let substate: ValidatorSubstate = parser.decode_next()?;
+                    parser.end()?;
+
+                    let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
+                    (
+                        node_id,
+                        RENodeInit::Object(btreemap!(
+                            SubstateOffset::Validator(ValidatorOffset::Validator) => RuntimeSubstate::Validator(substate)
+                        )),
+                    )
+                }
+                EPOCH_MANAGER_BLUEPRINT => {
+                    let epoch_mgr_substate: EpochManagerSubstate = parser.decode_next()?;
+                    let validator_set_substate_0: ValidatorSetSubstate = parser.decode_next()?;
+                    let validator_set_substate_1: ValidatorSetSubstate = parser.decode_next()?;
+                    parser.end()?;
+
+                    let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
+                    (
+                        node_id,
+                        RENodeInit::Object(btreemap!(
+                            SubstateOffset::EpochManager(EpochManagerOffset::EpochManager) => RuntimeSubstate::EpochManager(epoch_mgr_substate),
+                            SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet) => RuntimeSubstate::ValidatorSet(validator_set_substate_0),
+                            SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet) => RuntimeSubstate::ValidatorSet(validator_set_substate_1)
+                        )),
+                    )
+                }
+                _ => return Err(RuntimeError::SystemError(SystemError::BlueprintNotFound)),
+            },
+            ACCESS_CONTROLLER_PACKAGE => {
+                let substate: AccessControllerSubstate = parser.decode_next()?;
+                parser.end()?;
+
+                let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
+                (
+                    node_id,
+                    RENodeInit::Object(btreemap!(
+                        SubstateOffset::AccessController(AccessControllerOffset::AccessController)
+                            => RuntimeSubstate::AccessController(substate)
+                    )),
+                )
+            }
+            IDENTITY_PACKAGE => {
+                parser.end()?;
+
+                let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
+                (node_id, RENodeInit::Object(btreemap!()))
+            }
+            ACCOUNT_PACKAGE => {
+                let substate: AccountSubstate = parser.decode_next()?;
+                parser.end()?;
+
+                let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
+                (
+                    node_id,
+                    RENodeInit::Object(btreemap!(
+                        SubstateOffset::Account(AccountOffset::Account)
+                            => RuntimeSubstate::Account(substate)
+                    )),
+                )
+            }
+            CLOCK_PACKAGE => {
+                let substate: CurrentTimeRoundedToMinutesSubstate = parser.decode_next()?;
+                parser.end()?;
+
+                let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
+                (
+                    node_id,
+                    RENodeInit::Object(btreemap!(
+                        SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes)
+                            => RuntimeSubstate::CurrentTimeRoundedToMinutes(substate)
+                    )),
+                )
+            }
+            _ => {
+                let _substate: ScryptoValue = parser.decode_next()?;
+                parser.end()?;
+
+                // FIXME: schema - validate substate schema
+
+                // Allocate node id
+                let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
+
+                (
+                    node_id,
+                    RENodeInit::Object(btreemap!(
+                        SubstateOffset::Component(ComponentOffset::State0)
+                        => RuntimeSubstate::ComponentState(ComponentStateSubstate::new(app_states.pop().unwrap()))
+                    )),
+                )
+            }
+        };
 
         self.kernel_create_node(
             node_id,
-            RENodeInit::Component(ComponentStateSubstate::new(abi_enforced_app_substate)),
+            node_init,
             btreemap!(
                 NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(
                     TypeInfoSubstate::new(package_address, blueprint_ident.to_string(), false)
@@ -220,16 +501,21 @@ where
     fn globalize(
         &mut self,
         node_id: RENodeId,
-        modules: BTreeMap<NodeModuleId, Vec<u8>>,
-    ) -> Result<ComponentAddress, RuntimeError> {
+        modules: BTreeMap<NodeModuleId, ObjectId>,
+    ) -> Result<Address, RuntimeError> {
         let node_type = match node_id {
-            RENodeId::Component(..) => RENodeType::GlobalComponent,
-            RENodeId::Identity(..) => RENodeType::GlobalIdentity,
-            RENodeId::Validator(..) => RENodeType::GlobalValidator,
-            RENodeId::EpochManager(..) => RENodeType::GlobalEpochManager,
-            RENodeId::Clock(..) => RENodeType::GlobalClock,
-            RENodeId::Account(..) => RENodeType::GlobalAccount,
-            RENodeId::AccessController(..) => RENodeType::GlobalAccessController,
+            RENodeId::Object(..) => {
+                let (package_address, blueprint) = TypeInfoBlueprint::get_type(node_id, self)?;
+                match (package_address, blueprint.as_str()) {
+                    (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => RENodeType::GlobalAccount,
+                    (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => RENodeType::GlobalIdentity,
+                    (ACCESS_CONTROLLER_PACKAGE, ACCESS_CONTROLLER_BLUEPRINT) => {
+                        RENodeType::GlobalAccessController
+                    }
+                    (EPOCH_MANAGER_PACKAGE, VALIDATOR_BLUEPRINT) => RENodeType::GlobalValidator,
+                    _ => RENodeType::GlobalComponent,
+                }
+            }
             _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
         };
 
@@ -240,9 +526,9 @@ where
     fn globalize_with_address(
         &mut self,
         node_id: RENodeId,
-        modules: BTreeMap<NodeModuleId, Vec<u8>>,
+        modules: BTreeMap<NodeModuleId, ObjectId>,
         address: Address,
-    ) -> Result<ComponentAddress, RuntimeError> {
+    ) -> Result<Address, RuntimeError> {
         let node = self.kernel_drop_node(node_id)?;
 
         let mut module_substates = BTreeMap::new();
@@ -271,22 +557,30 @@ where
 
         // TODO: Check node type matches modules provided
 
-        for (module_id, init) in modules {
+        for (module_id, object_id) in modules {
             match module_id {
                 NodeModuleId::SELF
                 | NodeModuleId::TypeInfo
-                | NodeModuleId::AccessRules1
                 | NodeModuleId::PackageRoyalty
                 | NodeModuleId::FunctionAccessRules => {
                     return Err(RuntimeError::SystemError(SystemError::InvalidModule))
                 }
-                NodeModuleId::AccessRules => {
-                    let access_rules: Own = scrypto_decode(&init).map_err(|e| {
-                        RuntimeError::SystemError(SystemError::InvalidAccessRules(e))
-                    })?;
+                NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {
+                    let node_id = RENodeId::Object(object_id);
+                    let (package_address, blueprint) = self.get_object_type_info(node_id)?;
+                    if !matches!(
+                        (package_address, blueprint.as_str()),
+                        (ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT)
+                    ) {
+                        return Err(RuntimeError::SystemError(SystemError::InvalidModuleType {
+                            expected_package: ACCESS_RULES_PACKAGE,
+                            expected_blueprint: ACCOUNT_BLUEPRINT.to_string(),
+                            actual_package: package_address,
+                            actual_blueprint: blueprint,
+                        }));
+                    }
 
-                    let component_id = access_rules.component_id();
-                    let mut node = self.kernel_drop_node(RENodeId::Component(component_id))?;
+                    let mut node = self.kernel_drop_node(RENodeId::Object(object_id))?;
 
                     let access_rules = node
                         .substates
@@ -297,17 +591,25 @@ where
                         .unwrap();
                     let access_rules: MethodAccessRulesSubstate = access_rules.into();
 
-                    module_init.insert(
-                        NodeModuleId::AccessRules,
-                        RENodeModuleInit::MethodAccessRules(access_rules),
-                    );
+                    module_init
+                        .insert(module_id, RENodeModuleInit::MethodAccessRules(access_rules));
                 }
                 NodeModuleId::Metadata => {
-                    let metadata: Own = scrypto_decode(&init)
-                        .map_err(|e| RuntimeError::SystemError(SystemError::InvalidMetadata(e)))?;
+                    let node_id = RENodeId::Object(object_id);
+                    let (package_address, blueprint) = self.get_object_type_info(node_id)?;
+                    if !matches!(
+                        (package_address, blueprint.as_str()),
+                        (METADATA_PACKAGE, METADATA_BLUEPRINT)
+                    ) {
+                        return Err(RuntimeError::SystemError(SystemError::InvalidModuleType {
+                            expected_package: METADATA_PACKAGE,
+                            expected_blueprint: METADATA_BLUEPRINT.to_string(),
+                            actual_package: package_address,
+                            actual_blueprint: blueprint,
+                        }));
+                    }
 
-                    let component_id = metadata.component_id();
-                    let mut node = self.kernel_drop_node(RENodeId::Component(component_id))?;
+                    let mut node = self.kernel_drop_node(node_id)?;
 
                     let metadata = node
                         .substates
@@ -322,12 +624,21 @@ where
                         .insert(NodeModuleId::Metadata, RENodeModuleInit::Metadata(metadata));
                 }
                 NodeModuleId::ComponentRoyalty => {
-                    let royalty: Own = scrypto_decode(&init).map_err(|e| {
-                        RuntimeError::SystemError(SystemError::InvalidRoyaltyConfig(e))
-                    })?;
+                    let node_id = RENodeId::Object(object_id);
+                    let (package_address, blueprint) = self.get_object_type_info(node_id)?;
+                    if !matches!(
+                        (package_address, blueprint.as_str()),
+                        (ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT)
+                    ) {
+                        return Err(RuntimeError::SystemError(SystemError::InvalidModuleType {
+                            expected_package: ROYALTY_PACKAGE,
+                            expected_blueprint: COMPONENT_ROYALTY_BLUEPRINT.to_string(),
+                            actual_package: package_address,
+                            actual_blueprint: blueprint,
+                        }));
+                    }
 
-                    let component_id = royalty.component_id();
-                    let mut node = self.kernel_drop_node(RENodeId::Component(component_id))?;
+                    let mut node = self.kernel_drop_node(node_id)?;
 
                     let config = node
                         .substates
@@ -356,7 +667,7 @@ where
 
         self.kernel_create_node(
             address.into(),
-            RENodeInit::GlobalComponent(component_substates),
+            RENodeInit::GlobalObject(component_substates),
             module_init,
         )?;
 
@@ -388,7 +699,7 @@ where
             .map(|v| scrypto_encode(&v).expect("Failed to encode scrypto fn return"))
     }
 
-    fn get_component_type_info(
+    fn get_object_type_info(
         &mut self,
         node_id: RENodeId,
     ) -> Result<(PackageAddress, String), RuntimeError> {
@@ -418,7 +729,7 @@ where
 
     fn credit_cost_units(
         &mut self,
-        vault_id: VaultId,
+        vault_id: ObjectId,
         locked_fee: LiquidFungibleResource,
         contingent: bool,
     ) -> Result<LiquidFungibleResource, RuntimeError> {

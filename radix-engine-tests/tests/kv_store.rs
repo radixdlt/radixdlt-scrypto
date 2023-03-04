@@ -301,7 +301,7 @@ fn cannot_directly_reference_inserted_vault() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(RENodeId::Vault(_)))
+            RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(RENodeId::Object(_)))
         )
     });
 }
@@ -328,7 +328,7 @@ fn cannot_directly_reference_vault_after_container_moved() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(RENodeId::Vault(_)))
+            RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(RENodeId::Object(_)))
         )
     });
 }
@@ -355,7 +355,7 @@ fn cannot_directly_reference_vault_after_container_stored() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(RENodeId::Vault(_)))
+            RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(RENodeId::Object(_)))
         )
     });
 }

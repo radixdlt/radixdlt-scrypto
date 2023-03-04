@@ -8,7 +8,7 @@ use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientEventApi;
 use radix_engine_interface::api::ClientLoggerApi;
 use radix_engine_interface::api::{
-    ClientActorApi, ClientComponentApi, ClientNodeApi, ClientPackageApi, ClientSubstateApi,
+    ClientActorApi, ClientNodeApi, ClientObjectApi, ClientPackageApi, ClientSubstateApi,
     ClientUnsafeApi,
 };
 use radix_engine_interface::blueprints::logger::Level;
@@ -24,7 +24,8 @@ where
         + ClientNodeApi<RuntimeError>
         + ClientSubstateApi<RuntimeError>
         + ClientPackageApi<RuntimeError>
-        + ClientComponentApi<RuntimeError>
+        + ClientObjectApi<RuntimeError>
+        + ClientActorApi<RuntimeError>
         + ClientEventApi<RuntimeError>,
 {
     api: &'y mut Y,
@@ -38,7 +39,8 @@ where
         + ClientNodeApi<RuntimeError>
         + ClientSubstateApi<RuntimeError>
         + ClientPackageApi<RuntimeError>
-        + ClientComponentApi<RuntimeError>
+        + ClientObjectApi<RuntimeError>
+        + ClientActorApi<RuntimeError>
         + ClientEventApi<RuntimeError>,
 {
     pub fn new(api: &'y mut Y) -> Self {
@@ -56,7 +58,7 @@ where
         + ClientNodeApi<RuntimeError>
         + ClientSubstateApi<RuntimeError>
         + ClientPackageApi<RuntimeError>
-        + ClientComponentApi<RuntimeError>
+        + ClientObjectApi<RuntimeError>
         + ClientActorApi<RuntimeError>
         + ClientEventApi<RuntimeError>
         + ClientLoggerApi<RuntimeError>,
@@ -163,12 +165,10 @@ where
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let blueprint_ident =
             String::from_utf8(blueprint_ident).map_err(|_| WasmRuntimeError::InvalidIdent)?;
-        let app_states = scrypto_decode::<BTreeMap<u8, Vec<u8>>>(&app_states)
+        let app_states = scrypto_decode::<Vec<Vec<u8>>>(&app_states)
             .map_err(WasmRuntimeError::InvalidAppStates)?;
 
-        let component_id = self
-            .api
-            .new_component(blueprint_ident.as_ref(), app_states)?;
+        let component_id = self.api.new_object(blueprint_ident.as_ref(), app_states)?;
         let component_id_encoded =
             scrypto_encode(&component_id).expect("Failed to encode component id");
 
@@ -182,7 +182,7 @@ where
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let component_id = scrypto_decode::<RENodeId>(&component_id)
             .map_err(WasmRuntimeError::InvalidComponentId)?;
-        let modules = scrypto_decode::<BTreeMap<NodeModuleId, Vec<u8>>>(&modules)
+        let modules = scrypto_decode::<BTreeMap<NodeModuleId, ObjectId>>(&modules)
             .map_err(WasmRuntimeError::InvalidValue)?;
 
         let component_address = self.api.globalize(component_id, modules)?;
@@ -270,7 +270,7 @@ where
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let node_id =
             scrypto_decode::<RENodeId>(&node_id).map_err(WasmRuntimeError::InvalidNodeId)?;
-        let type_info = self.api.get_component_type_info(node_id)?;
+        let type_info = self.api.get_object_type_info(node_id)?;
 
         let buffer = scrypto_encode(&type_info).expect("Failed to encode type_info");
         self.allocate_buffer(buffer)

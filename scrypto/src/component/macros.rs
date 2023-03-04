@@ -1,8 +1,7 @@
 use crate::component::*;
 use crate::engine::scrypto_env::ScryptoEnv;
-use radix_engine_interface::api::ClientComponentApi;
+use radix_engine_interface::api::*;
 use radix_engine_interface::data::scrypto::scrypto_encode;
-use sbor::rust::collections::*;
 
 #[macro_export]
 macro_rules! borrow_package {
@@ -25,12 +24,7 @@ pub fn create_component<T: ComponentState<C>, C: Component + LocalComponent>(
 ) -> OwnedComponent {
     let mut env = ScryptoEnv;
     let node_id = env
-        .new_component(
-            blueprint_name,
-            btreemap!(
-                0 => scrypto_encode(&state).unwrap()
-            ),
-        )
+        .new_object(blueprint_name, vec![scrypto_encode(&state).unwrap()])
         .unwrap();
     OwnedComponent(node_id.into())
 }
