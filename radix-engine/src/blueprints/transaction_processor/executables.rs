@@ -16,9 +16,7 @@ use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
 };
-use radix_engine_interface::api::node_modules::metadata::{
-    MetadataSet, MetadataValues, METADATA_SET_IDENT,
-};
+use radix_engine_interface::api::node_modules::metadata::{MetadataSet, METADATA_SET_IDENT, MetadataVal};
 use radix_engine_interface::api::node_modules::royalty::{
     ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput, PackageClaimRoyaltyInput,
     PackageSetRoyaltyConfigInput, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
@@ -620,7 +618,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         METADATA_SET_IDENT,
                         scrypto_encode(&MetadataSet {
                             key: key.clone(),
-                            value: MetadataValues::string(value.clone()),
+                            value: value.to_metadata_value(),
                         })
                         .unwrap(),
                     )?;

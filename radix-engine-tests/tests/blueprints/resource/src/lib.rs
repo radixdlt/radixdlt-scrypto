@@ -122,7 +122,7 @@ mod resource_test {
             badge.authorize(|| {
                 let token_resource_manager = borrow_resource_manager!(resource_address);
                 let metadata = token_resource_manager.metadata();
-                metadata.set_string("a".to_owned(), "b".to_owned());
+                metadata.set("a".to_owned(), "b".to_owned());
                 assert_eq!(metadata.get_string("a".to_owned()).unwrap(), "b".to_owned());
             });
 

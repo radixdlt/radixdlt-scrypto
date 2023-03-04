@@ -45,7 +45,7 @@ impl MetadataObject for AttachedMetadata {
 pub trait MetadataObject {
     fn self_id(&self) -> (RENodeId, NodeModuleId);
 
-    fn set_string<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
+    fn set<K: AsRef<str>, V: MetadataVal>(&self, name: K, value: V) {
         let (node_id, module_id) = self.self_id();
 
         let _rtn = ScryptoEnv
@@ -55,7 +55,7 @@ pub trait MetadataObject {
                 METADATA_SET_IDENT,
                 scrypto_encode(&MetadataSet {
                     key: name.as_ref().to_owned(),
-                    value: MetadataValues::string(value.as_ref().to_owned()),
+                    value: value.to_metadata_value(),
                 })
                 .unwrap(),
             )
@@ -81,7 +81,7 @@ pub trait MetadataObject {
 
         match value {
             None => Err(MetadataError::EmptyEntry),
-            Some(value) => MetadataValues::get_string(value),
+            Some(value) => String::from_metadata_value(value),
         }
     }
 

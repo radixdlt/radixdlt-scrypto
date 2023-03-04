@@ -8,7 +8,7 @@ mod metadata_component {
         pub fn new(key: String, value: String) {
             let component = MetadataComponent {}.instantiate();
             let metadata = Metadata::new();
-            metadata.set_string(key.clone(), value.clone());
+            metadata.set(key.clone(), value.clone());
             let component_address = component.globalize_with_metadata(metadata);
             let global: MetadataComponentGlobalComponentRef = component_address.into();
             let metadata = global.metadata();
@@ -24,7 +24,7 @@ mod metadata_component {
 
             let global: MetadataComponentGlobalComponentRef = component_address.into();
             let metadata = global.metadata();
-            metadata.set_string(key.clone(), value.clone());
+            metadata.set(key.clone(), value.clone());
 
             assert_eq!(metadata.get_string(key).unwrap(), value);
         }
