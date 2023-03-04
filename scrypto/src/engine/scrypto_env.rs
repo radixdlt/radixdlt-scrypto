@@ -1,17 +1,17 @@
 use crate::engine::wasm_api::*;
-use radix_engine_interface::api::package::{PackageCodeSubstate, PackageInfoSubstate};
 use radix_engine_interface::api::{types::*, ClientEventApi, ClientLoggerApi, LockFlags};
 use radix_engine_interface::api::{
     ClientActorApi, ClientNodeApi, ClientObjectApi, ClientPackageApi, ClientSubstateApi,
 };
 use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::blueprints::resource::AccessRules;
-use radix_engine_interface::crypto::hash;
-use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoEncode};
-use sbor::rust::collections::*;
-use sbor::rust::fmt::Debug;
-use sbor::rust::vec::Vec;
-use scrypto_abi::{BlueprintAbi, LegacyDescribe};
+use radix_engine_interface::crypto::Hash;
+use radix_engine_interface::data::scrypto::model::{Address, PackageAddress};
+use radix_engine_interface::data::scrypto::*;
+use radix_engine_interface::*;
+use sbor::rust::prelude::*;
+use sbor::*;
+use scrypto_schema::PackageSchema;
 
 #[derive(Debug, Sbor)]
 pub enum ClientApiError {
@@ -136,12 +136,12 @@ impl ClientPackageApi<ClientApiError> for ScryptoEnv {
     fn new_package(
         &mut self,
         code: Vec<u8>,
-        abi: BTreeMap<String, BlueprintAbi>,
+        schema: PackageSchema,
         access_rules: AccessRules,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
     ) -> Result<PackageAddress, ClientApiError> {
-        let abi = scrypto_encode(&abi).unwrap();
+        let schema = scrypto_encode(&schema).unwrap();
         let access_rules = scrypto_encode(&access_rules).unwrap();
         let royalty_config = scrypto_encode(&royalty_config).unwrap();
         let metadata = scrypto_encode(&metadata).unwrap();
@@ -150,8 +150,8 @@ impl ClientPackageApi<ClientApiError> for ScryptoEnv {
             new_package(
                 code.as_ptr(),
                 code.len(),
-                abi.as_ptr(),
-                abi.len(),
+                schema.as_ptr(),
+                schema.len(),
                 access_rules.as_ptr(),
                 access_rules.len(),
                 royalty_config.as_ptr(),
@@ -161,37 +161,6 @@ impl ClientPackageApi<ClientApiError> for ScryptoEnv {
             )
         });
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
-    }
-
-    fn get_code(&mut self, package_address: PackageAddress) -> Result<PackageCode, ClientApiError> {
-        let package_global = RENodeId::GlobalPackage(package_address);
-        let handle = self.sys_lock_substate(
-            package_global,
-            SubstateOffset::Package(PackageOffset::Code),
-            LockFlags::read_only(),
-        )?;
-        let substate = self.sys_read_substate(handle)?;
-        let package: PackageCodeSubstate =
-            scrypto_decode(&substate).map_err(ClientApiError::DecodeError)?;
-        self.sys_drop_lock(handle)?;
-        Ok(PackageCode::Wasm(package.code))
-    }
-
-    fn get_abi(
-        &mut self,
-        package_address: PackageAddress,
-    ) -> Result<BTreeMap<String, scrypto_abi::BlueprintAbi>, ClientApiError> {
-        let package_global = RENodeId::GlobalPackage(package_address);
-        let handle = self.sys_lock_substate(
-            package_global,
-            SubstateOffset::Package(PackageOffset::Info),
-            LockFlags::read_only(),
-        )?;
-        let substate = self.sys_read_substate(handle)?;
-        let package: PackageInfoSubstate =
-            scrypto_decode(&substate).map_err(ClientApiError::DecodeError)?;
-        self.sys_drop_lock(handle)?;
-        Ok(package.blueprint_abis)
     }
 
     fn call_function(
@@ -285,15 +254,6 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
 }
 
 impl ClientEventApi<ClientApiError> for ScryptoEnv {
-    fn emit_event<T: ScryptoEncode + LegacyDescribe>(
-        &mut self,
-        event: T,
-    ) -> Result<(), ClientApiError> {
-        let schema_hash = hash(scrypto_encode(&T::describe()).unwrap());
-        let event_data = scrypto_encode(&event).unwrap();
-        self.emit_raw_event(schema_hash, event_data)
-    }
-
     fn emit_raw_event(
         &mut self,
         schema_hash: Hash,

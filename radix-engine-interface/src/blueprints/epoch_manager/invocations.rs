@@ -1,22 +1,11 @@
-use crate::api::component::ComponentAddress;
-use crate::api::types::*;
 use crate::blueprints::resource::*;
+use crate::data::manifest::model::*;
+use crate::data::scrypto::model::*;
 use crate::*;
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
-use scrypto_abi::BlueprintAbi;
-use transaction_data::model::ManifestBucket;
-use transaction_data::*;
-
-pub struct EpochManagerAbi;
-
-impl EpochManagerAbi {
-    pub fn blueprint_abis() -> BTreeMap<String, BlueprintAbi> {
-        BTreeMap::new()
-    }
-}
 
 pub const EPOCH_MANAGER_BLUEPRINT: &str = "EpochManager";
 pub const VALIDATOR_BLUEPRINT: &str = "Validator";
@@ -28,7 +17,7 @@ pub struct ValidatorInit {
     pub stake_account_address: ComponentAddress,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestCategorize, ManifestEncode, ManifestDecode)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
 pub struct ManifestValidatorInit {
     pub validator_account_address: ComponentAddress,
     pub initial_stake: ManifestBucket,
@@ -93,9 +82,7 @@ pub struct EpochManagerNextRoundInput {
 
 pub const EPOCH_MANAGER_CREATE_VALIDATOR_IDENT: &str = "create_validator";
 
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
-)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct EpochManagerCreateValidatorInput {
     pub key: EcdsaSecp256k1PublicKey,
     pub owner_access_rule: AccessRule,
@@ -103,17 +90,13 @@ pub struct EpochManagerCreateValidatorInput {
 
 pub const EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT: &str = "update_validator";
 
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
-)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub enum UpdateValidator {
     Register(EcdsaSecp256k1PublicKey, Decimal),
     Unregister,
 }
 
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
-)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct EpochManagerUpdateValidatorInput {
     pub validator_address: ComponentAddress,
     pub update: UpdateValidator,

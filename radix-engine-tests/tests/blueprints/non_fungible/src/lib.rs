@@ -1,6 +1,6 @@
+use scrypto::api::ClientPackageApi;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 use scrypto::prelude::*;
-use scrypto::radix_engine_interface::api::ClientPackageApi;
 
 #[derive(NonFungibleData)]
 pub struct Sandwich {

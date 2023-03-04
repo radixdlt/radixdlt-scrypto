@@ -6,14 +6,13 @@ use crate::types::*;
 use native_sdk::access_rules::AccessRulesObject;
 use native_sdk::metadata::Metadata;
 use native_sdk::resource::{ResourceManager, SysBucket};
+use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::{AccountDepositInput, ACCOUNT_DEPOSIT_IDENT};
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::rule;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -27,7 +26,7 @@ pub struct EpochManagerSubstate {
     pub num_unstake_epochs: u64,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, ScryptoSbor, LegacyDescribe)]
+#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, ScryptoSbor)]
 pub struct Validator {
     pub key: EcdsaSecp256k1PublicKey,
     pub stake: Decimal,
@@ -56,7 +55,9 @@ impl EpochManagerBlueprint {
     {
         // TODO: Remove decode/encode mess
         let input: EpochManagerCreateInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            .map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let address = ComponentAddress::EpochManager(input.component_address);
 
@@ -154,10 +155,13 @@ impl EpochManagerBlueprint {
             ],
         )?;
 
-        api.emit_event(EpochChangeEvent {
-            epoch: input.initial_epoch,
-            validators: validator_set,
-        })?;
+        Runtime::emit_event(
+            api,
+            EpochChangeEvent {
+                epoch: input.initial_epoch,
+                validators: validator_set,
+            },
+        )?;
 
         let mut access_rules = AccessRules::new();
         access_rules.set_method_access_rule(
@@ -223,8 +227,9 @@ impl EpochManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let _input: EpochManagerGetCurrentEpochInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let handle = api.sys_lock_substate(
             receiver,
@@ -246,7 +251,9 @@ impl EpochManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: EpochManagerNextRoundInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            .map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
         let mgr_handle = api.sys_lock_substate(receiver, offset, LockFlags::MUTABLE)?;
@@ -286,14 +293,17 @@ impl EpochManagerBlueprint {
             validator_set.epoch = prepared_epoch;
             validator_set.validator_set = next_validator_set.clone();
 
-            api.emit_event(EpochChangeEvent {
-                epoch: prepared_epoch,
-                validators: next_validator_set,
-            })?;
+            Runtime::emit_event(
+                api,
+                EpochChangeEvent {
+                    epoch: prepared_epoch,
+                    validators: next_validator_set,
+                },
+            )?;
         } else {
             epoch_manager.round = input.round;
 
-            api.emit_event(RoundChangeEvent { round: input.round })?;
+            Runtime::emit_event(api, RoundChangeEvent { round: input.round })?;
         }
 
         Ok(IndexedScryptoValue::from_typed(&()))
@@ -308,7 +318,9 @@ impl EpochManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: EpochManagerSetEpochInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            .map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let handle = api.sys_lock_substate(
             receiver,
@@ -331,8 +343,9 @@ impl EpochManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: EpochManagerCreateValidatorInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let handle = api.sys_lock_substate(
             receiver,
@@ -356,8 +369,9 @@ impl EpochManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: EpochManagerUpdateValidatorInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let handle = api.sys_lock_substate(
             receiver,

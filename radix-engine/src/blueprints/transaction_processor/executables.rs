@@ -24,19 +24,13 @@ use radix_engine_interface::api::node_modules::royalty::{
     PACKAGE_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
 use radix_engine_interface::api::package::*;
-use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::{IndexedScryptoValue, ScryptoValue};
 use sbor::rust::borrow::Cow;
-use transaction::data::model::*;
 use transaction::data::to_address;
 use transaction::data::transform;
-use transaction::data::ManifestCustomValue;
-use transaction::data::ManifestValue;
 use transaction::data::TransformHandler;
-use transaction::data::{manifest_decode, manifest_encode};
 use transaction::errors::ManifestIdAllocationError;
 use transaction::model::*;
 use transaction::validation::*;
@@ -494,16 +488,16 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 }
                 Instruction::PublishPackage {
                     code,
-                    abi,
+                    schema,
                     royalty_config,
                     metadata,
                     access_rules,
                 } => {
                     let code = processor.get_blob(&code)?;
-                    let abi = processor.get_blob(&abi)?;
-                    let abi = scrypto_decode(abi).map_err(|e| {
+                    let schema = processor.get_blob(&schema)?;
+                    let schema = scrypto_decode(schema).map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::PackageError(
-                            PackageError::InvalidAbi(e),
+                            PackageError::InvalidSchema(e),
                         ))
                     })?;
 
@@ -515,7 +509,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         scrypto_encode(&PackageLoaderPublishWasmInput {
                             package_address: None,
                             code: code.clone(),
-                            abi,
+                            schema,
                             access_rules: access_rules.clone(),
                             royalty_config: royalty_config.clone(),
                             metadata: metadata.clone(),

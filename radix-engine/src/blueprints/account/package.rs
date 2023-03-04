@@ -7,18 +7,16 @@ use native_sdk::access_rules::AccessRulesObject;
 use native_sdk::metadata::Metadata;
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::types::{RENodeId, SubstateOffset};
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::blueprints::resource::AccessRules;
 use radix_engine_interface::blueprints::resource::MethodKey;
+use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver};
 
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use native_sdk::resource::{SysBucket, Vault};
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
-use radix_engine_interface::data::ScryptoValue;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct AccountSubstate {
@@ -45,6 +43,168 @@ impl From<AccountError> for RuntimeError {
 pub struct AccountNativePackage;
 
 impl AccountNativePackage {
+    pub fn schema() -> PackageSchema {
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+
+        let mut substates = BTreeMap::new();
+        substates.insert(
+            0,
+            aggregator.add_child_type_and_descendents::<AccountSubstate>(),
+        );
+
+        let mut functions = BTreeMap::new();
+        functions.insert(
+            ACCOUNT_CREATE_GLOBAL_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<AccountCreateGlobalInput>(),
+                output: aggregator.add_child_type_and_descendents::<AccountCreateGlobalOutput>(),
+                export_name: ACCOUNT_CREATE_GLOBAL_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_CREATE_LOCAL_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<AccountCreateLocalInput>(),
+                output: aggregator.add_child_type_and_descendents::<AccountCreateLocalOutput>(),
+                export_name: ACCOUNT_CREATE_LOCAL_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_LOCK_FEE_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRef),
+                input: aggregator.add_child_type_and_descendents::<AccountCreateGlobalInput>(),
+                output: aggregator.add_child_type_and_descendents::<AccountCreateGlobalOutput>(),
+                export_name: ACCOUNT_LOCK_FEE_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_LOCK_CONTINGENT_FEE_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRef),
+                input: aggregator.add_child_type_and_descendents::<AccountLockContingentFeeInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccountLockContingentFeeOutput>(),
+                export_name: ACCOUNT_LOCK_CONTINGENT_FEE_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_DEPOSIT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRef),
+                input: aggregator.add_child_type_and_descendents::<AccountDepositInput>(),
+                output: aggregator.add_child_type_and_descendents::<AccountDepositOutput>(),
+                export_name: ACCOUNT_DEPOSIT_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_DEPOSIT_BATCH_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRef),
+                input: aggregator.add_child_type_and_descendents::<AccountDepositBatchInput>(),
+                output: aggregator.add_child_type_and_descendents::<AccountDepositBatchOutput>(),
+                export_name: ACCOUNT_DEPOSIT_BATCH_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_WITHDRAW_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRef),
+                input: aggregator.add_child_type_and_descendents::<AccountWithdrawInput>(),
+                output: aggregator.add_child_type_and_descendents::<AccountWithdrawOutput>(),
+                export_name: ACCOUNT_WITHDRAW_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRef),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccountWithdrawNonFungiblesInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccountWithdrawNonFungiblesOutput>(),
+                export_name: ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRef),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccountLockFeeAndWithdrawInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccountLockFeeAndWithdrawOutput>(),
+                export_name: ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRef),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccountLockFeeAndWithdrawNonFungiblesInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccountLockFeeAndWithdrawNonFungiblesOutput>(
+                    ),
+                export_name: ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_CREATE_PROOF_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRef),
+                input: aggregator.add_child_type_and_descendents::<AccountCreateProofInput>(),
+                output: aggregator.add_child_type_and_descendents::<AccountCreateProofOutput>(),
+                export_name: ACCOUNT_CREATE_PROOF_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRef),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccountCreateProofByAmountInput>(),
+                output: aggregator.add_child_type_and_descendents::<AccountCreateGlobalOutput>(),
+                export_name: ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_CREATE_PROOF_BY_IDS_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRef),
+                input: aggregator.add_child_type_and_descendents::<AccountCreateProofByIdsInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccountCreateProofByIdsOutput>(),
+                export_name: ACCOUNT_CREATE_PROOF_BY_IDS_IDENT.to_string(),
+            },
+        );
+
+        let schema = generate_full_schema(aggregator);
+        PackageSchema {
+            blueprints: btreemap!(
+                ACCOUNT_BLUEPRINT.to_string() => BlueprintSchema {
+                    schema,
+                    substates,
+                    functions
+                }
+            ),
+        }
+    }
+
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<RENodeId>,
@@ -178,7 +338,9 @@ impl AccountNativePackage {
     {
         // TODO: Remove decode/encode mess
         let input: AccountCreateGlobalInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            .map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         // Creating the key-value-store where the vaults will be held. This is a KVStore of
         // [`ResourceAddress`] and [`Own`]ed vaults.
@@ -224,7 +386,9 @@ impl AccountNativePackage {
     {
         // TODO: Remove decode/encode mess
         let _input: AccountCreateLocalInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            .map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         // Creating the key-value-store where the vaults will be held. This is a KVStore of
         // [`ResourceAddress`] and [`Own`]ed vaults.
@@ -317,8 +481,10 @@ impl AccountNativePackage {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
-        let input: AccountLockFeeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+        let input: AccountLockFeeInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         Self::lock_fee_internal(receiver, input.amount, false, api)?;
 
@@ -335,7 +501,9 @@ impl AccountNativePackage {
     {
         // TODO: Remove decode/encode mess
         let input: AccountLockContingentFeeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            .map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         Self::lock_fee_internal(receiver, input.amount, true, api)?;
 
@@ -351,8 +519,10 @@ impl AccountNativePackage {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
-        let input: AccountDepositInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+        let input: AccountDepositInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let resource_address = input.bucket.sys_resource_address(api)?;
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
@@ -421,7 +591,9 @@ impl AccountNativePackage {
     {
         // TODO: Remove decode/encode mess
         let input: AccountDepositBatchInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            .map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let handle = api.sys_lock_substate(
             receiver,
@@ -554,7 +726,9 @@ impl AccountNativePackage {
     {
         // TODO: Remove decode/encode mess
         let input: AccountWithdrawInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            .map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let bucket = Self::get_vault(
             receiver,
@@ -576,8 +750,9 @@ impl AccountNativePackage {
     {
         // TODO: Remove decode/encode mess
         let input: AccountWithdrawNonFungiblesInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let bucket = Self::get_vault(
             receiver,
@@ -599,8 +774,9 @@ impl AccountNativePackage {
     {
         // TODO: Remove decode/encode mess
         let input: AccountLockFeeAndWithdrawInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         Self::lock_fee_internal(receiver, input.amount_to_lock, false, api)?;
 
@@ -624,8 +800,9 @@ impl AccountNativePackage {
     {
         // TODO: Remove decode/encode mess
         let input: AccountLockFeeAndWithdrawNonFungiblesInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         Self::lock_fee_internal(receiver, input.amount_to_lock, false, api)?;
 
@@ -649,7 +826,9 @@ impl AccountNativePackage {
     {
         // TODO: Remove decode/encode mess
         let input: AccountCreateProofInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            .map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let proof = Self::get_vault(
             receiver,
@@ -671,8 +850,9 @@ impl AccountNativePackage {
     {
         // TODO: Remove decode/encode mess
         let input: AccountCreateProofByAmountInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let proof = Self::get_vault(
             receiver,
@@ -694,7 +874,9 @@ impl AccountNativePackage {
     {
         // TODO: Remove decode/encode mess
         let input: AccountCreateProofByIdsInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            .map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let proof = Self::get_vault(
             receiver,

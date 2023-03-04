@@ -16,12 +16,9 @@ use crate::system::kernel_modules::transaction_limits::TransactionLimitsError;
 use crate::system::node_modules::access_rules::{AccessRulesChainError, AuthZoneError};
 use crate::system::package::PackageError;
 use crate::transaction::AbortReason;
-use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::{Address, LockHandle, RENodeId, SubstateOffset};
-use sbor::*;
-
 use crate::types::*;
 use crate::wasm::WasmRuntimeError;
+use radix_engine_interface::api::substate_api::LockFlags;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum IdAllocationError {
@@ -125,12 +122,7 @@ pub enum KernelError {
 
     // invocation
     WasmRuntimeError(WasmRuntimeError),
-
-    InvalidReferenceWrite(Address),
-
     RENodeNotFound(RENodeId),
-
-    InvalidScryptoFnOutput,
     InvalidDirectAccess,
 
     // ID allocation
@@ -190,13 +182,6 @@ pub enum CallFrameError {
     MovingLockedRENode(RENodeId),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-pub enum ScryptoFnResolvingError {
-    BlueprintNotFound,
-    MethodNotFound,
-    InvalidInput,
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemError {
     InvalidLockFlags,
@@ -224,10 +209,14 @@ pub enum InterpreterError {
     NativeExportDoesNotExist(String),
     NativeInvalidCodeId(u8),
 
-    InvalidInvocation,
+    ScryptoBlueprintNotFound(PackageAddress, String),
+    ScryptoFunctionNotFound(String),
+    ScryptoReceiverNotMatch(String),
+    ScryptoInputSchemaNotMatch(String),
+    ScryptoInputDecodeError(DecodeError),
 
-    InvalidScryptoInvocation(FnIdentifier, ScryptoFnResolvingError),
-    InvalidScryptoReturn(DecodeError),
+    ScryptoOutputDecodeError(DecodeError),
+    ScryptoOutputSchemaNotMatch(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

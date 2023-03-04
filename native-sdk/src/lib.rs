@@ -10,15 +10,3 @@ pub mod component;
 pub mod metadata;
 pub mod resource;
 pub mod runtime;
-
-// Export macros
-mod macros;
-pub use macros::*;
-
-// Re-export radix engine derives
-pub extern crate radix_engine_derive;
-pub use radix_engine_derive::{
-    LegacyDescribe, ScryptoCategorize, ScryptoDecode, ScryptoDescribe, ScryptoEncode, ScryptoSbor,
-};
-
-pub extern crate radix_engine_interface;

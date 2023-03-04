@@ -1,5 +1,5 @@
+use radix_engine_interface::data::manifest::model::*;
 use sbor::*;
-use transaction_data::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum HeaderValidationError {

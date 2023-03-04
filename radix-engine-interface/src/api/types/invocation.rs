@@ -1,8 +1,9 @@
-use crate::api::package::PackageAddress;
 use crate::api::types::*;
 use crate::blueprints::resource::{FnKey, MethodKey};
-use crate::data::ScryptoValue;
+use crate::data::scrypto::model::*;
+use crate::data::scrypto::ScryptoValue;
 use crate::*;
+use sbor::rust::prelude::*;
 use sbor::rust::string::String;
 
 // TODO: Remove

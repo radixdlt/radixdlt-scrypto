@@ -1,8 +1,7 @@
-use crate::api::types::*;
-use crate::data::IndexedScryptoValue;
-use radix_engine_derive::*;
-use radix_engine_interface::data::ScryptoValue;
-use sbor::rust::collections::*;
+use crate::api::types::{IndexedScryptoValue, RENodeId};
+use crate::data::scrypto::ScryptoValue;
+use crate::*;
+use sbor::rust::prelude::*;
 
 // TODO: Josh is leaning towards keeping `Entry::Key` as part of the substate key.
 // We will change this implementation if that is agreed.

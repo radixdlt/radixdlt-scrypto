@@ -1,9 +1,8 @@
-use radix_engine::errors::{InterpreterError, RuntimeError, ScryptoFnResolvingError};
+use radix_engine::errors::{InterpreterError, RuntimeError};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::data::{manifest_args, ManifestExpression};
 
 #[test]
 fn test_component() {
@@ -74,13 +73,9 @@ fn invalid_blueprint_name_should_cause_error() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        if let RuntimeError::InterpreterError(InterpreterError::InvalidScryptoInvocation(
-            FnIdentifier {
-                package_address,
-                blueprint_name,
-                ..
-            },
-            ScryptoFnResolvingError::BlueprintNotFound,
+        if let RuntimeError::InterpreterError(InterpreterError::ScryptoBlueprintNotFound(
+            package_address,
+            blueprint_name,
         )) = e
         {
             package_addr.eq(&package_address) && blueprint_name.eq("NonExistentBlueprint")

@@ -2,8 +2,10 @@ use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
+use radix_engine_interface::data::scrypto::model::*;
+use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::math::Decimal;
+use radix_engine_interface::*;
 use sbor::rust::collections::BTreeSet;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 

@@ -1,7 +1,6 @@
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::data::{manifest_args, ManifestBucket};
 
 #[test]
 fn vector_of_buckets_argument_should_succeed() {

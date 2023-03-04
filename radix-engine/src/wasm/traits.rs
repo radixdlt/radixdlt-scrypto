@@ -1,7 +1,7 @@
 use super::InstrumentedCode;
 use crate::errors::InvokeError;
+use crate::types::*;
 use crate::wasm::errors::*;
-use radix_engine_interface::api::types::*;
 use sbor::rust::boxed::Box;
 use sbor::rust::vec::Vec;
 
@@ -34,7 +34,7 @@ pub trait WasmRuntime {
     fn new_package(
         &mut self,
         code: Vec<u8>,
-        abi: Vec<u8>,
+        schema: Vec<u8>,
         access_rules_chain: Vec<u8>,
         royalty_config: Vec<u8>,
         metadata: Vec<u8>,

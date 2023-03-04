@@ -1,8 +1,7 @@
+use crate::data::scrypto::model::*;
 use crate::math::*;
 use crate::*;
-use radix_engine_interface::api::types::*;
-use radix_engine_interface::blueprints::resource::*;
-use sbor::rust::collections::*;
+use sbor::rust::prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ResourceError {

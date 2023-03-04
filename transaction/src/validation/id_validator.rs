@@ -2,11 +2,11 @@ use crate::data::transform;
 use crate::data::TransformHandler;
 use crate::errors::*;
 use crate::validation::*;
-use radix_engine_interface::data::model::Own;
+use radix_engine_interface::data::manifest::model::*;
+use radix_engine_interface::data::manifest::*;
+use radix_engine_interface::data::scrypto::model::Own;
+use radix_engine_interface::*;
 use sbor::rust::collections::*;
-use transaction_data::model::ManifestBucket;
-use transaction_data::model::ManifestProof;
-use transaction_data::ManifestValue;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ProofKind {
@@ -150,15 +150,12 @@ impl TransformHandler<ManifestIdValidationError> for ManifestValidator {
 
     fn replace_expression(
         &mut self,
-        _e: transaction_data::model::ManifestExpression,
+        _e: ManifestExpression,
     ) -> Result<Vec<Own>, ManifestIdValidationError> {
         Ok(Vec::new())
     }
 
-    fn replace_blob(
-        &mut self,
-        _b: transaction_data::model::ManifestBlobRef,
-    ) -> Result<Vec<u8>, ManifestIdValidationError> {
+    fn replace_blob(&mut self, _b: ManifestBlobRef) -> Result<Vec<u8>, ManifestIdValidationError> {
         Ok(Vec::new())
     }
 }

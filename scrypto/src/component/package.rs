@@ -7,7 +7,7 @@ use radix_engine_interface::api::node_modules::royalty::{
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::Bucket;
-use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode};
+use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode};
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
@@ -15,7 +15,7 @@ use sbor::rust::vec::Vec;
 
 /// Represents a published package.
 #[derive(Debug)]
-pub struct BorrowedPackage(pub(crate) PackageAddress);
+pub struct BorrowedPackage(pub PackageAddress);
 
 impl BorrowedPackage {
     /// Invokes a function on this package.

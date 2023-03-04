@@ -1,10 +1,9 @@
-use crate::api::types::*;
 use crate::*;
 use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 
 /// Represents the level of a log message.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Sbor, LegacyDescribe)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Sbor)]
 pub enum Level {
     Error,
     Warn,

@@ -1,31 +1,25 @@
 use crate::blueprints::access_controller::AccessControllerSubstate;
-use crate::blueprints::account::AccountSubstate;
+use crate::blueprints::account::*;
 use crate::blueprints::clock::CurrentTimeRoundedToMinutesSubstate;
-use crate::blueprints::epoch_manager::{
-    EpochManagerSubstate, ValidatorSetSubstate, ValidatorSubstate,
-};
-use crate::blueprints::event_store::EventStoreNativePackage;
-use crate::blueprints::logger::LoggerNativePackage;
-use crate::blueprints::resource::{
-    BucketInfoSubstate, FungibleProof, NonFungibleProof, NonFungibleSubstate, ProofInfoSubstate,
-    ResourceManagerSubstate, VaultInfoSubstate,
-};
-use crate::errors::RuntimeError;
+use crate::blueprints::epoch_manager::*;
+use crate::blueprints::resource::*;
+use crate::errors::{ApplicationError, RuntimeError};
 use crate::errors::{KernelError, SystemError};
-use crate::kernel::actor::ActorIdentifier;
+use crate::kernel::actor::{Actor, ActorIdentifier};
 use crate::kernel::kernel::Kernel;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::{Invokable, KernelInternalApi};
 use crate::kernel::module::KernelModule;
 use crate::kernel::module_mixer::KernelModuleMixer;
+use crate::system::events::EventError;
+use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::MethodAccessRulesSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::system::node_substates::RuntimeSubstate;
-use crate::system::package::Package;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::component::{
@@ -38,19 +32,15 @@ use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
-use radix_engine_interface::api::ClientEventApi;
-use radix_engine_interface::api::{types::*, ClientLoggerApi};
-use radix_engine_interface::api::{
-    ClientActorApi, ClientApi, ClientNodeApi, ClientObjectApi, ClientPackageApi, ClientSubstateApi,
-    ClientUnsafeApi,
-};
+use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::*;
+use radix_engine_interface::events::EventTypeIdentifier;
+use radix_engine_interface::schema::PackageSchema;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
@@ -154,7 +144,7 @@ where
     fn new_package(
         &mut self,
         code: Vec<u8>,
-        abi: BTreeMap<String, BlueprintAbi>,
+        schema: PackageSchema,
         access_rules: AccessRules,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
@@ -166,7 +156,7 @@ where
             scrypto_encode(&PackageLoaderPublishWasmInput {
                 package_address: None,
                 code,
-                abi,
+                schema,
                 access_rules,
                 royalty_config,
                 metadata,
@@ -196,35 +186,6 @@ where
 
         self.kernel_invoke(invocation)
             .map(|v| scrypto_encode(&v).expect("Failed to encode scrypto fn return"))
-    }
-
-    fn get_code(&mut self, package_address: PackageAddress) -> Result<PackageCode, RuntimeError> {
-        let handle = self.kernel_lock_substate(
-            RENodeId::GlobalPackage(package_address),
-            NodeModuleId::SELF,
-            SubstateOffset::Package(PackageOffset::Code),
-            LockFlags::read_only(),
-        )?;
-        let package: &PackageCodeSubstate = self.kernel_get_substate_ref(handle)?;
-        let code = package.code().to_vec();
-        self.kernel_drop_lock(handle)?;
-        Ok(PackageCode::Wasm(code))
-    }
-
-    fn get_abi(
-        &mut self,
-        package_address: PackageAddress,
-    ) -> Result<BTreeMap<String, BlueprintAbi>, RuntimeError> {
-        let handle = self.kernel_lock_substate(
-            RENodeId::GlobalPackage(package_address),
-            NodeModuleId::SELF,
-            SubstateOffset::Package(PackageOffset::Info),
-            LockFlags::read_only(),
-        )?;
-        let package: &PackageInfoSubstate = self.kernel_get_substate_ref(handle)?;
-        let abi = package.blueprint_abis.clone();
-        self.kernel_drop_lock(handle)?;
-        Ok(abi)
     }
 }
 
@@ -506,20 +467,10 @@ where
                 )
             }
             _ => {
-                let abi = Package::get_blueprint_abi(
-                    RENodeId::GlobalPackage(package_address),
-                    blueprint_ident.to_string(),
-                    self,
-                )?;
-
-                let substate: ScryptoValue = parser.decode_next()?;
+                let _substate: ScryptoValue = parser.decode_next()?;
                 parser.end()?;
 
-                if !match_schema_with_value(&abi.structure, &substate) {
-                    return Err(RuntimeError::SystemError(
-                        SystemError::ObjectDoesNotMatchSchema,
-                    ));
-                }
+                // FIXME: schema - validate substate schema
 
                 // Allocate node id
                 let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
@@ -798,19 +749,50 @@ impl<'g, 's, W> ClientEventApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    fn emit_event<T: ScryptoEncode + abi::LegacyDescribe>(
-        &mut self,
-        event: T,
-    ) -> Result<(), RuntimeError> {
-        EventStoreNativePackage::emit_event(event, self)
-    }
-
     fn emit_raw_event(
         &mut self,
         schema_hash: Hash,
         event_data: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        EventStoreNativePackage::emit_raw_event(schema_hash, event_data, self)
+        // Costing event emission.
+        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+        // Construct the event type identifier based on the current actor
+        let event_type_id = match self.kernel_get_current_actor() {
+            Some(Actor {
+                identifier: ActorIdentifier::Method(MethodIdentifier(node_id, node_module_id, ..)),
+                ..
+            }) => Ok(EventTypeIdentifier(node_id, node_module_id, schema_hash)),
+            Some(Actor {
+                identifier:
+                    ActorIdentifier::Function(FnIdentifier {
+                        package_address, ..
+                    }),
+                ..
+            }) => Ok(EventTypeIdentifier(
+                RENodeId::GlobalPackage(package_address),
+                NodeModuleId::SELF,
+                schema_hash,
+            )),
+            _ => Err(RuntimeError::ApplicationError(
+                ApplicationError::EventError(EventError::InvalidActor),
+            )),
+        }?;
+
+        // TODO: Validate that the event schema matches that given by the event schema hash.
+        // Need to wait for David's PR for schema validation and move away from LegacyDescribe
+        // over to new Describe.
+
+        // NOTE: We need to ensure that the event being emitted is an SBOR struct or an enum,
+        // this is not done here, this should be done at event registration time. Thus, if the
+        // event has been successfully registered, it can be emitted (from a schema POV).
+
+        // Adding the event to the event store
+        self.kernel_get_module_state()
+            .events
+            .add_event(event_type_id, event_data);
+
+        Ok(())
     }
 }
 
@@ -819,7 +801,10 @@ where
     W: WasmEngine,
 {
     fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
-        LoggerNativePackage::log_message(level, message, self)
+        self.kernel_get_module_state()
+            .logger
+            .add_log(level, message);
+        Ok(())
     }
 }
 

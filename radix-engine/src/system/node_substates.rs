@@ -30,7 +30,6 @@ use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::resource::LiquidNonFungibleResource;
 use radix_engine_interface::blueprints::resource::LockedFungibleResource;
 use radix_engine_interface::blueprints::resource::LockedNonFungibleResource;
-use radix_engine_interface::data::IndexedScryptoValue;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PersistedSubstate {
@@ -116,6 +115,22 @@ impl PersistedSubstate {
     pub fn package_royalty_accumulator(&self) -> &PackageRoyaltyAccumulatorSubstate {
         if let PersistedSubstate::PackageRoyaltyAccumulator(state) = self {
             state
+        } else {
+            panic!("Not a package royalty accumulator");
+        }
+    }
+
+    pub fn package_info(&self) -> &PackageInfoSubstate {
+        if let PersistedSubstate::PackageInfo(info) = self {
+            info
+        } else {
+            panic!("Not a package royalty accumulator");
+        }
+    }
+
+    pub fn type_info(&self) -> &TypeInfoSubstate {
+        if let PersistedSubstate::TypeInfo(info) = self {
+            info
         } else {
             panic!("Not a package royalty accumulator");
         }

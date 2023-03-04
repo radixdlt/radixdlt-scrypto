@@ -5,6 +5,7 @@ use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
 use crate::system::node::RENodeModuleInit;
+use crate::types::*;
 use crate::{
     errors::{CanBeAbortion, ModuleError, RuntimeError},
     system::node::RENodeInit,
@@ -17,14 +18,9 @@ use radix_engine_interface::api::package::{
     PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate,
 };
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::{
-    ComponentAddress, InvocationDebugIdentifier, LockHandle, MethodIdentifier, NodeModuleId,
-    ObjectId, RoyaltyOffset, SubstateOffset, VaultOffset,
-};
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::constants::*;
-use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::{api::types::RENodeId, *};
 use sbor::rust::collections::BTreeMap;
 
@@ -376,7 +372,7 @@ impl KernelModule for CostingModule {
             api,
             match reason {
                 ClientCostingReason::RunWasm => CostingReason::RunWasm,
-                ClientCostingReason::RunNative => CostingReason::RunPrecompiled,
+                ClientCostingReason::RunNative => CostingReason::RunNative,
             },
             |_| units,
             5,

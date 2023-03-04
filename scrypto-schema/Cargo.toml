@@ -1,0 +1,18 @@
+[package]
+name = "scrypto-schema"
+version = "0.9.0"
+edition = "2021"
+
+[dependencies]
+sbor = { path = "../sbor", default-features = false }
+radix-engine-common = { path = "../radix-engine-common", default-features = false }
+serde = { version = "1.0.137", default-features = false, optional = true }
+
+[features]
+# You should enable either `std` or `alloc`
+default = ["std"]
+std = ["sbor/std", "radix-engine-common/std", "serde?/std"]
+alloc = ["sbor/alloc", "radix-engine-common/alloc", "serde?/alloc"]
+
+# Enable serde derives
+serde = ["serde/derive", "sbor/serde"]

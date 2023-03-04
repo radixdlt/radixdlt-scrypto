@@ -1,5 +1,5 @@
-use crate::radix_engine_interface::blueprints::clock::*;
-use radix_engine_interface::api::ClientObjectApi;
+use scrypto::api::*;
+use scrypto::blueprints::clock::*;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 

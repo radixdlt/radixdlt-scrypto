@@ -1,7 +1,6 @@
-use radix_engine_interface::api::component::*;
-use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::ClientSubstateApi;
-use sbor::rust::marker::PhantomData;
+use scrypto::api::component::*;
+use scrypto::api::substate_api::LockFlags;
+use scrypto::api::ClientSubstateApi;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 

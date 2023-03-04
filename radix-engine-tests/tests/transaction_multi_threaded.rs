@@ -12,7 +12,6 @@ mod multi_threaded_test {
     use radix_engine_interface::dec;
     use radix_engine_interface::rule;
     use transaction::builder::ManifestBuilder;
-    use transaction::data::{manifest_args, ManifestExpression};
     use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
     use transaction::model::TestTransaction;
     // using crossbeam for its scoped thread feature, which allows non-static lifetimes for data being

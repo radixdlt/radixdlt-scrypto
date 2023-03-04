@@ -3,7 +3,6 @@ use radix_engine::errors::{ApplicationError, KernelError, RuntimeError};
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::data::manifest_args;
 
 #[test]
 fn dangling_component_should_fail() {

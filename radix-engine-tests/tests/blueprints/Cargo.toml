@@ -1,6 +1,5 @@
 [workspace]
 members = [
-    "abi",
     "access_rules",
     "arguments",
     "bucket",
@@ -18,11 +17,11 @@ members = [
     "leaks",
     "local_component",
     "local_recursion",
-    "math-ops-check",
     "metadata_component",
     "module",
     "non_fungible",
     "package",
+    "package_schema",
     "package_token",
     "proof",
     "recursion",

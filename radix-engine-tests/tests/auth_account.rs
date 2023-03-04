@@ -4,7 +4,6 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::data::{manifest_args, ManifestExpression};
 
 fn test_auth_rule(
     test_runner: &mut TestRunner,

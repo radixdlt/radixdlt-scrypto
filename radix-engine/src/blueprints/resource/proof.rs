@@ -2,11 +2,9 @@ use crate::errors::{ApplicationError, InterpreterError, RuntimeError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::{ProofOffset, RENodeId, SubstateOffset};
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::{types::*, ClientSubstateApi};
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::ScryptoValue;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, ScryptoSbor)]
 pub enum LocalRef {
@@ -208,8 +206,10 @@ impl ProofBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
-        let _input: ProofCloneInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+        let _input: ProofCloneInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let proof_info = ProofInfoSubstate::of(receiver, api)?;
         let node_id = if proof_info.resource_type.is_fungible() {
@@ -268,7 +268,9 @@ impl ProofBlueprint {
     {
         // TODO: Remove decode/encode mess
         let _input: ProofGetAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            .map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let proof_info = ProofInfoSubstate::of(receiver, api)?;
         let amount = if proof_info.resource_type.is_fungible() {
@@ -305,8 +307,9 @@ impl ProofBlueprint {
     {
         // TODO: Remove decode/encode mess
         let _input: ProofGetNonFungibleLocalIdsInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap())
-                .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let proof_info = ProofInfoSubstate::of(receiver, api)?;
         if proof_info.resource_type.is_fungible() {
@@ -336,7 +339,9 @@ impl ProofBlueprint {
     {
         // TODO: Remove decode/encode mess
         let _input: ProofGetResourceAddressInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            .map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let proof_info = ProofInfoSubstate::of(receiver, api)?;
         Ok(IndexedScryptoValue::from_typed(

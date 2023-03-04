@@ -5,10 +5,8 @@ use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
 use crate::types::*;
-use radix_engine_interface::api::types::{ProofOffset, RENodeId, SubstateOffset};
 use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

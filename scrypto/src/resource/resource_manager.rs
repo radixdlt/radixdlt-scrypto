@@ -1,3 +1,4 @@
+use crate::*;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetGroupAccessRuleInput, AccessRulesSetMethodAccessRuleInput,
@@ -5,25 +6,26 @@ use radix_engine_interface::api::node_modules::auth::{
 use radix_engine_interface::api::node_modules::metadata::{
     MetadataGetInput, MetadataSetInput, METADATA_GET_IDENT, METADATA_SET_IDENT,
 };
+use radix_engine_interface::api::types::NonFungibleData;
 use radix_engine_interface::api::types::{NodeModuleId, RENodeId};
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
+use radix_engine_interface::data::scrypto::model::*;
+use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::math::Decimal;
+use radix_engine_interface::*;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 
-use crate::*;
-
 /// Represents a resource manager.
 #[derive(Debug)]
-pub struct ResourceManager(pub(crate) ResourceAddress);
+pub struct ResourceManager(pub ResourceAddress);
 
 impl ResourceManager {
-    pub fn set_metadata(&mut self, key: String, value: String) {
+    pub fn set_metadata(&self, key: String, value: String) {
         ScryptoEnv
             .call_module_method(
                 RENodeId::GlobalResourceManager(self.0),
@@ -34,7 +36,7 @@ impl ResourceManager {
             .unwrap();
     }
 
-    pub fn get_metadata(&mut self, key: String) -> Option<String> {
+    pub fn get_metadata(&self, key: String) -> Option<String> {
         let rtn = ScryptoEnv
             .call_module_method(
                 RENodeId::GlobalResourceManager(self.0),
@@ -47,7 +49,7 @@ impl ResourceManager {
         scrypto_decode(&rtn).unwrap()
     }
 
-    pub fn set_mintable(&mut self, access_rule: AccessRule) {
+    pub fn set_mintable(&self, access_rule: AccessRule) {
         ScryptoEnv
             .call_module_method(
                 RENodeId::GlobalResourceManager(self.0),
@@ -62,7 +64,7 @@ impl ResourceManager {
             .unwrap();
     }
 
-    pub fn set_burnable(&mut self, access_rule: AccessRule) -> () {
+    pub fn set_burnable(&self, access_rule: AccessRule) -> () {
         ScryptoEnv
             .call_module_method(
                 RENodeId::GlobalResourceManager(self.0),
@@ -80,7 +82,7 @@ impl ResourceManager {
             .unwrap();
     }
 
-    pub fn set_withdrawable(&mut self, access_rule: AccessRule) {
+    pub fn set_withdrawable(&self, access_rule: AccessRule) {
         let _rtn = ScryptoEnv
             .call_module_method(
                 RENodeId::GlobalResourceManager(self.0),
@@ -95,7 +97,7 @@ impl ResourceManager {
             .unwrap();
     }
 
-    pub fn set_depositable(&mut self, access_rule: AccessRule) {
+    pub fn set_depositable(&self, access_rule: AccessRule) {
         let _rtn = ScryptoEnv
             .call_module_method(
                 RENodeId::GlobalResourceManager(self.0),
@@ -110,7 +112,7 @@ impl ResourceManager {
             .unwrap();
     }
 
-    pub fn set_recallable(&mut self, access_rule: AccessRule) {
+    pub fn set_recallable(&self, access_rule: AccessRule) {
         let _rtn = ScryptoEnv
             .call_module_method(
                 RENodeId::GlobalResourceManager(self.0),
@@ -158,7 +160,7 @@ impl ResourceManager {
             .unwrap();
     }
 
-    pub fn lock_mintable(&mut self) {
+    pub fn lock_mintable(&self) {
         ScryptoEnv
             .call_module_method(
                 RENodeId::GlobalResourceManager(self.0),
@@ -173,7 +175,7 @@ impl ResourceManager {
             .unwrap();
     }
 
-    pub fn lock_burnable(&mut self) {
+    pub fn lock_burnable(&self) {
         ScryptoEnv
             .call_module_method(
                 RENodeId::GlobalResourceManager(self.0),
@@ -191,7 +193,7 @@ impl ResourceManager {
             .unwrap();
     }
 
-    pub fn lock_updateable_metadata(&mut self) {
+    pub fn lock_updateable_metadata(&self) {
         ScryptoEnv
             .call_module_method(
                 RENodeId::GlobalResourceManager(self.0),
@@ -206,7 +208,7 @@ impl ResourceManager {
             .unwrap();
     }
 
-    pub fn lock_updateable_non_fungible_data(&mut self) {
+    pub fn lock_updateable_non_fungible_data(&self) {
         ScryptoEnv
             .call_module_method(
                 RENodeId::GlobalResourceManager(self.0),
@@ -224,7 +226,7 @@ impl ResourceManager {
             .unwrap();
     }
 
-    pub fn lock_withdrawable(&mut self) {
+    pub fn lock_withdrawable(&self) {
         let _rtn = ScryptoEnv.call_module_method(
             RENodeId::GlobalResourceManager(self.0),
             NodeModuleId::AccessRules1,
@@ -237,7 +239,7 @@ impl ResourceManager {
         );
     }
 
-    pub fn lock_depositable(&mut self) {
+    pub fn lock_depositable(&self) {
         let _rtn = ScryptoEnv.call_module_method(
             RENodeId::GlobalResourceManager(self.0),
             NodeModuleId::AccessRules1,
@@ -250,7 +252,7 @@ impl ResourceManager {
         );
     }
 
-    pub fn lock_recallable(&mut self) {
+    pub fn lock_recallable(&self) {
         let _rtn = ScryptoEnv.call_module_method(
             RENodeId::GlobalResourceManager(self.0),
             NodeModuleId::AccessRules1,
@@ -263,7 +265,7 @@ impl ResourceManager {
         );
     }
 
-    fn update_non_fungible_data_internal(&mut self, id: NonFungibleLocalId, data: Vec<u8>) {
+    fn update_non_fungible_data_internal(&self, id: NonFungibleLocalId, data: Vec<u8>) {
         let mut env = ScryptoEnv;
         let _rtn = env
             .call_method(
@@ -324,7 +326,7 @@ impl ResourceManager {
         scrypto_decode(&rtn).unwrap()
     }
 
-    pub fn burn(&mut self, bucket: Bucket) {
+    pub fn burn(&self, bucket: Bucket) {
         let mut env = ScryptoEnv;
 
         let _rtn = env
@@ -340,7 +342,7 @@ impl ResourceManager {
     }
 
     /// Mints fungible resources
-    pub fn mint<T: Into<Decimal>>(&mut self, amount: T) -> Bucket {
+    pub fn mint<T: Into<Decimal>>(&self, amount: T) -> Bucket {
         let mut env = ScryptoEnv;
 
         let rtn = env
@@ -359,7 +361,7 @@ impl ResourceManager {
 
     /// Mints non-fungible resources
     pub fn mint_non_fungible<T: NonFungibleData>(
-        &mut self,
+        &self,
         id: &NonFungibleLocalId,
         data: T,
     ) -> Bucket {
@@ -381,7 +383,7 @@ impl ResourceManager {
     }
 
     /// Mints uuid non-fungible resources
-    pub fn mint_uuid_non_fungible<T: NonFungibleData>(&mut self, data: T) -> Bucket {
+    pub fn mint_uuid_non_fungible<T: NonFungibleData>(&self, data: T) -> Bucket {
         let mut entries = Vec::new();
         entries.push((data.immutable_data().unwrap(), data.mutable_data().unwrap()));
         let mut env = ScryptoEnv;

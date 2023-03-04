@@ -12,7 +12,6 @@ use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use rayon::prelude::*;
 use transaction::builder::{ManifestBuilder, TransactionBuilder};
-use transaction::data::manifest_args;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::{NotarizedTransaction, TransactionHeader};
 use transaction::validation::{

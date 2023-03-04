@@ -6,17 +6,12 @@ use native_sdk::access_rules::AccessRulesObject;
 use native_sdk::metadata::Metadata;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::types::{ClockOffset, RENodeId, SubstateOffset};
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::clock::ClockCreateInput;
 use radix_engine_interface::blueprints::clock::TimePrecision;
 use radix_engine_interface::blueprints::clock::*;
-use radix_engine_interface::blueprints::resource::MethodKey;
-use radix_engine_interface::blueprints::resource::{require, AccessRule};
-use radix_engine_interface::blueprints::resource::{AccessRules, FnKey};
-use radix_engine_interface::data::ScryptoValue;
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use radix_engine_interface::time::*;
 
@@ -95,8 +90,10 @@ impl ClockNativePackage {
         Y: ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
-        let input: ClockCreateInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+        let input: ClockCreateInput =
+            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let clock_id = api.new_object(
             CLOCK_BLUEPRINT,
@@ -146,7 +143,9 @@ impl ClockNativePackage {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: ClockSetCurrentTimeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            .map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         let current_time_ms = input.current_time_ms;
         let current_time_rounded_to_minutes =
@@ -174,7 +173,9 @@ impl ClockNativePackage {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: ClockGetCurrentTimeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            .map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         match input.precision {
             TimePrecision::Minute => {
@@ -202,7 +203,9 @@ impl ClockNativePackage {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let input: ClockCompareCurrentTimeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+            .map_err(|e| {
+                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+            })?;
 
         match input.precision {
             TimePrecision::Minute => {

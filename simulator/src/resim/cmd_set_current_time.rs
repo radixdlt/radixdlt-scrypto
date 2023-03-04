@@ -5,7 +5,6 @@ use radix_engine_interface::blueprints::clock::{
     ClockSetCurrentTimeInput, CLOCK_SET_CURRENT_TIME_IDENT,
 };
 use radix_engine_interface::time::UtcDateTime;
-use transaction::data::manifest_encode;
 use transaction::model::Instruction;
 
 use crate::resim::*;

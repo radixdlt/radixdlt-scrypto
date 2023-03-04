@@ -45,9 +45,18 @@ mod simple {
 
 #[blueprint]
 mod empty_with_use_statements {
-    use scrypto::model::ComponentAddress;
+    use radix_engine_common::data::scrypto::model::ComponentAddress;
 
-    struct Empty1 {}
+    struct EmptyWithUse {}
 
-    impl Empty1 {}
+    impl EmptyWithUse {}
+}
+
+#[blueprint]
+mod empty_with_use_super {
+    use super::*;
+
+    struct EmptyWithUseSuper {}
+
+    impl EmptyWithUseSuper {}
 }

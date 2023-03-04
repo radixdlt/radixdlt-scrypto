@@ -1,4 +1,4 @@
-use super::NonFungibleIdType;
+use crate::data::scrypto::model::*;
 use crate::{
     math::{BnumI256, Decimal},
     *,
@@ -6,7 +6,7 @@ use crate::{
 use sbor::*;
 
 /// Represents the type of a resource.
-#[derive(Debug, Clone, Copy, Sbor, LegacyDescribe, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Sbor, Eq, PartialEq)]
 pub enum ResourceType {
     /// Represents a fungible resource
     Fungible { divisibility: u8 },

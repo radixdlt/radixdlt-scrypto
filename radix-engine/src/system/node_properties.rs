@@ -1,16 +1,13 @@
 use crate::errors::{KernelError, RuntimeError};
 use crate::kernel::actor::{Actor, ActorIdentifier, ExecutionMode};
-use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::node_modules::metadata::*;
-use radix_engine_interface::api::node_modules::royalty::*;
-use radix_engine_interface::api::package::*;
+use crate::types::*;
+use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
+use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
+use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::types::{
-    AuthZoneStackOffset, BucketOffset, ComponentOffset, FnIdentifier, KeyValueStoreOffset,
-    PackageOffset, ProofOffset, RENodeId, ResourceManagerOffset, SubstateOffset, WorktopOffset,
+use radix_engine_interface::blueprints::resource::{
+    BUCKET_BLUEPRINT, PROOF_BLUEPRINT, WORKTOP_BLUEPRINT,
 };
-use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::*;
 
 pub struct VisibilityProperties;

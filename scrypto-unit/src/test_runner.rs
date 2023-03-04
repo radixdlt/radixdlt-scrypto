@@ -22,7 +22,6 @@ use radix_engine::transaction::{
 };
 use radix_engine::types::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
-use radix_engine_constants::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::types::{RENodeId, VaultOffset};
 use radix_engine_interface::api::ClientPackageApi;
@@ -36,17 +35,18 @@ use radix_engine_interface::blueprints::epoch_manager::{
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{EPOCH_MANAGER, FAUCET_COMPONENT};
+use radix_engine_interface::data::manifest::manifest_encode;
+use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::math::Decimal;
+use radix_engine_interface::network::NetworkDefinition;
+use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
 use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
-use scrypto::component::Mutability;
-use scrypto::component::Mutability::*;
-use scrypto::NonFungibleData;
+use sbor::basic_well_known_types::ANY_ID;
+use scrypto::prelude::*;
 use transaction::builder::ManifestBuilder;
-use transaction::data::model::ManifestExpression;
-use transaction::data::{manifest_args, manifest_encode};
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::{AuthZoneParams, PreviewIntent, TestTransaction};
 use transaction::model::{Executable, Instruction, SystemTransaction, TransactionManifest};
@@ -55,7 +55,7 @@ use transaction::validation::TestIntentHashManager;
 pub struct Compile;
 
 impl Compile {
-    pub fn compile<P: AsRef<Path>>(package_dir: P) -> (Vec<u8>, BTreeMap<String, BlueprintAbi>) {
+    pub fn compile<P: AsRef<Path>>(package_dir: P) -> (Vec<u8>, PackageSchema) {
         // Build
         let status = Command::new("cargo")
             .current_dir(package_dir.as_ref())
@@ -91,16 +91,16 @@ impl Compile {
         path.push(wasm_name);
         path.set_extension("wasm");
 
-        // Extract ABI
+        // Extract schema
         let code = fs::read(&path).unwrap_or_else(|err| {
             panic!(
                 "Failed to read built WASM from path {:?} - {:?}",
                 &path, err
             )
         });
-        let abi = extract_abi(&code).unwrap();
+        let schema = extract_schema(&code).unwrap();
 
-        (code, abi)
+        (code, schema)
     }
 
     // Naive pattern matching to find the crate name.
@@ -530,14 +530,14 @@ impl TestRunner {
     pub fn publish_package(
         &mut self,
         code: Vec<u8>,
-        abi: BTreeMap<String, BlueprintAbi>,
+        schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
         access_rules: AccessRules,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .publish_package(code, abi, royalty_config, metadata, access_rules)
+            .publish_package(code, schema, royalty_config, metadata, access_rules)
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -548,12 +548,12 @@ impl TestRunner {
     pub fn publish_package_with_owner(
         &mut self,
         code: Vec<u8>,
-        abi: BTreeMap<String, BlueprintAbi>,
+        schema: PackageSchema,
         owner_badge: NonFungibleGlobalId,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .publish_package_with_owner(code, abi, owner_badge)
+            .publish_package_with_owner(code, schema, owner_badge)
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -562,10 +562,10 @@ impl TestRunner {
     }
 
     pub fn compile_and_publish<P: AsRef<Path>>(&mut self, package_dir: P) -> PackageAddress {
-        let (code, abi) = Compile::compile(package_dir);
+        let (code, schema) = Compile::compile(package_dir);
         self.publish_package(
             code,
-            abi,
+            schema,
             BTreeMap::new(),
             BTreeMap::new(),
             AccessRules::new(),
@@ -577,8 +577,8 @@ impl TestRunner {
         package_dir: P,
         owner_badge: NonFungibleGlobalId,
     ) -> PackageAddress {
-        let (code, abi) = Compile::compile(package_dir);
-        self.publish_package_with_owner(code, abi, owner_badge)
+        let (code, schema) = Compile::compile(package_dir);
+        self.publish_package_with_owner(code, schema, owner_badge)
     }
 
     pub fn execute_manifest_ignoring_fee(
@@ -668,20 +668,6 @@ impl TestRunner {
             network,
             preview_intent,
         )
-    }
-
-    pub fn export_abi(
-        &mut self,
-        package_address: PackageAddress,
-        blueprint_name: &str,
-    ) -> BlueprintAbi {
-        export_abi(&self.substate_store, package_address, blueprint_name)
-            .expect("Failed to export ABI")
-    }
-
-    pub fn export_abi_by_component(&mut self, component_address: ComponentAddress) -> BlueprintAbi {
-        export_abi_by_component(&self.substate_store, component_address)
-            .expect("Failed to export ABI")
     }
 
     pub fn lock_resource_auth(
@@ -879,9 +865,9 @@ impl TestRunner {
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
 
         let mut entries = BTreeMap::new();
-        entries.insert(NonFungibleLocalId::integer(1), SampleNonFungibleData {});
-        entries.insert(NonFungibleLocalId::integer(2), SampleNonFungibleData {});
-        entries.insert(NonFungibleLocalId::integer(3), SampleNonFungibleData {});
+        entries.insert(NonFungibleLocalId::integer(1), EmptyNonFungibleData {});
+        entries.insert(NonFungibleLocalId::integer(2), EmptyNonFungibleData {});
+        entries.insert(NonFungibleLocalId::integer(3), EmptyNonFungibleData {});
 
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
@@ -1201,32 +1187,29 @@ pub fn get_cargo_target_directory(manifest_path: impl AsRef<OsStr>) -> String {
     }
 }
 
-pub fn generate_single_function_abi(
-    blueprint_name: &str,
-    function_name: &str,
-    output_type: Type,
-) -> BTreeMap<String, BlueprintAbi> {
-    let mut blueprint_abis = BTreeMap::new();
-    blueprint_abis.insert(
+pub fn single_function_package_schema(blueprint_name: &str, function_name: &str) -> PackageSchema {
+    let mut package_schema = PackageSchema::default();
+    package_schema.blueprints.insert(
         blueprint_name.to_string(),
-        BlueprintAbi {
-            structure: Type::Tuple {
-                element_types: vec![],
+        BlueprintSchema {
+            schema: ScryptoSchema {
+                type_kinds: vec![],
+                type_metadata: vec![],
+                type_validations: vec![],
             },
-            fns: vec![Fn {
-                ident: function_name.to_string(),
-                mutability: Option::None,
-                input: Type::Struct {
-                    name: "Any".to_string(),
-                    fields: Fields::Named { named: vec![] },
-                },
-                output: output_type,
-                export_name: format!("{}_{}", blueprint_name, function_name),
-            }],
+            substates: btreemap!(),
+            functions: btreemap!(
+                function_name.to_string() => FunctionSchema {
+                    receiver: Option::None,
+                    input: LocalTypeIndex::WellKnown(ANY_ID),
+                    output: LocalTypeIndex::WellKnown(ANY_ID),
+                    export_name: format!("{}_{}", blueprint_name, function_name),
+                }
+            ),
         },
     );
-    blueprint_abis
+    package_schema
 }
 
 #[derive(NonFungibleData)]
-struct SampleNonFungibleData {}
+struct EmptyNonFungibleData {}

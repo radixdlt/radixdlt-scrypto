@@ -1,8 +1,5 @@
-use radix_engine_interface::api::types::rust::mem::transmute;
-use radix_engine_interface::api::types::rust::mem::MaybeUninit;
-use radix_engine_interface::api::types::Buffer;
-use radix_engine_interface::api::types::BufferId;
-use radix_engine_interface::api::types::Slice;
+use sbor::rust::mem::transmute;
+use sbor::rust::mem::MaybeUninit;
 use sbor::rust::sync::Arc;
 use wasmi::core::Value;
 use wasmi::core::{HostError, Trap};
@@ -184,8 +181,8 @@ fn new_package(
     mut caller: Caller<'_, HostState>,
     code_ptr: u32,
     code_len: u32,
-    abi_ptr: u32,
-    abi_len: u32,
+    schema_ptr: u32,
+    schema_len: u32,
     access_rules_ptr: u32,
     access_rules_len: u32,
     royalty_config_ptr: u32,
@@ -198,7 +195,7 @@ fn new_package(
     runtime
         .new_package(
             read_memory(caller.as_context_mut(), memory, code_ptr, code_len)?,
-            read_memory(caller.as_context_mut(), memory, abi_ptr, abi_len)?,
+            read_memory(caller.as_context_mut(), memory, schema_ptr, schema_len)?,
             read_memory(
                 caller.as_context_mut(),
                 memory,
@@ -506,8 +503,8 @@ impl WasmiModule {
             |caller: Caller<'_, HostState>,
              code_ptr: u32,
              code_len: u32,
-             abi_ptr: u32,
-             abi_len: u32,
+             schema_ptr: u32,
+             schema_len: u32,
              access_rules_ptr: u32,
              access_rules_len: u32,
              royalty_config_ptr: u32,
@@ -519,8 +516,8 @@ impl WasmiModule {
                     caller,
                     code_ptr,
                     code_len,
-                    abi_ptr,
-                    abi_len,
+                    schema_ptr,
+                    schema_len,
                     access_rules_ptr,
                     access_rules_len,
                     royalty_config_ptr,

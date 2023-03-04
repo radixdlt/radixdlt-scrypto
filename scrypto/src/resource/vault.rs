@@ -1,14 +1,19 @@
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::model::Own;
-use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoCustomValueKind};
+use radix_engine_interface::data::scrypto::model::*;
+use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::OWN_VAULT_ID;
+use radix_engine_interface::data::scrypto::ScryptoCustomTypeKind;
+use radix_engine_interface::data::scrypto::{
+    scrypto_decode, scrypto_encode, ScryptoCustomValueKind,
+};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::Categorize;
+use radix_engine_interface::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
+use sbor::*;
 use scrypto::engine::scrypto_env::ScryptoEnv;
-use scrypto_abi::Type;
 
 use crate::resource::*;
 use crate::*;
@@ -52,10 +57,8 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for V
     }
 }
 
-impl scrypto_abi::LegacyDescribe for Vault {
-    fn describe() -> scrypto_abi::Type {
-        Type::Vault
-    }
+impl Describe<ScryptoCustomTypeKind> for Vault {
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown([OWN_VAULT_ID]);
 }
 
 pub trait ScryptoVault {

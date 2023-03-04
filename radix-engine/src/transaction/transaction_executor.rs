@@ -13,7 +13,6 @@ use crate::types::*;
 use crate::wasm::*;
 use radix_engine_constants::*;
 use sbor::rust::borrow::Cow;
-use transaction::data::manifest_encode;
 use transaction::model::*;
 
 pub struct FeeReserveConfig {

@@ -1,15 +1,12 @@
 use crate::data::{to_address, to_decimal, to_non_fungible_local_id, to_precise_decimal};
-use radix_engine_interface::{
-    address::Bech32Encoder,
-    blueprints::resource::{NonFungibleGlobalId, ResourceAddress},
-    data::model::Address,
+use radix_engine_interface::data::manifest::{
+    model::*, ManifestCustomValue, ManifestCustomValueKind, ManifestValue, ManifestValueKind,
 };
+use radix_engine_interface::data::scrypto::model::*;
+use radix_engine_interface::{address::Bech32Encoder, blueprints::resource::NonFungibleGlobalId};
 use sbor::rust::collections::HashMap;
 use sbor::rust::fmt;
 use sbor::*;
-use transaction_data::{
-    model::*, ManifestCustomValue, ManifestCustomValueKind, ManifestValue, ManifestValueKind,
-};
 use utils::ContextualDisplay;
 
 #[derive(Clone, Copy, Debug)]

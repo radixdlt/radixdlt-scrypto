@@ -1,3 +1,4 @@
+use crate::types::*;
 use crate::{
     errors::ModuleError,
     errors::RuntimeError,
@@ -6,11 +7,6 @@ use crate::{
         module::KernelModule,
     },
     types::Vec,
-};
-use radix_engine_interface::{
-    api::types::{InvocationDebugIdentifier, LockHandle},
-    data::ScryptoValue,
-    ScryptoSbor,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

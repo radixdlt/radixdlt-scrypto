@@ -3,7 +3,6 @@ use radix_engine_constants::DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME;
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::data::manifest_args;
 
 #[test]
 fn test_loop() {
@@ -14,13 +13,7 @@ fn test_loop() {
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "1000"));
     let package_address = test_runner.publish_package(
         code,
-        generate_single_function_abi(
-            "Test",
-            "f",
-            Type::Tuple {
-                element_types: vec![],
-            },
-        ),
+        single_function_package_schema("Test", "f"),
         BTreeMap::new(),
         BTreeMap::new(),
         AccessRules::new(),
@@ -46,13 +39,7 @@ fn test_loop_out_of_cost_unit() {
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "2000000"));
     let package_address = test_runner.publish_package(
         code,
-        generate_single_function_abi(
-            "Test",
-            "f",
-            Type::Tuple {
-                element_types: vec![],
-            },
-        ),
+        single_function_package_schema("Test", "f"),
         BTreeMap::new(),
         BTreeMap::new(),
         AccessRules::new(),
@@ -77,13 +64,7 @@ fn test_recursion() {
     let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "256"));
     let package_address = test_runner.publish_package(
         code,
-        generate_single_function_abi(
-            "Test",
-            "f",
-            Type::Tuple {
-                element_types: vec![],
-            },
-        ),
+        single_function_package_schema("Test", "f"),
         BTreeMap::new(),
         BTreeMap::new(),
         AccessRules::new(),
@@ -107,13 +88,7 @@ fn test_recursion_stack_overflow() {
     let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "257"));
     let package_address = test_runner.publish_package(
         code,
-        generate_single_function_abi(
-            "Test",
-            "f",
-            Type::Tuple {
-                element_types: vec![],
-            },
-        ),
+        single_function_package_schema("Test", "f"),
         BTreeMap::new(),
         BTreeMap::new(),
         AccessRules::new(),
@@ -141,13 +116,7 @@ fn test_grow_memory() {
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", &grow_value.to_string()));
     let package_address = test_runner.publish_package(
         code,
-        generate_single_function_abi(
-            "Test",
-            "f",
-            Type::Tuple {
-                element_types: vec![],
-            },
-        ),
+        single_function_package_schema("Test", "f"),
         BTreeMap::new(),
         BTreeMap::new(),
         AccessRules::new(),
@@ -171,13 +140,7 @@ fn test_grow_memory_out_of_cost_unit() {
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100000"));
     let package_address = test_runner.publish_package(
         code,
-        generate_single_function_abi(
-            "Test",
-            "f",
-            Type::Tuple {
-                element_types: vec![],
-            },
-        ),
+        single_function_package_schema("Test", "f"),
         BTreeMap::new(),
         BTreeMap::new(),
         AccessRules::new(),

@@ -7,7 +7,6 @@ use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::data::{manifest_args, ManifestExpression};
 use transaction::model::*;
 
 fn run_manifest<F>(f: F) -> TransactionReceipt

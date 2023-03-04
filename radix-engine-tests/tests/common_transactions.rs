@@ -1,10 +1,5 @@
-use radix_engine::types::{
-    hash, BTreeMap, Bech32Encoder, ComponentAddress, Decimal, NetworkDefinition,
-    NonFungibleGlobalId, NonFungibleLocalId, ResourceAddress, FAUCET_COMPONENT, RADIX_TOKEN,
-};
+use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::dec;
-use radix_engine_interface::rule;
 use scrypto::NonFungibleData;
 use scrypto_unit::TestRunner;
 use transaction::builder::ManifestBuilder;
@@ -136,21 +131,18 @@ fn creating_a_non_fungible_resource_with_initial_supply_succeeds() {
 #[test]
 fn publish_package_succeeds() {
     test_manifest(|account_component_address, bech32_encoder| {
-        // TODO: Update the code.blob and abi.blob files that are used for testing.
-        // Using the WASM and ABI from the account blueprint here as they are up to date. The
-        // abi.blob and code.blob files from the transaction crate are not.
         let code_blob = include_bytes!("../../assets/faucet.wasm").to_vec();
-        let abi_blob = include_bytes!("../../assets/faucet.abi").to_vec();
+        let schema_blob = include_bytes!("../../assets/faucet.schema").to_vec();
 
         let manifest = replace_variables!(
             include_str!("../../transaction/examples/package/publish.rtm"),
             code_blob_hash = hash(&code_blob),
-            abi_blob_hash = hash(&abi_blob),
+            schema_blob_hash = hash(&schema_blob),
             account_component_address = account_component_address.display(bech32_encoder),
             auth_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
             auth_badge_non_fungible_local_id = "#1#"
         );
-        (manifest, vec![code_blob, abi_blob])
+        (manifest, vec![code_blob, schema_blob])
     });
 }
 

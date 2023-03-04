@@ -53,6 +53,8 @@ mod secret {
 
 #[blueprint]
 mod stored_kv_local {
+    use secret::*;
+
     struct StoredKVLocal {
         components: KeyValueStore<u32, SecretComponent>,
     }
@@ -101,6 +103,8 @@ mod stored_kv_local {
 
 #[blueprint]
 mod stored_secret {
+    use secret::*;
+
     struct StoredSecret {
         component: SecretComponent,
     }

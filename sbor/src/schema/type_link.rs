@@ -101,6 +101,7 @@ const fn capture_dependent_type_ids(
     capture_dependent_type_ids(buffer, next + 1, dependencies)
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// This is the [`SchemaTypeLink`] used in a linearized [`Schema`] to link [`TypeKind`]s.
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, Sbor)]
 pub enum LocalTypeIndex {

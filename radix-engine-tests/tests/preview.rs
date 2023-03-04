@@ -4,8 +4,6 @@ use radix_engine_interface::rule;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
-use transaction::data::manifest_args;
-use transaction::data::ManifestExpression;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::*;
 use transaction::validation::{NotarizedTransactionValidator, TestIntentHashManager};

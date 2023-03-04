@@ -5,10 +5,9 @@ use radix_engine::{
     types::*,
     wasm::WASM_MEMORY_PAGE_SIZE,
 };
-use radix_engine_constants::*;
-use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::{blueprints::resource::*, schema::PackageSchema};
 use scrypto_unit::*;
-use transaction::{builder::ManifestBuilder, data::manifest_args, model::TestTransaction};
+use transaction::{builder::ManifestBuilder, model::TestTransaction};
 
 #[test]
 fn transaction_limit_call_frame_memory_exceeded() {
@@ -22,13 +21,7 @@ fn transaction_limit_call_frame_memory_exceeded() {
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", &grow_value.to_string()));
     let package_address = test_runner.publish_package(
         code,
-        generate_single_function_abi(
-            "Test",
-            "f",
-            Type::Tuple {
-                element_types: vec![],
-            },
-        ),
+        single_function_package_schema("Test", "f"),
         BTreeMap::new(),
         BTreeMap::new(),
         AccessRules::new(),
@@ -190,7 +183,7 @@ fn transaction_limit_exceeded_invoke_input_size_should_fail() {
         .lock_fee(FAUCET_COMPONENT, 100.into())
         .publish_package(
             code,
-            BTreeMap::new(),
+            PackageSchema::default(),
             BTreeMap::new(),
             BTreeMap::new(),
             AccessRules::new(),
@@ -203,7 +196,7 @@ fn transaction_limit_exceeded_invoke_input_size_should_fail() {
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
             TransactionLimitsError::MaxInvokePayloadSizeExceeded(x),
-        )) => *x == DEFAULT_MAX_INVOKE_INPUT_SIZE + 138,
+        )) => *x == DEFAULT_MAX_INVOKE_INPUT_SIZE + 140,
         _ => false,
     })
 }

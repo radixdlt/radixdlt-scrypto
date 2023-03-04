@@ -2,12 +2,13 @@ use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::ClientSubstateApi;
-use radix_engine_interface::data::{
+use radix_engine_interface::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode, ScryptoValue,
 };
 use sbor::rust::fmt;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::ops::{Deref, DerefMut};
+use sbor::rust::prelude::*;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 
 pub struct DataRef<V: ScryptoEncode> {

@@ -1,18 +1,9 @@
-use crate::api::types::*;
 use crate::blueprints::resource::*;
+use crate::data::scrypto::model::*;
 use crate::math::Decimal;
 use crate::*;
-use sbor::rust::collections::{BTreeMap, BTreeSet};
+use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
-use scrypto_abi::BlueprintAbi;
-
-pub struct AuthZoneAbi;
-
-impl AuthZoneAbi {
-    pub fn blueprint_abis() -> BTreeMap<String, BlueprintAbi> {
-        BTreeMap::new()
-    }
-}
 
 pub const AUTH_ZONE_BLUEPRINT: &str = "AuthZone";
 
