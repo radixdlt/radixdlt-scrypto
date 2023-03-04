@@ -1,3 +1,4 @@
+use radix_engine::system::node_modules::metadata::MetadataBackendValue;
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -26,7 +27,7 @@ fn can_globalize_with_component_metadata() {
     let value = test_runner
         .get_metadata(component_address.into(), "key")
         .expect("Should exist");
-    assert_eq!(value, "value");
+    assert_eq!(value, MetadataBackendValue::String("value".to_string()));
 }
 
 #[test]
@@ -53,7 +54,7 @@ fn can_set_metadata_after_globalized() {
     let value = test_runner
         .get_metadata(component_address.into(), "key")
         .expect("Should exist");
-    assert_eq!(value, "value");
+    assert_eq!(value, MetadataBackendValue::String("value".to_string()));
 }
 
 #[test]
