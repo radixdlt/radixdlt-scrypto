@@ -1,5 +1,5 @@
 use radix_engine_common::data::scrypto::model::*;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_interface::api::node_modules::metadata::MetadataEntry;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::resource::{AccessRule, AccessRules, MethodKey};
 use radix_engine_interface::data::manifest::model::*;
@@ -118,7 +118,7 @@ pub enum Instruction {
     SetMetadata {
         entity_address: ManifestAddress,
         key: String,
-        value: MetadataValue,
+        value: MetadataEntry,
     },
 
     SetPackageRoyaltyConfig {

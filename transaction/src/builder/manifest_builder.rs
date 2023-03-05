@@ -1,4 +1,4 @@
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_interface::api::node_modules::metadata::MetadataEntry;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::access_controller::{
     RuleSet, ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
@@ -532,7 +532,7 @@ impl ManifestBuilder {
         &mut self,
         entity_address: Address,
         key: String,
-        value: MetadataValue,
+        value: MetadataEntry,
     ) -> &mut Self {
         self.add_instruction(Instruction::SetMetadata {
             entity_address: from_address(entity_address),

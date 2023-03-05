@@ -23,7 +23,7 @@ use radix_engine::types::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_interface::api::node_modules::metadata::MetadataEntry;
 use radix_engine_interface::api::types::{RENodeId, VaultOffset};
 use radix_engine_interface::api::ClientPackageApi;
 use radix_engine_interface::blueprints::clock::{
@@ -227,7 +227,7 @@ impl TestRunner {
         )
     }
 
-    pub fn get_metadata(&mut self, address: Address, key: &str) -> Option<MetadataValue> {
+    pub fn get_metadata(&mut self, address: Address, key: &str) -> Option<MetadataEntry> {
         let metadata_entry = self
             .substate_store
             .get_substate(&SubstateId(
@@ -242,7 +242,7 @@ impl TestRunner {
         let metadata_entry: KeyValueStoreEntrySubstate = metadata_entry.into();
         let metadata_entry = match metadata_entry {
             KeyValueStoreEntrySubstate::Some(_, value) => {
-                let value: MetadataValue =
+                let value: MetadataEntry =
                     scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap();
                 Some(value)
             }

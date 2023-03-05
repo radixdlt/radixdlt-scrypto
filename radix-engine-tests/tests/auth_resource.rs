@@ -1,7 +1,7 @@
 extern crate core;
 
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -115,7 +115,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
         Action::UpdateMetadata => builder.set_metadata(
             Address::Resource(token_address),
             "key".to_string(),
-            MetadataValue::String("value".to_string()),
+            MetadataEntry::Value(MetadataValue::String("value".to_string())),
         ),
     };
 

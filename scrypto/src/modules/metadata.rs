@@ -8,6 +8,7 @@ use radix_engine_interface::constants::METADATA_PACKAGE;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoValue};
 use sbor::rust::prelude::ToOwned;
 use sbor::rust::string::String;
+use sbor::rust::vec::Vec;
 
 #[derive(PartialEq, Eq, Hash, Clone)]
 pub struct Metadata(pub ObjectId);
@@ -45,6 +46,25 @@ impl MetadataObject for AttachedMetadata {
 pub trait MetadataObject {
     fn self_id(&self) -> (RENodeId, NodeModuleId);
 
+    fn set_list<K: AsRef<str>>(&self, name: K, list: Vec<MetadataValue>) {
+        let (node_id, module_id) = self.self_id();
+
+        let value: ScryptoValue = scrypto_decode(&scrypto_encode(&MetadataEntry::List(list)).unwrap()).unwrap();
+
+        let _rtn = ScryptoEnv
+            .call_module_method(
+                node_id,
+                module_id,
+                METADATA_SET_IDENT,
+                scrypto_encode(&MetadataSet {
+                    key: name.as_ref().to_owned(),
+                    value,
+                })
+                    .unwrap(),
+            )
+            .unwrap();
+    }
+
     fn set<K: AsRef<str>, V: MetadataVal>(&self, name: K, value: V) {
         let (node_id, module_id) = self.self_id();
 
@@ -55,7 +75,7 @@ pub trait MetadataObject {
                 METADATA_SET_IDENT,
                 scrypto_encode(&MetadataSet {
                     key: name.as_ref().to_owned(),
-                    value: value.to_metadata_value(),
+                    value: value.to_metadata_entry(),
                 })
                 .unwrap(),
             )
@@ -81,7 +101,7 @@ pub trait MetadataObject {
 
         match value {
             None => Err(MetadataError::EmptyEntry),
-            Some(value) => String::from_metadata_value(value),
+            Some(value) => String::from_metadata_entry(value),
         }
     }
 
