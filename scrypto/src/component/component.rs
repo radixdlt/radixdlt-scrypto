@@ -1,5 +1,5 @@
 use crate::engine::scrypto_env::ScryptoEnv;
-use crate::modules::AttachedMetadata;
+use crate::modules::{AttachedAccessRules, AttachedMetadata};
 use crate::runtime::*;
 use crate::*;
 use radix_engine_interface::api::node_modules::auth::{
@@ -31,8 +31,6 @@ use sbor::{
     GlobalTypeId, ValueKind,
 };
 use scrypto::modules::Metadata;
-
-use super::ComponentAccessRules;
 
 pub trait ComponentState<T: Component + LocalComponent>: ScryptoEncode + ScryptoDecode {
     fn instantiate(self) -> T;
@@ -210,8 +208,8 @@ impl LocalComponent for OwnedComponent {
 pub struct GlobalComponentRef(pub ComponentAddress);
 
 impl GlobalComponentRef {
-    pub fn access_rules(&self) -> ComponentAccessRules {
-        ComponentAccessRules::new(self.0)
+    pub fn access_rules(&self) -> AttachedAccessRules {
+        AttachedAccessRules(self.0.into())
     }
 
     pub fn metadata(&self) -> AttachedMetadata {

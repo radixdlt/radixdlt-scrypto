@@ -475,7 +475,7 @@ fn generate_stubs(
         }
 
         impl #component_ref_ident {
-            pub fn access_rules(&self) -> ComponentAccessRules {
+            pub fn access_rules(&self) -> AttachedAccessRules {
                 self.component.access_rules()
             }
 
@@ -782,7 +782,7 @@ mod tests {
                     }
 
                     impl TestGlobalComponentRef {
-                        pub fn access_rules(&self) -> ComponentAccessRules {
+                        pub fn access_rules(&self) -> AttachedAccessRules {
                             self.component.access_rules()
                         }
 
