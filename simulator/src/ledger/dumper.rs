@@ -335,9 +335,10 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
         component_address.to_string(AddressDisplayContext::with_encoder(&bech32_encoder)),
         hex::encode(kv_store_id)
     );
-    for (last, (_hash, substate)) in map.iter().identify_last() {
+    for (last, (key, substate)) in map.iter().identify_last() {
         let substate = substate.clone().to_runtime();
         if let KeyValueStoreEntrySubstate::Some(value) = &substate.kv_store_entry() {
+            let key: ScryptoValue = scrypto_decode(&key).unwrap();
             let value_display_context =
                 ScryptoValueDisplayContext::with_optional_bench32(Some(&bech32_encoder));
             writeln!(
