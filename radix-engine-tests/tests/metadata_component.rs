@@ -1,5 +1,5 @@
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
+use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue, Url};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
@@ -187,6 +187,11 @@ fn can_set_public_key_metadata_through_manifest() {
             .public_key()
             .into(),
     )));
+}
+
+#[test]
+fn can_set_url_metadata_through_manifest() {
+    can_set_metadata_through_manifest(MetadataEntry::Value(MetadataValue::Url(Url("test".to_string()))));
 }
 
 #[test]
