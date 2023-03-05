@@ -30,13 +30,13 @@ impl RadixEngineDB {
 
     pub fn list_packages(&self) -> Vec<PackageAddress> {
         let start = &scrypto_encode(&SubstateId(
-            RENodeId::Global(PackageAddress::Normal([0; 26])),
+            RENodeId::Global(PackageAddress::Normal([0; 26]).into()),
             NodeModuleId::TypeInfo,
             SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
         ))
         .unwrap();
         let end = &scrypto_encode(&SubstateId(
-            RENodeId::Global(PackageAddress::Normal([255; 26])),
+            RENodeId::Global(PackageAddress::Normal([255; 26]).into()),
             NodeModuleId::TypeInfo,
             SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
         ))
@@ -46,7 +46,7 @@ impl RadixEngineDB {
         let mut addresses = Vec::new();
         for substate_id in substate_ids {
             if let SubstateId(
-                RENodeId::Global(package_address),
+                RENodeId::Global(Address::Package(package_address)),
                 NodeModuleId::TypeInfo,
                 SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
             ) = substate_id
@@ -64,13 +64,13 @@ impl RadixEngineDB {
         end: ComponentAddress,
     ) -> Vec<ComponentAddress> {
         let start = &scrypto_encode(&SubstateId(
-            RENodeId::GlobalComponent(start),
+            RENodeId::Global(Address::Component(start)),
             NodeModuleId::TypeInfo,
             SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
         ))
         .unwrap();
         let end = &scrypto_encode(&SubstateId(
-            RENodeId::GlobalComponent(end),
+            RENodeId::Global(Address::Component(end)),
             NodeModuleId::TypeInfo,
             SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
         ))
@@ -79,7 +79,7 @@ impl RadixEngineDB {
         let mut addresses = Vec::new();
         for substate_id in substate_ids {
             if let SubstateId(
-                RENodeId::GlobalComponent(component_address),
+                RENodeId::Global(Address::Component(component_address)),
                 NodeModuleId::TypeInfo,
                 SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
             ) = substate_id

@@ -160,8 +160,8 @@ impl ExecutableInvocation for MethodInvocation {
 
                 match code_type {
                     PackageCodeTypeSubstate::Wasm => {
-                        node_refs_to_copy.insert(RENodeId::GlobalComponent(EPOCH_MANAGER));
-                        node_refs_to_copy.insert(RENodeId::GlobalComponent(CLOCK));
+                        node_refs_to_copy.insert(RENodeId::Global(EPOCH_MANAGER.into()));
+                        node_refs_to_copy.insert(RENodeId::Global(CLOCK.into()));
                         node_refs_to_copy.insert(RENodeId::Global(RADIX_TOKEN.into()));
                         node_refs_to_copy.insert(RENodeId::Global(PACKAGE_TOKEN.into()));
                         node_refs_to_copy
@@ -233,8 +233,8 @@ impl ExecutableInvocation for FunctionInvocation {
 
                 match code_type {
                     PackageCodeTypeSubstate::Wasm => {
-                        node_refs_to_copy.insert(RENodeId::GlobalComponent(EPOCH_MANAGER));
-                        node_refs_to_copy.insert(RENodeId::GlobalComponent(CLOCK));
+                        node_refs_to_copy.insert(RENodeId::Global(EPOCH_MANAGER.into()));
+                        node_refs_to_copy.insert(RENodeId::Global(CLOCK.into()));
                         node_refs_to_copy.insert(RENodeId::Global(RADIX_TOKEN.into()));
                         node_refs_to_copy.insert(RENodeId::Global(PACKAGE_TOKEN.into()));
                         node_refs_to_copy

@@ -178,9 +178,9 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                     }
                 }
             }
-            RENodeId::GlobalComponent(ComponentAddress::Account(..))
-            | RENodeId::GlobalComponent(ComponentAddress::EcdsaSecp256k1VirtualAccount(..))
-            | RENodeId::GlobalComponent(ComponentAddress::EddsaEd25519VirtualAccount(..)) => {
+            RENodeId::Global(Address::Component(ComponentAddress::Account(..)))
+            | RENodeId::Global(Address::Component(ComponentAddress::EcdsaSecp256k1VirtualAccount(..)))
+            | RENodeId::Global(Address::Component(ComponentAddress::EddsaEd25519VirtualAccount(..))) => {
                 let substate_id = SubstateId(
                     node_id,
                     NodeModuleId::SELF,

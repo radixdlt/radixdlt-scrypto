@@ -86,7 +86,7 @@ impl From<ComponentIdentifier> for RENodeId {
         match value {
             ComponentIdentifier::RENodeId(node_id) => RENodeId::Object(node_id),
             ComponentIdentifier::Address(component_address) => {
-                RENodeId::GlobalComponent(component_address)
+                RENodeId::Global(component_address.into())
             }
         }
     }

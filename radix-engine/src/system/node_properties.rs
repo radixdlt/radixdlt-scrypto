@@ -187,7 +187,7 @@ impl VisibilityProperties {
                                     }
                                 }
                                 MethodIdentifier(
-                                    RENodeId::GlobalComponent(component_address),
+                                    RENodeId::Global(Address::Component(component_address)),
                                     ..,
                                 ) => match (node_id, offset) {
                                     // READ package code & abi
@@ -212,7 +212,7 @@ impl VisibilityProperties {
                                     ) => true,
                                     // READ/WRITE component application state
                                     (
-                                        RENodeId::GlobalComponent(addr),
+                                        RENodeId::Global(Address::Component(addr)),
                                         SubstateOffset::Component(ComponentOffset::State0),
                                     ) => addr.eq(component_address),
                                     // Otherwise, false
@@ -270,7 +270,7 @@ impl VisibilityProperties {
                                     }
                                 }
                                 MethodIdentifier(
-                                    RENodeId::GlobalComponent(component_address),
+                                    RENodeId::Global(Address::Component(component_address)),
                                     ..,
                                 ) => match (node_id, offset) {
                                     (
@@ -280,7 +280,7 @@ impl VisibilityProperties {
                                         )),
                                     ) => true,
                                     (
-                                        RENodeId::GlobalComponent(addr),
+                                        RENodeId::Global(Address::Component(addr)),
                                         SubstateOffset::Component(ComponentOffset::State0),
                                     ) => addr.eq(component_address),
                                     _ => false,

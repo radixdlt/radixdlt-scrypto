@@ -451,7 +451,7 @@ pub fn create_genesis(
     // Clock Component
     {
         let component_address = CLOCK.to_array_without_entity_id();
-        pre_allocated_ids.insert(RENodeId::GlobalComponent(CLOCK));
+        pre_allocated_ids.insert(RENodeId::Global(CLOCK.into()));
         instructions.push(Instruction::CallFunction {
             package_address: CLOCK_PACKAGE,
             blueprint_name: CLOCK_BLUEPRINT.to_string(),
@@ -485,7 +485,7 @@ pub fn create_genesis(
         let component_address = EPOCH_MANAGER.to_array_without_entity_id();
         let olympia_validator_token_address = OLYMPIA_VALIDATOR_TOKEN.to_array_without_entity_id();
         pre_allocated_ids.insert(RENodeId::Global(OLYMPIA_VALIDATOR_TOKEN.into()));
-        pre_allocated_ids.insert(RENodeId::GlobalComponent(EPOCH_MANAGER));
+        pre_allocated_ids.insert(RENodeId::Global(EPOCH_MANAGER.into()));
         instructions.push(Instruction::CallFunction {
             package_address: EPOCH_MANAGER_PACKAGE,
             blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
@@ -691,7 +691,7 @@ mod tests {
             .resource_changes
             .iter()
             .any(|rc| rc.amount == allocation_amount
-                && rc.node_id == RENodeId::GlobalComponent(account_component_address)));
+                && rc.node_id == RENodeId::Global(account_component_address.into())));
     }
 
     #[test]

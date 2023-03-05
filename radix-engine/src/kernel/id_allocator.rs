@@ -77,25 +77,25 @@ impl IdAllocator {
                 .map(|address| RENodeId::Global(address.into())),
             RENodeType::GlobalEpochManager => self
                 .new_epoch_manager_address()
-                .map(|address| RENodeId::GlobalComponent(address)),
+                .map(|address| RENodeId::Global(address.into())),
             RENodeType::GlobalValidator => self
                 .new_validator_address()
-                .map(|address| RENodeId::GlobalComponent(address)),
+                .map(|address| RENodeId::Global(address.into())),
             RENodeType::GlobalResourceManager => self
                 .new_resource_address()
                 .map(|address| RENodeId::Global(address.into())),
             RENodeType::GlobalAccount => self
                 .new_account_address()
-                .map(|address| RENodeId::GlobalComponent(address)),
+                .map(|address| RENodeId::Global(address.into())),
             RENodeType::GlobalIdentity => self
                 .new_identity_address()
-                .map(|address| RENodeId::GlobalComponent(address)),
+                .map(|address| RENodeId::Global(address.into())),
             RENodeType::GlobalComponent => self
                 .new_component_address()
-                .map(|address| RENodeId::GlobalComponent(address)),
+                .map(|address| RENodeId::Global(address.into())),
             RENodeType::GlobalAccessController => self
                 .new_access_controller_address()
-                .map(|address| RENodeId::GlobalComponent(address)),
+                .map(|address| RENodeId::Global(address.into())),
         }
         .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
 

@@ -240,7 +240,7 @@ where
     ) -> Result<bool, RuntimeError> {
         match node_id {
             // TODO: Need to have a schema check in place before this in order to not create virtual components when accessing illegal substates
-            RENodeId::GlobalComponent(component_address) => {
+            RENodeId::Global(Address::Component(component_address)) => {
                 // Lazy create component if missing
                 match component_address {
                     ComponentAddress::EcdsaSecp256k1VirtualAccount(address) => {
@@ -514,7 +514,7 @@ where
                             }
                         }
                     }
-                    RENodeId::GlobalComponent(global_address) => {
+                    RENodeId::Global(Address::Component(global_address)) => {
                         if matches!(
                             global_address,
                             ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
@@ -685,7 +685,7 @@ where
         self.execution_mode = ExecutionMode::Kernel;
 
         match (node_id, &init) {
-            (RENodeId::GlobalComponent(..), RENodeInit::GlobalObject(..)) => {}
+            (RENodeId::Global(Address::Component(..)), RENodeInit::GlobalObject(..)) => {}
             (RENodeId::Global(Address::Resource(..)), RENodeInit::GlobalObject(..)) => {}
             (RENodeId::Global(Address::Package(..)), RENodeInit::GlobalPackage(..)) => {}
             (RENodeId::Object(..), RENodeInit::Object(..)) => {}

@@ -149,9 +149,7 @@ impl CallFrame {
         let mut temp_references = HashSet::new();
         for node_id in references {
             // TODO: fix this ugly condition
-            if (matches!(node_id, RENodeId::GlobalComponent(_))
-                || matches!(node_id, RENodeId::Global(_)))
-            {
+            if matches!(node_id, RENodeId::Global(_)) {
                 // May overwrite existing node refs (for better visibility origin)
                 self.immortal_node_refs.insert(
                     node_id,
@@ -346,11 +344,11 @@ impl CallFrame {
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::GlobalComponent(EPOCH_MANAGER),
+            RENodeId::Global(EPOCH_MANAGER.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::GlobalComponent(CLOCK),
+            RENodeId::Global(CLOCK.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(

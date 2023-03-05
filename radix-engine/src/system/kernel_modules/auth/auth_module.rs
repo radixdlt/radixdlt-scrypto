@@ -47,7 +47,7 @@ impl AuthModule {
             actor,
             Some(Actor {
                 identifier: ActorIdentifier::Method(MethodIdentifier(
-                    RENodeId::GlobalComponent(..),
+                    RENodeId::Global(Address::Component(..)),
                     ..
                 )),
                 ..
@@ -211,7 +211,7 @@ impl AuthModule {
                 // TODO: Clean this up
                 let auth = if matches!(
                     node_id,
-                    RENodeId::GlobalComponent(ComponentAddress::Normal(..))
+                    RENodeId::Global(Address::Component(ComponentAddress::Normal(..)))
                 ) && module_id.eq(&NodeModuleId::SELF)
                 {
                     Self::normal_component_method_authorization(

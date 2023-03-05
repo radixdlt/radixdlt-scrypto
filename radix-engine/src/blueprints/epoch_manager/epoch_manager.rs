@@ -109,7 +109,7 @@ impl EpochManagerBlueprint {
             let owner_token_bucket =
                 olympia_validator_token_resman.mint_non_fungible(local_id, api)?;
             api.call_method(
-                RENodeId::GlobalComponent(validator_init.validator_account_address.into()),
+                RENodeId::Global(validator_init.validator_account_address.into()),
                 ACCOUNT_DEPOSIT_IDENT,
                 scrypto_encode(&AccountDepositInput {
                     bucket: owner_token_bucket,
@@ -130,7 +130,7 @@ impl EpochManagerBlueprint {
             validator_set.insert(address, validator);
 
             api.call_method(
-                RENodeId::GlobalComponent(validator_init.stake_account_address.into()),
+                RENodeId::Global(validator_init.stake_account_address.into()),
                 ACCOUNT_DEPOSIT_IDENT,
                 scrypto_encode(&AccountDepositInput { bucket: lp_bucket }).unwrap(),
             )?;

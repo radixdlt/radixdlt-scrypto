@@ -84,7 +84,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
         ComponentAddress::Normal(..) => {
             let component_info_substate: TypeInfoSubstate = substate_store
                 .get_substate(&SubstateId(
-                    RENodeId::GlobalComponent(component_address),
+                    RENodeId::Global(component_address.into()),
                     NodeModuleId::TypeInfo,
                     SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
                 ))
@@ -93,7 +93,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 .ok_or(DisplayError::ComponentNotFound)?;
             let access_rules_chain_substate = substate_store
                 .get_substate(&SubstateId(
-                    RENodeId::GlobalComponent(component_address),
+                    RENodeId::Global(component_address.into()),
                     NodeModuleId::AccessRules,
                     SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
                 ))
@@ -102,7 +102,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 .ok_or(DisplayError::ComponentNotFound)?;
             let state: ComponentStateSubstate = substate_store
                 .get_substate(&SubstateId(
-                    RENodeId::GlobalComponent(component_address),
+                    RENodeId::Global(component_address.into()),
                     NodeModuleId::SELF,
                     SubstateOffset::Component(ComponentOffset::State0),
                 ))
@@ -111,7 +111,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 .unwrap();
             let metadata_substate = substate_store
                 .get_substate(&SubstateId(
-                    RENodeId::GlobalComponent(component_address),
+                    RENodeId::Global(component_address.into()),
                     NodeModuleId::Metadata,
                     SubstateOffset::Metadata(MetadataOffset::Metadata),
                 ))
@@ -177,7 +177,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
         ComponentAddress::Account(..) => {
             let account_substate = substate_store
                 .get_substate(&SubstateId(
-                    RENodeId::GlobalComponent(component_address),
+                    RENodeId::Global(component_address.into()),
                     NodeModuleId::SELF,
                     SubstateOffset::Account(AccountOffset::Account),
                 ))
@@ -186,7 +186,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 .ok_or(DisplayError::ComponentNotFound)?;
             let access_rules_chain_substate = substate_store
                 .get_substate(&SubstateId(
-                    RENodeId::GlobalComponent(component_address),
+                    RENodeId::Global(component_address.into()),
                     NodeModuleId::AccessRules,
                     SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
                 ))
@@ -228,7 +228,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
         ComponentAddress::Identity(..) => {
             let metadata_substate = substate_store
                 .get_substate(&SubstateId(
-                    RENodeId::GlobalComponent(component_address),
+                    RENodeId::Global(component_address.into()),
                     NodeModuleId::Metadata,
                     SubstateOffset::Metadata(MetadataOffset::Metadata),
                 ))
@@ -237,7 +237,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 .ok_or(DisplayError::ComponentNotFound)?;
             let access_rules_chain_substate = substate_store
                 .get_substate(&SubstateId(
-                    RENodeId::GlobalComponent(component_address),
+                    RENodeId::Global(component_address.into()),
                     NodeModuleId::AccessRules,
                     SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
                 ))
@@ -257,7 +257,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
         ComponentAddress::AccessController(..) => {
             let access_controller_substate = substate_store
                 .get_substate(&SubstateId(
-                    RENodeId::GlobalComponent(component_address),
+                    RENodeId::Global(component_address.into()),
                     NodeModuleId::Metadata,
                     SubstateOffset::Metadata(MetadataOffset::Metadata),
                 ))
@@ -266,7 +266,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 .ok_or(DisplayError::ComponentNotFound)?;
             let access_rules_chain_substate = substate_store
                 .get_substate(&SubstateId(
-                    RENodeId::GlobalComponent(component_address),
+                    RENodeId::Global(component_address.into()),
                     NodeModuleId::AccessRules,
                     SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
                 ))

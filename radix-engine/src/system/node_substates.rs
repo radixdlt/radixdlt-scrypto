@@ -1467,7 +1467,7 @@ impl<'a> SubstateRef<'a> {
             SubstateRef::PackageInfo(substate) => {
                 let mut references = HashSet::new();
                 for component_ref in &substate.dependent_components {
-                    references.insert(RENodeId::GlobalComponent(*component_ref));
+                    references.insert(RENodeId::Global(component_ref.clone().into()));
                 }
                 for resource_ref in &substate.dependent_resources {
                     references.insert(RENodeId::Global(resource_ref.clone().into()));
@@ -1489,8 +1489,8 @@ impl<'a> SubstateRef<'a> {
             SubstateRef::Validator(substate) => {
                 let mut references = HashSet::new();
                 let mut owned_nodes = Vec::new();
-                references.insert(RENodeId::GlobalComponent(substate.manager));
-                references.insert(RENodeId::GlobalComponent(substate.address));
+                references.insert(RENodeId::Global(substate.manager.into()));
+                references.insert(RENodeId::Global(substate.address.into()));
                 references.insert(RENodeId::Global(substate.unstake_nft.into()));
                 references.insert(RENodeId::Global(substate.liquidity_token.into()));
                 owned_nodes.push(RENodeId::Object(substate.stake_xrd_vault_id));

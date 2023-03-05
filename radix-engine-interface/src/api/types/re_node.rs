@@ -28,7 +28,6 @@ pub enum RENodeId {
     AuthZoneStack,
     Worktop,
     TransactionRuntime,
-    GlobalComponent(ComponentAddress),
     Global(Address),
     KeyValueStore(KeyValueStoreId),
     NonFungibleStore(NonFungibleStoreId),
@@ -41,9 +40,6 @@ impl fmt::Debug for RENodeId {
             Self::AuthZoneStack => write!(f, "AuthZoneStack"),
             Self::Worktop => write!(f, "Worktop"),
             Self::TransactionRuntime => write!(f, "TransactionRuntime"),
-            Self::GlobalComponent(address) => {
-                f.debug_tuple("GlobalComponent").field(address).finish()
-            }
             Self::KeyValueStore(id) => f
                 .debug_tuple("KeyValueStore")
                 .field(&hex::encode(id))
@@ -75,7 +71,6 @@ impl Into<[u8; 36]> for RENodeId {
 impl From<RENodeId> for Address {
     fn from(node_id: RENodeId) -> Self {
         match node_id {
-            RENodeId::GlobalComponent(component_address) => component_address.into(),
             RENodeId::Global(address) => address,
             _ => panic!("Not an address"),
         }
@@ -84,17 +79,14 @@ impl From<RENodeId> for Address {
 
 impl From<Address> for RENodeId {
     fn from(address: Address) -> Self {
-        match address {
-            Address::Component(component_address) => RENodeId::GlobalComponent(component_address),
-            Address::Package(..) | Address::Resource(..) => RENodeId::Global(address),
-        }
+        RENodeId::Global(address)
     }
 }
 
 impl Into<ComponentAddress> for RENodeId {
     fn into(self) -> ComponentAddress {
         match self {
-            RENodeId::GlobalComponent(address) => address,
+            RENodeId::Global(address) => address.into(),
             _ => panic!("Not a component address: {:?}", self),
         }
     }

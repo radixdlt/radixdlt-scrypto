@@ -287,14 +287,6 @@ impl<'s> Track<'s> {
         assert!(!self.loaded_substates.contains_key(&substate_id));
 
         match &substate_id {
-            SubstateId(
-                RENodeId::GlobalComponent(component_address),
-                NodeModuleId::TypeInfo,
-                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-            ) => {
-                self.new_global_addresses
-                    .push(Address::Component(*component_address));
-            }
             SubstateId(RENodeId::Global(address), NodeModuleId::TypeInfo, ..) => {
                 self.new_global_addresses.push(*address);
             }
@@ -592,8 +584,7 @@ impl<'s> FinalizingTrack<'s> {
                 .iter()
                 .find(|(identifier, _)| match identifier {
                     EventTypeIdentifier(
-                        RENodeId::Global(Address::Package(EPOCH_MANAGER_PACKAGE))
-                        | RENodeId::GlobalComponent(ComponentAddress::EpochManager(..)),
+                        RENodeId::Global(Address::Package(EPOCH_MANAGER_PACKAGE) | Address::Component(ComponentAddress::EpochManager(..))),
                         NodeModuleId::SELF,
                         schema_hash,
                     ) if *schema_hash == expected_schema_hash => true,

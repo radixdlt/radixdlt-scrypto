@@ -246,7 +246,7 @@ impl TestRunner {
         component_address: ComponentAddress,
     ) -> Option<Decimal> {
         if let Some(output) = self.substate_store.get_substate(&SubstateId(
-            RENodeId::GlobalComponent(component_address),
+            RENodeId::Global(component_address.into()),
             NodeModuleId::ComponentRoyalty,
             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
         )) {
@@ -317,7 +317,7 @@ impl TestRunner {
         component_address: ComponentAddress,
         resource_address: ResourceAddress,
     ) -> Vec<ObjectId> {
-        let node_id = RENodeId::GlobalComponent(component_address);
+        let node_id = RENodeId::Global(component_address.into());
         let mut vault_finder = VaultFinder::new(resource_address);
 
         let mut state_tree_visitor =
@@ -378,7 +378,7 @@ impl TestRunner {
         &mut self,
         component_address: ComponentAddress,
     ) -> HashMap<ResourceAddress, Decimal> {
-        let node_id = RENodeId::GlobalComponent(component_address);
+        let node_id = RENodeId::Global(component_address.into());
         let mut accounter = ResourceAccounter::new(&self.substate_store);
         accounter.add_resources(node_id).unwrap();
         accounter.into_map()
@@ -438,7 +438,7 @@ impl TestRunner {
 
     pub fn get_validator_info(&mut self, system_address: ComponentAddress) -> ValidatorSubstate {
         let substate_id = SubstateId(
-            RENodeId::GlobalComponent(system_address),
+            RENodeId::Global(system_address.into()),
             NodeModuleId::SELF,
             SubstateOffset::Validator(ValidatorOffset::Validator),
         );
@@ -454,7 +454,7 @@ impl TestRunner {
 
     pub fn get_validator_with_key(&mut self, key: &EcdsaSecp256k1PublicKey) -> ComponentAddress {
         let substate_id = SubstateId(
-            RENodeId::GlobalComponent(EPOCH_MANAGER),
+            RENodeId::Global(EPOCH_MANAGER.into()),
             NodeModuleId::SELF,
             SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet),
         );

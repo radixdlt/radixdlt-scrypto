@@ -339,7 +339,7 @@ pub fn get_blueprint(
 
     let output = substate_store
         .get_substate(&SubstateId(
-            RENodeId::GlobalComponent(component_address),
+            RENodeId::Global(component_address.into()),
             NodeModuleId::TypeInfo,
             SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
         ))

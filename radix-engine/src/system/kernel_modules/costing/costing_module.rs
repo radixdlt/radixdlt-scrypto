@@ -131,7 +131,7 @@ impl KernelModule for CostingModule {
                     ActorIdentifier::Method(MethodIdentifier(node_id, ..))
                         if matches!(
                             node_id,
-                            RENodeId::GlobalComponent(ComponentAddress::Normal(..))
+                            RENodeId::Global(Address::Component(ComponentAddress::Normal(..)))
                         ) =>
                     {
                         Some(node_id)
