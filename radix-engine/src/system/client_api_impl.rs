@@ -770,7 +770,7 @@ where
                     }),
                 ..
             }) => Ok(EventTypeIdentifier(
-                RENodeId::GlobalPackage(package_address),
+                RENodeId::Global(package_address.into()),
                 NodeModuleId::SELF,
                 schema_hash,
             )),

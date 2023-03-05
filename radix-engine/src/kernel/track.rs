@@ -303,9 +303,8 @@ impl<'s> Track<'s> {
                 self.new_global_addresses
                     .push(Address::Resource(*resource_address));
             }
-            SubstateId(RENodeId::GlobalPackage(package_address), NodeModuleId::TypeInfo, ..) => {
-                self.new_global_addresses
-                    .push(Address::Package(*package_address));
+            SubstateId(RENodeId::Global(package_address), NodeModuleId::TypeInfo, ..) => {
+                self.new_global_addresses.push(*package_address);
             }
             _ => {}
         }
@@ -601,7 +600,7 @@ impl<'s> FinalizingTrack<'s> {
                 .iter()
                 .find(|(identifier, _)| match identifier {
                     EventTypeIdentifier(
-                        RENodeId::GlobalPackage(EPOCH_MANAGER_PACKAGE)
+                        RENodeId::Global(Address::Package(EPOCH_MANAGER_PACKAGE))
                         | RENodeId::GlobalComponent(ComponentAddress::EpochManager(..)),
                         NodeModuleId::SELF,
                         schema_hash,
@@ -690,7 +689,7 @@ impl<'s> FinalizingTrack<'s> {
             match receiver {
                 RoyaltyReceiver::Package(package_address) => {
                     let substate_id = SubstateId(
-                        RENodeId::GlobalPackage(*package_address),
+                        RENodeId::Global(package_address.clone().into()),
                         NodeModuleId::PackageRoyalty,
                         SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                     );

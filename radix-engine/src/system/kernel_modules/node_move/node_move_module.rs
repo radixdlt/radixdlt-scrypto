@@ -82,7 +82,7 @@ impl NodeMoveModule {
             | RENodeId::GlobalResourceManager(..)
             | RENodeId::KeyValueStore(..)
             | RENodeId::NonFungibleStore(..)
-            | RENodeId::GlobalPackage(..)
+            | RENodeId::Global(..)
             | RENodeId::Worktop
             | RENodeId::GlobalComponent(..) => Err(RuntimeError::ModuleError(
                 ModuleError::NodeMoveError(NodeMoveError::CantMoveDownstream(node_id)),
@@ -102,7 +102,7 @@ impl NodeMoveModule {
             | RENodeId::GlobalResourceManager(..)
             | RENodeId::KeyValueStore(..)
             | RENodeId::NonFungibleStore(..)
-            | RENodeId::GlobalPackage(..)
+            | RENodeId::Global(..)
             | RENodeId::Worktop
             | RENodeId::GlobalComponent(..) => Err(RuntimeError::ModuleError(
                 ModuleError::NodeMoveError(NodeMoveError::CantMoveUpstream(node_id)),

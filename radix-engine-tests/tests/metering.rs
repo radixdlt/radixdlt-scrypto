@@ -204,7 +204,11 @@ fn test_radiswap() {
         + 12500 /* DropNode */
         + 24330 /* Invoke */
         + 187500 /* LockSubstate */
+<<<<<<< HEAD
         + 2554720 /* ReadSubstate */
+=======
+        + 2552880 /* ReadSubstate */
+>>>>>>> a876b70... Use Global for package RENodeId
         + 147500 /* RunNative */
         + 1618225 /* RunWasm */
         + 50000 /* TxBaseCost */
@@ -313,9 +317,9 @@ fn test_flash_loan() {
         + 22500 /* DropNode */
         + 45210 /* Invoke */
         + 292500 /* LockSubstate */
-        + 5121840 /* ReadSubstate */
+        + 5128000 /* ReadSubstate */
         + 240000 /* RunNative */
-        + 1377240 /* RunWasm */
+        + 1378485 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2475 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */

@@ -150,7 +150,7 @@ impl CallFrame {
         for node_id in references {
             // TODO: fix this ugly condition
             if (matches!(node_id, RENodeId::GlobalComponent(_))
-                || matches!(node_id, RENodeId::GlobalPackage(_)))
+                || matches!(node_id, RENodeId::Global(_)))
                 || matches!(node_id, RENodeId::GlobalResourceManager(_))
             {
                 // May overwrite existing node refs (for better visibility origin)
@@ -355,7 +355,7 @@ impl CallFrame {
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::GlobalPackage(FAUCET_PACKAGE),
+            RENodeId::Global(Address::Package(FAUCET_PACKAGE)),
             RENodeVisibilityOrigin::Normal,
         );
 

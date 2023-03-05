@@ -270,7 +270,7 @@ impl TestRunner {
 
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
         if let Some(output) = self.substate_store.get_substate(&SubstateId(
-            RENodeId::GlobalPackage(package_address),
+            RENodeId::Global(package_address.into()),
             NodeModuleId::PackageRoyalty,
             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
         )) {

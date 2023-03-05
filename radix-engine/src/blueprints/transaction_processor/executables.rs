@@ -84,7 +84,7 @@ fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFra
             args,
             ..
         } => {
-            update.add_ref(RENodeId::GlobalPackage(*package_address));
+            update.add_ref(RENodeId::Global(package_address.clone().into()));
             let value: ManifestValue =
                 manifest_decode(args).expect("Invalid CALL_FUNCTION arguments");
             extract_refs_from_value(&value, update);
@@ -94,7 +94,7 @@ fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFra
             }
         }
         Instruction::PublishPackage { access_rules, .. } => {
-            update.add_ref(RENodeId::GlobalPackage(PACKAGE_LOADER));
+            update.add_ref(RENodeId::Global(PACKAGE_LOADER.into()));
 
             // TODO: Remove and cleanup
             let value: ManifestValue = manifest_decode(&manifest_encode(access_rules).unwrap())
@@ -131,7 +131,7 @@ fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFra
         | Instruction::ClaimPackageRoyalty {
             package_address, ..
         } => {
-            update.add_ref(RENodeId::GlobalPackage(*package_address));
+            update.add_ref(RENodeId::Global(package_address.clone().into()));
         }
         Instruction::SetComponentRoyaltyConfig {
             component_address, ..
@@ -231,7 +231,7 @@ fn extract_refs_from_value(value: &ManifestValue, collector: &mut CallFrameUpdat
             ManifestCustomValue::Address(a) => {
                 let address = to_address(a.clone());
                 let node_id = match address {
-                    Address::Package(package_address) => RENodeId::GlobalPackage(package_address),
+                    Address::Package(..) => RENodeId::Global(address),
                     Address::Component(component_address) => {
                         RENodeId::GlobalComponent(component_address)
                     }
@@ -636,7 +636,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     royalty_config,
                 } => {
                     let result = api.call_module_method(
-                        RENodeId::GlobalPackage(package_address),
+                        RENodeId::Global(package_address.into()),
                         NodeModuleId::PackageRoyalty,
                         PACKAGE_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
                         scrypto_encode(&PackageSetRoyaltyConfigInput {
@@ -677,7 +677,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 }
                 Instruction::ClaimPackageRoyalty { package_address } => {
                     let result = api.call_module_method(
-                        RENodeId::GlobalPackage(package_address),
+                        RENodeId::Global(package_address.into()),
                         NodeModuleId::PackageRoyalty,
                         PACKAGE_ROYALTY_CLAIM_ROYALTY_IDENT,
                         scrypto_encode(&PackageClaimRoyaltyInput {}).unwrap(),

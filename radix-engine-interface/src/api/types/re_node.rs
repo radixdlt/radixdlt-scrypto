@@ -30,7 +30,7 @@ pub enum RENodeId {
     TransactionRuntime,
     GlobalComponent(ComponentAddress),
     GlobalResourceManager(ResourceAddress),
-    GlobalPackage(PackageAddress),
+    Global(Address),
     KeyValueStore(KeyValueStoreId),
     NonFungibleStore(NonFungibleStoreId),
     Object(ObjectId),
@@ -57,7 +57,7 @@ impl fmt::Debug for RENodeId {
             Self::GlobalResourceManager(address) => {
                 f.debug_tuple("ResourceManager").field(&address).finish()
             }
-            Self::GlobalPackage(address) => f.debug_tuple("GlobalPackage").field(&address).finish(),
+            Self::Global(address) => f.debug_tuple("GlobalPackage").field(&address).finish(),
         }
     }
 }
@@ -81,7 +81,7 @@ impl From<RENodeId> for Address {
         match node_id {
             RENodeId::GlobalComponent(component_address) => component_address.into(),
             RENodeId::GlobalResourceManager(resource_address) => resource_address.into(),
-            RENodeId::GlobalPackage(package_address) => package_address.into(),
+            RENodeId::Global(package_address) => package_address,
             _ => panic!("Not an address"),
         }
     }
@@ -94,7 +94,7 @@ impl From<Address> for RENodeId {
             Address::Resource(resource_address) => {
                 RENodeId::GlobalResourceManager(resource_address)
             }
-            Address::Package(package_address) => RENodeId::GlobalPackage(package_address),
+            Address::Package(..) => RENodeId::Global(address),
         }
     }
 }
@@ -111,7 +111,7 @@ impl Into<ComponentAddress> for RENodeId {
 impl Into<PackageAddress> for RENodeId {
     fn into(self) -> PackageAddress {
         match self {
-            RENodeId::GlobalPackage(package_address) => package_address,
+            RENodeId::Global(package_address) => package_address.into(),
             _ => panic!("Not a package address"),
         }
     }

@@ -468,7 +468,7 @@ where
                                 .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
                         }
                     }
-                    RENodeId::GlobalPackage(package_address) => {
+                    RENodeId::Global(Address::Package(package_address)) => {
                         // TODO: Cleanup
                         {
                             match *package_address {
@@ -687,7 +687,7 @@ where
         match (node_id, &init) {
             (RENodeId::GlobalComponent(..), RENodeInit::GlobalObject(..)) => {}
             (RENodeId::GlobalResourceManager(..), RENodeInit::GlobalObject(..)) => {}
-            (RENodeId::GlobalPackage(..), RENodeInit::GlobalPackage(..)) => {}
+            (RENodeId::Global(..), RENodeInit::GlobalPackage(..)) => {}
             (RENodeId::Object(..), RENodeInit::Object(..)) => {}
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
             (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
@@ -920,9 +920,9 @@ where
                     // TODO: This is a hack to allow for package imports to be visible
                     // TODO: Remove this once we are able to get this information through the Blueprint ABI
                     RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(
-                        RENodeId::GlobalPackage(package_address),
+                        RENodeId::Global(package_address),
                     )) => {
-                        let node_id = RENodeId::GlobalPackage(*package_address);
+                        let node_id = RENodeId::Global(*package_address);
                         let module_id = NodeModuleId::SELF;
                         self.track
                             .acquire_lock(

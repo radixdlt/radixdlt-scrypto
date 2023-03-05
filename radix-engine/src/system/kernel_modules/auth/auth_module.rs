@@ -71,7 +71,7 @@ impl AuthModule {
             }
         } else {
             let handle = api.kernel_lock_substate(
-                RENodeId::GlobalPackage(identifier.package_address),
+                RENodeId::Global(identifier.package_address.into()),
                 NodeModuleId::FunctionAccessRules,
                 SubstateOffset::PackageAccessRules,
                 LockFlags::read_only(),
@@ -246,7 +246,7 @@ impl AuthModule {
             let (package_address, blueprint_ident) = TypeInfoBlueprint::get_type(receiver, api)?;
 
             let handle = api.kernel_lock_substate(
-                RENodeId::GlobalPackage(package_address),
+                RENodeId::Global(package_address.into()),
                 NodeModuleId::SELF,
                 SubstateOffset::Package(PackageOffset::Info),
                 LockFlags::read_only(),

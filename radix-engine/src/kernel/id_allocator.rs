@@ -74,7 +74,7 @@ impl IdAllocator {
             RENodeType::Object => self.new_object_id().map(|id| RENodeId::Object(id)),
             RENodeType::GlobalPackage => self
                 .new_package_address()
-                .map(|address| RENodeId::GlobalPackage(address)),
+                .map(|address| RENodeId::Global(address.into())),
             RENodeType::GlobalEpochManager => self
                 .new_epoch_manager_address()
                 .map(|address| RENodeId::GlobalComponent(address)),
