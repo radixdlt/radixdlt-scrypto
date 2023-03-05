@@ -1390,7 +1390,7 @@ impl<'a> SubstateRef<'a> {
             SubstateRef::ResourceManager(substate) => {
                 let mut owned_nodes = Vec::new();
                 if let Some(nf_store_id) = substate.nf_store_id {
-                    owned_nodes.push(RENodeId::NonFungibleStore(nf_store_id));
+                    owned_nodes.push(RENodeId::KeyValueStore(nf_store_id));
                 }
                 (HashSet::new(), owned_nodes)
             }

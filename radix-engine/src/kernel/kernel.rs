@@ -690,7 +690,6 @@ where
             (RENodeId::GlobalPackage(..), RENodeInit::GlobalPackage(..)) => {}
             (RENodeId::Object(..), RENodeInit::Object(..)) => {}
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
-            (RENodeId::NonFungibleStore(..), RENodeInit::KeyValueStore) => {}
             (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {}
             (RENodeId::TransactionRuntime, RENodeInit::TransactionRuntime(..)) => {}
             (RENodeId::Worktop, RENodeInit::Worktop(..)) => {}

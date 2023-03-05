@@ -81,7 +81,6 @@ impl NodeMoveModule {
             | RENodeId::AuthZoneStack
             | RENodeId::GlobalResourceManager(..)
             | RENodeId::KeyValueStore(..)
-            | RENodeId::NonFungibleStore(..)
             | RENodeId::GlobalPackage(..)
             | RENodeId::Worktop
             | RENodeId::GlobalComponent(..) => Err(RuntimeError::ModuleError(
@@ -101,7 +100,6 @@ impl NodeMoveModule {
             | RENodeId::AuthZoneStack
             | RENodeId::GlobalResourceManager(..)
             | RENodeId::KeyValueStore(..)
-            | RENodeId::NonFungibleStore(..)
             | RENodeId::GlobalPackage(..)
             | RENodeId::Worktop
             | RENodeId::GlobalComponent(..) => Err(RuntimeError::ModuleError(

@@ -14,7 +14,7 @@ use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
-    NonFungibleStoreId, RENodeId, ResourceManagerOffset, SubstateOffset,
+    RENodeId, ResourceManagerOffset, SubstateOffset,
 };
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
@@ -33,13 +33,13 @@ pub struct ResourceManagerSubstate {
     pub resource_address: ResourceAddress, // TODO: Figure out a way to remove?
     pub resource_type: ResourceType,
     pub total_supply: Decimal,
-    pub nf_store_id: Option<NonFungibleStoreId>,
+    pub nf_store_id: Option<KeyValueStoreId>,
 }
 
 impl ResourceManagerSubstate {
     pub fn new(
         resource_type: ResourceType,
-        nf_store_id: Option<NonFungibleStoreId>,
+        nf_store_id: Option<KeyValueStoreId>,
         resource_address: ResourceAddress,
     ) -> ResourceManagerSubstate {
         Self {
@@ -74,13 +74,13 @@ fn build_non_fungible_resource_manager_substate_with_initial_supply<Y>(
 where
     Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
 {
-    let nf_store_node_id = api.kernel_allocate_node_id(RENodeType::NonFungibleStore)?;
+    let nf_store_node_id = api.kernel_allocate_node_id(RENodeType::KeyValueStore)?;
     api.kernel_create_node(
         nf_store_node_id,
         RENodeInit::KeyValueStore,
         BTreeMap::new(),
     )?;
-    let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
+    let nf_store_id: KeyValueStoreId = nf_store_node_id.into();
 
     let mut resource_manager = ResourceManagerSubstate::new(
         ResourceType::NonFungible { id_type },
@@ -442,13 +442,13 @@ where
 {
     let resource_address: ResourceAddress = global_node_id.into();
 
-    let nf_store_node_id = api.kernel_allocate_node_id(RENodeType::NonFungibleStore)?;
+    let nf_store_node_id = api.kernel_allocate_node_id(RENodeType::KeyValueStore)?;
     api.kernel_create_node(
         nf_store_node_id,
         RENodeInit::KeyValueStore,
         BTreeMap::new(),
     )?;
-    let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
+    let nf_store_id: KeyValueStoreId = nf_store_node_id.into();
     let resource_manager_substate = ResourceManagerSubstate::new(
         ResourceType::NonFungible { id_type },
         Some(nf_store_id),
@@ -877,7 +877,7 @@ impl ResourceManagerBlueprint {
 
         for (id, non_fungible) in non_fungibles {
             let non_fungible_handle = api.sys_lock_substate(
-                RENodeId::NonFungibleStore(nf_store_id.unwrap()),
+                RENodeId::KeyValueStore(nf_store_id.unwrap()),
                 SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&id).unwrap())),
                 LockFlags::MUTABLE,
             )?;
@@ -968,7 +968,7 @@ impl ResourceManagerBlueprint {
 
                 {
                     let non_fungible_handle = api.sys_lock_substate(
-                        RENodeId::NonFungibleStore(nf_store_id),
+                        RENodeId::KeyValueStore(nf_store_id),
                         SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&id).unwrap())),
                         LockFlags::MUTABLE,
                     )?;
@@ -1139,7 +1139,7 @@ impl ResourceManagerBlueprint {
         let resource_manager: &ResourceManagerSubstate =
             api.kernel_get_substate_ref(resman_handle)?;
         if let Some(nf_store_id) = resource_manager.nf_store_id {
-            let node_id = RENodeId::NonFungibleStore(nf_store_id);
+            let node_id = RENodeId::KeyValueStore(nf_store_id);
 
             if let DroppedBucketResource::NonFungible(nf) = dropped_bucket.resource {
                 for id in nf.into_ids() {
@@ -1301,7 +1301,7 @@ impl ResourceManagerBlueprint {
         let resource_address = resource_manager.resource_address;
 
         let non_fungible_handle = api.sys_lock_substate(
-            RENodeId::NonFungibleStore(nf_store_id),
+            RENodeId::KeyValueStore(nf_store_id),
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&input.id).unwrap())),
             LockFlags::MUTABLE,
         )?;
@@ -1351,7 +1351,7 @@ impl ResourceManagerBlueprint {
             .ok_or(InvokeError::SelfError(ResourceManagerError::NotNonFungible))?;
 
         let non_fungible_handle = api.sys_lock_substate(
-            RENodeId::NonFungibleStore(nf_store_id),
+            RENodeId::KeyValueStore(nf_store_id),
                 SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&input.id).unwrap())),
             LockFlags::read_only(),
         )?;
@@ -1440,7 +1440,7 @@ impl ResourceManagerBlueprint {
             NonFungibleGlobalId::new(resource_manager.resource_address, input.id.clone());
 
         let non_fungible_handle = api.sys_lock_substate(
-            RENodeId::NonFungibleStore(nf_store_id),
+            RENodeId::KeyValueStore(nf_store_id),
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&input.id).unwrap())),
             LockFlags::read_only(),
         )?;

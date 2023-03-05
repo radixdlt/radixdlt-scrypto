@@ -492,7 +492,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             for (inner_last, id) in ids.iter().identify_last() {
                 let non_fungible: KeyValueStoreEntrySubstate = substate_store
                     .get_substate(&SubstateId(
-                        RENodeId::NonFungibleStore(resource_manager.nf_store_id.unwrap()),
+                        RENodeId::KeyValueStore(resource_manager.nf_store_id.unwrap()),
                         NodeModuleId::SELF,
                         SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(id).unwrap())),
                     ))

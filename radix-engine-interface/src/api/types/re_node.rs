@@ -18,7 +18,6 @@ pub enum RENodeType {
     GlobalAccessController,
     GlobalIdentity,
     KeyValueStore,
-    NonFungibleStore,
     Object,
     TransactionRuntime,
 }
@@ -32,7 +31,6 @@ pub enum RENodeId {
     GlobalResourceManager(ResourceAddress),
     GlobalPackage(PackageAddress),
     KeyValueStore(KeyValueStoreId),
-    NonFungibleStore(NonFungibleStoreId),
     Object(ObjectId),
 }
 
@@ -49,10 +47,6 @@ impl fmt::Debug for RENodeId {
                 .debug_tuple("KeyValueStore")
                 .field(&hex::encode(id))
                 .finish(),
-            Self::NonFungibleStore(id) => f
-                .debug_tuple("NonFungibleStore")
-                .field(&hex::encode(id))
-                .finish(),
             Self::Object(id) => f.debug_tuple("Object").field(&hex::encode(id)).finish(),
             Self::GlobalResourceManager(address) => {
                 f.debug_tuple("ResourceManager").field(&address).finish()
@@ -66,7 +60,6 @@ impl Into<[u8; 36]> for RENodeId {
     fn into(self) -> [u8; 36] {
         match self {
             RENodeId::KeyValueStore(id) => id,
-            RENodeId::NonFungibleStore(id) => id,
             RENodeId::Object(id) => id,
             RENodeId::Worktop => [3u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
             RENodeId::TransactionRuntime => [4u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
