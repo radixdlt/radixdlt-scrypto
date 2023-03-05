@@ -15,6 +15,7 @@ use radix_engine_interface::blueprints::resource::{
 };
 use radix_engine_interface::network::NetworkDefinition;
 use std::collections::VecDeque;
+use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
 use utils::ContextualDisplay;
 
 use crate::utils::*;
@@ -404,8 +405,12 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             .map(|s| s.substate)
             .map(|s| s.to_runtime().into());
         let name_metadata = match name_metadata {
-            Some(KeyValueStoreEntrySubstate::Some(_, ScryptoValue::String { value })) => {
-                Some(value)
+            Some(KeyValueStoreEntrySubstate::Some(_, scrypto_value)) => {
+                let entry: MetadataEntry = scrypto_decode(&scrypto_encode(&scrypto_value).unwrap()).unwrap();
+                match entry {
+                    MetadataEntry::Value(MetadataValue::String(value)) => Some(value),
+                    _ => None,
+                }
             }
             _ => None,
         }
@@ -423,8 +428,12 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             .map(|s| s.substate)
             .map(|s| s.to_runtime().into());
         let symbol_metadata = match symbol_metadata {
-            Some(KeyValueStoreEntrySubstate::Some(_, ScryptoValue::String { value })) => {
-                Some(value)
+            Some(KeyValueStoreEntrySubstate::Some(_, scrypto_value)) => {
+                let entry: MetadataEntry = scrypto_decode(&scrypto_encode(&scrypto_value).unwrap()).unwrap();
+                match entry {
+                    MetadataEntry::Value(MetadataValue::String(value)) => Some(value),
+                    _ => None,
+                }
             }
             _ => None,
         }
