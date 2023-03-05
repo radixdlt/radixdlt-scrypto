@@ -108,11 +108,6 @@ where
                     self.kernel_get_substate_ref_mut(lock_handle)?;
                 *entry = next;
             }
-            RuntimeSubstate::NonFungible(next) => {
-                let non_fungible: &mut NonFungibleSubstate =
-                    self.kernel_get_substate_ref_mut(lock_handle)?;
-                *non_fungible = next;
-            }
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidOverwrite)),
         }
 

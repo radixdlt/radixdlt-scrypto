@@ -7,14 +7,7 @@ use crate::blueprints::clock::CurrentTimeRoundedToMinutesSubstate;
 use crate::blueprints::epoch_manager::EpochManagerSubstate;
 use crate::blueprints::epoch_manager::ValidatorSetSubstate;
 use crate::blueprints::epoch_manager::ValidatorSubstate;
-use crate::blueprints::resource::BucketInfoSubstate;
-use crate::blueprints::resource::FungibleProof;
-use crate::blueprints::resource::NonFungibleProof;
-use crate::blueprints::resource::NonFungibleSubstate;
-use crate::blueprints::resource::ProofInfoSubstate;
-use crate::blueprints::resource::ResourceManagerSubstate;
-use crate::blueprints::resource::VaultInfoSubstate;
-use crate::blueprints::resource::WorktopSubstate;
+use crate::blueprints::resource::*;
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::errors::*;
 use crate::system::node_modules::access_rules::FunctionAccessRulesSubstate;
@@ -23,7 +16,7 @@ use crate::types::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::{
-    ComponentOffset, KeyValueStoreOffset, NonFungibleStoreOffset, RENodeId, SubstateOffset,
+    ComponentOffset, KeyValueStoreOffset, RENodeId, SubstateOffset,
 };
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::resource::LiquidNonFungibleResource;
@@ -63,7 +56,6 @@ pub enum PersistedSubstate {
     PackageRoyaltyAccumulator(PackageRoyaltyAccumulatorSubstate),
 
     /* KVStore entry */
-    NonFungible(NonFungibleSubstate),
     KeyValueStoreEntry(KeyValueStoreEntrySubstate),
 }
 
@@ -198,7 +190,6 @@ impl PersistedSubstate {
             PersistedSubstate::VaultLockedNonFungible(value) => {
                 RuntimeSubstate::VaultLockedNonFungible(value)
             }
-            PersistedSubstate::NonFungible(value) => RuntimeSubstate::NonFungible(value),
             PersistedSubstate::KeyValueStoreEntry(value) => {
                 RuntimeSubstate::KeyValueStoreEntry(value)
             }
@@ -278,7 +269,6 @@ pub enum RuntimeSubstate {
     PackageRoyaltyAccumulator(PackageRoyaltyAccumulatorSubstate),
 
     /* KVStore entry */
-    NonFungible(NonFungibleSubstate),
     KeyValueStoreEntry(KeyValueStoreEntrySubstate),
 }
 
@@ -302,7 +292,6 @@ impl RuntimeSubstate {
                 PersistedSubstate::PackageCodeType(value.clone())
             }
             RuntimeSubstate::PackageCode(value) => PersistedSubstate::PackageCode(value.clone()),
-            RuntimeSubstate::NonFungible(value) => PersistedSubstate::NonFungible(value.clone()),
             RuntimeSubstate::KeyValueStoreEntry(value) => {
                 PersistedSubstate::KeyValueStoreEntry(value.clone())
             }
@@ -370,7 +359,6 @@ impl RuntimeSubstate {
             RuntimeSubstate::PackageInfo(value) => PersistedSubstate::PackageInfo(value),
             RuntimeSubstate::PackageCodeType(value) => PersistedSubstate::PackageCodeType(value),
             RuntimeSubstate::PackageCode(value) => PersistedSubstate::PackageCode(value),
-            RuntimeSubstate::NonFungible(value) => PersistedSubstate::NonFungible(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => {
                 PersistedSubstate::KeyValueStoreEntry(value)
             }
@@ -442,11 +430,6 @@ impl RuntimeSubstate {
                     scrypto_decode(buffer).map_err(|e| KernelError::SborDecodeError(e))?;
                 RuntimeSubstate::KeyValueStoreEntry(substate)
             }
-            SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..)) => {
-                let substate =
-                    scrypto_decode(buffer).map_err(|e| KernelError::SborDecodeError(e))?;
-                RuntimeSubstate::NonFungible(substate)
-            }
             offset => {
                 return Err(RuntimeError::KernelError(KernelError::InvalidOffset(
                     offset.clone(),
@@ -516,7 +499,6 @@ impl RuntimeSubstate {
             RuntimeSubstate::ProofInfo(value) => SubstateRefMut::ProofInfo(value),
             RuntimeSubstate::FungibleProof(value) => SubstateRefMut::FungibleProof(value),
             RuntimeSubstate::NonFungibleProof(value) => SubstateRefMut::NonFungibleProof(value),
-            RuntimeSubstate::NonFungible(value) => SubstateRefMut::NonFungible(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => SubstateRefMut::KeyValueStoreEntry(value),
             RuntimeSubstate::AuthZoneStack(value) => SubstateRefMut::AuthZoneStack(value),
             RuntimeSubstate::Worktop(value) => SubstateRefMut::Worktop(value),
@@ -579,7 +561,6 @@ impl RuntimeSubstate {
             RuntimeSubstate::ProofInfo(value) => SubstateRef::ProofInfo(value),
             RuntimeSubstate::FungibleProof(value) => SubstateRef::FungibleProof(value),
             RuntimeSubstate::NonFungibleProof(value) => SubstateRef::NonFungibleProof(value),
-            RuntimeSubstate::NonFungible(value) => SubstateRef::NonFungible(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => SubstateRef::KeyValueStoreEntry(value),
             RuntimeSubstate::AuthZoneStack(value) => SubstateRef::AuthZoneStack(value),
             RuntimeSubstate::Worktop(value) => SubstateRef::Worktop(value),
@@ -743,12 +724,6 @@ impl Into<RuntimeSubstate> for VaultInfoSubstate {
     }
 }
 
-impl Into<RuntimeSubstate> for NonFungibleSubstate {
-    fn into(self) -> RuntimeSubstate {
-        RuntimeSubstate::NonFungible(self)
-    }
-}
-
 impl Into<RuntimeSubstate> for KeyValueStoreEntrySubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::KeyValueStoreEntry(self)
@@ -871,16 +846,6 @@ impl Into<PackageCodeSubstate> for RuntimeSubstate {
             code
         } else {
             panic!("Not a wasm code");
-        }
-    }
-}
-
-impl Into<NonFungibleSubstate> for RuntimeSubstate {
-    fn into(self) -> NonFungibleSubstate {
-        if let RuntimeSubstate::NonFungible(non_fungible) = self {
-            non_fungible
-        } else {
-            panic!("Not a non-fungible wrapper");
         }
     }
 }
@@ -1037,7 +1002,6 @@ pub enum SubstateRef<'a> {
     ComponentState(&'a ComponentStateSubstate),
     ComponentRoyaltyConfig(&'a ComponentRoyaltyConfigSubstate),
     ComponentRoyaltyAccumulator(&'a ComponentRoyaltyAccumulatorSubstate),
-    NonFungible(&'a NonFungibleSubstate),
     KeyValueStoreEntry(&'a KeyValueStoreEntrySubstate),
     PackageInfo(&'a PackageInfoSubstate),
     PackageCodeType(&'a PackageCodeTypeSubstate),
@@ -1168,15 +1132,6 @@ impl<'a> From<SubstateRef<'a>> for &'a PackageRoyaltyAccumulatorSubstate {
         match value {
             SubstateRef::PackageRoyaltyAccumulator(value) => value,
             _ => panic!("Not a PackageRoyaltyAccumulator"),
-        }
-    }
-}
-
-impl<'a> From<SubstateRef<'a>> for &'a NonFungibleSubstate {
-    fn from(value: SubstateRef<'a>) -> Self {
-        match value {
-            SubstateRef::NonFungible(value) => value,
-            _ => panic!("Not a non fungible"),
         }
     }
 }
@@ -1372,7 +1327,6 @@ impl<'a> SubstateRef<'a> {
             SubstateRef::PackageRoyaltyAccumulator(value) => {
                 IndexedScryptoValue::from_typed(*value)
             }
-            SubstateRef::NonFungible(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::KeyValueStoreEntry(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::MethodAccessRules(value) => IndexedScryptoValue::from_typed(*value),
             _ => panic!("Unsupported scrypto value"),
@@ -1479,18 +1433,6 @@ impl<'a> SubstateRef<'a> {
             SubstateRef::KeyValueStoreEntry(substate) => {
                 (substate.global_references(), substate.owned_node_ids())
             }
-            SubstateRef::NonFungible(substate) => {
-                let maybe_scrypto_value = substate
-                    .0
-                    .as_ref()
-                    .map(|non_fungible| IndexedScryptoValue::from_typed(non_fungible));
-                if let Some(scrypto_value) = maybe_scrypto_value {
-                    let (_, _, owns, refs) = scrypto_value.unpack();
-                    (refs, owns)
-                } else {
-                    (HashSet::new(), Vec::new())
-                }
-            }
             SubstateRef::Account(substate) => {
                 let mut owned_nodes = Vec::new();
                 owned_nodes.push(RENodeId::KeyValueStore(
@@ -1521,7 +1463,6 @@ pub enum SubstateRefMut<'a> {
     PackageRoyaltyConfig(&'a mut PackageRoyaltyConfigSubstate),
     PackageRoyaltyAccumulator(&'a mut PackageRoyaltyAccumulatorSubstate),
     PackageAccessRules(&'a mut FunctionAccessRulesSubstate),
-    NonFungible(&'a mut NonFungibleSubstate),
     KeyValueStoreEntry(&'a mut KeyValueStoreEntrySubstate),
     VaultInfo(&'a mut VaultInfoSubstate),
     VaultLiquidFungible(&'a mut LiquidFungibleResource),
@@ -1564,15 +1505,6 @@ impl<'a> From<SubstateRefMut<'a>> for &'a mut WorktopSubstate {
         match value {
             SubstateRefMut::Worktop(value) => value,
             _ => panic!("Not an auth zone"),
-        }
-    }
-}
-
-impl<'a> From<SubstateRefMut<'a>> for &'a mut NonFungibleSubstate {
-    fn from(value: SubstateRefMut<'a>) -> Self {
-        match value {
-            SubstateRefMut::NonFungible(value) => value,
-            _ => panic!("Not a bucket"),
         }
     }
 }

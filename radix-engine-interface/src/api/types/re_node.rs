@@ -211,11 +211,6 @@ pub enum KeyValueStoreOffset {
     Entry(Vec<u8>),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
-pub enum NonFungibleStoreOffset {
-    Entry(NonFungibleLocalId),
-}
-
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum VaultOffset {
     Info,
@@ -286,7 +281,6 @@ pub enum SubstateOffset {
     Package(PackageOffset),
     ResourceManager(ResourceManagerOffset),
     KeyValueStore(KeyValueStoreOffset),
-    NonFungibleStore(NonFungibleStoreOffset),
     Vault(VaultOffset),
     EpochManager(EpochManagerOffset),
     Validator(ValidatorOffset),

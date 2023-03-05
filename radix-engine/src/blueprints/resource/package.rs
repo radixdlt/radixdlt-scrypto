@@ -7,6 +7,7 @@ use crate::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
+use crate::blueprints::resource::vault::VaultBlueprint;
 
 pub struct ResourceManagerNativePackage;
 

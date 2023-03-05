@@ -14,13 +14,15 @@ use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
-    NonFungibleStoreId, NonFungibleStoreOffset, RENodeId, ResourceManagerOffset, SubstateOffset,
+    NonFungibleStoreId, RENodeId, ResourceManagerOffset, SubstateOffset,
 };
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;
+use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
+use crate::blueprints::resource::vault::VaultInfoSubstate;
 
 use super::events::resource_manager::BurnResourceEvent;
 use super::events::resource_manager::MintResourceEvent;
@@ -75,7 +77,7 @@ where
     let nf_store_node_id = api.kernel_allocate_node_id(RENodeType::NonFungibleStore)?;
     api.kernel_create_node(
         nf_store_node_id,
-        RENodeInit::NonFungibleStore(NonFungibleStore::new()),
+        RENodeInit::KeyValueStore,
         BTreeMap::new(),
     )?;
     let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
@@ -99,16 +101,22 @@ where
                 ));
             }
 
-            let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(
-                non_fungible_local_id.clone(),
-            ));
             let non_fungible_handle =
-                api.sys_lock_substate(nf_store_node_id, offset, LockFlags::MUTABLE)?;
-            let non_fungible_mut: &mut NonFungibleSubstate =
+                api.sys_lock_substate(
+                    nf_store_node_id,
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                        scrypto_encode(non_fungible_local_id).unwrap(),
+                    )),
+                    LockFlags::MUTABLE,
+                )?;
+            let non_fungible_mut: &mut KeyValueStoreEntrySubstate =
                 api.kernel_get_substate_ref_mut(non_fungible_handle)?;
-            *non_fungible_mut = NonFungibleSubstate(Some(
-                NonFungible::new(data.0.clone(), data.1.clone()), // FIXME: verify data
-            ));
+
+            // FIXME: verify data
+            let non_fungible = NonFungible::new(data.0.clone(), data.1.clone());
+            let value: ScryptoValue = scrypto_decode(&scrypto_encode(&non_fungible).unwrap()).unwrap();
+
+            *non_fungible_mut = KeyValueStoreEntrySubstate::Some(value);
             api.sys_drop_lock(non_fungible_handle)?;
         }
         resource_manager.total_supply = entries.len().into();
@@ -437,7 +445,7 @@ where
     let nf_store_node_id = api.kernel_allocate_node_id(RENodeType::NonFungibleStore)?;
     api.kernel_create_node(
         nf_store_node_id,
-        RENodeInit::NonFungibleStore(NonFungibleStore::new()),
+        RENodeInit::KeyValueStore,
         BTreeMap::new(),
     )?;
     let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
@@ -870,15 +878,15 @@ impl ResourceManagerBlueprint {
         for (id, non_fungible) in non_fungibles {
             let non_fungible_handle = api.sys_lock_substate(
                 RENodeId::NonFungibleStore(nf_store_id.unwrap()),
-                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id.clone())),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&id).unwrap())),
                 LockFlags::MUTABLE,
             )?;
 
             {
-                let non_fungible_mut: &mut NonFungibleSubstate =
+                let non_fungible_mut: &mut KeyValueStoreEntrySubstate =
                     api.kernel_get_substate_ref_mut(non_fungible_handle)?;
 
-                if non_fungible_mut.0.is_some() {
+                if let KeyValueStoreEntrySubstate::Some(..) = non_fungible_mut {
                     return Err(RuntimeError::ApplicationError(
                         ApplicationError::ResourceManagerError(
                             ResourceManagerError::NonFungibleAlreadyExists(
@@ -888,7 +896,9 @@ impl ResourceManagerBlueprint {
                     ));
                 }
 
-                *non_fungible_mut = NonFungibleSubstate(Some(non_fungible));
+                // FIXME: verify data
+                let value: ScryptoValue = scrypto_decode(&scrypto_encode(&non_fungible).unwrap()).unwrap();
+                *non_fungible_mut = KeyValueStoreEntrySubstate::Some(value);
             }
 
             api.sys_drop_lock(non_fungible_handle)?;
@@ -959,13 +969,17 @@ impl ResourceManagerBlueprint {
                 {
                     let non_fungible_handle = api.sys_lock_substate(
                         RENodeId::NonFungibleStore(nf_store_id),
-                        SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id)),
+                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&id).unwrap())),
                         LockFlags::MUTABLE,
                     )?;
-                    let non_fungible = NonFungible::new(data.0, data.1);
-                    let non_fungible_mut: &mut NonFungibleSubstate =
+                    let non_fungible_mut: &mut KeyValueStoreEntrySubstate =
                         api.kernel_get_substate_ref_mut(non_fungible_handle)?;
-                    *non_fungible_mut = NonFungibleSubstate(Some(non_fungible));
+
+                    // FIXME: verify data
+                    let non_fungible = NonFungible::new(data.0, data.1);
+                    let value: ScryptoValue = scrypto_decode(&scrypto_encode(&non_fungible).unwrap()).unwrap();
+                    *non_fungible_mut = KeyValueStoreEntrySubstate::Some(value);
+
                     api.sys_drop_lock(non_fungible_handle)?;
                 }
             }
@@ -1129,13 +1143,16 @@ impl ResourceManagerBlueprint {
 
             if let DroppedBucketResource::NonFungible(nf) = dropped_bucket.resource {
                 for id in nf.into_ids() {
-                    let offset =
-                        SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id.clone()));
                     let non_fungible_handle =
-                        api.sys_lock_substate(node_id, offset, LockFlags::MUTABLE)?;
-                    let non_fungible_mut: &mut NonFungibleSubstate =
+                        api.sys_lock_substate(
+                            node_id,
+                            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&id).unwrap())),
+                            LockFlags::MUTABLE
+                        )?;
+
+                    let non_fungible_mut: &mut KeyValueStoreEntrySubstate =
                         api.kernel_get_substate_ref_mut(non_fungible_handle)?;
-                    *non_fungible_mut = NonFungibleSubstate(None);
+                    *non_fungible_mut = KeyValueStoreEntrySubstate::None;
                     api.sys_drop_lock(non_fungible_handle)?;
                 }
             }
@@ -1285,13 +1302,15 @@ impl ResourceManagerBlueprint {
 
         let non_fungible_handle = api.sys_lock_substate(
             RENodeId::NonFungibleStore(nf_store_id),
-            SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(input.id.clone())),
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&input.id).unwrap())),
             LockFlags::MUTABLE,
         )?;
-        let non_fungible_mut: &mut NonFungibleSubstate =
+        let non_fungible_mut: &mut KeyValueStoreEntrySubstate =
             api.kernel_get_substate_ref_mut(non_fungible_handle)?;
-        if let Some(ref mut non_fungible) = non_fungible_mut.0 {
+        if let KeyValueStoreEntrySubstate::Some(ref mut non_fungible_substate) = non_fungible_mut {
+            let mut non_fungible: NonFungible = scrypto_decode(&scrypto_encode(non_fungible_substate).unwrap()).unwrap();
             non_fungible.set_mutable_data(input.data);
+            *non_fungible_substate = scrypto_decode(&scrypto_encode(&non_fungible).unwrap()).unwrap();
         } else {
             let non_fungible_global_id = NonFungibleGlobalId::new(resource_address, input.id);
             return Err(RuntimeError::ApplicationError(
@@ -1333,12 +1352,12 @@ impl ResourceManagerBlueprint {
 
         let non_fungible_handle = api.sys_lock_substate(
             RENodeId::NonFungibleStore(nf_store_id),
-            SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(input.id)),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&input.id).unwrap())),
             LockFlags::read_only(),
         )?;
-        let non_fungible: &NonFungibleSubstate =
+        let non_fungible: &KeyValueStoreEntrySubstate =
             api.kernel_get_substate_ref(non_fungible_handle)?;
-        let exists = non_fungible.0.is_some();
+        let exists = matches!(non_fungible, KeyValueStoreEntrySubstate::Some(..));
 
         Ok(IndexedScryptoValue::from_typed(&exists))
     }
@@ -1422,11 +1441,12 @@ impl ResourceManagerBlueprint {
 
         let non_fungible_handle = api.sys_lock_substate(
             RENodeId::NonFungibleStore(nf_store_id),
-            SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(input.id)),
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&input.id).unwrap())),
             LockFlags::read_only(),
         )?;
-        let wrapper: &NonFungibleSubstate = api.kernel_get_substate_ref(non_fungible_handle)?;
-        if let Some(non_fungible) = wrapper.0.as_ref() {
+        let wrapper: &KeyValueStoreEntrySubstate = api.kernel_get_substate_ref(non_fungible_handle)?;
+        if let KeyValueStoreEntrySubstate::Some(non_fungible) = wrapper {
+            let non_fungible: NonFungible = scrypto_decode(&scrypto_encode(&non_fungible).unwrap()).unwrap();
             Ok(IndexedScryptoValue::from_typed(&[
                 non_fungible.immutable_data(),
                 non_fungible.mutable_data(),

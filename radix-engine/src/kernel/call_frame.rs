@@ -7,7 +7,7 @@ use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
-    LockHandle, NonFungibleStoreOffset, RENodeId, SubstateId, SubstateOffset,
+    LockHandle, RENodeId, SubstateId, SubstateOffset,
 };
 
 use super::heap::{Heap, HeapRENode};
@@ -122,11 +122,7 @@ impl CallFrame {
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
         self.check_node_visibility(&node_id)?;
-        if !(matches!(offset, SubstateOffset::KeyValueStore(..))
-            || matches!(
-                offset,
-                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..))
-            ))
+        if !(matches!(offset, SubstateOffset::KeyValueStore(..)))
         {
             let substate_id = SubstateId(node_id, module_id, offset.clone());
             if heap.contains_node(&node_id) {
@@ -277,11 +273,7 @@ impl CallFrame {
 
         let flags = substate_lock.flags;
 
-        if !(matches!(offset, SubstateOffset::KeyValueStore(..))
-            || matches!(
-                offset,
-                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..))
-            ))
+        if !(matches!(offset, SubstateOffset::KeyValueStore(..)))
         {
             if !heap.contains_node(&node_id) {
                 track

@@ -4,7 +4,6 @@ use crate::blueprints::account::AccountNativePackage;
 use crate::blueprints::clock::ClockNativePackage;
 use crate::blueprints::epoch_manager::EpochManagerNativePackage;
 use crate::blueprints::identity::IdentityNativePackage;
-use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_runtime::TransactionRuntimeNativePackage;
 use crate::errors::{InterpreterError, RuntimeError};
 use crate::kernel::actor::Actor;
@@ -32,6 +31,7 @@ use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::schema::BlueprintSchema;
+use crate::blueprints::resource::ResourceManagerNativePackage;
 
 fn validate_input(
     blueprint_schema: &BlueprintSchema,

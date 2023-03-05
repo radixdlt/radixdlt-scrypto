@@ -1,5 +1,4 @@
 use super::track::Track;
-use crate::blueprints::resource::{BucketInfoSubstate, NonFungibleSubstate, ProofInfoSubstate};
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::errors::CallFrameError;
 use crate::system::node_modules::access_rules::AuthZoneStackSubstate;
@@ -16,6 +15,7 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
+use crate::blueprints::resource::*;
 
 pub struct Heap {
     nodes: HashMap<RENodeId, HeapRENode>,
@@ -51,17 +51,6 @@ impl Heap {
                 );
                 Ok(entry.to_ref())
             }
-            (
-                RENodeId::NonFungibleStore(..),
-                NodeModuleId::SELF,
-                SubstateOffset::NonFungibleStore(..),
-            ) => {
-                let entry = node
-                    .substates
-                    .entry((module_id, offset.clone()))
-                    .or_insert(RuntimeSubstate::NonFungible(NonFungibleSubstate(None)));
-                Ok(entry.to_ref())
-            }
             _ => node
                 .substates
                 .get(&(module_id, offset.clone()))
@@ -83,17 +72,10 @@ impl Heap {
 
         // TODO: Will clean this up when virtual substates is cleaned up
         match (&node_id, offset) {
-            (RENodeId::KeyValueStore(..), SubstateOffset::KeyValueStore(..)) => {
+            (_, SubstateOffset::KeyValueStore(..)) => {
                 let entry = node.substates.entry((module_id, offset.clone())).or_insert(
                     RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::None),
                 );
-                Ok(entry.to_ref_mut())
-            }
-            (RENodeId::NonFungibleStore(..), SubstateOffset::NonFungibleStore(..)) => {
-                let entry = node
-                    .substates
-                    .entry((module_id, offset.clone()))
-                    .or_insert(RuntimeSubstate::NonFungible(NonFungibleSubstate(None)));
                 Ok(entry.to_ref_mut())
             }
             _ => node
