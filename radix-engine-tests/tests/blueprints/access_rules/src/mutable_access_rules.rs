@@ -5,7 +5,7 @@ mod mutable_access_rules_component {
     struct MutableAccessRulesComponent {}
 
     impl MutableAccessRulesComponent {
-        pub fn new(access_rules: AccessRules) -> ComponentAddress {
+        pub fn new(access_rules: AccessRulesConfig) -> ComponentAddress {
             let component = Self {}.instantiate();
             component.globalize_with_access_rules(access_rules)
         }

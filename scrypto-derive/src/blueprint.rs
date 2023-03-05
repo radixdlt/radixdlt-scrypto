@@ -435,7 +435,7 @@ fn generate_stubs(
         impl ::scrypto::component::LocalComponent for #component_ident {
             fn globalize_with_modules(
                 self,
-                access_rules: AccessRulesConfig,
+                access_rules: AccessRules,
                 metadata: Metadata,
                 royalty_config: RoyaltyConfig,
             ) -> ComponentAddress {
@@ -738,7 +738,7 @@ mod tests {
                     impl ::scrypto::component::LocalComponent for TestComponent {
                         fn globalize_with_modules(
                             self,
-                            access_rules: AccessRulesConfig,
+                            access_rules: AccessRules,
                             metadata: Metadata,
                             royalty_config: RoyaltyConfig,
                         ) -> ComponentAddress {
