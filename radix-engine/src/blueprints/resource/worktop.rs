@@ -40,12 +40,12 @@ impl WorktopBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let _input: WorktopDropInput =
+        let input: WorktopDropInput =
             scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
                 RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
             })?;
 
-        let mut node = api.kernel_drop_node(RENodeId::Worktop)?;
+        let mut node = api.kernel_drop_node(RENodeId::Object(input.worktop.id()))?;
         let substate = node
             .substates
             .remove(&(

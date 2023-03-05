@@ -8,7 +8,6 @@ use sbor::rust::prelude::*;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor)]
 pub enum RENodeType {
     AuthZoneStack,
-    Worktop,
     GlobalAccount,
     GlobalComponent,
     GlobalResourceManager,
@@ -26,7 +25,6 @@ pub enum RENodeType {
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum RENodeId {
     AuthZoneStack,
-    Worktop,
     TransactionRuntime,
     Global(Address),
     KeyValueStore(KeyValueStoreId),
@@ -38,7 +36,6 @@ impl fmt::Debug for RENodeId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::AuthZoneStack => write!(f, "AuthZoneStack"),
-            Self::Worktop => write!(f, "Worktop"),
             Self::TransactionRuntime => write!(f, "TransactionRuntime"),
             Self::KeyValueStore(id) => f
                 .debug_tuple("KeyValueStore")
@@ -60,7 +57,6 @@ impl Into<[u8; 36]> for RENodeId {
             RENodeId::KeyValueStore(id) => id,
             RENodeId::NonFungibleStore(id) => id,
             RENodeId::Object(id) => id,
-            RENodeId::Worktop => [3u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
             RENodeId::TransactionRuntime => [4u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
             RENodeId::AuthZoneStack => [5u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
             _ => panic!("Not a stored id: {:?}", self),

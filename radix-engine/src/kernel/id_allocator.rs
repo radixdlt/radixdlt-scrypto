@@ -64,7 +64,6 @@ impl IdAllocator {
         let node_id = match node_type {
             RENodeType::AuthZoneStack => Ok(RENodeId::AuthZoneStack),
             RENodeType::TransactionRuntime => Ok(RENodeId::TransactionRuntime),
-            RENodeType::Worktop => Ok(RENodeId::Worktop),
             RENodeType::KeyValueStore => {
                 self.new_kv_store_id().map(|id| RENodeId::KeyValueStore(id))
             }

@@ -82,7 +82,6 @@ impl NodeMoveModule {
             | RENodeId::KeyValueStore(..)
             | RENodeId::NonFungibleStore(..)
             | RENodeId::Global(..)
-            | RENodeId::Worktop
              => Err(RuntimeError::ModuleError(
                 ModuleError::NodeMoveError(NodeMoveError::CantMoveDownstream(node_id)),
             )),
@@ -101,7 +100,6 @@ impl NodeMoveModule {
             | RENodeId::KeyValueStore(..)
             | RENodeId::NonFungibleStore(..)
             | RENodeId::Global(..)
-            | RENodeId::Worktop
              => Err(RuntimeError::ModuleError(
                 ModuleError::NodeMoveError(NodeMoveError::CantMoveUpstream(node_id)),
             )),

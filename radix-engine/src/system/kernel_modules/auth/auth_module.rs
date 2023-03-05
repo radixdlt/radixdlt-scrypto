@@ -129,7 +129,7 @@ impl AuthModule {
                 }
             }
             MethodIdentifier(
-                RENodeId::Worktop | RENodeId::TransactionRuntime | RENodeId::AuthZoneStack,
+                RENodeId::TransactionRuntime | RENodeId::AuthZoneStack,
                 ..,
             ) => MethodAuthorization::AllowAll,
 

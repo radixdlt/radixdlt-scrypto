@@ -1,4 +1,4 @@
-use crate::blueprints::resource::{WorktopBlueprint, WorktopSubstate};
+use crate::blueprints::resource::WorktopSubstate;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::actor::Actor;
@@ -34,6 +34,7 @@ use transaction::data::TransformHandler;
 use transaction::errors::ManifestIdAllocationError;
 use transaction::model::*;
 use transaction::validation::*;
+use crate::system::node_substates::RuntimeSubstate;
 
 #[derive(Debug, ScryptoSbor)]
 pub struct TransactionProcessorRunInvocation<'a> {
@@ -293,10 +294,12 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
             TransactionProcessor::perform_validation(request, api)?;
         }
 
-        let worktop_node_id = api.kernel_allocate_node_id(RENodeType::Worktop)?;
+        let worktop_node_id = api.kernel_allocate_node_id(RENodeType::Object)?;
         api.kernel_create_node(
             worktop_node_id,
-            RENodeInit::Worktop(WorktopSubstate::new()),
+            RENodeInit::Object(btreemap!(
+                SubstateOffset::Worktop(WorktopOffset::Worktop) => RuntimeSubstate::Worktop(WorktopSubstate::new())
+            )),
             btreemap!(
                 NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                     package_address: RESOURCE_MANAGER_PACKAGE,
@@ -305,6 +308,8 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 })
             ),
         )?;
+
+        let worktop = Worktop(worktop_node_id.into());
 
         let instructions: Vec<Instruction> = manifest_decode(&self.instructions).unwrap();
 
@@ -321,7 +326,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
             let result = match inst {
                 Instruction::TakeFromWorktop { resource_address } => {
-                    let bucket = Worktop::sys_take_all(resource_address, api)?;
+                    let bucket = worktop.sys_take_all(resource_address, api)?;
                     processor.create_manifest_bucket(bucket)?;
                     InstructionOutput::None
                 }
@@ -329,7 +334,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     amount,
                     resource_address,
                 } => {
-                    let bucket = Worktop::sys_take(resource_address, amount, api)?;
+                    let bucket = worktop.sys_take(resource_address, amount, api)?;
                     processor.create_manifest_bucket(bucket)?;
                     InstructionOutput::None
                 }
@@ -337,31 +342,31 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     ids,
                     resource_address,
                 } => {
-                    let bucket = Worktop::sys_take_non_fungibles(resource_address, ids, api)?;
+                    let bucket = worktop.sys_take_non_fungibles(resource_address, ids, api)?;
                     processor.create_manifest_bucket(bucket)?;
                     InstructionOutput::None
                 }
                 Instruction::ReturnToWorktop { bucket_id } => {
                     let bucket = processor.take_bucket(&bucket_id)?;
-                    Worktop::sys_put(bucket, api)?;
+                    worktop.sys_put(bucket, api)?;
                     InstructionOutput::None
                 }
                 Instruction::AssertWorktopContains { resource_address } => {
-                    Worktop::sys_assert_contains(resource_address, api)?;
+                    worktop.sys_assert_contains(resource_address, api)?;
                     InstructionOutput::None
                 }
                 Instruction::AssertWorktopContainsByAmount {
                     amount,
                     resource_address,
                 } => {
-                    Worktop::sys_assert_contains_amount(resource_address, amount, api)?;
+                    worktop.sys_assert_contains_amount(resource_address, amount, api)?;
                     InstructionOutput::None
                 }
                 Instruction::AssertWorktopContainsByIds {
                     ids,
                     resource_address,
                 } => {
-                    Worktop::sys_assert_contains_non_fungibles(resource_address, ids, api)?;
+                    worktop.sys_assert_contains_non_fungibles(resource_address, ids, api)?;
                     InstructionOutput::None
                 }
                 Instruction::PopFromAuthZone {} => {
@@ -438,7 +443,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 } => {
                     let value: ManifestValue =
                         manifest_decode(&args).expect("Invalid CALL_FUNCTION arguments");
-                    let mut processor_with_api = TransactionProcessorWithApi { processor, api };
+                    let mut processor_with_api = TransactionProcessorWithApi { worktop, processor, api };
                     let scrypto_value = transform(value, &mut processor_with_api)?;
                     processor = processor_with_api.processor;
 
@@ -451,7 +456,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
                     let result = IndexedScryptoValue::from_vec(rtn).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result, api,
+                        &result, &worktop, api,
                     )?;
                     InstructionOutput::CallReturn(result)
                 }
@@ -462,7 +467,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 } => {
                     let value: ManifestValue =
                         manifest_decode(&args).expect("Invalid CALL_METHOD arguments");
-                    let mut processor_with_api = TransactionProcessorWithApi { processor, api };
+                    let mut processor_with_api = TransactionProcessorWithApi { worktop, processor, api };
                     let scrypto_value = transform(value, &mut processor_with_api)?;
                     processor = processor_with_api.processor;
 
@@ -473,7 +478,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     )?;
                     let result = IndexedScryptoValue::from_vec(rtn).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result, api,
+                        &result, &worktop, api,
                     )?;
                     InstructionOutput::CallReturn(result)
                 }
@@ -511,6 +516,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result_indexed,
+                        &worktop,
                         api,
                     )?;
 
@@ -527,7 +533,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
                     let result = IndexedScryptoValue::from_vec(rtn).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result, api,
+                        &result, &worktop, api,
                     )?;
                     InstructionOutput::CallReturn(result)
                 }
@@ -543,7 +549,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
                     let result = IndexedScryptoValue::from_vec(rtn).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result, api,
+                        &result, &worktop, api,
                     )?;
                     InstructionOutput::CallReturn(result)
                 }
@@ -560,7 +566,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
                     let result = IndexedScryptoValue::from_vec(rtn).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result, api,
+                        &result, &worktop, api,
                     )?;
                     InstructionOutput::CallReturn(result)
                 }
@@ -579,7 +585,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
                     let result = IndexedScryptoValue::from_vec(rtn).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result, api,
+                        &result, &worktop, api,
                     )?;
                     InstructionOutput::CallReturn(result)
                 }
@@ -592,7 +598,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
                     let result = IndexedScryptoValue::from_vec(rtn).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result, api,
+                        &result, &worktop, api,
                     )?;
                     InstructionOutput::CallReturn(result)
                 }
@@ -617,6 +623,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result_indexed,
+                        &worktop,
                         api,
                     )?;
 
@@ -639,6 +646,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result_indexed,
+                        &worktop,
                         api,
                     )?;
 
@@ -661,6 +669,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result_indexed,
+                        &worktop,
                         api,
                     )?;
 
@@ -677,6 +686,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result_indexed,
+                        &worktop,
                         api,
                     )?;
 
@@ -693,6 +703,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result_indexed,
+                        &worktop,
                         api,
                     )?;
 
@@ -719,6 +730,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result_indexed,
+                        &worktop,
                         api,
                     )?;
 
@@ -729,7 +741,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
                     let result = IndexedScryptoValue::from_typed(&rtn);
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result, api,
+                        &result, &worktop, api,
                     )?;
                     InstructionOutput::CallReturn(result)
                 }
@@ -737,14 +749,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
             outputs.push(result);
         }
 
-        WorktopBlueprint::drop(
-            IndexedScryptoValue::from_typed(&WorktopDropInput {}).into(),
-            api,
-        )?;
-        // Can't use native-sdk yet since there is no way to express moving the worktop
-        /*
-        Worktop::sys_drop(api)?;
-         */
+        worktop.sys_drop(api)?;
 
         Ok((outputs, CallFrameUpdate::empty()))
     }
@@ -847,6 +852,7 @@ impl<'blob> TransactionProcessor<'blob> {
 
     fn move_proofs_to_authzone_and_buckets_to_worktop<Y>(
         value: &IndexedScryptoValue,
+        worktop: &Worktop,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -858,7 +864,7 @@ impl<'blob> TransactionProcessor<'blob> {
             match (package_address, blueprint.as_str()) {
                 (RESOURCE_MANAGER_PACKAGE, BUCKET_BLUEPRINT) => {
                     let bucket = Bucket(owned_node.clone().into());
-                    Worktop::sys_put(bucket, api)?;
+                    worktop.sys_put(bucket, api)?;
                 }
                 (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
                     let proof = Proof(owned_node.clone().into());
@@ -921,6 +927,7 @@ impl<'blob> TransactionProcessor<'blob> {
 }
 
 struct TransactionProcessorWithApi<'blob, 'a, Y: ClientApi<RuntimeError>> {
+    worktop: Worktop,
     processor: TransactionProcessor<'blob>,
     api: &'a mut Y,
 }
@@ -939,7 +946,7 @@ impl<'blob, 'a, Y: ClientApi<RuntimeError>> TransformHandler<RuntimeError>
     fn replace_expression(&mut self, e: ManifestExpression) -> Result<Vec<Own>, RuntimeError> {
         match e {
             ManifestExpression::EntireWorktop => {
-                let buckets = Worktop::sys_drain(self.api)?;
+                let buckets = self.worktop.sys_drain(self.api)?;
                 Ok(buckets.into_iter().map(|b| Own::Bucket(b.0)).collect())
             }
             ManifestExpression::EntireAuthZone => {
