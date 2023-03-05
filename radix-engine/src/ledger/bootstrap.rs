@@ -442,7 +442,8 @@ pub fn create_genesis(
                 schema: scrypto_decode(&faucet_abi).unwrap(),
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
-                access_rules: AccessRulesConfig::new().default(AccessRule::DenyAll, AccessRule::DenyAll),
+                access_rules: AccessRulesConfig::new()
+                    .default(AccessRule::DenyAll, AccessRule::DenyAll),
             })
             .unwrap(),
         });

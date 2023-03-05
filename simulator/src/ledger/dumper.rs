@@ -7,6 +7,7 @@ use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::types::*;
 use radix_engine_interface::address::AddressDisplayContext;
 use radix_engine_interface::api::component::*;
+use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
 use radix_engine_interface::api::package::PackageCodeSubstate;
 use radix_engine_interface::api::types::IndexedScryptoValue;
 use radix_engine_interface::api::types::RENodeId;
@@ -15,7 +16,6 @@ use radix_engine_interface::blueprints::resource::{
 };
 use radix_engine_interface::network::NetworkDefinition;
 use std::collections::VecDeque;
-use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
 use utils::ContextualDisplay;
 
 use crate::utils::*;
@@ -66,7 +66,7 @@ struct ComponentStateDump {
     pub owned_vaults: Option<HashSet<ObjectId>>,
     pub package_address: Option<PackageAddress>, // Native components have no package address.
     pub blueprint_name: String,                  // All components have a blueprint, native or not.
-    pub access_rules: Option<AccessRulesConfig>,       // Virtual Components don't have access rules.
+    pub access_rules: Option<AccessRulesConfig>, // Virtual Components don't have access rules.
 }
 
 /// Dump a component into console.
@@ -406,7 +406,8 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             .map(|s| s.to_runtime().into());
         let name_metadata = match name_metadata {
             Some(KeyValueStoreEntrySubstate::Some(_, scrypto_value)) => {
-                let entry: MetadataEntry = scrypto_decode(&scrypto_encode(&scrypto_value).unwrap()).unwrap();
+                let entry: MetadataEntry =
+                    scrypto_decode(&scrypto_encode(&scrypto_value).unwrap()).unwrap();
                 match entry {
                     MetadataEntry::Value(MetadataValue::String(value)) => Some(value),
                     _ => None,
@@ -429,7 +430,8 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             .map(|s| s.to_runtime().into());
         let symbol_metadata = match symbol_metadata {
             Some(KeyValueStoreEntrySubstate::Some(_, scrypto_value)) => {
-                let entry: MetadataEntry = scrypto_decode(&scrypto_encode(&scrypto_value).unwrap()).unwrap();
+                let entry: MetadataEntry =
+                    scrypto_decode(&scrypto_encode(&scrypto_value).unwrap()).unwrap();
                 match entry {
                     MetadataEntry::Value(MetadataValue::String(value)) => Some(value),
                     _ => None,

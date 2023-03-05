@@ -49,7 +49,8 @@ pub trait MetadataObject {
     fn set_list<K: AsRef<str>>(&self, name: K, list: Vec<MetadataValue>) {
         let (node_id, module_id) = self.self_id();
 
-        let value: ScryptoValue = scrypto_decode(&scrypto_encode(&MetadataEntry::List(list)).unwrap()).unwrap();
+        let value: ScryptoValue =
+            scrypto_decode(&scrypto_encode(&MetadataEntry::List(list)).unwrap()).unwrap();
 
         let _rtn = ScryptoEnv
             .call_module_method(
@@ -60,7 +61,7 @@ pub trait MetadataObject {
                     key: name.as_ref().to_owned(),
                     value,
                 })
-                    .unwrap(),
+                .unwrap(),
             )
             .unwrap();
     }

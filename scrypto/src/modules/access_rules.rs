@@ -1,13 +1,19 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 use radix_engine_derive::*;
-use radix_engine_interface::api::node_modules::auth::{AccessRulesSetMethodAccessRuleInput, AccessRulesSetMethodMutabilityInput, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT, ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT, AccessRulesCreateInput};
+use radix_engine_interface::api::node_modules::auth::{
+    AccessRulesCreateInput, AccessRulesSetMethodAccessRuleInput,
+    AccessRulesSetMethodMutabilityInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
+    ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT, ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
+};
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::*;
-use radix_engine_interface::blueprints::resource::{AccessRule, AccessRuleEntry, AccessRulesConfig, MethodKey};
+use radix_engine_interface::blueprints::resource::{
+    AccessRule, AccessRuleEntry, AccessRulesConfig, MethodKey,
+};
+use radix_engine_interface::constants::ACCESS_RULES_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::*;
-use radix_engine_interface::constants::ACCESS_RULES_PACKAGE;
 use sbor::rust::prelude::*;
 
 #[derive(PartialEq, Eq, Hash, Clone)]
@@ -20,9 +26,7 @@ impl AccessRules {
                 ACCESS_RULES_PACKAGE,
                 ACCESS_RULES_BLUEPRINT,
                 ACCESS_RULES_CREATE_IDENT,
-                scrypto_encode(&AccessRulesCreateInput {
-                    access_rules
-                }).unwrap(),
+                scrypto_encode(&AccessRulesCreateInput { access_rules }).unwrap(),
             )
             .unwrap();
         let access_rules: Own = scrypto_decode(&rtn).unwrap();

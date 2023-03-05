@@ -191,7 +191,9 @@ fn can_set_public_key_metadata_through_manifest() {
 
 #[test]
 fn can_set_url_metadata_through_manifest() {
-    can_set_metadata_through_manifest(MetadataEntry::Value(MetadataValue::Url(Url("test".to_string()))));
+    can_set_metadata_through_manifest(MetadataEntry::Value(MetadataValue::Url(Url(
+        "test".to_string()
+    ))));
 }
 
 #[test]
@@ -204,6 +206,6 @@ fn can_set_list_metadata_through_manifest() {
                 .unwrap()
                 .public_key()
                 .into(),
-        )
+        ),
     ]));
 }

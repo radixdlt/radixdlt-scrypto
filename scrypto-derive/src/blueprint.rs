@@ -437,9 +437,9 @@ fn generate_stubs(
                 self,
                 access_rules: AccessRules,
                 metadata: Metadata,
-                royalty_config: RoyaltyConfig,
+                royalty: Royalty,
             ) -> ComponentAddress {
-                self.component.globalize_with_modules(access_rules, metadata, royalty_config)
+                self.component.globalize_with_modules(access_rules, metadata, royalty)
             }
         }
 
@@ -483,8 +483,8 @@ fn generate_stubs(
                 self.component.metadata()
             }
 
-            pub fn claim_royalty(&self) -> Bucket {
-                self.component.claim_royalty()
+            pub fn royalty(&self) -> AttachedRoyalty {
+                self.component.royalty()
             }
 
             #(#methods)*
@@ -740,9 +740,9 @@ mod tests {
                             self,
                             access_rules: AccessRules,
                             metadata: Metadata,
-                            royalty_config: RoyaltyConfig,
+                            royalty: Royalty,
                         ) -> ComponentAddress {
-                            self.component.globalize_with_modules(access_rules, metadata, royalty_config)
+                            self.component.globalize_with_modules(access_rules, metadata, royalty)
                         }
                     }
 
@@ -790,8 +790,8 @@ mod tests {
                             self.component.metadata()
                         }
 
-                        pub fn claim_royalty(&self) -> Bucket {
-                            self.component.claim_royalty()
+                        pub fn royalty(&self) -> AttachedRoyalty {
+                            self.component.royalty()
                         }
 
                         pub fn x(&self, arg0: u32) -> u32 {
