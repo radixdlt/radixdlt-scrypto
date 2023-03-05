@@ -128,10 +128,9 @@ impl AuthModule {
                     _ => MethodAuthorization::AllowAll,
                 }
             }
-            MethodIdentifier(
-                RENodeId::TransactionRuntime | RENodeId::AuthZoneStack,
-                ..,
-            ) => MethodAuthorization::AllowAll,
+            MethodIdentifier(RENodeId::TransactionRuntime | RENodeId::AuthZoneStack, ..) => {
+                MethodAuthorization::AllowAll
+            }
 
             MethodIdentifier(RENodeId::Object(object_id), ..) => {
                 let node_id = RENodeId::Object(*object_id);

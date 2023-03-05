@@ -164,10 +164,8 @@ impl ExecutableInvocation for MethodInvocation {
                         node_refs_to_copy.insert(RENodeId::Global(CLOCK.into()));
                         node_refs_to_copy.insert(RENodeId::Global(RADIX_TOKEN.into()));
                         node_refs_to_copy.insert(RENodeId::Global(PACKAGE_TOKEN.into()));
-                        node_refs_to_copy
-                            .insert(RENodeId::Global(ECDSA_SECP256K1_TOKEN.into()));
-                        node_refs_to_copy
-                            .insert(RENodeId::Global(EDDSA_ED25519_TOKEN.into()));
+                        node_refs_to_copy.insert(RENodeId::Global(ECDSA_SECP256K1_TOKEN.into()));
+                        node_refs_to_copy.insert(RENodeId::Global(EDDSA_ED25519_TOKEN.into()));
                     }
                     _ => {}
                 }
@@ -237,10 +235,8 @@ impl ExecutableInvocation for FunctionInvocation {
                         node_refs_to_copy.insert(RENodeId::Global(CLOCK.into()));
                         node_refs_to_copy.insert(RENodeId::Global(RADIX_TOKEN.into()));
                         node_refs_to_copy.insert(RENodeId::Global(PACKAGE_TOKEN.into()));
-                        node_refs_to_copy
-                            .insert(RENodeId::Global(ECDSA_SECP256K1_TOKEN.into()));
-                        node_refs_to_copy
-                            .insert(RENodeId::Global(EDDSA_ED25519_TOKEN.into()));
+                        node_refs_to_copy.insert(RENodeId::Global(ECDSA_SECP256K1_TOKEN.into()));
+                        node_refs_to_copy.insert(RENodeId::Global(EDDSA_ED25519_TOKEN.into()));
                     }
                     _ => {}
                 }

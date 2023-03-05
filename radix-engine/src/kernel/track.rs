@@ -584,7 +584,10 @@ impl<'s> FinalizingTrack<'s> {
                 .iter()
                 .find(|(identifier, _)| match identifier {
                     EventTypeIdentifier(
-                        RENodeId::Global(Address::Package(EPOCH_MANAGER_PACKAGE) | Address::Component(ComponentAddress::EpochManager(..))),
+                        RENodeId::Global(
+                            Address::Package(EPOCH_MANAGER_PACKAGE)
+                            | Address::Component(ComponentAddress::EpochManager(..)),
+                        ),
                         NodeModuleId::SELF,
                         schema_hash,
                     ) if *schema_hash == expected_schema_hash => true,

@@ -81,10 +81,9 @@ impl NodeMoveModule {
             | RENodeId::AuthZoneStack
             | RENodeId::KeyValueStore(..)
             | RENodeId::NonFungibleStore(..)
-            | RENodeId::Global(..)
-             => Err(RuntimeError::ModuleError(
-                ModuleError::NodeMoveError(NodeMoveError::CantMoveDownstream(node_id)),
-            )),
+            | RENodeId::Global(..) => Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
+                NodeMoveError::CantMoveDownstream(node_id),
+            ))),
         }
     }
 
@@ -99,10 +98,9 @@ impl NodeMoveModule {
             | RENodeId::AuthZoneStack
             | RENodeId::KeyValueStore(..)
             | RENodeId::NonFungibleStore(..)
-            | RENodeId::Global(..)
-             => Err(RuntimeError::ModuleError(
-                ModuleError::NodeMoveError(NodeMoveError::CantMoveUpstream(node_id)),
-            )),
+            | RENodeId::Global(..) => Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
+                NodeMoveError::CantMoveUpstream(node_id),
+            ))),
         }
     }
 }

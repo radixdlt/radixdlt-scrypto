@@ -286,9 +286,9 @@ where
 
     fn drop_node_internal(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError> {
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::DropNode, |api| match node_id {
-            RENodeId::AuthZoneStack
-            | RENodeId::TransactionRuntime
-            | RENodeId::Object(..) => api.current_frame.remove_node(&mut api.heap, node_id),
+            RENodeId::AuthZoneStack | RENodeId::TransactionRuntime | RENodeId::Object(..) => {
+                api.current_frame.remove_node(&mut api.heap, node_id)
+            }
             _ => Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
                 node_id,
             ))),

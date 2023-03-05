@@ -11,12 +11,14 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 
-
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Worktop(pub ObjectId);
 
 impl Worktop {
-    pub fn sys_drop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(self, api: &mut Y) -> Result<(), E>
+    pub fn sys_drop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        self,
+        api: &mut Y,
+    ) -> Result<(), E>
     where
         Y: ClientApi<E>,
     {
@@ -25,8 +27,9 @@ impl Worktop {
             WORKTOP_BLUEPRINT,
             WORKTOP_DROP_IDENT,
             scrypto_encode(&WorktopDropInput {
-                worktop: Own::Object(self.0)
-            }).unwrap(),
+                worktop: Own::Object(self.0),
+            })
+            .unwrap(),
         )?;
 
         Ok(())

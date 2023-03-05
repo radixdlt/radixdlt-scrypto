@@ -8,6 +8,7 @@ use crate::kernel::kernel_api::{
 };
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::system::node_substates::RuntimeSubstate;
 use crate::system::package::PackageError;
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -34,7 +35,6 @@ use transaction::data::TransformHandler;
 use transaction::errors::ManifestIdAllocationError;
 use transaction::model::*;
 use transaction::validation::*;
-use crate::system::node_substates::RuntimeSubstate;
 
 #[derive(Debug, ScryptoSbor)]
 pub struct TransactionProcessorRunInvocation<'a> {
@@ -443,7 +443,11 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 } => {
                     let value: ManifestValue =
                         manifest_decode(&args).expect("Invalid CALL_FUNCTION arguments");
-                    let mut processor_with_api = TransactionProcessorWithApi { worktop, processor, api };
+                    let mut processor_with_api = TransactionProcessorWithApi {
+                        worktop,
+                        processor,
+                        api,
+                    };
                     let scrypto_value = transform(value, &mut processor_with_api)?;
                     processor = processor_with_api.processor;
 
@@ -467,7 +471,11 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 } => {
                     let value: ManifestValue =
                         manifest_decode(&args).expect("Invalid CALL_METHOD arguments");
-                    let mut processor_with_api = TransactionProcessorWithApi { worktop, processor, api };
+                    let mut processor_with_api = TransactionProcessorWithApi {
+                        worktop,
+                        processor,
+                        api,
+                    };
                     let scrypto_value = transform(value, &mut processor_with_api)?;
                     processor = processor_with_api.processor;
 
