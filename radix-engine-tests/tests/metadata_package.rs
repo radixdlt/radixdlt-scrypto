@@ -1,7 +1,7 @@
 use radix_engine::errors::{ModuleError, RuntimeError};
 use radix_engine::system::kernel_modules::auth::AuthError;
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::metadata::{METADATA_SET_IDENT, MetadataValue};
+use radix_engine_interface::api::node_modules::metadata::{MetadataValue, METADATA_SET_IDENT};
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;

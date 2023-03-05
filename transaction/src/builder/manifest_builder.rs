@@ -1,3 +1,4 @@
+use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::access_controller::{
     RuleSet, ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
@@ -23,7 +24,6 @@ use radix_engine_interface::data::scrypto::{model::*, scrypto_encode};
 use radix_engine_interface::math::*;
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::*;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
 use sbor::rust::string::String;
