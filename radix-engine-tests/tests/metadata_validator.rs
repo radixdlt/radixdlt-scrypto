@@ -1,7 +1,7 @@
 use radix_engine::errors::{ModuleError, RuntimeError};
 use radix_engine::system::kernel_modules::auth::AuthError;
-use radix_engine::system::node_modules::metadata::MetadataValue;
 use radix_engine::types::*;
+use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -44,7 +44,7 @@ fn can_set_validator_metadata_with_owner() {
         .set_metadata(
             Address::Component(component_address),
             "name".to_string(),
-            "best package ever!".to_string(),
+            MetadataValue::String("best package ever!".to_string()),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![owner_id]);
@@ -75,7 +75,7 @@ fn cannot_set_validator_metadata_without_owner() {
         .set_metadata(
             Address::Component(component_address),
             "name".to_string(),
-            "best package ever!".to_string(),
+            MetadataValue::String("best package ever!".to_string()),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

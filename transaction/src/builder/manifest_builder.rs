@@ -23,6 +23,7 @@ use radix_engine_interface::data::scrypto::{model::*, scrypto_encode};
 use radix_engine_interface::math::*;
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::*;
+use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
 use sbor::rust::string::String;
@@ -531,7 +532,7 @@ impl ManifestBuilder {
         &mut self,
         entity_address: Address,
         key: String,
-        value: String,
+        value: MetadataValue,
     ) -> &mut Self {
         self.add_instruction(Instruction::SetMetadata {
             entity_address: from_address(entity_address),

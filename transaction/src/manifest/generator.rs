@@ -420,7 +420,7 @@ pub fn generate_instruction(
         } => Instruction::SetMetadata {
             entity_address: generate_address(entity_address, bech32_decoder)?,
             key: generate_string(key)?,
-            value: generate_string(value)?,
+            value: generate_typed_value(value, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::SetPackageRoyaltyConfig {
             package_address,
