@@ -54,7 +54,10 @@ fn can_set_identity_metadata_with_owner(is_virtual: bool) {
     let value = test_runner
         .get_metadata(component_address.into(), "name")
         .expect("Should exist");
-    assert_eq!(value, MetadataValue::String("best package ever!".to_string()));
+    assert_eq!(
+        value,
+        MetadataValue::String("best package ever!".to_string())
+    );
 }
 
 #[test]

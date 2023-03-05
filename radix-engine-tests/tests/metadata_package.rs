@@ -88,7 +88,10 @@ fn can_set_package_metadata_with_owner() {
     let value = test_runner
         .get_metadata(package_address.into(), "name")
         .expect("Should exist");
-    assert_eq!(value, MetadataValue::String("best package ever!".to_string()));
+    assert_eq!(
+        value,
+        MetadataValue::String("best package ever!".to_string())
+    );
 }
 
 #[test]
