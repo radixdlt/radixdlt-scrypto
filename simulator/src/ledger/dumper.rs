@@ -337,7 +337,7 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
     );
     for (last, (_hash, substate)) in map.iter().identify_last() {
         let substate = substate.clone().to_runtime();
-        if let KeyValueStoreEntrySubstate::Some(key, value) = &substate.kv_store_entry() {
+        if let KeyValueStoreEntrySubstate::Some(value) = &substate.kv_store_entry() {
             let value_display_context =
                 ScryptoValueDisplayContext::with_optional_bench32(Some(&bech32_encoder));
             writeln!(
@@ -405,7 +405,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             .map(|s| s.substate)
             .map(|s| s.to_runtime().into());
         let name_metadata = match name_metadata {
-            Some(KeyValueStoreEntrySubstate::Some(_, scrypto_value)) => {
+            Some(KeyValueStoreEntrySubstate::Some(scrypto_value)) => {
                 let entry: MetadataEntry =
                     scrypto_decode(&scrypto_encode(&scrypto_value).unwrap()).unwrap();
                 match entry {
@@ -429,7 +429,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             .map(|s| s.substate)
             .map(|s| s.to_runtime().into());
         let symbol_metadata = match symbol_metadata {
-            Some(KeyValueStoreEntrySubstate::Some(_, scrypto_value)) => {
+            Some(KeyValueStoreEntrySubstate::Some(scrypto_value)) => {
                 let entry: MetadataEntry =
                     scrypto_decode(&scrypto_encode(&scrypto_value).unwrap()).unwrap();
                 match entry {
