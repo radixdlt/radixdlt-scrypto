@@ -151,7 +151,6 @@ impl CallFrame {
             // TODO: fix this ugly condition
             if (matches!(node_id, RENodeId::GlobalComponent(_))
                 || matches!(node_id, RENodeId::Global(_)))
-                || matches!(node_id, RENodeId::GlobalResourceManager(_))
             {
                 // May overwrite existing node refs (for better visibility origin)
                 self.immortal_node_refs.insert(
@@ -327,23 +326,23 @@ impl CallFrame {
 
         // Add well-known global refs to current frame
         frame.add_ref(
-            RENodeId::GlobalResourceManager(RADIX_TOKEN),
+            RENodeId::Global(RADIX_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::GlobalResourceManager(SYSTEM_TOKEN),
+            RENodeId::Global(SYSTEM_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::GlobalResourceManager(ECDSA_SECP256K1_TOKEN),
+            RENodeId::Global(ECDSA_SECP256K1_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::GlobalResourceManager(EDDSA_ED25519_TOKEN),
+            RENodeId::Global(EDDSA_ED25519_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::GlobalResourceManager(PACKAGE_TOKEN),
+            RENodeId::Global(PACKAGE_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(

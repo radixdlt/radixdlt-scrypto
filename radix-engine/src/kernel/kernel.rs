@@ -128,11 +128,11 @@ where
     ) -> Result<(), RuntimeError> {
         // TODO: This should move into the appropriate place once virtual manager is implemented
         self.current_frame.add_ref(
-            RENodeId::GlobalResourceManager(ECDSA_SECP256K1_TOKEN),
+            RENodeId::Global(ECDSA_SECP256K1_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
         self.current_frame.add_ref(
-            RENodeId::GlobalResourceManager(EDDSA_ED25519_TOKEN),
+            RENodeId::Global(EDDSA_ED25519_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
 
@@ -206,11 +206,11 @@ where
     ) -> Result<(), RuntimeError> {
         // TODO: This should move into the appropriate place once virtual manager is implemented
         self.current_frame.add_ref(
-            RENodeId::GlobalResourceManager(ECDSA_SECP256K1_TOKEN),
+            RENodeId::Global(ECDSA_SECP256K1_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
         self.current_frame.add_ref(
-            RENodeId::GlobalResourceManager(EDDSA_ED25519_TOKEN),
+            RENodeId::Global(EDDSA_ED25519_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
 
@@ -449,7 +449,7 @@ where
         if depth == 0 {
             for node_id in &resolved.update.node_refs_to_copy {
                 match node_id {
-                    RENodeId::GlobalResourceManager(..) => {
+                    RENodeId::Global(Address::Resource(..)) => {
                         if self.current_frame.get_node_visibility(node_id).is_none() {
                             let offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
                             self.track
@@ -686,8 +686,8 @@ where
 
         match (node_id, &init) {
             (RENodeId::GlobalComponent(..), RENodeInit::GlobalObject(..)) => {}
-            (RENodeId::GlobalResourceManager(..), RENodeInit::GlobalObject(..)) => {}
-            (RENodeId::Global(..), RENodeInit::GlobalPackage(..)) => {}
+            (RENodeId::Global(Address::Resource(..)), RENodeInit::GlobalObject(..)) => {}
+            (RENodeId::Global(Address::Package(..)), RENodeInit::GlobalPackage(..)) => {}
             (RENodeId::Object(..), RENodeInit::Object(..)) => {}
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
             (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}

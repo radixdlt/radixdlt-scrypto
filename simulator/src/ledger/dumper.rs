@@ -428,7 +428,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
         let resource_address = vault_info.resource_address;
         let resource_manager: Option<ResourceManagerSubstate> = substate_store
             .get_substate(&SubstateId(
-                RENodeId::GlobalResourceManager(resource_address),
+                RENodeId::Global(resource_address.into()),
                 NodeModuleId::SELF,
                 SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             ))
@@ -437,7 +437,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
         let resource_manager = resource_manager.ok_or(DisplayError::ResourceManagerNotFound)?;
         let metadata: Option<MetadataSubstate> = substate_store
             .get_substate(&SubstateId(
-                RENodeId::GlobalResourceManager(resource_address),
+                RENodeId::Global(resource_address.into()),
                 NodeModuleId::Metadata,
                 SubstateOffset::Metadata(MetadataOffset::Metadata),
             ))
@@ -542,7 +542,7 @@ pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
 ) -> Result<(), DisplayError> {
     let resource_manager: Option<ResourceManagerSubstate> = substate_store
         .get_substate(&SubstateId(
-            RENodeId::GlobalResourceManager(resource_address),
+            RENodeId::Global(resource_address.into()),
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
         ))

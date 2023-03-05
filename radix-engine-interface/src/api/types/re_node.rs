@@ -29,7 +29,6 @@ pub enum RENodeId {
     Worktop,
     TransactionRuntime,
     GlobalComponent(ComponentAddress),
-    GlobalResourceManager(ResourceAddress),
     Global(Address),
     KeyValueStore(KeyValueStoreId),
     NonFungibleStore(NonFungibleStoreId),
@@ -54,10 +53,7 @@ impl fmt::Debug for RENodeId {
                 .field(&hex::encode(id))
                 .finish(),
             Self::Object(id) => f.debug_tuple("Object").field(&hex::encode(id)).finish(),
-            Self::GlobalResourceManager(address) => {
-                f.debug_tuple("ResourceManager").field(&address).finish()
-            }
-            Self::Global(address) => f.debug_tuple("GlobalPackage").field(&address).finish(),
+            Self::Global(address) => f.debug_tuple("Global").field(&address).finish(),
         }
     }
 }
@@ -80,8 +76,7 @@ impl From<RENodeId> for Address {
     fn from(node_id: RENodeId) -> Self {
         match node_id {
             RENodeId::GlobalComponent(component_address) => component_address.into(),
-            RENodeId::GlobalResourceManager(resource_address) => resource_address.into(),
-            RENodeId::Global(package_address) => package_address,
+            RENodeId::Global(address) => address,
             _ => panic!("Not an address"),
         }
     }
@@ -91,10 +86,7 @@ impl From<Address> for RENodeId {
     fn from(address: Address) -> Self {
         match address {
             Address::Component(component_address) => RENodeId::GlobalComponent(component_address),
-            Address::Resource(resource_address) => {
-                RENodeId::GlobalResourceManager(resource_address)
-            }
-            Address::Package(..) => RENodeId::Global(address),
+            Address::Package(..) | Address::Resource(..) => RENodeId::Global(address),
         }
     }
 }
@@ -111,7 +103,7 @@ impl Into<ComponentAddress> for RENodeId {
 impl Into<PackageAddress> for RENodeId {
     fn into(self) -> PackageAddress {
         match self {
-            RENodeId::Global(package_address) => package_address.into(),
+            RENodeId::Global(address) => address.into(),
             _ => panic!("Not a package address"),
         }
     }
@@ -120,7 +112,7 @@ impl Into<PackageAddress> for RENodeId {
 impl Into<ResourceAddress> for RENodeId {
     fn into(self) -> ResourceAddress {
         match self {
-            RENodeId::GlobalResourceManager(resource_address) => resource_address,
+            RENodeId::Global(address) => address.into(),
             _ => panic!("Not a resource address"),
         }
     }

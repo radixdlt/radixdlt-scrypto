@@ -161,7 +161,7 @@ pub fn create_genesis(
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let initial_supply: Decimal = XRD_MAX_SUPPLY.into();
         let resource_address = RADIX_TOKEN.to_array_without_entity_id();
-        pre_allocated_ids.insert(RENodeId::GlobalResourceManager(RADIX_TOKEN));
+        pre_allocated_ids.insert(RENodeId::Global(RADIX_TOKEN.into()));
         instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
@@ -186,7 +186,7 @@ pub fn create_genesis(
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = PACKAGE_TOKEN.to_array_without_entity_id();
-        pre_allocated_ids.insert(RENodeId::GlobalResourceManager(PACKAGE_TOKEN));
+        pre_allocated_ids.insert(RENodeId::Global(PACKAGE_TOKEN.into()));
         instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
@@ -368,7 +368,7 @@ pub fn create_genesis(
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = ECDSA_SECP256K1_TOKEN.to_array_without_entity_id();
-        pre_allocated_ids.insert(RENodeId::GlobalResourceManager(ECDSA_SECP256K1_TOKEN));
+        pre_allocated_ids.insert(RENodeId::Global(ECDSA_SECP256K1_TOKEN.into()));
         instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
@@ -390,7 +390,7 @@ pub fn create_genesis(
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = EDDSA_ED25519_TOKEN.to_array_without_entity_id();
-        pre_allocated_ids.insert(RENodeId::GlobalResourceManager(EDDSA_ED25519_TOKEN));
+        pre_allocated_ids.insert(RENodeId::Global(EDDSA_ED25519_TOKEN.into()));
         instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
@@ -412,7 +412,7 @@ pub fn create_genesis(
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = SYSTEM_TOKEN.to_array_without_entity_id();
-        pre_allocated_ids.insert(RENodeId::GlobalResourceManager(SYSTEM_TOKEN));
+        pre_allocated_ids.insert(RENodeId::Global(SYSTEM_TOKEN.into()));
         instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
@@ -484,7 +484,7 @@ pub fn create_genesis(
 
         let component_address = EPOCH_MANAGER.to_array_without_entity_id();
         let olympia_validator_token_address = OLYMPIA_VALIDATOR_TOKEN.to_array_without_entity_id();
-        pre_allocated_ids.insert(RENodeId::GlobalResourceManager(OLYMPIA_VALIDATOR_TOKEN));
+        pre_allocated_ids.insert(RENodeId::Global(OLYMPIA_VALIDATOR_TOKEN.into()));
         pre_allocated_ids.insert(RENodeId::GlobalComponent(EPOCH_MANAGER));
         instructions.push(Instruction::CallFunction {
             package_address: EPOCH_MANAGER_PACKAGE,
@@ -589,7 +589,7 @@ where
 {
     if substate_store
         .get_substate(&SubstateId(
-            RENodeId::GlobalResourceManager(RADIX_TOKEN),
+            RENodeId::Global(RADIX_TOKEN.into()),
             NodeModuleId::TypeInfo,
             SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
         ))

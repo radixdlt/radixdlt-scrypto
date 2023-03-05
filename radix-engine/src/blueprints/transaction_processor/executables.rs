@@ -90,7 +90,7 @@ fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFra
             extract_refs_from_value(&value, update);
 
             if package_address.eq(&EPOCH_MANAGER_PACKAGE) {
-                update.add_ref(RENodeId::GlobalResourceManager(PACKAGE_TOKEN));
+                update.add_ref(RENodeId::Global(PACKAGE_TOKEN.into()));
             }
         }
         Instruction::PublishPackage { access_rules, .. } => {
@@ -177,7 +177,7 @@ fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFra
         | Instruction::MintUuidNonFungible {
             resource_address, ..
         } => {
-            update.add_ref(RENodeId::GlobalResourceManager(resource_address.clone()));
+            update.add_ref(RENodeId::Global(resource_address.clone().into()));
         }
         Instruction::ReturnToWorktop { .. }
         | Instruction::PopFromAuthZone { .. }
@@ -231,12 +231,9 @@ fn extract_refs_from_value(value: &ManifestValue, collector: &mut CallFrameUpdat
             ManifestCustomValue::Address(a) => {
                 let address = to_address(a.clone());
                 let node_id = match address {
-                    Address::Package(..) => RENodeId::Global(address),
+                    Address::Package(..) | Address::Resource(..) => RENodeId::Global(address),
                     Address::Component(component_address) => {
                         RENodeId::GlobalComponent(component_address)
-                    }
-                    Address::Resource(resource_address) => {
-                        RENodeId::GlobalResourceManager(resource_address)
                     }
                 };
                 collector.add_ref(node_id)
@@ -259,12 +256,12 @@ impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
         for instruction in instructions {
             extract_refs_from_instruction(&instruction, &mut call_frame_update);
         }
-        call_frame_update.add_ref(RENodeId::GlobalResourceManager(RADIX_TOKEN));
-        call_frame_update.add_ref(RENodeId::GlobalResourceManager(PACKAGE_TOKEN));
+        call_frame_update.add_ref(RENodeId::Global(RADIX_TOKEN.into()));
+        call_frame_update.add_ref(RENodeId::Global(PACKAGE_TOKEN.into()));
         call_frame_update.add_ref(RENodeId::GlobalComponent(EPOCH_MANAGER));
         call_frame_update.add_ref(RENodeId::GlobalComponent(CLOCK));
-        call_frame_update.add_ref(RENodeId::GlobalResourceManager(ECDSA_SECP256K1_TOKEN));
-        call_frame_update.add_ref(RENodeId::GlobalResourceManager(EDDSA_ED25519_TOKEN));
+        call_frame_update.add_ref(RENodeId::Global(ECDSA_SECP256K1_TOKEN.into()));
+        call_frame_update.add_ref(RENodeId::Global(EDDSA_ED25519_TOKEN.into()));
 
         let actor = Actor::function(FnIdentifier {
             package_address: PACKAGE_LOADER,
@@ -545,7 +542,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     amount,
                 } => {
                     let rtn = api.call_method(
-                        RENodeId::GlobalResourceManager(resource_address),
+                        RENodeId::Global(resource_address.into()),
                         RESOURCE_MANAGER_MINT_FUNGIBLE,
                         scrypto_encode(&ResourceManagerMintFungibleInput { amount }).unwrap(),
                     )?;
@@ -561,7 +558,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     entries,
                 } => {
                     let rtn = api.call_method(
-                        RENodeId::GlobalResourceManager(resource_address),
+                        RENodeId::Global(resource_address.into()),
                         RESOURCE_MANAGER_MINT_NON_FUNGIBLE,
                         scrypto_encode(&ResourceManagerMintNonFungibleInput { entries: entries })
                             .unwrap(),
@@ -578,7 +575,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     entries,
                 } => {
                     let rtn = api.call_method(
-                        RENodeId::GlobalResourceManager(resource_address),
+                        RENodeId::Global(resource_address.into()),
                         RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE,
                         scrypto_encode(&ResourceManagerMintUuidNonFungibleInput {
                             entries: entries,

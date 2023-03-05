@@ -295,16 +295,8 @@ impl<'s> Track<'s> {
                 self.new_global_addresses
                     .push(Address::Component(*component_address));
             }
-            SubstateId(
-                RENodeId::GlobalResourceManager(resource_address),
-                NodeModuleId::TypeInfo,
-                ..,
-            ) => {
-                self.new_global_addresses
-                    .push(Address::Resource(*resource_address));
-            }
-            SubstateId(RENodeId::Global(package_address), NodeModuleId::TypeInfo, ..) => {
-                self.new_global_addresses.push(*package_address);
+            SubstateId(RENodeId::Global(address), NodeModuleId::TypeInfo, ..) => {
+                self.new_global_addresses.push(*address);
             }
             _ => {}
         }

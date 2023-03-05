@@ -118,7 +118,7 @@ impl SysBucket for Bucket {
         Y: ClientObjectApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::GlobalResourceManager(receiver),
+            RENodeId::Global(receiver.into()),
             RESOURCE_MANAGER_CREATE_BUCKET_IDENT,
             scrypto_encode(&ResourceManagerCreateBucketInput {}).unwrap(),
         )?;

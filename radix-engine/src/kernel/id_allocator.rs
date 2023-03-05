@@ -83,7 +83,7 @@ impl IdAllocator {
                 .map(|address| RENodeId::GlobalComponent(address)),
             RENodeType::GlobalResourceManager => self
                 .new_resource_address()
-                .map(|address| RENodeId::GlobalResourceManager(address)),
+                .map(|address| RENodeId::Global(address.into())),
             RENodeType::GlobalAccount => self
                 .new_account_address()
                 .map(|address| RENodeId::GlobalComponent(address)),

@@ -161,7 +161,7 @@ impl AuthModule {
                         let auth = match visibility {
                             RENodeVisibilityOrigin::Normal => {
                                 Self::method_authorization_contextless(
-                                    RENodeId::GlobalResourceManager(resource_address),
+                                    RENodeId::Global(resource_address.into()),
                                     NodeModuleId::AccessRules1,
                                     method_key,
                                     api,
@@ -169,7 +169,7 @@ impl AuthModule {
                             }
                             RENodeVisibilityOrigin::DirectAccess => {
                                 let handle = api.kernel_lock_substate(
-                                    RENodeId::GlobalResourceManager(resource_address),
+                                    RENodeId::Global(resource_address.into()),
                                     NodeModuleId::AccessRules1,
                                     SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
                                     LockFlags::read_only(),

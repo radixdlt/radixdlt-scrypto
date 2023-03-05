@@ -106,13 +106,13 @@ impl RadixEngineDB {
 
     pub fn list_resource_managers(&self) -> Vec<ResourceAddress> {
         let start = &scrypto_encode(&SubstateId(
-            RENodeId::GlobalResourceManager(ResourceAddress::Normal([0; 26])),
+            RENodeId::Global(ResourceAddress::Normal([0; 26]).into()),
             NodeModuleId::TypeInfo,
             SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
         ))
         .unwrap();
         let end = &scrypto_encode(&SubstateId(
-            RENodeId::GlobalResourceManager(ResourceAddress::Normal([255; 26])),
+            RENodeId::Global(ResourceAddress::Normal([255; 26]).into()),
             NodeModuleId::TypeInfo,
             SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
         ))
@@ -121,7 +121,7 @@ impl RadixEngineDB {
         let mut addresses = Vec::new();
         for substate_id in substate_ids {
             if let SubstateId(
-                RENodeId::GlobalResourceManager(resource_address),
+                RENodeId::Global(Address::Resource(resource_address)),
                 NodeModuleId::TypeInfo,
                 SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
             ) = substate_id

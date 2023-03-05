@@ -146,7 +146,7 @@ impl ExecutableInvocation for MethodInvocation {
         // TODO: Remove this weirdness or move to a kernel module if we still want to support this
         {
             if package_address.eq(&PACKAGE_LOADER) {
-                node_refs_to_copy.insert(RENodeId::GlobalResourceManager(RADIX_TOKEN));
+                node_refs_to_copy.insert(RENodeId::Global(RADIX_TOKEN.into()));
             } else {
                 let handle = api.kernel_lock_substate(
                     RENodeId::Global(fn_identifier.package_address.into()),
@@ -162,12 +162,12 @@ impl ExecutableInvocation for MethodInvocation {
                     PackageCodeTypeSubstate::Wasm => {
                         node_refs_to_copy.insert(RENodeId::GlobalComponent(EPOCH_MANAGER));
                         node_refs_to_copy.insert(RENodeId::GlobalComponent(CLOCK));
-                        node_refs_to_copy.insert(RENodeId::GlobalResourceManager(RADIX_TOKEN));
-                        node_refs_to_copy.insert(RENodeId::GlobalResourceManager(PACKAGE_TOKEN));
+                        node_refs_to_copy.insert(RENodeId::Global(RADIX_TOKEN.into()));
+                        node_refs_to_copy.insert(RENodeId::Global(PACKAGE_TOKEN.into()));
                         node_refs_to_copy
-                            .insert(RENodeId::GlobalResourceManager(ECDSA_SECP256K1_TOKEN));
+                            .insert(RENodeId::Global(ECDSA_SECP256K1_TOKEN.into()));
                         node_refs_to_copy
-                            .insert(RENodeId::GlobalResourceManager(EDDSA_ED25519_TOKEN));
+                            .insert(RENodeId::Global(EDDSA_ED25519_TOKEN.into()));
                     }
                     _ => {}
                 }
@@ -219,7 +219,7 @@ impl ExecutableInvocation for FunctionInvocation {
         // TODO: Remove this weirdness or move to a kernel module if we still want to support this
         {
             if self.fn_identifier.package_address.eq(&PACKAGE_LOADER) {
-                node_refs_to_copy.insert(RENodeId::GlobalResourceManager(RADIX_TOKEN));
+                node_refs_to_copy.insert(RENodeId::Global(RADIX_TOKEN.into()));
             } else {
                 let handle = api.kernel_lock_substate(
                     RENodeId::Global(self.fn_identifier.package_address.into()),
@@ -235,12 +235,12 @@ impl ExecutableInvocation for FunctionInvocation {
                     PackageCodeTypeSubstate::Wasm => {
                         node_refs_to_copy.insert(RENodeId::GlobalComponent(EPOCH_MANAGER));
                         node_refs_to_copy.insert(RENodeId::GlobalComponent(CLOCK));
-                        node_refs_to_copy.insert(RENodeId::GlobalResourceManager(RADIX_TOKEN));
-                        node_refs_to_copy.insert(RENodeId::GlobalResourceManager(PACKAGE_TOKEN));
+                        node_refs_to_copy.insert(RENodeId::Global(RADIX_TOKEN.into()));
+                        node_refs_to_copy.insert(RENodeId::Global(PACKAGE_TOKEN.into()));
                         node_refs_to_copy
-                            .insert(RENodeId::GlobalResourceManager(ECDSA_SECP256K1_TOKEN));
+                            .insert(RENodeId::Global(ECDSA_SECP256K1_TOKEN.into()));
                         node_refs_to_copy
-                            .insert(RENodeId::GlobalResourceManager(EDDSA_ED25519_TOKEN));
+                            .insert(RENodeId::Global(EDDSA_ED25519_TOKEN.into()));
                     }
                     _ => {}
                 }
