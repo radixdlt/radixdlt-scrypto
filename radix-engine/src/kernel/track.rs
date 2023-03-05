@@ -233,7 +233,9 @@ impl<'s> Track<'s> {
         offset: &SubstateOffset,
     ) -> SubstateRef {
         let runtime_substate = match (node_id, offset) {
-            (_, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))) => self.read_key_value(node_id, module_id, offset),
+            (_, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))) => {
+                self.read_key_value(node_id, module_id, offset)
+            }
             _ => {
                 let substate_id = SubstateId(node_id, module_id, offset.clone());
                 &self
@@ -253,7 +255,9 @@ impl<'s> Track<'s> {
         offset: &SubstateOffset,
     ) -> SubstateRefMut {
         let runtime_substate = match (node_id, module_id, offset) {
-            (_, _, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))) => self.read_key_value_mut(node_id, module_id, offset),
+            (_, _, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))) => {
+                self.read_key_value_mut(node_id, module_id, offset)
+            }
             _ => {
                 let substate_id = SubstateId(node_id, module_id, offset.clone());
                 &mut self
@@ -270,25 +274,8 @@ impl<'s> Track<'s> {
         assert!(!self.loaded_substates.contains_key(&substate_id));
 
         match &substate_id {
-            SubstateId(
-                RENodeId::GlobalComponent(component_address),
-                NodeModuleId::TypeInfo,
-                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-            ) => {
-                self.new_global_addresses
-                    .push(Address::Component(*component_address));
-            }
-            SubstateId(
-                RENodeId::GlobalResourceManager(resource_address),
-                NodeModuleId::TypeInfo,
-                ..,
-            ) => {
-                self.new_global_addresses
-                    .push(Address::Resource(*resource_address));
-            }
-            SubstateId(RENodeId::GlobalPackage(package_address), NodeModuleId::TypeInfo, ..) => {
-                self.new_global_addresses
-                    .push(Address::Package(*package_address));
+            SubstateId(RENodeId::Global(address), NodeModuleId::TypeInfo, ..) => {
+                self.new_global_addresses.push(*address);
             }
             _ => {}
         }
@@ -528,8 +515,10 @@ impl<'s> FinalizingTrack<'s> {
                 .iter()
                 .find(|(identifier, _)| match identifier {
                     EventTypeIdentifier(
-                        RENodeId::GlobalPackage(EPOCH_MANAGER_PACKAGE)
-                        | RENodeId::GlobalComponent(ComponentAddress::EpochManager(..)),
+                        RENodeId::Global(
+                            Address::Package(EPOCH_MANAGER_PACKAGE)
+                            | Address::Component(ComponentAddress::EpochManager(..)),
+                        ),
                         NodeModuleId::SELF,
                         schema_hash,
                     ) if *schema_hash == expected_schema_hash => true,
@@ -617,7 +606,7 @@ impl<'s> FinalizingTrack<'s> {
             match receiver {
                 RoyaltyReceiver::Package(package_address) => {
                     let substate_id = SubstateId(
-                        RENodeId::GlobalPackage(*package_address),
+                        RENodeId::Global(package_address.clone().into()),
                         NodeModuleId::PackageRoyalty,
                         SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                     );

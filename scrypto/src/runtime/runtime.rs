@@ -29,7 +29,7 @@ impl Runtime {
     pub fn current_epoch() -> u64 {
         let rtn = ScryptoEnv
             .call_method(
-                RENodeId::GlobalComponent(EPOCH_MANAGER.into()),
+                RENodeId::Global(EPOCH_MANAGER.into()),
                 EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
                 scrypto_encode(&EpochManagerGetCurrentEpochInput).unwrap(),
             )
@@ -81,7 +81,7 @@ impl Runtime {
     ) -> T {
         let output = ScryptoEnv
             .call_method(
-                RENodeId::GlobalComponent(component_address.into()),
+                RENodeId::Global(component_address.into()),
                 method.as_ref(),
                 args,
             )

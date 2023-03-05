@@ -1,4 +1,3 @@
-use crate::blueprints::resource::*;
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::system::node_modules::access_rules::*;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
@@ -7,9 +6,7 @@ use crate::system::type_info::PackageCodeTypeSubstate;
 use crate::types::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::package::*;
-use radix_engine_interface::api::types::{
-    AuthZoneStackOffset, PackageOffset, SubstateOffset, WorktopOffset,
-};
+use radix_engine_interface::api::types::{AuthZoneStackOffset, PackageOffset, SubstateOffset};
 
 #[derive(Debug)]
 pub enum RENodeModuleInit {
@@ -92,7 +89,6 @@ pub enum RENodeInit {
     ),
     Object(BTreeMap<SubstateOffset, RuntimeSubstate>),
     AuthZoneStack(AuthZoneStackSubstate),
-    Worktop(WorktopSubstate),
     KeyValueStore,
     TransactionRuntime(TransactionRuntimeSubstate),
 }
@@ -111,12 +107,6 @@ impl RENodeInit {
                 substates.extend(object_substates);
             }
             RENodeInit::KeyValueStore => {}
-            RENodeInit::Worktop(worktop) => {
-                substates.insert(
-                    SubstateOffset::Worktop(WorktopOffset::Worktop),
-                    RuntimeSubstate::Worktop(worktop),
-                );
-            }
             RENodeInit::GlobalPackage(package_info, code_type, code) => {
                 substates.insert(
                     SubstateOffset::Package(PackageOffset::Info),

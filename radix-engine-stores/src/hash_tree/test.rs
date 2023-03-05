@@ -384,7 +384,7 @@ fn substate_id(
     let fake_pkg_address = PackageAddress::Normal([re_node_id_seed; 26]);
     let fake_kvs_entry_id = vec![substate_offset_seed; substate_offset_seed as usize];
     SubstateId(
-        RENodeId::GlobalPackage(fake_pkg_address),
+        RENodeId::Global(fake_pkg_address.into()),
         node_module_id,
         SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(fake_kvs_entry_id)),
     )

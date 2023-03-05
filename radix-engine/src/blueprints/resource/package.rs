@@ -1,3 +1,4 @@
+use crate::blueprints::resource::vault::VaultBlueprint;
 use crate::blueprints::resource::*;
 use crate::errors::InterpreterError;
 use crate::errors::RuntimeError;
@@ -7,7 +8,6 @@ use crate::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
-use crate::blueprints::resource::vault::VaultBlueprint;
 
 pub struct ResourceManagerNativePackage;
 

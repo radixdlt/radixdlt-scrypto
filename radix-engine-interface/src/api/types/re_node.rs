@@ -8,7 +8,6 @@ use sbor::rust::prelude::*;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor)]
 pub enum RENodeType {
     AuthZoneStack,
-    Worktop,
     GlobalAccount,
     GlobalComponent,
     GlobalResourceManager,
@@ -25,11 +24,8 @@ pub enum RENodeType {
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum RENodeId {
     AuthZoneStack,
-    Worktop,
     TransactionRuntime,
-    GlobalComponent(ComponentAddress),
-    GlobalResourceManager(ResourceAddress),
-    GlobalPackage(PackageAddress),
+    Global(Address),
     KeyValueStore(KeyValueStoreId),
     Object(ObjectId),
 }
@@ -38,20 +34,13 @@ impl fmt::Debug for RENodeId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::AuthZoneStack => write!(f, "AuthZoneStack"),
-            Self::Worktop => write!(f, "Worktop"),
             Self::TransactionRuntime => write!(f, "TransactionRuntime"),
-            Self::GlobalComponent(address) => {
-                f.debug_tuple("GlobalComponent").field(address).finish()
-            }
             Self::KeyValueStore(id) => f
                 .debug_tuple("KeyValueStore")
                 .field(&hex::encode(id))
                 .finish(),
             Self::Object(id) => f.debug_tuple("Object").field(&hex::encode(id)).finish(),
-            Self::GlobalResourceManager(address) => {
-                f.debug_tuple("ResourceManager").field(&address).finish()
-            }
-            Self::GlobalPackage(address) => f.debug_tuple("GlobalPackage").field(&address).finish(),
+            Self::Global(address) => f.debug_tuple("Global").field(&address).finish(),
         }
     }
 }
@@ -61,7 +50,6 @@ impl Into<[u8; 36]> for RENodeId {
         match self {
             RENodeId::KeyValueStore(id) => id,
             RENodeId::Object(id) => id,
-            RENodeId::Worktop => [3u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
             RENodeId::TransactionRuntime => [4u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
             RENodeId::AuthZoneStack => [5u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
             _ => panic!("Not a stored id: {:?}", self),
@@ -72,9 +60,7 @@ impl Into<[u8; 36]> for RENodeId {
 impl From<RENodeId> for Address {
     fn from(node_id: RENodeId) -> Self {
         match node_id {
-            RENodeId::GlobalComponent(component_address) => component_address.into(),
-            RENodeId::GlobalResourceManager(resource_address) => resource_address.into(),
-            RENodeId::GlobalPackage(package_address) => package_address.into(),
+            RENodeId::Global(address) => address,
             _ => panic!("Not an address"),
         }
     }
@@ -82,20 +68,14 @@ impl From<RENodeId> for Address {
 
 impl From<Address> for RENodeId {
     fn from(address: Address) -> Self {
-        match address {
-            Address::Component(component_address) => RENodeId::GlobalComponent(component_address),
-            Address::Resource(resource_address) => {
-                RENodeId::GlobalResourceManager(resource_address)
-            }
-            Address::Package(package_address) => RENodeId::GlobalPackage(package_address),
-        }
+        RENodeId::Global(address)
     }
 }
 
 impl Into<ComponentAddress> for RENodeId {
     fn into(self) -> ComponentAddress {
         match self {
-            RENodeId::GlobalComponent(address) => address,
+            RENodeId::Global(address) => address.into(),
             _ => panic!("Not a component address: {:?}", self),
         }
     }
@@ -104,7 +84,7 @@ impl Into<ComponentAddress> for RENodeId {
 impl Into<PackageAddress> for RENodeId {
     fn into(self) -> PackageAddress {
         match self {
-            RENodeId::GlobalPackage(package_address) => package_address,
+            RENodeId::Global(address) => address.into(),
             _ => panic!("Not a package address"),
         }
     }
@@ -113,7 +93,7 @@ impl Into<PackageAddress> for RENodeId {
 impl Into<ResourceAddress> for RENodeId {
     fn into(self) -> ResourceAddress {
         match self {
-            RENodeId::GlobalResourceManager(resource_address) => resource_address,
+            RENodeId::Global(address) => address.into(),
             _ => panic!("Not a resource address"),
         }
     }

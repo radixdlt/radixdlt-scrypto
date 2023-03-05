@@ -47,7 +47,7 @@ impl AuthModule {
             actor,
             Some(Actor {
                 identifier: ActorIdentifier::Method(MethodIdentifier(
-                    RENodeId::GlobalComponent(..),
+                    RENodeId::Global(Address::Component(..)),
                     ..
                 )),
                 ..
@@ -71,7 +71,7 @@ impl AuthModule {
             }
         } else {
             let handle = api.kernel_lock_substate(
-                RENodeId::GlobalPackage(identifier.package_address),
+                RENodeId::Global(identifier.package_address.into()),
                 NodeModuleId::FunctionAccessRules,
                 SubstateOffset::PackageAccessRules,
                 LockFlags::read_only(),
@@ -128,10 +128,9 @@ impl AuthModule {
                     _ => MethodAuthorization::AllowAll,
                 }
             }
-            MethodIdentifier(
-                RENodeId::Worktop | RENodeId::TransactionRuntime | RENodeId::AuthZoneStack,
-                ..,
-            ) => MethodAuthorization::AllowAll,
+            MethodIdentifier(RENodeId::TransactionRuntime | RENodeId::AuthZoneStack, ..) => {
+                MethodAuthorization::AllowAll
+            }
 
             MethodIdentifier(RENodeId::Object(object_id), ..) => {
                 let node_id = RENodeId::Object(*object_id);
@@ -161,7 +160,7 @@ impl AuthModule {
                         let auth = match visibility {
                             RENodeVisibilityOrigin::Normal => {
                                 Self::method_authorization_contextless(
-                                    RENodeId::GlobalResourceManager(resource_address),
+                                    RENodeId::Global(resource_address.into()),
                                     NodeModuleId::AccessRules1,
                                     method_key,
                                     api,
@@ -169,7 +168,7 @@ impl AuthModule {
                             }
                             RENodeVisibilityOrigin::DirectAccess => {
                                 let handle = api.kernel_lock_substate(
-                                    RENodeId::GlobalResourceManager(resource_address),
+                                    RENodeId::Global(resource_address.into()),
                                     NodeModuleId::AccessRules1,
                                     SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
                                     LockFlags::read_only(),
@@ -211,7 +210,7 @@ impl AuthModule {
                 // TODO: Clean this up
                 let auth = if matches!(
                     node_id,
-                    RENodeId::GlobalComponent(ComponentAddress::Normal(..))
+                    RENodeId::Global(Address::Component(ComponentAddress::Normal(..)))
                 ) && module_id.eq(&NodeModuleId::SELF)
                 {
                     Self::normal_component_method_authorization(
@@ -246,7 +245,7 @@ impl AuthModule {
             let (package_address, blueprint_ident) = TypeInfoBlueprint::get_type(receiver, api)?;
 
             let handle = api.kernel_lock_substate(
-                RENodeId::GlobalPackage(package_address),
+                RENodeId::Global(package_address.into()),
                 NodeModuleId::SELF,
                 SubstateOffset::Package(PackageOffset::Info),
                 LockFlags::read_only(),

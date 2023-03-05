@@ -1,4 +1,5 @@
 use super::track::Track;
+use crate::blueprints::resource::*;
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::errors::CallFrameError;
 use crate::system::node_modules::access_rules::AuthZoneStackSubstate;
@@ -15,7 +16,6 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
-use crate::blueprints::resource::*;
 
 pub struct Heap {
     nodes: HashMap<RENodeId, HeapRENode>,

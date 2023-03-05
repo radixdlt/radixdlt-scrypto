@@ -66,7 +66,7 @@ impl Publish {
                 RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
 
             let substate_id = SubstateId(
-                RENodeId::GlobalPackage(package_address.0),
+                RENodeId::Global(package_address.0),
                 NodeModuleId::SELF,
                 SubstateOffset::Package(PackageOffset::Code),
             );
@@ -85,7 +85,7 @@ impl Publish {
             // TODO: implement real package overwrite
             substate_store.put_substate(
                 SubstateId(
-                    RENodeId::GlobalPackage(package_address.0),
+                    RENodeId::Global(package_address.0),
                     NodeModuleId::SELF,
                     SubstateOffset::Package(PackageOffset::Code),
                 ),
@@ -105,7 +105,7 @@ impl Publish {
 
             substate_store.put_substate(
                 SubstateId(
-                    RENodeId::GlobalPackage(package_address.0),
+                    RENodeId::Global(package_address.0),
                     NodeModuleId::SELF,
                     SubstateOffset::Package(PackageOffset::Info),
                 ),
