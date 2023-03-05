@@ -242,7 +242,7 @@ impl TestRunner {
 
         let metadata_entry: KeyValueStoreEntrySubstate = metadata_entry.into();
         let metadata_entry = match metadata_entry {
-            KeyValueStoreEntrySubstate::Some(_, value) => {
+            KeyValueStoreEntrySubstate::Some(value) => {
                 let value: MetadataEntry =
                     scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap();
                 Some(value)

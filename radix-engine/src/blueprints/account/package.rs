@@ -447,7 +447,7 @@ impl AccountNativePackage {
                 api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
 
             match entry {
-                KeyValueStoreEntrySubstate::Some(_, value) => {
+                KeyValueStoreEntrySubstate::Some(value) => {
                     Ok(scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
                         .map(|own| Vault(own.vault_id()))
                         .expect("Impossible Case!"))
@@ -551,20 +551,18 @@ impl AccountNativePackage {
                 api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
 
             match entry {
-                KeyValueStoreEntrySubstate::Some(_, value) => {
+                KeyValueStoreEntrySubstate::Some(value) => {
                     scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
                         .map(|own| Vault(own.vault_id()))
                         .expect("Impossible Case!")
                 }
                 KeyValueStoreEntrySubstate::None => {
                     let vault = Vault::sys_new(resource_address, api)?;
-                    let encoded_key = IndexedScryptoValue::from_typed(&resource_address);
                     let encoded_value = IndexedScryptoValue::from_typed(&Own::Vault(vault.0));
 
                     let entry: &mut KeyValueStoreEntrySubstate =
                         api.kernel_get_substate_ref_mut(kv_store_entry_lock_handle)?;
-                    *entry =
-                        KeyValueStoreEntrySubstate::Some(encoded_key.into(), encoded_value.into());
+                    *entry = KeyValueStoreEntrySubstate::Some(encoded_value.into());
 
                     vault
                 }
@@ -627,22 +625,18 @@ impl AccountNativePackage {
                     api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
 
                 match entry {
-                    KeyValueStoreEntrySubstate::Some(_, value) => {
+                    KeyValueStoreEntrySubstate::Some(value) => {
                         scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
                             .map(|own| Vault(own.vault_id()))
                             .expect("Impossible Case!")
                     }
                     KeyValueStoreEntrySubstate::None => {
                         let vault = Vault::sys_new(resource_address, api)?;
-                        let encoded_key = IndexedScryptoValue::from_typed(&resource_address);
                         let encoded_value = IndexedScryptoValue::from_typed(&Own::Vault(vault.0));
 
                         let entry: &mut KeyValueStoreEntrySubstate =
                             api.kernel_get_substate_ref_mut(kv_store_entry_lock_handle)?;
-                        *entry = KeyValueStoreEntrySubstate::Some(
-                            encoded_key.into(),
-                            encoded_value.into(),
-                        );
+                        *entry = KeyValueStoreEntrySubstate::Some(encoded_value.into());
 
                         vault
                     }
@@ -695,7 +689,7 @@ impl AccountNativePackage {
                 api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
 
             match entry {
-                KeyValueStoreEntrySubstate::Some(_, value) => {
+                KeyValueStoreEntrySubstate::Some(value) => {
                     Ok(scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
                         .map(|own| Vault(own.vault_id()))
                         .expect("Impossible Case!"))

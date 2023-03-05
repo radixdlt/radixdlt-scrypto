@@ -28,7 +28,6 @@ mod cyclic_map {
                 scrypto_encode(&0u32).unwrap(),
             ));
             let substate = KeyValueStoreEntrySubstate::Some(
-                scrypto_decode(&scrypto_encode(&0u32).unwrap()).unwrap(),
                 scrypto_decode(
                     &scrypto_encode(&KeyValueStore::<(), ()> {
                         id: kv_store0_id,
@@ -59,7 +58,6 @@ mod cyclic_map {
                 scrypto_encode(&0u32).unwrap(),
             ));
             let substate = KeyValueStoreEntrySubstate::Some(
-                scrypto_decode(&scrypto_encode(&0u32).unwrap()).unwrap(),
                 scrypto_decode(
                     &scrypto_encode(&KeyValueStore::<(), ()> {
                         id: kv_store_id,

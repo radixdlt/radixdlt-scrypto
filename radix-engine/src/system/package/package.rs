@@ -92,7 +92,6 @@ impl Package {
                     scrypto_encode(&key).unwrap(),
                 )),
                 RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::Some(
-                    ScryptoValue::String { value: key },
                     ScryptoValue::String { value },
                 )),
             );
@@ -196,7 +195,6 @@ impl Package {
                     scrypto_encode(&key).unwrap(),
                 )),
                 RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::Some(
-                    ScryptoValue::String { value: key },
                     ScryptoValue::String { value },
                 )),
             );
