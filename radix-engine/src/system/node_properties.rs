@@ -321,6 +321,7 @@ impl SubstateProperties {
             SubstateOffset::AccessController(..) => true,
             SubstateOffset::TypeInfo(..) => true,
             SubstateOffset::PackageAccessRules => true,
+            SubstateOffset::PackageEventSchema(..) => true,
         }
     }
 

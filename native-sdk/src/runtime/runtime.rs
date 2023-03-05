@@ -30,7 +30,7 @@ impl Runtime {
                 .map(hash)
                 .expect("Schema can't be encoded!")
         };
-        api.emit_raw_event(schema_hash, scrypto_encode(&event).unwrap())
+        api.emit_event(schema_hash, scrypto_encode(&event).unwrap())
     }
 
     pub fn sys_current_epoch<Y, E>(api: &mut Y) -> Result<u64, E>

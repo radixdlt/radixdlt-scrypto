@@ -562,7 +562,8 @@ where
                 NodeModuleId::SELF
                 | NodeModuleId::TypeInfo
                 | NodeModuleId::PackageRoyalty
-                | NodeModuleId::FunctionAccessRules => {
+                | NodeModuleId::FunctionAccessRules
+                | NodeModuleId::PackageEventSchema => {
                     return Err(RuntimeError::SystemError(SystemError::InvalidModule))
                 }
                 NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {
@@ -749,11 +750,7 @@ impl<'g, 's, W> ClientEventApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    fn emit_raw_event(
-        &mut self,
-        schema_hash: Hash,
-        event_data: Vec<u8>,
-    ) -> Result<(), RuntimeError> {
+    fn emit_event(&mut self, schema_hash: Hash, event_data: Vec<u8>) -> Result<(), RuntimeError> {
         // Costing event emission.
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 

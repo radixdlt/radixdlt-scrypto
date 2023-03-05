@@ -1,11 +1,13 @@
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::FIXED_HIGH_FEE;
+use crate::system::kernel_modules::events::EventError;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::{
     FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
+use crate::system::node_modules::event_schema::PackageEventSchemaSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::type_info::PackageCodeTypeSubstate;
@@ -111,6 +113,30 @@ impl Package {
                 default_auth: input.default_package_access_rule,
             }),
         );
+        {
+            let mut package_event_schema = BTreeMap::<
+                String,
+                BTreeMap<Hash, (LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>,
+            >::new();
+            for (blueprint_name, event_schemas) in input.event_schema {
+                let blueprint_schema = package_event_schema.entry(blueprint_name).or_default();
+                for indexed_schema in event_schemas {
+                    let schema_hash = scrypto_encode(&indexed_schema).map(hash).map_err(|_| {
+                        RuntimeError::ApplicationError(ApplicationError::EventError(
+                            EventError::FailedToSborEncodeEventSchema,
+                        ))
+                    })?;
+                    blueprint_schema.insert(schema_hash, indexed_schema);
+                }
+            }
+
+            node_modules.insert(
+                NodeModuleId::PackageEventSchema,
+                RENodeModuleInit::PackageEventSchema(PackageEventSchemaSubstate(
+                    package_event_schema,
+                )),
+            );
+        }
 
         let info = PackageInfoSubstate {
             schema: input.schema,

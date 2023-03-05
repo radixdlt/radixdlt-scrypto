@@ -123,7 +123,7 @@ impl Runtime {
                 .expect("Schema can't be encoded!")
         };
         ScryptoEnv
-            .emit_raw_event(schema_hash, scrypto_encode(&event).unwrap())
+            .emit_event(schema_hash, scrypto_encode(&event).unwrap())
             .unwrap();
     }
 }

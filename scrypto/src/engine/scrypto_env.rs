@@ -254,11 +254,7 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
 }
 
 impl ClientEventApi<ClientApiError> for ScryptoEnv {
-    fn emit_raw_event(
-        &mut self,
-        schema_hash: Hash,
-        event_data: Vec<u8>,
-    ) -> Result<(), ClientApiError> {
+    fn emit_event(&mut self, schema_hash: Hash, event_data: Vec<u8>) -> Result<(), ClientApiError> {
         unsafe {
             emit_event(
                 schema_hash.0.as_ptr(),

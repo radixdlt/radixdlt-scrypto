@@ -1,6 +1,7 @@
 use crate::blueprints::resource::*;
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::system::node_modules::access_rules::*;
+use crate::system::node_modules::event_schema::PackageEventSchemaSubstate;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::*;
@@ -33,6 +34,9 @@ pub enum RENodeModuleInit {
         PackageRoyaltyConfigSubstate,
         PackageRoyaltyAccumulatorSubstate,
     ),
+
+    /* Events */
+    PackageEventSchema(PackageEventSchemaSubstate),
 }
 
 impl RENodeModuleInit {
@@ -78,6 +82,14 @@ impl RENodeModuleInit {
                 substates.insert(
                     SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                     accumulator.into(),
+                );
+            }
+            RENodeModuleInit::PackageEventSchema(event_schema) => {
+                substates.insert(
+                    SubstateOffset::PackageEventSchema(
+                        PackageEventSchemaOffset::PackageEventSchema,
+                    ),
+                    event_schema.into(),
                 );
             }
         }

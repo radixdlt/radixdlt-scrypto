@@ -291,7 +291,7 @@ where
         event: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
         self.api
-            .emit_raw_event(Hash(copy_u8_array(&schema_hash)), event)?;
+            .emit_event(Hash(copy_u8_array(&schema_hash)), event)?;
         Ok(())
     }
 

@@ -14,7 +14,7 @@ pub struct StakeEvent {
 
 #[derive(ScryptoSbor)]
 pub struct UnstakeEvent {
-    pub stake_units: Decimal, // TODO: Should be stake units instead?
+    pub stake_units: Decimal,
 }
 
 #[derive(ScryptoSbor)]
