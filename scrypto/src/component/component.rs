@@ -14,7 +14,7 @@ use radix_engine_interface::api::node_modules::royalty::{
 use radix_engine_interface::api::types::{ObjectId, RENodeId};
 use radix_engine_interface::api::{types::*, ClientObjectApi, ClientPackageApi};
 use radix_engine_interface::blueprints::resource::{
-    require, AccessRule, AccessRuleEntry, AccessRules, Bucket, MethodKey, NonFungibleGlobalId,
+    require, AccessRule, AccessRuleEntry, AccessRulesConfig, Bucket, MethodKey, NonFungibleGlobalId,
 };
 use radix_engine_interface::constants::{ACCESS_RULES_PACKAGE, ROYALTY_PACKAGE};
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::OWN_ID;
@@ -51,13 +51,13 @@ pub trait Component {
 pub trait LocalComponent: Sized {
     fn globalize_with_modules(
         self,
-        access_rules: AccessRules,
+        access_rules: AccessRulesConfig,
         metadata: Metadata,
         config: RoyaltyConfig,
     ) -> ComponentAddress;
 
     fn globalize(self) -> ComponentAddress {
-        let mut access_rules = AccessRules::new();
+        let mut access_rules = AccessRulesConfig::new();
         access_rules.set_method_access_rule(
             MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
             AccessRuleEntry::AccessRule(AccessRule::DenyAll),
@@ -68,7 +68,7 @@ pub trait LocalComponent: Sized {
     }
 
     fn globalize_with_metadata(self, metadata: Metadata) -> ComponentAddress {
-        let mut access_rules = AccessRules::new();
+        let mut access_rules = AccessRulesConfig::new();
         access_rules.set_method_access_rule(
             MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
             AccessRuleEntry::AccessRule(AccessRule::DenyAll),
@@ -79,7 +79,7 @@ pub trait LocalComponent: Sized {
     }
 
     fn globalize_with_royalty_config(self, config: RoyaltyConfig) -> ComponentAddress {
-        let mut access_rules = AccessRules::new();
+        let mut access_rules = AccessRulesConfig::new();
         access_rules.set_method_access_rule(
             MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
             AccessRuleEntry::AccessRule(AccessRule::DenyAll),
@@ -89,7 +89,7 @@ pub trait LocalComponent: Sized {
         self.globalize_with_modules(access_rules, Metadata::new(), config)
     }
 
-    fn globalize_with_access_rules(self, access_rules: AccessRules) -> ComponentAddress {
+    fn globalize_with_access_rules(self, access_rules: AccessRulesConfig) -> ComponentAddress {
         self.globalize_with_modules(access_rules, Metadata::new(), RoyaltyConfig::default())
     }
 
@@ -99,7 +99,7 @@ pub trait LocalComponent: Sized {
         royalty_config: RoyaltyConfig,
     ) -> ComponentAddress {
         let mut access_rules =
-            AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll);
+            AccessRulesConfig::new().default(AccessRule::AllowAll, AccessRule::AllowAll);
         access_rules.set_access_rule_and_mutability(
             MethodKey::new(NodeModuleId::Metadata, METADATA_GET_IDENT.to_string()),
             AccessRule::AllowAll,
@@ -160,7 +160,7 @@ impl Component for OwnedComponent {
 impl LocalComponent for OwnedComponent {
     fn globalize_with_modules(
         self,
-        access_rules: AccessRules,
+        access_rules: AccessRulesConfig,
         metadata: Metadata,
         config: RoyaltyConfig,
     ) -> ComponentAddress {

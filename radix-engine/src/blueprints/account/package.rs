@@ -10,7 +10,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::AccessRule;
-use radix_engine_interface::blueprints::resource::AccessRules;
+use radix_engine_interface::blueprints::resource::AccessRulesConfig;
 use radix_engine_interface::blueprints::resource::MethodKey;
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver};
 
@@ -893,8 +893,8 @@ impl AccountNativePackage {
 // Helpers
 //=========
 
-fn access_rules_from_withdraw_rule(withdraw_rule: AccessRule) -> AccessRules {
-    let mut access_rules = AccessRules::new();
+fn access_rules_from_withdraw_rule(withdraw_rule: AccessRule) -> AccessRulesConfig {
+    let mut access_rules = AccessRulesConfig::new();
     access_rules.set_access_rule_and_mutability(
         MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_IDENT.to_string()),
         AccessRule::AllowAll,

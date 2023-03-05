@@ -11,7 +11,7 @@ use radix_engine_interface::api::package::PackageCodeSubstate;
 use radix_engine_interface::api::types::IndexedScryptoValue;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::blueprints::resource::{
-    AccessRules, LiquidFungibleResource, LiquidNonFungibleResource,
+    AccessRulesConfig, LiquidFungibleResource, LiquidNonFungibleResource,
 };
 use radix_engine_interface::network::NetworkDefinition;
 use std::collections::VecDeque;
@@ -66,7 +66,7 @@ struct ComponentStateDump {
     pub owned_vaults: Option<HashSet<ObjectId>>,
     pub package_address: Option<PackageAddress>, // Native components have no package address.
     pub blueprint_name: String,                  // All components have a blueprint, native or not.
-    pub access_rules: Option<AccessRules>,       // Virtual Components don't have access rules.
+    pub access_rules: Option<AccessRulesConfig>,       // Virtual Components don't have access rules.
 }
 
 /// Dump a component into console.

@@ -1,7 +1,7 @@
 use radix_engine_common::data::scrypto::model::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataEntry;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::blueprints::resource::{AccessRule, AccessRules, MethodKey};
+use radix_engine_interface::blueprints::resource::{AccessRule, AccessRulesConfig, MethodKey};
 use radix_engine_interface::data::manifest::model::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;
@@ -103,7 +103,7 @@ pub enum Instruction {
         schema: ManifestBlobRef,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
-        access_rules: AccessRules,
+        access_rules: AccessRulesConfig,
     },
 
     BurnResource {

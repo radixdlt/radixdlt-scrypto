@@ -644,8 +644,8 @@ fn access_rule_or(access_rules: Vec<AccessRule>) -> AccessRule {
 // Helpers
 //=========
 
-fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
-    let mut access_rules = AccessRules::new();
+fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
+    let mut access_rules = AccessRulesConfig::new();
 
     // Primary Role Rules
     let primary_group = "primary";
@@ -812,7 +812,7 @@ where
 fn update_access_rules<Y>(
     api: &mut Y,
     receiver: RENodeId,
-    access_rules: AccessRules,
+    access_rules: AccessRulesConfig,
 ) -> Result<(), RuntimeError>
 where
     Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,

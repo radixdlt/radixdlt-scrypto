@@ -144,7 +144,7 @@ where
         &mut self,
         code: Vec<u8>,
         schema: PackageSchema,
-        access_rules: AccessRules,
+        access_rules: AccessRulesConfig,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
     ) -> Result<PackageAddress, RuntimeError> {

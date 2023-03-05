@@ -163,7 +163,7 @@ impl EpochManagerBlueprint {
             },
         )?;
 
-        let mut access_rules = AccessRules::new();
+        let mut access_rules = AccessRulesConfig::new();
         access_rules.set_method_access_rule(
             MethodKey::new(
                 NodeModuleId::SELF,
