@@ -7,8 +7,8 @@ use radix_engine_interface::constants::{CLOCK, EPOCH_MANAGER};
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::time::*;
+use sbor::generate_full_schema_from_single_type;
 use sbor::rust::fmt::Debug;
-use sbor::{generate_full_schema, TypeAggregator, TypeMetadata};
 
 #[derive(Debug)]
 pub struct Runtime {}
@@ -23,16 +23,14 @@ impl Runtime {
         Y: ClientEventApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        // FIXME: schema - replace this placeholder implementation
-        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-        let type_index = aggregator.add_child_type_and_descendents::<T>();
-        let schema = generate_full_schema(aggregator);
-        let metadata = schema.resolve_type_metadata(type_index);
-        let type_hash = match metadata {
-            Some(TypeMetadata { type_name, .. }) => hash(type_name.as_ref()),
-            None => todo!(),
+        let schema_hash = {
+            let (local_type_index, schema) =
+                generate_full_schema_from_single_type::<T, ScryptoCustomTypeExtension>();
+            scrypto_encode(&(local_type_index, schema))
+                .map(hash)
+                .expect("Schema can't be encoded!")
         };
-        api.emit_raw_event(type_hash, scrypto_encode(&event).unwrap())
+        api.emit_raw_event(schema_hash, scrypto_encode(&event).unwrap())
     }
 
     pub fn sys_current_epoch<Y, E>(api: &mut Y) -> Result<u64, E>

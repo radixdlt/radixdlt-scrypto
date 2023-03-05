@@ -33,7 +33,7 @@ fn can_emit_basic_event_from_scrypto() {
             EventTypeIdentifier(
                 RENodeId::GlobalPackage(package_address),
                 NodeModuleId::SELF,
-                hash("CustomEvent"),
+                schema_hash::<CustomEvent>(),
             ),
             scrypto_encode(&CustomEvent { number: 12 }).unwrap(),
         )];
@@ -42,7 +42,15 @@ fn can_emit_basic_event_from_scrypto() {
     }
 }
 
-#[derive(ScryptoEncode)]
+#[derive(ScryptoEncode, Describe)]
 struct CustomEvent {
     number: u64,
+}
+
+fn schema_hash<T: ScryptoDescribe>() -> Hash {
+    let (local_type_index, schema) =
+        generate_full_schema_from_single_type::<T, ScryptoCustomTypeExtension>();
+    scrypto_encode(&(local_type_index, schema))
+        .map(hash)
+        .expect("Schema can't be encoded!")
 }

@@ -11,13 +11,13 @@ use radix_engine_interface::blueprints::transaction_runtime::{
 };
 use radix_engine_interface::constants::{EPOCH_MANAGER, PACKAGE_TOKEN};
 use radix_engine_interface::crypto::{hash, Hash};
-use radix_engine_interface::data::scrypto::{model::*, ScryptoCustomTypeKind};
+use radix_engine_interface::data::scrypto::{model::*, ScryptoCustomTypeExtension};
 use radix_engine_interface::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoDescribe, ScryptoEncode,
 };
 use radix_engine_interface::*;
+use sbor::generate_full_schema_from_single_type;
 use sbor::rust::prelude::*;
-use sbor::{generate_full_schema, TypeAggregator, TypeMetadata};
 use scrypto::engine::scrypto_env::ScryptoEnv;
 
 /// The transaction runtime.
@@ -115,17 +115,15 @@ impl Runtime {
 
     /// Emits an application event
     pub fn emit_event<T: ScryptoEncode + ScryptoDescribe>(event: T) {
-        // FIXME: schema - replace this placeholder implementation
-        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-        let type_index = aggregator.add_child_type_and_descendents::<T>();
-        let schema = generate_full_schema(aggregator);
-        let metadata = schema.resolve_type_metadata(type_index);
-        let type_hash = match metadata {
-            Some(TypeMetadata { type_name, .. }) => hash(type_name.as_ref()),
-            None => todo!(),
+        let schema_hash = {
+            let (local_type_index, schema) =
+                generate_full_schema_from_single_type::<T, ScryptoCustomTypeExtension>();
+            scrypto_encode(&(local_type_index, schema))
+                .map(hash)
+                .expect("Schema can't be encoded!")
         };
         ScryptoEnv
-            .emit_raw_event(type_hash, scrypto_encode(&event).unwrap())
+            .emit_raw_event(schema_hash, scrypto_encode(&event).unwrap())
             .unwrap();
     }
 }

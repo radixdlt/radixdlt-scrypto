@@ -595,8 +595,15 @@ impl<'s> FinalizingTrack<'s> {
         // Commit/rollback application state changes
         let mut to_persist = HashMap::new();
         let next_epoch = {
-            // FIXME: schema - update
-            let expected_schema_hash = hash("EpochChangeEvent");
+            let expected_schema_hash = {
+                let (local_type_index, schema) = generate_full_schema_from_single_type::<
+                    EpochChangeEvent,
+                    ScryptoCustomTypeExtension,
+                >();
+                scrypto_encode(&(local_type_index, schema))
+                    .map(hash)
+                    .expect("Schema can't be encoded!")
+            };
             application_events
                 .iter()
                 .find(|(identifier, _)| match identifier {
