@@ -699,6 +699,7 @@ impl<'s> FinalizingTrack<'s> {
                         .0
                         .package_royalty_accumulator()
                         .royalty_vault
+                        .expect("FIXME: clean up royalty vault mess")
                         .vault_id();
                     let royalty_vault_substate = to_persist
                         .get_mut(&SubstateId(

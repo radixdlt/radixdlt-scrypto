@@ -42,10 +42,11 @@ fn validate_package_schema(schema: &PackageSchema) -> Result<(), PackageError> {
 }
 
 fn build_package_node_modules(
-    royalty_vault: Own,
+    royalty_vault: Option<Own>,
     royalty_config: BTreeMap<String, RoyaltyConfig>,
     metadata: BTreeMap<String, String>,
     access_rules: AccessRules,
+    function_access_rules: FunctionAccessRulesSubstate,
 ) -> BTreeMap<NodeModuleId, RENodeModuleInit> {
     let mut node_modules = BTreeMap::new();
     node_modules.insert(
@@ -75,10 +76,7 @@ fn build_package_node_modules(
     );
     node_modules.insert(
         NodeModuleId::FunctionAccessRules,
-        RENodeModuleInit::FunctionAccessRules(FunctionAccessRulesSubstate {
-            access_rules: BTreeMap::new(),
-            default_auth: AccessRule::AllowAll,
-        }),
+        RENodeModuleInit::FunctionAccessRules(function_access_rules),
     );
 
     node_modules
@@ -154,10 +152,14 @@ impl Package {
 
         // Build node module init
         let node_modules = build_package_node_modules(
-            ResourceManager(RADIX_TOKEN).new_vault(api)?,
+            None,
             BTreeMap::new(),
             input.metadata,
             input.access_rules,
+            FunctionAccessRulesSubstate {
+                access_rules: input.package_access_rules,
+                default_auth: input.default_package_access_rule,
+            },
         );
 
         // Create package node
@@ -209,10 +211,14 @@ impl Package {
 
         // Build node module init
         let node_modules = build_package_node_modules(
-            ResourceManager(RADIX_TOKEN).new_vault(api)?,
+            Some(ResourceManager(RADIX_TOKEN).new_vault(api)?),
             input.royalty_config,
             input.metadata,
             input.access_rules,
+            FunctionAccessRulesSubstate {
+                access_rules: BTreeMap::new(),
+                default_auth: AccessRule::AllowAll,
+            },
         );
 
         // Create package node

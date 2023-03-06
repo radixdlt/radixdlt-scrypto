@@ -193,7 +193,11 @@ impl KernelModule for CostingModule {
             api.kernel_get_substate_ref(handle)?;
         {
             let royalty_vault = package_royalty_accumulator.royalty_vault.clone();
-            let vault_node_id = RENodeId::Object(royalty_vault.vault_id());
+            let vault_node_id = RENodeId::Object(
+                royalty_vault
+                    .expect("FIXME: cleanup royalty vault mess")
+                    .vault_id(),
+            );
             let vault_handle = api.kernel_lock_substate(
                 vault_node_id,
                 NodeModuleId::SELF,

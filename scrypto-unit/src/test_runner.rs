@@ -278,6 +278,7 @@ impl TestRunner {
                 .substate
                 .package_royalty_accumulator()
                 .royalty_vault
+                .expect("FIXME: cleanup royalty vault mess")
                 .clone();
 
             self.substate_store

@@ -1508,7 +1508,9 @@ impl<'a> SubstateRef<'a> {
             }
             SubstateRef::PackageRoyaltyAccumulator(substate) => {
                 let mut owned_nodes = Vec::new();
-                owned_nodes.push(RENodeId::Object(substate.royalty_vault.vault_id()));
+                if let Some(vault) = substate.royalty_vault {
+                    owned_nodes.push(RENodeId::Object(vault.vault_id()));
+                }
                 (HashSet::new(), owned_nodes)
             }
             SubstateRef::ComponentState(substate) => {

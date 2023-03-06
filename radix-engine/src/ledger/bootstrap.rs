@@ -383,7 +383,6 @@ pub fn create_genesis(
         });
     }
 
-    // TODO: Perhaps combine with ecdsa token?
     // EDDSA ED25519 Token
     {
         let metadata: BTreeMap<String, String> = BTreeMap::new();
@@ -405,7 +404,6 @@ pub fn create_genesis(
         });
     }
 
-    // TODO: Perhaps combine with ecdsa token?
     // System Token
     {
         let metadata: BTreeMap<String, String> = BTreeMap::new();
