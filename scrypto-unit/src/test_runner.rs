@@ -44,7 +44,7 @@ use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
 use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
-use sbor::basic_well_known_types::ANY_ID;
+use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
 use scrypto::prelude::*;
 use transaction::builder::ManifestBuilder;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
@@ -1197,7 +1197,7 @@ pub fn single_function_package_schema(blueprint_name: &str, function_name: &str)
                 type_metadata: vec![],
                 type_validations: vec![],
             },
-            substates: btreemap!(),
+            substates: vec![LocalTypeIndex::WellKnown(UNIT_ID)],
             functions: btreemap!(
                 function_name.to_string() => FunctionSchema {
                     receiver: Option::None,
