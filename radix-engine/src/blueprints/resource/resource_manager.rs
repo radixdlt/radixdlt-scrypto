@@ -513,7 +513,7 @@ impl ResourceManagerBlueprint {
         // If address isn't user frame allocated or pre_allocated then
         // using this node_id will fail on create_node below
         let global_node_id =
-            RENodeId::Global(ResourceAddress::Normal(input.resource_address).into());
+            RENodeId::GlobalObject(ResourceAddress::Normal(input.resource_address).into());
         let address = create_non_fungible_resource_manager(
             global_node_id,
             input.id_type,
@@ -720,7 +720,7 @@ impl ResourceManagerBlueprint {
             })?;
 
         let global_node_id =
-            RENodeId::Global(ResourceAddress::Normal(input.resource_address).into());
+            RENodeId::GlobalObject(ResourceAddress::Normal(input.resource_address).into());
         let resource_address: ResourceAddress = global_node_id.into();
 
         let (resource_manager_substate, bucket) =

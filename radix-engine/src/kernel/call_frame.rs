@@ -149,7 +149,7 @@ impl CallFrame {
         let mut temp_references = HashSet::new();
         for node_id in references {
             // TODO: fix this ugly condition
-            if matches!(node_id, RENodeId::Global(_)) {
+            if matches!(node_id, RENodeId::GlobalObject(_)) {
                 // May overwrite existing node refs (for better visibility origin)
                 self.immortal_node_refs.insert(
                     node_id,
@@ -324,35 +324,35 @@ impl CallFrame {
 
         // Add well-known global refs to current frame
         frame.add_ref(
-            RENodeId::Global(RADIX_TOKEN.into()),
+            RENodeId::GlobalObject(RADIX_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::Global(SYSTEM_TOKEN.into()),
+            RENodeId::GlobalObject(SYSTEM_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::Global(ECDSA_SECP256K1_TOKEN.into()),
+            RENodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::Global(EDDSA_ED25519_TOKEN.into()),
+            RENodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::Global(PACKAGE_TOKEN.into()),
+            RENodeId::GlobalObject(PACKAGE_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::Global(EPOCH_MANAGER.into()),
+            RENodeId::GlobalObject(EPOCH_MANAGER.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::Global(CLOCK.into()),
+            RENodeId::GlobalObject(CLOCK.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::Global(Address::Package(FAUCET_PACKAGE)),
+            RENodeId::GlobalObject(Address::Package(FAUCET_PACKAGE)),
             RENodeVisibilityOrigin::Normal,
         );
 

@@ -128,11 +128,11 @@ where
     ) -> Result<(), RuntimeError> {
         // TODO: This should move into the appropriate place once virtual manager is implemented
         self.current_frame.add_ref(
-            RENodeId::Global(ECDSA_SECP256K1_TOKEN.into()),
+            RENodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
         self.current_frame.add_ref(
-            RENodeId::Global(EDDSA_ED25519_TOKEN.into()),
+            RENodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
 
@@ -206,11 +206,11 @@ where
     ) -> Result<(), RuntimeError> {
         // TODO: This should move into the appropriate place once virtual manager is implemented
         self.current_frame.add_ref(
-            RENodeId::Global(ECDSA_SECP256K1_TOKEN.into()),
+            RENodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
         self.current_frame.add_ref(
-            RENodeId::Global(EDDSA_ED25519_TOKEN.into()),
+            RENodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
 
@@ -240,7 +240,7 @@ where
     ) -> Result<bool, RuntimeError> {
         match node_id {
             // TODO: Need to have a schema check in place before this in order to not create virtual components when accessing illegal substates
-            RENodeId::Global(Address::Component(component_address)) => {
+            RENodeId::GlobalObject(Address::Component(component_address)) => {
                 // Lazy create component if missing
                 match component_address {
                     ComponentAddress::EcdsaSecp256k1VirtualAccount(address) => {
@@ -448,7 +448,7 @@ where
         if depth == 0 {
             for node_id in &resolved.update.node_refs_to_copy {
                 match node_id {
-                    RENodeId::Global(Address::Resource(..)) => {
+                    RENodeId::GlobalObject(Address::Resource(..)) => {
                         if self.current_frame.get_node_visibility(node_id).is_none() {
                             let offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
                             self.track
@@ -467,7 +467,7 @@ where
                                 .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
                         }
                     }
-                    RENodeId::Global(Address::Package(package_address)) => {
+                    RENodeId::GlobalObject(Address::Package(package_address)) => {
                         // TODO: Cleanup
                         {
                             match *package_address {
@@ -513,7 +513,7 @@ where
                             }
                         }
                     }
-                    RENodeId::Global(Address::Component(global_address)) => {
+                    RENodeId::GlobalObject(Address::Component(global_address)) => {
                         if matches!(
                             global_address,
                             ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
@@ -684,9 +684,9 @@ where
         self.execution_mode = ExecutionMode::Kernel;
 
         match (node_id, &init) {
-            (RENodeId::Global(Address::Component(..)), RENodeInit::GlobalObject(..)) => {}
-            (RENodeId::Global(Address::Resource(..)), RENodeInit::GlobalObject(..)) => {}
-            (RENodeId::Global(Address::Package(..)), RENodeInit::GlobalPackage(..)) => {}
+            (RENodeId::GlobalObject(Address::Component(..)), RENodeInit::GlobalObject(..)) => {}
+            (RENodeId::GlobalObject(Address::Resource(..)), RENodeInit::GlobalObject(..)) => {}
+            (RENodeId::GlobalObject(Address::Package(..)), RENodeInit::GlobalPackage(..)) => {}
             (RENodeId::Object(..), RENodeInit::Object(..)) => {}
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
             (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
@@ -918,9 +918,9 @@ where
                     // TODO: This is a hack to allow for package imports to be visible
                     // TODO: Remove this once we are able to get this information through the Blueprint ABI
                     RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(
-                        RENodeId::Global(package_address),
+                        RENodeId::GlobalObject(package_address),
                     )) => {
-                        let node_id = RENodeId::Global(*package_address);
+                        let node_id = RENodeId::GlobalObject(*package_address);
                         let module_id = NodeModuleId::SELF;
                         self.track
                             .acquire_lock(

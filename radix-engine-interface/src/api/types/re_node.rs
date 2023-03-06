@@ -26,7 +26,7 @@ pub enum RENodeType {
 pub enum RENodeId {
     AuthZoneStack,
     TransactionRuntime,
-    Global(Address),
+    GlobalObject(Address),
     KeyValueStore(KeyValueStoreId),
     NonFungibleStore(NonFungibleStoreId),
     Object(ObjectId),
@@ -46,7 +46,7 @@ impl fmt::Debug for RENodeId {
                 .field(&hex::encode(id))
                 .finish(),
             Self::Object(id) => f.debug_tuple("Object").field(&hex::encode(id)).finish(),
-            Self::Global(address) => f.debug_tuple("Global").field(&address).finish(),
+            Self::GlobalObject(address) => f.debug_tuple("Global").field(&address).finish(),
         }
     }
 }
@@ -67,7 +67,7 @@ impl Into<[u8; 36]> for RENodeId {
 impl From<RENodeId> for Address {
     fn from(node_id: RENodeId) -> Self {
         match node_id {
-            RENodeId::Global(address) => address,
+            RENodeId::GlobalObject(address) => address,
             _ => panic!("Not an address"),
         }
     }
@@ -75,14 +75,14 @@ impl From<RENodeId> for Address {
 
 impl From<Address> for RENodeId {
     fn from(address: Address) -> Self {
-        RENodeId::Global(address)
+        RENodeId::GlobalObject(address)
     }
 }
 
 impl Into<ComponentAddress> for RENodeId {
     fn into(self) -> ComponentAddress {
         match self {
-            RENodeId::Global(address) => address.into(),
+            RENodeId::GlobalObject(address) => address.into(),
             _ => panic!("Not a component address: {:?}", self),
         }
     }
@@ -91,7 +91,7 @@ impl Into<ComponentAddress> for RENodeId {
 impl Into<PackageAddress> for RENodeId {
     fn into(self) -> PackageAddress {
         match self {
-            RENodeId::Global(address) => address.into(),
+            RENodeId::GlobalObject(address) => address.into(),
             _ => panic!("Not a package address"),
         }
     }
@@ -100,7 +100,7 @@ impl Into<PackageAddress> for RENodeId {
 impl Into<ResourceAddress> for RENodeId {
     fn into(self) -> ResourceAddress {
         match self {
-            RENodeId::Global(address) => address.into(),
+            RENodeId::GlobalObject(address) => address.into(),
             _ => panic!("Not a resource address"),
         }
     }

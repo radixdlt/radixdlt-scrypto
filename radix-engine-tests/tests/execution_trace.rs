@@ -50,23 +50,27 @@ fn test_trace_resource_transfers() {
         .expect_commit()
         .resource_changes
         .iter()
-        .any(|r| r.node_id == RENodeId::Global(source_component.into())
-            && r.amount == -Decimal::from(transfer_amount)));
+        .any(
+            |r| r.node_id == RENodeId::GlobalObject(source_component.into())
+                && r.amount == -Decimal::from(transfer_amount)
+        ));
 
     // Target vault deposit
     assert!(receipt
         .expect_commit()
         .resource_changes
         .iter()
-        .any(|r| r.node_id == RENodeId::Global(target_component.into())
-            && r.amount == Decimal::from(transfer_amount)));
+        .any(
+            |r| r.node_id == RENodeId::GlobalObject(target_component.into())
+                && r.amount == Decimal::from(transfer_amount)
+        ));
 
     // Fee withdrawal
     assert!(receipt
         .expect_commit()
         .resource_changes
         .iter()
-        .any(|r| r.node_id == RENodeId::Global(account.into())
+        .any(|r| r.node_id == RENodeId::GlobalObject(account.into())
             && r.amount == -Decimal::from(total_fee_paid)));
 }
 
@@ -118,10 +122,9 @@ fn test_trace_fee_payments() {
         - fee_summary.bad_debt_xrd;
 
     assert_eq!(1, resource_changes.len());
-    assert!(resource_changes
-        .iter()
-        .any(|r| r.node_id == RENodeId::Global(funded_component.into())
-            && r.amount == -total_fee_paid));
+    assert!(resource_changes.iter().any(|r| r.node_id
+        == RENodeId::GlobalObject(funded_component.into())
+        && r.amount == -total_fee_paid));
 }
 
 #[test]
