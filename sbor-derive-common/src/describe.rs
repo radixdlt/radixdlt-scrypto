@@ -137,7 +137,7 @@ fn handle_normal_describe(
                         );
 
                         fn type_data() -> Option<::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId>> {
-                            Some(::sbor::TypeData::named_fields_tuple(
+                            Some(::sbor::TypeData::struct_with_named_fields(
                                 stringify!(#ident),
                                 ::sbor::rust::vec![
                                     #((#field_names, <#field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID),)*
@@ -176,7 +176,7 @@ fn handle_normal_describe(
                         );
 
                         fn type_data() -> Option<::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId>> {
-                            Some(::sbor::TypeData::named_tuple(
+                            Some(::sbor::TypeData::struct_with_unnamed_fields(
                                 stringify!(#ident),
                                 ::sbor::rust::vec![
                                     #(<#field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID,)*
@@ -200,7 +200,7 @@ fn handle_normal_describe(
                         );
 
                         fn type_data() -> Option<::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId>> {
-                            Some(::sbor::TypeData::named_unit(stringify!(#ident)))
+                            Some(::sbor::TypeData::struct_with_unit_fields(stringify!(#ident)))
                         }
                     }
                 }
@@ -236,7 +236,7 @@ fn handle_normal_describe(
                                     })
                                     .collect();
                                 quote! {
-                                    ::sbor::TypeData::named_fields_tuple(
+                                    ::sbor::TypeData::struct_with_named_fields(
                                         #variant_name,
                                         ::sbor::rust::vec![
                                             #((#field_names, <#field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID),)*
@@ -251,7 +251,7 @@ fn handle_normal_describe(
                                     unskipped_fields.iter().map(|f| &f.ty).collect();
                                 all_field_types.extend_from_slice(&field_types);
                                 quote! {
-                                    ::sbor::TypeData::named_tuple(
+                                    ::sbor::TypeData::struct_with_unnamed_fields(
                                         #variant_name,
                                         ::sbor::rust::vec![
                                             #(<#field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID,)*
@@ -261,7 +261,7 @@ fn handle_normal_describe(
                             }
                             Fields::Unit => {
                                 quote! {
-                                    ::sbor::TypeData::named_unit(#variant_name)
+                                    ::sbor::TypeData::struct_with_unit_fields(#variant_name)
                                 }
                             }
                         }
@@ -281,7 +281,7 @@ fn handle_normal_describe(
 
                     fn type_data() -> Option<::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId>> {
                         use ::sbor::rust::borrow::ToOwned;
-                        Some(::sbor::TypeData::named_enum(
+                        Some(::sbor::TypeData::enum_variants(
                             stringify!(#ident),
                             ::sbor::rust::collections::btree_map::btreemap![
                                 #(#variant_indices => #variant_type_data,)*
@@ -331,7 +331,7 @@ mod tests {
                     );
 
                     fn type_data() -> Option<::sbor::TypeData <C, ::sbor::GlobalTypeId>> {
-                        Some(::sbor::TypeData::named_fields_tuple(
+                        Some(::sbor::TypeData::struct_with_named_fields(
                             stringify!(Test),
                             ::sbor::rust::vec![
                                 ("a", <u32 as ::sbor::Describe<C>>::TYPE_ID),
@@ -375,7 +375,7 @@ mod tests {
                         ::sbor::TypeData<
                             radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId>,
                             ::sbor::GlobalTypeId>> {
-                        Some(::sbor::TypeData::named_fields_tuple(
+                        Some(::sbor::TypeData::struct_with_named_fields(
                             stringify!(Test),
                             ::sbor::rust::vec![
                                 (
@@ -429,7 +429,7 @@ mod tests {
                     );
 
                     fn type_data() -> Option<::sbor::TypeData <C, ::sbor::GlobalTypeId>> {
-                        Some(::sbor::TypeData::named_tuple(
+                        Some(::sbor::TypeData::struct_with_unnamed_fields(
                             stringify!(Test),
                             ::sbor::rust::vec![
                                 <u32 as ::sbor::Describe<C>>::TYPE_ID,
@@ -465,7 +465,7 @@ mod tests {
                     );
 
                     fn type_data() -> Option<::sbor::TypeData <C, ::sbor::GlobalTypeId>> {
-                        Some(::sbor::TypeData::named_unit(stringify!(Test)))
+                        Some(::sbor::TypeData::struct_with_unit_fields(stringify!(Test)))
                     }
                 }
             },
@@ -496,18 +496,18 @@ mod tests {
 
                     fn type_data() -> Option<::sbor::TypeData <C, ::sbor::GlobalTypeId>> {
                         use ::sbor::rust::borrow::ToOwned;
-                        Some(::sbor::TypeData::named_enum(
+                        Some(::sbor::TypeData::enum_variants(
                             stringify!(Test),
                             ::sbor::rust::collections::btree_map::btreemap![
-                                0u8 => ::sbor::TypeData::named_unit("A"),
-                                1u8 => ::sbor::TypeData::named_tuple(
+                                0u8 => ::sbor::TypeData::struct_with_unit_fields("A"),
+                                1u8 => ::sbor::TypeData::struct_with_unnamed_fields(
                                     "B",
                                     ::sbor::rust::vec![
                                         <T as ::sbor::Describe<C>>::TYPE_ID,
                                         <Vec<T2> as ::sbor::Describe<C>>::TYPE_ID,
                                     ],
                                 ),
-                                2u8 => ::sbor::TypeData::named_fields_tuple(
+                                2u8 => ::sbor::TypeData::struct_with_named_fields(
                                     "C",
                                     ::sbor::rust::vec![
                                         ("x", <[u8; 5] as ::sbor::Describe<C>>::TYPE_ID),

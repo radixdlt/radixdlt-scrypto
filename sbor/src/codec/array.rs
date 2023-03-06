@@ -104,10 +104,10 @@ mod schema {
             match T::TYPE_ID {
                 GlobalTypeId::WellKnown([basic_well_known_types::U8_ID]) => None,
                 _ => Some(TypeData::new(
-                    TypeMetadata::no_child_names("Array"),
                     TypeKind::Array {
                         element_type: T::TYPE_ID,
                     },
+                    TypeMetadata::no_child_names("Array"),
                 )),
             }
         }
@@ -134,10 +134,10 @@ mod schema {
             };
             Some(
                 TypeData::new(
-                    TypeMetadata::no_child_names(type_name),
                     TypeKind::Array {
                         element_type: T::TYPE_ID,
                     },
+                    TypeMetadata::no_child_names(type_name),
                 )
                 .with_validation(TypeValidation::Array(LengthValidation {
                     min: Some(size),

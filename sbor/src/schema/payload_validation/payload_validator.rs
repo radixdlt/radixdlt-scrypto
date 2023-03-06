@@ -406,7 +406,7 @@ mod tests {
             },
             metadata: TypeMetadata {
                 type_name: "Vec".into(),
-                children: Children::None,
+                child_names: None,
             },
             validation: TypeValidation::Array(LengthValidation {
                 min: 0.into(),
@@ -417,7 +417,7 @@ mod tests {
             kind: BasicTypeKind::U8,
             metadata: TypeMetadata {
                 type_name: "U8".into(),
-                children: Children::None,
+                child_names: None,
             },
             validation: TypeValidation::U8(NumericValidation {
                 min: 5.into(),
