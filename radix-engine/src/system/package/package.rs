@@ -75,10 +75,9 @@ impl Package {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: PackageLoaderPublishNativeInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: PackageLoaderPublishNativeInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let metadata_substate = MetadataSubstate {
             metadata: input.metadata,
@@ -147,10 +146,9 @@ impl Package {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: PackageLoaderPublishWasmInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: PackageLoaderPublishWasmInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let royalty_vault_id = ResourceManager(RADIX_TOKEN).new_vault(api)?.vault_id();
 

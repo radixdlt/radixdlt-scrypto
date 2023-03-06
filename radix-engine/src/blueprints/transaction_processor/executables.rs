@@ -275,7 +275,7 @@ impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
             resolved_actor: actor,
             update: call_frame_update,
             executor: self,
-            args: ScryptoValue::Tuple { fields: vec![] },
+            args: IndexedScryptoValue::unit(),
         };
 
         Ok(resolved)
@@ -291,7 +291,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
     fn execute<Y, W: WasmEngine>(
         self,
-        _args: ScryptoValue,
+        _args: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where

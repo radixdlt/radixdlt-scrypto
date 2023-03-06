@@ -42,15 +42,16 @@ impl IdentityNativePackage {
         }
     }
 
-    fn create<Y>(input: ScryptoValue, api: &mut Y) -> Result<IndexedScryptoValue, RuntimeError>
+    fn create<Y>(
+        input: IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
-        let input: IdentityCreateInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: IdentityCreateInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let (node_id, access_rules) = Identity::create(input.access_rule, api)?;
         let access_rules = AccessRulesObject::sys_new(access_rules, api)?;

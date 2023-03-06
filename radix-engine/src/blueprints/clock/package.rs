@@ -85,15 +85,16 @@ impl ClockNativePackage {
         }
     }
 
-    fn create<Y>(input: ScryptoValue, api: &mut Y) -> Result<IndexedScryptoValue, RuntimeError>
+    fn create<Y>(
+        input: IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
-        let input: ClockCreateInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: ClockCreateInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let clock_id = api.new_object(
             CLOCK_BLUEPRINT,
@@ -142,10 +143,9 @@ impl ClockNativePackage {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: ClockSetCurrentTimeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: ClockSetCurrentTimeInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let current_time_ms = input.current_time_ms;
         let current_time_rounded_to_minutes =
@@ -172,10 +172,9 @@ impl ClockNativePackage {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: ClockGetCurrentTimeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: ClockGetCurrentTimeInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         match input.precision {
             TimePrecision::Minute => {
@@ -202,10 +201,9 @@ impl ClockNativePackage {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: ClockCompareCurrentTimeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: ClockCompareCurrentTimeInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         match input.precision {
             TimePrecision::Minute => {

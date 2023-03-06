@@ -206,10 +206,9 @@ impl ProofBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
-        let _input: ProofCloneInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let _input: ProofCloneInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let proof_info = ProofInfoSubstate::of(receiver, api)?;
         let node_id = if proof_info.resource_type.is_fungible() {
@@ -266,11 +265,9 @@ impl ProofBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
-        let _input: ProofGetAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let _input: ProofGetAmountInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let proof_info = ProofInfoSubstate::of(receiver, api)?;
         let amount = if proof_info.resource_type.is_fungible() {
@@ -306,10 +303,9 @@ impl ProofBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
-        let _input: ProofGetNonFungibleLocalIdsInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let _input: ProofGetNonFungibleLocalIdsInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let proof_info = ProofInfoSubstate::of(receiver, api)?;
         if proof_info.resource_type.is_fungible() {
@@ -337,11 +333,9 @@ impl ProofBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
-        let _input: ProofGetResourceAddressInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let _input: ProofGetResourceAddressInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let proof_info = ProofInfoSubstate::of(receiver, api)?;
         Ok(IndexedScryptoValue::from_typed(

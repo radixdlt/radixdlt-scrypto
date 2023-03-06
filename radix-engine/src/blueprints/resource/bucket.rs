@@ -501,11 +501,9 @@ impl BucketBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
-        let input: BucketDropEmptyInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: BucketDropEmptyInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let amount = input.bucket.sys_amount(api)?;
         if amount.is_zero() {
@@ -529,11 +527,9 @@ impl BucketBlueprint {
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
-        let input: BucketTakeInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: BucketTakeInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         // Check amount
         let info = BucketInfoSubstate::of(receiver, api)?;
@@ -588,9 +584,7 @@ impl BucketBlueprint {
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
-        let input: BucketTakeNonFungiblesInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
+        let input: BucketTakeNonFungiblesInput = input.as_typed().map_err(|e| {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
 
@@ -628,11 +622,9 @@ impl BucketBlueprint {
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
-        let input: BucketPutInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: BucketPutInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         // Drop other bucket
         let other_bucket: DroppedBucket = api
@@ -671,10 +663,9 @@ impl BucketBlueprint {
             + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
-        let _input: BucketGetNonFungibleLocalIdsInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let _input: BucketGetNonFungibleLocalIdsInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let info = BucketInfoSubstate::of(receiver, api)?;
         if info.resource_type.is_fungible() {
@@ -701,11 +692,9 @@ impl BucketBlueprint {
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
-        let _input: BucketGetAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let _input: BucketGetAmountInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let info = BucketInfoSubstate::of(receiver, api)?;
         let amount = if info.resource_type.is_fungible() {
@@ -731,10 +720,9 @@ impl BucketBlueprint {
             + ClientApi<RuntimeError>,
     {
         // TODO: Remove decode/encode mess
-        let _input: BucketGetResourceAddressInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let _input: BucketGetResourceAddressInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let info = BucketInfoSubstate::of(receiver, api)?;
 
@@ -752,11 +740,9 @@ impl BucketBlueprint {
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
-        let _input: BucketCreateProofInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let _input: BucketCreateProofInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let info = BucketInfoSubstate::of(receiver, api)?;
         let node_id = if info.resource_type.is_fungible() {
@@ -819,10 +805,9 @@ impl BucketBlueprint {
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>,
     {
-        let input: BucketLockAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: BucketLockAmountInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         FungibleBucket::lock_amount(receiver, input.amount, api)?;
 
@@ -840,8 +825,7 @@ impl BucketBlueprint {
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>,
     {
-        let input: BucketLockNonFungiblesInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
+        let input: BucketLockNonFungiblesInput = input.as_typed().map_err(|e| {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
 
@@ -861,10 +845,9 @@ impl BucketBlueprint {
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>,
     {
-        let input: BucketUnlockAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: BucketUnlockAmountInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         FungibleBucket::unlock_amount(receiver, input.amount, api)?;
 
@@ -882,10 +865,9 @@ impl BucketBlueprint {
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>,
     {
-        let input: BucketUnlockNonFungiblesInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: BucketUnlockNonFungiblesInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         NonFungibleBucket::unlock_non_fungibles(receiver, input.local_ids, api)?;
 
