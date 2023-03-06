@@ -224,21 +224,21 @@ impl GlobalComponentRef {
 impl Component for GlobalComponentRef {
     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
         let output = ScryptoEnv
-            .call_method(RENodeId::Global(self.0.into()), method, args)
+            .call_method(RENodeId::GlobalObject(self.0.into()), method, args)
             .unwrap();
         scrypto_decode(&output).unwrap()
     }
 
     fn package_address(&self) -> PackageAddress {
         ScryptoEnv
-            .get_object_type_info(RENodeId::Global(self.0.into()))
+            .get_object_type_info(RENodeId::GlobalObject(self.0.into()))
             .unwrap()
             .0
     }
 
     fn blueprint_name(&self) -> String {
         ScryptoEnv
-            .get_object_type_info(RENodeId::Global(self.0.into()))
+            .get_object_type_info(RENodeId::GlobalObject(self.0.into()))
             .unwrap()
             .1
     }

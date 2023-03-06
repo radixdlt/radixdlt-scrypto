@@ -38,7 +38,7 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
     let package: Option<PackageCodeSubstate> = substate_store
         .get_substate(&SubstateId(
-            RENodeId::Global(package_address.into()),
+            RENodeId::GlobalObject(package_address.into()),
             NodeModuleId::SELF,
             SubstateOffset::Package(PackageOffset::Code),
         ))
@@ -83,7 +83,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
         ComponentAddress::Normal(..) => {
             let type_info_substate: TypeInfoSubstate = substate_store
                 .get_substate(&SubstateId(
-                    RENodeId::Global(component_address.into()),
+                    RENodeId::GlobalObject(component_address.into()),
                     NodeModuleId::TypeInfo,
                     SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
                 ))
@@ -92,7 +92,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 .ok_or(DisplayError::ComponentNotFound)?;
             let access_rules_chain_substate = substate_store
                 .get_substate(&SubstateId(
-                    RENodeId::Global(component_address.into()),
+                    RENodeId::GlobalObject(component_address.into()),
                     NodeModuleId::AccessRules,
                     SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
                 ))
@@ -101,7 +101,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 .ok_or(DisplayError::ComponentNotFound)?;
             let state: ComponentStateSubstate = substate_store
                 .get_substate(&SubstateId(
-                    RENodeId::Global(component_address.into()),
+                    RENodeId::GlobalObject(component_address.into()),
                     NodeModuleId::SELF,
                     SubstateOffset::Component(ComponentOffset::State0),
                 ))
@@ -166,7 +166,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
         ComponentAddress::Account(..) => {
             let account_substate = substate_store
                 .get_substate(&SubstateId(
-                    RENodeId::Global(component_address.into()),
+                    RENodeId::GlobalObject(component_address.into()),
                     NodeModuleId::SELF,
                     SubstateOffset::Account(AccountOffset::Account),
                 ))
@@ -175,7 +175,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 .ok_or(DisplayError::ComponentNotFound)?;
             let access_rules_chain_substate = substate_store
                 .get_substate(&SubstateId(
-                    RENodeId::Global(component_address.into()),
+                    RENodeId::GlobalObject(component_address.into()),
                     NodeModuleId::AccessRules,
                     SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
                 ))
@@ -215,7 +215,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
         ComponentAddress::Identity(..) => {
             let access_rules_chain_substate = substate_store
                 .get_substate(&SubstateId(
-                    RENodeId::Global(component_address.into()),
+                    RENodeId::GlobalObject(component_address.into()),
                     NodeModuleId::AccessRules,
                     SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
                 ))
@@ -234,7 +234,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
         ComponentAddress::AccessController(..) => {
             let access_controller_substate = substate_store
                 .get_substate(&SubstateId(
-                    RENodeId::Global(component_address.into()),
+                    RENodeId::GlobalObject(component_address.into()),
                     NodeModuleId::Metadata,
                     SubstateOffset::AccessController(AccessControllerOffset::AccessController),
                 ))
@@ -243,7 +243,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 .ok_or(DisplayError::ComponentNotFound)?;
             let access_rules_chain_substate = substate_store
                 .get_substate(&SubstateId(
-                    RENodeId::Global(component_address.into()),
+                    RENodeId::GlobalObject(component_address.into()),
                     NodeModuleId::AccessRules,
                     SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
                 ))
@@ -390,7 +390,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
         let resource_address = vault_info.resource_address;
         let resource_manager: Option<ResourceManagerSubstate> = substate_store
             .get_substate(&SubstateId(
-                RENodeId::Global(resource_address.into()),
+                RENodeId::GlobalObject(resource_address.into()),
                 NodeModuleId::SELF,
                 SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             ))
@@ -423,7 +423,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
 
         let symbol_metadata: Option<KeyValueStoreEntrySubstate> = substate_store
             .get_substate(&SubstateId(
-                RENodeId::Global(resource_address.into()),
+                RENodeId::GlobalObject(resource_address.into()),
                 NodeModuleId::Metadata,
                 SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
                     scrypto_encode("symbol").unwrap(),
@@ -538,7 +538,7 @@ pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
 ) -> Result<(), DisplayError> {
     let resource_manager: Option<ResourceManagerSubstate> = substate_store
         .get_substate(&SubstateId(
-            RENodeId::Global(resource_address.into()),
+            RENodeId::GlobalObject(resource_address.into()),
             NodeModuleId::SELF,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
         ))

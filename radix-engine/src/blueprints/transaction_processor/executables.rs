@@ -85,17 +85,17 @@ fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFra
             args,
             ..
         } => {
-            update.add_ref(RENodeId::Global(package_address.clone().into()));
+            update.add_ref(RENodeId::GlobalObject(package_address.clone().into()));
             let value: ManifestValue =
                 manifest_decode(args).expect("Invalid CALL_FUNCTION arguments");
             extract_refs_from_value(&value, update);
 
             if package_address.eq(&EPOCH_MANAGER_PACKAGE) {
-                update.add_ref(RENodeId::Global(PACKAGE_TOKEN.into()));
+                update.add_ref(RENodeId::GlobalObject(PACKAGE_TOKEN.into()));
             }
         }
         Instruction::PublishPackage { access_rules, .. } => {
-            update.add_ref(RENodeId::Global(PACKAGE_LOADER.into()));
+            update.add_ref(RENodeId::GlobalObject(PACKAGE_LOADER.into()));
 
             // TODO: Remove and cleanup
             let value: ManifestValue = manifest_decode(&manifest_encode(access_rules).unwrap())
@@ -107,7 +107,7 @@ fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFra
             args,
             method_name,
         } => {
-            update.add_ref(RENodeId::Global(component_address.clone().into()));
+            update.add_ref(RENodeId::GlobalObject(component_address.clone().into()));
             let value: ManifestValue = manifest_decode(args)
                 .expect(format!("Invalid CALL_METHOD arguments to {}", method_name).as_str());
             extract_refs_from_value(&value, update);
@@ -132,7 +132,7 @@ fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFra
         | Instruction::ClaimPackageRoyalty {
             package_address, ..
         } => {
-            update.add_ref(RENodeId::Global(package_address.clone().into()));
+            update.add_ref(RENodeId::GlobalObject(package_address.clone().into()));
         }
         Instruction::SetComponentRoyaltyConfig {
             component_address, ..
@@ -140,7 +140,7 @@ fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFra
         | Instruction::ClaimComponentRoyalty {
             component_address, ..
         } => {
-            update.add_ref(RENodeId::Global(component_address.clone().into()));
+            update.add_ref(RENodeId::GlobalObject(component_address.clone().into()));
         }
         Instruction::TakeFromWorktop {
             resource_address, ..
@@ -178,7 +178,7 @@ fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFra
         | Instruction::MintUuidNonFungible {
             resource_address, ..
         } => {
-            update.add_ref(RENodeId::Global(resource_address.clone().into()));
+            update.add_ref(RENodeId::GlobalObject(resource_address.clone().into()));
         }
         Instruction::ReturnToWorktop { .. }
         | Instruction::PopFromAuthZone { .. }
@@ -231,7 +231,7 @@ fn extract_refs_from_value(value: &ManifestValue, collector: &mut CallFrameUpdat
         Value::Custom { value } => match value {
             ManifestCustomValue::Address(a) => {
                 let address = to_address(a.clone());
-                collector.add_ref(RENodeId::Global(address))
+                collector.add_ref(RENodeId::GlobalObject(address))
             }
             _ => {}
         },
@@ -251,12 +251,12 @@ impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
         for instruction in instructions {
             extract_refs_from_instruction(&instruction, &mut call_frame_update);
         }
-        call_frame_update.add_ref(RENodeId::Global(RADIX_TOKEN.into()));
-        call_frame_update.add_ref(RENodeId::Global(PACKAGE_TOKEN.into()));
-        call_frame_update.add_ref(RENodeId::Global(EPOCH_MANAGER.into()));
-        call_frame_update.add_ref(RENodeId::Global(CLOCK.into()));
-        call_frame_update.add_ref(RENodeId::Global(ECDSA_SECP256K1_TOKEN.into()));
-        call_frame_update.add_ref(RENodeId::Global(EDDSA_ED25519_TOKEN.into()));
+        call_frame_update.add_ref(RENodeId::GlobalObject(RADIX_TOKEN.into()));
+        call_frame_update.add_ref(RENodeId::GlobalObject(PACKAGE_TOKEN.into()));
+        call_frame_update.add_ref(RENodeId::GlobalObject(EPOCH_MANAGER.into()));
+        call_frame_update.add_ref(RENodeId::GlobalObject(CLOCK.into()));
+        call_frame_update.add_ref(RENodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()));
+        call_frame_update.add_ref(RENodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()));
 
         let actor = Actor::function(FnIdentifier {
             package_address: PACKAGE_LOADER,
@@ -480,7 +480,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     processor = processor_with_api.processor;
 
                     let rtn = api.call_method(
-                        RENodeId::Global(component_address.into()),
+                        RENodeId::GlobalObject(component_address.into()),
                         &method_name,
                         scrypto_encode(&scrypto_value).unwrap(),
                     )?;
@@ -550,7 +550,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     amount,
                 } => {
                     let rtn = api.call_method(
-                        RENodeId::Global(resource_address.into()),
+                        RENodeId::GlobalObject(resource_address.into()),
                         RESOURCE_MANAGER_MINT_FUNGIBLE,
                         scrypto_encode(&ResourceManagerMintFungibleInput { amount }).unwrap(),
                     )?;
@@ -566,7 +566,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     entries,
                 } => {
                     let rtn = api.call_method(
-                        RENodeId::Global(resource_address.into()),
+                        RENodeId::GlobalObject(resource_address.into()),
                         RESOURCE_MANAGER_MINT_NON_FUNGIBLE,
                         scrypto_encode(&ResourceManagerMintNonFungibleInput { entries: entries })
                             .unwrap(),
@@ -583,7 +583,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     entries,
                 } => {
                     let rtn = api.call_method(
-                        RENodeId::Global(resource_address.into()),
+                        RENodeId::GlobalObject(resource_address.into()),
                         RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE,
                         scrypto_encode(&ResourceManagerMintUuidNonFungibleInput {
                             entries: entries,
@@ -642,7 +642,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     royalty_config,
                 } => {
                     let result = api.call_module_method(
-                        RENodeId::Global(package_address.into()),
+                        RENodeId::GlobalObject(package_address.into()),
                         NodeModuleId::PackageRoyalty,
                         PACKAGE_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
                         scrypto_encode(&PackageSetRoyaltyConfigInput {
@@ -665,7 +665,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     royalty_config,
                 } => {
                     let result = api.call_module_method(
-                        RENodeId::Global(component_address.into()),
+                        RENodeId::GlobalObject(component_address.into()),
                         NodeModuleId::ComponentRoyalty,
                         COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
                         scrypto_encode(&ComponentSetRoyaltyConfigInput {
@@ -685,7 +685,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 }
                 Instruction::ClaimPackageRoyalty { package_address } => {
                     let result = api.call_module_method(
-                        RENodeId::Global(package_address.into()),
+                        RENodeId::GlobalObject(package_address.into()),
                         NodeModuleId::PackageRoyalty,
                         PACKAGE_ROYALTY_CLAIM_ROYALTY_IDENT,
                         scrypto_encode(&PackageClaimRoyaltyInput {}).unwrap(),
@@ -702,7 +702,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 }
                 Instruction::ClaimComponentRoyalty { component_address } => {
                     let result = api.call_module_method(
-                        RENodeId::Global(component_address.into()),
+                        RENodeId::GlobalObject(component_address.into()),
                         NodeModuleId::ComponentRoyalty,
                         COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
                         scrypto_encode(&ComponentClaimRoyaltyInput {}).unwrap(),

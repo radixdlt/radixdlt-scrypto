@@ -70,28 +70,28 @@ impl IdAllocator {
             RENodeType::Object => self.new_object_id().map(|id| RENodeId::Object(id)),
             RENodeType::GlobalPackage => self
                 .new_package_address()
-                .map(|address| RENodeId::Global(address.into())),
+                .map(|address| RENodeId::GlobalObject(address.into())),
             RENodeType::GlobalEpochManager => self
                 .new_epoch_manager_address()
-                .map(|address| RENodeId::Global(address.into())),
+                .map(|address| RENodeId::GlobalObject(address.into())),
             RENodeType::GlobalValidator => self
                 .new_validator_address()
-                .map(|address| RENodeId::Global(address.into())),
+                .map(|address| RENodeId::GlobalObject(address.into())),
             RENodeType::GlobalResourceManager => self
                 .new_resource_address()
-                .map(|address| RENodeId::Global(address.into())),
+                .map(|address| RENodeId::GlobalObject(address.into())),
             RENodeType::GlobalAccount => self
                 .new_account_address()
-                .map(|address| RENodeId::Global(address.into())),
+                .map(|address| RENodeId::GlobalObject(address.into())),
             RENodeType::GlobalIdentity => self
                 .new_identity_address()
-                .map(|address| RENodeId::Global(address.into())),
+                .map(|address| RENodeId::GlobalObject(address.into())),
             RENodeType::GlobalComponent => self
                 .new_component_address()
-                .map(|address| RENodeId::Global(address.into())),
+                .map(|address| RENodeId::GlobalObject(address.into())),
             RENodeType::GlobalAccessController => self
                 .new_access_controller_address()
-                .map(|address| RENodeId::Global(address.into())),
+                .map(|address| RENodeId::GlobalObject(address.into())),
         }
         .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
 
