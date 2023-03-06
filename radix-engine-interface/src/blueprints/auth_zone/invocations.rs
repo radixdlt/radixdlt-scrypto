@@ -12,6 +12,8 @@ pub const AUTH_ZONE_POP_IDENT: &str = "pop";
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct AuthZonePopInput {}
 
+pub type AuthZonePopOutput = Proof;
+
 pub const AUTH_ZONE_PUSH_IDENT: &str = "push";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
@@ -27,12 +29,16 @@ impl Clone for AuthZonePushInput {
     }
 }
 
+pub type AuthZonePushOutput = ();
+
 pub const AUTH_ZONE_CREATE_PROOF_IDENT: &str = "create_proof";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct AuthZoneCreateProofInput {
     pub resource_address: ResourceAddress,
 }
+
+pub type AuthZoneCreateProofOutput = Proof;
 
 pub const AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_IDENT: &str = "create_proof_by_amount";
 
@@ -42,6 +48,8 @@ pub struct AuthZoneCreateProofByAmountInput {
     pub resource_address: ResourceAddress,
 }
 
+pub type AuthZoneCreateProofByAmountOutput = Proof;
+
 pub const AUTH_ZONE_CREATE_PROOF_BY_IDS_IDENT: &str = "create_proof_by_ids";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
@@ -50,15 +58,21 @@ pub struct AuthZoneCreateProofByIdsInput {
     pub resource_address: ResourceAddress,
 }
 
+pub type AuthZoneCreateProofByIdsOutput = Proof;
+
 pub const AUTH_ZONE_CLEAR_IDENT: &str = "clear";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct AuthZoneClearInput {}
 
+pub type AuthZoneClearOutput = ();
+
 pub const AUTH_ZONE_DRAIN_IDENT: &str = "drain";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct AuthZoneDrainInput {}
+
+pub type AuthZoneDrainOutput = Vec<Proof>;
 
 pub const AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT: &str = "assert_access_rule";
 
@@ -66,3 +80,5 @@ pub const AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT: &str = "assert_access_rule";
 pub struct AuthZoneAssertAccessRuleInput {
     pub access_rule: AccessRule,
 }
+
+pub type AuthZoneAssertAccessRuleOutput = ();

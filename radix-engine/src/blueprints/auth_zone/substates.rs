@@ -5,7 +5,7 @@ use crate::types::*;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct AuthZoneStackSubstate {
     pub(super) auth_zones: Vec<AuthZone>,
 }
@@ -82,7 +82,7 @@ impl AuthZoneStackSubstate {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, ScryptoSbor)]
 pub struct AuthZone {
     pub(super) proofs: Vec<Proof>,
     // Virtualized resources, note that one cannot create proofs with virtual resources but only be used for AuthZone checks

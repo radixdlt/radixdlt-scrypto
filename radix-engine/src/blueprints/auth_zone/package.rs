@@ -30,18 +30,83 @@ impl AuthZoneNativePackage {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut substates = Vec::new();
-        substates.push(aggregator.add_child_type_and_descendents::<AccessControllerSubstate>());
+        substates.push(aggregator.add_child_type_and_descendents::<AuthZoneStackSubstate>());
 
         let mut functions = BTreeMap::new();
         functions.insert(
-            ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
+            AUTH_ZONE_POP_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<AuthZonePopInput>(),
+                output: aggregator.add_child_type_and_descendents::<AuthZonePopOutput>(),
+                export_name: AUTH_ZONE_POP_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            AUTH_ZONE_PUSH_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<AuthZonePushInput>(),
+                output: aggregator.add_child_type_and_descendents::<AuthZonePushOutput>(),
+                export_name: AUTH_ZONE_PUSH_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            AUTH_ZONE_CREATE_PROOF_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofInput>(),
+                output: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofOutput>(),
+                export_name: AUTH_ZONE_CREATE_PROOF_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
             FunctionSchema {
                 receiver: None,
                 input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerCreateGlobalInput>(),
+                    .add_child_type_and_descendents::<AuthZoneCreateProofByAmountInput>(),
                 output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerCreateGlobalOutput>(),
-                export_name: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
+                    .add_child_type_and_descendents::<AuthZoneCreateProofByAmountOutput>(),
+                export_name: AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            AUTH_ZONE_CREATE_PROOF_BY_IDS_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofByIdsInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AuthZoneCreateProofByIdsOutput>(),
+                export_name: AUTH_ZONE_CREATE_PROOF_BY_IDS_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            AUTH_ZONE_CLEAR_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<AuthZoneClearInput>(),
+                output: aggregator.add_child_type_and_descendents::<AuthZoneClearOutput>(),
+                export_name: AUTH_ZONE_CLEAR_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            AUTH_ZONE_DRAIN_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<AuthZoneDrainInput>(),
+                output: aggregator.add_child_type_and_descendents::<AuthZoneDrainOutput>(),
+                export_name: AUTH_ZONE_DRAIN_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<AuthZoneAssertAccessRuleInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AuthZoneAssertAccessRuleOutput>(),
+                export_name: AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT.to_string(),
             },
         );
 
