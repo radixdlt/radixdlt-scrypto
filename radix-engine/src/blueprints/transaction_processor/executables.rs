@@ -4,7 +4,7 @@ use crate::errors::RuntimeError;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{
-    ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, TemporaryResolvedInvocation,
+    ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, ResolvedInvocation,
 };
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
@@ -252,7 +252,7 @@ impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
     fn resolve<D: KernelSubstateApi>(
         self,
         _api: &mut D,
-    ) -> Result<TemporaryResolvedInvocation<Self::Exec>, RuntimeError> {
+    ) -> Result<ResolvedInvocation<Self::Exec>, RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
         // TODO: This can be refactored out once any type in sbor is implemented
         let instructions: Vec<Instruction> = manifest_decode(&self.instructions).unwrap();
@@ -272,7 +272,7 @@ impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
             ident: "run".to_string(),
         });
 
-        let resolved = TemporaryResolvedInvocation {
+        let resolved = ResolvedInvocation {
             resolved_actor: actor,
             update: call_frame_update,
             executor: self,

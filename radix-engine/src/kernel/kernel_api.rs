@@ -1,5 +1,4 @@
 use super::actor::Actor;
-use super::call_frame::CallFrameUpdate;
 use super::call_frame::RENodeVisibilityOrigin;
 use super::heap::HeapRENode;
 use super::module_mixer::KernelModuleMixer;
@@ -86,46 +85,17 @@ pub trait KernelWasmApi<W: WasmEngine> {
     ) -> Result<W::WasmInstance, RuntimeError>;
 }
 
-pub trait Invokable<I: Invocation, E> {
+pub trait KernelInvokeApi<I: Invocation, E> {
     fn kernel_invoke(&mut self, invocation: I) -> Result<I::Output, E>;
-}
-
-pub trait Executor {
-    type Output: Debug;
-
-    fn execute<Y, W>(
-        self,
-        arg: ScryptoValue,
-        api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + ClientApi<RuntimeError>,
-        W: WasmEngine;
-}
-
-pub struct TemporaryResolvedInvocation<E: Executor> {
-    pub executor: E,
-    pub update: CallFrameUpdate,
-
-    // TODO: Make these two RENodes / Substates
-    pub resolved_actor: Actor,
-    pub args: IndexedScryptoValue,
-}
-
-pub trait ExecutableInvocation: Invocation {
-    type Exec: Executor<Output = Self::Output>;
-
-    fn resolve<Y: KernelSubstateApi>(
-        self,
-        api: &mut Y,
-    ) -> Result<TemporaryResolvedInvocation<Self::Exec>, RuntimeError>;
-
-    fn payload_size(&self) -> usize;
 }
 
 /// Interface of the Kernel, for Kernel modules.
 pub trait KernelApi<W: WasmEngine, E>:
-    KernelNodeApi + KernelSubstateApi + KernelWasmApi<W>
+    KernelNodeApi
+    + KernelSubstateApi
+    + KernelWasmApi<W>
+    + KernelInvokeApi<FunctionInvocation, E>
+    + KernelInvokeApi<MethodInvocation, E>
 {
 }
 
@@ -133,10 +103,12 @@ pub trait KernelApi<W: WasmEngine, E>:
 /// No kernel state changes are expected as of a result of invoking such APIs, except updating returned references.
 pub trait KernelInternalApi {
     fn kernel_get_module_state(&mut self) -> &mut KernelModuleMixer;
+
     fn kernel_get_node_visibility_origin(
         &self,
         node_id: RENodeId,
     ) -> Option<RENodeVisibilityOrigin>;
+
     fn kernel_get_current_depth(&self) -> usize;
 
     // TODO: Remove

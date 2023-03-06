@@ -11,7 +11,7 @@ use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{
     ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, KernelWasmApi,
-    TemporaryResolvedInvocation,
+    ResolvedInvocation,
 };
 use crate::system::node_modules::access_rules::{AccessRulesNativePackage, AuthZoneNativePackage};
 use crate::system::node_modules::metadata::MetadataNativePackage;
@@ -99,7 +99,7 @@ impl ExecutableInvocation for MethodInvocation {
     fn resolve<D: KernelSubstateApi>(
         self,
         api: &mut D,
-    ) -> Result<TemporaryResolvedInvocation<Self::Exec>, RuntimeError> {
+    ) -> Result<ResolvedInvocation<Self::Exec>, RuntimeError> {
         let (_, value, nodes_to_move, mut node_refs_to_copy) =
             IndexedScryptoValue::from_slice(&self.args)
                 .map_err(|e| {
@@ -182,7 +182,7 @@ impl ExecutableInvocation for MethodInvocation {
             receiver: Some(self.identifier),
         };
 
-        let resolved = TemporaryResolvedInvocation {
+        let resolved = ResolvedInvocation {
             resolved_actor: actor,
             update: CallFrameUpdate {
                 nodes_to_move,
@@ -206,7 +206,7 @@ impl ExecutableInvocation for FunctionInvocation {
     fn resolve<D: KernelSubstateApi>(
         self,
         api: &mut D,
-    ) -> Result<TemporaryResolvedInvocation<Self::Exec>, RuntimeError> {
+    ) -> Result<ResolvedInvocation<Self::Exec>, RuntimeError> {
         let (_, value, nodes_to_move, mut node_refs_to_copy) =
             IndexedScryptoValue::from_slice(&self.args)
                 .map_err(|e| {
@@ -250,7 +250,7 @@ impl ExecutableInvocation for FunctionInvocation {
             node_refs_to_copy.insert(RENodeId::GlobalPackage(self.fn_identifier.package_address));
         }
 
-        let resolved = TemporaryResolvedInvocation {
+        let resolved = ResolvedInvocation {
             resolved_actor: actor,
             update: CallFrameUpdate {
                 nodes_to_move,
