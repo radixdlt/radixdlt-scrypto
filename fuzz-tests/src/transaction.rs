@@ -2,114 +2,119 @@
 
 #[cfg(feature = "libfuzzer-sys")]
 use libfuzzer_sys::fuzz_target;
+#[cfg(feature = "libfuzzer-sys")]
+use once_cell::sync::Lazy;
 
 #[cfg(feature = "afl")]
 use afl::fuzz;
+#[cfg(feature = "afl")]
+use std::panic::AssertUnwindSafe;
 
 #[cfg(feature = "simple-fuzzer")]
 mod simple_fuzzer;
 
-use radix_engine::kernel::interpreters::ScryptoInterpreter;
-use radix_engine::ledger::TypedInMemorySubstateStore;
-use radix_engine::transaction::{
-    execute_and_commit_transaction, ExecutionConfig, FeeReserveConfig,
-};
-use radix_engine::types::*;
-use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
-use radix_engine_interface::blueprints::resource::AccessRule;
-use transaction::builder::{ManifestBuilder, TransactionBuilder};
-use transaction::model::{NotarizedTransaction, TransactionHeader};
+use radix_engine::types::{ComponentAddress, EcdsaSecp256k1PublicKey};
+use radix_engine_interface::blueprints::resource::{FromPublicKey, NonFungibleGlobalId};
+use scrypto_unit::TestRunner;
+use transaction::model::TransactionManifest;
 use transaction::signing::EcdsaSecp256k1PrivateKey;
-use transaction::validation::{
-    NotarizedTransactionValidator, TestIntentHashManager, TransactionValidator, ValidationConfig,
-};
 
-fn execute_single_transaction(transaction: NotarizedTransaction) {
-    let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
-
-    let executable = validator
-        .validate(&transaction, 0, &TestIntentHashManager::new())
-        .unwrap();
-
-    let scrypto_interpreter = ScryptoInterpreter {
-        wasm_engine: DefaultWasmEngine::default(),
-        wasm_instrumenter: WasmInstrumenter::default(),
-        wasm_metering_config: WasmMeteringConfig::V0,
-    };
-    let mut store = TypedInMemorySubstateStore::with_bootstrap(&scrypto_interpreter);
-    let execution_config = ExecutionConfig::default();
-    let fee_reserve_config = FeeReserveConfig::default();
-
-    execute_and_commit_transaction(
-        &mut store,
-        &scrypto_interpreter,
-        &fee_reserve_config,
-        &execution_config,
-        &executable,
-    );
+struct Account {
+    public_key: EcdsaSecp256k1PublicKey,
+    private_key: EcdsaSecp256k1PrivateKey,
+    address: ComponentAddress,
 }
 
-fn generate_transaction(data: &[u8]) -> NotarizedTransaction {
-    let mut builder = ManifestBuilder::new();
+struct Fuzzer {
+    runner: TestRunner,
+    accounts: Vec<Account>,
+    //    fungible_resource: [ResourceAddress; 2],
+    //    non_fungible_resource: [ResourceAddress; 2],
+}
 
-    let mut i = 0;
+impl Fuzzer {
+    fn new() -> Self {
+        let mut runner = TestRunner::builder().without_trace().build();
+        let accounts: Vec<Account> = (0..2)
+            .map(|_| {
+                let acc = runner.new_account(false);
+                println!("addr = {:?}", acc.2);
+                Account {
+                    public_key: acc.0,
+                    private_key: acc.1,
+                    address: acc.2,
+                }
+            })
+            .collect();
 
-    while i < data.len() {
-        match data[i] % 2 {
-            0 => {
-                builder.new_account(AccessRule::AllowAll);
-            }
-            1 => {
-                builder.call_method(FAUCET_COMPONENT, "lock_fee", args!(dec!("100")));
-            }
-            _ => panic!("Unexpected"),
-        }
-        i += 1;
+        Self { runner, accounts }
     }
-    let manifest = builder.build();
-    let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
 
-    let header = TransactionHeader {
-        version: 1,
-        network_id: NetworkDefinition::simulator().id,
-        start_epoch_inclusive: 0,
-        end_epoch_exclusive: 100,
-        nonce: 5,
-        notary_public_key: private_key.public_key().into(),
-        notary_as_signatory: false,
-        cost_unit_limit: 10_000_000,
-        tip_percentage: 0,
-    };
+    fn fuzz_tx_manifest(&mut self, data: &[u8]) -> TxStatus {
+        let result = TransactionManifest::from_slice(data);
+        match result {
+            Ok(manifest) => {
+                let _receipt = self.runner.execute_manifest(
+                    manifest,
+                    vec![NonFungibleGlobalId::from_public_key(
+                        &self.accounts[0].public_key,
+                    )],
+                );
 
-    TransactionBuilder::new()
-        .header(header)
-        .manifest(manifest)
-        .sign(&private_key)
-        .notarize(&private_key)
-        .build()
+                TxStatus::Ok
+            }
+            Err(_err) => {
+                //println!("manifest decoding error {:?}", err);
+                TxStatus::Error
+            }
+        }
+    }
 }
 
-fn fuzz_transaction(data: &[u8]) {
-    let transaction = generate_transaction(data);
-    execute_single_transaction(transaction);
+enum TxStatus {
+    // TransactionIntent successfully parsed
+    Ok,
+    // TransactionIntent parse error
+    Error,
+}
+
+#[test]
+fn test_fuzz_tx() {
+    let mut fuzzer = Fuzzer::new();
+    let data = std::fs::read(
+        "afl_in/manifest_e057a3853ccb0e33c8b61f2cde91f655473b202c6c095e2202c2ad93caee4e34.raw",
+    )
+    .unwrap();
+    fuzzer.fuzz_tx_manifest(&data);
 }
 
 // Fuzzer entry points
 #[cfg(feature = "libfuzzer-sys")]
 fuzz_target!(|data: &[u8]| {
-    fuzz_transaction(data);
+    unsafe {
+        static mut FUZZER: Lazy<Fuzzer> = Lazy::new(|| Fuzzer::new());
+
+        FUZZER.fuzz_tx_manifest(data);
+    }
 });
 
 #[cfg(feature = "afl")]
 fn main() {
+    // fuzz! uses `catch_unwind` and it requires RefUnwindSafe trait, which is not auto-implemented by
+    // Fuzzer members (TestRunner mainly). `AssertUnwindSafe` annotates the variable is indeed
+    // unwind safe
+    let mut fuzzer = AssertUnwindSafe(Fuzzer::new());
+
     fuzz!(|data: &[u8]| {
-        fuzz_transaction(data);
+        fuzzer.fuzz_tx_manifest(data);
     });
 }
 
 #[cfg(feature = "simple-fuzzer")]
 fn main() {
+    let mut fuzzer = Fuzzer::new();
+
     simple_fuzzer::fuzz(|data: &[u8]| {
-        fuzz_transaction(data);
+        fuzzer.fuzz_tx_manifest(data);
     });
 }

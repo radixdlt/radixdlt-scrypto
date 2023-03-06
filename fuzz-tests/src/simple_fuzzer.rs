@@ -125,9 +125,9 @@ fn fuzz_init() -> DataFuzzer {
     fuzzer
 }
 
-pub fn fuzz<F>(closure: F)
+pub fn fuzz<F>(mut closure: F)
 where
-    F: Fn(&[u8]),
+    F: FnMut(&[u8]),
 {
     let mut fuzzer = fuzz_init();
 
