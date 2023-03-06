@@ -12,8 +12,6 @@ use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum BucketError {
-    InvalidRequestData(DecodeError),
-
     ResourceError(ResourceError),
     ProofError(ProofError),
     NonFungibleOperationNotSupported,

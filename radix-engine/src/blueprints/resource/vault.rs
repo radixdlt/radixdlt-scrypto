@@ -17,8 +17,6 @@ use super::events::vault::{
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum VaultError {
-    InvalidRequestData(DecodeError),
-
     ResourceError(ResourceError),
     ProofError(ProofError),
     NonFungibleOperationNotSupported,

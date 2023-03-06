@@ -21,14 +21,11 @@ use radix_engine_interface::schema::PackageSchema;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PackageError {
-    InvalidRequestData(DecodeError),
     InvalidWasm(PrepareError),
+
     InvalidBlueprintWasm(SchemaValidationError),
     MissingSubstateSchema,
     TooManySubstateSchemas,
-    BlueprintNotFound,
-    MethodNotFound(String),
-    CouldNotEncodePackageAddress,
 }
 
 fn validate_package_schema(schema: &PackageSchema) -> Result<(), PackageError> {

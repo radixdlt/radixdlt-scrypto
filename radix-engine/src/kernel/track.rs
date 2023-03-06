@@ -698,7 +698,7 @@ impl<'s> FinalizingTrack<'s> {
                     let royalty_vault_id = accumulator_substate
                         .0
                         .package_royalty_accumulator()
-                        .royalty
+                        .royalty_vault
                         .vault_id();
                     let royalty_vault_substate = to_persist
                         .get_mut(&SubstateId(
@@ -726,7 +726,7 @@ impl<'s> FinalizingTrack<'s> {
                     let royalty_vault_id = accumulator_substate
                         .0
                         .component_royalty_accumulator()
-                        .royalty
+                        .royalty_vault
                         .vault_id();
                     let royalty_vault_substate = to_persist
                         .get_mut(&SubstateId(

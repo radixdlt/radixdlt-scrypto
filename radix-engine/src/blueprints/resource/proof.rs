@@ -23,7 +23,6 @@ impl LocalRef {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ProofError {
-    InvalidRequestData(DecodeError),
     /// Error produced by a resource container.
     ResourceError(ResourceError),
     /// Can't generate zero-amount or empty non-fungible set proofs.

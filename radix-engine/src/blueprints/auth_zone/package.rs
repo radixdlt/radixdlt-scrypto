@@ -17,7 +17,6 @@ use super::{
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthZoneError {
-    InvalidRequestData(DecodeError),
     EmptyAuthZone,
     AssertAccessRuleFailed,
     ComposeProofError(ComposeProofError),
