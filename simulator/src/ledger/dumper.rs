@@ -112,6 +112,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
             let raw_state = IndexedScryptoValue::from_slice(&state.raw).unwrap();
             let (package_address, blueprint_name) = match type_info_substate {
                 TypeInfoSubstate::Object { package_address, blueprint_name, ..} => (package_address, blueprint_name),
+                _ => panic!("Unexpected"),
             };
             let access_rules = access_rules_chain_substate.access_rules;
 

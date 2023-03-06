@@ -1388,7 +1388,7 @@ impl<'a> SubstateRef<'a> {
                     TypeInfoSubstate::Object { package_address, .. } => {
                         references.insert(RENodeId::Global(package_address.clone().into()));
                     }
-                    TypeInfoSubstate::KeyValueStore => {
+                    TypeInfoSubstate::KeyValueStore(..) => {
                     }
                 }
                 (references, Vec::new())

@@ -348,6 +348,7 @@ pub fn get_blueprint(
     let type_info = output.substate.type_info();
 
     match type_info {
-        TypeInfoSubstate::Object { package_address, blueprint_name, ..} => Ok((*package_address, blueprint_name.to_string()))
+        TypeInfoSubstate::Object { package_address, blueprint_name, ..} => Ok((*package_address, blueprint_name.to_string())),
+        _ => panic!("Unexpected"),
     }
 }

@@ -117,7 +117,7 @@ impl ExecutableInvocation for MethodInvocation {
                         package_address, blueprint_name, ..
                     } => (package_address, blueprint_name),
 
-                    TypeInfoSubstate::KeyValueStore => return Err(RuntimeError::InterpreterError(InterpreterError::CallMethodOnKeyValueStore)),
+                    TypeInfoSubstate::KeyValueStore(..) => return Err(RuntimeError::InterpreterError(InterpreterError::CallMethodOnKeyValueStore)),
                 }
             },
             NodeModuleId::Metadata => {

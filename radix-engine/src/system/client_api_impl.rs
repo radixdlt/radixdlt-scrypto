@@ -708,20 +708,20 @@ where
         let type_info = TypeInfoBlueprint::get_type(node_id, self)?;
         let blueprint = match type_info {
             TypeInfoSubstate::Object { package_address, blueprint_name, ..} => (package_address, blueprint_name),
-            TypeInfoSubstate::KeyValueStore => return Err(RuntimeError::SystemError(SystemError::NotAnObject)),
+            TypeInfoSubstate::KeyValueStore(..) => return Err(RuntimeError::SystemError(SystemError::NotAnObject)),
         };
 
         Ok(blueprint)
     }
 
-    fn new_key_value_store(&mut self, _schema: KeyValueStoreSchema) -> Result<KeyValueStoreId, RuntimeError> {
+    fn new_key_value_store(&mut self, schema: KeyValueStoreSchema) -> Result<KeyValueStoreId, RuntimeError> {
         let node_id = self.kernel_allocate_node_id(RENodeType::KeyValueStore)?;
 
         self.kernel_create_node(
             node_id,
             RENodeInit::KeyValueStore,
             btreemap!(
-                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::KeyValueStore),
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::KeyValueStore(schema)),
         ))?;
 
         Ok(node_id.into())
