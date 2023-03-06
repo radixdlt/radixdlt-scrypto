@@ -7,9 +7,9 @@ struct CustomEvent {
 
 #[blueprint]
 mod event_store_visibility {
-    struct EventStoreVisibility;
+    struct EventsBlueprint;
 
-    impl EventStoreVisibility {
+    impl EventsBlueprint {
         pub fn emit_event(number: u64) {
             Runtime::emit_event(CustomEvent { number });
         }

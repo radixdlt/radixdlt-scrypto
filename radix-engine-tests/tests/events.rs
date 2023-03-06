@@ -14,7 +14,7 @@ fn can_emit_basic_event_from_scrypto() {
     let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
-            "EventStoreVisibility",
+            "EventsBlueprint",
             "emit_event",
             manifest_args!(12u64),
         )
@@ -31,8 +31,11 @@ fn can_emit_basic_event_from_scrypto() {
 
         let expected_events = vec![(
             EventTypeIdentifier(
-                RENodeId::GlobalPackage(package_address),
-                NodeModuleId::SELF,
+                Emitter::Function(
+                    RENodeId::GlobalPackage(package_address),
+                    NodeModuleId::SELF,
+                    "EventsBlueprint".into(),
+                ),
                 schema_hash::<CustomEvent>(),
             ),
             scrypto_encode(&CustomEvent { number: 12 }).unwrap(),

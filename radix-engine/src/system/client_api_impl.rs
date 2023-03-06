@@ -761,16 +761,24 @@ where
             Some(Actor {
                 identifier: ActorIdentifier::Method(MethodIdentifier(node_id, node_module_id, ..)),
                 ..
-            }) => Ok(EventTypeIdentifier(node_id, node_module_id, schema_hash)),
+            }) => Ok(EventTypeIdentifier(
+                Emitter::Method(node_id, node_module_id),
+                schema_hash,
+            )),
             Some(Actor {
                 identifier:
                     ActorIdentifier::Function(FnIdentifier {
-                        package_address, ..
+                        package_address,
+                        blueprint_name,
+                        ..
                     }),
                 ..
             }) => Ok(EventTypeIdentifier(
-                RENodeId::GlobalPackage(package_address),
-                NodeModuleId::SELF,
+                Emitter::Function(
+                    RENodeId::GlobalPackage(package_address),
+                    NodeModuleId::SELF,
+                    blueprint_name,
+                ),
                 schema_hash,
             )),
             _ => Err(RuntimeError::ApplicationError(

@@ -608,9 +608,15 @@ impl<'s> FinalizingTrack<'s> {
                 .iter()
                 .find(|(identifier, _)| match identifier {
                     EventTypeIdentifier(
-                        RENodeId::GlobalPackage(EPOCH_MANAGER_PACKAGE)
-                        | RENodeId::GlobalComponent(ComponentAddress::EpochManager(..)),
-                        NodeModuleId::SELF,
+                        Emitter::Function(
+                            RENodeId::GlobalPackage(EPOCH_MANAGER_PACKAGE),
+                            NodeModuleId::SELF,
+                            ..,
+                        )
+                        | Emitter::Method(
+                            RENodeId::GlobalComponent(ComponentAddress::EpochManager(..)),
+                            NodeModuleId::SELF,
+                        ),
                         schema_hash,
                     ) if *schema_hash == expected_schema_hash => true,
                     _ => false,
