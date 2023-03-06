@@ -1,4 +1,10 @@
-use radix_engine::types::*;
+#![allow(dead_code)]
+
+use radix_engine::{
+    errors::{ApplicationError, RuntimeError},
+    system::kernel_modules::events::EventError,
+    types::*,
+};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -6,7 +12,7 @@ use transaction::builder::ManifestBuilder;
 // should not be able to have full control over it.
 
 #[test]
-fn can_emit_basic_event_from_scrypto() {
+fn scrypto_cant_emit_unregistered_event() {
     // Arrange
     let mut test_runner = TestRunner::builder().without_trace().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/events");
@@ -24,25 +30,14 @@ fn can_emit_basic_event_from_scrypto() {
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
 
     // Assert
-    {
-        receipt.expect_commit_success();
-        let mut application_events = receipt.expect_commit().application_events.clone();
-        application_events.remove(0); // Removing the first event which is the lock fee against the faucet.
-
-        let expected_events = vec![(
-            EventTypeIdentifier(
-                Emitter::Function(
-                    RENodeId::GlobalPackage(package_address),
-                    NodeModuleId::SELF,
-                    "EventsBlueprint".into(),
-                ),
-                schema_hash::<CustomEvent>(),
-            ),
-            scrypto_encode(&CustomEvent { number: 12 }).unwrap(),
-        )];
-
-        assert_eq!(expected_events, application_events)
-    }
+    receipt.expect_specific_failure(|runtime_error| {
+        matches!(
+            runtime_error,
+            RuntimeError::ApplicationError(ApplicationError::EventError(
+                EventError::SchemaNotFoundError { .. }
+            ))
+        )
+    });
 }
 
 #[derive(ScryptoEncode, Describe)]

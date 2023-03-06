@@ -244,6 +244,10 @@ impl Package {
                 default_auth: AccessRule::AllowAll,
             }),
         );
+        node_modules.insert(
+            NodeModuleId::PackageEventSchema,
+            RENodeModuleInit::PackageEventSchema(PackageEventSchemaSubstate(BTreeMap::new())), // TODO: To rework in Pt3
+        );
 
         // Create package node
         let node_id = if let Some(address) = input.package_address {
