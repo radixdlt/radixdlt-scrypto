@@ -68,7 +68,7 @@ pub struct FunctionInvocation {
 }
 
 impl Invocation for FunctionInvocation {
-    type Output = ScryptoValue;
+    type Output = IndexedScryptoValue;
 
     fn debug_identifier(&self) -> InvocationDebugIdentifier {
         InvocationDebugIdentifier::Function(self.fn_identifier.clone())
@@ -82,7 +82,7 @@ pub struct MethodInvocation {
 }
 
 impl Invocation for MethodInvocation {
-    type Output = ScryptoValue;
+    type Output = IndexedScryptoValue;
 
     fn debug_identifier(&self) -> InvocationDebugIdentifier {
         InvocationDebugIdentifier::Method(self.identifier.clone())

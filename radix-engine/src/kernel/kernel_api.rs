@@ -109,7 +109,7 @@ pub struct TemporaryResolvedInvocation<E: Executor> {
 
     // TODO: Make these two RENodes / Substates
     pub resolved_actor: Actor,
-    pub args: ScryptoValue,
+    pub args: IndexedScryptoValue,
 }
 
 pub trait ExecutableInvocation: Invocation {
