@@ -81,7 +81,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
     // components have a `TypeInfoSubstate`. Other components require some special handling.
     let component_state_dump = match component_address {
         ComponentAddress::Normal(..) => {
-            let component_info_substate: TypeInfoSubstate = substate_store
+            let type_info_substate: TypeInfoSubstate = substate_store
                 .get_substate(&SubstateId(
                     RENodeId::Global(component_address.into()),
                     NodeModuleId::TypeInfo,
@@ -110,8 +110,9 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 .unwrap();
 
             let raw_state = IndexedScryptoValue::from_slice(&state.raw).unwrap();
-            let package_address = component_info_substate.package_address;
-            let blueprint_name = component_info_substate.blueprint_name;
+            let (package_address, blueprint_name) = match type_info_substate {
+                TypeInfoSubstate::Object { package_address, blueprint_name, ..} => (package_address, blueprint_name),
+            };
             let access_rules = access_rules_chain_substate.access_rules;
 
             // Find all vaults owned by the component, assuming a tree structure.

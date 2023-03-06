@@ -1384,7 +1384,11 @@ impl<'a> SubstateRef<'a> {
             }
             SubstateRef::TypeInfo(substate) => {
                 let mut references = HashSet::new();
-                references.insert(RENodeId::Global(substate.package_address.into()));
+                match substate {
+                    TypeInfoSubstate::Object { package_address, .. } => {
+                        references.insert(RENodeId::Global(package_address.clone().into()));
+                    }
+                }
                 (references, Vec::new())
             }
             SubstateRef::ResourceManager(substate) => {

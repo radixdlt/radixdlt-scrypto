@@ -100,7 +100,7 @@ impl Package {
         let mut node_modules = BTreeMap::new();
         node_modules.insert(
             NodeModuleId::TypeInfo,
-            RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+            RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
                 package_address: PACKAGE_LOADER,
                 blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
                 global: true,
@@ -213,7 +213,7 @@ impl Package {
         let mut node_modules = BTreeMap::new();
         node_modules.insert(
             NodeModuleId::TypeInfo,
-            RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+            RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
                 package_address: PACKAGE_LOADER,
                 blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
                 global: true,

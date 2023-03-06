@@ -493,7 +493,16 @@ where
     ) -> Result<Address, RuntimeError> {
         let node_type = match node_id {
             RENodeId::Object(..) => {
-                let (package_address, blueprint) = TypeInfoBlueprint::get_type(node_id, self)?;
+                let type_info = TypeInfoBlueprint::get_type(node_id, self)?;
+                let (package_address, blueprint) = match type_info {
+                    TypeInfoSubstate::Object {
+                        package_address, blueprint_name, global,
+                    } if !global => {
+                        (package_address, blueprint_name)
+                    }
+                    _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
+                };
+
                 match (package_address, blueprint.as_str()) {
                     (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => RENodeType::GlobalAccount,
                     (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => RENodeType::GlobalIdentity,
@@ -537,7 +546,12 @@ where
             ))
             .unwrap();
         let mut type_info_substate: TypeInfoSubstate = type_info.into();
-        type_info_substate.global = true;
+
+        match type_info_substate {
+            TypeInfoSubstate::Object { ref mut global, .. } if !*global => *global = true,
+            _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
+        };
+
         module_init.insert(
             NodeModuleId::TypeInfo,
             RENodeModuleInit::TypeInfo(type_info_substate),
@@ -691,13 +705,27 @@ where
         &mut self,
         node_id: RENodeId,
     ) -> Result<(PackageAddress, String), RuntimeError> {
-        TypeInfoBlueprint::get_type(node_id, self)
+        let type_info = TypeInfoBlueprint::get_type(node_id, self)?;
+        let blueprint = match type_info {
+            TypeInfoSubstate::Object { package_address, blueprint_name, ..} => (package_address, blueprint_name)
+        };
+
+        Ok(blueprint)
     }
 
     fn new_key_value_store(&mut self, _schema: KeyValueStoreSchema) -> Result<KeyValueStoreId, RuntimeError> {
         let node_id = self.kernel_allocate_node_id(RENodeType::KeyValueStore)?;
 
-        self.kernel_create_node(node_id, RENodeInit::KeyValueStore, btreemap!())?;
+        self.kernel_create_node(
+            node_id,
+            RENodeInit::KeyValueStore,
+            btreemap!(
+                /*
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(
+                    TypeInfoSubstate::new(package_address, blueprint_ident.to_string(), false)
+                ),
+                 */
+        ))?;
 
         Ok(node_id.into())
     }

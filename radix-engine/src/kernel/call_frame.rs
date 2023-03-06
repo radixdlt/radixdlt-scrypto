@@ -240,11 +240,15 @@ impl CallFrame {
                     &SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
                 ) {
                     let type_info: &TypeInfoSubstate = info.into();
-                    SubstateProperties::verify_can_own(
-                        &offset,
-                        type_info.package_address,
-                        type_info.blueprint_name.as_str(),
-                    )?;
+                    match type_info {
+                        TypeInfoSubstate::Object { package_address, blueprint_name, .. } => {
+                            SubstateProperties::verify_can_own(
+                                &offset,
+                                *package_address,
+                                blueprint_name.as_str(),
+                            )?;
+                        }
+                    }
                 }
             }
 
@@ -471,11 +475,15 @@ impl CallFrame {
                     &SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
                 ) {
                     let type_info: &TypeInfoSubstate = info.into();
-                    SubstateProperties::verify_can_own(
-                        &offset,
-                        type_info.package_address,
-                        type_info.blueprint_name.as_str(),
-                    )?;
+                    match type_info {
+                        TypeInfoSubstate::Object { package_address, blueprint_name, .. } => {
+                            SubstateProperties::verify_can_own(
+                                &offset,
+                                *package_address,
+                                blueprint_name.as_str(),
+                            )?;
+                        }
+                    }
                 }
 
                 if push_to_store {

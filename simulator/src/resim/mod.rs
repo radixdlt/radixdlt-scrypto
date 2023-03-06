@@ -72,6 +72,7 @@ use radix_engine_stores::rocks_db::RadixEngineDB;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
+use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use transaction::builder::ManifestBuilder;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::manifest::decompile;
@@ -346,5 +347,7 @@ pub fn get_blueprint(
         .ok_or(Error::ComponentNotFound(component_address))?;
     let type_info = output.substate.type_info();
 
-    Ok((type_info.package_address, type_info.blueprint_name.clone()))
+    match type_info {
+        TypeInfoSubstate::Object { package_address, blueprint_name, ..} => Ok((*package_address, blueprint_name.to_string()))
+    }
 }
