@@ -166,7 +166,7 @@ extern "C" {
 
 #[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn consume_buffer(_buffer_id: BufferId, _destination_ptr: *mut u8) {
-    todo!()
+    unreachable!()
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -176,12 +176,12 @@ pub unsafe fn new_component(
     _app_states_ptr: *const u8,
     _app_states: usize,
 ) -> Buffer {
-    todo!()
+    unreachable!()
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn new_key_value_store() -> Buffer {
-    todo!()
+    unreachable!()
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -191,7 +191,7 @@ pub unsafe fn globalize_component(
     _modules_ptr: *const u8,
     _modules_len: usize,
 ) -> Buffer {
-    todo!()
+    unreachable!()
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -203,7 +203,7 @@ pub unsafe fn globalize_with_address(
     _address_ptr: *const u8,
     _address_len: usize,
 ) -> Buffer {
-    todo!()
+    unreachable!()
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -211,7 +211,7 @@ pub unsafe fn get_component_type_info(
     _component_id_ptr: *const u8,
     _component_id_len: usize,
 ) -> Buffer {
-    todo!()
+    unreachable!()
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -224,7 +224,7 @@ pub unsafe fn call_method(
     _args_ptr: *const u8,
     _args_len: usize,
 ) -> Buffer {
-    todo!()
+    unreachable!()
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -240,7 +240,7 @@ pub unsafe fn new_package(
     _metadata_ptr: *const u8,
     _metadata_len: usize,
 ) -> Buffer {
-    todo!()
+    unreachable!()
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -254,12 +254,12 @@ pub unsafe fn call_function(
     _args_ptr: *const u8,
     _args_len: usize,
 ) -> Buffer {
-    todo!()
+    unreachable!()
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn drop_node(_node_id_ptr: *const u8, _node_id_len: usize) {
-    todo!()
+    unreachable!()
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -270,12 +270,12 @@ pub unsafe fn lock_substate(
     _offset_len: usize,
     _flags: u32,
 ) -> u32 {
-    todo!()
+    unreachable!()
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn read_substate(_handle: u32) -> Buffer {
-    todo!()
+    unreachable!()
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -283,12 +283,12 @@ pub unsafe fn write_substate(_handle: u32, _data_ptr: *const u8, _data_len: usiz
 
 #[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn drop_lock(_handle: u32) {
-    todo!()
+    unreachable!()
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn get_actor() -> Buffer {
-    todo!()
+    unreachable!()
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -298,7 +298,7 @@ pub unsafe fn emit_event(
     _event_data_ptr: *const u8,
     _event_data_len: usize,
 ) {
-    todo!()
+    unreachable!()
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -308,5 +308,5 @@ pub unsafe fn log_message(
     _message_ptr: *const u8,
     _message_len: usize,
 ) {
-    todo!()
+    unreachable!()
 }
