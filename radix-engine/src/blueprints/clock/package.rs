@@ -13,6 +13,7 @@ use radix_engine_interface::blueprints::clock::TimePrecision;
 use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
+use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::time::*;
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq)]
@@ -26,7 +27,7 @@ const MINUTES_TO_MS_FACTOR: i64 = SECONDS_TO_MS_FACTOR * MINUTES_TO_SECONDS_FACT
 
 pub struct ClockNativePackage;
 impl ClockNativePackage {
-    pub fn schema() -> schema::PackageSchema {
+    pub fn schema() -> PackageSchema {
         todo!()
     }
 

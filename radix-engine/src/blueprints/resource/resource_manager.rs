@@ -20,6 +20,7 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
+use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::*;
 
 use super::events::resource_manager::BurnResourceEvent;
@@ -473,7 +474,7 @@ where
 pub struct ResourceManagerBlueprint;
 
 impl ResourceManagerBlueprint {
-    pub fn schema() -> schema::PackageSchema {
+    pub fn schema() -> PackageSchema {
         todo!()
     }
 

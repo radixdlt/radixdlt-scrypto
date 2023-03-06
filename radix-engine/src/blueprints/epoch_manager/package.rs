@@ -9,11 +9,12 @@ use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, FnKey};
+use radix_engine_interface::schema::PackageSchema;
 
 pub struct EpochManagerNativePackage;
 
 impl EpochManagerNativePackage {
-    pub fn schema() -> schema::PackageSchema {
+    pub fn schema() -> PackageSchema {
         todo!()
     }
 

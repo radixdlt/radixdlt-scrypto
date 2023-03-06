@@ -10,6 +10,7 @@ use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::schema::PackageSchema;
 
 use super::{
     compose_proof_by_amount, compose_proof_by_ids, AuthZoneStackSubstate, ComposeProofError,
@@ -25,7 +26,7 @@ pub enum AuthZoneError {
 pub struct AuthZoneNativePackage;
 
 impl AuthZoneNativePackage {
-    pub fn schema() -> schema::PackageSchema {
+    pub fn schema() -> PackageSchema {
         todo!()
     }
 

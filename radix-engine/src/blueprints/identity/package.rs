@@ -13,11 +13,12 @@ use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::schema::PackageSchema;
 
 pub struct IdentityNativePackage;
 
 impl IdentityNativePackage {
-    pub fn schema() -> schema::PackageSchema {
+    pub fn schema() -> PackageSchema {
         todo!()
     }
 
