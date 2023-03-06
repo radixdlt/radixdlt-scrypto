@@ -46,11 +46,8 @@ impl AccountNativePackage {
     pub fn schema() -> PackageSchema {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-        let mut substates = BTreeMap::new();
-        substates.insert(
-            0,
-            aggregator.add_child_type_and_descendents::<AccountSubstate>(),
-        );
+        let mut substates = Vec::new();
+        substates.push(aggregator.add_child_type_and_descendents::<AccountSubstate>());
 
         let mut functions = BTreeMap::new();
         functions.insert(

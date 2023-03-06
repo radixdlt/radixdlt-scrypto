@@ -260,7 +260,7 @@ impl AuthModule {
                 .clone();
             let index = schema
                 .substates
-                .get(&0)
+                .get(0)
                 .expect("Substate schema [offset: 0] not found")
                 .clone();
             api.kernel_drop_lock(handle)?;

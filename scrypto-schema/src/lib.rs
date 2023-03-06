@@ -22,7 +22,7 @@ pub struct PackageSchema {
 pub struct BlueprintSchema {
     pub schema: ScryptoSchema,
     /// For each offset, there is a [`LocalTypeIndex`]
-    pub substates: BTreeMap<u8, LocalTypeIndex>,
+    pub substates: Vec<LocalTypeIndex>,
     /// For each function, there is a [`FunctionSchema`]
     pub functions: BTreeMap<String, FunctionSchema>,
 }
@@ -49,7 +49,7 @@ impl Default for BlueprintSchema {
                 type_metadata: vec![],
                 type_validations: vec![],
             },
-            substates: BTreeMap::default(),
+            substates: Vec::default(),
             functions: BTreeMap::default(),
         }
     }
@@ -64,6 +64,7 @@ impl BlueprintSchema {
         }
         None
     }
+
     pub fn find_method(&self, ident: &str) -> Option<FunctionSchema> {
         if let Some(x) = self.functions.get(ident) {
             if x.receiver.is_some() {
