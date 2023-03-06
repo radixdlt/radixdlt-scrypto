@@ -690,7 +690,7 @@ mod tests {
         expected_end_offset: usize,
     ) {
         let event = traverser.next_event();
-        let sbor_depth = event.location.child_value_depth();
+        let sbor_depth = event.location.ancestor_path.len() + 1;
         let LocatedTraversalEvent {
             event: TraversalEvent::ContainerStart(header),
             location: Location {
@@ -715,7 +715,7 @@ mod tests {
         expected_end_offset: usize,
     ) {
         let event = traverser.next_event();
-        let sbor_depth = event.location.child_value_depth();
+        let sbor_depth = event.location.ancestor_path.len() + 1;
         let LocatedTraversalEvent {
             event: TraversalEvent::ContainerEnd(header),
             location: Location {
@@ -740,7 +740,7 @@ mod tests {
         expected_end_offset: usize,
     ) {
         let event = traverser.next_event();
-        let sbor_depth = event.location.child_value_depth();
+        let sbor_depth = event.location.ancestor_path.len() + 1;
         let LocatedTraversalEvent {
             event: TraversalEvent::TerminalValue(value),
             location: Location {
@@ -765,7 +765,7 @@ mod tests {
         expected_end_offset: usize,
     ) {
         let event = traverser.next_event();
-        let sbor_depth = event.location.child_value_depth();
+        let sbor_depth = event.location.ancestor_path.len() + 1;
         let LocatedTraversalEvent {
             event: TraversalEvent::TerminalValueBatch(value_batch),
             location: Location {
