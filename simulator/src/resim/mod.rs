@@ -306,7 +306,7 @@ pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageS
 
     let output = substate_store
         .get_substate(&SubstateId(
-            RENodeId::Global(package_address),
+            RENodeId::Global(package_address.into()),
             NodeModuleId::SELF,
             SubstateOffset::Package(PackageOffset::Info),
         ))

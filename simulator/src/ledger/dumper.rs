@@ -38,7 +38,7 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
     let package: Option<PackageCodeSubstate> = substate_store
         .get_substate(&SubstateId(
-            RENodeId::Global(package_address),
+            RENodeId::Global(package_address.into()),
             NodeModuleId::SELF,
             SubstateOffset::Package(PackageOffset::Code),
         ))
