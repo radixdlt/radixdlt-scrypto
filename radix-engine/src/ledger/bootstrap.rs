@@ -436,7 +436,7 @@ pub fn create_genesis(
             function_name: PACKAGE_LOADER_PUBLISH_WASM_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishWasmInput {
                 package_address: Some(package_address),
-                code: faucet_code, // TODO: Use blob here instead?
+                code: faucet_code,
                 schema: scrypto_decode(&faucet_abi).unwrap(),
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
