@@ -13,7 +13,7 @@ use radix_engine_interface::blueprints::clock::TimePrecision;
 use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
-use radix_engine_interface::schema::PackageSchema;
+use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
 use radix_engine_interface::time::*;
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq)]
@@ -28,7 +28,34 @@ const MINUTES_TO_MS_FACTOR: i64 = SECONDS_TO_MS_FACTOR * MINUTES_TO_SECONDS_FACT
 pub struct ClockNativePackage;
 impl ClockNativePackage {
     pub fn schema() -> PackageSchema {
-        todo!()
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+
+        let mut substates = Vec::new();
+        substates.push(aggregator.add_child_type_and_descendents::<AccessControllerSubstate>());
+
+        let mut functions = BTreeMap::new();
+        functions.insert(
+            ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator
+                    .add_child_type_and_descendents::<AccessControllerCreateGlobalInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccessControllerCreateGlobalOutput>(),
+                export_name: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
+            },
+        );
+
+        let schema = generate_full_schema(aggregator);
+        PackageSchema {
+            blueprints: btreemap!(
+                CLOCK_BLUEPRINT.to_string() => BlueprintSchema {
+                    schema,
+                    substates,
+                    functions
+                }
+            ),
+        }
     }
 
     pub fn package_access_rules() -> BTreeMap<FnKey, AccessRule> {

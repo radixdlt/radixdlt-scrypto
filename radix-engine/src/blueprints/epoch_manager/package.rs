@@ -9,13 +9,40 @@ use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, FnKey};
-use radix_engine_interface::schema::PackageSchema;
+use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
 
 pub struct EpochManagerNativePackage;
 
 impl EpochManagerNativePackage {
     pub fn schema() -> PackageSchema {
-        todo!()
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+
+        let mut substates = Vec::new();
+        substates.push(aggregator.add_child_type_and_descendents::<AccessControllerSubstate>());
+
+        let mut functions = BTreeMap::new();
+        functions.insert(
+            ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator
+                    .add_child_type_and_descendents::<AccessControllerCreateGlobalInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccessControllerCreateGlobalOutput>(),
+                export_name: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
+            },
+        );
+
+        let schema = generate_full_schema(aggregator);
+        PackageSchema {
+            blueprints: btreemap!(
+                EPOCH_MANAGER_BLUEPRINT.to_string() => BlueprintSchema {
+                    schema,
+                    substates,
+                    functions
+                }
+            ),
+        }
     }
 
     pub fn package_access_rules() -> BTreeMap<FnKey, AccessRule> {

@@ -13,13 +13,42 @@ use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::schema::BlueprintSchema;
+use radix_engine_interface::schema::FunctionSchema;
 use radix_engine_interface::schema::PackageSchema;
 
 pub struct IdentityNativePackage;
 
 impl IdentityNativePackage {
     pub fn schema() -> PackageSchema {
-        todo!()
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+
+        let mut substates = Vec::new();
+        substates.push(aggregator.add_child_type_and_descendents::<AccessControllerSubstate>());
+
+        let mut functions = BTreeMap::new();
+        functions.insert(
+            ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator
+                    .add_child_type_and_descendents::<AccessControllerCreateGlobalInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccessControllerCreateGlobalOutput>(),
+                export_name: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
+            },
+        );
+
+        let schema = generate_full_schema(aggregator);
+        PackageSchema {
+            blueprints: btreemap!(
+                IDENTITY_BLUEPRINT.to_string() => BlueprintSchema {
+                    schema,
+                    substates,
+                    functions
+                }
+            ),
+        }
     }
 
     pub fn invoke_export<Y>(
