@@ -29,7 +29,7 @@ impl AuthZoneNativePackage {
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<RENodeId>,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -112,7 +112,7 @@ pub struct AuthZoneBlueprint;
 impl AuthZoneBlueprint {
     pub(crate) fn pop<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -145,7 +145,7 @@ impl AuthZoneBlueprint {
 
     pub(crate) fn push<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -172,7 +172,7 @@ impl AuthZoneBlueprint {
 
     pub(crate) fn create_proof<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -215,7 +215,7 @@ impl AuthZoneBlueprint {
 
     pub(crate) fn create_proof_by_amount<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -263,7 +263,7 @@ impl AuthZoneBlueprint {
 
     pub(crate) fn create_proof_by_ids<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -311,7 +311,7 @@ impl AuthZoneBlueprint {
 
     pub(crate) fn clear<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -341,7 +341,7 @@ impl AuthZoneBlueprint {
 
     pub(crate) fn drain<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -369,7 +369,7 @@ impl AuthZoneBlueprint {
 
     pub(crate) fn assert_access_rule<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where

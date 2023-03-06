@@ -52,7 +52,7 @@ pub struct ValidatorBlueprint;
 impl ValidatorBlueprint {
     pub fn register<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -107,7 +107,7 @@ impl ValidatorBlueprint {
 
     pub fn unregister<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -154,7 +154,7 @@ impl ValidatorBlueprint {
 
     pub fn stake<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -228,7 +228,7 @@ impl ValidatorBlueprint {
 
     pub fn unstake<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -331,7 +331,7 @@ impl ValidatorBlueprint {
 
     pub fn claim_xrd<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -402,7 +402,7 @@ impl ValidatorBlueprint {
 
     pub fn update_key<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -450,7 +450,7 @@ impl ValidatorBlueprint {
 
     pub fn update_accept_delegated_stake<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where

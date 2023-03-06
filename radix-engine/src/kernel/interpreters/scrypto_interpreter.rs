@@ -35,7 +35,7 @@ fn validate_input(
     blueprint_schema: &BlueprintSchema,
     fn_ident: &str,
     with_receiver: bool,
-    input: &ScryptoValue,
+    input: &IndexedScryptoValue,
 ) -> Result<String, RuntimeError> {
     let function_schema =
         blueprint_schema
@@ -51,14 +51,16 @@ fn validate_input(
         ));
     }
 
-    let bytes = scrypto_encode(input).expect("Failed to encode ScryptoValue");
-
-    validate_payload_against_schema(&bytes, &blueprint_schema.schema, function_schema.input)
-        .map_err(|_| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputSchemaNotMatch(
-                fn_ident.to_string(),
-            ))
-        })?;
+    validate_payload_against_schema(
+        input.as_slice(),
+        &blueprint_schema.schema,
+        function_schema.input,
+    )
+    .map_err(|_| {
+        RuntimeError::InterpreterError(InterpreterError::ScryptoInputSchemaNotMatch(
+            fn_ident.to_string(),
+        ))
+    })?;
 
     Ok(function_schema.export_name.clone())
 }
@@ -98,12 +100,12 @@ impl ExecutableInvocation for MethodInvocation {
         self,
         api: &mut D,
     ) -> Result<ResolvedInvocation<Self::Exec>, RuntimeError> {
-        let (_, value, nodes_to_move, mut node_refs_to_copy) =
-            IndexedScryptoValue::from_slice(&self.args)
-                .map_err(|e| {
-                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-                })?
-                .unpack();
+        let value = IndexedScryptoValue::from_vec(self.args).map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
+        let nodes_to_move = value.owned_node_ids().clone();
+        let mut node_refs_to_copy = value.global_references().clone();
+
         // Pass the component ref
         node_refs_to_copy.insert(self.identifier.0);
 
@@ -205,12 +207,11 @@ impl ExecutableInvocation for FunctionInvocation {
         self,
         api: &mut D,
     ) -> Result<ResolvedInvocation<Self::Exec>, RuntimeError> {
-        let (_, value, nodes_to_move, mut node_refs_to_copy) =
-            IndexedScryptoValue::from_slice(&self.args)
-                .map_err(|e| {
-                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-                })?
-                .unpack();
+        let value = IndexedScryptoValue::from_vec(self.args).map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
+        let nodes_to_move = value.owned_node_ids().clone();
+        let mut node_refs_to_copy = value.global_references().clone();
 
         let actor = Actor::function(self.fn_identifier.clone());
 
@@ -275,13 +276,13 @@ pub struct ScryptoExecutor {
 }
 
 impl Executor for ScryptoExecutor {
-    type Output = ScryptoValue;
+    type Output = IndexedScryptoValue;
 
     fn execute<Y, W>(
         self,
-        args: ScryptoValue,
+        args: IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<(ScryptoValue, CallFrameUpdate), RuntimeError>
+    ) -> Result<(IndexedScryptoValue, CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + ClientApi<RuntimeError>,
         W: WasmEngine,
@@ -411,9 +412,7 @@ impl Executor for ScryptoExecutor {
                         }
                         input.push(
                             runtime
-                                .allocate_buffer(
-                                    scrypto_encode(&args).expect("Failed to encode args"),
-                                )
+                                .allocate_buffer(args.into())
                                 .expect("Failed to allocate buffer"),
                         );
 
@@ -429,13 +428,12 @@ impl Executor for ScryptoExecutor {
             output
         };
 
-        let (_, value, nodes_to_move, refs_to_copy) = output.unpack();
         let update = CallFrameUpdate {
-            node_refs_to_copy: refs_to_copy,
-            nodes_to_move,
+            node_refs_to_copy: output.global_references().clone(),
+            nodes_to_move: output.owned_node_ids().clone(),
         };
 
-        Ok((value, update))
+        Ok((output, update))
     }
 }
 
@@ -446,7 +444,7 @@ impl NativeVm {
         native_package_code_id: u8,
         receiver: Option<MethodIdentifier>,
         export_name: &str,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where

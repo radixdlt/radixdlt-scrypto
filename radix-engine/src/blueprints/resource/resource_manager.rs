@@ -474,7 +474,7 @@ pub struct ResourceManagerBlueprint;
 
 impl ResourceManagerBlueprint {
     pub(crate) fn create_non_fungible<Y>(
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -498,7 +498,7 @@ impl ResourceManagerBlueprint {
     }
 
     pub(crate) fn create_non_fungible_with_address<Y>(
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -526,7 +526,7 @@ impl ResourceManagerBlueprint {
     }
 
     pub(crate) fn create_non_fungible_with_initial_supply<Y>(
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -582,7 +582,7 @@ impl ResourceManagerBlueprint {
     }
 
     pub(crate) fn create_uuid_non_fungible_with_initial_supply<Y>(
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -636,7 +636,7 @@ impl ResourceManagerBlueprint {
     }
 
     pub(crate) fn create_fungible<Y>(
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -660,7 +660,7 @@ impl ResourceManagerBlueprint {
     }
 
     pub(crate) fn create_fungible_with_initial_supply<Y>(
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -707,7 +707,7 @@ impl ResourceManagerBlueprint {
     }
 
     pub(crate) fn create_fungible_with_initial_supply_and_address<Y>(
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -755,7 +755,7 @@ impl ResourceManagerBlueprint {
     }
 
     pub(crate) fn burn_bucket<Y>(
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -778,7 +778,7 @@ impl ResourceManagerBlueprint {
 
     pub(crate) fn mint_non_fungible<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -904,7 +904,7 @@ impl ResourceManagerBlueprint {
 
     pub(crate) fn mint_uuid_non_fungible<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -992,7 +992,7 @@ impl ResourceManagerBlueprint {
 
     pub(crate) fn mint_fungible<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -1065,7 +1065,7 @@ impl ResourceManagerBlueprint {
 
     pub(crate) fn burn<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -1148,7 +1148,7 @@ impl ResourceManagerBlueprint {
 
     pub(crate) fn create_bucket<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -1198,7 +1198,7 @@ impl ResourceManagerBlueprint {
 
     pub(crate) fn create_vault<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -1259,7 +1259,7 @@ impl ResourceManagerBlueprint {
 
     pub(crate) fn update_non_fungible_data<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -1308,7 +1308,7 @@ impl ResourceManagerBlueprint {
 
     pub(crate) fn non_fungible_exists<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -1345,7 +1345,7 @@ impl ResourceManagerBlueprint {
 
     pub(crate) fn get_resource_type<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -1371,7 +1371,7 @@ impl ResourceManagerBlueprint {
 
     pub(crate) fn get_total_supply<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -1394,7 +1394,7 @@ impl ResourceManagerBlueprint {
 
     pub(crate) fn get_non_fungible<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where

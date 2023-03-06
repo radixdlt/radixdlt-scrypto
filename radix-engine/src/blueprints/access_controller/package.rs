@@ -119,7 +119,7 @@ impl AccessControllerNativePackage {
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<RENodeId>,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -231,7 +231,7 @@ impl AccessControllerNativePackage {
     }
 
     fn create_global<Y>(
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -279,7 +279,7 @@ impl AccessControllerNativePackage {
 
     fn create_proof<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -298,7 +298,7 @@ impl AccessControllerNativePackage {
 
     fn initiate_recovery_as_primary<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -334,7 +334,7 @@ impl AccessControllerNativePackage {
 
     fn initiate_recovery_as_recovery<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -370,7 +370,7 @@ impl AccessControllerNativePackage {
 
     fn quick_confirm_primary_role_recovery_proposal<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -412,7 +412,7 @@ impl AccessControllerNativePackage {
 
     fn quick_confirm_recovery_role_recovery_proposal<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -454,7 +454,7 @@ impl AccessControllerNativePackage {
 
     fn timed_confirm_recovery<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -497,7 +497,7 @@ impl AccessControllerNativePackage {
 
     fn cancel_primary_role_recovery_proposal<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -526,7 +526,7 @@ impl AccessControllerNativePackage {
 
     fn cancel_recovery_role_recovery_proposal<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -555,7 +555,7 @@ impl AccessControllerNativePackage {
 
     fn lock_primary_role<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -578,7 +578,7 @@ impl AccessControllerNativePackage {
 
     fn unlock_primary_role<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -601,7 +601,7 @@ impl AccessControllerNativePackage {
 
     fn stop_timed_recovery<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where

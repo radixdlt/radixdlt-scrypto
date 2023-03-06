@@ -47,7 +47,7 @@ pub struct EpochManagerBlueprint;
 
 impl EpochManagerBlueprint {
     pub(crate) fn create<Y>(
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -220,7 +220,7 @@ impl EpochManagerBlueprint {
 
     pub(crate) fn get_current_epoch<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -244,7 +244,7 @@ impl EpochManagerBlueprint {
 
     pub(crate) fn next_round<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -311,7 +311,7 @@ impl EpochManagerBlueprint {
 
     pub(crate) fn set_epoch<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -336,7 +336,7 @@ impl EpochManagerBlueprint {
 
     pub(crate) fn create_validator<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -362,7 +362,7 @@ impl EpochManagerBlueprint {
 
     pub(crate) fn update_validator<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
