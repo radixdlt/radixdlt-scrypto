@@ -52,7 +52,10 @@ pub trait WasmRuntime {
         access_rules: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn new_key_value_store(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+    fn new_key_value_store(
+        &mut self,
+        schema: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn get_component_type_info(
         &mut self,

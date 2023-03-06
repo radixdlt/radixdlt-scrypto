@@ -39,7 +39,7 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::PackageSchema;
+use radix_engine_interface::schema::{KeyValueStoreSchema, PackageSchema};
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
@@ -694,7 +694,7 @@ where
         TypeInfoBlueprint::get_type(node_id, self)
     }
 
-    fn new_key_value_store(&mut self) -> Result<KeyValueStoreId, RuntimeError> {
+    fn new_key_value_store(&mut self, _schema: KeyValueStoreSchema) -> Result<KeyValueStoreId, RuntimeError> {
         let node_id = self.kernel_allocate_node_id(RENodeType::KeyValueStore)?;
 
         self.kernel_create_node(node_id, RENodeInit::KeyValueStore, btreemap!())?;

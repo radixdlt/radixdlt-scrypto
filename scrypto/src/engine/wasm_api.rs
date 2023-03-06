@@ -42,7 +42,10 @@ extern "C" {
         app_states_len: usize,
     ) -> Buffer;
 
-    pub fn new_key_value_store() -> Buffer;
+    pub fn new_key_value_store(
+        schema_ptr: *const u8,
+        schema_len: usize,
+    ) -> Buffer;
 
     pub fn globalize_component(
         component_id_ptr: *const u8,
@@ -180,7 +183,10 @@ pub unsafe fn new_component(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn new_key_value_store() -> Buffer {
+pub unsafe fn new_key_value_store(
+    _schema_ptr: *const u8,
+    _schema_len: usize,
+) -> Buffer {
     todo!()
 }
 

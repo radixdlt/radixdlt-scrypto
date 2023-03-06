@@ -3,6 +3,7 @@ use crate::data::scrypto::model::*;
 use sbor::rust::collections::*;
 use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
+use scrypto_schema::KeyValueStoreSchema;
 
 pub trait ClientObjectApi<E> {
     // TODO: refine the interface
@@ -12,7 +13,7 @@ pub trait ClientObjectApi<E> {
         app_states: Vec<Vec<u8>>,
     ) -> Result<ObjectId, E>;
 
-    fn new_key_value_store(&mut self) -> Result<KeyValueStoreId, E>;
+    fn new_key_value_store(&mut self, schema: KeyValueStoreSchema) -> Result<KeyValueStoreId, E>;
 
     fn globalize(
         &mut self,

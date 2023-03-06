@@ -1,6 +1,6 @@
 #![allow(unused_must_use)]
 use colored::*;
-use radix_engine::blueprints::resource::ResourceManagerSubstate;
+use radix_engine::blueprints::resource::{NonFungible, ResourceManagerSubstate};
 use radix_engine::blueprints::resource::VaultInfoSubstate;
 use radix_engine::ledger::*;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
@@ -421,7 +421,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
 
         let symbol_metadata: Option<KeyValueStoreEntrySubstate> = substate_store
             .get_substate(&SubstateId(
-                RENodeId::GlobalResourceManager(resource_address),
+                RENodeId::Global(resource_address.into()),
                 NodeModuleId::Metadata,
                 SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
                     scrypto_encode("symbol").unwrap(),
@@ -502,7 +502,9 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                     .map(|s| s.substate.to_runtime())
                     .map(|s| s.into())
                     .unwrap();
-                if let KeyValueStoreEntrySubstate::Some(non_fungible) = non_fungible.0 {
+                if let KeyValueStoreEntrySubstate::Some(value) = non_fungible {
+                    let non_fungible: NonFungible = scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap();
+
                     let id = IndexedScryptoValue::from_typed(id);
                     let immutable_data =
                         IndexedScryptoValue::from_slice(&non_fungible.immutable_data()).unwrap();

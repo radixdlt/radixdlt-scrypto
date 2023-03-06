@@ -5,9 +5,30 @@ compile_error!("Either feature `std` or `alloc` must be enabled for this crate."
 #[cfg(all(feature = "std", feature = "alloc"))]
 compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
-use radix_engine_common::data::scrypto::ScryptoSchema;
+use radix_engine_common::data::scrypto::{ScryptoCustomTypeKind, ScryptoDescribe, ScryptoSchema};
 use sbor::rust::prelude::*;
 use sbor::*;
+
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+pub struct KeyValueStoreSchema {
+    pub schema: ScryptoSchema,
+    pub key: LocalTypeIndex,
+    pub value: LocalTypeIndex,
+}
+
+impl KeyValueStoreSchema {
+    pub fn new<K: ScryptoDescribe, V: ScryptoDescribe>() -> Self {
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+        let key_type_index = aggregator.add_child_type_and_descendents::<K>();
+        let value_type_index = aggregator.add_child_type_and_descendents::<V>();
+        let schema = generate_full_schema(aggregator);
+        Self {
+            schema,
+            key: key_type_index,
+            value: value_type_index,
+        }
+    }
+}
 
 // We keep one self-contained schema per blueprint:
 // - Easier macro to export schema, as they work at blueprint level

@@ -9,6 +9,7 @@ use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::OWN_
 use radix_engine_interface::data::scrypto::*;
 use sbor::rust::marker::PhantomData;
 use sbor::*;
+use scrypto_schema::KeyValueStoreSchema;
 
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::{DataRef, DataRefMut, OriginalData};
@@ -16,17 +17,20 @@ use crate::runtime::{DataRef, DataRefMut, OriginalData};
 // TODO: optimize `rust_value -> bytes -> scrypto_value` conversion.
 
 /// A scalable key-value map which loads entries on demand.
-pub struct KeyValueStore<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> {
+pub struct KeyValueStore<K: ScryptoEncode + ScryptoDecode + ScryptoDescribe, V: ScryptoEncode + ScryptoDecode + ScryptoDescribe> {
     pub id: KeyValueStoreId,
     pub key: PhantomData<K>,
     pub value: PhantomData<V>,
 }
 
-impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValueStore<K, V> {
+impl<K: ScryptoEncode + ScryptoDecode + ScryptoDescribe, V: ScryptoEncode + ScryptoDecode + ScryptoDescribe> KeyValueStore<K, V> {
     /// Creates a new key value store.
     pub fn new() -> Self {
         let mut env = ScryptoEnv;
-        let id = env.new_key_value_store().unwrap();
+
+        let schema = KeyValueStoreSchema::new::<K, V>();
+
+        let id = env.new_key_value_store(schema).unwrap();
 
         Self {
             id,
@@ -122,7 +126,7 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValu
 //========
 // binary
 //========
-impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode>
+impl<K: ScryptoEncode + ScryptoDecode + ScryptoDescribe, V: ScryptoEncode + ScryptoDecode + ScryptoDescribe>
     Categorize<ScryptoCustomValueKind> for KeyValueStore<K, V>
 {
     #[inline]
@@ -132,8 +136,8 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode>
 }
 
 impl<
-        K: ScryptoEncode + ScryptoDecode,
-        V: ScryptoEncode + ScryptoDecode,
+        K: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
+        V: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
         E: Encoder<ScryptoCustomValueKind>,
     > Encode<ScryptoCustomValueKind, E> for KeyValueStore<K, V>
 {
@@ -149,8 +153,8 @@ impl<
 }
 
 impl<
-        K: ScryptoEncode + ScryptoDecode,
-        V: ScryptoEncode + ScryptoDecode,
+        K: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
+        V: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
         D: Decoder<ScryptoCustomValueKind>,
     > Decode<ScryptoCustomValueKind, D> for KeyValueStore<K, V>
 {
@@ -170,7 +174,7 @@ impl<
     }
 }
 
-impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode>
+impl<K: ScryptoEncode + ScryptoDecode + ScryptoDescribe, V: ScryptoEncode + ScryptoDecode + ScryptoDescribe>
     Describe<ScryptoCustomTypeKind> for KeyValueStore<K, V>
 {
     const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown([OWN_KEY_VALUE_STORE_ID]);

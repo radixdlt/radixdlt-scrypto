@@ -20,6 +20,7 @@ use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;
+use radix_engine_interface::schema::KeyValueStoreSchema;
 
 use super::events::resource_manager::BurnResourceEvent;
 use super::events::resource_manager::MintResourceEvent;
@@ -71,7 +72,8 @@ fn build_non_fungible_resource_manager_substate_with_initial_supply<Y>(
 where
     Y: KernelSubstateApi + ClientApi<RuntimeError>,
 {
-    let nf_store_id = api.new_key_value_store()?;
+    let schema = KeyValueStoreSchema::new::<NonFungibleLocalId, NonFungible>();
+    let nf_store_id = api.new_key_value_store(schema)?;
 
     let mut resource_manager = ResourceManagerSubstate::new(
         ResourceType::NonFungible { id_type },
@@ -433,7 +435,8 @@ where
 {
     let resource_address: ResourceAddress = global_node_id.into();
 
-    let nf_store_id = api.new_key_value_store()?;
+    let schema = KeyValueStoreSchema::new::<NonFungibleLocalId, NonFungible>();
+    let nf_store_id = api.new_key_value_store(schema)?;
     let resource_manager_substate = ResourceManagerSubstate::new(
         ResourceType::NonFungible { id_type },
         Some(nf_store_id),
