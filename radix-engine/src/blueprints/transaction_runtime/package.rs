@@ -20,7 +20,12 @@ pub struct TransactionRuntimeSubstate {
 }
 
 pub struct TransactionRuntimeNativePackage;
+
 impl TransactionRuntimeNativePackage {
+    pub fn schema() -> schema::PackageSchema {
+        todo!()
+    }
+
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<RENodeId>,

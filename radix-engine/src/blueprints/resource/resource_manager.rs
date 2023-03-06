@@ -473,6 +473,10 @@ where
 pub struct ResourceManagerBlueprint;
 
 impl ResourceManagerBlueprint {
+    pub fn schema() -> schema::PackageSchema {
+        todo!()
+    }
+
     pub(crate) fn create_non_fungible<Y>(
         input: IndexedScryptoValue,
         api: &mut Y,

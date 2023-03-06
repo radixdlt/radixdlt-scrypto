@@ -15,7 +15,12 @@ use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
 
 pub struct IdentityNativePackage;
+
 impl IdentityNativePackage {
+    pub fn schema() -> schema::PackageSchema {
+        todo!()
+    }
+
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<RENodeId>,

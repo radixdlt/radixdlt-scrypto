@@ -116,6 +116,10 @@ impl From<AccessControllerError> for RuntimeError {
 pub struct AccessControllerNativePackage;
 
 impl AccessControllerNativePackage {
+    pub fn schema() -> schema::PackageSchema {
+        todo!()
+    }
+
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<RENodeId>,

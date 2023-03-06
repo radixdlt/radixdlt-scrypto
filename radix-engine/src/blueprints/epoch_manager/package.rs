@@ -13,6 +13,10 @@ use radix_engine_interface::blueprints::resource::{require, AccessRule, FnKey};
 pub struct EpochManagerNativePackage;
 
 impl EpochManagerNativePackage {
+    pub fn schema() -> schema::PackageSchema {
+        todo!()
+    }
+
     pub fn package_access_rules() -> BTreeMap<FnKey, AccessRule> {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(
