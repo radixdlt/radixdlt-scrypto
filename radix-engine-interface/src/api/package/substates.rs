@@ -52,5 +52,5 @@ pub struct PackageRoyaltyConfigSubstate {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct PackageRoyaltyAccumulatorSubstate {
-    pub royalty: Own,
+    pub royalty_vault: Own,
 }

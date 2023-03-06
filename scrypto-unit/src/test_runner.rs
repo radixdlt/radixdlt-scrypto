@@ -277,7 +277,7 @@ impl TestRunner {
             let royalty_vault: Own = output
                 .substate
                 .package_royalty_accumulator()
-                .royalty
+                .royalty_vault
                 .clone();
 
             self.substate_store

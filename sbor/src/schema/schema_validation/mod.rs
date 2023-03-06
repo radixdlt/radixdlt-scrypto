@@ -9,7 +9,7 @@ pub use type_kind_validation::*;
 pub use type_metadata_validation::*;
 pub use type_validation_validation::*;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum SchemaValidationError {
     MetadataLengthMismatch,
     ValidationsLengthMismatch,
