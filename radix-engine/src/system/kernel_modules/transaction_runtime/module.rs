@@ -53,7 +53,7 @@ impl KernelModule for TransactionRuntimeModule {
         _api: &mut Y,
         _actor: &Option<Actor>,
         call_frame_update: &mut CallFrameUpdate,
-        _args: &ScryptoValue,
+        _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         call_frame_update
             .node_refs_to_copy

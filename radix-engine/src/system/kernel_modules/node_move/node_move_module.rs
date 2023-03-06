@@ -116,7 +116,7 @@ impl KernelModule for NodeMoveModule {
         api: &mut Y,
         actor: &Option<Actor>,
         call_frame_update: &mut CallFrameUpdate,
-        _args: &ScryptoValue,
+        _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         for node_id in &call_frame_update.nodes_to_move {
             // TODO: Move into system layer

@@ -119,7 +119,7 @@ impl KernelModule for CostingModule {
         api: &mut Y,
         callee: &Option<Actor>,
         _nodes_and_refs: &mut CallFrameUpdate,
-        _args: &ScryptoValue,
+        _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         // Identify the function, and optional component address
         let (fn_identifier, optional_component) = match &callee {

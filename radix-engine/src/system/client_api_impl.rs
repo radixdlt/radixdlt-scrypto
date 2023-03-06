@@ -184,8 +184,7 @@ where
             args,
         };
 
-        self.kernel_invoke(invocation)
-            .map(|v| scrypto_encode(&v).expect("Failed to encode scrypto fn return"))
+        self.kernel_invoke(invocation).map(|v| v.into())
     }
 }
 
@@ -695,8 +694,7 @@ where
             args,
         };
 
-        self.kernel_invoke(invocation)
-            .map(|v| scrypto_encode(&v).expect("Failed to encode scrypto fn return"))
+        self.kernel_invoke(invocation).map(|v| v.into())
     }
 
     fn get_object_type_info(

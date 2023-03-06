@@ -3,9 +3,8 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::{
-    ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, ResolvedInvocation,
-};
+use crate::kernel::executor::*;
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::package::PackageError;

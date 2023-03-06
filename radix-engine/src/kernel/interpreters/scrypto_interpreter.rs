@@ -9,10 +9,8 @@ use crate::blueprints::transaction_runtime::TransactionRuntimeNativePackage;
 use crate::errors::{InterpreterError, RuntimeError};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::{
-    ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, KernelWasmApi,
-    ResolvedInvocation,
-};
+use crate::kernel::executor::*;
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, KernelWasmApi};
 use crate::system::node_modules::access_rules::{AccessRulesNativePackage, AuthZoneNativePackage};
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
