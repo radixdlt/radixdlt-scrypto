@@ -6,7 +6,6 @@ use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::heap::DroppedBucket;
 use crate::kernel::heap::DroppedBucketResource;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::node::RENodeInit;
 use crate::types::*;
 use native_sdk::access_rules::AccessRulesObject;
 use native_sdk::metadata::Metadata;
@@ -70,11 +69,9 @@ fn build_non_fungible_resource_manager_substate_with_initial_supply<Y>(
     api: &mut Y,
 ) -> Result<(ResourceManagerSubstate, Bucket), RuntimeError>
 where
-    Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    Y: KernelSubstateApi + ClientApi<RuntimeError>,
 {
-    let nf_store_node_id = api.kernel_allocate_node_id(RENodeType::KeyValueStore)?;
-    api.kernel_create_node(nf_store_node_id, RENodeInit::KeyValueStore, BTreeMap::new())?;
-    let nf_store_id: KeyValueStoreId = nf_store_node_id.into();
+    let nf_store_id = api.new_key_value_store()?;
 
     let mut resource_manager = ResourceManagerSubstate::new(
         ResourceType::NonFungible { id_type },
@@ -96,7 +93,7 @@ where
             }
 
             let non_fungible_handle = api.sys_lock_substate(
-                nf_store_node_id,
+                RENodeId::KeyValueStore(nf_store_id),
                 SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
                     scrypto_encode(non_fungible_local_id).unwrap(),
                 )),
@@ -432,13 +429,11 @@ fn create_non_fungible_resource_manager<Y>(
     api: &mut Y,
 ) -> Result<ResourceAddress, RuntimeError>
 where
-    Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    Y: KernelSubstateApi + ClientApi<RuntimeError>,
 {
     let resource_address: ResourceAddress = global_node_id.into();
 
-    let nf_store_node_id = api.kernel_allocate_node_id(RENodeType::KeyValueStore)?;
-    api.kernel_create_node(nf_store_node_id, RENodeInit::KeyValueStore, BTreeMap::new())?;
-    let nf_store_id: KeyValueStoreId = nf_store_node_id.into();
+    let nf_store_id = api.new_key_value_store()?;
     let resource_manager_substate = ResourceManagerSubstate::new(
         ResourceType::NonFungible { id_type },
         Some(nf_store_id),
