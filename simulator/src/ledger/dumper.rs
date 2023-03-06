@@ -38,7 +38,7 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
     let package: Option<PackageCodeSubstate> = substate_store
         .get_substate(&SubstateId(
-            RENodeId::Global(package_address),
+            RENodeId::Global(package_address.into()),
             NodeModuleId::SELF,
             SubstateOffset::Package(PackageOffset::Code),
         ))
@@ -551,7 +551,7 @@ pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
     let resource_manager = resource_manager.ok_or(DisplayError::ResourceManagerNotFound)?;
     let metadata: Option<MetadataSubstate> = substate_store
         .get_substate(&SubstateId(
-            RENodeId::GlobalResourceManager(resource_address),
+            RENodeId::Global(resource_address.into()),
             NodeModuleId::Metadata,
             SubstateOffset::Metadata(MetadataOffset::Metadata),
         ))
