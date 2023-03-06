@@ -189,6 +189,8 @@ fn new_package(
     royalty_config_len: u32,
     metadata_ptr: u32,
     metadata_len: u32,
+    event_schema_ptr: u32,
+    event_schema_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
@@ -209,6 +211,12 @@ fn new_package(
                 royalty_config_len,
             )?,
             read_memory(caller.as_context_mut(), memory, metadata_ptr, metadata_len)?,
+            read_memory(
+                caller.as_context_mut(),
+                memory,
+                event_schema_ptr,
+                event_schema_len,
+            )?,
         )
         .map(|buffer| buffer.0)
 }
@@ -510,7 +518,9 @@ impl WasmiModule {
              royalty_config_ptr: u32,
              royalty_config_len: u32,
              metadata_ptr: u32,
-             metadata_len: u32|
+             metadata_len: u32,
+             event_schema_ptr: u32,
+             event_schema_len: u32|
              -> Result<u64, Trap> {
                 new_package(
                     caller,
@@ -524,6 +534,8 @@ impl WasmiModule {
                     royalty_config_len,
                     metadata_ptr,
                     metadata_len,
+                    event_schema_ptr,
+                    event_schema_len,
                 )
                 .map_err(|e| e.into())
             },

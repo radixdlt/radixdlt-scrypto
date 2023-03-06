@@ -605,6 +605,7 @@ pub fn create_genesis(
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll),
+                event_schema: BTreeMap::new(),
             })
             .unwrap(),
         });

@@ -21,6 +21,7 @@ pub struct PackageLoaderPublishWasmInput {
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: AccessRules,
+    pub event_schema: BTreeMap<String, Vec<(LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>>,
 }
 
 pub const PACKAGE_LOADER_PUBLISH_NATIVE_IDENT: &str = "publish_native";

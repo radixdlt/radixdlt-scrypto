@@ -148,6 +148,7 @@ where
         access_rules: AccessRules,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
+        event_schema: BTreeMap<String, Vec<(LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>>,
     ) -> Result<PackageAddress, RuntimeError> {
         let result = self.call_function(
             PACKAGE_LOADER,
@@ -160,6 +161,7 @@ where
                 access_rules,
                 royalty_config,
                 metadata,
+                event_schema,
             })
             .unwrap(),
         )?;

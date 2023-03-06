@@ -38,6 +38,7 @@ pub trait WasmRuntime {
         access_rules_chain: Vec<u8>,
         royalty_config: Vec<u8>,
         metadata: Vec<u8>,
+        event_schema: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn new_component(

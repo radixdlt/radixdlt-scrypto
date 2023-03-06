@@ -140,11 +140,13 @@ impl ClientPackageApi<ClientApiError> for ScryptoEnv {
         access_rules: AccessRules,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
+        event_schema: BTreeMap<String, Vec<(LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>>,
     ) -> Result<PackageAddress, ClientApiError> {
         let schema = scrypto_encode(&schema).unwrap();
         let access_rules = scrypto_encode(&access_rules).unwrap();
         let royalty_config = scrypto_encode(&royalty_config).unwrap();
         let metadata = scrypto_encode(&metadata).unwrap();
+        let event_schema = scrypto_encode(&event_schema).unwrap();
 
         let bytes = copy_buffer(unsafe {
             new_package(
@@ -158,6 +160,8 @@ impl ClientPackageApi<ClientApiError> for ScryptoEnv {
                 royalty_config.len(),
                 metadata.as_ptr(),
                 metadata.len(),
+                event_schema.as_ptr(),
+                event_schema.len(),
             )
         });
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)

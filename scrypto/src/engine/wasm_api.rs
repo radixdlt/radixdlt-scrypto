@@ -88,6 +88,8 @@ extern "C" {
         royalty_config: usize,
         metadata_ptr: *const u8,
         metadata_len: usize,
+        event_schema_ptr: *const u8,
+        event_schema_len: usize,
     ) -> Buffer;
 
     /// Invokes a function on a blueprint.
@@ -239,6 +241,8 @@ pub unsafe fn new_package(
     _royalty_config: usize,
     _metadata_ptr: *const u8,
     _metadata_len: usize,
+    _event_schema_ptr: *const u8,
+    _event_schema_len: usize,
 ) -> Buffer {
     todo!()
 }

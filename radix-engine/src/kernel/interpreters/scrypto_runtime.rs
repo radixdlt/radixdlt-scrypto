@@ -139,6 +139,7 @@ where
         access_rules: Vec<u8>,
         royalty_config: Vec<u8>,
         metadata: Vec<u8>,
+        event_schema: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let schema =
             scrypto_decode::<PackageSchema>(&abi).map_err(WasmRuntimeError::InvalidSchema)?;
@@ -148,10 +149,19 @@ where
             .map_err(WasmRuntimeError::InvalidRoyaltyConfig)?;
         let metadata = scrypto_decode::<BTreeMap<String, String>>(&metadata)
             .map_err(WasmRuntimeError::InvalidMetadata)?;
+        let event_schema = scrypto_decode::<
+            BTreeMap<String, Vec<(LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>>,
+        >(&event_schema)
+        .map_err(WasmRuntimeError::InvalidMetadata)?;
 
-        let package_address =
-            self.api
-                .new_package(code, schema, access_rules, royalty_config, metadata)?;
+        let package_address = self.api.new_package(
+            code,
+            schema,
+            access_rules,
+            royalty_config,
+            metadata,
+            event_schema,
+        )?;
         let package_address_encoded =
             scrypto_encode(&package_address).expect("Failed to encode package address");
 
@@ -362,6 +372,7 @@ impl WasmRuntime for NopWasmRuntime {
         access_rules_chain: Vec<u8>,
         royalty_config: Vec<u8>,
         metadata: Vec<u8>,
+        event_schema: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }

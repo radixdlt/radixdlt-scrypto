@@ -247,6 +247,8 @@ impl WasmerModule {
             royalty_config_len: u32,
             metadata_ptr: u32,
             metadata_len: u32,
+            event_schema_ptr: u32,
+            event_schema_len: u32,
         ) -> Result<u64, RuntimeError> {
             let (instance, runtime) = grab_runtime!(env);
 
@@ -257,6 +259,7 @@ impl WasmerModule {
                     read_memory(&instance, access_rules_ptr, access_rules_len)?,
                     read_memory(&instance, royalty_config_ptr, royalty_config_len)?,
                     read_memory(&instance, metadata_ptr, metadata_len)?,
+                    read_memory(&instance, event_schema_ptr, event_schema_len)?,
                 )
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
