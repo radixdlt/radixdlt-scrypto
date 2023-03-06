@@ -28,12 +28,17 @@ pub use value_formatter::*;
 #[cfg(feature = "serde")]
 pub use value_serializer::*;
 
+use sbor::rust::vec::Vec;
+use sbor::traversal::VecTraverser;
+use sbor::*;
+
 // 0x5c for [5c]rypto - (91 in decimal)
 pub const SCRYPTO_SBOR_V1_PAYLOAD_PREFIX: u8 = 0x5c;
 pub const SCRYPTO_SBOR_V1_MAX_DEPTH: usize = 64;
 
 pub type ScryptoEncoder<'a> = VecEncoder<'a, ScryptoCustomValueKind>;
 pub type ScryptoDecoder<'a> = VecDecoder<'a, ScryptoCustomValueKind>;
+pub type ScryptoTraverser<'a> = VecTraverser<'a, ScryptoCustomTraversal>;
 pub type ScryptoValueKind = ValueKind<ScryptoCustomValueKind>;
 pub type ScryptoValue = Value<ScryptoCustomValueKind, ScryptoCustomValue>;
 
@@ -62,9 +67,6 @@ impl<T: Describe<ScryptoCustomTypeKind>> ScryptoDescribe for T {}
 
 pub trait ScryptoSbor: ScryptoCategorize + ScryptoDecode + ScryptoEncode + ScryptoDescribe {}
 impl<T: ScryptoCategorize + ScryptoDecode + ScryptoEncode + ScryptoDescribe> ScryptoSbor for T {}
-
-use sbor::rust::vec::Vec;
-use sbor::*;
 
 /// Encodes a data structure into byte array.
 pub fn scrypto_encode<T: ScryptoEncode + ?Sized>(value: &T) -> Result<Vec<u8>, EncodeError> {
