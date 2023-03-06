@@ -745,10 +745,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
             outputs.push(result);
         }
 
-        WorktopBlueprint::drop(
-            IndexedScryptoValue::from_typed(&WorktopDropInput {}).to_scrypto_value(),
-            api,
-        )?;
+        WorktopBlueprint::drop(IndexedScryptoValue::from_typed(&WorktopDropInput {}), api)?;
         // Can't use native-sdk yet since there is no way to express moving the worktop
         /*
         Worktop::sys_drop(api)?;

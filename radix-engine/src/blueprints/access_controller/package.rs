@@ -283,7 +283,6 @@ impl AccessControllerNativePackage {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
         let _input: AccessControllerCreateProofInput = input.as_typed().map_err(|e| {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;

@@ -662,7 +662,6 @@ impl BucketBlueprint {
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
         let _input: BucketGetNonFungibleLocalIdsInput = input.as_typed().map_err(|e| {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
@@ -719,7 +718,6 @@ impl BucketBlueprint {
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
         let _input: BucketGetResourceAddressInput = input.as_typed().map_err(|e| {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;

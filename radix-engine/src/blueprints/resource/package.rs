@@ -328,13 +328,7 @@ impl ResourceManagerNativePackage {
                     ));
                 }
 
-                // TODO: Remove decode/encode mess
-                let input: ProofDropInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-                    .map_err(|e| {
-                        RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-                    })?;
-
-                ProofBlueprint::drop(input.proof, api)
+                ProofBlueprint::drop(input, api)
             }
             PROOF_CLONE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;

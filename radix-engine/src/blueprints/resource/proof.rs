@@ -205,7 +205,6 @@ impl ProofBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
         let _input: ProofCloneInput = input.as_typed().map_err(|e| {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
@@ -302,7 +301,6 @@ impl ProofBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
         let _input: ProofGetNonFungibleLocalIdsInput = input.as_typed().map_err(|e| {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
@@ -343,10 +341,18 @@ impl ProofBlueprint {
         ))
     }
 
-    pub(crate) fn drop<Y>(proof: Proof, api: &mut Y) -> Result<IndexedScryptoValue, RuntimeError>
+    pub(crate) fn drop<Y>(
+        input: IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
+        let input: ProofDropInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
+        let proof = input.proof;
+
         let mut heap_node = api.kernel_drop_node(RENodeId::Object(proof.0))?;
         let proof_info: ProofInfoSubstate = heap_node
             .substates
