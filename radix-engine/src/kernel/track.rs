@@ -608,12 +608,7 @@ impl<'s> FinalizingTrack<'s> {
                 .iter()
                 .find(|(identifier, _)| match identifier {
                     EventTypeIdentifier(
-                        Emitter::Function(
-                            RENodeId::GlobalPackage(EPOCH_MANAGER_PACKAGE),
-                            NodeModuleId::SELF,
-                            ..,
-                        )
-                        | Emitter::Method(
+                        Emitter::Method(
                             RENodeId::GlobalComponent(ComponentAddress::EpochManager(..)),
                             NodeModuleId::SELF,
                         ),

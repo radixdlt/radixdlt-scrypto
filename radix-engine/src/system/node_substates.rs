@@ -147,6 +147,14 @@ impl PersistedSubstate {
             panic!("Not a resource manager substate");
         }
     }
+
+    pub fn event_schema(&self) -> &PackageEventSchemaSubstate {
+        if let PersistedSubstate::PackageEventSchema(state) = self {
+            state
+        } else {
+            panic!("Not a PackageEventSchema");
+        }
+    }
 }
 
 impl Into<VaultInfoSubstate> for PersistedSubstate {
