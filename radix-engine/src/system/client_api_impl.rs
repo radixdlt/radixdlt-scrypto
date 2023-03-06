@@ -707,7 +707,8 @@ where
     ) -> Result<(PackageAddress, String), RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(node_id, self)?;
         let blueprint = match type_info {
-            TypeInfoSubstate::Object { package_address, blueprint_name, ..} => (package_address, blueprint_name)
+            TypeInfoSubstate::Object { package_address, blueprint_name, ..} => (package_address, blueprint_name),
+            TypeInfoSubstate::KeyValueStore => return Err(RuntimeError::SystemError(SystemError::NotAnObject)),
         };
 
         Ok(blueprint)
@@ -720,11 +721,7 @@ where
             node_id,
             RENodeInit::KeyValueStore,
             btreemap!(
-                /*
-                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(
-                    TypeInfoSubstate::new(package_address, blueprint_ident.to_string(), false)
-                ),
-                 */
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::KeyValueStore),
         ))?;
 
         Ok(node_id.into())

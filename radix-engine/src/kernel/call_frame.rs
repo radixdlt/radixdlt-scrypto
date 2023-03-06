@@ -248,6 +248,7 @@ impl CallFrame {
                                 blueprint_name.as_str(),
                             )?;
                         }
+                        TypeInfoSubstate::KeyValueStore => {}
                     }
                 }
             }
@@ -483,6 +484,7 @@ impl CallFrame {
                                 blueprint_name.as_str(),
                             )?;
                         }
+                        TypeInfoSubstate::KeyValueStore => {}
                     }
                 }
 

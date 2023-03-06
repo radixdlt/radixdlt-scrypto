@@ -115,7 +115,9 @@ impl ExecutableInvocation for MethodInvocation {
                 match type_info {
                     TypeInfoSubstate::Object {
                         package_address, blueprint_name, ..
-                    } => (package_address, blueprint_name)
+                    } => (package_address, blueprint_name),
+
+                    TypeInfoSubstate::KeyValueStore => return Err(RuntimeError::InterpreterError(InterpreterError::CallMethodOnKeyValueStore)),
                 }
             },
             NodeModuleId::Metadata => {

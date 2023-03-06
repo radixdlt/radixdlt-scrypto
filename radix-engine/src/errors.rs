@@ -185,6 +185,7 @@ pub enum CallFrameError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemError {
+    NotAnObject,
     InvalidLockFlags,
     CannotGlobalize,
     InvalidModule,
@@ -205,6 +206,8 @@ pub enum SystemError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum InterpreterError {
+    CallMethodOnKeyValueStore,
+
     NativeUnexpectedReceiver(String),
     NativeExpectedReceiver(String),
     NativeExportDoesNotExist(String),

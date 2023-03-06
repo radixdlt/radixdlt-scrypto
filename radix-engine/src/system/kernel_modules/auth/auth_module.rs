@@ -245,6 +245,7 @@ impl AuthModule {
             let type_info = TypeInfoBlueprint::get_type(receiver, api)?;
             let (package_address, blueprint_ident) = match type_info {
                 TypeInfoSubstate::Object { package_address, blueprint_name, .. } => (package_address, blueprint_name),
+                TypeInfoSubstate::KeyValueStore => return Err(RuntimeError::SystemError(SystemError::NotAnObject)),
             };
 
             let handle = api.kernel_lock_substate(
