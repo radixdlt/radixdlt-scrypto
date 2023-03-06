@@ -24,8 +24,8 @@ impl IndexedScryptoValue {
             Some(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX),
             true,
         );
-        let global_references = HashSet::<RENodeId>::new();
-        let owned_nodes = Vec::<RENodeId>::new();
+        let mut global_references = HashSet::<RENodeId>::new();
+        let mut owned_nodes = Vec::<RENodeId>::new();
         loop {
             let event = traverser.next_event();
             match event.event {
@@ -88,9 +88,13 @@ impl IndexedScryptoValue {
         Self::new(vec)
     }
 
-    pub fn from_value(value: ScryptoValue) -> Self {
+    pub fn from_scrypto_value(value: ScryptoValue) -> Self {
         let bytes = scrypto_encode(&value).expect("Failed to encode trusted ScryptoValue");
         Self::new(bytes).expect("Failed to index trusted ScryptoValue")
+    }
+
+    pub fn to_scrypto_value(&self) -> ScryptoValue {
+        scrypto_decode(&self.bytes).expect("Failed to decode bytes in IndexedScryptoValue")
     }
 
     pub fn as_typed<T: ScryptoDecode>(&self) -> Result<T, DecodeError> {
@@ -99,10 +103,6 @@ impl IndexedScryptoValue {
 
     pub fn as_slice(&self) -> &[u8] {
         self.bytes.as_slice()
-    }
-
-    pub fn to_value(&self) -> ScryptoValue {
-        scrypto_decode(&self.bytes).expect("Failed to decode bytes in IndexedScryptoValue")
     }
 
     pub fn global_references(&self) -> &HashSet<RENodeId> {
@@ -128,7 +128,7 @@ impl fmt::Debug for IndexedScryptoValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         format_scrypto_value(
             f,
-            &self.to_value(),
+            &self.to_scrypto_value(),
             &ScryptoValueDisplayContext::no_context(),
         )
     }
@@ -142,7 +142,7 @@ impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for IndexedScryptoVal
         f: &mut F,
         context: &ScryptoValueDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
-        format_scrypto_value(f, &self.to_value(), context)
+        format_scrypto_value(f, &self.to_scrypto_value(), context)
     }
 }
 

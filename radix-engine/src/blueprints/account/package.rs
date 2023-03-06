@@ -563,8 +563,10 @@ impl AccountNativePackage {
 
                     let entry: &mut KeyValueStoreEntrySubstate =
                         api.kernel_get_substate_ref_mut(kv_store_entry_lock_handle)?;
-                    *entry =
-                        KeyValueStoreEntrySubstate::Some(encoded_key.into(), encoded_value.into());
+                    *entry = KeyValueStoreEntrySubstate::Some(
+                        encoded_key.to_scrypto_value(),
+                        encoded_value.to_scrypto_value(),
+                    );
 
                     vault
                 }
@@ -640,8 +642,8 @@ impl AccountNativePackage {
                         let entry: &mut KeyValueStoreEntrySubstate =
                             api.kernel_get_substate_ref_mut(kv_store_entry_lock_handle)?;
                         *entry = KeyValueStoreEntrySubstate::Some(
-                            encoded_key.into(),
-                            encoded_value.into(),
+                            encoded_key.to_scrypto_value(),
+                            encoded_value.to_scrypto_value(),
                         );
 
                         vault

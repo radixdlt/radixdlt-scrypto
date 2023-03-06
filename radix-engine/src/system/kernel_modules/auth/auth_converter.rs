@@ -24,7 +24,7 @@ fn soft_to_hard_decimal(
                 match &ty {
                     ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Decimal) => {
                         let v = sbor_path
-                            .get_from_value(value.as_value())
+                            .get_from_value(&value.to_scrypto_value())
                             .expect(format!("Value missing at {:?}", schema_path).as_str());
 
                         HardDecimal::Amount(
@@ -55,7 +55,7 @@ fn soft_to_hard_count(
                 match &ty {
                     ScryptoTypeKind::U8 => {
                         let v = sbor_path
-                            .get_from_value(value.as_value())
+                            .get_from_value(&value.to_scrypto_value())
                             .expect(format!("Value missing at {:?}", schema_path).as_str());
 
                         HardCount::Count(
@@ -96,7 +96,7 @@ fn soft_to_hard_resource_list(
                         if *element_type == LocalTypeIndex::WellKnown(RESOURCE_ADDRESS_ID) =>
                     {
                         let v = sbor_path
-                            .get_from_value(value.as_value())
+                            .get_from_value(&value.to_scrypto_value())
                             .expect(format!("Value missing at {:?}", schema_path).as_str());
 
                         HardProofRuleResourceList::List(
@@ -117,7 +117,7 @@ fn soft_to_hard_resource_list(
                                     && field_types[1]
                                         == LocalTypeIndex::WellKnown(NON_FUNGIBLE_LOCAL_ID_ID) =>  {
                                             let v = sbor_path
-                                                .get_from_value(value.as_value())
+                                                .get_from_value(&value.to_scrypto_value())
                                                 .expect(format!("Value missing at {:?}", schema_path).as_str());
 
                                             HardProofRuleResourceList::List(
@@ -154,7 +154,7 @@ fn soft_to_hard_resource(
                 match &ty {
                     TypeKind::Custom(ScryptoCustomTypeKind::ResourceAddress) => {
                         let v = sbor_path
-                            .get_from_value(value.as_value())
+                            .get_from_value(&value.to_scrypto_value())
                             .expect(format!("Value missing at {:?}", schema_path).as_str());
 
                         HardResourceOrNonFungible::Resource(
@@ -185,7 +185,7 @@ fn soft_to_hard_resource_or_non_fungible(
                 match &ty {
                     TypeKind::Custom(ScryptoCustomTypeKind::ResourceAddress) => {
                         let v = sbor_path
-                            .get_from_value(value.as_value())
+                            .get_from_value(&value.to_scrypto_value())
                             .expect(format!("Value missing at {:?}", schema_path).as_str());
 
                         HardResourceOrNonFungible::Resource(
@@ -201,7 +201,7 @@ fn soft_to_hard_resource_or_non_fungible(
                                 == LocalTypeIndex::WellKnown(NON_FUNGIBLE_LOCAL_ID_ID) =>
                     {
                         let v = sbor_path
-                            .get_from_value(value.as_value())
+                            .get_from_value(&value.to_scrypto_value())
                             .expect(format!("Value missing at {:?}", schema_path).as_str());
 
                         HardResourceOrNonFungible::NonFungible(
