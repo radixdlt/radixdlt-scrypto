@@ -5,28 +5,69 @@ use radix_engine_common::data::scrypto::*;
 use sbor::path::SborPathBuf;
 use sbor::rust::fmt;
 use sbor::rust::prelude::*;
+use sbor::traversal::TraversalEvent;
 use sbor::*;
 use utils::ContextualDisplay;
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct IndexedScryptoValue {
     bytes: Vec<u8>,
-    value: ScryptoValue,
     global_references: HashSet<RENodeId>,
     owned_nodes: Vec<RENodeId>,
 }
 
 impl IndexedScryptoValue {
-    fn new(bytes: Vec<u8>, value: ScryptoValue) -> Self {
-        let mut visitor = ScryptoValueVisitor::new();
-        traverse_any(&mut SborPathBuf::new(), &value, &mut visitor).expect("Infallible");
-
-        Self {
-            bytes,
-            value,
-            global_references: visitor.global_references,
-            owned_nodes: visitor.owned_nodes,
+    fn new(bytes: Vec<u8>) -> Result<Self, DecodeError> {
+        let mut traverser = ScryptoTraverser::new(
+            &bytes,
+            SCRYPTO_SBOR_V1_MAX_DEPTH,
+            Some(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX),
+            true,
+        );
+        let global_references = HashSet::<RENodeId>::new();
+        let owned_nodes = Vec::<RENodeId>::new();
+        loop {
+            let event = traverser.next_event();
+            match event.event {
+                TraversalEvent::PayloadPrefix => {}
+                TraversalEvent::ContainerStart(_) => {}
+                TraversalEvent::ContainerEnd(_) => {}
+                TraversalEvent::TerminalValue(r) => {
+                    if let traversal::TerminalValueRef::Custom(c) = r {
+                        match c.0 {
+                            ScryptoCustomValue::Address(a) => {
+                                global_references.insert(a.into());
+                            }
+                            ScryptoCustomValue::Own(o) => {
+                                owned_nodes.push(match o {
+                                    Own::Bucket(id)
+                                    | Own::Proof(id)
+                                    | Own::Vault(id)
+                                    | Own::Object(id) => RENodeId::Object(id),
+                                    Own::KeyValueStore(id) => RENodeId::KeyValueStore(id),
+                                });
+                            }
+                            ScryptoCustomValue::Decimal(_)
+                            | ScryptoCustomValue::PreciseDecimal(_)
+                            | ScryptoCustomValue::NonFungibleLocalId(_) => {}
+                        }
+                    }
+                }
+                TraversalEvent::TerminalValueBatch(_) => {}
+                TraversalEvent::End => {
+                    break;
+                }
+                TraversalEvent::DecodeError(e) => {
+                    return Err(e);
+                }
+            }
         }
+
+        Ok(Self {
+            bytes,
+            global_references,
+            owned_nodes,
+        })
     }
 
     pub fn unit() -> Self {
