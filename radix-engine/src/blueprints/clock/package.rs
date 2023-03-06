@@ -31,18 +31,46 @@ impl ClockNativePackage {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut substates = Vec::new();
-        substates.push(aggregator.add_child_type_and_descendents::<AccessControllerSubstate>());
+        substates.push(
+            aggregator.add_child_type_and_descendents::<CurrentTimeRoundedToMinutesSubstate>(),
+        );
 
         let mut functions = BTreeMap::new();
         functions.insert(
-            ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
+            CLOCK_CREATE_IDENT.to_string(),
             FunctionSchema {
                 receiver: None,
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerCreateGlobalInput>(),
+                input: aggregator.add_child_type_and_descendents::<ClockCreateInput>(),
+                output: aggregator.add_child_type_and_descendents::<ClockCreateOutput>(),
+                export_name: CLOCK_CREATE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            CLOCK_GET_CURRENT_TIME_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<ClockGetCurrentTimeInput>(),
+                output: aggregator.add_child_type_and_descendents::<ClockGetCurrentTimeOutput>(),
+                export_name: CLOCK_GET_CURRENT_TIME_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<ClockSetCurrentTimeInput>(),
+                output: aggregator.add_child_type_and_descendents::<ClockSetCurrentTimeOutput>(),
+                export_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            CLOCK_COMPARE_CURRENT_TIME_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<ClockCompareCurrentTimeInput>(),
                 output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerCreateGlobalOutput>(),
-                export_name: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
+                    .add_child_type_and_descendents::<ClockCompareCurrentTimeOutput>(),
+                export_name: CLOCK_COMPARE_CURRENT_TIME_IDENT.to_string(),
             },
         );
 
