@@ -76,26 +76,21 @@ impl IndexedScryptoValue {
 
     /// Converts a rust value into `IndexedScryptoValue`, assuming it follows RE semantics.
     pub fn from_typed<T: ScryptoEncode + ?Sized>(value: &T) -> Self {
-        let bytes = scrypto_encode(value).expect("Failed to encode typed value");
-        let value =
-            scrypto_decode(&bytes).expect("Failed to decode Scrypto SBOR bytes into ScryptoValue");
-
-        Self::new(bytes, value)
+        let bytes = scrypto_encode(value).expect("Failed to encode trusted Rust value");
+        Self::new(bytes).expect("Failed to index trusted Rust value")
     }
 
     pub fn from_slice(slice: &[u8]) -> Result<Self, DecodeError> {
-        let value = scrypto_decode(slice)?;
-        Ok(Self::new(slice.to_vec(), value))
+        Self::new(slice.to_vec())
     }
 
     pub fn from_vec(vec: Vec<u8>) -> Result<Self, DecodeError> {
-        let value = scrypto_decode(&vec)?;
-        Ok(Self::new(vec, value))
+        Self::new(vec)
     }
 
     pub fn from_value(value: ScryptoValue) -> Self {
-        let bytes = scrypto_encode(&value).expect("Failed to encode ScryptoValue into bytes");
-        Self::new(bytes, value)
+        let bytes = scrypto_encode(&value).expect("Failed to encode trusted ScryptoValue");
+        Self::new(bytes).expect("Failed to index trusted ScryptoValue")
     }
 
     pub fn as_typed<T: ScryptoDecode>(&self) -> Result<T, DecodeError> {
@@ -106,8 +101,8 @@ impl IndexedScryptoValue {
         self.bytes.as_slice()
     }
 
-    pub fn as_value(&self) -> &ScryptoValue {
-        &self.value
+    pub fn to_value(&self) -> ScryptoValue {
+        scrypto_decode(&self.bytes).expect("Failed to decode bytes in IndexedScryptoValue")
     }
 
     pub fn global_references(&self) -> &HashSet<RENodeId> {
@@ -118,13 +113,8 @@ impl IndexedScryptoValue {
         &self.owned_nodes
     }
 
-    pub fn unpack(self) -> (Vec<u8>, ScryptoValue, Vec<RENodeId>, HashSet<RENodeId>) {
-        (
-            self.bytes,
-            self.value,
-            self.owned_nodes,
-            self.global_references,
-        )
+    pub fn unpack(self) -> (Vec<u8>, Vec<RENodeId>, HashSet<RENodeId>) {
+        (self.bytes, self.owned_nodes, self.global_references)
     }
 }
 
@@ -133,17 +123,12 @@ impl Into<Vec<u8>> for IndexedScryptoValue {
         self.bytes
     }
 }
-impl Into<ScryptoValue> for IndexedScryptoValue {
-    fn into(self) -> ScryptoValue {
-        self.value
-    }
-}
 
 impl fmt::Debug for IndexedScryptoValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         format_scrypto_value(
             f,
-            self.as_value(),
+            &self.to_value(),
             &ScryptoValueDisplayContext::no_context(),
         )
     }
@@ -157,7 +142,7 @@ impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for IndexedScryptoVal
         f: &mut F,
         context: &ScryptoValueDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
-        format_scrypto_value(f, self.as_value(), context)
+        format_scrypto_value(f, &self.to_value(), context)
     }
 }
 
