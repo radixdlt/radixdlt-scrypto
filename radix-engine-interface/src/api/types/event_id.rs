@@ -1,6 +1,7 @@
 use crate::api::types::{NodeModuleId, RENodeId};
 use crate::crypto::Hash;
 use crate::ScryptoSbor;
+use sbor::rust::string::String;
 
 /// Identifies a specific event schema emitter by some emitter RENode.
 ///
