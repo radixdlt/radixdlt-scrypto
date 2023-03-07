@@ -8,6 +8,7 @@ use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::time::*;
 use sbor::generate_full_schema_from_single_type;
 use sbor::rust::fmt::Debug;
+use sbor::rust::prelude::ToOwned;
 
 #[derive(Debug)]
 pub struct Runtime {}
