@@ -1,5 +1,5 @@
 use crate::blueprints::resource::*;
-use crate::errors::{ApplicationError, RuntimeError};
+use crate::errors::{ApplicationError, RuntimeError, SubstateValidationError};
 use crate::errors::{KernelError, SystemError};
 use crate::kernel::actor::{Actor, ActorIdentifier};
 use crate::kernel::kernel::Kernel;
@@ -193,6 +193,50 @@ where
         blueprint_ident: &str,
         mut app_states: Vec<Vec<u8>>,
     ) -> Result<ObjectId, RuntimeError> {
+        let package_address = self
+            .kernel_get_current_actor()
+            .unwrap()
+            .fn_identifier
+            .package_address();
+
+        let handle = self.kernel_lock_substate(
+            RENodeId::GlobalPackage(package_address),
+            NodeModuleId::SELF,
+            SubstateOffset::Package(PackageOffset::Info),
+            LockFlags::read_only(),
+        )?;
+        let package: &PackageInfoSubstate = self.kernel_get_substate_ref(handle)?;
+        let schema =
+            package
+                .schema
+                .blueprints
+                .get(blueprint_ident)
+                .ok_or(RuntimeError::SystemError(
+                    SystemError::SubstateValidationError(
+                        SubstateValidationError::BlueprintNotFound,
+                    ),
+                ))?;
+        if schema.substates.len() != app_states.len() {
+            return Err(RuntimeError::SystemError(
+                SystemError::SubstateValidationError(
+                    SubstateValidationError::WrongNumberOfSubstates(
+                        app_states.len(),
+                        schema.substates.len(),
+                    ),
+                ),
+            ));
+        }
+        for i in 0..app_states.len() {
+            validate_payload_against_schema(&app_states[i], &schema.schema, schema.substates[i])
+                .map_err(|e| {
+                    // TODO: make `LocatedValidationError` encodable
+                    RuntimeError::SystemError(SystemError::SubstateValidationError(
+                        SubstateValidationError::SchemaValidationError(format!("{:?}", e)),
+                    ))
+                })?;
+        }
+        self.kernel_drop_lock(handle)?;
+
         struct SubstateSchemaParser<'a> {
             next_index: usize,
             app_states: &'a Vec<Vec<u8>>,
@@ -206,109 +250,95 @@ where
                 }
             }
 
-            fn decode_next<S: ScryptoDecode>(&mut self) -> Result<S, RuntimeError> {
+            fn decode_next<S: ScryptoDecode>(&mut self) -> S {
                 if let Some(substate_bytes) = self.app_states.get(self.next_index) {
-                    let decoded = scrypto_decode(substate_bytes).map_err(|e| {
-                        RuntimeError::SystemError(SystemError::SubstateDecodeNotMatchSchema(e))
-                    })?;
-
+                    let decoded = scrypto_decode(substate_bytes)
+                        .expect("Unexpected decode error for app states");
                     self.next_index = self.next_index + 1;
-
-                    Ok(decoded)
+                    decoded
                 } else {
-                    return Err(RuntimeError::SystemError(
-                        SystemError::ObjectDoesNotMatchSchema,
-                    ));
+                    panic!("Unexpected missing app states");
                 }
             }
 
-            fn end(self) -> Result<(), RuntimeError> {
+            fn end(self) {
                 if self.app_states.get(self.next_index).is_some() {
-                    return Err(RuntimeError::SystemError(
-                        SystemError::ObjectDoesNotMatchSchema,
-                    ));
+                    panic!("Unexpected extra app states");
                 }
-
-                Ok(())
             }
         }
 
-        let package_address = self
-            .kernel_get_current_actor()
-            .unwrap()
-            .fn_identifier
-            .package_address();
-
         let mut parser = SubstateSchemaParser::new(&mut app_states);
-
         let node_init = match package_address {
             RESOURCE_MANAGER_PACKAGE => match blueprint_ident {
                 RESOURCE_MANAGER_BLUEPRINT => RENodeInit::Object(btreemap!(
-                    SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => RuntimeSubstate::ResourceManager(parser.decode_next()?)
+                    SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => RuntimeSubstate::ResourceManager(parser.decode_next())
                 )),
                 PROOF_BLUEPRINT => RENodeInit::Object(btreemap!(
-                    SubstateOffset::Proof(ProofOffset::Info) => RuntimeSubstate::ProofInfo(parser.decode_next()?),
-                    SubstateOffset::Proof(ProofOffset::Fungible) => RuntimeSubstate::FungibleProof(parser.decode_next()?),
-                    SubstateOffset::Proof(ProofOffset::NonFungible) => RuntimeSubstate::NonFungibleProof(parser.decode_next()?),
+                    SubstateOffset::Proof(ProofOffset::Info) => RuntimeSubstate::ProofInfo(parser.decode_next()),
+                    SubstateOffset::Proof(ProofOffset::Fungible) => RuntimeSubstate::FungibleProof(parser.decode_next()),
+                    SubstateOffset::Proof(ProofOffset::NonFungible) => RuntimeSubstate::NonFungibleProof(parser.decode_next()),
                 )),
                 BUCKET_BLUEPRINT => RENodeInit::Object(btreemap!(
-                    SubstateOffset::Bucket(BucketOffset::Info) => RuntimeSubstate::BucketInfo(parser.decode_next()?),
-                    SubstateOffset::Bucket(BucketOffset::LiquidFungible) => RuntimeSubstate::BucketLiquidFungible(parser.decode_next()?),
-                    SubstateOffset::Bucket(BucketOffset::LockedFungible) => RuntimeSubstate::BucketLockedFungible(parser.decode_next()?),
-                    SubstateOffset::Bucket(BucketOffset::LiquidNonFungible) => RuntimeSubstate::BucketLiquidNonFungible(parser.decode_next()?),
-                    SubstateOffset::Bucket(BucketOffset::LockedNonFungible) => RuntimeSubstate::BucketLockedNonFungible(parser.decode_next()?),
+                    SubstateOffset::Bucket(BucketOffset::Info) => RuntimeSubstate::BucketInfo(parser.decode_next()),
+                    SubstateOffset::Bucket(BucketOffset::LiquidFungible) => RuntimeSubstate::BucketLiquidFungible(parser.decode_next()),
+                    SubstateOffset::Bucket(BucketOffset::LockedFungible) => RuntimeSubstate::BucketLockedFungible(parser.decode_next()),
+                    SubstateOffset::Bucket(BucketOffset::LiquidNonFungible) => RuntimeSubstate::BucketLiquidNonFungible(parser.decode_next()),
+                    SubstateOffset::Bucket(BucketOffset::LockedNonFungible) => RuntimeSubstate::BucketLockedNonFungible(parser.decode_next()),
                 )),
                 VAULT_BLUEPRINT => RENodeInit::Object(btreemap!(
-                    SubstateOffset::Vault(VaultOffset::Info) => RuntimeSubstate::VaultInfo(parser.decode_next()?),
-                    SubstateOffset::Vault(VaultOffset::LiquidFungible) => RuntimeSubstate::VaultLiquidFungible(parser.decode_next()?),
-                    SubstateOffset::Vault(VaultOffset::LockedFungible) => RuntimeSubstate::VaultLockedFungible(parser.decode_next()?),
-                    SubstateOffset::Vault(VaultOffset::LiquidNonFungible) => RuntimeSubstate::VaultLiquidNonFungible(parser.decode_next()?),
-                    SubstateOffset::Vault(VaultOffset::LockedNonFungible) => RuntimeSubstate::VaultLockedNonFungible(parser.decode_next()?),
+                    SubstateOffset::Vault(VaultOffset::Info) => RuntimeSubstate::VaultInfo(parser.decode_next()),
+                    SubstateOffset::Vault(VaultOffset::LiquidFungible) => RuntimeSubstate::VaultLiquidFungible(parser.decode_next()),
+                    SubstateOffset::Vault(VaultOffset::LockedFungible) => RuntimeSubstate::VaultLockedFungible(parser.decode_next()),
+                    SubstateOffset::Vault(VaultOffset::LiquidNonFungible) => RuntimeSubstate::VaultLiquidNonFungible(parser.decode_next()),
+                    SubstateOffset::Vault(VaultOffset::LockedNonFungible) => RuntimeSubstate::VaultLockedNonFungible(parser.decode_next()),
                 )),
-                _ => return Err(RuntimeError::SystemError(SystemError::BlueprintNotFound)),
+                blueprint => panic!("Unexpected blueprint {}", blueprint),
             },
             METADATA_PACKAGE => RENodeInit::Object(btreemap!(
-                SubstateOffset::Metadata(MetadataOffset::Metadata) => RuntimeSubstate::Metadata(parser.decode_next()?),
+                SubstateOffset::Metadata(MetadataOffset::Metadata) => RuntimeSubstate::Metadata(parser.decode_next()),
             )),
             ROYALTY_PACKAGE => match blueprint_ident {
                 COMPONENT_ROYALTY_BLUEPRINT => RENodeInit::Object(btreemap!(
-                    SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig) => RuntimeSubstate::ComponentRoyaltyConfig(parser.decode_next()?),
-                    SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator) => RuntimeSubstate::ComponentRoyaltyAccumulator(parser.decode_next()?)
+                    SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig) => RuntimeSubstate::ComponentRoyaltyConfig(parser.decode_next()),
+                    SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator) => RuntimeSubstate::ComponentRoyaltyAccumulator(parser.decode_next())
                 )),
-                _ => return Err(RuntimeError::SystemError(SystemError::BlueprintNotFound)),
+                blueprint => panic!("Unexpected blueprint {}", blueprint),
             },
             ACCESS_RULES_PACKAGE => RENodeInit::Object(btreemap!(
-                SubstateOffset::AccessRules(AccessRulesOffset::AccessRules) => RuntimeSubstate::MethodAccessRules(parser.decode_next()?)
+                SubstateOffset::AccessRules(AccessRulesOffset::AccessRules) => RuntimeSubstate::MethodAccessRules(parser.decode_next())
             )),
             EPOCH_MANAGER_PACKAGE => match blueprint_ident {
                 VALIDATOR_BLUEPRINT => RENodeInit::Object(btreemap!(
-                    SubstateOffset::Validator(ValidatorOffset::Validator) => RuntimeSubstate::Validator(parser.decode_next()?)
+                    SubstateOffset::Validator(ValidatorOffset::Validator) => RuntimeSubstate::Validator(parser.decode_next())
                 )),
                 EPOCH_MANAGER_BLUEPRINT => RENodeInit::Object(btreemap!(
-                    SubstateOffset::EpochManager(EpochManagerOffset::EpochManager) => RuntimeSubstate::EpochManager(parser.decode_next()?),
-                    SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet) => RuntimeSubstate::ValidatorSet(parser.decode_next()?),
-                    SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet) => RuntimeSubstate::ValidatorSet(parser.decode_next()?)
+                    SubstateOffset::EpochManager(EpochManagerOffset::EpochManager) => RuntimeSubstate::EpochManager(parser.decode_next()),
+                    SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet) => RuntimeSubstate::ValidatorSet(parser.decode_next()),
+                    SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet) => RuntimeSubstate::ValidatorSet(parser.decode_next())
                 )),
-                _ => return Err(RuntimeError::SystemError(SystemError::BlueprintNotFound)),
+                blueprint => panic!("Unexpected blueprint {}", blueprint),
             },
             ACCESS_CONTROLLER_PACKAGE => RENodeInit::Object(btreemap!(
                 SubstateOffset::AccessController(AccessControllerOffset::AccessController)
-                    => RuntimeSubstate::AccessController(parser.decode_next()?)
+                    => RuntimeSubstate::AccessController(parser.decode_next())
             )),
             IDENTITY_PACKAGE => RENodeInit::Object(btreemap!()),
             ACCOUNT_PACKAGE => RENodeInit::Object(btreemap!(
                 SubstateOffset::Account(AccountOffset::Account)
-                    => RuntimeSubstate::Account(parser.decode_next()?)
+                    => RuntimeSubstate::Account(parser.decode_next())
             )),
             CLOCK_PACKAGE => RENodeInit::Object(btreemap!(
                 SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes)
-                    => RuntimeSubstate::CurrentTimeRoundedToMinutes(parser.decode_next()?)
+                    => RuntimeSubstate::CurrentTimeRoundedToMinutes(parser.decode_next())
             )),
             _ => RENodeInit::Object(btreemap!(
-                SubstateOffset::Component(ComponentOffset::State0) => RuntimeSubstate::ComponentState(ComponentStateSubstate::new(scrypto_encode(&parser.decode_next::<ScryptoValue>()?).unwrap()))
+                SubstateOffset::Component(ComponentOffset::State0) => RuntimeSubstate::ComponentState(
+                    ComponentStateSubstate::new(scrypto_encode(&parser.decode_next::<ScryptoValue>()).unwrap())
+                )
             )),
         };
-        parser.end()?;
+        parser.end();
 
         let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
 

@@ -187,19 +187,20 @@ pub enum SystemError {
     InvalidLockFlags,
     CannotGlobalize,
     InvalidModule,
-    SubstateDecodeNotMatchSchema(DecodeError),
-    ObjectDoesNotMatchSchema,
-    BlueprintNotFound,
-    InvalidScryptoValue(DecodeError),
-    InvalidAccessRules(DecodeError),
-    InvalidMetadata(DecodeError),
-    InvalidRoyaltyConfig(DecodeError),
     InvalidModuleType {
         expected_package: PackageAddress,
         expected_blueprint: String,
         actual_package: PackageAddress,
         actual_blueprint: String,
     },
+    SubstateValidationError(SubstateValidationError),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum SubstateValidationError {
+    BlueprintNotFound,
+    WrongNumberOfSubstates(usize, usize),
+    SchemaValidationError(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
