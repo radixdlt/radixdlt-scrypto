@@ -63,7 +63,7 @@ pub enum TransactionProcessorError {
 pub trait NativeOutput: ScryptoEncode + Debug + Send + Sync {}
 impl<T: ScryptoEncode + Debug + Send + Sync> NativeOutput for T {}
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub enum InstructionOutput {
     CallReturn(IndexedScryptoValue),
     None,
