@@ -47,6 +47,35 @@ pub struct ResourceChange {
     pub amount: Decimal,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum WorktopChange {
+    Take(ResourceSpecifier),
+    Put(ResourceSpecifier),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum ResourceSpecifier {
+    Amount(ResourceAddress, Decimal),
+    Ids(ResourceAddress, BTreeSet<NonFungibleLocalId>),
+}
+
+impl From<&BucketSnapshot> for ResourceSpecifier {
+    fn from(value: &BucketSnapshot) -> Self {
+        match value {
+            BucketSnapshot::Fungible {
+                resource_address,
+                liquid,
+                ..
+            } => Self::Amount(*resource_address, *liquid),
+            BucketSnapshot::NonFungible {
+                resource_address,
+                liquid,
+                ..
+            } => Self::Ids(*resource_address, liquid.clone()),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct ExecutionTraceReceipt {
     pub resource_changes: IndexMap<usize, Vec<ResourceChange>>,
@@ -159,6 +188,44 @@ pub enum KernelCallOrigin {
     ScryptoMethod(FnIdentifier),
     CreateNode,
     DropNode,
+}
+
+impl KernelCallTrace {
+    pub fn worktop_changes(
+        &self,
+        worktop_changes_aggregator: &mut IndexMap<usize, Vec<WorktopChange>>,
+    ) {
+        if let KernelCallOrigin::ScryptoMethod(fn_identifier) = &self.origin {
+            if fn_identifier.blueprint_name == WORKTOP_BLUEPRINT
+                && fn_identifier.package_address == RESOURCE_MANAGER_PACKAGE
+            {
+                if fn_identifier.ident == WORKTOP_PUT_IDENT {
+                    for (_, bucket_snapshot) in self.input.buckets.iter() {
+                        worktop_changes_aggregator
+                            .entry(self.instruction_index)
+                            .or_default()
+                            .push(WorktopChange::Put(bucket_snapshot.into()))
+                    }
+                } else if fn_identifier.ident == WORKTOP_TAKE_IDENT
+                    || fn_identifier.ident == WORKTOP_TAKE_ALL_IDENT
+                    || fn_identifier.ident == WORKTOP_TAKE_NON_FUNGIBLES_IDENT
+                    || fn_identifier.ident == WORKTOP_DRAIN_IDENT
+                {
+                    for (_, bucket_snapshot) in self.output.buckets.iter() {
+                        worktop_changes_aggregator
+                            .entry(self.instruction_index)
+                            .or_default()
+                            .push(WorktopChange::Take(bucket_snapshot.into()))
+                    }
+                }
+            }
+        }
+
+        // Aggregate the worktop changes for all children traces
+        for child in self.children.iter() {
+            child.worktop_changes(worktop_changes_aggregator)
+        }
+    }
 }
 
 impl ResourceSummary {
