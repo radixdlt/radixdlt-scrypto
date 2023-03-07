@@ -1222,5 +1222,5 @@ pub fn single_function_package_schema(blueprint_name: &str, function_name: &str)
     package_schema
 }
 
-#[derive(NonFungibleData)]
+#[derive(ScryptoSbor, NonFungibleData)]
 struct EmptyNonFungibleData {}

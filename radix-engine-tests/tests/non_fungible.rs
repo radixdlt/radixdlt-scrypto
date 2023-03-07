@@ -469,7 +469,7 @@ fn can_mint_uuid_non_fungible_in_scrypto() {
     receipt.expect_commit_success();
 }
 
-#[derive(NonFungibleData)]
+#[derive(ScryptoSbor, NonFungibleData)]
 pub struct Sandwich {
     pub name: String,
     #[mutable]

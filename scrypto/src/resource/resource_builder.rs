@@ -526,7 +526,7 @@ impl<A: ConfiguredAuth>
                 RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
                     id_type: StringNonFungibleLocalId::id_type(),
-                    non_fungible_schema: NonFungibleSchema::new(),
+                    non_fungible_schema: NonFungibleSchema::new_schema::<V>(),
                     metadata: self.metadata,
                     access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),

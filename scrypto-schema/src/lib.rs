@@ -25,6 +25,16 @@ impl NonFungibleSchema {
             non_fungible: non_fungible_type,
         }
     }
+
+    pub fn new_schema<N: ScryptoDescribe>() -> Self {
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+        let non_fungible_type = aggregator.add_child_type_and_descendents::<N>();
+        let schema = generate_full_schema(aggregator);
+        Self {
+            schema,
+            non_fungible: non_fungible_type,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]

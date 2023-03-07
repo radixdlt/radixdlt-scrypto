@@ -1,4 +1,3 @@
-use scrypto::api::component::*;
 use scrypto::api::substate_api::LockFlags;
 use scrypto::api::ClientSubstateApi;
 use scrypto::engine::scrypto_env::*;

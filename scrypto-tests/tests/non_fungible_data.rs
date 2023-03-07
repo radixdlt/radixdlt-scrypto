@@ -2,7 +2,7 @@
 
 use scrypto::prelude::*;
 
-#[derive(Debug, PartialEq, Eq, NonFungibleData)]
+#[derive(Debug, PartialEq, Eq, ScryptoSbor, NonFungibleData)]
 struct Sample {
     a: u32,
     #[mutable]

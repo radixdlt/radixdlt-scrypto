@@ -1,10 +1,11 @@
+use radix_engine_common::data::scrypto::ScryptoDescribe;
 use crate::api::types::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 use sbor::{DecodeError, EncodeError};
 
 /// Represents the data structure of a non-fungible.
-pub trait NonFungibleData {
+pub trait NonFungibleData: ScryptoDescribe {
     /// Decodes `Self` from the serialized immutable and mutable parts.
     fn decode(immutable_data: &[u8], mutable_data: &[u8]) -> Result<Self, DecodeError>
     where
