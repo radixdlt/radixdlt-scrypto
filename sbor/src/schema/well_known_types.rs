@@ -55,7 +55,7 @@ macro_rules! create_well_known_lookup {
                 lookup[sbor::basic_well_known_types::ANY_ID as usize] = Some(TypeData::no_child_names(TypeKind::Any, "Any"));
                 lookup[sbor::basic_well_known_types::UNIT_ID as usize] = Some(TypeData::no_child_names(
                     TypeKind::Tuple {
-                        field_types: vec![],
+                        field_types: sbor::rust::prelude::vec![],
                     },
                     "Unit"
                 ));
