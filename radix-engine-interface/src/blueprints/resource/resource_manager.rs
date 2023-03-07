@@ -2,7 +2,7 @@ use crate::blueprints::resource::*;
 use crate::data::scrypto::model::*;
 use crate::math::*;
 use crate::*;
-use sbor::rust::collections::{BTreeMap, BTreeSet};
+use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use scrypto_schema::NonFungibleSchema;
@@ -94,7 +94,7 @@ pub struct ResourceManagerCreateUuidNonFungibleWithInitialSupplyInput {
     pub non_fungible_schema: NonFungibleSchema,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    pub entries: BTreeSet<(Vec<u8>, Vec<u8>)>,
+    pub entries: Vec<(Vec<u8>, Vec<u8>)>,
 }
 
 pub const RESOURCE_MANAGER_BURN_BUCKET_IDENT: &str = "burn_bucket";
