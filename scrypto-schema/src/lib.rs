@@ -20,7 +20,7 @@ impl KeyValueStoreSchema {
     pub fn new<K: ScryptoDescribe, V: ScryptoDescribe>() -> Self {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
         let key_type_index = aggregator.add_child_type_and_descendents::<K>();
-        let value_type_index = aggregator.add_child_type_and_descendents::<V>();
+        let value_type_index = aggregator.add_child_type_and_descendents::<Option<V>>();
         let schema = generate_full_schema(aggregator);
         Self {
             schema,

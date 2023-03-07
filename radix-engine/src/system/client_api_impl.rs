@@ -7,7 +7,7 @@ use crate::errors::{ApplicationError, RuntimeError};
 use crate::errors::{KernelError, SystemError};
 use crate::kernel::actor::{Actor, ActorIdentifier};
 use crate::kernel::kernel::Kernel;
-use crate::kernel::kernel_api::KernelNodeApi;
+use crate::kernel::kernel_api::{KernelNodeApi, LockInfo};
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::{Invokable, KernelInternalApi};
 use crate::kernel::module::KernelModule;
@@ -93,7 +93,21 @@ where
         lock_handle: LockHandle,
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        let offset = self.kernel_get_lock_info(lock_handle)?.offset;
+        let LockInfo { node_id, module_id, offset, .. } = self.kernel_get_lock_info(lock_handle)?;
+
+        if module_id.eq(&NodeModuleId::SELF) {
+            let type_info = TypeInfoBlueprint::get_type(node_id, self)?;
+            match type_info {
+                TypeInfoSubstate::KeyValueStore(schema) => {
+                    validate_payload_against_schema(&buffer, &schema.schema, schema.value)
+                        .map_err(|_| {
+                            RuntimeError::KernelError(KernelError::InvalidOverwrite)
+                        })?;
+                }
+                _ => {}
+            }
+        }
+
         let substate = RuntimeSubstate::decode_from_buffer(&offset, &buffer)?;
 
         match substate {

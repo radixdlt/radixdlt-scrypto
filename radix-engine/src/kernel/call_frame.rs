@@ -293,6 +293,8 @@ impl CallFrame {
             .ok_or(KernelError::LockDoesNotExist(lock_handle))?;
 
         Ok(LockInfo {
+            node_id: substate_lock.node_id,
+            module_id: substate_lock.module_id,
             offset: substate_lock.offset.clone(),
             flags: substate_lock.flags,
         })
