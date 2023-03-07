@@ -17,7 +17,7 @@ use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSch
 use radix_engine_interface::time::*;
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq)]
-pub struct CurrentTimeRoundedToMinutesSubstate {
+pub struct ClockSubstate {
     pub current_time_rounded_to_minutes_ms: i64,
 }
 
@@ -31,9 +31,7 @@ impl ClockNativePackage {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut substates = Vec::new();
-        substates.push(
-            aggregator.add_child_type_and_descendents::<CurrentTimeRoundedToMinutesSubstate>(),
-        );
+        substates.push(aggregator.add_child_type_and_descendents::<ClockSubstate>());
 
         let mut functions = BTreeMap::new();
         functions.insert(
@@ -158,7 +156,7 @@ impl ClockNativePackage {
 
         let clock_id = api.new_object(
             CLOCK_BLUEPRINT,
-            vec![scrypto_encode(&CurrentTimeRoundedToMinutesSubstate {
+            vec![scrypto_encode(&ClockSubstate {
                 current_time_rounded_to_minutes_ms: 0,
             })
             .unwrap()],
@@ -216,7 +214,7 @@ impl ClockNativePackage {
             SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes),
             LockFlags::MUTABLE,
         )?;
-        let current_time_rounded_to_minutes_substate: &mut CurrentTimeRoundedToMinutesSubstate =
+        let current_time_rounded_to_minutes_substate: &mut ClockSubstate =
             api.kernel_get_substate_ref_mut(handle)?;
         current_time_rounded_to_minutes_substate.current_time_rounded_to_minutes_ms =
             current_time_rounded_to_minutes;
@@ -243,8 +241,7 @@ impl ClockNativePackage {
                     SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes),
                     LockFlags::read_only(),
                 )?;
-                let substate: &CurrentTimeRoundedToMinutesSubstate =
-                    api.kernel_get_substate_ref(handle)?;
+                let substate: &ClockSubstate = api.kernel_get_substate_ref(handle)?;
                 let instant = Instant::new(
                     substate.current_time_rounded_to_minutes_ms / SECONDS_TO_MS_FACTOR,
                 );
@@ -272,8 +269,7 @@ impl ClockNativePackage {
                     SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes),
                     LockFlags::read_only(),
                 )?;
-                let substate: &CurrentTimeRoundedToMinutesSubstate =
-                    api.kernel_get_substate_ref(handle)?;
+                let substate: &ClockSubstate = api.kernel_get_substate_ref(handle)?;
                 let current_time_instant = Instant::new(
                     substate.current_time_rounded_to_minutes_ms / SECONDS_TO_MS_FACTOR,
                 );
