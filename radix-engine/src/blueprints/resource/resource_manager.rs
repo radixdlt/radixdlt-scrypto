@@ -122,7 +122,10 @@ where
             BUCKET_BLUEPRINT,
             vec![
                 scrypto_encode(&info).unwrap(),
+                scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
+                scrypto_encode(&LockedFungibleResource::default()).unwrap(),
                 scrypto_encode(&LiquidNonFungibleResource::new(ids)).unwrap(),
+                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
             ],
         )?;
 
@@ -176,6 +179,9 @@ where
             vec![
                 scrypto_encode(&bucket_info).unwrap(),
                 scrypto_encode(&liquid_resource).unwrap(),
+                scrypto_encode(&LockedFungibleResource::default()).unwrap(),
+                scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
+                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
             ],
         )?;
 
@@ -840,7 +846,10 @@ impl ResourceManagerBlueprint {
                 BUCKET_BLUEPRINT,
                 vec![
                     scrypto_encode(&info).unwrap(),
+                    scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
+                    scrypto_encode(&LockedFungibleResource::default()).unwrap(),
                     scrypto_encode(&LiquidNonFungibleResource::new(ids)).unwrap(),
+                    scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
                 ],
             )?;
 
@@ -966,7 +975,10 @@ impl ResourceManagerBlueprint {
                 BUCKET_BLUEPRINT,
                 vec![
                     scrypto_encode(&info).unwrap(),
+                    scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
+                    scrypto_encode(&LockedFungibleResource::default()).unwrap(),
                     scrypto_encode(&LiquidNonFungibleResource::new(ids.clone())).unwrap(),
+                    scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
                 ],
             )?;
 
@@ -1162,10 +1174,10 @@ impl ResourceManagerBlueprint {
                         resource_type: ResourceType::Fungible { divisibility },
                     })
                     .unwrap(),
-                    scrypto_encode(&LiquidFungibleResource::new_empty()).unwrap(),
-                    scrypto_encode(&LockedFungibleResource::new_empty()).unwrap(),
-                    scrypto_encode(&LiquidNonFungibleResource::new_empty()).unwrap(),
-                    scrypto_encode(&LockedNonFungibleResource::new_empty()).unwrap(),
+                    scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
+                    scrypto_encode(&LockedFungibleResource::default()).unwrap(),
+                    scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
+                    scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
                 ],
             )?,
             ResourceType::NonFungible { id_type } => api.new_object(
@@ -1176,10 +1188,10 @@ impl ResourceManagerBlueprint {
                         resource_type: ResourceType::NonFungible { id_type },
                     })
                     .unwrap(),
-                    scrypto_encode(&LiquidFungibleResource::new_empty()).unwrap(),
-                    scrypto_encode(&LockedFungibleResource::new_empty()).unwrap(),
-                    scrypto_encode(&LiquidNonFungibleResource::new_empty()).unwrap(),
-                    scrypto_encode(&LockedNonFungibleResource::new_empty()).unwrap(),
+                    scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
+                    scrypto_encode(&LockedFungibleResource::default()).unwrap(),
+                    scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
+                    scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
                 ],
             )?,
         };
@@ -1218,10 +1230,10 @@ impl ResourceManagerBlueprint {
                     VAULT_BLUEPRINT,
                     vec![
                         scrypto_encode(&info).unwrap(),
-                        scrypto_encode(&LiquidFungibleResource::new_empty()).unwrap(),
-                        scrypto_encode(&LockedFungibleResource::new_empty()).unwrap(),
-                        scrypto_encode(&LiquidNonFungibleResource::new_empty()).unwrap(),
-                        scrypto_encode(&LockedNonFungibleResource::new_empty()).unwrap(),
+                        scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
+                        scrypto_encode(&LockedFungibleResource::default()).unwrap(),
+                        scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
+                        scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
                     ],
                 )?
             }
@@ -1234,10 +1246,10 @@ impl ResourceManagerBlueprint {
                     VAULT_BLUEPRINT,
                     vec![
                         scrypto_encode(&info).unwrap(),
-                        scrypto_encode(&LiquidFungibleResource::new_empty()).unwrap(),
-                        scrypto_encode(&LockedFungibleResource::new_empty()).unwrap(),
-                        scrypto_encode(&LiquidNonFungibleResource::new_empty()).unwrap(),
-                        scrypto_encode(&LockedNonFungibleResource::new_empty()).unwrap(),
+                        scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
+                        scrypto_encode(&LockedFungibleResource::default()).unwrap(),
+                        scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
+                        scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
                     ],
                 )?
             }

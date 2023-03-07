@@ -547,6 +547,9 @@ impl BucketBlueprint {
                 vec![
                     scrypto_encode(&info).unwrap(),
                     scrypto_encode(&taken).unwrap(),
+                    scrypto_encode(&LockedFungibleResource::default()).unwrap(),
+                    scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
+                    scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
                 ],
             )?;
 
@@ -560,7 +563,10 @@ impl BucketBlueprint {
                 BUCKET_BLUEPRINT,
                 vec![
                     scrypto_encode(&info).unwrap(),
+                    scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
+                    scrypto_encode(&LockedFungibleResource::default()).unwrap(),
                     scrypto_encode(&taken).unwrap(),
+                    scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
                 ],
             )?;
 
@@ -601,7 +607,10 @@ impl BucketBlueprint {
                 BUCKET_BLUEPRINT,
                 vec![
                     scrypto_encode(&info).unwrap(),
+                    scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
+                    scrypto_encode(&LockedFungibleResource::default()).unwrap(),
                     scrypto_encode(&taken).unwrap(),
+                    scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
                 ],
             )?;
 

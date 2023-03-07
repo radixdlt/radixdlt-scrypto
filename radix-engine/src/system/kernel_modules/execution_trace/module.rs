@@ -162,7 +162,7 @@ pub enum KernelCallOrigin {
 }
 
 impl ResourceSummary {
-    pub fn new_empty() -> Self {
+    pub fn default() -> Self {
         Self {
             buckets: index_map_new(),
             proofs: index_map_new(),
@@ -315,7 +315,7 @@ impl ExecutionTraceModule {
             let instruction_index = self.instruction_index();
 
             let traced_input = (
-                ResourceSummary::new_empty(),
+                ResourceSummary::default(),
                 KernelCallOrigin::CreateNode,
                 instruction_index,
             );
@@ -370,7 +370,7 @@ impl ExecutionTraceModule {
             return;
         }
 
-        let traced_output = ResourceSummary::new_empty();
+        let traced_output = ResourceSummary::default();
 
         let current_actor = current_actor
             .clone()

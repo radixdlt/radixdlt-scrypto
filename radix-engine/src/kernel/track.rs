@@ -649,7 +649,7 @@ impl<'s> FinalizingTrack<'s> {
         let mut required = fee_summary.total_execution_cost_xrd
             + fee_summary.total_royalty_cost_xrd
             - fee_summary.bad_debt_xrd;
-        let mut fees: LiquidFungibleResource = LiquidFungibleResource::new_empty();
+        let mut fees: LiquidFungibleResource = LiquidFungibleResource::default();
         for (vault_id, mut locked, contingent) in fee_summary.vault_locks.iter().cloned().rev() {
             let amount = if contingent {
                 if is_success {
