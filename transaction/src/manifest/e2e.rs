@@ -338,7 +338,7 @@ CREATE_FUNGIBLE_RESOURCE
                 include_str!(
                     "../../examples/resources/creation/non_fungible/with_initial_supply.rtm"
                 )
-                .to_string(),
+                    .to_string(),
             ),
             &NetworkDefinition::simulator(),
             vec![],
@@ -368,7 +368,7 @@ CALL_METHOD
                 include_str!(
                     "../../examples/resources/creation/non_fungible/no_initial_supply.rtm"
                 )
-                .to_string(),
+                    .to_string(),
             ),
             &NetworkDefinition::simulator(),
             vec![],
