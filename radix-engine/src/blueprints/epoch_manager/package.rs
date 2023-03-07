@@ -11,7 +11,7 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, FnKey};
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
 
-use super::{EpochManagerSubstate, ValidatorSubstate};
+use super::{EpochManagerSubstate, ValidatorSetSubstate, ValidatorSubstate};
 
 pub struct EpochManagerNativePackage;
 
@@ -21,6 +21,8 @@ impl EpochManagerNativePackage {
 
         let mut substates = Vec::new();
         substates.push(aggregator.add_child_type_and_descendents::<EpochManagerSubstate>());
+        substates.push(aggregator.add_child_type_and_descendents::<ValidatorSetSubstate>());
+        substates.push(aggregator.add_child_type_and_descendents::<ValidatorSetSubstate>());
 
         let mut functions = BTreeMap::new();
         functions.insert(

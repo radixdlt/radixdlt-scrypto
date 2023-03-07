@@ -5,6 +5,7 @@ use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use native_sdk::access_rules::AccessRulesObject;
 use native_sdk::metadata::Metadata;
@@ -24,7 +25,7 @@ impl IdentityNativePackage {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut substates = Vec::new();
-        substates.push(aggregator.add_child_type_and_descendents::<Identity>());
+        substates.push(aggregator.add_child_type_and_descendents::<IdentitySubstate>());
 
         let mut functions = BTreeMap::new();
         functions.insert(
@@ -86,7 +87,7 @@ impl IdentityNativePackage {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
 
-        let (node_id, access_rules) = Identity::create(input.access_rule, api)?;
+        let (node_id, access_rules) = IdentityBlueprint::create(input.access_rule, api)?;
         let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
         let metadata = Metadata::sys_create(api)?;
         let address = api.globalize(
@@ -100,10 +101,12 @@ impl IdentityNativePackage {
     }
 }
 
-#[derive(ScryptoSbor)]
-pub struct Identity;
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct IdentitySubstate {}
 
-impl Identity {
+pub struct IdentityBlueprint;
+
+impl IdentityBlueprint {
     pub fn create<Y>(
         access_rule: AccessRule,
         api: &mut Y,
@@ -123,7 +126,10 @@ impl Identity {
             AccessRule::DenyAll,
         );
 
-        let component_id = api.new_object(IDENTITY_BLUEPRINT, vec![])?;
+        let component_id = api.new_object(
+            IDENTITY_BLUEPRINT,
+            vec![scrypto_encode(&IdentitySubstate {}).unwrap()],
+        )?;
 
         Ok((RENodeId::Object(component_id), access_rules))
     }
@@ -135,8 +141,6 @@ impl Identity {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let node_id = api.kernel_allocate_node_id(RENodeType::Object)?;
-
         let mut access_rules = AccessRules::new();
         access_rules.set_access_rule_and_mutability(
             MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
@@ -149,9 +153,12 @@ impl Identity {
             AccessRule::DenyAll,
         );
 
+        let node_id = api.kernel_allocate_node_id(RENodeType::Object)?;
         api.kernel_create_node(
             node_id,
-            RENodeInit::Object(btreemap!()),
+            RENodeInit::Object(btreemap!(
+                SubstateOffset::Identity(IdentityOffset::Identity) => RuntimeSubstate::Identity(IdentitySubstate {}),
+            )),
             btreemap!(
                 NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                     package_address: IDENTITY_PACKAGE,

@@ -1,4 +1,4 @@
-use radix_engine::errors::{ApplicationError, RuntimeError};
+use radix_engine::errors::{RuntimeError, SubstateValidationError, SystemError};
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -25,7 +25,9 @@ fn should_not_be_able_to_node_create_with_invalid_blueprint() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::PackageError(_))
+            RuntimeError::SystemError(SystemError::SubstateValidationError(
+                SubstateValidationError::BlueprintNotFound(_)
+            ))
         )
     });
 }

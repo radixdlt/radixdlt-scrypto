@@ -213,13 +213,14 @@ where
                 .get(blueprint_ident)
                 .ok_or(RuntimeError::SystemError(
                     SystemError::SubstateValidationError(
-                        SubstateValidationError::BlueprintNotFound,
+                        SubstateValidationError::BlueprintNotFound(blueprint_ident.to_string()),
                     ),
                 ))?;
         if schema.substates.len() != app_states.len() {
             return Err(RuntimeError::SystemError(
                 SystemError::SubstateValidationError(
                     SubstateValidationError::WrongNumberOfSubstates(
+                        blueprint_ident.to_string(),
                         app_states.len(),
                         schema.substates.len(),
                     ),
@@ -231,7 +232,10 @@ where
                 .map_err(|e| {
                     // TODO: make `LocatedValidationError` encodable
                     RuntimeError::SystemError(SystemError::SubstateValidationError(
-                        SubstateValidationError::SchemaValidationError(format!("{:?}", e)),
+                        SubstateValidationError::SchemaValidationError(
+                            blueprint_ident.to_string(),
+                            format!("{:?}", e),
+                        ),
                     ))
                 })?;
         }
@@ -323,7 +327,10 @@ where
                 SubstateOffset::AccessController(AccessControllerOffset::AccessController)
                     => RuntimeSubstate::AccessController(parser.decode_next())
             )),
-            IDENTITY_PACKAGE => RENodeInit::Object(btreemap!()),
+            IDENTITY_PACKAGE => RENodeInit::Object(btreemap!(
+                SubstateOffset::Identity(IdentityOffset::Identity)
+                    => RuntimeSubstate::Identity(parser.decode_next())
+            )),
             ACCOUNT_PACKAGE => RENodeInit::Object(btreemap!(
                 SubstateOffset::Account(AccountOffset::Account)
                     => RuntimeSubstate::Account(parser.decode_next())

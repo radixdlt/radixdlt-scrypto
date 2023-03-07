@@ -283,6 +283,11 @@ pub enum AccessControllerOffset {
     AccessController,
 }
 
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum IdentityOffset {
+    Identity,
+}
+
 /// Specifies a specific Substate into a given RENode
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
 pub enum SubstateOffset {
@@ -302,6 +307,7 @@ pub enum SubstateOffset {
     TransactionRuntime(TransactionRuntimeOffset),
     Account(AccountOffset),
     AccessController(AccessControllerOffset),
+    Identity(IdentityOffset),
 
     // Node modules
     // TODO: align with module ID allocation?
