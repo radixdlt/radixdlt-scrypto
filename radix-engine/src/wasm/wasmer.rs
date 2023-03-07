@@ -424,17 +424,17 @@ impl WasmerModule {
 
         fn emit_event(
             env: &WasmerInstanceEnv,
-            schema_hash_ptr: u32,
-            schema_hash_len: u32,
+            event_name_ptr: u32,
+            event_name_len: u32,
             event_data_ptr: u32,
             event_data_len: u32,
         ) -> Result<(), InvokeError<WasmRuntimeError>> {
             let (instance, runtime) = grab_runtime!(env);
 
-            let schema_hash = read_memory(&instance, schema_hash_ptr, schema_hash_len)?;
+            let event_name = read_memory(&instance, event_name_ptr, event_name_len)?;
             let event_data = read_memory(&instance, event_data_ptr, event_data_len)?;
 
-            runtime.emit_event(schema_hash, event_data)
+            runtime.emit_event(event_name, event_data)
         }
 
         fn log_message(

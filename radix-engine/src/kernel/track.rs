@@ -595,14 +595,17 @@ impl<'s> FinalizingTrack<'s> {
         // Commit/rollback application state changes
         let mut to_persist = HashMap::new();
         let next_epoch = {
-            let expected_schema_hash = {
+            // TODO: Simplify once ScryptoEvent trait is implemented
+            let expected_event_name = {
                 let (local_type_index, schema) = generate_full_schema_from_single_type::<
                     EpochChangeEvent,
                     ScryptoCustomTypeExtension,
                 >();
-                scrypto_encode(&(local_type_index, schema))
-                    .map(hash)
-                    .expect("Schema can't be encoded!")
+                (*schema
+                    .resolve_type_metadata(local_type_index)
+                    .expect("Cant fail")
+                    .type_name)
+                    .to_owned()
             };
             application_events
                 .iter()
@@ -617,8 +620,8 @@ impl<'s> FinalizingTrack<'s> {
                             RENodeId::GlobalComponent(ComponentAddress::EpochManager(..)),
                             NodeModuleId::SELF,
                         ),
-                        schema_hash,
-                    ) if *schema_hash == expected_schema_hash => true,
+                        event_name,
+                    ) if *event_name == expected_event_name => true,
                     _ => false,
                 })
                 .map(|(_, data)| {

@@ -5,7 +5,6 @@ use radix_engine_interface::api::{
 };
 use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::blueprints::resource::AccessRules;
-use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::model::{Address, PackageAddress};
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::*;
@@ -258,11 +257,16 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
 }
 
 impl ClientEventApi<ClientApiError> for ScryptoEnv {
-    fn emit_event(&mut self, schema_hash: Hash, event_data: Vec<u8>) -> Result<(), ClientApiError> {
+    fn emit_event(
+        &mut self,
+        event_name: String,
+        event_data: Vec<u8>,
+    ) -> Result<(), ClientApiError> {
+        let event_name = scrypto_encode(&event_name).unwrap();
         unsafe {
             emit_event(
-                schema_hash.0.as_ptr(),
-                schema_hash.0.len(),
+                event_name.as_ptr(),
+                event_name.len(),
                 event_data.as_ptr(),
                 event_data.len(),
             )

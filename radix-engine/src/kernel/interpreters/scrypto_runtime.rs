@@ -15,7 +15,6 @@ use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::blueprints::resource::AccessRules;
 use radix_engine_interface::schema::PackageSchema;
 use sbor::rust::vec::Vec;
-use utils::copy_u8_array;
 
 /// A shim between ClientApi and WASM, with buffer capability.
 pub struct ScryptoRuntime<'y, Y>
@@ -297,11 +296,13 @@ where
 
     fn emit_event(
         &mut self,
-        schema_hash: Vec<u8>,
+        event_name: Vec<u8>,
         event: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
-        self.api
-            .emit_event(Hash(copy_u8_array(&schema_hash)), event)?;
+        self.api.emit_event(
+            scrypto_decode(&event_name).expect("Failed to decode level"),
+            event,
+        )?;
         Ok(())
     }
 
@@ -452,7 +453,7 @@ impl WasmRuntime for NopWasmRuntime {
 
     fn emit_event(
         &mut self,
-        schema_hash: Vec<u8>,
+        event_name: Vec<u8>,
         event: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))

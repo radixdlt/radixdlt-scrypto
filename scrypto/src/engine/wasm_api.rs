@@ -148,8 +148,8 @@ extern "C" {
     //===============
 
     pub fn emit_event(
-        schema_hash_ptr: *const u8,
-        schema_hash_len: usize,
+        event_name_ptr: *const u8,
+        event_name_len: usize,
         event_data_ptr: *const u8,
         event_data_len: usize,
     );
@@ -297,8 +297,8 @@ pub unsafe fn get_actor() -> Buffer {
 
 #[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn emit_event(
-    _schema_hash_ptr: *const u8,
-    _schema_hash_len: usize,
+    _event_name_ptr: *const u8,
+    _event_name_len: usize,
     _event_data_ptr: *const u8,
     _event_data_len: usize,
 ) {

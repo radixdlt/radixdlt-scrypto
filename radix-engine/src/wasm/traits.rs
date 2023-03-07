@@ -93,7 +93,7 @@ pub trait WasmRuntime {
 
     fn emit_event(
         &mut self,
-        schema_hash: Vec<u8>,
+        event_name: Vec<u8>,
         event: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>>;
 

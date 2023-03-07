@@ -10,7 +10,7 @@ use radix_engine_interface::blueprints::transaction_runtime::{
     TRANSACTION_RUNTIME_GENERATE_UUID_IDENT, TRANSACTION_RUNTIME_GET_HASH_IDENT,
 };
 use radix_engine_interface::constants::{EPOCH_MANAGER, PACKAGE_TOKEN};
-use radix_engine_interface::crypto::{hash, Hash};
+use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::{model::*, ScryptoCustomTypeExtension};
 use radix_engine_interface::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoDescribe, ScryptoEncode,
@@ -115,15 +115,18 @@ impl Runtime {
 
     /// Emits an application event
     pub fn emit_event<T: ScryptoEncode + ScryptoDescribe>(event: T) {
-        let schema_hash = {
+        // TODO: Simplify once ScryptoEvent trait is implemented
+        let event_name = {
             let (local_type_index, schema) =
                 generate_full_schema_from_single_type::<T, ScryptoCustomTypeExtension>();
-            scrypto_encode(&(local_type_index, schema))
-                .map(hash)
-                .expect("Schema can't be encoded!")
+            (*schema
+                .resolve_type_metadata(local_type_index)
+                .expect("Cant fail")
+                .type_name)
+                .to_owned()
         };
         ScryptoEnv
-            .emit_event(schema_hash, scrypto_encode(&event).unwrap())
+            .emit_event(event_name, scrypto_encode(&event).unwrap())
             .unwrap();
     }
 }

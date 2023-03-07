@@ -116,17 +116,24 @@ impl Package {
         {
             let mut package_event_schema = BTreeMap::<
                 String,
-                BTreeMap<Hash, (LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>,
+                BTreeMap<String, (LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>,
             >::new();
             for (blueprint_name, event_schemas) in input.event_schema {
                 let blueprint_schema = package_event_schema.entry(blueprint_name).or_default();
-                for indexed_schema in event_schemas {
-                    let schema_hash = scrypto_encode(&indexed_schema).map(hash).map_err(|_| {
-                        RuntimeError::ApplicationError(ApplicationError::EventError(
-                            EventError::FailedToSborEncodeEventSchema,
-                        ))
-                    })?;
-                    blueprint_schema.insert(schema_hash, indexed_schema);
+                for (local_type_index, schema) in event_schemas {
+                    let event_name = {
+                        (*schema
+                            .resolve_type_metadata(local_type_index)
+                            .map_or(
+                                Err(RuntimeError::ApplicationError(
+                                    ApplicationError::EventError(EventError::InvalidEventSchema),
+                                )),
+                                Ok,
+                            )?
+                            .type_name)
+                            .to_owned()
+                    };
+                    blueprint_schema.insert(event_name, (local_type_index, schema));
                 }
             }
 

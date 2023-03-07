@@ -754,7 +754,7 @@ impl<'g, 's, W> ClientEventApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    fn emit_event(&mut self, schema_hash: Hash, event_data: Vec<u8>) -> Result<(), RuntimeError> {
+    fn emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), RuntimeError> {
         // Costing event emission.
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
@@ -765,8 +765,10 @@ where
                 identifier: ActorIdentifier::Method(MethodIdentifier(node_id, node_module_id, ..)),
                 ..
             }) => {
-                let event_type_id =
-                    EventTypeIdentifier(Emitter::Method(node_id, node_module_id), schema_hash);
+                let event_type_id = EventTypeIdentifier(
+                    Emitter::Method(node_id, node_module_id),
+                    event_name.clone(),
+                );
                 let (package_address, blueprint_name) = match node_module_id {
                     NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {
                         Ok((ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT.into()))
@@ -806,7 +808,7 @@ where
                         NodeModuleId::SELF,
                         blueprint_name.clone(),
                     ),
-                    schema_hash,
+                    event_name.clone(),
                 ),
                 package_address,
                 blueprint_name.to_owned(),
@@ -826,22 +828,22 @@ where
             )?;
             let package_schema =
                 self.kernel_get_substate_ref::<PackageEventSchemaSubstate>(handle)?;
-            let indexed_schema = package_schema
+            let contained_schema = package_schema
                 .0
                 .get(&blueprint_name)
-                .and_then(|blueprint_schema| blueprint_schema.get(&schema_hash))
+                .and_then(|blueprint_schema| blueprint_schema.get(&event_name))
                 .map_or(
                     Err(RuntimeError::ApplicationError(
                         ApplicationError::EventError(EventError::SchemaNotFoundError {
                             package_address,
                             blueprint_name,
-                            schema_hash,
+                            event_name,
                         }),
                     )),
                     |item| Ok(item.clone()),
                 )?;
             self.kernel_drop_lock(handle)?;
-            indexed_schema
+            contained_schema
         };
 
         // Validating the event data against the event schema

@@ -4,7 +4,6 @@ use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::transaction_runtime::*;
 use radix_engine_interface::constants::{CLOCK, EPOCH_MANAGER};
-use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::time::*;
 use sbor::generate_full_schema_from_single_type;
@@ -23,14 +22,17 @@ impl Runtime {
         Y: ClientEventApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        let schema_hash = {
+        // TODO: Simplify once ScryptoEvent trait is implemented
+        let event_name = {
             let (local_type_index, schema) =
                 generate_full_schema_from_single_type::<T, ScryptoCustomTypeExtension>();
-            scrypto_encode(&(local_type_index, schema))
-                .map(hash)
-                .expect("Schema can't be encoded!")
+            (*schema
+                .resolve_type_metadata(local_type_index)
+                .expect("Cant fail")
+                .type_name)
+                .to_owned()
         };
-        api.emit_event(schema_hash, scrypto_encode(&event).unwrap())
+        api.emit_event(event_name, scrypto_encode(&event).unwrap())
     }
 
     pub fn sys_current_epoch<Y, E>(api: &mut Y) -> Result<u64, E>

@@ -1,5 +1,4 @@
 use crate::api::types::{NodeModuleId, RENodeId};
-use crate::crypto::Hash;
 use crate::ScryptoSbor;
 use sbor::rust::string::String;
 
@@ -12,7 +11,7 @@ use sbor::rust::string::String;
 /// It is important to note that application events are always emitted by an RENode, meaning that
 /// there is always an emitter of some [`RENodeId`].
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct EventTypeIdentifier(pub Emitter, pub Hash);
+pub struct EventTypeIdentifier(pub Emitter, pub String);
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum Emitter {

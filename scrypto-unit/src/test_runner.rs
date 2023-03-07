@@ -1108,32 +1108,34 @@ impl TestRunner {
         &mut self,
         event_type_identifier: &EventTypeIdentifier,
     ) -> (LocalTypeIndex, ScryptoSchema) {
-        let (package_address, blueprint_name, schema_hash) = match event_type_identifier {
-            EventTypeIdentifier(Emitter::Method(node_id, node_module), schema_hash) => {
+        let (package_address, blueprint_name, event_name) = match event_type_identifier {
+            EventTypeIdentifier(Emitter::Method(node_id, node_module), event_name) => {
                 match node_module {
                     NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => (
                         ACCESS_RULES_PACKAGE,
                         ACCESS_RULES_BLUEPRINT.into(),
-                        *schema_hash,
+                        event_name.clone(),
                     ),
                     NodeModuleId::ComponentRoyalty => (
                         ROYALTY_PACKAGE,
                         COMPONENT_ROYALTY_BLUEPRINT.into(),
-                        *schema_hash,
+                        event_name.clone(),
                     ),
                     NodeModuleId::PackageRoyalty => (
                         ROYALTY_PACKAGE,
                         PACKAGE_ROYALTY_BLUEPRINT.into(),
-                        *schema_hash,
+                        event_name.clone(),
                     ),
                     NodeModuleId::FunctionAccessRules => (
                         ACCESS_RULES_PACKAGE,
                         FUNCTION_ACCESS_RULES_BLUEPRINT.into(),
-                        *schema_hash,
+                        event_name.clone(),
                     ),
-                    NodeModuleId::Metadata => {
-                        (METADATA_PACKAGE, METADATA_BLUEPRINT.into(), *schema_hash)
-                    }
+                    NodeModuleId::Metadata => (
+                        METADATA_PACKAGE,
+                        METADATA_BLUEPRINT.into(),
+                        event_name.clone(),
+                    ),
                     NodeModuleId::SELF => {
                         let type_info = self
                             .substate_store()
@@ -1150,7 +1152,7 @@ impl TestRunner {
                         (
                             type_info.package_address,
                             type_info.blueprint_name,
-                            *schema_hash,
+                            event_name.clone(),
                         )
                     }
                     NodeModuleId::TypeInfo | NodeModuleId::PackageEventSchema => {
@@ -1158,11 +1160,15 @@ impl TestRunner {
                     }
                 }
             }
-            EventTypeIdentifier(Emitter::Function(node_id, _, blueprint_name), schema_hash) => {
+            EventTypeIdentifier(Emitter::Function(node_id, _, blueprint_name), event_name) => {
                 let RENodeId::GlobalPackage(package_address) = node_id else {
                     panic!("must be a package address")
                 };
-                (*package_address, blueprint_name.to_owned(), *schema_hash)
+                (
+                    *package_address,
+                    blueprint_name.to_owned(),
+                    event_name.clone(),
+                )
             }
         };
 
@@ -1180,15 +1186,13 @@ impl TestRunner {
             .0
             .get(&blueprint_name)
             .unwrap()
-            .get(&schema_hash)
+            .get(&event_name)
             .unwrap()
             .clone()
     }
 
     pub fn event_name(&mut self, event_type_identifier: &EventTypeIdentifier) -> String {
-        let (index, schema) = self.event_schema(event_type_identifier);
-        let metadata = schema.resolve_type_metadata(index).unwrap();
-        (*metadata.type_name).to_owned()
+        event_type_identifier.1.clone()
     }
 }
 
