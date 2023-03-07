@@ -1044,6 +1044,9 @@ impl ResourceManagerBlueprint {
                     vec![
                         scrypto_encode(&bucket_info).unwrap(),
                         scrypto_encode(&liquid_resource).unwrap(),
+                        scrypto_encode(&LockedFungibleResource::default()).unwrap(),
+                        scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
+                        scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
                     ],
                 )?;
 

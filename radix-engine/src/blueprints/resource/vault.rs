@@ -600,9 +600,9 @@ impl VaultBlueprint {
                         resource_type: info.resource_type,
                     })
                     .unwrap(),
-                    scrypto_encode(&taken).unwrap(),
+                    scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
                     scrypto_encode(&LockedFungibleResource::default()).unwrap(),
-                    scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
+                    scrypto_encode(&taken).unwrap(),
                     scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
                 ],
             )?;

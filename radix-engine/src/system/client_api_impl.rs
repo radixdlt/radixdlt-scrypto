@@ -241,8 +241,6 @@ where
 
         let mut parser = SubstateSchemaParser::new(&mut app_states);
 
-        println!("!!!! {:?}, {:?}", package_address, blueprint_ident);
-
         let node_init = match package_address {
             RESOURCE_MANAGER_PACKAGE => match blueprint_ident {
                 RESOURCE_MANAGER_BLUEPRINT => RENodeInit::Object(btreemap!(
