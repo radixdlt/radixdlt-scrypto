@@ -41,7 +41,7 @@ pub struct ResourceManagerCreateFungibleWithInitialSupplyInput {
     pub initial_supply: Decimal,
 }
 
-pub type ResourceManagerCreateFungibleWithInitialSupplyOutput = Bucket;
+pub type ResourceManagerCreateFungibleWithInitialSupplyOutput = (ResourceAddress, Bucket);
 
 pub const RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT: &str =
     "create_fungible_with_initial_supply_and_address";
@@ -55,7 +55,7 @@ pub struct ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput {
     pub resource_address: [u8; 26], // TODO: Clean this up
 }
 
-pub type ResourceManagerCreateFungibleWithInitialSupplyAndAddressOutput = Bucket;
+pub type ResourceManagerCreateFungibleWithInitialSupplyAndAddressOutput = (ResourceAddress, Bucket);
 
 pub const RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT: &str = "create_non_fungible";
 
@@ -79,7 +79,7 @@ pub struct ResourceManagerCreateNonFungibleWithInitialSupplyInput {
     pub entries: BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>,
 }
 
-pub type ResourceManagerCreateNonFungibleWithInitialSupplyOutput = Bucket;
+pub type ResourceManagerCreateNonFungibleWithInitialSupplyOutput = (ResourceAddress, Bucket);
 
 pub const RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT: &str =
     "create_non_fungible_with_address";
@@ -104,7 +104,7 @@ pub struct ResourceManagerCreateUuidNonFungibleWithInitialSupplyInput {
     pub entries: BTreeSet<(Vec<u8>, Vec<u8>)>,
 }
 
-pub type ResourceManagerCreateUuidNonFungibleWithInitialSupplyOutput = Bucket;
+pub type ResourceManagerCreateUuidNonFungibleWithInitialSupplyOutput = (ResourceAddress, Bucket);
 
 pub const RESOURCE_MANAGER_BURN_BUCKET_IDENT: &str = "burn_bucket";
 
@@ -172,7 +172,7 @@ pub struct ResourceManagerGetNonFungibleInput {
     pub id: NonFungibleLocalId,
 }
 
-pub type ResourceManagerGetNonFungibleOutput = (Vec<u8>, Vec<u8>);
+pub type ResourceManagerGetNonFungibleOutput = [Vec<u8>; 2];
 
 pub const RESOURCE_MANAGER_MINT_NON_FUNGIBLE_IDENT: &str = "mint_non_fungible";
 

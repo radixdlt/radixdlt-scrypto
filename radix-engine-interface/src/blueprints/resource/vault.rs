@@ -117,7 +117,7 @@ pub struct VaultCreateProofByIdsInput {
     pub ids: BTreeSet<NonFungibleLocalId>,
 }
 
-pub type VaultCreateProofByIdsOutput = ();
+pub type VaultCreateProofByIdsOutput = Proof;
 
 pub const VAULT_LOCK_AMOUNT_IDENT: &str = "Vault_lock_amount";
 

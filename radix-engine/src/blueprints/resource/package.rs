@@ -545,7 +545,7 @@ impl ResourceManagerNativePackage {
         functions.insert(
             PROOF_DROP_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
+                receiver: None,
                 input: aggregator.add_child_type_and_descendents::<ProofDropInput>(),
                 output: aggregator.add_child_type_and_descendents::<ProofDropOutput>(),
                 export_name: PROOF_DROP_IDENT.to_string(),
@@ -607,7 +607,7 @@ impl ResourceManagerNativePackage {
         functions.insert(
             WORKTOP_DROP_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
+                receiver: None,
                 input: aggregator.add_child_type_and_descendents::<WorktopDropInput>(),
                 output: aggregator.add_child_type_and_descendents::<WorktopDropOutput>(),
                 export_name: WORKTOP_DROP_IDENT.to_string(),
