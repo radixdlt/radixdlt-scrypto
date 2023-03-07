@@ -27,18 +27,29 @@ impl TransactionRuntimeNativePackage {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut substates = Vec::new();
-        substates.push(aggregator.add_child_type_and_descendents::<AccessControllerSubstate>());
+        substates.push(aggregator.add_child_type_and_descendents::<TransactionRuntimeSubstate>());
 
         let mut functions = BTreeMap::new();
         functions.insert(
-            ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
+            TRANSACTION_RUNTIME_GET_HASH_IDENT.to_string(),
             FunctionSchema {
                 receiver: None,
                 input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerCreateGlobalInput>(),
+                    .add_child_type_and_descendents::<TransactionRuntimeGetHashInput>(),
                 output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerCreateGlobalOutput>(),
-                export_name: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
+                    .add_child_type_and_descendents::<TransactionRuntimeGetHashOutput>(),
+                export_name: TRANSACTION_RUNTIME_GET_HASH_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            TRANSACTION_RUNTIME_GENERATE_UUID_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator
+                    .add_child_type_and_descendents::<TransactionRuntimeGenerateUuidInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<TransactionRuntimeGenerateUuidInputOutput>(),
+                export_name: TRANSACTION_RUNTIME_GENERATE_UUID_IDENT.to_string(),
             },
         );
 
@@ -120,7 +131,7 @@ impl TransactionRuntimeNativePackage {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let _input: TransactionRuntimeGenerateUuid = input.as_typed().map_err(|e| {
+        let _input: TransactionRuntimeGenerateUuidInput = input.as_typed().map_err(|e| {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
 

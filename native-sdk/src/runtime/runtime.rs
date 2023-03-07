@@ -96,7 +96,7 @@ impl Runtime {
         let rtn = api.call_method(
             RENodeId::TransactionRuntime,
             TRANSACTION_RUNTIME_GENERATE_UUID_IDENT,
-            scrypto_encode(&TransactionRuntimeGenerateUuid {}).unwrap(),
+            scrypto_encode(&TransactionRuntimeGenerateUuidInput {}).unwrap(),
         )?;
         Ok(scrypto_decode(&rtn).unwrap())
     }
