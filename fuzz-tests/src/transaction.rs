@@ -169,7 +169,7 @@ enum TxStatus {
 fn test_fuzz_tx() {
     let mut fuzzer = Fuzzer::new();
     let data = std::fs::read(
-        "afl/transaction/in/manifest_e057a3853ccb0e33c8b61f2cde91f655473b202c6c095e2202c2ad93caee4e34.raw",
+        "fuzz_input/transaction/manifest_e057a3853ccb0e33c8b61f2cde91f655473b202c6c095e2202c2ad93caee4e34.raw",
     )
     .unwrap();
     fuzzer.fuzz_tx_manifest(&data);
