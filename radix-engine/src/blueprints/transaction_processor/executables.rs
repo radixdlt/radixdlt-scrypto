@@ -545,7 +545,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 } => {
                     let rtn = api.call_method(
                         RENodeId::GlobalResourceManager(resource_address),
-                        RESOURCE_MANAGER_MINT_FUNGIBLE,
+                        RESOURCE_MANAGER_MINT_FUNGIBLE_IDENT,
                         scrypto_encode(&ResourceManagerMintFungibleInput { amount }).unwrap(),
                     )?;
 
@@ -561,7 +561,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 } => {
                     let rtn = api.call_method(
                         RENodeId::GlobalResourceManager(resource_address),
-                        RESOURCE_MANAGER_MINT_NON_FUNGIBLE,
+                        RESOURCE_MANAGER_MINT_NON_FUNGIBLE_IDENT,
                         scrypto_encode(&ResourceManagerMintNonFungibleInput { entries: entries })
                             .unwrap(),
                     )?;
@@ -578,7 +578,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 } => {
                     let rtn = api.call_method(
                         RENodeId::GlobalResourceManager(resource_address),
-                        RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE,
+                        RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE_IDENT,
                         scrypto_encode(&ResourceManagerMintUuidNonFungibleInput {
                             entries: entries,
                         })

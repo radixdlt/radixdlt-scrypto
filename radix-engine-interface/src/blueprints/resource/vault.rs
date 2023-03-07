@@ -17,6 +17,8 @@ pub struct VaultPutInput {
     pub bucket: Bucket,
 }
 
+pub type VaultPutOutput = ();
+
 impl Clone for VaultPutInput {
     fn clone(&self) -> Self {
         Self {
@@ -32,12 +34,16 @@ pub struct VaultTakeInput {
     pub amount: Decimal,
 }
 
+pub type VaultTakeOutput = Bucket;
+
 pub const VAULT_TAKE_NON_FUNGIBLES_IDENT: &str = "take_non_fungibles";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct VaultTakeNonFungiblesInput {
     pub non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
 }
+
+pub type VaultTakeNonFungiblesOutput = Bucket;
 
 pub const VAULT_LOCK_FEE_IDENT: &str = "lock_fee";
 
@@ -47,12 +53,16 @@ pub struct VaultLockFeeInput {
     pub contingent: bool,
 }
 
+pub type VaultLockFeeOutput = ();
+
 pub const VAULT_RECALL_IDENT: &str = "recall";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct VaultRecallInput {
     pub amount: Decimal,
 }
+
+pub type VaultRecallOutput = Bucket;
 
 pub const VAULT_RECALL_NON_FUNGIBLES_IDENT: &str = "recall_non_fungibles";
 
@@ -61,25 +71,35 @@ pub struct VaultRecallNonFungiblesInput {
     pub non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
 }
 
+pub type VaultRecallNonFungiblesOutput = Bucket;
+
 pub const VAULT_GET_AMOUNT_IDENT: &str = "get_amount";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct VaultGetAmountInput {}
+
+pub type VaultGetAmountOutput = Decimal;
 
 pub const VAULT_GET_RESOURCE_ADDRESS_IDENT: &str = "get_resource_address";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct VaultGetResourceAddressInput {}
 
+pub type VaultGetResourceAddressOutput = ResourceAddress;
+
 pub const VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT: &str = "get_non_fungible_local_ids";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct VaultGetNonFungibleLocalIdsInput {}
 
+pub type VaultGetNonFungibleLocalIdsOutput = BTreeSet<NonFungibleLocalId>;
+
 pub const VAULT_CREATE_PROOF_IDENT: &str = "create_proof";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct VaultCreateProofInput {}
+
+pub type VaultCreateProofOutput = Proof;
 
 pub const VAULT_CREATE_PROOF_BY_AMOUNT_IDENT: &str = "create_proof_by_amount";
 
@@ -88,6 +108,8 @@ pub struct VaultCreateProofByAmountInput {
     pub amount: Decimal,
 }
 
+pub type VaultCreateProofByAmountOutput = Proof;
+
 pub const VAULT_CREATE_PROOF_BY_IDS_IDENT: &str = "create_proof_by_ids";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
@@ -95,33 +117,43 @@ pub struct VaultCreateProofByIdsInput {
     pub ids: BTreeSet<NonFungibleLocalId>,
 }
 
+pub type VaultCreateProofByIdsOutput = ();
+
+pub const VAULT_LOCK_AMOUNT_IDENT: &str = "Vault_lock_amount";
+
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct VaultLockAmountInput {
     pub amount: Decimal,
 }
 
-pub const VAULT_LOCK_AMOUNT_IDENT: &str = "Vault_lock_amount";
+pub type VaultLockAmountOutput = ();
+
+pub const VAULT_UNLOCK_AMOUNT_IDENT: &str = "Vault_unlock_amount";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct VaultUnlockAmountInput {
     pub amount: Decimal,
 }
 
-pub const VAULT_UNLOCK_AMOUNT_IDENT: &str = "Vault_unlock_amount";
+pub type VaultUnlockAmountOutput = ();
+
+pub const VAULT_LOCK_NON_FUNGIBLES_IDENT: &str = "Vault_lock_non_fungibles";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct VaultLockNonFungiblesInput {
     pub local_ids: BTreeSet<NonFungibleLocalId>,
 }
 
-pub const VAULT_LOCK_NON_FUNGIBLES_IDENT: &str = "Vault_lock_non_fungibles";
+pub type VaultLockNonFungiblesOutput = ();
+
+pub const VAULT_UNLOCK_NON_FUNGIBLES_IDENT: &str = "Vault_unlock_non_fungibles";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct VaultUnlockNonFungiblesInput {
     pub local_ids: BTreeSet<NonFungibleLocalId>,
 }
 
-pub const VAULT_UNLOCK_NON_FUNGIBLES_IDENT: &str = "Vault_unlock_non_fungibles";
+pub type VaultUnlockNonFungiblesOutput = ();
 
 //========
 // Stub
