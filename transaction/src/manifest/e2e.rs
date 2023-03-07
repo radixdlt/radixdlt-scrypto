@@ -1,10 +1,10 @@
 #[cfg(test)]
 mod tests {
+    use crate::eddsa_ed25519::EddsaEd25519PrivateKey;
     use crate::manifest::*;
+    use crate::model::{TransactionHeader, TransactionIntent};
     use radix_engine_interface::network::NetworkDefinition;
     use sbor::rust::collections::*;
-    use crate::eddsa_ed25519::EddsaEd25519PrivateKey;
-    use crate::model::{TransactionHeader, TransactionIntent};
 
     #[test]
     fn test_publish_package() {
@@ -338,7 +338,7 @@ CREATE_FUNGIBLE_RESOURCE
                 include_str!(
                     "../../examples/resources/creation/non_fungible/with_initial_supply.rtm"
                 )
-                    .to_string(),
+                .to_string(),
             ),
             &NetworkDefinition::simulator(),
             vec![],
@@ -368,7 +368,7 @@ CALL_METHOD
                 include_str!(
                     "../../examples/resources/creation/non_fungible/no_initial_supply.rtm"
                 )
-                    .to_string(),
+                .to_string(),
             ),
             &NetworkDefinition::simulator(),
             vec![],
@@ -554,7 +554,11 @@ CREATE_ACCESS_CONTROLLER
     }
 
     fn print_blob(name: &str, blob: Vec<u8>) {
-        print!("const TX_{}: [u8; {}] = [", name.clone().to_uppercase(), blob.len());
+        print!(
+            "const TX_{}: [u8; {}] = [",
+            name.clone().to_uppercase(),
+            blob.len()
+        );
 
         for &byte in blob.iter() {
             print!("{:#04x}, ", byte);
@@ -581,7 +585,8 @@ CREATE_ACCESS_CONTROLLER
             },
             manifest,
             blobs,
-        ).unwrap()
+        )
+        .unwrap()
     }
 
     fn apply_replacements_to_manifest(mut manifest: String) -> String {
