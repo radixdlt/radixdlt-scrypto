@@ -737,7 +737,7 @@ impl ResourceManagerNativePackage {
                 }
                 ResourceManagerBlueprint::create_non_fungible_with_initial_supply(input, api)
             }
-            RESOURCE_MANAGER_CREATE_UUID_NON_FUNGIBLE_WITH_INITIAL_SUPPLY => {
+            RESOURCE_MANAGER_CREATE_UUID_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
@@ -789,7 +789,7 @@ impl ResourceManagerNativePackage {
                 }
                 ResourceManagerBlueprint::burn_bucket(input, api)
             }
-            RESOURCE_MANAGER_MINT_NON_FUNGIBLE => {
+            RESOURCE_MANAGER_MINT_NON_FUNGIBLE_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
@@ -797,7 +797,7 @@ impl ResourceManagerNativePackage {
                 ))?;
                 ResourceManagerBlueprint::mint_non_fungible(receiver, input, api)
             }
-            RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE => {
+            RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
@@ -805,7 +805,7 @@ impl ResourceManagerNativePackage {
                 ))?;
                 ResourceManagerBlueprint::mint_uuid_non_fungible(receiver, input, api)
             }
-            RESOURCE_MANAGER_MINT_FUNGIBLE => {
+            RESOURCE_MANAGER_MINT_FUNGIBLE_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
