@@ -25,7 +25,7 @@ impl Clock {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                RENodeId::GlobalComponent(CLOCK.into()),
+                RENodeId::GlobalObject(CLOCK.into()),
                 CLOCK_GET_CURRENT_TIME_IDENT,
                 scrypto_encode(&ClockGetCurrentTimeInput { precision }).unwrap(),
             )
@@ -68,7 +68,7 @@ impl Clock {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                RENodeId::GlobalComponent(CLOCK.into()),
+                RENodeId::GlobalObject(CLOCK.into()),
                 CLOCK_COMPARE_CURRENT_TIME_IDENT,
                 scrypto_encode(&ClockCompareCurrentTimeInput {
                     instant,

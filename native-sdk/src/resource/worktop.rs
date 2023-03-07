@@ -11,10 +11,14 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 
-pub struct Worktop;
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct Worktop(pub ObjectId);
 
 impl Worktop {
-    pub fn sys_drop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(api: &mut Y) -> Result<(), E>
+    pub fn sys_drop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        self,
+        api: &mut Y,
+    ) -> Result<(), E>
     where
         Y: ClientApi<E>,
     {
@@ -22,13 +26,17 @@ impl Worktop {
             RESOURCE_MANAGER_PACKAGE,
             WORKTOP_BLUEPRINT,
             WORKTOP_DROP_IDENT,
-            scrypto_encode(&WorktopDropInput {}).unwrap(),
+            scrypto_encode(&WorktopDropInput {
+                worktop: Own::Object(self.0),
+            })
+            .unwrap(),
         )?;
 
         Ok(())
     }
 
     pub fn sys_put<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        &self,
         bucket: Bucket,
         api: &mut Y,
     ) -> Result<(), E>
@@ -36,7 +44,7 @@ impl Worktop {
         Y: ClientApi<E>,
     {
         let _rtn = api.call_method(
-            RENodeId::Worktop,
+            RENodeId::Object(self.0),
             WORKTOP_PUT_IDENT,
             scrypto_encode(&WorktopPutInput { bucket }).unwrap(),
         )?;
@@ -45,6 +53,7 @@ impl Worktop {
     }
 
     pub fn sys_take<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        &self,
         resource_address: ResourceAddress,
         amount: Decimal,
         api: &mut Y,
@@ -53,7 +62,7 @@ impl Worktop {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::Worktop,
+            RENodeId::Object(self.0),
             WORKTOP_TAKE_IDENT,
             scrypto_encode(&WorktopTakeInput {
                 resource_address,
@@ -66,6 +75,7 @@ impl Worktop {
     }
 
     pub fn sys_take_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        &self,
         resource_address: ResourceAddress,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
@@ -74,7 +84,7 @@ impl Worktop {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::Worktop,
+            RENodeId::Object(self.0),
             WORKTOP_TAKE_NON_FUNGIBLES_IDENT,
             scrypto_encode(&WorktopTakeNonFungiblesInput {
                 resource_address,
@@ -87,6 +97,7 @@ impl Worktop {
     }
 
     pub fn sys_take_all<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        &self,
         resource_address: ResourceAddress,
         api: &mut Y,
     ) -> Result<Bucket, E>
@@ -94,7 +105,7 @@ impl Worktop {
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::Worktop,
+            RENodeId::Object(self.0),
             WORKTOP_TAKE_ALL_IDENT,
             scrypto_encode(&WorktopTakeAllInput { resource_address }).unwrap(),
         )?;
@@ -102,6 +113,7 @@ impl Worktop {
     }
 
     pub fn sys_assert_contains<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        &self,
         resource_address: ResourceAddress,
         api: &mut Y,
     ) -> Result<(), E>
@@ -109,7 +121,7 @@ impl Worktop {
         Y: ClientApi<E>,
     {
         let _rtn = api.call_method(
-            RENodeId::Worktop,
+            RENodeId::Object(self.0),
             WORKTOP_ASSERT_CONTAINS_IDENT,
             scrypto_encode(&WorktopAssertContainsInput { resource_address }).unwrap(),
         )?;
@@ -117,6 +129,7 @@ impl Worktop {
     }
 
     pub fn sys_assert_contains_amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        &self,
         resource_address: ResourceAddress,
         amount: Decimal,
         api: &mut Y,
@@ -125,7 +138,7 @@ impl Worktop {
         Y: ClientApi<E>,
     {
         let _rtn = api.call_method(
-            RENodeId::Worktop,
+            RENodeId::Object(self.0),
             WORKTOP_ASSERT_CONTAINS_AMOUNT_IDENT,
             scrypto_encode(&WorktopAssertContainsAmountInput {
                 resource_address,
@@ -137,6 +150,7 @@ impl Worktop {
     }
 
     pub fn sys_assert_contains_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        &self,
         resource_address: ResourceAddress,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
@@ -145,7 +159,7 @@ impl Worktop {
         Y: ClientApi<E>,
     {
         let _rtn = api.call_method(
-            RENodeId::Worktop,
+            RENodeId::Object(self.0),
             WORKTOP_ASSERT_CONTAINS_NON_FUNGIBLES_IDENT,
             scrypto_encode(&WorktopAssertContainsNonFungiblesInput {
                 resource_address,
@@ -157,13 +171,14 @@ impl Worktop {
     }
 
     pub fn sys_drain<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        &self,
         api: &mut Y,
     ) -> Result<Vec<Bucket>, E>
     where
         Y: ClientApi<E>,
     {
         let rtn = api.call_method(
-            RENodeId::Worktop,
+            RENodeId::Object(self.0),
             WORKTOP_DRAIN_IDENT,
             scrypto_encode(&WorktopDrainInput {}).unwrap(),
         )?;
