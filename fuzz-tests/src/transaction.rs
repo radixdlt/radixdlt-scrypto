@@ -13,11 +13,12 @@ use std::panic::AssertUnwindSafe;
 #[cfg(feature = "simple-fuzzer")]
 mod simple_fuzzer;
 
-use radix_engine::types::{ComponentAddress, EcdsaSecp256k1PublicKey};
+use radix_engine::types::{ComponentAddress, EcdsaSecp256k1PublicKey, ResourceAddress};
 use radix_engine_interface::blueprints::resource::{FromPublicKey, NonFungibleGlobalId};
 use scrypto_unit::TestRunner;
+use transaction::model::Instruction;
 use transaction::model::TransactionManifest;
-use transaction::signing::EcdsaSecp256k1PrivateKey;
+use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 
 struct Account {
     public_key: EcdsaSecp256k1PublicKey,
@@ -28,8 +29,7 @@ struct Account {
 struct Fuzzer {
     runner: TestRunner,
     accounts: Vec<Account>,
-    //    fungible_resource: [ResourceAddress; 2],
-    //    non_fungible_resource: [ResourceAddress; 2],
+    resources: Vec<ResourceAddress>,
 }
 
 impl Fuzzer {
@@ -46,14 +46,101 @@ impl Fuzzer {
                 }
             })
             .collect();
+        let resources: Vec<ResourceAddress> = vec![
+            runner.create_fungible_resource(1000.into(), 18, accounts[0].address),
+            runner.create_non_fungible_resource(accounts[0].address),
+        ];
 
-        Self { runner, accounts }
+        println!("resources = {:?}", resources);
+
+        Self {
+            runner,
+            accounts,
+            resources,
+        }
+    }
+
+    // pick account from the preallocated pool basing on the input data
+    fn get_account(&mut self, data: &[u8]) -> Option<ComponentAddress> {
+        let len = data.len();
+        if len >= 2 && data[len - 2] % 2 == 0 {
+            let idx = *data.last().unwrap() as usize % self.accounts.len();
+            return Some(self.accounts[idx].address);
+        }
+        None
+    }
+
+    // pick resource from the preallocated pool basing on the input data
+    fn get_resource(&mut self, data: &[u8]) -> Option<ResourceAddress> {
+        let len = data.len();
+        if len >= 2 && data[len - 2] % 2 == 0 {
+            let idx = *data.last().unwrap() as usize % self.accounts.len();
+            return Some(self.resources[idx]);
+        }
+        None
+    }
+
+    // Replace some data in the manifest in quasi-random manner using some preallocated resources.
+    // This is to let fuzzing go "deeper" into the manifest instructions and not to reject the
+    // transaction on the very early stage
+    fn mutate_manifest(&mut self, manifest: &mut TransactionManifest) {
+        for i in &mut manifest.instructions {
+            match i {
+                Instruction::CallMethod {
+                    component_address, ..
+                }
+                | Instruction::SetComponentRoyaltyConfig {
+                    component_address, ..
+                }
+                | Instruction::ClaimComponentRoyalty { component_address } => {
+                    if let Some(address) = self.get_account(&component_address.to_array_without_entity_id()) {
+                        *component_address = address;
+                    }
+                }
+                Instruction::TakeFromWorktop { resource_address }
+                | Instruction::TakeFromWorktopByAmount {
+                    resource_address, ..
+                }
+                | Instruction::TakeFromWorktopByIds {
+                    resource_address, ..
+                }
+                | Instruction::AssertWorktopContains { resource_address }
+                | Instruction::AssertWorktopContainsByAmount {
+                    resource_address, ..
+                }
+                | Instruction::AssertWorktopContainsByIds {
+                    resource_address, ..
+                }
+                | Instruction::CreateProofFromAuthZone { resource_address }
+                | Instruction::CreateProofFromAuthZoneByAmount {
+                    resource_address, ..
+                }
+                | Instruction::CreateProofFromAuthZoneByIds {
+                    resource_address, ..
+                }
+                | Instruction::MintFungible {
+                    resource_address, ..
+                }
+                | Instruction::MintNonFungible {
+                    resource_address, ..
+                }
+                | Instruction::MintUuidNonFungible {
+                    resource_address, ..
+                } => {
+                    if let Some(address) = self.get_resource(&resource_address.to_array_without_entity_id()) {
+                        *resource_address = address;
+                    }
+                }
+                _ => {}
+            }
+        }
     }
 
     fn fuzz_tx_manifest(&mut self, data: &[u8]) -> TxStatus {
         let result = TransactionManifest::from_slice(data);
         match result {
-            Ok(manifest) => {
+            Ok(mut manifest) => {
+                self.mutate_manifest(&mut manifest);
                 let _receipt = self.runner.execute_manifest(
                     manifest,
                     vec![NonFungibleGlobalId::from_public_key(
@@ -82,7 +169,7 @@ enum TxStatus {
 fn test_fuzz_tx() {
     let mut fuzzer = Fuzzer::new();
     let data = std::fs::read(
-        "afl_in/manifest_e057a3853ccb0e33c8b61f2cde91f655473b202c6c095e2202c2ad93caee4e34.raw",
+        "afl/transaction/in/manifest_e057a3853ccb0e33c8b61f2cde91f655473b202c6c095e2202c2ad93caee4e34.raw",
     )
     .unwrap();
     fuzzer.fuzz_tx_manifest(&data);
