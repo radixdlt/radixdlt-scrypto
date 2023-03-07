@@ -41,8 +41,8 @@ wabt = { version = "0.10.0" }
 
 [features]
 # You should enable either `std` or `alloc`
-default = ["std"]
-std = ["sbor/std", "native-sdk/std", "wasmi/std", "transaction/std", "radix-engine-interface/std", "utils/std", "moka"]
+default = ["std", "moka"]
+std = ["sbor/std", "native-sdk/std", "wasmi/std", "transaction/std", "radix-engine-interface/std", "utils/std"]
 alloc = ["sbor/alloc", "native-sdk/alloc", "transaction/alloc", "radix-engine-interface/alloc", "utils/alloc", "lru/hashbrown"]
 
 # Enables heap memory and CPU cycles resource tracing - available only for Linux OS on x86 arch.
