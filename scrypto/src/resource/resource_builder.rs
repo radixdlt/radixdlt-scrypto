@@ -685,7 +685,7 @@ impl<A: ConfiguredAuth>
                         entries: entries
                             .into_iter()
                             .map(|data| {
-                                (data.immutable_data().unwrap(), data.mutable_data().unwrap())
+                                scrypto_encode(&data).unwrap()
                             })
                             .collect(),
                     },
@@ -708,13 +708,13 @@ impl<A: ConfiguredAuth>
 
 fn map_entries<T: IntoIterator<Item = (Y, V)>, V: NonFungibleData, Y: IsNonFungibleLocalId>(
     entries: T,
-) -> BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)> {
+) -> BTreeMap<NonFungibleLocalId, Vec<u8>> {
     entries
         .into_iter()
         .map(|(id, data)| {
             (
                 id.into(),
-                (data.immutable_data().unwrap(), data.mutable_data().unwrap()),
+                scrypto_encode(&data).unwrap(),
             )
         })
         .collect()

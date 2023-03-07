@@ -331,7 +331,7 @@ impl ManifestBuilder {
         if let Some(initial_supply) = initial_supply {
             let entries = initial_supply
                 .into_iter()
-                .map(|(id, e)| (id, (e.immutable_data().unwrap(), e.mutable_data().unwrap())))
+                .map(|(id, e)| (id, scrypto_encode(&e).unwrap()))
                 .collect();
 
             self.add_instruction(Instruction::CallFunction {
@@ -700,7 +700,7 @@ impl ManifestBuilder {
     {
         let entries = entries
             .into_iter()
-            .map(|(id, e)| (id, (e.immutable_data().unwrap(), e.mutable_data().unwrap())))
+            .map(|(id, e)| (id, scrypto_encode(&e).unwrap()))
             .collect();
         self.add_instruction(Instruction::MintNonFungible {
             resource_address,
@@ -720,7 +720,7 @@ impl ManifestBuilder {
     {
         let entries = entries
             .into_iter()
-            .map(|e| (e.immutable_data().unwrap(), e.mutable_data().unwrap()))
+            .map(|e| scrypto_encode(&e).unwrap())
             .collect();
         self.add_instruction(Instruction::MintUuidNonFungible {
             resource_address,

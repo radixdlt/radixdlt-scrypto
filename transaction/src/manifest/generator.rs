@@ -990,7 +990,7 @@ fn generate_non_fungible_mint_params(
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
     blobs: &BTreeMap<Hash, Vec<u8>>,
-) -> Result<BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>, GeneratorError> {
+) -> Result<BTreeMap<NonFungibleLocalId, Vec<u8>>, GeneratorError> {
     match value {
         ast::Value::Map(key_type, value_type, elements) => {
             if key_type != &ast::Type::NonFungibleLocalId {
@@ -1029,6 +1029,7 @@ fn generate_non_fungible_mint_params(
                             blobs,
                         )?)
                         .map_err(GeneratorError::ArgumentEncodingError)?;
+                        /*
                         let mutable_data = manifest_encode(&generate_args_from_tuple(
                             &values[1],
                             resolver,
@@ -1036,8 +1037,9 @@ fn generate_non_fungible_mint_params(
                             blobs,
                         )?)
                         .map_err(GeneratorError::ArgumentEncodingError)?;
+                         */
 
-                        (immutable_data, mutable_data)
+                        immutable_data
                     }
                     v => invalid_type!(v, ast::Type::Tuple)?,
                 };
@@ -1055,7 +1057,7 @@ fn generate_uuid_non_fungible_mint_params(
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
     blobs: &BTreeMap<Hash, Vec<u8>>,
-) -> Result<Vec<(Vec<u8>, Vec<u8>)>, GeneratorError> {
+) -> Result<Vec<Vec<u8>>, GeneratorError> {
     match value {
         ast::Value::Array(kind, elements) => {
             if kind != &ast::Type::Tuple {
@@ -1077,6 +1079,7 @@ fn generate_uuid_non_fungible_mint_params(
                             });
                         }
 
+                        /*
                         let immutable_data = manifest_encode(&generate_args_from_tuple(
                             &values[0],
                             resolver,
@@ -1084,6 +1087,7 @@ fn generate_uuid_non_fungible_mint_params(
                             blobs,
                         )?)
                         .map_err(GeneratorError::ArgumentEncodingError)?;
+                         */
                         let mutable_data = manifest_encode(&generate_args_from_tuple(
                             &values[1],
                             resolver,
@@ -1092,7 +1096,7 @@ fn generate_uuid_non_fungible_mint_params(
                         )?)
                         .map_err(GeneratorError::ArgumentEncodingError)?;
 
-                        mint_params.push((immutable_data, mutable_data));
+                        mint_params.push(mutable_data);
                     }
                     v => invalid_type!(v, ast::Type::Tuple)?,
                 }
@@ -1574,10 +1578,7 @@ mod tests {
                 resource_address: resource,
                 entries: BTreeMap::from([(
                     NonFungibleLocalId::integer(1),
-                    (
-                        manifest_args!(String::from("Hello World"), dec!("12")),
-                        manifest_args!(12u8, 19u128)
-                    )
+                    manifest_args!(String::from("Hello World"), dec!("12")),
                 )])
             },
         );
@@ -1662,10 +1663,7 @@ mod tests {
                     ]),
                     entries: BTreeMap::from([(
                         NonFungibleLocalId::integer(1),
-                        (
-                            manifest_args!(String::from("Hello World"), dec!("12")),
-                            manifest_args!(12u8, 19u128)
-                        )
+                        manifest_args!(String::from("Hello World"), dec!("12")),
                     )]),
                 })
                 .unwrap(),
@@ -1750,10 +1748,9 @@ mod tests {
             "#,
             Instruction::MintUuidNonFungible {
                 resource_address: resource,
-                entries: Vec::from([(
+                entries: Vec::from([
                     manifest_args!(String::from("Hello World"), dec!("12")),
-                    manifest_args!(12u8, 19u128)
-                )])
+                ])
             },
         );
     }

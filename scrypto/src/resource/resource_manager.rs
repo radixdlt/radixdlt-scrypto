@@ -255,7 +255,7 @@ impl ResourceManager {
             .unwrap();
     }
 
-    fn get_non_fungible_data_internal(&self, id: NonFungibleLocalId) -> [Vec<u8>; 2] {
+    fn get_non_fungible_data_internal(&self, id: NonFungibleLocalId) -> Vec<u8> {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
@@ -347,7 +347,7 @@ impl ResourceManager {
         let mut entries = BTreeMap::new();
         entries.insert(
             id.clone(),
-            (data.immutable_data().unwrap(), data.mutable_data().unwrap()),
+            scrypto_encode(&data).unwrap(),
         );
         let mut env = ScryptoEnv;
         let rtn = env
@@ -364,7 +364,7 @@ impl ResourceManager {
     /// Mints uuid non-fungible resources
     pub fn mint_uuid_non_fungible<T: NonFungibleData>(&self, data: T) -> Bucket {
         let mut entries = Vec::new();
-        entries.push((data.immutable_data().unwrap(), data.mutable_data().unwrap()));
+        entries.push(scrypto_encode(&data).unwrap());
         let mut env = ScryptoEnv;
 
         let rtn = env
@@ -384,7 +384,7 @@ impl ResourceManager {
     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
     pub fn get_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleLocalId) -> T {
         let non_fungible = self.get_non_fungible_data_internal(id.clone());
-        T::decode(&non_fungible[0], &non_fungible[1]).unwrap()
+        scrypto_decode(&non_fungible).unwrap()
     }
 
     /// Updates the mutable part of a non-fungible unit.
@@ -396,6 +396,6 @@ impl ResourceManager {
         id: &NonFungibleLocalId,
         new_data: T,
     ) {
-        self.update_non_fungible_data_internal(id.clone(), new_data.mutable_data().unwrap())
+        self.update_non_fungible_data_internal(id.clone(), scrypto_encode(&new_data).unwrap())
     }
 }

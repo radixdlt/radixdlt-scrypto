@@ -152,12 +152,12 @@ pub enum Instruction {
 
     MintNonFungible {
         resource_address: ResourceAddress,
-        entries: BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>,
+        entries: BTreeMap<NonFungibleLocalId, Vec<u8>>,
     },
 
     MintUuidNonFungible {
         resource_address: ResourceAddress,
-        entries: Vec<(Vec<u8>, Vec<u8>)>,
+        entries: Vec<Vec<u8>>,
     },
 
     AssertAccessRule {

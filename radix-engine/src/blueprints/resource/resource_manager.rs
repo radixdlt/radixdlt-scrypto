@@ -65,7 +65,7 @@ pub enum ResourceManagerError {
 fn build_non_fungible_resource_manager_substate_with_initial_supply<Y>(
     resource_address: ResourceAddress,
     id_type: NonFungibleIdType,
-    entries: BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>,
+    entries: BTreeMap<NonFungibleLocalId, Vec<u8>>,
     _non_fungible_schema: NonFungibleSchema,
     api: &mut Y,
 ) -> Result<(ResourceManagerSubstate, Bucket), RuntimeError>
@@ -105,9 +105,8 @@ where
                 api.kernel_get_substate_ref_mut(non_fungible_handle)?;
 
             // FIXME: verify data
-            let non_fungible = NonFungible::new(data.0.clone(), data.1.clone());
-            let value: ScryptoValue =
-                scrypto_decode(&scrypto_encode(&non_fungible).unwrap()).unwrap();
+            //let non_fungible = NonFungible::new(data.0.clone(), data.1.clone());
+            let value: ScryptoValue = scrypto_decode(data).unwrap();
 
             *non_fungible_mut = Option::Some(value);
             api.sys_drop_lock(non_fungible_handle)?;
@@ -841,7 +840,8 @@ impl ResourceManagerBlueprint {
                     ));
                 }
 
-                let non_fungible = NonFungible::new(data.0, data.1);
+                //let non_fungible = NonFungible::new(data.0, data.1);
+                let non_fungible: ScryptoValue = scrypto_decode(&data).unwrap();
                 ids.insert(id.clone());
                 non_fungibles.insert(id, non_fungible);
             }
@@ -894,9 +894,9 @@ impl ResourceManagerBlueprint {
                 }
 
                 // FIXME: verify data
-                let value: ScryptoValue =
-                    scrypto_decode(&scrypto_encode(&non_fungible).unwrap()).unwrap();
-                *non_fungible_mut = Option::Some(value);
+                //let value: ScryptoValue =
+                    //scrypto_decode(&scrypto_encode(&non_fungible).unwrap()).unwrap();
+                *non_fungible_mut = Option::Some(non_fungible);
             }
 
             api.sys_drop_lock(non_fungible_handle)?;
@@ -976,9 +976,9 @@ impl ResourceManagerBlueprint {
                         api.kernel_get_substate_ref_mut(non_fungible_handle)?;
 
                     // FIXME: verify data
-                    let non_fungible = NonFungible::new(data.0, data.1);
-                    let value: ScryptoValue =
-                        scrypto_decode(&scrypto_encode(&non_fungible).unwrap()).unwrap();
+                    //let non_fungible = NonFungible::new(data.0, data.1);
+                    let value: ScryptoValue = scrypto_decode(&data).unwrap();
+                        //scrypto_decode(&scrypto_encode(&non_fungible).unwrap()).unwrap();
                     *non_fungible_mut = Option::Some(value);
 
                     api.sys_drop_lock(non_fungible_handle)?;

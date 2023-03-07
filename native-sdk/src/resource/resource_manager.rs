@@ -111,7 +111,7 @@ impl ResourceManager {
         let mut entries = BTreeMap::new();
         entries.insert(
             local_id,
-            (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
+            scrypto_encode(&()).unwrap(),
         );
 
         let rtn = api.call_method(
@@ -134,7 +134,7 @@ impl ResourceManager {
     {
         // TODO: Implement UUID generation in ResourceManager
         let mut entries = Vec::new();
-        entries.push((scrypto_encode(&data).unwrap(), scrypto_encode(&()).unwrap()));
+        entries.push(scrypto_encode(&()).unwrap());
 
         let rtn = api.call_method(
             RENodeId::GlobalObject(self.0.into()),

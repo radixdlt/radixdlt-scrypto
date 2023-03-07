@@ -71,7 +71,7 @@ pub struct ResourceManagerCreateNonFungibleWithInitialSupplyInput {
     pub non_fungible_schema: NonFungibleSchema,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    pub entries: BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>,
+    pub entries: BTreeMap<NonFungibleLocalId, Vec<u8>>,
 }
 
 pub const RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT: &str =
@@ -94,7 +94,7 @@ pub struct ResourceManagerCreateUuidNonFungibleWithInitialSupplyInput {
     pub non_fungible_schema: NonFungibleSchema,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    pub entries: Vec<(Vec<u8>, Vec<u8>)>,
+    pub entries: Vec<Vec<u8>>,
 }
 
 pub const RESOURCE_MANAGER_BURN_BUCKET_IDENT: &str = "burn_bucket";
@@ -155,14 +155,14 @@ pub const RESOURCE_MANAGER_MINT_NON_FUNGIBLE: &str = "mint_non_fungible";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct ResourceManagerMintNonFungibleInput {
-    pub entries: BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>,
+    pub entries: BTreeMap<NonFungibleLocalId, Vec<u8>>,
 }
 
 pub const RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE: &str = "mint_uuid_non_fungible";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct ResourceManagerMintUuidNonFungibleInput {
-    pub entries: Vec<(Vec<u8>, Vec<u8>)>,
+    pub entries: Vec<Vec<u8>>,
 }
 
 pub const RESOURCE_MANAGER_MINT_FUNGIBLE: &str = "mint_fungible";

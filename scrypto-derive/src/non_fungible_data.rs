@@ -74,6 +74,7 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
                 let m_ids2 = m_ids.clone();
                 let m_types = m.iter().map(|f| &f.ty);
 
+                /*
                 quote! {
                     impl ::scrypto::prelude::NonFungibleData for #ident {
                         fn decode(immutable_data: &[u8], mutable_data: &[u8]) -> Result<Self, ::sbor::DecodeError> {
@@ -129,6 +130,12 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
 
                             Ok(bytes)
                         }
+                    }
+                }
+                 */
+
+                quote! {
+                    impl ::scrypto::prelude::NonFungibleData for #ident {
                     }
                 }
             }
