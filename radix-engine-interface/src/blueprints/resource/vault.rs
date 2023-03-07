@@ -1,9 +1,12 @@
+use crate::api::types::*;
 use crate::blueprints::resource::*;
 use crate::data::scrypto::model::*;
+use crate::data::scrypto::ScryptoCustomTypeKind;
+use crate::data::scrypto::ScryptoCustomValueKind;
 use crate::math::*;
 use crate::*;
-use sbor::rust::collections::BTreeSet;
-use sbor::rust::fmt::Debug;
+use sbor::rust::prelude::*;
+use sbor::*;
 
 pub const VAULT_BLUEPRINT: &str = "Vault";
 
@@ -119,3 +122,52 @@ pub struct VaultUnlockNonFungiblesInput {
 }
 
 pub const VAULT_UNLOCK_NON_FUNGIBLES_IDENT: &str = "Vault_unlock_non_fungibles";
+
+//========
+// Stub
+//========
+
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub struct Vault(pub ObjectId);
+
+//========
+// binary
+//========
+
+impl Categorize<ScryptoCustomValueKind> for Vault {
+    #[inline]
+    fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
+        ValueKind::Custom(ScryptoCustomValueKind::Own)
+    }
+}
+
+impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for Vault {
+    #[inline]
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_value_kind(Self::value_kind())
+    }
+
+    #[inline]
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        Own::Vault(self.0).encode_body(encoder)
+    }
+}
+
+impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for Vault {
+    fn decode_body_with_value_kind(
+        decoder: &mut D,
+        value_kind: ValueKind<ScryptoCustomValueKind>,
+    ) -> Result<Self, DecodeError> {
+        let o = Own::decode_body_with_value_kind(decoder, value_kind)?;
+        match o {
+            Own::Vault(vault_id) => Ok(Self(vault_id)),
+            _ => Err(DecodeError::InvalidCustomValue),
+        }
+    }
+}
+
+impl Describe<ScryptoCustomTypeKind> for Vault {
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(
+        crate::data::scrypto::well_known_scrypto_custom_types::OWN_VAULT_ID,
+    );
+}

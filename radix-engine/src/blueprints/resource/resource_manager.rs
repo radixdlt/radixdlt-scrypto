@@ -20,9 +20,6 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::schema::BlueprintSchema;
-use radix_engine_interface::schema::FunctionSchema;
-use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::*;
 
 use super::events::resource_manager::BurnResourceEvent;
@@ -224,7 +221,7 @@ fn build_access_rules(
     resman_access_rules.set_group_and_mutability(
         MethodKey::new(
             NodeModuleId::SELF,
-            RESOURCE_MANAGER_MINT_NON_FUNGIBLE.to_string(),
+            RESOURCE_MANAGER_MINT_NON_FUNGIBLE_IDENT.to_string(),
         ),
         "mint".to_string(),
         DenyAll,
@@ -232,7 +229,7 @@ fn build_access_rules(
     resman_access_rules.set_group_and_mutability(
         MethodKey::new(
             NodeModuleId::SELF,
-            RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE.to_string(),
+            RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE_IDENT.to_string(),
         ),
         "mint".to_string(),
         DenyAll,
@@ -240,7 +237,7 @@ fn build_access_rules(
     resman_access_rules.set_group_and_mutability(
         MethodKey::new(
             NodeModuleId::SELF,
-            RESOURCE_MANAGER_MINT_FUNGIBLE.to_string(),
+            RESOURCE_MANAGER_MINT_FUNGIBLE_IDENT.to_string(),
         ),
         "mint".to_string(),
         DenyAll,
@@ -476,37 +473,6 @@ where
 pub struct ResourceManagerBlueprint;
 
 impl ResourceManagerBlueprint {
-    pub fn schema() -> PackageSchema {
-        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-
-        let mut substates = Vec::new();
-        substates.push(aggregator.add_child_type_and_descendents::<AccessControllerSubstate>());
-
-        let mut functions = BTreeMap::new();
-        functions.insert(
-            ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
-            FunctionSchema {
-                receiver: None,
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerCreateGlobalInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerCreateGlobalOutput>(),
-                export_name: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
-            },
-        );
-
-        let schema = generate_full_schema(aggregator);
-        PackageSchema {
-            blueprints: btreemap!(
-                RESOURCE_MANAGER_BLUEPRINT.to_string() => BlueprintSchema {
-                    schema,
-                    substates,
-                    functions
-                }
-            ),
-        }
-    }
-
     pub(crate) fn create_non_fungible<Y>(
         input: IndexedScryptoValue,
         api: &mut Y,

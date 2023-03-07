@@ -7,10 +7,241 @@ use crate::types::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::schema::BlueprintSchema;
+use radix_engine_interface::schema::FunctionSchema;
+use radix_engine_interface::schema::PackageSchema;
 
 pub struct ResourceManagerNativePackage;
 
 impl ResourceManagerNativePackage {
+    pub fn schema() -> PackageSchema {
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+
+        let mut substates = Vec::new();
+        substates.push(aggregator.add_child_type_and_descendents::<ResourceManagerSubstate>());
+
+        let mut functions = BTreeMap::new();
+        functions.insert(
+            RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerCreateNonFungibleInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerCreateNonFungibleOutput>(),
+                export_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerCreateNonFungibleWithAddressInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerCreateNonFungibleWithAddressOutput>(),
+                export_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerCreateNonFungibleWithInitialSupplyInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerCreateNonFungibleWithInitialSupplyOutput>(),
+                export_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            RESOURCE_MANAGER_CREATE_UUID_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerCreateUuidNonFungibleWithInitialSupplyInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerCreateUuidNonFungibleWithInitialSupplyOutput>(),
+                export_name: RESOURCE_MANAGER_CREATE_UUID_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerCreateFungibleInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerCreateFungibleOutput>(),
+                export_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerCreateFungibleWithInitialSupplyInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerCreateFungibleWithInitialSupplyOutput>(),
+                export_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerCreateFungibleWithInitialSupplyAndAddressOutput>(),
+                export_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            RESOURCE_MANAGER_BURN_BUCKET_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerBurnBucketInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerBurnBucketOutput>(),
+                export_name: RESOURCE_MANAGER_BURN_BUCKET_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            RESOURCE_MANAGER_MINT_NON_FUNGIBLE_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerMintNonFungibleInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerMintNonFungibleOutput>(),
+                export_name: RESOURCE_MANAGER_MINT_NON_FUNGIBLE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerMintUuidNonFungibleInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerMintUuidNonFungibleOutput>(),
+                export_name: RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            RESOURCE_MANAGER_MINT_FUNGIBLE_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerMintFungibleInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerMintFungibleOutput>(),
+                export_name: RESOURCE_MANAGER_MINT_FUNGIBLE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            RESOURCE_MANAGER_BURN_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<ResourceManagerBurnInput>(),
+                output: aggregator.add_child_type_and_descendents::<ResourceManagerBurnOutput>(),
+                export_name: RESOURCE_MANAGER_BURN_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            RESOURCE_MANAGER_CREATE_BUCKET_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerCreateBucketInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerCreateBucketOutput>(),
+                export_name: RESOURCE_MANAGER_CREATE_BUCKET_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            RESOURCE_MANAGER_CREATE_VAULT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerCreateVaultInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerCreateVaultOutput>(),
+                export_name: RESOURCE_MANAGER_CREATE_VAULT_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerUpdateNonFungibleDataInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerUpdateNonFungibleDataOutput>(),
+                export_name: RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            RESOURCE_MANAGER_NON_FUNGIBLE_EXISTS_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerNonFungibleExistsInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerNonFungibleExistsOutput>(),
+                export_name: RESOURCE_MANAGER_NON_FUNGIBLE_EXISTS_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerGetResourceTypeInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerGetResourceTypeOutput>(),
+                export_name: RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerGetTotalSupplyInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerGetTotalSupplyOutput>(),
+                export_name: RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerGetNonFungibleInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<ResourceManagerGetNonFungibleOutput>(),
+                export_name: RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT.to_string(),
+            },
+        );
+
+        let schema = generate_full_schema(aggregator);
+        let resource_manager_schema = BlueprintSchema {
+            schema,
+            substates,
+            functions,
+        };
+        PackageSchema {
+            blueprints: btreemap!(
+                RESOURCE_MANAGER_BLUEPRINT.to_string() => resource_manager_schema
+            ),
+        }
+    }
+
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<RENodeId>,

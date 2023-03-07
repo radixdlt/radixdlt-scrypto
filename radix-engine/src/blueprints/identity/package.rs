@@ -24,18 +24,16 @@ impl IdentityNativePackage {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut substates = Vec::new();
-        substates.push(aggregator.add_child_type_and_descendents::<AccessControllerSubstate>());
+        substates.push(aggregator.add_child_type_and_descendents::<Identity>());
 
         let mut functions = BTreeMap::new();
         functions.insert(
-            ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
+            IDENTITY_CREATE_IDENT.to_string(),
             FunctionSchema {
                 receiver: None,
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerCreateGlobalInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerCreateGlobalOutput>(),
-                export_name: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
+                input: aggregator.add_child_type_and_descendents::<IdentityCreateInput>(),
+                output: aggregator.add_child_type_and_descendents::<IdentityCreateOutput>(),
+                export_name: IDENTITY_CREATE_IDENT.to_string(),
             },
         );
 
@@ -102,6 +100,7 @@ impl IdentityNativePackage {
     }
 }
 
+#[derive(ScryptoSbor)]
 pub struct Identity;
 
 impl Identity {
