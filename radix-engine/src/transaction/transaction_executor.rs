@@ -1,9 +1,7 @@
-use crate::blueprints::transaction_processor::TransactionProcessorRunInvocation;
 use crate::errors::*;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::interpreters::ScryptoInterpreter;
 use crate::kernel::kernel::Kernel;
-use crate::kernel::kernel_api::KernelInvokeApi;
 use crate::kernel::module_mixer::KernelModuleMixer;
 use crate::kernel::track::{PreExecutionError, Track};
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
@@ -12,6 +10,13 @@ use crate::transaction::*;
 use crate::types::*;
 use crate::wasm::*;
 use radix_engine_constants::*;
+use radix_engine_interface::api::package::{
+    TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
+};
+use radix_engine_interface::api::ClientPackageApi;
+use radix_engine_interface::blueprints::transaction_processor::{
+    InstructionOutput, TransactionProcessorRunInput,
+};
 use sbor::rust::borrow::Cow;
 use transaction::model::*;
 
@@ -257,12 +262,22 @@ where
             kernel.initialize().expect("Failed to initialize kernel");
 
             // Invoke transaction processor
-            let invoke_result = kernel.kernel_invoke(TransactionProcessorRunInvocation {
-                transaction_hash: transaction_hash.clone(),
-                runtime_validations: Cow::Borrowed(executable.runtime_validations()),
-                instructions: Cow::Owned(manifest_encode(executable.instructions()).unwrap()),
-                blobs: Cow::Borrowed(executable.blobs()),
-            });
+            let invoke_result = kernel
+                .call_function(
+                    TRANSACTION_PROCESSOR_PACKAGE,
+                    TRANSACTION_PROCESSOR_BLUEPRINT,
+                    TRANSACTION_PROCESSOR_RUN_IDENT,
+                    scrypto_encode(&TransactionProcessorRunInput {
+                        transaction_hash: transaction_hash.clone(),
+                        runtime_validations: Cow::Borrowed(executable.runtime_validations()),
+                        instructions: Cow::Owned(
+                            manifest_encode(executable.instructions()).unwrap(),
+                        ),
+                        blobs: Cow::Borrowed(executable.blobs()),
+                    })
+                    .unwrap(),
+                )
+                .map(|x| scrypto_decode::<Vec<InstructionOutput>>(&x).unwrap());
 
             // Teardown
             let (modules, invoke_result) = kernel.teardown(invoke_result);

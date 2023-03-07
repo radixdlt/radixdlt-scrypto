@@ -37,14 +37,6 @@ use transaction::errors::ManifestIdAllocationError;
 use transaction::model::*;
 use transaction::validation::*;
 
-#[derive(Debug, ScryptoSbor)]
-pub struct TransactionProcessorRunInvocation<'a> {
-    pub transaction_hash: Hash,
-    pub runtime_validations: Cow<'a, [RuntimeValidationRequest]>,
-    pub instructions: Cow<'a, Vec<u8>>,
-    pub blobs: Cow<'a, [Vec<u8>]>,
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TransactionProcessorError {
     TransactionEpochNotYetValid {
@@ -61,14 +53,6 @@ pub enum TransactionProcessorError {
     IdAllocationError(ManifestIdAllocationError),
     InvalidCallData(DecodeError),
     InvalidPackageSchema(DecodeError),
-}
-
-impl<'a> Invocation for TransactionProcessorRunInvocation<'a> {
-    type Output = Vec<InstructionOutput>;
-
-    fn debug_identifier(&self) -> InvocationDebugIdentifier {
-        InvocationDebugIdentifier::Transaction
-    }
 }
 
 fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFrameUpdate) {
@@ -231,10 +215,10 @@ fn extract_refs_from_value(value: &ManifestValue, collector: &mut CallFrameUpdat
     }
 }
 
-impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
-    type Exec = Self;
+pub struct TransactionProcessorBlueprint;
 
-    fn resolve<D: KernelSubstateApi>(
+impl TransactionProcessorBlueprint {
+    pub fn resolve<D: KernelSubstateApi>(
         self,
         _api: &mut D,
     ) -> Result<ResolvedInvocation<Self::Exec>, RuntimeError> {
@@ -267,15 +251,7 @@ impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
         Ok(resolved)
     }
 
-    fn payload_size(&self) -> usize {
-        0
-    }
-}
-
-impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
-    type Output = Vec<InstructionOutput>;
-
-    fn execute<Y, W: WasmEngine>(
+    pub fn execute<Y, W: WasmEngine>(
         self,
         _args: IndexedScryptoValue,
         api: &mut Y,

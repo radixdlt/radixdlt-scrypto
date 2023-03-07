@@ -14,9 +14,9 @@ pub struct TransactionProcessorRunInput<'a> {
     pub blobs: Cow<'a, [Vec<u8>]>,
 }
 
-pub type TransactionProcessorCreateOutput = Vec<InstructionOutput>;
+pub type TransactionProcessorRunOutput = Vec<InstructionOutput>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Sbor)]
 pub enum InstructionOutput {
     CallReturn(Vec<u8>),
     None,

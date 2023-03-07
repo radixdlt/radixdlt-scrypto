@@ -25,6 +25,7 @@ pub const EPOCH_MANAGER_PACKAGE: PackageAddress = vanity_address!(EntityType::Pa
 pub const CLOCK_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 4);
 pub const ACCOUNT_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 5);
 pub const ACCESS_CONTROLLER_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 6);
+pub const TRANSACTION_PROCESSOR_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 7);
 pub const TRANSACTION_RUNTIME_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 8);
 pub const AUTH_ZONE_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 9);
 pub const METADATA_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 10);
