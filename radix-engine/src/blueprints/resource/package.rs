@@ -235,9 +235,464 @@ impl ResourceManagerNativePackage {
             substates,
             functions,
         };
+
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+
+        let mut substates = Vec::new();
+        substates.push(aggregator.add_child_type_and_descendents::<ResourceManagerSubstate>());
+
+        let mut functions = BTreeMap::new();
+        functions.insert(
+            VAULT_LOCK_FEE_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<VaultLockFeeInput>(),
+                output: aggregator.add_child_type_and_descendents::<VaultLockFeeOutput>(),
+                export_name: VAULT_LOCK_FEE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_TAKE_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<VaultTakeInput>(),
+                output: aggregator.add_child_type_and_descendents::<VaultTakeOutput>(),
+                export_name: VAULT_TAKE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_TAKE_NON_FUNGIBLES_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<VaultTakeNonFungiblesInput>(),
+                output: aggregator.add_child_type_and_descendents::<VaultTakeNonFungiblesOutput>(),
+                export_name: VAULT_TAKE_NON_FUNGIBLES_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_RECALL_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<VaultRecallInput>(),
+                output: aggregator.add_child_type_and_descendents::<VaultRecallOutput>(),
+                export_name: VAULT_RECALL_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_RECALL_NON_FUNGIBLES_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<VaultRecallNonFungiblesInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<VaultRecallNonFungiblesOutput>(),
+                export_name: VAULT_RECALL_NON_FUNGIBLES_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_PUT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<VaultPutInput>(),
+                output: aggregator.add_child_type_and_descendents::<VaultPutOutput>(),
+                export_name: VAULT_PUT_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_GET_AMOUNT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<VaultGetAmountInput>(),
+                output: aggregator.add_child_type_and_descendents::<VaultGetAmountOutput>(),
+                export_name: VAULT_GET_AMOUNT_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_GET_RESOURCE_ADDRESS_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<VaultGetResourceAddressInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<VaultGetResourceAddressOutput>(),
+                export_name: VAULT_GET_RESOURCE_ADDRESS_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator
+                    .add_child_type_and_descendents::<VaultGetNonFungibleLocalIdsInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<VaultGetNonFungibleLocalIdsOutput>(),
+                export_name: VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_CREATE_PROOF_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<VaultCreateProofInput>(),
+                output: aggregator.add_child_type_and_descendents::<VaultCreateProofOutput>(),
+                export_name: VAULT_CREATE_PROOF_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<VaultCreateProofByAmountInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<VaultCreateProofByAmountOutput>(),
+                export_name: VAULT_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_CREATE_PROOF_BY_IDS_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<VaultCreateProofByIdsInput>(),
+                output: aggregator.add_child_type_and_descendents::<VaultCreateProofByIdsOutput>(),
+                export_name: VAULT_CREATE_PROOF_BY_IDS_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_LOCK_AMOUNT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<VaultLockAmountInput>(),
+                output: aggregator.add_child_type_and_descendents::<VaultLockAmountOutput>(),
+                export_name: VAULT_LOCK_AMOUNT_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_LOCK_NON_FUNGIBLES_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<VaultLockNonFungiblesInput>(),
+                output: aggregator.add_child_type_and_descendents::<VaultLockNonFungiblesOutput>(),
+                export_name: VAULT_LOCK_NON_FUNGIBLES_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_UNLOCK_AMOUNT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<VaultUnlockAmountInput>(),
+                output: aggregator.add_child_type_and_descendents::<VaultUnlockAmountOutput>(),
+                export_name: VAULT_UNLOCK_AMOUNT_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VAULT_UNLOCK_NON_FUNGIBLES_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<VaultUnlockNonFungiblesInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<VaultUnlockNonFungiblesOutput>(),
+                export_name: VAULT_UNLOCK_NON_FUNGIBLES_IDENT.to_string(),
+            },
+        );
+
+        let schema = generate_full_schema(aggregator);
+        let vault_schema = BlueprintSchema {
+            schema,
+            substates,
+            functions,
+        };
+
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+
+        let mut substates = Vec::new();
+        substates.push(aggregator.add_child_type_and_descendents::<ResourceManagerSubstate>());
+
+        let mut functions = BTreeMap::new();
+        functions.insert(
+            BUCKET_DROP_EMPTY_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<BucketDropEmptyInput>(),
+                output: aggregator.add_child_type_and_descendents::<BucketDropEmptyOutput>(),
+                export_name: BUCKET_DROP_EMPTY_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            BUCKET_PUT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<BucketPutInput>(),
+                output: aggregator.add_child_type_and_descendents::<BucketPutOutput>(),
+                export_name: BUCKET_PUT_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            BUCKET_TAKE_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<BucketTakeInput>(),
+                output: aggregator.add_child_type_and_descendents::<BucketTakeOutput>(),
+                export_name: BUCKET_TAKE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            BUCKET_TAKE_NON_FUNGIBLES_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<BucketTakeNonFungiblesInput>(),
+                output: aggregator.add_child_type_and_descendents::<BucketTakeNonFungiblesOutput>(),
+                export_name: BUCKET_TAKE_NON_FUNGIBLES_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            BUCKET_GET_AMOUNT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<BucketGetAmountInput>(),
+                output: aggregator.add_child_type_and_descendents::<BucketGetAmountOutput>(),
+                export_name: BUCKET_GET_AMOUNT_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator
+                    .add_child_type_and_descendents::<BucketGetNonFungibleLocalIdsInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<BucketGetNonFungibleLocalIdsOutput>(),
+                export_name: BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            BUCKET_GET_RESOURCE_ADDRESS_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<BucketGetResourceAddressInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<BucketGetResourceAddressOutput>(),
+                export_name: BUCKET_GET_RESOURCE_ADDRESS_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            BUCKET_CREATE_PROOF_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<BucketCreateProofInput>(),
+                output: aggregator.add_child_type_and_descendents::<BucketCreateProofOutput>(),
+                export_name: BUCKET_CREATE_PROOF_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            BUCKET_LOCK_AMOUNT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<BucketLockAmountInput>(),
+                output: aggregator.add_child_type_and_descendents::<BucketLockAmountOutput>(),
+                export_name: BUCKET_LOCK_AMOUNT_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            BUCKET_LOCK_NON_FUNGIBLES_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<BucketLockNonFungiblesInput>(),
+                output: aggregator.add_child_type_and_descendents::<BucketLockNonFungiblesOutput>(),
+                export_name: BUCKET_LOCK_NON_FUNGIBLES_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            BUCKET_UNLOCK_AMOUNT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<BucketUnlockAmountInput>(),
+                output: aggregator.add_child_type_and_descendents::<BucketUnlockAmountOutput>(),
+                export_name: BUCKET_UNLOCK_AMOUNT_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            BUCKET_UNLOCK_NON_FUNGIBLES_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<BucketUnlockNonFungiblesInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<BucketUnlockNonFungiblesOutput>(),
+                export_name: BUCKET_UNLOCK_NON_FUNGIBLES_IDENT.to_string(),
+            },
+        );
+        let schema = generate_full_schema(aggregator);
+        let bucket_schema = BlueprintSchema {
+            schema,
+            substates,
+            functions,
+        };
+
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+
+        let mut substates = Vec::new();
+        substates.push(aggregator.add_child_type_and_descendents::<ResourceManagerSubstate>());
+
+        let mut functions = BTreeMap::new();
+        functions.insert(
+            PROOF_DROP_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<ProofDropInput>(),
+                output: aggregator.add_child_type_and_descendents::<ProofDropOutput>(),
+                export_name: PROOF_DROP_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            PROOF_CLONE_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<ProofCloneInput>(),
+                output: aggregator.add_child_type_and_descendents::<ProofCloneOutput>(),
+                export_name: PROOF_CLONE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            PROOF_GET_AMOUNT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<ProofGetAmountInput>(),
+                output: aggregator.add_child_type_and_descendents::<ProofGetAmountOutput>(),
+                export_name: PROOF_GET_AMOUNT_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator
+                    .add_child_type_and_descendents::<ProofGetNonFungibleLocalIdsInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<ProofGetNonFungibleLocalIdsOutput>(),
+                export_name: PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            PROOF_GET_RESOURCE_ADDRESS_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<ProofGetResourceAddressInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<ProofGetResourceAddressOutput>(),
+                export_name: PROOF_GET_RESOURCE_ADDRESS_IDENT.to_string(),
+            },
+        );
+
+        let schema = generate_full_schema(aggregator);
+        let proof_schema = BlueprintSchema {
+            schema,
+            substates,
+            functions,
+        };
+
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+
+        let mut substates = Vec::new();
+        substates.push(aggregator.add_child_type_and_descendents::<ResourceManagerSubstate>());
+
+        let mut functions = BTreeMap::new();
+        functions.insert(
+            WORKTOP_DROP_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<WorktopDropInput>(),
+                output: aggregator.add_child_type_and_descendents::<WorktopDropOutput>(),
+                export_name: WORKTOP_DROP_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            WORKTOP_PUT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<WorktopPutInput>(),
+                output: aggregator.add_child_type_and_descendents::<WorktopPutOutput>(),
+                export_name: WORKTOP_PUT_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            WORKTOP_TAKE_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<WorktopTakeInput>(),
+                output: aggregator.add_child_type_and_descendents::<WorktopTakeOutput>(),
+                export_name: WORKTOP_TAKE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            WORKTOP_TAKE_NON_FUNGIBLES_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<WorktopTakeNonFungiblesInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<WorktopTakeNonFungiblesOutput>(),
+                export_name: WORKTOP_TAKE_NON_FUNGIBLES_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            WORKTOP_TAKE_ALL_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<WorktopTakeAllInput>(),
+                output: aggregator.add_child_type_and_descendents::<WorktopTakeAllOutput>(),
+                export_name: WORKTOP_TAKE_ALL_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            WORKTOP_ASSERT_CONTAINS_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<WorktopAssertContainsInput>(),
+                output: aggregator.add_child_type_and_descendents::<WorktopAssertContainsOutput>(),
+                export_name: WORKTOP_ASSERT_CONTAINS_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            WORKTOP_ASSERT_CONTAINS_AMOUNT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator
+                    .add_child_type_and_descendents::<WorktopAssertContainsAmountInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<WorktopAssertContainsAmountOutput>(),
+                export_name: WORKTOP_ASSERT_CONTAINS_AMOUNT_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            WORKTOP_ASSERT_CONTAINS_NON_FUNGIBLES_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator
+                    .add_child_type_and_descendents::<WorktopAssertContainsNonFungiblesInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<WorktopAssertContainsNonFungiblesOutput>(),
+                export_name: WORKTOP_ASSERT_CONTAINS_NON_FUNGIBLES_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            WORKTOP_DRAIN_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<WorktopDrainInput>(),
+                output: aggregator.add_child_type_and_descendents::<WorktopDrainOutput>(),
+                export_name: WORKTOP_DRAIN_IDENT.to_string(),
+            },
+        );
+        let schema = generate_full_schema(aggregator);
+        let worktop_schema = BlueprintSchema {
+            schema,
+            substates,
+            functions,
+        };
+
         PackageSchema {
             blueprints: btreemap!(
-                RESOURCE_MANAGER_BLUEPRINT.to_string() => resource_manager_schema
+                RESOURCE_MANAGER_BLUEPRINT.to_string() => resource_manager_schema,
+                VAULT_BLUEPRINT.to_string() => vault_schema,
+                BUCKET_BLUEPRINT.to_string() => bucket_schema,
+                PROOF_BLUEPRINT.to_string() => proof_schema,
+                WORKTOP_BLUEPRINT.to_string() =>worktop_schema
             ),
         }
     }
