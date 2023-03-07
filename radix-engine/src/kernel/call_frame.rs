@@ -149,10 +149,7 @@ impl CallFrame {
         let mut temp_references = HashSet::new();
         for node_id in references {
             // TODO: fix this ugly condition
-            if (matches!(node_id, RENodeId::GlobalComponent(_))
-                || matches!(node_id, RENodeId::GlobalPackage(_)))
-                || matches!(node_id, RENodeId::GlobalResourceManager(_))
-            {
+            if matches!(node_id, RENodeId::GlobalObject(_)) {
                 // May overwrite existing node refs (for better visibility origin)
                 self.immortal_node_refs.insert(
                     node_id,
@@ -327,35 +324,35 @@ impl CallFrame {
 
         // Add well-known global refs to current frame
         frame.add_ref(
-            RENodeId::GlobalResourceManager(RADIX_TOKEN),
+            RENodeId::GlobalObject(RADIX_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::GlobalResourceManager(SYSTEM_TOKEN),
+            RENodeId::GlobalObject(SYSTEM_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::GlobalResourceManager(ECDSA_SECP256K1_TOKEN),
+            RENodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::GlobalResourceManager(EDDSA_ED25519_TOKEN),
+            RENodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::GlobalResourceManager(PACKAGE_TOKEN),
+            RENodeId::GlobalObject(PACKAGE_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::GlobalComponent(EPOCH_MANAGER),
+            RENodeId::GlobalObject(EPOCH_MANAGER.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::GlobalComponent(CLOCK),
+            RENodeId::GlobalObject(CLOCK.into()),
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
-            RENodeId::GlobalPackage(FAUCET_PACKAGE),
+            RENodeId::GlobalObject(Address::Package(FAUCET_PACKAGE)),
             RENodeVisibilityOrigin::Normal,
         );
 

@@ -31,7 +31,7 @@ fn can_emit_basic_event_from_scrypto() {
 
         let expected_events = vec![(
             EventTypeIdentifier(
-                RENodeId::GlobalPackage(package_address),
+                RENodeId::GlobalObject(package_address.into()),
                 NodeModuleId::SELF,
                 hash("CustomEvent"),
             ),

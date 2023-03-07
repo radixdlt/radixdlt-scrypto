@@ -178,7 +178,7 @@ fn assert_resource_changes_for_transfer(
     assert!(resource_changes
         .iter()
         .any(|r| r.resource_address == resource_address
-            && r.node_id == RENodeId::GlobalComponent(target_account)
+            && r.node_id == RENodeId::GlobalObject(target_account.into())
             && r.amount == Decimal::from(transfer_amount)));
 }
 
