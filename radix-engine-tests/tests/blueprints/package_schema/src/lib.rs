@@ -12,7 +12,8 @@ mod schema_component {
             component.globalize()
         }
 
-        pub fn create_invalid_schema_component() -> ComponentAddress {
+        pub fn create_component_with_access_rules_containing_undefined_method_name(
+        ) -> ComponentAddress {
             let component = Self {}.instantiate();
             component.globalize_with_access_rules(
                 AccessRules::new()
