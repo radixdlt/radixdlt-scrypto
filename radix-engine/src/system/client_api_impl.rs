@@ -237,8 +237,6 @@ where
             }
         }
 
-        // Create component RENode
-        // FIXME: support native blueprints
         let package_address = self
             .kernel_get_current_actor()
             .unwrap()

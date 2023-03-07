@@ -75,7 +75,7 @@ where
     let nf_store_node_id = api.kernel_allocate_node_id(RENodeType::NonFungibleStore)?;
     api.kernel_create_node(
         nf_store_node_id,
-        RENodeInit::NonFungibleStore(NonFungibleStore::new()),
+        RENodeInit::NonFungibleStore,
         BTreeMap::new(),
     )?;
     let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
@@ -437,7 +437,7 @@ where
     let nf_store_node_id = api.kernel_allocate_node_id(RENodeType::NonFungibleStore)?;
     api.kernel_create_node(
         nf_store_node_id,
-        RENodeInit::NonFungibleStore(NonFungibleStore::new()),
+        RENodeInit::NonFungibleStore,
         BTreeMap::new(),
     )?;
     let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();

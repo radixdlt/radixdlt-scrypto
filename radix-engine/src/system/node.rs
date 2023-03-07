@@ -9,7 +9,7 @@ use crate::types::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::types::{
-    AuthZoneStackOffset, NonFungibleStoreOffset, PackageOffset, SubstateOffset, WorktopOffset,
+    AuthZoneStackOffset, PackageOffset, SubstateOffset, WorktopOffset,
 };
 
 #[derive(Debug)]
@@ -98,7 +98,7 @@ pub enum RENodeInit {
     AuthZoneStack(AuthZoneStackSubstate),
     Worktop(WorktopSubstate),
     KeyValueStore,
-    NonFungibleStore(NonFungibleStore),
+    NonFungibleStore,
     TransactionRuntime(TransactionRuntimeSubstate),
 }
 
@@ -115,7 +115,7 @@ impl RENodeInit {
             RENodeInit::GlobalObject(object_substates) | RENodeInit::Object(object_substates) => {
                 substates.extend(object_substates);
             }
-            RENodeInit::KeyValueStore => {}
+            RENodeInit::KeyValueStore | RENodeInit::NonFungibleStore => {}
             RENodeInit::Worktop(worktop) => {
                 substates.insert(
                     SubstateOffset::Worktop(WorktopOffset::Worktop),
@@ -132,14 +132,6 @@ impl RENodeInit {
                     code_type.into(),
                 );
                 substates.insert(SubstateOffset::Package(PackageOffset::Code), code.into());
-            }
-            RENodeInit::NonFungibleStore(non_fungible_store) => {
-                for (id, non_fungible) in non_fungible_store.loaded_non_fungibles {
-                    substates.insert(
-                        SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id)),
-                        non_fungible.into(),
-                    );
-                }
             }
             RENodeInit::TransactionRuntime(transaction_hash) => {
                 substates.insert(
