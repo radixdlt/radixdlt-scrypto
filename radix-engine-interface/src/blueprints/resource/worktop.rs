@@ -10,7 +10,7 @@ pub const WORKTOP_DROP_IDENT: &str = "Worktop_drop";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct WorktopDropInput {
-    // FIXME: there should an Own
+    pub worktop: Own,
 }
 
 pub type WorktopDropOutput = ();

@@ -1,12 +1,14 @@
-use crate::blueprints::resource::{WorktopBlueprint, WorktopSubstate};
+use crate::blueprints::resource::WorktopSubstate;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::executor::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::node::{RENodeInit, RENodeModuleInit};
+use crate::system::node::RENodeInit;
+use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
@@ -25,6 +27,8 @@ use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
+use radix_engine_interface::blueprints::transaction_processor::*;
 use sbor::rust::borrow::Cow;
 use transaction::data::to_address;
 use transaction::data::transform;
@@ -59,7 +63,6 @@ pub enum TransactionProcessorError {
     InvalidPackageSchema(DecodeError),
 }
 
-
 impl<'a> Invocation for TransactionProcessorRunInvocation<'a> {
     type Output = Vec<InstructionOutput>;
 
@@ -75,17 +78,17 @@ fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFra
             args,
             ..
         } => {
-            update.add_ref(RENodeId::GlobalPackage(*package_address));
+            update.add_ref(RENodeId::GlobalObject(package_address.clone().into()));
             let value: ManifestValue =
                 manifest_decode(args).expect("Invalid CALL_FUNCTION arguments");
             extract_refs_from_value(&value, update);
 
             if package_address.eq(&EPOCH_MANAGER_PACKAGE) {
-                update.add_ref(RENodeId::GlobalResourceManager(PACKAGE_TOKEN));
+                update.add_ref(RENodeId::GlobalObject(PACKAGE_TOKEN.into()));
             }
         }
         Instruction::PublishPackage { access_rules, .. } => {
-            update.add_ref(RENodeId::GlobalPackage(PACKAGE_LOADER));
+            update.add_ref(RENodeId::GlobalObject(PACKAGE_LOADER.into()));
 
             // TODO: Remove and cleanup
             let value: ManifestValue = manifest_decode(&manifest_encode(access_rules).unwrap())
@@ -97,7 +100,7 @@ fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFra
             args,
             method_name,
         } => {
-            update.add_ref(RENodeId::GlobalComponent(*component_address));
+            update.add_ref(RENodeId::GlobalObject(component_address.clone().into()));
             let value: ManifestValue = manifest_decode(args)
                 .expect(format!("Invalid CALL_METHOD arguments to {}", method_name).as_str());
             extract_refs_from_value(&value, update);
@@ -122,7 +125,7 @@ fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFra
         | Instruction::ClaimPackageRoyalty {
             package_address, ..
         } => {
-            update.add_ref(RENodeId::GlobalPackage(*package_address));
+            update.add_ref(RENodeId::GlobalObject(package_address.clone().into()));
         }
         Instruction::SetComponentRoyaltyConfig {
             component_address, ..
@@ -130,7 +133,7 @@ fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFra
         | Instruction::ClaimComponentRoyalty {
             component_address, ..
         } => {
-            update.add_ref(RENodeId::GlobalComponent(*component_address));
+            update.add_ref(RENodeId::GlobalObject(component_address.clone().into()));
         }
         Instruction::TakeFromWorktop {
             resource_address, ..
@@ -168,7 +171,7 @@ fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFra
         | Instruction::MintUuidNonFungible {
             resource_address, ..
         } => {
-            update.add_ref(RENodeId::GlobalResourceManager(resource_address.clone()));
+            update.add_ref(RENodeId::GlobalObject(resource_address.clone().into()));
         }
         Instruction::ReturnToWorktop { .. }
         | Instruction::PopFromAuthZone { .. }
@@ -221,16 +224,7 @@ fn extract_refs_from_value(value: &ManifestValue, collector: &mut CallFrameUpdat
         Value::Custom { value } => match value {
             ManifestCustomValue::Address(a) => {
                 let address = to_address(a.clone());
-                let node_id = match address {
-                    Address::Package(package_address) => RENodeId::GlobalPackage(package_address),
-                    Address::Component(component_address) => {
-                        RENodeId::GlobalComponent(component_address)
-                    }
-                    Address::Resource(resource_address) => {
-                        RENodeId::GlobalResourceManager(resource_address)
-                    }
-                };
-                collector.add_ref(node_id)
+                collector.add_ref(RENodeId::GlobalObject(address))
             }
             _ => {}
         },
@@ -250,12 +244,12 @@ impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
         for instruction in instructions {
             extract_refs_from_instruction(&instruction, &mut call_frame_update);
         }
-        call_frame_update.add_ref(RENodeId::GlobalResourceManager(RADIX_TOKEN));
-        call_frame_update.add_ref(RENodeId::GlobalResourceManager(PACKAGE_TOKEN));
-        call_frame_update.add_ref(RENodeId::GlobalComponent(EPOCH_MANAGER));
-        call_frame_update.add_ref(RENodeId::GlobalComponent(CLOCK));
-        call_frame_update.add_ref(RENodeId::GlobalResourceManager(ECDSA_SECP256K1_TOKEN));
-        call_frame_update.add_ref(RENodeId::GlobalResourceManager(EDDSA_ED25519_TOKEN));
+        call_frame_update.add_ref(RENodeId::GlobalObject(RADIX_TOKEN.into()));
+        call_frame_update.add_ref(RENodeId::GlobalObject(PACKAGE_TOKEN.into()));
+        call_frame_update.add_ref(RENodeId::GlobalObject(EPOCH_MANAGER.into()));
+        call_frame_update.add_ref(RENodeId::GlobalObject(CLOCK.into()));
+        call_frame_update.add_ref(RENodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()));
+        call_frame_update.add_ref(RENodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()));
 
         let actor = Actor::function(FnIdentifier {
             package_address: PACKAGE_LOADER,
@@ -293,10 +287,12 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
             TransactionProcessor::perform_validation(request, api)?;
         }
 
-        let worktop_node_id = api.kernel_allocate_node_id(RENodeType::Worktop)?;
+        let worktop_node_id = api.kernel_allocate_node_id(RENodeType::Object)?;
         api.kernel_create_node(
             worktop_node_id,
-            RENodeInit::Worktop(WorktopSubstate::new()),
+            RENodeInit::Object(btreemap!(
+                SubstateOffset::Worktop(WorktopOffset::Worktop) => RuntimeSubstate::Worktop(WorktopSubstate::new())
+            )),
             btreemap!(
                 NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                     package_address: RESOURCE_MANAGER_PACKAGE,
@@ -305,6 +301,8 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 })
             ),
         )?;
+
+        let worktop = Worktop(worktop_node_id.into());
 
         let instructions: Vec<Instruction> = manifest_decode(&self.instructions).unwrap();
 
@@ -321,7 +319,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
             let result = match inst {
                 Instruction::TakeFromWorktop { resource_address } => {
-                    let bucket = Worktop::sys_take_all(resource_address, api)?;
+                    let bucket = worktop.sys_take_all(resource_address, api)?;
                     processor.create_manifest_bucket(bucket)?;
                     InstructionOutput::None
                 }
@@ -329,7 +327,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     amount,
                     resource_address,
                 } => {
-                    let bucket = Worktop::sys_take(resource_address, amount, api)?;
+                    let bucket = worktop.sys_take(resource_address, amount, api)?;
                     processor.create_manifest_bucket(bucket)?;
                     InstructionOutput::None
                 }
@@ -337,31 +335,31 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     ids,
                     resource_address,
                 } => {
-                    let bucket = Worktop::sys_take_non_fungibles(resource_address, ids, api)?;
+                    let bucket = worktop.sys_take_non_fungibles(resource_address, ids, api)?;
                     processor.create_manifest_bucket(bucket)?;
                     InstructionOutput::None
                 }
                 Instruction::ReturnToWorktop { bucket_id } => {
                     let bucket = processor.take_bucket(&bucket_id)?;
-                    Worktop::sys_put(bucket, api)?;
+                    worktop.sys_put(bucket, api)?;
                     InstructionOutput::None
                 }
                 Instruction::AssertWorktopContains { resource_address } => {
-                    Worktop::sys_assert_contains(resource_address, api)?;
+                    worktop.sys_assert_contains(resource_address, api)?;
                     InstructionOutput::None
                 }
                 Instruction::AssertWorktopContainsByAmount {
                     amount,
                     resource_address,
                 } => {
-                    Worktop::sys_assert_contains_amount(resource_address, amount, api)?;
+                    worktop.sys_assert_contains_amount(resource_address, amount, api)?;
                     InstructionOutput::None
                 }
                 Instruction::AssertWorktopContainsByIds {
                     ids,
                     resource_address,
                 } => {
-                    Worktop::sys_assert_contains_non_fungibles(resource_address, ids, api)?;
+                    worktop.sys_assert_contains_non_fungibles(resource_address, ids, api)?;
                     InstructionOutput::None
                 }
                 Instruction::PopFromAuthZone {} => {
@@ -438,7 +436,11 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 } => {
                     let value: ManifestValue =
                         manifest_decode(&args).expect("Invalid CALL_FUNCTION arguments");
-                    let mut processor_with_api = TransactionProcessorWithApi { processor, api };
+                    let mut processor_with_api = TransactionProcessorWithApi {
+                        worktop,
+                        processor,
+                        api,
+                    };
                     let scrypto_value = transform(value, &mut processor_with_api)?;
                     processor = processor_with_api.processor;
 
@@ -451,9 +453,9 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
                     let result = IndexedScryptoValue::from_vec(rtn).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result, api,
+                        &result, &worktop, api,
                     )?;
-                    InstructionOutput::CallReturn(result)
+                    InstructionOutput::CallReturn(result.into())
                 }
                 Instruction::CallMethod {
                     component_address,
@@ -462,20 +464,24 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 } => {
                     let value: ManifestValue =
                         manifest_decode(&args).expect("Invalid CALL_METHOD arguments");
-                    let mut processor_with_api = TransactionProcessorWithApi { processor, api };
+                    let mut processor_with_api = TransactionProcessorWithApi {
+                        worktop,
+                        processor,
+                        api,
+                    };
                     let scrypto_value = transform(value, &mut processor_with_api)?;
                     processor = processor_with_api.processor;
 
                     let rtn = api.call_method(
-                        RENodeId::GlobalComponent(component_address.into()),
+                        RENodeId::GlobalObject(component_address.into()),
                         &method_name,
                         scrypto_encode(&scrypto_value).unwrap(),
                     )?;
                     let result = IndexedScryptoValue::from_vec(rtn).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result, api,
+                        &result, &worktop, api,
                     )?;
-                    InstructionOutput::CallReturn(result)
+                    InstructionOutput::CallReturn(result.into())
                 }
                 Instruction::PublishPackage {
                     code,
@@ -511,10 +517,11 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result_indexed,
+                        &worktop,
                         api,
                     )?;
 
-                    InstructionOutput::CallReturn(result_indexed)
+                    InstructionOutput::CallReturn(result_indexed.into())
                 }
                 Instruction::BurnResource { bucket_id } => {
                     let bucket = processor.take_bucket(&bucket_id)?;
@@ -527,32 +534,32 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
                     let result = IndexedScryptoValue::from_vec(rtn).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result, api,
+                        &result, &worktop, api,
                     )?;
-                    InstructionOutput::CallReturn(result)
+                    InstructionOutput::CallReturn(result.into())
                 }
                 Instruction::MintFungible {
                     resource_address,
                     amount,
                 } => {
                     let rtn = api.call_method(
-                        RENodeId::GlobalResourceManager(resource_address),
+                        RENodeId::GlobalObject(resource_address.into()),
                         RESOURCE_MANAGER_MINT_FUNGIBLE_IDENT,
                         scrypto_encode(&ResourceManagerMintFungibleInput { amount }).unwrap(),
                     )?;
 
                     let result = IndexedScryptoValue::from_vec(rtn).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result, api,
+                        &result, &worktop, api,
                     )?;
-                    InstructionOutput::CallReturn(result)
+                    InstructionOutput::CallReturn(result.into())
                 }
                 Instruction::MintNonFungible {
                     resource_address,
                     entries,
                 } => {
                     let rtn = api.call_method(
-                        RENodeId::GlobalResourceManager(resource_address),
+                        RENodeId::GlobalObject(resource_address.into()),
                         RESOURCE_MANAGER_MINT_NON_FUNGIBLE_IDENT,
                         scrypto_encode(&ResourceManagerMintNonFungibleInput { entries: entries })
                             .unwrap(),
@@ -560,16 +567,16 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
                     let result = IndexedScryptoValue::from_vec(rtn).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result, api,
+                        &result, &worktop, api,
                     )?;
-                    InstructionOutput::CallReturn(result)
+                    InstructionOutput::CallReturn(result.into())
                 }
                 Instruction::MintUuidNonFungible {
                     resource_address,
                     entries,
                 } => {
                     let rtn = api.call_method(
-                        RENodeId::GlobalResourceManager(resource_address),
+                        RENodeId::GlobalObject(resource_address.into()),
                         RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE_IDENT,
                         scrypto_encode(&ResourceManagerMintUuidNonFungibleInput {
                             entries: entries,
@@ -579,9 +586,9 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
                     let result = IndexedScryptoValue::from_vec(rtn).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result, api,
+                        &result, &worktop, api,
                     )?;
-                    InstructionOutput::CallReturn(result)
+                    InstructionOutput::CallReturn(result.into())
                 }
                 Instruction::RecallResource { vault_id, amount } => {
                     let rtn = api.call_method(
@@ -592,9 +599,9 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
                     let result = IndexedScryptoValue::from_vec(rtn).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result, api,
+                        &result, &worktop, api,
                     )?;
-                    InstructionOutput::CallReturn(result)
+                    InstructionOutput::CallReturn(result.into())
                 }
                 Instruction::SetMetadata {
                     entity_address,
@@ -617,17 +624,18 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result_indexed,
+                        &worktop,
                         api,
                     )?;
 
-                    InstructionOutput::CallReturn(result_indexed)
+                    InstructionOutput::CallReturn(result_indexed.into())
                 }
                 Instruction::SetPackageRoyaltyConfig {
                     package_address,
                     royalty_config,
                 } => {
                     let result = api.call_module_method(
-                        RENodeId::GlobalPackage(package_address),
+                        RENodeId::GlobalObject(package_address.into()),
                         NodeModuleId::PackageRoyalty,
                         PACKAGE_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
                         scrypto_encode(&PackageSetRoyaltyConfigInput {
@@ -639,17 +647,18 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result_indexed,
+                        &worktop,
                         api,
                     )?;
 
-                    InstructionOutput::CallReturn(result_indexed)
+                    InstructionOutput::CallReturn(result_indexed.into())
                 }
                 Instruction::SetComponentRoyaltyConfig {
                     component_address,
                     royalty_config,
                 } => {
                     let result = api.call_module_method(
-                        RENodeId::GlobalComponent(component_address.into()),
+                        RENodeId::GlobalObject(component_address.into()),
                         NodeModuleId::ComponentRoyalty,
                         COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
                         scrypto_encode(&ComponentSetRoyaltyConfigInput {
@@ -661,14 +670,15 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result_indexed,
+                        &worktop,
                         api,
                     )?;
 
-                    InstructionOutput::CallReturn(result_indexed)
+                    InstructionOutput::CallReturn(result_indexed.into())
                 }
                 Instruction::ClaimPackageRoyalty { package_address } => {
                     let result = api.call_module_method(
-                        RENodeId::GlobalPackage(package_address),
+                        RENodeId::GlobalObject(package_address.into()),
                         NodeModuleId::PackageRoyalty,
                         PACKAGE_ROYALTY_CLAIM_ROYALTY_IDENT,
                         scrypto_encode(&PackageClaimRoyaltyInput {}).unwrap(),
@@ -677,14 +687,15 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result_indexed,
+                        &worktop,
                         api,
                     )?;
 
-                    InstructionOutput::CallReturn(result_indexed)
+                    InstructionOutput::CallReturn(result_indexed.into())
                 }
                 Instruction::ClaimComponentRoyalty { component_address } => {
                     let result = api.call_module_method(
-                        RENodeId::GlobalComponent(component_address.into()),
+                        RENodeId::GlobalObject(component_address.into()),
                         NodeModuleId::ComponentRoyalty,
                         COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
                         scrypto_encode(&ComponentClaimRoyaltyInput {}).unwrap(),
@@ -693,10 +704,11 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result_indexed,
+                        &worktop,
                         api,
                     )?;
 
-                    InstructionOutput::CallReturn(result_indexed)
+                    InstructionOutput::CallReturn(result_indexed.into())
                 }
                 Instruction::SetMethodAccessRule {
                     entity_address,
@@ -719,29 +731,26 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result_indexed,
+                        &worktop,
                         api,
                     )?;
 
-                    InstructionOutput::CallReturn(result_indexed)
+                    InstructionOutput::CallReturn(result_indexed.into())
                 }
                 Instruction::AssertAccessRule { access_rule } => {
                     let rtn = ComponentAuthZone::sys_assert_access_rule(access_rule, api)?;
 
                     let result = IndexedScryptoValue::from_typed(&rtn);
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result, api,
+                        &result, &worktop, api,
                     )?;
-                    InstructionOutput::CallReturn(result)
+                    InstructionOutput::CallReturn(result.into())
                 }
             };
             outputs.push(result);
         }
 
-        WorktopBlueprint::drop(IndexedScryptoValue::from_typed(&WorktopDropInput {}), api)?;
-        // Can't use native-sdk yet since there is no way to express moving the worktop
-        /*
-        Worktop::sys_drop(api)?;
-         */
+        worktop.sys_drop(api)?;
 
         Ok((outputs, CallFrameUpdate::empty()))
     }
@@ -844,6 +853,7 @@ impl<'blob> TransactionProcessor<'blob> {
 
     fn move_proofs_to_authzone_and_buckets_to_worktop<Y>(
         value: &IndexedScryptoValue,
+        worktop: &Worktop,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -855,7 +865,7 @@ impl<'blob> TransactionProcessor<'blob> {
             match (package_address, blueprint.as_str()) {
                 (RESOURCE_MANAGER_PACKAGE, BUCKET_BLUEPRINT) => {
                     let bucket = Bucket(owned_node.clone().into());
-                    Worktop::sys_put(bucket, api)?;
+                    worktop.sys_put(bucket, api)?;
                 }
                 (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
                     let proof = Proof(owned_node.clone().into());
@@ -918,6 +928,7 @@ impl<'blob> TransactionProcessor<'blob> {
 }
 
 struct TransactionProcessorWithApi<'blob, 'a, Y: ClientApi<RuntimeError>> {
+    worktop: Worktop,
     processor: TransactionProcessor<'blob>,
     api: &'a mut Y,
 }
@@ -936,7 +947,7 @@ impl<'blob, 'a, Y: ClientApi<RuntimeError>> TransformHandler<RuntimeError>
     fn replace_expression(&mut self, e: ManifestExpression) -> Result<Vec<Own>, RuntimeError> {
         match e {
             ManifestExpression::EntireWorktop => {
-                let buckets = Worktop::sys_drain(self.api)?;
+                let buckets = self.worktop.sys_drain(self.api)?;
                 Ok(buckets.into_iter().map(|b| Own::Bucket(b.0)).collect())
             }
             ManifestExpression::EntireAuthZone => {

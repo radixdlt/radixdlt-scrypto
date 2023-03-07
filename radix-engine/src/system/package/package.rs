@@ -164,7 +164,7 @@ impl Package {
 
         // Create package node
         let node_id = if let Some(address) = input.package_address {
-            RENodeId::GlobalPackage(PackageAddress::Normal(address))
+            RENodeId::GlobalObject(PackageAddress::Normal(address).into())
         } else {
             api.kernel_allocate_node_id(RENodeType::GlobalPackage)?
         };
@@ -223,7 +223,7 @@ impl Package {
 
         // Create package node
         let node_id = if let Some(address) = input.package_address {
-            RENodeId::GlobalPackage(PackageAddress::Normal(address))
+            RENodeId::GlobalObject(PackageAddress::Normal(address).into())
         } else {
             api.kernel_allocate_node_id(RENodeType::GlobalPackage)?
         };

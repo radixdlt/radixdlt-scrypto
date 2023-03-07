@@ -203,7 +203,7 @@ where
             .package_address();
 
         let handle = self.kernel_lock_substate(
-            RENodeId::GlobalPackage(package_address),
+            RENodeId::GlobalObject(package_address.into()),
             NodeModuleId::SELF,
             SubstateOffset::Package(PackageOffset::Info),
             LockFlags::read_only(),
@@ -636,7 +636,7 @@ where
                     }),
                 ..
             }) => Ok(EventTypeIdentifier(
-                RENodeId::GlobalPackage(package_address),
+                RENodeId::GlobalObject(package_address.into()),
                 NodeModuleId::SELF,
                 schema_hash,
             )),

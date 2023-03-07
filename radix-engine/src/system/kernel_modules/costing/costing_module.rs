@@ -131,7 +131,9 @@ impl KernelModule for CostingModule {
                     ActorIdentifier::Method(MethodIdentifier(node_id, ..))
                         if matches!(
                             node_id,
-                            RENodeId::GlobalComponent(ComponentAddress::Normal(..))
+                            RENodeId::GlobalObject(Address::Component(ComponentAddress::Normal(
+                                ..
+                            )))
                         ) =>
                     {
                         Some(node_id)
@@ -168,7 +170,7 @@ impl KernelModule for CostingModule {
          * Apply package royalty
          */
         let handle = api.kernel_lock_substate(
-            RENodeId::GlobalPackage(package_address),
+            RENodeId::GlobalObject(package_address.into()),
             NodeModuleId::PackageRoyalty,
             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
             LockFlags::read_only(),
@@ -184,7 +186,7 @@ impl KernelModule for CostingModule {
 
         // FIXME: refactor to defer substate loading to finalization.
         let handle = api.kernel_lock_substate(
-            RENodeId::GlobalPackage(package_address),
+            RENodeId::GlobalObject(package_address.into()),
             NodeModuleId::PackageRoyalty,
             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
             LockFlags::read_only(),
