@@ -254,15 +254,15 @@ where
                 BUCKET_BLUEPRINT => RENodeInit::Object(btreemap!(
                     SubstateOffset::Bucket(BucketOffset::Info) => RuntimeSubstate::BucketInfo(parser.decode_next()?),
                     SubstateOffset::Bucket(BucketOffset::LiquidFungible) => RuntimeSubstate::BucketLiquidFungible(parser.decode_next()?),
-                    SubstateOffset::Bucket(BucketOffset::LiquidNonFungible) => RuntimeSubstate::BucketLiquidNonFungible(parser.decode_next()?),
                     SubstateOffset::Bucket(BucketOffset::LockedFungible) => RuntimeSubstate::BucketLockedFungible(parser.decode_next()?),
+                    SubstateOffset::Bucket(BucketOffset::LiquidNonFungible) => RuntimeSubstate::BucketLiquidNonFungible(parser.decode_next()?),
                     SubstateOffset::Bucket(BucketOffset::LockedNonFungible) => RuntimeSubstate::BucketLockedNonFungible(parser.decode_next()?),
                 )),
                 VAULT_BLUEPRINT => RENodeInit::Object(btreemap!(
                     SubstateOffset::Vault(VaultOffset::Info) => RuntimeSubstate::VaultInfo(parser.decode_next()?),
                     SubstateOffset::Vault(VaultOffset::LiquidFungible) => RuntimeSubstate::VaultLiquidFungible(parser.decode_next()?),
-                    SubstateOffset::Vault(VaultOffset::LiquidNonFungible) => RuntimeSubstate::VaultLiquidNonFungible(parser.decode_next()?),
                     SubstateOffset::Vault(VaultOffset::LockedFungible) => RuntimeSubstate::VaultLockedFungible(parser.decode_next()?),
+                    SubstateOffset::Vault(VaultOffset::LiquidNonFungible) => RuntimeSubstate::VaultLiquidNonFungible(parser.decode_next()?),
                     SubstateOffset::Vault(VaultOffset::LockedNonFungible) => RuntimeSubstate::VaultLockedNonFungible(parser.decode_next()?),
                 )),
                 _ => return Err(RuntimeError::SystemError(SystemError::BlueprintNotFound)),

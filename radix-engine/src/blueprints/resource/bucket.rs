@@ -757,6 +757,7 @@ impl BucketBlueprint {
                 vec![
                     scrypto_encode(&proof_info).unwrap(),
                     scrypto_encode(&proof).unwrap(),
+                    scrypto_encode(&NonFungibleProof::default()).unwrap(),
                 ],
             )?;
             RENodeId::Object(proof_id)
@@ -774,6 +775,7 @@ impl BucketBlueprint {
                 PROOF_BLUEPRINT,
                 vec![
                     scrypto_encode(&proof_info).unwrap(),
+                    scrypto_encode(&FungibleProof::default()).unwrap(),
                     scrypto_encode(&proof).unwrap(),
                 ],
             )?;

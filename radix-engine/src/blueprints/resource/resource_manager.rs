@@ -1163,6 +1163,9 @@ impl ResourceManagerBlueprint {
                     })
                     .unwrap(),
                     scrypto_encode(&LiquidFungibleResource::new_empty()).unwrap(),
+                    scrypto_encode(&LockedFungibleResource::new_empty()).unwrap(),
+                    scrypto_encode(&LiquidNonFungibleResource::new_empty()).unwrap(),
+                    scrypto_encode(&LockedNonFungibleResource::new_empty()).unwrap(),
                 ],
             )?,
             ResourceType::NonFungible { id_type } => api.new_object(
@@ -1173,7 +1176,10 @@ impl ResourceManagerBlueprint {
                         resource_type: ResourceType::NonFungible { id_type },
                     })
                     .unwrap(),
+                    scrypto_encode(&LiquidFungibleResource::new_empty()).unwrap(),
+                    scrypto_encode(&LockedFungibleResource::new_empty()).unwrap(),
                     scrypto_encode(&LiquidNonFungibleResource::new_empty()).unwrap(),
+                    scrypto_encode(&LockedNonFungibleResource::new_empty()).unwrap(),
                 ],
             )?,
         };
@@ -1213,6 +1219,9 @@ impl ResourceManagerBlueprint {
                     vec![
                         scrypto_encode(&info).unwrap(),
                         scrypto_encode(&LiquidFungibleResource::new_empty()).unwrap(),
+                        scrypto_encode(&LockedFungibleResource::new_empty()).unwrap(),
+                        scrypto_encode(&LiquidNonFungibleResource::new_empty()).unwrap(),
+                        scrypto_encode(&LockedNonFungibleResource::new_empty()).unwrap(),
                     ],
                 )?
             }
@@ -1225,7 +1234,10 @@ impl ResourceManagerBlueprint {
                     VAULT_BLUEPRINT,
                     vec![
                         scrypto_encode(&info).unwrap(),
+                        scrypto_encode(&LiquidFungibleResource::new_empty()).unwrap(),
+                        scrypto_encode(&LockedFungibleResource::new_empty()).unwrap(),
                         scrypto_encode(&LiquidNonFungibleResource::new_empty()).unwrap(),
+                        scrypto_encode(&LockedNonFungibleResource::new_empty()).unwrap(),
                     ],
                 )?
             }

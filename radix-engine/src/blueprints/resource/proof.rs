@@ -66,7 +66,7 @@ impl ProofInfoSubstate {
     }
 }
 
-#[derive(Debug, Clone, ScryptoSbor)]
+#[derive(Debug, Clone, ScryptoSbor, Default)]
 pub struct FungibleProof {
     pub total_locked: Decimal,
     /// The supporting containers.
@@ -127,7 +127,7 @@ impl FungibleProof {
     }
 }
 
-#[derive(Debug, Clone, ScryptoSbor)]
+#[derive(Debug, Clone, ScryptoSbor, Default)]
 pub struct NonFungibleProof {
     /// The total locked amount or non-fungible ids.
     pub total_locked: BTreeSet<NonFungibleLocalId>,
