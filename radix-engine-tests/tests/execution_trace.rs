@@ -1,6 +1,9 @@
 use radix_engine::kernel::event::TrackedEvent;
-use radix_engine::system::kernel_modules::execution_trace::{KernelCallOrigin, KernelCallTrace};
+use radix_engine::system::kernel_modules::execution_trace::{
+    KernelCallOrigin, KernelCallTrace, ResourceSpecifier, WorktopChange,
+};
 use radix_engine::types::*;
+use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -38,7 +41,25 @@ fn test_trace_resource_transfers() {
     /* There should be three resource changes: withdrawal from the source vault,
     deposit to the target vault and withdrawal for the fee */
     println!("{:?}", receipt.expect_commit().resource_changes);
-    assert_eq!(3, receipt.expect_commit().resource_changes.len());
+    assert_eq!(2, receipt.expect_commit().resource_changes.len()); // Two instructions
+    assert_eq!(
+        1,
+        receipt
+            .expect_commit()
+            .resource_changes
+            .get(&0)
+            .unwrap()
+            .len()
+    ); // One resource change in the first instruction (lock fee)
+    assert_eq!(
+        2,
+        receipt
+            .expect_commit()
+            .resource_changes
+            .get(&1)
+            .unwrap()
+            .len()
+    ); // One resource change in the first instruction (lock fee)
 
     let fee_summary = &receipt.execution.fee_summary;
 
@@ -50,6 +71,7 @@ fn test_trace_resource_transfers() {
         .expect_commit()
         .resource_changes
         .iter()
+        .flat_map(|(_, rc)| rc)
         .any(|r| r.node_id == RENodeId::GlobalComponent(source_component)
             && r.amount == -Decimal::from(transfer_amount)));
 
@@ -58,6 +80,7 @@ fn test_trace_resource_transfers() {
         .expect_commit()
         .resource_changes
         .iter()
+        .flat_map(|(_, rc)| rc)
         .any(|r| r.node_id == RENodeId::GlobalComponent(target_component)
             && r.amount == Decimal::from(transfer_amount)));
 
@@ -66,6 +89,7 @@ fn test_trace_resource_transfers() {
         .expect_commit()
         .resource_changes
         .iter()
+        .flat_map(|(_, rc)| rc)
         .any(|r| r.node_id == RENodeId::GlobalComponent(account)
             && r.amount == -Decimal::from(total_fee_paid)));
 }
@@ -119,7 +143,8 @@ fn test_trace_fee_payments() {
 
     assert_eq!(1, resource_changes.len());
     assert!(resource_changes
-        .iter()
+        .into_iter()
+        .flat_map(|(_, rc)| rc)
         .any(|r| r.node_id == RENodeId::GlobalComponent(funded_component)
             && r.amount == -total_fee_paid));
 }
@@ -130,7 +155,7 @@ fn test_instruction_traces() {
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/execution_trace");
 
-    let manfiest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_method(FAUCET_COMPONENT, "free", manifest_args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
@@ -148,7 +173,7 @@ fn test_instruction_traces() {
         )
         .build();
 
-    let receipt = test_runner.execute_manifest(manfiest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     receipt.expect_commit_success();
 
@@ -345,6 +370,215 @@ fn test_instruction_traces() {
         let input_resource = call_trace.input.buckets.values().nth(0).unwrap();
         assert_eq!(RADIX_TOKEN, input_resource.resource_address());
         assert_eq!(dec!("10000"), input_resource.amount());
+    }
+}
+
+#[test]
+fn test_worktop_changes() {
+    // Arrange
+    fn return_to_worktop<'a>(
+        builder: &'a mut ManifestBuilder,
+        bucket: ManifestBucket,
+    ) -> &'a mut ManifestBuilder {
+        builder.return_to_worktop(bucket)
+    }
+
+    let mut test_runner = TestRunner::builder().build();
+    let (pk, _, account) = test_runner.new_account(false);
+
+    let fungible_resource = test_runner.create_fungible_resource(100.into(), 18, account);
+    let non_fungible_resource = test_runner.create_non_fungible_resource(account);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(account, 10.into())
+        .withdraw_from_account(account, fungible_resource, 100.into())
+        .withdraw_non_fungibles_from_account(
+            account,
+            non_fungible_resource,
+            &[
+                NonFungibleLocalId::integer(1),
+                NonFungibleLocalId::integer(2),
+                NonFungibleLocalId::integer(3),
+            ]
+            .into(),
+        )
+        .take_from_worktop(fungible_resource, return_to_worktop)
+        .take_from_worktop_by_amount(20.into(), fungible_resource, return_to_worktop)
+        .take_from_worktop(non_fungible_resource, return_to_worktop)
+        .take_from_worktop_by_amount(2.into(), non_fungible_resource, return_to_worktop)
+        .take_from_worktop_by_ids(
+            &[
+                NonFungibleLocalId::integer(1),
+                NonFungibleLocalId::integer(3),
+            ]
+            .into(),
+            non_fungible_resource,
+            return_to_worktop,
+        )
+        .call_method(
+            account,
+            ACCOUNT_DEPOSIT_BATCH_IDENT,
+            manifest_args!(ManifestExpression::EntireWorktop),
+        )
+        .build();
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+
+    // Assert
+    {
+        receipt.expect_commit_success();
+
+        let worktop_changes = receipt.execution.worktop_changes();
+
+        // Lock fee
+        assert_eq!(worktop_changes.get(&0), None);
+
+        // Withdraw fungible resource from account
+        assert_eq!(
+            worktop_changes.get(&1),
+            Some(&vec![WorktopChange::Put(ResourceSpecifier::Amount(
+                fungible_resource,
+                100.into()
+            ))])
+        );
+
+        // Withdraw non-fungible resource from account
+        assert_eq!(
+            worktop_changes.get(&2),
+            Some(&vec![WorktopChange::Put(ResourceSpecifier::Ids(
+                non_fungible_resource,
+                [
+                    NonFungibleLocalId::integer(1),
+                    NonFungibleLocalId::integer(2),
+                    NonFungibleLocalId::integer(3),
+                ]
+                .into()
+            ))])
+        );
+
+        // Take fungible resource from worktop (takes all)
+        assert_eq!(
+            worktop_changes.get(&3),
+            Some(&vec![WorktopChange::Take(ResourceSpecifier::Amount(
+                fungible_resource,
+                100.into()
+            ))])
+        );
+        assert_eq!(
+            worktop_changes.get(&4),
+            Some(&vec![WorktopChange::Put(ResourceSpecifier::Amount(
+                fungible_resource,
+                100.into()
+            ))])
+        );
+
+        // Take fungible resource from worktop by amount
+        assert_eq!(
+            worktop_changes.get(&5),
+            Some(&vec![WorktopChange::Take(ResourceSpecifier::Amount(
+                fungible_resource,
+                20.into()
+            ))])
+        );
+        assert_eq!(
+            worktop_changes.get(&6),
+            Some(&vec![WorktopChange::Put(ResourceSpecifier::Amount(
+                fungible_resource,
+                20.into()
+            ))])
+        );
+
+        // Take non-fungible from worktop (takes all)
+        assert_eq!(
+            worktop_changes.get(&7),
+            Some(&vec![WorktopChange::Take(ResourceSpecifier::Ids(
+                non_fungible_resource,
+                [
+                    NonFungibleLocalId::integer(1),
+                    NonFungibleLocalId::integer(2),
+                    NonFungibleLocalId::integer(3),
+                ]
+                .into()
+            ))])
+        );
+        assert_eq!(
+            worktop_changes.get(&8),
+            Some(&vec![WorktopChange::Put(ResourceSpecifier::Ids(
+                non_fungible_resource,
+                [
+                    NonFungibleLocalId::integer(1),
+                    NonFungibleLocalId::integer(2),
+                    NonFungibleLocalId::integer(3),
+                ]
+                .into()
+            ))])
+        );
+
+        // Take non-fungible from worktop by amount
+        assert_eq!(
+            worktop_changes.get(&9),
+            Some(&vec![WorktopChange::Take(ResourceSpecifier::Ids(
+                non_fungible_resource,
+                [
+                    NonFungibleLocalId::integer(1),
+                    NonFungibleLocalId::integer(2),
+                ]
+                .into()
+            ))])
+        );
+        assert_eq!(
+            worktop_changes.get(&10),
+            Some(&vec![WorktopChange::Put(ResourceSpecifier::Ids(
+                non_fungible_resource,
+                [
+                    NonFungibleLocalId::integer(1),
+                    NonFungibleLocalId::integer(2),
+                ]
+                .into()
+            ))])
+        );
+
+        // Take non-fungible from worktop by ids
+        assert_eq!(
+            worktop_changes.get(&11),
+            Some(&vec![WorktopChange::Take(ResourceSpecifier::Ids(
+                non_fungible_resource,
+                [
+                    NonFungibleLocalId::integer(1),
+                    NonFungibleLocalId::integer(3),
+                ]
+                .into()
+            ))])
+        );
+        assert_eq!(
+            worktop_changes.get(&12),
+            Some(&vec![WorktopChange::Put(ResourceSpecifier::Ids(
+                non_fungible_resource,
+                [
+                    NonFungibleLocalId::integer(1),
+                    NonFungibleLocalId::integer(3),
+                ]
+                .into()
+            ))])
+        );
+
+        // Take all from worktop and deposit
+        assert_eq!(
+            worktop_changes.get(&13),
+            Some(&vec![
+                WorktopChange::Take(ResourceSpecifier::Ids(
+                    non_fungible_resource,
+                    [
+                        NonFungibleLocalId::integer(1),
+                        NonFungibleLocalId::integer(2),
+                        NonFungibleLocalId::integer(3),
+                    ]
+                    .into()
+                )),
+                WorktopChange::Take(ResourceSpecifier::Amount(fungible_resource, 100.into()))
+            ])
+        );
     }
 }
 

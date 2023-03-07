@@ -4,7 +4,7 @@ use crate::errors::*;
 use crate::kernel::event::TrackedEvent;
 use crate::state_manager::StateDiff;
 use crate::system::kernel_modules::costing::FeeSummary;
-use crate::system::kernel_modules::execution_trace::ResourceChange;
+use crate::system::kernel_modules::execution_trace::{ResourceChange, WorktopChange};
 use crate::types::*;
 use colored::*;
 use radix_engine_interface::address::{AddressDisplayContext, NO_NETWORK};
@@ -27,6 +27,20 @@ pub struct TransactionExecution {
     pub fee_summary: FeeSummary,
     pub events: Vec<TrackedEvent>,
     pub resources_usage: ResourcesUsage,
+}
+
+impl TransactionExecution {
+    pub fn worktop_changes(&self) -> IndexMap<usize, Vec<WorktopChange>> {
+        let mut aggregator = index_map_new::<usize, Vec<WorktopChange>>();
+        for event in &self.events {
+            match event {
+                TrackedEvent::KernelCallTrace(kernel_call_trace) => {
+                    kernel_call_trace.worktop_changes(&mut aggregator)
+                }
+            }
+        }
+        aggregator
+    }
 }
 
 /// Captures whether a transaction should be committed, and its other results
@@ -52,7 +66,7 @@ pub struct CommitResult {
     pub outcome: TransactionOutcome,
     pub state_updates: StateDiff,
     pub entity_changes: EntityChanges,
-    pub resource_changes: Vec<ResourceChange>,
+    pub resource_changes: IndexMap<usize, Vec<ResourceChange>>,
     pub application_logs: Vec<(Level, String)>,
     pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
     pub next_epoch: Option<(BTreeMap<ComponentAddress, Validator>, u64)>,

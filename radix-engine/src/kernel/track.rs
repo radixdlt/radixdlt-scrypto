@@ -459,7 +459,7 @@ impl<'s> Track<'s> {
         self,
         mut invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
         mut fee_reserve: SystemLoanFeeReserve,
-        vault_ops: Vec<(TraceActor, ObjectId, VaultOp)>,
+        vault_ops: Vec<(TraceActor, ObjectId, VaultOp, usize)>,
         events: Vec<TrackedEvent>,
         application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
         application_logs: Vec<(Level, String)>,
@@ -586,7 +586,7 @@ impl<'s> FinalizingTrack<'s> {
         self,
         invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
         fee_summary: &mut FeeSummary,
-        vault_ops: Vec<(TraceActor, ObjectId, VaultOp)>,
+        vault_ops: Vec<(TraceActor, ObjectId, VaultOp, usize)>,
         application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
         application_logs: Vec<(Level, String)>,
     ) -> TransactionResult {

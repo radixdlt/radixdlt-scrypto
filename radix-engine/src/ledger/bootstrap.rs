@@ -690,6 +690,7 @@ mod tests {
         assert!(commit_result
             .resource_changes
             .iter()
+            .flat_map(|(_, rc)| rc)
             .any(|rc| rc.amount == allocation_amount
                 && rc.node_id == RENodeId::GlobalComponent(account_component_address)));
     }
