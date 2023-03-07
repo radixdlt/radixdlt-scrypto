@@ -2,16 +2,13 @@ use crate::api::types::*;
 use core::convert::Infallible;
 use radix_engine_common::data::scrypto::model::*;
 use radix_engine_common::data::scrypto::*;
-use radix_engine_common::ScryptoSbor;
 use sbor::path::SborPathBuf;
 use sbor::rust::fmt;
 use sbor::rust::prelude::*;
 use sbor::*;
 use utils::ContextualDisplay;
 
-// TODO: Remove the default ScryptoSbor derive and do a custom implementation that encodes and
-// decodes as ScryptoValue.
-#[derive(Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct IndexedScryptoValue {
     bytes: Vec<u8>,
     value: ScryptoValue,

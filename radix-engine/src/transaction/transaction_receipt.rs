@@ -274,7 +274,7 @@ impl TransactionReceipt {
     pub fn output<T: ScryptoDecode>(&self, nth: usize) -> T {
         match &self.expect_commit_success()[nth] {
             InstructionOutput::CallReturn(value) => {
-                value.as_typed().expect("Output can't be converted")
+                scrypto_decode::<T>(value).expect("Output can't be converted")
             }
             InstructionOutput::None => panic!("No call return from the instruction"),
         }
@@ -409,7 +409,9 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                         "\n{} {}",
                         prefix!(i, outputs),
                         match output {
-                            InstructionOutput::CallReturn(x) => x.to_string(context),
+                            InstructionOutput::CallReturn(x) => IndexedScryptoValue::from_slice(&x)
+                                .expect("Impossible case! Instruction output can't be decoded")
+                                .to_string(context),
                             InstructionOutput::None => "None".to_string(),
                         }
                     )?;
