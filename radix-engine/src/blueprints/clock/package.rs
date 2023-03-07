@@ -13,7 +13,7 @@ use radix_engine_interface::blueprints::clock::TimePrecision;
 use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
-use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
+use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver};
 use radix_engine_interface::time::*;
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq)]
@@ -46,7 +46,7 @@ impl ClockNativePackage {
         functions.insert(
             CLOCK_GET_CURRENT_TIME_IDENT.to_string(),
             FunctionSchema {
-                receiver: None,
+                receiver: Some(Receiver::SelfRef),
                 input: aggregator.add_child_type_and_descendents::<ClockGetCurrentTimeInput>(),
                 output: aggregator.add_child_type_and_descendents::<ClockGetCurrentTimeOutput>(),
                 export_name: CLOCK_GET_CURRENT_TIME_IDENT.to_string(),
@@ -55,7 +55,7 @@ impl ClockNativePackage {
         functions.insert(
             CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
             FunctionSchema {
-                receiver: None,
+                receiver: Some(Receiver::SelfRefMut),
                 input: aggregator.add_child_type_and_descendents::<ClockSetCurrentTimeInput>(),
                 output: aggregator.add_child_type_and_descendents::<ClockSetCurrentTimeOutput>(),
                 export_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
@@ -64,7 +64,7 @@ impl ClockNativePackage {
         functions.insert(
             CLOCK_COMPARE_CURRENT_TIME_IDENT.to_string(),
             FunctionSchema {
-                receiver: None,
+                receiver: Some(Receiver::SelfRefMut),
                 input: aggregator.add_child_type_and_descendents::<ClockCompareCurrentTimeInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<ClockCompareCurrentTimeOutput>(),

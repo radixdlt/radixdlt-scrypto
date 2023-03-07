@@ -7,7 +7,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::transaction_runtime::*;
-use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
+use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver};
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub enum TransactionRuntimeError {
@@ -33,7 +33,7 @@ impl TransactionRuntimeNativePackage {
         functions.insert(
             TRANSACTION_RUNTIME_GET_HASH_IDENT.to_string(),
             FunctionSchema {
-                receiver: None,
+                receiver: Some(Receiver::SelfRef),
                 input: aggregator
                     .add_child_type_and_descendents::<TransactionRuntimeGetHashInput>(),
                 output: aggregator
@@ -44,7 +44,7 @@ impl TransactionRuntimeNativePackage {
         functions.insert(
             TRANSACTION_RUNTIME_GENERATE_UUID_IDENT.to_string(),
             FunctionSchema {
-                receiver: None,
+                receiver: Some(Receiver::SelfRefMut),
                 input: aggregator
                     .add_child_type_and_descendents::<TransactionRuntimeGenerateUuidInput>(),
                 output: aggregator

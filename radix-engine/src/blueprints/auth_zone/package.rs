@@ -10,7 +10,7 @@ use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
+use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver};
 
 use super::{
     compose_proof_by_amount, compose_proof_by_ids, AuthZoneStackSubstate, ComposeProofError,
@@ -36,7 +36,7 @@ impl AuthZoneNativePackage {
         functions.insert(
             AUTH_ZONE_POP_IDENT.to_string(),
             FunctionSchema {
-                receiver: None,
+                receiver: Some(Receiver::SelfRefMut),
                 input: aggregator.add_child_type_and_descendents::<AuthZonePopInput>(),
                 output: aggregator.add_child_type_and_descendents::<AuthZonePopOutput>(),
                 export_name: AUTH_ZONE_POP_IDENT.to_string(),
@@ -45,7 +45,7 @@ impl AuthZoneNativePackage {
         functions.insert(
             AUTH_ZONE_PUSH_IDENT.to_string(),
             FunctionSchema {
-                receiver: None,
+                receiver: Some(Receiver::SelfRefMut),
                 input: aggregator.add_child_type_and_descendents::<AuthZonePushInput>(),
                 output: aggregator.add_child_type_and_descendents::<AuthZonePushOutput>(),
                 export_name: AUTH_ZONE_PUSH_IDENT.to_string(),
@@ -54,7 +54,7 @@ impl AuthZoneNativePackage {
         functions.insert(
             AUTH_ZONE_CREATE_PROOF_IDENT.to_string(),
             FunctionSchema {
-                receiver: None,
+                receiver: Some(Receiver::SelfRefMut),
                 input: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofInput>(),
                 output: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofOutput>(),
                 export_name: AUTH_ZONE_CREATE_PROOF_IDENT.to_string(),
@@ -63,7 +63,7 @@ impl AuthZoneNativePackage {
         functions.insert(
             AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
             FunctionSchema {
-                receiver: None,
+                receiver: Some(Receiver::SelfRefMut),
                 input: aggregator
                     .add_child_type_and_descendents::<AuthZoneCreateProofByAmountInput>(),
                 output: aggregator
@@ -74,7 +74,7 @@ impl AuthZoneNativePackage {
         functions.insert(
             AUTH_ZONE_CREATE_PROOF_BY_IDS_IDENT.to_string(),
             FunctionSchema {
-                receiver: None,
+                receiver: Some(Receiver::SelfRefMut),
                 input: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofByIdsInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AuthZoneCreateProofByIdsOutput>(),
@@ -84,7 +84,7 @@ impl AuthZoneNativePackage {
         functions.insert(
             AUTH_ZONE_CLEAR_IDENT.to_string(),
             FunctionSchema {
-                receiver: None,
+                receiver: Some(Receiver::SelfRefMut),
                 input: aggregator.add_child_type_and_descendents::<AuthZoneClearInput>(),
                 output: aggregator.add_child_type_and_descendents::<AuthZoneClearOutput>(),
                 export_name: AUTH_ZONE_CLEAR_IDENT.to_string(),
@@ -93,7 +93,7 @@ impl AuthZoneNativePackage {
         functions.insert(
             AUTH_ZONE_DRAIN_IDENT.to_string(),
             FunctionSchema {
-                receiver: None,
+                receiver: Some(Receiver::SelfRefMut),
                 input: aggregator.add_child_type_and_descendents::<AuthZoneDrainInput>(),
                 output: aggregator.add_child_type_and_descendents::<AuthZoneDrainOutput>(),
                 export_name: AUTH_ZONE_DRAIN_IDENT.to_string(),
@@ -102,7 +102,7 @@ impl AuthZoneNativePackage {
         functions.insert(
             AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT.to_string(),
             FunctionSchema {
-                receiver: None,
+                receiver: Some(Receiver::SelfRefMut),
                 input: aggregator.add_child_type_and_descendents::<AuthZoneAssertAccessRuleInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AuthZoneAssertAccessRuleOutput>(),
