@@ -94,6 +94,9 @@ where
         let offset = self.kernel_get_lock_info(lock_handle)?.offset;
         let substate = RuntimeSubstate::decode_from_buffer(&offset, &buffer)?;
 
+        // TODO: support all self substates
+        // TODO: add payload schema validation
+
         match substate {
             RuntimeSubstate::ComponentState(next) => {
                 let state: &mut ComponentStateSubstate =
