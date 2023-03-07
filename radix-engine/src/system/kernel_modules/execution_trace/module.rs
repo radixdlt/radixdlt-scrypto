@@ -22,7 +22,7 @@ pub struct ExecutionTraceModule {
     max_kernel_call_depth_traced: usize,
 
     /// Current transaction index
-    current_transaction_index: usize,
+    current_instruction_index: usize,
 
     /// Current kernel calls depth. Note that this doesn't necessarily correspond to the
     /// call frame depth, as there can be nested kernel calls within a single call frame
@@ -35,8 +35,8 @@ pub struct ExecutionTraceModule {
     /// A mapping of complete KernelCallTrace stacks (\w both inputs and outputs), indexed by depth.
     kernel_call_traces_stacks: IndexMap<usize, Vec<KernelCallTrace>>,
 
-    /// Vault operations: (Caller, Vault ID, operation)
-    vault_ops: Vec<(TraceActor, ObjectId, VaultOp)>,
+    /// Vault operations: (Caller, Vault ID, operation, instruction index)
+    vault_ops: Vec<(TraceActor, ObjectId, VaultOp, usize)>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -47,9 +47,38 @@ pub struct ResourceChange {
     pub amount: Decimal,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum WorktopChange {
+    Take(ResourceSpecifier),
+    Put(ResourceSpecifier),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum ResourceSpecifier {
+    Amount(ResourceAddress, Decimal),
+    Ids(ResourceAddress, BTreeSet<NonFungibleLocalId>),
+}
+
+impl From<&BucketSnapshot> for ResourceSpecifier {
+    fn from(value: &BucketSnapshot) -> Self {
+        match value {
+            BucketSnapshot::Fungible {
+                resource_address,
+                liquid,
+                ..
+            } => Self::Amount(*resource_address, *liquid),
+            BucketSnapshot::NonFungible {
+                resource_address,
+                liquid,
+                ..
+            } => Self::Ids(*resource_address, liquid.clone()),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct ExecutionTraceReceipt {
-    pub resource_changes: Vec<ResourceChange>,
+    pub resource_changes: IndexMap<usize, Vec<ResourceChange>>,
 }
 
 #[derive(Debug, Clone)]
@@ -159,6 +188,44 @@ pub enum KernelCallOrigin {
     ScryptoMethod(FnIdentifier),
     CreateNode,
     DropNode,
+}
+
+impl KernelCallTrace {
+    pub fn worktop_changes(
+        &self,
+        worktop_changes_aggregator: &mut IndexMap<usize, Vec<WorktopChange>>,
+    ) {
+        if let KernelCallOrigin::ScryptoMethod(fn_identifier) = &self.origin {
+            if fn_identifier.blueprint_name == WORKTOP_BLUEPRINT
+                && fn_identifier.package_address == RESOURCE_MANAGER_PACKAGE
+            {
+                if fn_identifier.ident == WORKTOP_PUT_IDENT {
+                    for (_, bucket_snapshot) in self.input.buckets.iter() {
+                        worktop_changes_aggregator
+                            .entry(self.instruction_index)
+                            .or_default()
+                            .push(WorktopChange::Put(bucket_snapshot.into()))
+                    }
+                } else if fn_identifier.ident == WORKTOP_TAKE_IDENT
+                    || fn_identifier.ident == WORKTOP_TAKE_ALL_IDENT
+                    || fn_identifier.ident == WORKTOP_TAKE_NON_FUNGIBLES_IDENT
+                    || fn_identifier.ident == WORKTOP_DRAIN_IDENT
+                {
+                    for (_, bucket_snapshot) in self.output.buckets.iter() {
+                        worktop_changes_aggregator
+                            .entry(self.instruction_index)
+                            .or_default()
+                            .push(WorktopChange::Take(bucket_snapshot.into()))
+                    }
+                }
+            }
+        }
+
+        // Aggregate the worktop changes for all children traces
+        for child in self.children.iter() {
+            child.worktop_changes(worktop_changes_aggregator)
+        }
+    }
 }
 
 impl ResourceSummary {
@@ -293,7 +360,7 @@ impl KernelModule for ExecutionTraceModule {
     ) -> Result<(), RuntimeError> {
         api.kernel_get_module_state()
             .execution_trace
-            .current_transaction_index = new_index;
+            .current_instruction_index = new_index;
         Ok(())
     }
 }
@@ -302,7 +369,7 @@ impl ExecutionTraceModule {
     pub fn new(max_kernel_call_depth_traced: usize) -> ExecutionTraceModule {
         Self {
             max_kernel_call_depth_traced,
-            current_transaction_index: 0,
+            current_instruction_index: 0,
             current_kernel_call_depth: 0,
             traced_kernel_call_inputs_stack: vec![],
             kernel_call_traces_stacks: index_map_new(),
@@ -529,7 +596,12 @@ impl ExecutionTraceModule {
         }
     }
 
-    pub fn collect_events(mut self) -> (Vec<(TraceActor, ObjectId, VaultOp)>, Vec<TrackedEvent>) {
+    pub fn collect_events(
+        mut self,
+    ) -> (
+        Vec<(TraceActor, ObjectId, VaultOp, usize)>,
+        Vec<TrackedEvent>,
+    ) {
         let mut events = Vec::new();
         for (_, traces) in self.kernel_call_traces_stacks.drain(..) {
             // Emit an output event for each "root" kernel call trace
@@ -542,7 +614,7 @@ impl ExecutionTraceModule {
     }
 
     fn instruction_index(&self) -> usize {
-        self.current_transaction_index
+        self.current_instruction_index
     }
 
     fn handle_vault_put_input<'s>(
@@ -560,6 +632,7 @@ impl ExecutionTraceModule {
                 actor.clone(),
                 vault_id.clone(),
                 VaultOp::Put(resource.resource_address(), resource.amount()),
+                self.instruction_index(),
             ));
         }
     }
@@ -569,8 +642,12 @@ impl ExecutionTraceModule {
             .clone()
             .map(|a| TraceActor::Actor(a))
             .unwrap_or(TraceActor::Root);
-        self.vault_ops
-            .push((actor, vault_id.clone(), VaultOp::LockFee));
+        self.vault_ops.push((
+            actor,
+            vault_id.clone(),
+            VaultOp::LockFee,
+            self.instruction_index(),
+        ));
     }
 
     fn handle_vault_take_output<'s>(
@@ -588,6 +665,7 @@ impl ExecutionTraceModule {
                 actor.clone(),
                 vault_id.clone(),
                 VaultOp::Take(resource.resource_address(), resource.amount()),
+                self.instruction_index(),
             ));
         }
     }
@@ -598,18 +676,18 @@ impl ExecutionTraceReceipt {
     // The current approach relies on various runtime invariants.
 
     pub fn new(
-        ops: Vec<(TraceActor, ObjectId, VaultOp)>,
+        ops: Vec<(TraceActor, ObjectId, VaultOp, usize)>,
         actual_fee_payments: &BTreeMap<ObjectId, Decimal>,
         is_commit_success: bool,
     ) -> Self {
-        // TODO: Might want to change the key from being a ComponentId to being an enum to
-        //       accommodate for accounts
-        let mut vault_changes =
-            index_map_new::<RENodeId, IndexMap<ObjectId, (ResourceAddress, Decimal)>>();
+        let mut vault_changes = index_map_new::<
+            usize,
+            IndexMap<RENodeId, IndexMap<ObjectId, (ResourceAddress, Decimal)>>,
+        >();
         let mut vault_locked_by = index_map_new::<ObjectId, RENodeId>();
-        for (actor, vault_id, vault_op) in ops {
+        for (actor, vault_id, vault_op, instruction_index) in ops {
             if let TraceActor::Actor(Actor {
-                identifier: ActorIdentifier::Method(method),
+                identifier: ActorIdentifier::Method(MethodIdentifier(node_id, ..)),
                 ..
             }) = actor
             {
@@ -617,7 +695,9 @@ impl ExecutionTraceReceipt {
                     VaultOp::Create(_) => todo!("Not supported yet!"),
                     VaultOp::Put(resource_address, amount) => {
                         vault_changes
-                            .entry(method.0)
+                            .entry(instruction_index)
+                            .or_default()
+                            .entry(node_id)
                             .or_default()
                             .entry(vault_id)
                             .or_insert((resource_address, Decimal::zero()))
@@ -625,7 +705,9 @@ impl ExecutionTraceReceipt {
                     }
                     VaultOp::Take(resource_address, amount) => {
                         vault_changes
-                            .entry(method.0)
+                            .entry(instruction_index)
+                            .or_default()
+                            .entry(node_id)
                             .or_default()
                             .entry(vault_id)
                             .or_insert((resource_address, Decimal::zero()))
@@ -633,7 +715,9 @@ impl ExecutionTraceReceipt {
                     }
                     VaultOp::LockFee => {
                         vault_changes
-                            .entry(method.0)
+                            .entry(instruction_index)
+                            .or_default()
+                            .entry(node_id)
                             .or_default()
                             .entry(vault_id)
                             .or_insert((RADIX_TOKEN, Decimal::zero()))
@@ -642,35 +726,39 @@ impl ExecutionTraceReceipt {
                         // Hack: Additional check to avoid second `lock_fee` attempts (runtime failure) from
                         // polluting the `vault_locked_by` index.
                         if !vault_locked_by.contains_key(&vault_id) {
-                            vault_locked_by.insert(vault_id, method.0);
+                            vault_locked_by.insert(vault_id, node_id);
                         }
                     }
                 }
             }
         }
 
-        let mut resource_changes = Vec::<ResourceChange>::new();
-        for (node_id, map) in vault_changes {
-            for (vault_id, (resource_address, delta)) in map {
-                // Amount = put/take amount - fee_amount
-                let fee_amount = actual_fee_payments
-                    .get(&vault_id)
-                    .cloned()
-                    .unwrap_or_default();
-                let amount = if is_commit_success {
-                    delta
-                } else {
-                    Decimal::zero()
-                } - fee_amount;
+        let mut resource_changes = index_map_new::<usize, Vec<ResourceChange>>();
+        for (instruction_index, instruction_resource_changes) in vault_changes {
+            for (node_id, map) in instruction_resource_changes {
+                for (vault_id, (resource_address, delta)) in map {
+                    // Amount = put/take amount - fee_amount
+                    let fee_amount = actual_fee_payments
+                        .get(&vault_id)
+                        .cloned()
+                        .unwrap_or_default();
+                    let amount = if is_commit_success {
+                        delta
+                    } else {
+                        Decimal::zero()
+                    } - fee_amount;
 
-                // Add a resource change log if non-zero
-                if !amount.is_zero() {
-                    resource_changes.push(ResourceChange {
-                        resource_address,
-                        node_id,
-                        vault_id,
-                        amount,
-                    });
+                    // Add a resource change log if non-zero
+                    if !amount.is_zero() {
+                        resource_changes.entry(instruction_index).or_default().push(
+                            ResourceChange {
+                                resource_address,
+                                node_id,
+                                vault_id,
+                                amount,
+                            },
+                        );
+                    }
                 }
             }
         }
