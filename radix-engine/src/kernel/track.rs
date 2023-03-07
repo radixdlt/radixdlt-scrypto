@@ -1,6 +1,6 @@
 use crate::blueprints::epoch_manager::EpochChangeEvent;
 use crate::blueprints::resource::NonFungibleSubstate;
-use crate::blueprints::transaction_processor::{InstructionOutput, TransactionProcessorError};
+use crate::blueprints::transaction_processor::{ TransactionProcessorError};
 use crate::errors::*;
 use crate::ledger::*;
 use crate::state_manager::StateDiff;
@@ -23,6 +23,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::Level;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
+use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::crypto::hash;
 use sbor::rust::collections::*;
 

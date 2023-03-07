@@ -1,5 +1,4 @@
 use crate::blueprints::epoch_manager::Validator;
-use crate::blueprints::transaction_processor::InstructionOutput;
 use crate::errors::*;
 use crate::kernel::event::TrackedEvent;
 use crate::state_manager::StateDiff;
@@ -9,6 +8,7 @@ use crate::types::*;
 use colored::*;
 use radix_engine_interface::address::{AddressDisplayContext, NO_NETWORK};
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::data::scrypto::{
     ScryptoDecode, ScryptoValue, ScryptoValueDisplayContext,
 };

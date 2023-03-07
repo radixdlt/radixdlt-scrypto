@@ -59,14 +59,6 @@ pub enum TransactionProcessorError {
     InvalidPackageSchema(DecodeError),
 }
 
-pub trait NativeOutput: ScryptoEncode + Debug + Send + Sync {}
-impl<T: ScryptoEncode + Debug + Send + Sync> NativeOutput for T {}
-
-#[derive(Debug, Clone)]
-pub enum InstructionOutput {
-    CallReturn(IndexedScryptoValue),
-    None,
-}
 
 impl<'a> Invocation for TransactionProcessorRunInvocation<'a> {
     type Output = Vec<InstructionOutput>;
