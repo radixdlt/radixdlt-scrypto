@@ -567,7 +567,6 @@ fn test_worktop_changes() {
         assert_eq!(
             worktop_changes.get(&13),
             Some(&vec![
-                WorktopChange::Put(ResourceSpecifier::Amount(fungible_resource, 100.into())),
                 WorktopChange::Take(ResourceSpecifier::Ids(
                     non_fungible_resource,
                     [
@@ -576,7 +575,8 @@ fn test_worktop_changes() {
                         NonFungibleLocalId::integer(3),
                     ]
                     .into()
-                ))
+                )),
+                WorktopChange::Take(ResourceSpecifier::Amount(fungible_resource, 100.into()))
             ])
         );
     }
