@@ -19,7 +19,7 @@ use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;
-use radix_engine_interface::schema::KeyValueStoreSchema;
+use radix_engine_interface::schema::{KeyValueStoreSchema, NonFungibleSchema};
 
 use super::events::resource_manager::BurnResourceEvent;
 use super::events::resource_manager::MintResourceEvent;
@@ -66,6 +66,7 @@ fn build_non_fungible_resource_manager_substate_with_initial_supply<Y>(
     resource_address: ResourceAddress,
     id_type: NonFungibleIdType,
     entries: BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>,
+    _non_fungible_schema: NonFungibleSchema,
     api: &mut Y,
 ) -> Result<(ResourceManagerSubstate, Bucket), RuntimeError>
 where
@@ -426,6 +427,7 @@ fn create_non_fungible_resource_manager<Y>(
     global_node_id: RENodeId,
     id_type: NonFungibleIdType,
     metadata: BTreeMap<String, String>,
+    _non_fungible_schema: NonFungibleSchema,
     access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     api: &mut Y,
 ) -> Result<ResourceAddress, RuntimeError>
@@ -444,7 +446,9 @@ where
 
     let object_id = api.new_object(
         RESOURCE_MANAGER_BLUEPRINT,
-        vec![scrypto_encode(&resource_manager_substate).unwrap()],
+        vec![
+            scrypto_encode(&resource_manager_substate).unwrap(),
+        ],
     )?;
 
     let (resman_access_rules, vault_access_rules) = build_access_rules(access_rules);
@@ -486,6 +490,7 @@ impl ResourceManagerBlueprint {
             global_node_id,
             input.id_type,
             input.metadata,
+            input.non_fungible_schema,
             input.access_rules,
             api,
         )?;
@@ -513,6 +518,7 @@ impl ResourceManagerBlueprint {
             global_node_id,
             input.id_type,
             input.metadata,
+            input.non_fungible_schema,
             input.access_rules,
             api,
         )?;
@@ -550,6 +556,7 @@ impl ResourceManagerBlueprint {
                 resource_address,
                 input.id_type,
                 input.entries,
+                input.non_fungible_schema,
                 api,
             )?;
 
@@ -604,6 +611,7 @@ impl ResourceManagerBlueprint {
                 resource_address,
                 NonFungibleIdType::UUID,
                 entries,
+                input.non_fungible_schema,
                 api,
             )?;
 

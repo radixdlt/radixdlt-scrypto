@@ -5,6 +5,7 @@ use crate::*;
 use sbor::rust::collections::{BTreeMap, BTreeSet};
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
+use scrypto_schema::NonFungibleSchema;
 
 pub const RESOURCE_MANAGER_BLUEPRINT: &str = "ResourceManager";
 
@@ -56,6 +57,7 @@ pub const RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT: &str = "create_non_fungibl
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct ResourceManagerCreateNonFungibleInput {
     pub id_type: NonFungibleIdType,
+    pub non_fungible_schema: NonFungibleSchema,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
 }
@@ -66,6 +68,7 @@ pub const RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT: &str =
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct ResourceManagerCreateNonFungibleWithInitialSupplyInput {
     pub id_type: NonFungibleIdType,
+    pub non_fungible_schema: NonFungibleSchema,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub entries: BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>,
@@ -77,6 +80,7 @@ pub const RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT: &str =
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct ResourceManagerCreateNonFungibleWithAddressInput {
     pub id_type: NonFungibleIdType,
+    pub non_fungible_schema: NonFungibleSchema,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub resource_address: [u8; 26], // TODO: Clean this up
@@ -87,6 +91,7 @@ pub const RESOURCE_MANAGER_CREATE_UUID_NON_FUNGIBLE_WITH_INITIAL_SUPPLY: &str =
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct ResourceManagerCreateUuidNonFungibleWithInitialSupplyInput {
+    pub non_fungible_schema: NonFungibleSchema,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub entries: BTreeSet<(Vec<u8>, Vec<u8>)>,

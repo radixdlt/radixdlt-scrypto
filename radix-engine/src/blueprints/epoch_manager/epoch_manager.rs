@@ -14,6 +14,7 @@ use radix_engine_interface::blueprints::account::{AccountDepositInput, ACCOUNT_D
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
+use radix_engine_interface::schema::NonFungibleSchema;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct EpochManagerSubstate {
@@ -90,6 +91,7 @@ impl EpochManagerBlueprint {
                 RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT,
                 scrypto_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
                     id_type: NonFungibleIdType::Bytes,
+                    non_fungible_schema: NonFungibleSchema::new(),
                     metadata,
                     access_rules,
                     resource_address: input.olympia_validator_token_address,

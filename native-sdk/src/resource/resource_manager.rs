@@ -7,6 +7,7 @@ use radix_engine_interface::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode,
 };
 use radix_engine_interface::math::Decimal;
+use radix_engine_interface::schema::NonFungibleSchema;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
@@ -81,12 +82,14 @@ impl ResourceManager {
     where
         Y: ClientApi<E>,
     {
+        let non_fungible_schema = NonFungibleSchema::new();
         let result = api.call_function(
             RESOURCE_MANAGER_PACKAGE,
             RESOURCE_MANAGER_BLUEPRINT,
             RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT,
             scrypto_encode(&ResourceManagerCreateNonFungibleInput {
                 id_type,
+                non_fungible_schema,
                 metadata,
                 access_rules,
             })

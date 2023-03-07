@@ -22,7 +22,7 @@ use radix_engine_interface::crypto::{hash, EcdsaSecp256k1PublicKey, Hash};
 use radix_engine_interface::data::manifest::{manifest_encode, model::*};
 use radix_engine_interface::data::scrypto::{model::*, scrypto_encode};
 use radix_engine_interface::math::*;
-use radix_engine_interface::schema::PackageSchema;
+use radix_engine_interface::schema::{NonFungibleSchema, PackageSchema};
 use radix_engine_interface::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
@@ -341,6 +341,7 @@ impl ManifestBuilder {
                     .to_string(),
                 args: manifest_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
                     id_type,
+                    non_fungible_schema: NonFungibleSchema::new(),
                     metadata,
                     access_rules,
                     entries,
@@ -354,6 +355,7 @@ impl ManifestBuilder {
                 function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT.to_string(),
                 args: manifest_encode(&ResourceManagerCreateNonFungibleInput {
                     id_type,
+                    non_fungible_schema: NonFungibleSchema::new(),
                     metadata,
                     access_rules,
                 })

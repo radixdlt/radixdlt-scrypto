@@ -37,6 +37,7 @@ use radix_engine_interface::data::manifest::*;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::manifest_args;
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
+use radix_engine_interface::schema::NonFungibleSchema;
 use sbor::rust::borrow::Borrow;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
@@ -542,6 +543,7 @@ pub fn generate_instruction(
             function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT.to_string(),
             args: manifest_encode(&ResourceManagerCreateNonFungibleInput {
                 id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
+                non_fungible_schema: NonFungibleSchema::new(),
                 metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
                 access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
             })
@@ -559,6 +561,7 @@ pub fn generate_instruction(
                 .to_string(),
             args: manifest_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
                 id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
+                non_fungible_schema: NonFungibleSchema::new(),
                 metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
                 access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
                 entries: generate_non_fungible_mint_params(
@@ -1616,6 +1619,7 @@ mod tests {
                 function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT.to_string(),
                 args: manifest_encode(&ResourceManagerCreateNonFungibleInput {
                     id_type: NonFungibleIdType::Integer,
+                    non_fungible_schema: NonFungibleSchema::new(),
                     metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
                     access_rules: BTreeMap::from([
                         (
@@ -1644,6 +1648,7 @@ mod tests {
                     .to_string(),
                 args: manifest_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
                     id_type: NonFungibleIdType::Integer,
+                    non_fungible_schema: NonFungibleSchema::new(),
                     metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
                     access_rules: BTreeMap::from([
                         (

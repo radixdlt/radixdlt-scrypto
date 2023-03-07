@@ -11,6 +11,7 @@ use sbor::rust::collections::*;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
+use scrypto_schema::NonFungibleSchema;
 
 /// Not divisible.
 pub const DIVISIBILITY_NONE: u8 = 0;
@@ -419,6 +420,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                     RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT,
                     scrypto_encode(&ResourceManagerCreateNonFungibleInput {
                         id_type,
+                        non_fungible_schema: NonFungibleSchema::new(),
                         metadata,
                         access_rules,
                     })
@@ -524,6 +526,7 @@ impl<A: ConfiguredAuth>
                 RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
                     id_type: StringNonFungibleLocalId::id_type(),
+                    non_fungible_schema: NonFungibleSchema::new(),
                     metadata: self.metadata,
                     access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
@@ -573,6 +576,7 @@ impl<A: ConfiguredAuth>
                 RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
                     id_type: IntegerNonFungibleLocalId::id_type(),
+                    non_fungible_schema: NonFungibleSchema::new(),
                     metadata: self.metadata,
                     access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
@@ -622,6 +626,7 @@ impl<A: ConfiguredAuth>
                 RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
                     id_type: BytesNonFungibleLocalId::id_type(),
+                    non_fungible_schema: NonFungibleSchema::new(),
                     metadata: self.metadata,
                     access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
@@ -674,6 +679,7 @@ impl<A: ConfiguredAuth>
                 RESOURCE_MANAGER_CREATE_UUID_NON_FUNGIBLE_WITH_INITIAL_SUPPLY,
                 scrypto_encode(
                     &ResourceManagerCreateUuidNonFungibleWithInitialSupplyInput {
+                        non_fungible_schema: NonFungibleSchema::new(),
                         metadata: self.metadata,
                         access_rules: self.auth.into_access_rules(),
                         entries: entries
