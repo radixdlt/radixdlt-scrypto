@@ -21,7 +21,6 @@ use radix_engine::transaction::{
 };
 use radix_engine::types::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
-use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::node_modules::metadata::MetadataEntry;
 use radix_engine_interface::api::types::{RENodeId, VaultOffset};
@@ -240,14 +239,14 @@ impl TestRunner {
             ))
             .map(|s| s.substate.to_runtime())?;
 
-        let metadata_entry: KeyValueStoreEntrySubstate = metadata_entry.into();
+        let metadata_entry: Option<ScryptoValue> = metadata_entry.into();
         let metadata_entry = match metadata_entry {
-            KeyValueStoreEntrySubstate::Some(value) => {
+            Option::Some(value) => {
                 let value: MetadataEntry =
                     scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap();
                 Some(value)
             }
-            KeyValueStoreEntrySubstate::None => None,
+            Option::None => None,
         };
 
         metadata_entry

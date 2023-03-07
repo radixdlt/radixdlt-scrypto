@@ -1,4 +1,3 @@
-use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
     KeyValueStoreId, KeyValueStoreOffset, RENodeId, SubstateOffset,
@@ -54,13 +53,13 @@ impl<K: ScryptoEncode + ScryptoDecode + ScryptoDescribe, V: ScryptoEncode + Scry
         let raw_bytes = env.sys_read_substate(handle).unwrap();
 
         // Decode and create Ref
-        let substate: KeyValueStoreEntrySubstate = scrypto_decode(&raw_bytes).unwrap();
+        let substate: Option<ScryptoValue> = scrypto_decode(&raw_bytes).unwrap();
         match substate {
-            KeyValueStoreEntrySubstate::Some(value) => Some(DataRef::new(
+            Option::Some(value) => Some(DataRef::new(
                 handle,
                 scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap(),
             )),
-            KeyValueStoreEntrySubstate::None => {
+            Option::None => {
                 env.sys_drop_lock(handle).unwrap();
                 None
             }
@@ -81,9 +80,9 @@ impl<K: ScryptoEncode + ScryptoDecode + ScryptoDescribe, V: ScryptoEncode + Scry
         let raw_bytes = env.sys_read_substate(handle).unwrap();
 
         // Decode and create RefMut
-        let substate: KeyValueStoreEntrySubstate = scrypto_decode(&raw_bytes).unwrap();
+        let substate: Option<ScryptoValue> = scrypto_decode(&raw_bytes).unwrap();
         match substate {
-            KeyValueStoreEntrySubstate::Some(value) => {
+            Option::Some(value) => {
                 let rust_value = scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap();
                 Some(DataRefMut::new(
                     handle,
@@ -91,7 +90,7 @@ impl<K: ScryptoEncode + ScryptoDecode + ScryptoDescribe, V: ScryptoEncode + Scry
                     rust_value,
                 ))
             }
-            KeyValueStoreEntrySubstate::None => {
+            Option::None => {
                 env.sys_drop_lock(handle).unwrap();
                 None
             }
@@ -111,11 +110,12 @@ impl<K: ScryptoEncode + ScryptoDecode + ScryptoDescribe, V: ScryptoEncode + Scry
                 LockFlags::MUTABLE,
             )
             .unwrap();
+        let substate: Option<ScryptoValue> = Option::Some(
+            scrypto_decode(&value_payload).unwrap(),
+        );
         env.sys_write_substate(
             handle,
-            scrypto_encode(&KeyValueStoreEntrySubstate::Some(
-                scrypto_decode(&value_payload).unwrap(),
-            ))
+            scrypto_encode(&substate)
             .unwrap(),
         )
         .unwrap();

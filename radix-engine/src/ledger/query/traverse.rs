@@ -85,10 +85,14 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                         SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(entry_id.clone())),
                     );
                     if let PersistedSubstate::KeyValueStoreEntry(entry) = substate {
-                        for child_node_id in entry.owned_node_ids() {
-                            self.traverse_recursive(Some(&substate_id), child_node_id, depth + 1)
-                                .expect("Broken Node Store");
+                        if let Some(value) = entry {
+                            let (_, _, own, _) = IndexedScryptoValue::from_value(value.clone()).unpack();
+                            for child_node_id in own {
+                                self.traverse_recursive(Some(&substate_id), child_node_id, depth + 1)
+                                    .expect("Broken Node Store");
+                            }
                         }
+
                     }
                 }
             }

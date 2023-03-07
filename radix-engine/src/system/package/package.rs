@@ -13,7 +13,6 @@ use crate::types::*;
 use crate::wasm::{PrepareError, WasmValidator};
 use core::fmt::Debug;
 use native_sdk::resource::ResourceManager;
-use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
@@ -91,7 +90,7 @@ impl Package {
                 SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
                     scrypto_encode(&key).unwrap(),
                 )),
-                RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::Some(
+                RuntimeSubstate::KeyValueStoreEntry(Option::Some(
                     ScryptoValue::String { value },
                 )),
             );
@@ -194,7 +193,7 @@ impl Package {
                 SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
                     scrypto_encode(&key).unwrap(),
                 )),
-                RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::Some(
+                RuntimeSubstate::KeyValueStoreEntry(Option::Some(
                     ScryptoValue::String { value },
                 )),
             );

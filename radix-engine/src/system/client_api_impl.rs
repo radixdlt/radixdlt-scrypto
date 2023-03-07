@@ -23,7 +23,6 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate,
-    KeyValueStoreEntrySubstate,
 };
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
@@ -104,7 +103,7 @@ where
                 *state = next
             }
             RuntimeSubstate::KeyValueStoreEntry(next) => {
-                let entry: &mut KeyValueStoreEntrySubstate =
+                let entry: &mut Option<ScryptoValue> =
                     self.kernel_get_substate_ref_mut(lock_handle)?;
                 *entry = next;
             }

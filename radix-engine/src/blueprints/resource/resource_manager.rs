@@ -11,7 +11,6 @@ use native_sdk::access_rules::AccessRulesObject;
 use native_sdk::metadata::Metadata;
 use native_sdk::resource::SysBucket;
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{RENodeId, ResourceManagerOffset, SubstateOffset};
@@ -101,7 +100,7 @@ where
                 )),
                 LockFlags::MUTABLE,
             )?;
-            let non_fungible_mut: &mut KeyValueStoreEntrySubstate =
+            let non_fungible_mut: &mut Option<ScryptoValue> =
                 api.kernel_get_substate_ref_mut(non_fungible_handle)?;
 
             // FIXME: verify data
@@ -109,7 +108,7 @@ where
             let value: ScryptoValue =
                 scrypto_decode(&scrypto_encode(&non_fungible).unwrap()).unwrap();
 
-            *non_fungible_mut = KeyValueStoreEntrySubstate::Some(value);
+            *non_fungible_mut = Option::Some(value);
             api.sys_drop_lock(non_fungible_handle)?;
         }
         resource_manager.total_supply = entries.len().into();
@@ -873,10 +872,10 @@ impl ResourceManagerBlueprint {
             )?;
 
             {
-                let non_fungible_mut: &mut KeyValueStoreEntrySubstate =
+                let non_fungible_mut: &mut Option<ScryptoValue> =
                     api.kernel_get_substate_ref_mut(non_fungible_handle)?;
 
-                if let KeyValueStoreEntrySubstate::Some(..) = non_fungible_mut {
+                if let Option::Some(..) = non_fungible_mut {
                     return Err(RuntimeError::ApplicationError(
                         ApplicationError::ResourceManagerError(
                             ResourceManagerError::NonFungibleAlreadyExists(
@@ -889,7 +888,7 @@ impl ResourceManagerBlueprint {
                 // FIXME: verify data
                 let value: ScryptoValue =
                     scrypto_decode(&scrypto_encode(&non_fungible).unwrap()).unwrap();
-                *non_fungible_mut = KeyValueStoreEntrySubstate::Some(value);
+                *non_fungible_mut = Option::Some(value);
             }
 
             api.sys_drop_lock(non_fungible_handle)?;
@@ -965,14 +964,14 @@ impl ResourceManagerBlueprint {
                         )),
                         LockFlags::MUTABLE,
                     )?;
-                    let non_fungible_mut: &mut KeyValueStoreEntrySubstate =
+                    let non_fungible_mut: &mut Option<ScryptoValue> =
                         api.kernel_get_substate_ref_mut(non_fungible_handle)?;
 
                     // FIXME: verify data
                     let non_fungible = NonFungible::new(data.0, data.1);
                     let value: ScryptoValue =
                         scrypto_decode(&scrypto_encode(&non_fungible).unwrap()).unwrap();
-                    *non_fungible_mut = KeyValueStoreEntrySubstate::Some(value);
+                    *non_fungible_mut = Option::Some(value);
 
                     api.sys_drop_lock(non_fungible_handle)?;
                 }
@@ -1145,9 +1144,9 @@ impl ResourceManagerBlueprint {
                         LockFlags::MUTABLE,
                     )?;
 
-                    let non_fungible_mut: &mut KeyValueStoreEntrySubstate =
+                    let non_fungible_mut: &mut Option<ScryptoValue> =
                         api.kernel_get_substate_ref_mut(non_fungible_handle)?;
-                    *non_fungible_mut = KeyValueStoreEntrySubstate::None;
+                    *non_fungible_mut = Option::None;
                     api.sys_drop_lock(non_fungible_handle)?;
                 }
             }
@@ -1302,9 +1301,9 @@ impl ResourceManagerBlueprint {
             )),
             LockFlags::MUTABLE,
         )?;
-        let non_fungible_mut: &mut KeyValueStoreEntrySubstate =
+        let non_fungible_mut: &mut Option<ScryptoValue> =
             api.kernel_get_substate_ref_mut(non_fungible_handle)?;
-        if let KeyValueStoreEntrySubstate::Some(ref mut non_fungible_substate) = non_fungible_mut {
+        if let Option::Some(ref mut non_fungible_substate) = non_fungible_mut {
             let mut non_fungible: NonFungible =
                 scrypto_decode(&scrypto_encode(non_fungible_substate).unwrap()).unwrap();
             non_fungible.set_mutable_data(input.data);
@@ -1356,9 +1355,9 @@ impl ResourceManagerBlueprint {
             )),
             LockFlags::read_only(),
         )?;
-        let non_fungible: &KeyValueStoreEntrySubstate =
+        let non_fungible: &Option<ScryptoValue> =
             api.kernel_get_substate_ref(non_fungible_handle)?;
-        let exists = matches!(non_fungible, KeyValueStoreEntrySubstate::Some(..));
+        let exists = matches!(non_fungible, Option::Some(..));
 
         Ok(IndexedScryptoValue::from_typed(&exists))
     }
@@ -1447,9 +1446,9 @@ impl ResourceManagerBlueprint {
             )),
             LockFlags::read_only(),
         )?;
-        let wrapper: &KeyValueStoreEntrySubstate =
+        let wrapper: &Option<ScryptoValue> =
             api.kernel_get_substate_ref(non_fungible_handle)?;
-        if let KeyValueStoreEntrySubstate::Some(non_fungible) = wrapper {
+        if let Option::Some(non_fungible) = wrapper {
             let non_fungible: NonFungible =
                 scrypto_decode(&scrypto_encode(&non_fungible).unwrap()).unwrap();
             Ok(IndexedScryptoValue::from_typed(&[

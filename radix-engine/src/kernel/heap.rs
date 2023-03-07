@@ -5,7 +5,6 @@ use crate::errors::CallFrameError;
 use crate::system::node_modules::access_rules::AuthZoneStackSubstate;
 use crate::system::node_substates::{RuntimeSubstate, SubstateRef, SubstateRefMut};
 use crate::types::HashMap;
-use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, BucketOffset, NodeModuleId, ProofOffset, RENodeId, SubstateId,
     SubstateOffset, TransactionRuntimeOffset,
@@ -47,7 +46,7 @@ impl Heap {
         match (&node_id, module_id, offset) {
             (_, _, SubstateOffset::KeyValueStore(..)) => {
                 let entry = node.substates.entry((module_id, offset.clone())).or_insert(
-                    RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::None),
+                    RuntimeSubstate::KeyValueStoreEntry(Option::None),
                 );
                 Ok(entry.to_ref())
             }
@@ -74,7 +73,7 @@ impl Heap {
         match (&node_id, offset) {
             (_, SubstateOffset::KeyValueStore(..)) => {
                 let entry = node.substates.entry((module_id, offset.clone())).or_insert(
-                    RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::None),
+                    RuntimeSubstate::KeyValueStoreEntry(Option::None),
                 );
                 Ok(entry.to_ref_mut())
             }

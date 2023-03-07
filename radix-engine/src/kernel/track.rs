@@ -17,7 +17,6 @@ use crate::transaction::TransactionOutcome;
 use crate::transaction::TransactionResult;
 use crate::transaction::{AbortReason, AbortResult, CommitResult};
 use crate::types::*;
-use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::logger::Level;
@@ -305,7 +304,7 @@ impl<'s> Track<'s> {
                     let (substate, version) = output
                         .map(|o| (o.substate.to_runtime(), o.version))
                         .unwrap_or((
-                            RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::None),
+                            RuntimeSubstate::KeyValueStoreEntry(Option::None),
                             0,
                         ));
 
@@ -342,7 +341,7 @@ impl<'s> Track<'s> {
                     let (substate, version) = output
                         .map(|o| (o.substate.to_runtime(), o.version))
                         .unwrap_or((
-                            RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::None),
+                            RuntimeSubstate::KeyValueStoreEntry(Option::None),
                             0,
                         ));
 

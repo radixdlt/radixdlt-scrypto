@@ -56,7 +56,7 @@ pub enum PersistedSubstate {
     PackageRoyaltyAccumulator(PackageRoyaltyAccumulatorSubstate),
 
     /* KVStore entry */
-    KeyValueStoreEntry(KeyValueStoreEntrySubstate),
+    KeyValueStoreEntry(Option<ScryptoValue>),
 }
 
 impl PersistedSubstate {
@@ -269,7 +269,7 @@ pub enum RuntimeSubstate {
     PackageRoyaltyAccumulator(PackageRoyaltyAccumulatorSubstate),
 
     /* KVStore entry */
-    KeyValueStoreEntry(KeyValueStoreEntrySubstate),
+    KeyValueStoreEntry(Option<ScryptoValue>),
 }
 
 impl RuntimeSubstate {
@@ -594,7 +594,7 @@ impl RuntimeSubstate {
         }
     }
 
-    pub fn kv_store_entry(&self) -> &KeyValueStoreEntrySubstate {
+    pub fn kv_store_entry(&self) -> &Option<ScryptoValue> {
         if let RuntimeSubstate::KeyValueStoreEntry(kv_store_entry) = self {
             kv_store_entry
         } else {
@@ -724,7 +724,7 @@ impl Into<RuntimeSubstate> for VaultInfoSubstate {
     }
 }
 
-impl Into<RuntimeSubstate> for KeyValueStoreEntrySubstate {
+impl Into<RuntimeSubstate> for Option<ScryptoValue> {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::KeyValueStoreEntry(self)
     }
@@ -850,8 +850,8 @@ impl Into<PackageCodeSubstate> for RuntimeSubstate {
     }
 }
 
-impl Into<KeyValueStoreEntrySubstate> for RuntimeSubstate {
-    fn into(self) -> KeyValueStoreEntrySubstate {
+impl Into<Option<ScryptoValue>> for RuntimeSubstate {
+    fn into(self) -> Option<ScryptoValue> {
         if let RuntimeSubstate::KeyValueStoreEntry(kv_store_entry) = self {
             kv_store_entry
         } else {
@@ -1002,7 +1002,7 @@ pub enum SubstateRef<'a> {
     ComponentState(&'a ComponentStateSubstate),
     ComponentRoyaltyConfig(&'a ComponentRoyaltyConfigSubstate),
     ComponentRoyaltyAccumulator(&'a ComponentRoyaltyAccumulatorSubstate),
-    KeyValueStoreEntry(&'a KeyValueStoreEntrySubstate),
+    KeyValueStoreEntry(&'a Option<ScryptoValue>),
     PackageInfo(&'a PackageInfoSubstate),
     PackageCodeType(&'a PackageCodeTypeSubstate),
     PackageCode(&'a PackageCodeSubstate),
@@ -1217,7 +1217,7 @@ impl<'a> From<SubstateRef<'a>> for &'a WorktopSubstate {
     }
 }
 
-impl<'a> From<SubstateRef<'a>> for &'a KeyValueStoreEntrySubstate {
+impl<'a> From<SubstateRef<'a>> for &'a Option<ScryptoValue> {
     fn from(value: SubstateRef<'a>) -> Self {
         match value {
             SubstateRef::KeyValueStoreEntry(value) => value,
@@ -1437,7 +1437,12 @@ impl<'a> SubstateRef<'a> {
                 (HashSet::new(), owned_nodes)
             }
             SubstateRef::KeyValueStoreEntry(substate) => {
-                (substate.global_references(), substate.owned_node_ids())
+                if let Some(substate) = substate {
+                    let (_, _, own, refs) = IndexedScryptoValue::from_value(substate.clone()).unpack();
+                    (refs, own)
+                } else {
+                    (HashSet::new(), Vec::new())
+                }
             }
             SubstateRef::Account(substate) => {
                 let mut owned_nodes = Vec::new();
@@ -1469,7 +1474,7 @@ pub enum SubstateRefMut<'a> {
     PackageRoyaltyConfig(&'a mut PackageRoyaltyConfigSubstate),
     PackageRoyaltyAccumulator(&'a mut PackageRoyaltyAccumulatorSubstate),
     PackageAccessRules(&'a mut FunctionAccessRulesSubstate),
-    KeyValueStoreEntry(&'a mut KeyValueStoreEntrySubstate),
+    KeyValueStoreEntry(&'a mut Option<ScryptoValue>),
     VaultInfo(&'a mut VaultInfoSubstate),
     VaultLiquidFungible(&'a mut LiquidFungibleResource),
     VaultLiquidNonFungible(&'a mut LiquidNonFungibleResource),
@@ -1524,7 +1529,7 @@ impl<'a> From<SubstateRefMut<'a>> for &'a mut ResourceManagerSubstate {
     }
 }
 
-impl<'a> From<SubstateRefMut<'a>> for &'a mut KeyValueStoreEntrySubstate {
+impl<'a> From<SubstateRefMut<'a>> for &'a mut Option<ScryptoValue> {
     fn from(value: SubstateRefMut<'a>) -> Self {
         match value {
             SubstateRefMut::KeyValueStoreEntry(value) => value,
