@@ -226,36 +226,36 @@ impl AccessControllerNativePackage {
             },
         );
         functions.insert(
-            ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE.to_string(),
+            ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT.to_string(),
             FunctionSchema {
                 receiver: None,
                 input: aggregator
                     .add_child_type_and_descendents::<AccessControllerLockPrimaryRoleInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerLockPrimaryRoleOutput>(),
-                export_name: ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE.to_string(),
+                export_name: ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT.to_string(),
             },
         );
         functions.insert(
-            ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE.to_string(),
+            ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT.to_string(),
             FunctionSchema {
                 receiver: None,
                 input: aggregator
                     .add_child_type_and_descendents::<AccessControllerUnlockPrimaryRoleInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerUnlockPrimaryRoleOutput>(),
-                export_name: ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE.to_string(),
+                export_name: ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT.to_string(),
             },
         );
         functions.insert(
-            ACCESS_CONTROLLER_STOP_TIMED_RECOVERY.to_string(),
+            ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT.to_string(),
             FunctionSchema {
                 receiver: None,
                 input: aggregator
                     .add_child_type_and_descendents::<AccessControllerStopTimedRecoveryInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerStopTimedRecoveryOutput>(),
-                export_name: ACCESS_CONTROLLER_STOP_TIMED_RECOVERY.to_string(),
+                export_name: ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT.to_string(),
             },
         );
 
@@ -355,7 +355,7 @@ impl AccessControllerNativePackage {
                 ))?;
                 Self::cancel_recovery_role_recovery_proposal(receiver, input, api)
             }
-            ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE => {
+            ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
@@ -363,7 +363,7 @@ impl AccessControllerNativePackage {
                 ))?;
                 Self::lock_primary_role(receiver, input, api)
             }
-            ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE => {
+            ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
@@ -371,7 +371,7 @@ impl AccessControllerNativePackage {
                 ))?;
                 Self::unlock_primary_role(receiver, input, api)
             }
-            ACCESS_CONTROLLER_STOP_TIMED_RECOVERY => {
+            ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
@@ -846,14 +846,14 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
             NodeModuleId::SELF,
-            ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE.to_string(),
+            ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT.to_string(),
         ),
         recovery_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
             NodeModuleId::SELF,
-            ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE.to_string(),
+            ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT.to_string(),
         ),
         recovery_group.into(),
     );
@@ -869,7 +869,7 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
     access_rules.set_method_access_rule(
         MethodKey::new(
             NodeModuleId::SELF,
-            ACCESS_CONTROLLER_STOP_TIMED_RECOVERY.to_string(),
+            ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT.to_string(),
         ),
         access_rule_or(
             [

@@ -1,6 +1,6 @@
 use crate::kernel::module::KernelModule;
 
-use radix_engine_interface::blueprints::logger::Level;
+use radix_engine_interface::api::types::Level;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 

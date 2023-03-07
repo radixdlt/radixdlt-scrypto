@@ -144,7 +144,7 @@ pub type AccessControllerCancelRecoveryRoleRecoveryProposalOutput = ();
 // Access Controller Lock Primary Role
 //=====================================
 
-pub const ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE: &str = "lock_primary_role";
+pub const ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT: &str = "lock_primary_role";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccessControllerLockPrimaryRoleInput;
@@ -155,7 +155,7 @@ pub type AccessControllerLockPrimaryRoleOutput = ();
 // Access Controller Unlock Primary Role
 //=======================================
 
-pub const ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE: &str = "unlock_primary_role";
+pub const ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT: &str = "unlock_primary_role";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccessControllerUnlockPrimaryRoleInput;
@@ -166,7 +166,7 @@ pub type AccessControllerUnlockPrimaryRoleOutput = ();
 // Access Controller Stop Timed Recovery
 //=======================================
 
-pub const ACCESS_CONTROLLER_STOP_TIMED_RECOVERY: &str = "stop_timed_recovery";
+pub const ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT: &str = "stop_timed_recovery";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccessControllerStopTimedRecoveryInput {
