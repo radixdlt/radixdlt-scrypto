@@ -1,5 +1,3 @@
-use crate::api::types::*;
-use crate::blueprints::resource::*;
 use crate::data::scrypto::*;
 use sbor::rust::format;
 use sbor::rust::vec;
@@ -412,6 +410,7 @@ pub fn serialize_custom_value<S: Serializer>(
     }
 }
 
+/*
 impl<'a> ContextualSerialize<ScryptoValueSerializationContext<'a>> for NonFungibleGlobalId {
     fn contextual_serialize<S: Serializer>(
         &self,
@@ -429,6 +428,7 @@ impl<'a> ContextualSerialize<ScryptoValueSerializationContext<'a>> for NonFungib
         tuple.end()
     }
 }
+ */
 
 /// We encode custom types in one of two ways:
 /// - As a tagged object { "type": "TypeName", "value": X }
