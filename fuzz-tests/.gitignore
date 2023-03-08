@@ -1,0 +1,6 @@
+target-libfuzzer
+target-afl
+afl
+corpus
+artifacts
+#coverage
