@@ -22,7 +22,7 @@ use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 
 struct Account {
     public_key: EcdsaSecp256k1PublicKey,
-    private_key: EcdsaSecp256k1PrivateKey,
+    _private_key: EcdsaSecp256k1PrivateKey,
     address: ComponentAddress,
 }
 
@@ -41,7 +41,7 @@ impl Fuzzer {
                 println!("addr = {:?}", acc.2);
                 Account {
                     public_key: acc.0,
-                    private_key: acc.1,
+                    _private_key: acc.1,
                     address: acc.2,
                 }
             })
@@ -80,10 +80,10 @@ impl Fuzzer {
         None
     }
 
-    // Replace some data in the manifest in quasi-random manner using some preallocated resources.
+    // Smartly replace some data in the manifest using some preallocated resources.
     // This is to let fuzzing go "deeper" into the manifest instructions and not to reject the
     // transaction on the very early stage
-    fn mutate_manifest(&mut self, manifest: &mut TransactionManifest) {
+    fn smart_mutate_manifest(&mut self, manifest: &mut TransactionManifest) {
         for i in &mut manifest.instructions {
             match i {
                 Instruction::CallMethod {
@@ -140,7 +140,7 @@ impl Fuzzer {
         let result = TransactionManifest::from_slice(data);
         match result {
             Ok(mut manifest) => {
-                self.mutate_manifest(&mut manifest);
+                self.smart_mutate_manifest(&mut manifest);
                 let _receipt = self.runner.execute_manifest(
                     manifest,
                     vec![NonFungibleGlobalId::from_public_key(
