@@ -334,7 +334,7 @@ pub fn create_genesis(
                 dependent_resources: vec![],
                 dependent_components: vec![],
                 package_access_rules: BTreeMap::new(),
-                default_package_access_rule: AccessRule::DenyAll,
+                default_package_access_rule: AccessRule::AllowAll,
             })
             .unwrap(),
         });
@@ -702,7 +702,7 @@ mod tests {
             &substate_store,
             &scrypto_interpreter,
             &FeeReserveConfig::default(),
-            &ExecutionConfig::default(),
+            &ExecutionConfig::genesis(),
             &genesis_transaction.get_executable(vec![AuthAddresses::system_role()]),
         );
 

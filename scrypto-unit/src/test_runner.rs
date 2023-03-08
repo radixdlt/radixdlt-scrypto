@@ -160,7 +160,7 @@ impl TestRunnerBuilder {
         let receipt = runner.execute_transaction_with_config(
             genesis.get_executable(vec![AuthAddresses::system_role()]),
             &FeeReserveConfig::default(),
-            &ExecutionConfig::default(),
+            &ExecutionConfig::genesis(),
         );
         receipt.expect_commit_success();
         runner

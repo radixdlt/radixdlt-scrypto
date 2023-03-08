@@ -187,7 +187,7 @@ where
         &mut self,
         executable: &Executable,
         execution_config: &ExecutionConfig,
-        fee_reserve: SystemLoanFeeReserve,
+        mut fee_reserve: SystemLoanFeeReserve,
         fee_table: FeeTable,
     ) -> TransactionReceipt {
         let transaction_hash = executable.transaction_hash();
@@ -211,25 +211,29 @@ where
             crate::kernel::resources_tracker::ResourcesTracker::start_measurement();
 
         // Apply pre execution costing
-        let pre_execution_result =
-            Self::apply_pre_execution_costs(fee_reserve, &fee_table, executable);
-        let fee_reserve = match pre_execution_result {
-            Ok(fee_reserve) => fee_reserve,
-            Err(err) => {
-                return TransactionReceipt {
-                    execution: TransactionExecution {
-                        fee_summary: err.fee_summary,
-                        events: vec![],
-                        resources_usage: ResourcesUsage::default(),
-                    },
-                    result: TransactionResult::Reject(RejectResult {
-                        error: RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::ModuleError(
-                            ModuleError::CostingError(CostingError::FeeReserveError(err.error)),
-                        )),
-                    }),
-                };
-            }
-        };
+        if !execution_config.genesis {
+            let pre_execution_result =
+                Self::apply_pre_execution_costs(fee_reserve, &fee_table, executable);
+            fee_reserve = match pre_execution_result {
+                Ok(fee_reserve) => fee_reserve,
+                Err(err) => {
+                    return TransactionReceipt {
+                        execution: TransactionExecution {
+                            fee_summary: err.fee_summary,
+                            events: vec![],
+                            resources_usage: ResourcesUsage::default(),
+                        },
+                        result: TransactionResult::Reject(RejectResult {
+                            error: RejectionError::ErrorBeforeFeeLoanRepaid(
+                                RuntimeError::ModuleError(ModuleError::CostingError(
+                                    CostingError::FeeReserveError(err.error),
+                                )),
+                            ),
+                        }),
+                    };
+                }
+            };
+        }
 
         // Prepare state track and execution trace
         let mut track = Track::new(self.substate_store);
