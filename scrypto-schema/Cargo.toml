@@ -16,3 +16,6 @@ alloc = ["sbor/alloc", "radix-engine-common/alloc", "serde?/alloc"]
 
 # Enable serde derives
 serde = ["serde/derive", "sbor/serde"]
+
+[lib]
+bench = false
