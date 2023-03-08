@@ -6,7 +6,7 @@ use sbor::rust::prelude::*;
 use sbor::*;
 use utils::copy_u8_array;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Reference(pub [u8; 36]);
 
 impl Reference {

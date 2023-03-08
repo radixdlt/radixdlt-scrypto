@@ -261,7 +261,9 @@ where
             // Initialize
             kernel.initialize().expect("Failed to initialize kernel");
 
-            // Invoke transaction processor
+            // Call TransactionProcessor::Run()
+            let (global_references, local_references) =
+                extract_refs_from_manifest(executable.instructions());
             let invoke_result = kernel
                 .call_function(
                     TRANSACTION_PROCESSOR_PACKAGE,
@@ -274,6 +276,8 @@ where
                             manifest_encode(executable.instructions()).unwrap(),
                         ),
                         blobs: Cow::Borrowed(executable.blobs()),
+                        global_references,
+                        local_references,
                     })
                     .unwrap(),
                 )

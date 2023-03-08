@@ -1534,7 +1534,7 @@ impl<'a> SubstateRef<'a> {
                 (HashSet::new(), owned_nodes)
             }
             SubstateRef::KeyValueStoreEntry(substate) => {
-                (substate.global_references(), substate.owned_node_ids())
+                (substate.references(), substate.owned_node_ids())
             }
             SubstateRef::NonFungible(substate) => {
                 let maybe_scrypto_value = substate

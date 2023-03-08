@@ -29,7 +29,6 @@ use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::blueprints::transaction_processor::*;
-use sbor::rust::borrow::Cow;
 use transaction::data::to_address;
 use transaction::data::transform;
 use transaction::data::TransformHandler;
@@ -55,7 +54,10 @@ pub enum TransactionProcessorError {
     InvalidPackageSchema(DecodeError),
 }
 
-fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFrameUpdate) {
+pub(crate) fn extract_refs_from_instruction(
+    instruction: &Instruction,
+    update: &mut CallFrameUpdate,
+) {
     match instruction {
         Instruction::CallFunction {
             package_address,
@@ -170,7 +172,7 @@ fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFra
     }
 }
 
-fn extract_refs_from_value(value: &ManifestValue, collector: &mut CallFrameUpdate) {
+pub(crate) fn extract_refs_from_value(value: &ManifestValue, collector: &mut CallFrameUpdate) {
     match value {
         Value::Bool { .. }
         | Value::I8 { .. }

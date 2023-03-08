@@ -15,8 +15,8 @@ pub struct TransactionProcessorRunInput<'a> {
     pub runtime_validations: Cow<'a, [RuntimeValidationRequest]>,
     pub instructions: Cow<'a, Vec<u8>>,
     pub blobs: Cow<'a, [Vec<u8>]>,
-    pub global_references: Vec<Address>,
-    pub local_references: Vec<Reference>,
+    pub global_references: BTreeSet<Address>,
+    pub local_references: BTreeSet<Reference>,
 }
 
 pub type TransactionProcessorRunOutput = Vec<InstructionOutput>;

@@ -104,7 +104,7 @@ impl ExecutableInvocation for MethodInvocation {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
         let nodes_to_move = value.owned_node_ids().clone();
-        let mut node_refs_to_copy = value.global_references().clone();
+        let mut node_refs_to_copy = value.references().clone();
 
         // Pass the component ref
         node_refs_to_copy.insert(self.identifier.0);
@@ -211,7 +211,7 @@ impl ExecutableInvocation for FunctionInvocation {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
         let nodes_to_move = value.owned_node_ids().clone();
-        let mut node_refs_to_copy = value.global_references().clone();
+        let mut node_refs_to_copy = value.references().clone();
 
         let actor = Actor::function(self.fn_identifier.clone());
 
@@ -429,7 +429,7 @@ impl Executor for ScryptoExecutor {
         };
 
         let update = CallFrameUpdate {
-            node_refs_to_copy: output.global_references().clone(),
+            node_refs_to_copy: output.references().clone(),
             nodes_to_move: output.owned_node_ids().clone(),
         };
 
