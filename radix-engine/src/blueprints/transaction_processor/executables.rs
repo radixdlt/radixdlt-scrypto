@@ -565,13 +565,30 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     resource_address,
                     entries,
                 } => {
+                    /*
+                    let mut processor_with_api = TransactionProcessorWithApi {
+                        worktop,
+                        processor,
+                        api,
+                    };
+
+                    let mut non_fungible_entries = BTreeMap::new();
+                    for (id, value) in entries {
+                        let value: ManifestValue =
+                            manifest_decode(&value).expect("Invalid CALL_FUNCTION arguments");
+                        let scrypto_value = transform(value, &mut processor_with_api)?;
+                        non_fungible_entries.insert(id, scrypto_encode(&scrypto_value).unwrap());
+                    }
+
+                    processor = processor_with_api.processor;
+                     */
+
                     let rtn = api.call_method(
                         RENodeId::GlobalObject(resource_address.into()),
                         RESOURCE_MANAGER_MINT_NON_FUNGIBLE,
-                        scrypto_encode(&ResourceManagerMintNonFungibleInput { entries: entries })
+                        scrypto_encode(&ResourceManagerMintNonFungibleInput { entries })
                             .unwrap(),
                     )?;
-
                     let result = IndexedScryptoValue::from_vec(rtn).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result, &worktop, api,

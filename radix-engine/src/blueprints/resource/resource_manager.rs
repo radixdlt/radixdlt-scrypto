@@ -1312,11 +1312,12 @@ impl ResourceManagerBlueprint {
         let non_fungible_mut: &mut Option<ScryptoValue> =
             api.kernel_get_substate_ref_mut(non_fungible_handle)?;
         if let Option::Some(ref mut non_fungible_substate) = non_fungible_mut {
+            /*
             let mut non_fungible: NonFungible =
                 scrypto_decode(&scrypto_encode(non_fungible_substate).unwrap()).unwrap();
             non_fungible.set_mutable_data(input.data);
-            *non_fungible_substate =
-                scrypto_decode(&scrypto_encode(&non_fungible).unwrap()).unwrap();
+             */
+            *non_fungible_substate = scrypto_decode(&input.data).unwrap();
         } else {
             let non_fungible_global_id = NonFungibleGlobalId::new(resource_address, input.id);
             return Err(RuntimeError::ApplicationError(
@@ -1457,12 +1458,7 @@ impl ResourceManagerBlueprint {
         let wrapper: &Option<ScryptoValue> =
             api.kernel_get_substate_ref(non_fungible_handle)?;
         if let Option::Some(non_fungible) = wrapper {
-            let non_fungible: NonFungible =
-                scrypto_decode(&scrypto_encode(&non_fungible).unwrap()).unwrap();
-            Ok(IndexedScryptoValue::from_typed(&[
-                non_fungible.immutable_data(),
-                non_fungible.mutable_data(),
-            ]))
+            Ok(IndexedScryptoValue::from_typed(non_fungible))
         } else {
             Err(RuntimeError::ApplicationError(
                 ApplicationError::ResourceManagerError(ResourceManagerError::NonFungibleNotFound(

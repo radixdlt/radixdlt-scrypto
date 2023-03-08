@@ -1,4 +1,4 @@
-use radix_engine_common::data::scrypto::{ScryptoDescribe, ScryptoSbor};
+use radix_engine_common::data::scrypto::ScryptoSbor;
 use crate::api::types::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;

@@ -190,45 +190,6 @@ mod tests {
             output,
             quote! {
                 impl ::scrypto::prelude::NonFungibleData for MyStruct {
-                    fn decode(immutable_data: &[u8], mutable_data: &[u8]) -> Result<Self, ::sbor::DecodeError> {
-                        use ::sbor::{value_kind::*, *};
-                        let mut decoder_nm = ::scrypto::data::scrypto::ScryptoDecoder::new(immutable_data, ::scrypto::data::scrypto::SCRYPTO_SBOR_V1_MAX_DEPTH);
-                        decoder_nm.read_and_check_payload_prefix(::scrypto::data::scrypto::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
-                        decoder_nm.read_and_check_value_kind(::scrypto::data::scrypto::ScryptoValueKind::Tuple)?;
-                        decoder_nm.read_and_check_size(1)?;
-                        let mut decoder_m = ::scrypto::data::scrypto::ScryptoDecoder::new(mutable_data, ::scrypto::data::scrypto::SCRYPTO_SBOR_V1_MAX_DEPTH);
-                        decoder_m.read_and_check_payload_prefix(::scrypto::data::scrypto::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
-                        decoder_m.read_and_check_value_kind(::scrypto::data::scrypto::ScryptoValueKind::Tuple)?;
-                        decoder_m.read_and_check_size(1)?;
-                        let decoded = Self {
-                            field_1: decoder_nm.decode::<u32>()?,
-                            field_2: decoder_m.decode::<String>()?,
-                        };
-                        decoder_nm.check_end()?;
-                        decoder_m.check_end()?;
-                        Ok(decoded)
-                    }
-                    fn immutable_data(&self) -> Result<::sbor::rust::vec::Vec<u8>, ::sbor::EncodeError> {
-                        use ::sbor::{value_kind::*, *};
-                        let mut bytes = Vec::with_capacity(512);
-                        let mut encoder = ::scrypto::data::scrypto::ScryptoEncoder::new(&mut bytes, ::scrypto::data::scrypto::SCRYPTO_SBOR_V1_MAX_DEPTH);
-                        encoder.write_payload_prefix(::scrypto::data::scrypto::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
-                        encoder.write_value_kind(::scrypto::data::scrypto::ScryptoValueKind::Tuple)?;
-                        encoder.write_size(1)?;
-                        encoder.encode(&self.field_1)?;
-                        Ok(bytes)
-                    }
-                    fn mutable_data(&self) -> Result<::sbor::rust::vec::Vec<u8>, ::sbor::EncodeError> {
-                        use ::sbor::{value_kind::*, *};
-                        use ::sbor::rust::vec::Vec;
-                        let mut bytes = Vec::with_capacity(512);
-                        let mut encoder = ::scrypto::data::scrypto::ScryptoEncoder::new(&mut bytes, ::scrypto::data::scrypto::SCRYPTO_SBOR_V1_MAX_DEPTH);
-                        encoder.write_payload_prefix(::scrypto::data::scrypto::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
-                        encoder.write_value_kind(::scrypto::data::scrypto::ScryptoValueKind::Tuple)?;
-                        encoder.write_size(1)?;
-                        encoder.encode(&self.field_2)?;
-                        Ok(bytes)
-                    }
                 }
             },
         );

@@ -134,7 +134,7 @@ impl ResourceManager {
     {
         // TODO: Implement UUID generation in ResourceManager
         let mut entries = Vec::new();
-        entries.push(scrypto_encode(&()).unwrap());
+        entries.push(scrypto_encode(&data).unwrap());
 
         let rtn = api.call_method(
             RENodeId::GlobalObject(self.0.into()),
@@ -163,7 +163,7 @@ impl ResourceManager {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn get_non_fungible_mutable_data<Y, E: Debug + ScryptoDecode, T: ScryptoDecode>(
+    pub fn get_non_fungible_data<Y, E: Debug + ScryptoDecode, T: ScryptoDecode>(
         &self,
         id: NonFungibleLocalId,
         api: &mut Y,
@@ -177,8 +177,7 @@ impl ResourceManager {
             scrypto_encode(&ResourceManagerGetNonFungibleInput { id }).unwrap(),
         )?;
 
-        let output: [Vec<u8>; 2] = scrypto_decode(&rtn).unwrap();
-        let data = scrypto_decode(&output[0]).unwrap();
+        let data = scrypto_decode(&rtn).unwrap();
         Ok(data)
     }
 

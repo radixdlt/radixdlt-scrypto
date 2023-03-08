@@ -114,6 +114,7 @@ pub fn decompile_instruction<F: fmt::Write>(
     instruction: &Instruction,
     context: &mut DecompilationContext,
 ) -> Result<(), DecompileError> {
+    println!("{:?}", instruction);
     match instruction {
         Instruction::TakeFromWorktop { resource_address } => {
             let bucket_id = context
@@ -523,7 +524,7 @@ pub fn decompile_instruction<F: fmt::Write>(
 
             f.write_str("MINT_NON_FUNGIBLE")?;
             format_typed_value(f, context, resource_address)?;
-            //format_typed_value(f, context, &entries)?;
+            format_typed_value(f, context, &entries)?;
             f.write_str(";")?;
         }
         Instruction::MintUuidNonFungible {
@@ -534,7 +535,7 @@ pub fn decompile_instruction<F: fmt::Write>(
 
             f.write_str("MINT_UUID_NON_FUNGIBLE")?;
             format_typed_value(f, context, resource_address)?;
-            //format_typed_value(f, context, &entries)?;
+            format_typed_value(f, context, &entries)?;
             f.write_str(";")?;
         }
         Instruction::AssertAccessRule { access_rule } => {
@@ -578,13 +579,13 @@ pub fn format_encoded_args<F: fmt::Write>(
 
 fn transform_non_fungible_mint_params(
     mint_params: &BTreeMap<NonFungibleLocalId, Vec<u8>>,
-) -> Result<BTreeMap<NonFungibleLocalId, ManifestValue>, DecodeError> {
+) -> Result<BTreeMap<NonFungibleLocalId, Vec<u8>>, DecodeError> {
     let mut mint_params_manifest_value =
-        BTreeMap::<NonFungibleLocalId, ManifestValue>::new();
-    for (id, immutable_data) in mint_params.into_iter() {
+        BTreeMap::<NonFungibleLocalId, Vec<u8>>::new();
+    for (id, data) in mint_params.into_iter() {
         mint_params_manifest_value.insert(
             id.clone(),
-                manifest_decode(&immutable_data)?,
+                data.clone(),
         );
     }
     Ok(mint_params_manifest_value)
@@ -592,10 +593,10 @@ fn transform_non_fungible_mint_params(
 
 fn transform_uuid_non_fungible_mint_params(
     mint_params: &Vec<Vec<u8>>,
-) -> Result<Vec<ManifestValue>, DecodeError> {
-    let mut mint_params_manifest_value = Vec::<ManifestValue>::new();
+) -> Result<Vec<Vec<u8>>, DecodeError> {
+    let mut mint_params_manifest_value = Vec::<Vec<u8>>::new();
     for data in mint_params.into_iter() {
-        mint_params_manifest_value.push(manifest_decode(&data)?);
+        mint_params_manifest_value.push(data.clone());
     }
     Ok(mint_params_manifest_value)
 }

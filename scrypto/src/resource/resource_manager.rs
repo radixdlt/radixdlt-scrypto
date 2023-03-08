@@ -244,29 +244,6 @@ impl ResourceManager {
         );
     }
 
-    fn update_non_fungible_data_internal(&self, id: NonFungibleLocalId, data: Vec<u8>) {
-        let mut env = ScryptoEnv;
-        let _rtn = env
-            .call_method(
-                RENodeId::GlobalObject(self.0.into()),
-                RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT,
-                scrypto_encode(&ResourceManagerUpdateNonFungibleDataInput { id, data }).unwrap(),
-            )
-            .unwrap();
-    }
-
-    fn get_non_fungible_data_internal(&self, id: NonFungibleLocalId) -> Vec<u8> {
-        let mut env = ScryptoEnv;
-        let rtn = env
-            .call_method(
-                RENodeId::GlobalObject(self.0.into()),
-                RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT,
-                scrypto_encode(&ResourceManagerGetNonFungibleInput { id }).unwrap(),
-            )
-            .unwrap();
-        scrypto_decode(&rtn).unwrap()
-    }
-
     pub fn resource_type(&self) -> ResourceType {
         let mut env = ScryptoEnv;
         let rtn = env
@@ -383,8 +360,15 @@ impl ResourceManager {
     /// # Panics
     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
     pub fn get_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleLocalId) -> T {
-        let non_fungible = self.get_non_fungible_data_internal(id.clone());
-        scrypto_decode(&non_fungible).unwrap()
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                RENodeId::GlobalObject(self.0.into()),
+                RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT,
+                scrypto_encode(&ResourceManagerGetNonFungibleInput { id: id.clone() }).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
     }
 
     /// Updates the mutable part of a non-fungible unit.
@@ -396,6 +380,16 @@ impl ResourceManager {
         id: &NonFungibleLocalId,
         new_data: T,
     ) {
-        self.update_non_fungible_data_internal(id.clone(), scrypto_encode(&new_data).unwrap())
+        let mut env = ScryptoEnv;
+        let _rtn = env
+            .call_method(
+                RENodeId::GlobalObject(self.0.into()),
+                RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT,
+                scrypto_encode(&ResourceManagerUpdateNonFungibleDataInput {
+                    id: id.clone(),
+                    data: scrypto_encode(&new_data).unwrap(),
+                }).unwrap(),
+            )
+            .unwrap();
     }
 }

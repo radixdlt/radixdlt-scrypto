@@ -1,6 +1,6 @@
 #![allow(unused_must_use)]
 use colored::*;
-use radix_engine::blueprints::resource::{NonFungible, ResourceManagerSubstate};
+use radix_engine::blueprints::resource::ResourceManagerSubstate;
 use radix_engine::blueprints::resource::VaultInfoSubstate;
 use radix_engine::ledger::*;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
@@ -509,23 +509,17 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                     .map(|s| s.into())
                     .unwrap();
                 if let Option::Some(value) = non_fungible {
-                    let non_fungible: NonFungible = scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap();
 
                     let id = IndexedScryptoValue::from_typed(id);
-                    let immutable_data =
-                        IndexedScryptoValue::from_slice(&non_fungible.immutable_data()).unwrap();
-                    let mutable_data =
-                        IndexedScryptoValue::from_slice(&non_fungible.mutable_data()).unwrap();
                     let value_display_context =
                         ScryptoValueDisplayContext::with_optional_bench32(Some(&bech32_encoder));
                     writeln!(
                         output,
-                        "{}  {} NonFungible {{ id: {}, immutable_data: {}, mutable_data: {} }}",
+                        "{}  {} NonFungible {{ id: {}, data: {} }}",
                         if last { " " } else { "│" },
                         list_item_prefix(inner_last),
                         id.display(value_display_context),
-                        immutable_data.display(value_display_context),
-                        mutable_data.display(value_display_context)
+                        value.display(value_display_context),
                     );
                 }
             }

@@ -8,6 +8,7 @@ use radix_engine_interface::blueprints::resource::{
     ResourceMethodAuthKey, RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
 };
 use radix_engine_interface::rule;
+use radix_engine_interface::schema::NonFungibleSchema;
 use transaction::builder::ManifestBuilder;
 use transaction::model::Instruction;
 
@@ -89,15 +90,13 @@ impl NewSimpleBadge {
                     .to_string(),
                 args: manifest_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
                     id_type: NonFungibleIdType::Integer,
+                    non_fungible_schema: NonFungibleSchema::new(),
                     metadata,
                     access_rules: btreemap!(
                         ResourceMethodAuthKey::Withdraw => (rule!(allow_all), rule!(deny_all))
                     ),
                     entries: btreemap!(
-                        NonFungibleLocalId::integer(1) => (
-                            scrypto_encode(&EmptyStruct).unwrap(),
-                            scrypto_encode(&EmptyStruct).unwrap(),
-                        ),
+                        NonFungibleLocalId::integer(1) => scrypto_encode(&EmptyStruct).unwrap(),
                     ),
                 })
                 .unwrap(),

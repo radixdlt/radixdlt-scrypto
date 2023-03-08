@@ -1,8 +1,9 @@
 use scrypto::api::ClientPackageApi;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 use scrypto::prelude::*;
+use scrypto::schema::NonFungibleSchema;
 
-#[derive(NonFungibleData)]
+#[derive(ScryptoSbor, NonFungibleData)]
 pub struct Sandwich {
     pub name: String,
     #[mutable]
@@ -297,7 +298,7 @@ mod non_fungible_test {
             let mut encoded = BTreeMap::new();
             encoded.insert(
                 NonFungibleLocalId::integer(0),
-                (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
+                scrypto_encode(&()).unwrap(),
             );
 
             // creating non-fungible id with id type set to default (UUID)
@@ -310,6 +311,7 @@ mod non_fungible_test {
                         id_type: NonFungibleIdType::UUID,
                         metadata: BTreeMap::new(),
                         access_rules: BTreeMap::new(),
+                        non_fungible_schema: NonFungibleSchema::new_schema::<()>(),
                         entries: encoded,
                     })
                     .unwrap(),

@@ -501,7 +501,7 @@ impl<A: ConfiguredAuth>
     /// ```no_run
     /// use scrypto::prelude::*;
     ///
-    /// #[derive(NonFungibleData)]
+    /// #[derive(ScryptoSbor, NonFungibleData)]
     /// struct NFData {
     ///     pub name: String,
     ///     #[mutable]
@@ -551,7 +551,7 @@ impl<A: ConfiguredAuth>
     /// ```no_run
     /// use scrypto::prelude::*;
     ///
-    /// #[derive(NonFungibleData)]
+    /// #[derive(ScryptoSbor, NonFungibleData)]
     /// struct NFData {
     ///     pub name: String,
     ///     #[mutable]
@@ -601,7 +601,7 @@ impl<A: ConfiguredAuth>
     /// ```no_run
     /// use scrypto::prelude::*;
     ///
-    /// #[derive(NonFungibleData)]
+    /// #[derive(ScryptoSbor, NonFungibleData)]
     /// struct NFData {
     ///     pub name: String,
     ///     #[mutable]
@@ -654,7 +654,7 @@ impl<A: ConfiguredAuth>
     /// ```no_run
     /// use scrypto::prelude::*;
     ///
-    /// #[derive(NonFungibleData)]
+    /// #[derive(ScryptoSbor, NonFungibleData)]
     /// struct NFData {
     ///     pub name: String,
     ///     #[mutable]

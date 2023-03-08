@@ -8,6 +8,7 @@ use radix_engine_interface::blueprints::resource::{
 };
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::rule;
+use radix_engine_interface::schema::NonFungibleSchema;
 use rand::Rng;
 use utils::ContextualDisplay;
 
@@ -74,6 +75,7 @@ impl NewAccount {
                         .to_string(),
                     args: manifest_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
                         id_type: NonFungibleIdType::Integer,
+                        non_fungible_schema: NonFungibleSchema::new(),
                         metadata: btreemap!(
                             "name".to_owned() => "Owner Badge".to_owned()
                         ),
@@ -81,10 +83,7 @@ impl NewAccount {
                             ResourceMethodAuthKey::Withdraw => (rule!(allow_all), rule!(deny_all))
                         ),
                         entries: btreemap!(
-                            NonFungibleLocalId::integer(1) => (
-                                scrypto_encode(&EmptyStruct).unwrap(),
-                                scrypto_encode(&EmptyStruct).unwrap(),
-                            )
+                            NonFungibleLocalId::integer(1) => scrypto_encode(&EmptyStruct).unwrap(),
                         ),
                     })
                     .unwrap(),

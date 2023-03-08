@@ -35,6 +35,7 @@ use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::manifest::model::*;
 use radix_engine_interface::data::manifest::*;
 use radix_engine_interface::data::scrypto::model::*;
+use radix_engine_interface::data::scrypto::scrypto_encode;
 use radix_engine_interface::manifest_args;
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
 use radix_engine_interface::schema::NonFungibleSchema;
@@ -963,17 +964,23 @@ fn generate_byte_vec_from_hex(value: &ast::Value) -> Result<Vec<u8>, GeneratorEr
     Ok(bytes)
 }
 
-/// This function generates args from an [`ast::Value`]. This is useful when minting NFTs to be able
-/// to specify their data in a human readable format instead of SBOR.
-fn generate_args_from_tuple(
-    value: &ast::Value,
-    resolver: &mut NameResolver,
-    bech32_decoder: &Bech32Decoder,
-    blobs: &BTreeMap<Hash, Vec<u8>>,
-) -> Result<ManifestValue, GeneratorError> {
-    match value {
-        ast::Value::Tuple(values) => generate_args(values, resolver, bech32_decoder, blobs),
-        v => invalid_type!(v, ast::Type::Tuple),
+struct TemporaryTransformHandler;
+
+impl TransformHandler<GeneratorError> for TemporaryTransformHandler {
+    fn replace_bucket(&mut self, b: ManifestBucket) -> Result<Own, GeneratorError> {
+        todo!()
+    }
+
+    fn replace_proof(&mut self, p: ManifestProof) -> Result<Own, GeneratorError> {
+        todo!()
+    }
+
+    fn replace_expression(&mut self, e: ManifestExpression) -> Result<Vec<Own>, GeneratorError> {
+        todo!()
+    }
+
+    fn replace_blob(&mut self, b: ManifestBlobRef) -> Result<Vec<u8>, GeneratorError> {
+        todo!()
     }
 }
 
@@ -999,12 +1006,14 @@ fn generate_non_fungible_mint_params(
                     actual: key_type.clone(),
                 });
             };
+            /*
             if value_type != &ast::Type::Tuple {
                 return Err(GeneratorError::InvalidAstType {
                     expected_type: ast::Type::Tuple,
                     actual: value_type.clone(),
                 });
             };
+             */
             if elements.len() % 2 != 0 {
                 return Err(GeneratorError::OddNumberOfElements);
             }
@@ -1012,7 +1021,17 @@ fn generate_non_fungible_mint_params(
             let mut mint_params = BTreeMap::new();
             for i in 0..elements.len() / 2 {
                 let non_fungible_local_id = generate_non_fungible_local_id(&elements[i * 2])?;
-                let non_fungible_data = match elements[i * 2 + 1].clone() {
+                let non_fungible = generate_value(
+                    &elements[i * 2 + 1],
+                    None,
+                    resolver,
+                    bech32_decoder,
+                    blobs,
+                )?;
+                let non_fungible = transform(non_fungible, &mut TemporaryTransformHandler)?;
+                let non_fungible = scrypto_encode(&non_fungible).unwrap();
+                /*
+                let non_fungible_data = match .clone() {
                     ast::Value::Tuple(values) => {
                         if values.len() != 2 {
                             return Err(GeneratorError::InvalidLength {
@@ -1043,7 +1062,8 @@ fn generate_non_fungible_mint_params(
                     }
                     v => invalid_type!(v, ast::Type::Tuple)?,
                 };
-                mint_params.insert(non_fungible_local_id, non_fungible_data);
+                 */
+                mint_params.insert(non_fungible_local_id, non_fungible);
             }
 
             Ok(mint_params)
@@ -1059,47 +1079,19 @@ fn generate_uuid_non_fungible_mint_params(
     blobs: &BTreeMap<Hash, Vec<u8>>,
 ) -> Result<Vec<Vec<u8>>, GeneratorError> {
     match value {
-        ast::Value::Array(kind, elements) => {
-            if kind != &ast::Type::Tuple {
-                return Err(GeneratorError::InvalidAstType {
-                    expected_type: ast::Type::Tuple,
-                    actual: kind.clone(),
-                });
-            };
-
+        ast::Value::Array(_kind, elements) => {
             let mut mint_params = Vec::new();
             for element in elements.into_iter() {
-                match element {
-                    ast::Value::Tuple(values) => {
-                        if values.len() != 2 {
-                            return Err(GeneratorError::InvalidLength {
-                                value_type: ast::Type::Tuple,
-                                expected_length: 2,
-                                actual: values.len(),
-                            });
-                        }
-
-                        /*
-                        let immutable_data = manifest_encode(&generate_args_from_tuple(
-                            &values[0],
-                            resolver,
-                            bech32_decoder,
-                            blobs,
-                        )?)
-                        .map_err(GeneratorError::ArgumentEncodingError)?;
-                         */
-                        let mutable_data = manifest_encode(&generate_args_from_tuple(
-                            &values[1],
-                            resolver,
-                            bech32_decoder,
-                            blobs,
-                        )?)
-                        .map_err(GeneratorError::ArgumentEncodingError)?;
-
-                        mint_params.push(mutable_data);
-                    }
-                    v => invalid_type!(v, ast::Type::Tuple)?,
-                }
+                let non_fungible = generate_value(
+                    element,
+                    None,
+                    resolver,
+                    bech32_decoder,
+                    blobs,
+                )?;
+                let non_fungible = transform(non_fungible, &mut TemporaryTransformHandler)?;
+                let non_fungible = scrypto_encode(&non_fungible).unwrap();
+                mint_params.push(non_fungible);
             }
 
             Ok(mint_params)
@@ -1572,16 +1564,7 @@ mod tests {
                 amount: dec!("100")
             },
         );
-        generate_instruction_ok!(
-            r##"MINT_NON_FUNGIBLE ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak") Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128)));"##,
-            Instruction::MintNonFungible {
-                resource_address: resource,
-                entries: BTreeMap::from([(
-                    NonFungibleLocalId::integer(1),
-                    manifest_args!(String::from("Hello World"), dec!("12")),
-                )])
-            },
-        );
+
     }
 
     #[test]
@@ -1641,7 +1624,7 @@ mod tests {
     #[test]
     fn test_create_non_fungible_with_initial_supply_instruction() {
         generate_instruction_ok!(
-            r##"CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY Enum("NonFungibleIdType::Integer") Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll"))) Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128)));"##,
+            r##"CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY Enum("NonFungibleIdType::Integer") Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll"))) Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple("Hello World", Decimal("12")));"##,
             Instruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
@@ -1663,7 +1646,7 @@ mod tests {
                     ]),
                     entries: BTreeMap::from([(
                         NonFungibleLocalId::integer(1),
-                        manifest_args!(String::from("Hello World"), dec!("12")),
+                        scrypto_encode(&(String::from("Hello World"), dec!("12"))).unwrap(),
                     )]),
                 })
                 .unwrap(),
@@ -1728,6 +1711,27 @@ mod tests {
     }
 
     #[test]
+    fn test_mint_non_fungible_instruction() {
+        let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
+        let resource = bech32_decoder
+            .validate_and_decode_resource_address(
+                "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak",
+            )
+            .unwrap();
+
+        generate_instruction_ok!(
+            r##"MINT_NON_FUNGIBLE ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak") Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple("Hello World", Decimal("12")));"##,
+            Instruction::MintNonFungible {
+                resource_address: resource,
+                entries: BTreeMap::from([(
+                    NonFungibleLocalId::integer(1),
+                    scrypto_encode(&(String::from("Hello World"), dec!("12"))).unwrap(),
+                )])
+            },
+        );
+    }
+
+    #[test]
     fn test_mint_uuid_non_fungible_instruction() {
         let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
         let resource = bech32_decoder
@@ -1740,16 +1744,13 @@ mod tests {
             MINT_UUID_NON_FUNGIBLE
                 ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")
                 Array<Tuple>(
-                    Tuple(
-                        Tuple("Hello World", Decimal("12")),
-                        Tuple(12u8, 19u128)
-                    )
+                    Tuple("Hello World", Decimal("12"))
                 );
             "#,
             Instruction::MintUuidNonFungible {
                 resource_address: resource,
                 entries: Vec::from([
-                    manifest_args!(String::from("Hello World"), dec!("12")),
+                    scrypto_encode(&(String::from("Hello World"), dec!("12"))).unwrap(),
                 ])
             },
         );
