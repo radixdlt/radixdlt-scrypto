@@ -5,6 +5,7 @@ use crate::blueprints::clock::ClockNativePackage;
 use crate::blueprints::epoch_manager::EpochManagerNativePackage;
 use crate::blueprints::identity::IdentityNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
+use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::blueprints::transaction_runtime::TransactionRuntimeNativePackage;
 use crate::kernel::interpreters::ScryptoInterpreter;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
@@ -311,6 +312,29 @@ pub fn create_genesis(
                 dependent_components: vec![CLOCK],
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
+            })
+            .unwrap(),
+        });
+    }
+
+    // TransactionProcessor Package
+    {
+        pre_allocated_ids.insert(RENodeId::GlobalObject(TRANSACTION_PROCESSOR_PACKAGE.into()));
+        let package_address = TRANSACTION_PROCESSOR_PACKAGE.to_array_without_entity_id();
+        instructions.push(Instruction::CallFunction {
+            package_address: PACKAGE_LOADER,
+            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
+            args: manifest_encode(&PackageLoaderPublishNativeInput {
+                package_address: Some(package_address), // TODO: Clean this up
+                schema: TransactionProcessorNativePackage::schema(),
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new(),
+                native_package_code_id: TRANSACTION_PROCESSOR_CODE_ID,
+                dependent_resources: vec![],
+                dependent_components: vec![],
+                package_access_rules: BTreeMap::new(),
+                default_package_access_rule: AccessRule::DenyAll,
             })
             .unwrap(),
         });
