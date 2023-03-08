@@ -1,7 +1,6 @@
 use super::node_modules::access_rules::AuthZoneStackSubstate;
 use super::node_modules::access_rules::MethodAccessRulesSubstate;
 use super::node_modules::metadata::MetadataSubstate;
-use super::package::PackageCodeTypeSubstate;
 use crate::blueprints::access_controller::AccessControllerSubstate;
 use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::clock::ClockSubstate;
@@ -41,7 +40,6 @@ pub enum PersistedSubstate {
     ResourceManager(ResourceManagerSubstate),
     ComponentState(ComponentStateSubstate),
     PackageInfo(PackageInfoSubstate),
-    PackageCodeType(PackageCodeTypeSubstate),
     PackageCode(PackageCodeSubstate),
     Account(AccountSubstate),
     AccessController(AccessControllerSubstate),
@@ -189,7 +187,6 @@ impl PersistedSubstate {
             PersistedSubstate::ResourceManager(value) => RuntimeSubstate::ResourceManager(value),
             PersistedSubstate::ComponentState(value) => RuntimeSubstate::ComponentState(value),
             PersistedSubstate::PackageInfo(value) => RuntimeSubstate::PackageInfo(value),
-            PersistedSubstate::PackageCodeType(value) => RuntimeSubstate::PackageCodeType(value),
             PersistedSubstate::PackageCode(value) => RuntimeSubstate::PackageCode(value),
             PersistedSubstate::VaultInfo(value) => RuntimeSubstate::VaultInfo(value),
             PersistedSubstate::VaultLiquidFungible(value) => {
@@ -247,7 +244,6 @@ pub enum RuntimeSubstate {
     ComponentState(ComponentStateSubstate),
     PackageCode(PackageCodeSubstate),
     PackageInfo(PackageInfoSubstate),
-    PackageCodeType(PackageCodeTypeSubstate),
     AuthZoneStack(AuthZoneStackSubstate),
     Worktop(WorktopSubstate),
     TransactionRuntime(TransactionRuntimeSubstate),
@@ -310,9 +306,6 @@ impl RuntimeSubstate {
                 PersistedSubstate::ComponentState(value.clone())
             }
             RuntimeSubstate::PackageInfo(value) => PersistedSubstate::PackageInfo(value.clone()),
-            RuntimeSubstate::PackageCodeType(value) => {
-                PersistedSubstate::PackageCodeType(value.clone())
-            }
             RuntimeSubstate::PackageCode(value) => PersistedSubstate::PackageCode(value.clone()),
             RuntimeSubstate::NonFungible(value) => PersistedSubstate::NonFungible(value.clone()),
             RuntimeSubstate::KeyValueStoreEntry(value) => {
@@ -382,7 +375,6 @@ impl RuntimeSubstate {
             RuntimeSubstate::ResourceManager(value) => PersistedSubstate::ResourceManager(value),
             RuntimeSubstate::ComponentState(value) => PersistedSubstate::ComponentState(value),
             RuntimeSubstate::PackageInfo(value) => PersistedSubstate::PackageInfo(value),
-            RuntimeSubstate::PackageCodeType(value) => PersistedSubstate::PackageCodeType(value),
             RuntimeSubstate::PackageCode(value) => PersistedSubstate::PackageCode(value),
             RuntimeSubstate::NonFungible(value) => PersistedSubstate::NonFungible(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => {
@@ -496,7 +488,6 @@ impl RuntimeSubstate {
             RuntimeSubstate::FunctionAccessRules(value) => {
                 SubstateRefMut::PackageAccessRules(value)
             }
-            RuntimeSubstate::PackageCodeType(value) => SubstateRefMut::PackageCodeType(value),
             RuntimeSubstate::PackageCode(value) => SubstateRefMut::PackageCode(value),
             RuntimeSubstate::PackageRoyaltyConfig(value) => {
                 SubstateRefMut::PackageRoyaltyConfig(value)
@@ -564,7 +555,6 @@ impl RuntimeSubstate {
                 SubstateRef::ComponentRoyaltyAccumulator(value)
             }
             RuntimeSubstate::PackageInfo(value) => SubstateRef::PackageInfo(value),
-            RuntimeSubstate::PackageCodeType(value) => SubstateRef::PackageCodeType(value),
             RuntimeSubstate::FunctionAccessRules(value) => SubstateRef::PackageAccessRules(value),
             RuntimeSubstate::PackageCode(value) => SubstateRef::PackageCode(value),
             RuntimeSubstate::PackageRoyaltyConfig(value) => {
@@ -724,11 +714,6 @@ impl Into<RuntimeSubstate> for PackageInfoSubstate {
     }
 }
 
-impl Into<RuntimeSubstate> for PackageCodeTypeSubstate {
-    fn into(self) -> RuntimeSubstate {
-        RuntimeSubstate::PackageCodeType(self)
-    }
-}
 impl Into<RuntimeSubstate> for FunctionAccessRulesSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::FunctionAccessRules(self)
@@ -1084,7 +1069,6 @@ pub enum SubstateRef<'a> {
     NonFungible(&'a NonFungibleSubstate),
     KeyValueStoreEntry(&'a KeyValueStoreEntrySubstate),
     PackageInfo(&'a PackageInfoSubstate),
-    PackageCodeType(&'a PackageCodeTypeSubstate),
     PackageCode(&'a PackageCodeSubstate),
     PackageRoyaltyConfig(&'a PackageRoyaltyConfigSubstate),
     PackageRoyaltyAccumulator(&'a PackageRoyaltyAccumulatorSubstate),
@@ -1335,15 +1319,6 @@ impl<'a> From<SubstateRef<'a>> for &'a PackageInfoSubstate {
     }
 }
 
-impl<'a> From<SubstateRef<'a>> for &'a PackageCodeTypeSubstate {
-    fn from(value: SubstateRef<'a>) -> Self {
-        match value {
-            SubstateRef::PackageCodeType(value) => value,
-            _ => panic!("Not package code type"),
-        }
-    }
-}
-
 impl<'a> From<SubstateRef<'a>> for &'a MethodAccessRulesSubstate {
     fn from(value: SubstateRef<'a>) -> Self {
         match value {
@@ -1410,7 +1385,6 @@ impl<'a> From<SubstateRef<'a>> for &'a AuthZoneStackSubstate {
 impl<'a> SubstateRef<'a> {
     pub fn to_scrypto_value(&self) -> IndexedScryptoValue {
         match self {
-            SubstateRef::PackageCodeType(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::EpochManager(value) => IndexedScryptoValue::from_typed(*value),
             SubstateRef::CurrentTimeRoundedToMinutes(value) => {
                 IndexedScryptoValue::from_typed(*value)
@@ -1573,7 +1547,6 @@ pub enum SubstateRefMut<'a> {
     ComponentRoyaltyConfig(&'a mut ComponentRoyaltyConfigSubstate),
     ComponentRoyaltyAccumulator(&'a mut ComponentRoyaltyAccumulatorSubstate),
     PackageInfo(&'a mut PackageInfoSubstate),
-    PackageCodeType(&'a mut PackageCodeTypeSubstate),
     PackageCode(&'a mut PackageCodeSubstate),
     PackageRoyaltyConfig(&'a mut PackageRoyaltyConfigSubstate),
     PackageRoyaltyAccumulator(&'a mut PackageRoyaltyAccumulatorSubstate),

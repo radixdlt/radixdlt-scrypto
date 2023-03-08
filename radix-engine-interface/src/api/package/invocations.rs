@@ -26,7 +26,6 @@ pub const PACKAGE_LOADER_PUBLISH_NATIVE_IDENT: &str = "publish_native";
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct PackageLoaderPublishNativeInput {
     pub package_address: Option<[u8; 26]>, // TODO: Clean this up
-    pub native_package_code_id: u8,
     pub schema: PackageSchema,
     pub dependent_resources: Vec<ResourceAddress>,
     pub dependent_components: Vec<ComponentAddress>,

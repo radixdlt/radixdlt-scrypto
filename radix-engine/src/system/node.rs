@@ -3,7 +3,6 @@ use crate::system::node_modules::access_rules::*;
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::*;
-use crate::system::package::PackageCodeTypeSubstate;
 use crate::types::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::package::*;
@@ -86,11 +85,7 @@ impl RENodeModuleInit {
 #[derive(Debug)]
 pub enum RENodeInit {
     GlobalObject(BTreeMap<SubstateOffset, RuntimeSubstate>),
-    GlobalPackage(
-        PackageInfoSubstate,
-        PackageCodeTypeSubstate,
-        PackageCodeSubstate,
-    ),
+    GlobalPackage(PackageInfoSubstate, PackageCodeSubstate),
     Object(BTreeMap<SubstateOffset, RuntimeSubstate>),
     AuthZoneStack(AuthZoneStackSubstate),
     KeyValueStore,
@@ -112,14 +107,10 @@ impl RENodeInit {
                 substates.extend(object_substates);
             }
             RENodeInit::KeyValueStore | RENodeInit::NonFungibleStore => {}
-            RENodeInit::GlobalPackage(package_info, code_type, code) => {
+            RENodeInit::GlobalPackage(package_info, code) => {
                 substates.insert(
                     SubstateOffset::Package(PackageOffset::Info),
                     package_info.into(),
-                );
-                substates.insert(
-                    SubstateOffset::Package(PackageOffset::CodeType),
-                    code_type.into(),
                 );
                 substates.insert(SubstateOffset::Package(PackageOffset::Code), code.into());
             }

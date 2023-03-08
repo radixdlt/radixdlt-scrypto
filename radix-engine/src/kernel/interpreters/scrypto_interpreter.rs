@@ -16,7 +16,6 @@ use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::node_modules::type_info::TypeInfoBlueprint;
 use crate::system::package::Package;
-use crate::system::package::PackageCodeTypeSubstate;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
 use radix_engine_interface::api::node_modules::auth::{
@@ -148,28 +147,13 @@ impl ExecutableInvocation for MethodInvocation {
             if package_address.eq(&PACKAGE_LOADER) {
                 node_refs_to_copy.insert(RENodeId::GlobalObject(RADIX_TOKEN.into()));
             } else {
-                let handle = api.kernel_lock_substate(
-                    RENodeId::GlobalObject(fn_identifier.package_address.into()),
-                    NodeModuleId::SELF,
-                    SubstateOffset::Package(PackageOffset::CodeType),
-                    LockFlags::read_only(),
-                )?;
-                let code_type: &PackageCodeTypeSubstate = api.kernel_get_substate_ref(handle)?;
-                let code_type = code_type.clone();
-                api.kernel_drop_lock(handle)?;
-
-                match code_type {
-                    PackageCodeTypeSubstate::Wasm => {
-                        node_refs_to_copy.insert(RENodeId::GlobalObject(EPOCH_MANAGER.into()));
-                        node_refs_to_copy.insert(RENodeId::GlobalObject(CLOCK.into()));
-                        node_refs_to_copy.insert(RENodeId::GlobalObject(RADIX_TOKEN.into()));
-                        node_refs_to_copy.insert(RENodeId::GlobalObject(PACKAGE_TOKEN.into()));
-                        node_refs_to_copy
-                            .insert(RENodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()));
-                        node_refs_to_copy
-                            .insert(RENodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()));
-                    }
-                    _ => {}
+                if package_address.is_wasm() {
+                    node_refs_to_copy.insert(RENodeId::GlobalObject(EPOCH_MANAGER.into()));
+                    node_refs_to_copy.insert(RENodeId::GlobalObject(CLOCK.into()));
+                    node_refs_to_copy.insert(RENodeId::GlobalObject(RADIX_TOKEN.into()));
+                    node_refs_to_copy.insert(RENodeId::GlobalObject(PACKAGE_TOKEN.into()));
+                    node_refs_to_copy.insert(RENodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()));
+                    node_refs_to_copy.insert(RENodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()));
                 }
             }
 
@@ -205,7 +189,7 @@ impl ExecutableInvocation for FunctionInvocation {
 
     fn resolve<D: KernelSubstateApi>(
         self,
-        api: &mut D,
+        _api: &mut D,
     ) -> Result<ResolvedInvocation<Self::Exec>, RuntimeError> {
         let value = IndexedScryptoValue::from_vec(self.args).map_err(|e| {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
@@ -220,28 +204,13 @@ impl ExecutableInvocation for FunctionInvocation {
             if self.fn_identifier.package_address.eq(&PACKAGE_LOADER) {
                 node_refs_to_copy.insert(RENodeId::GlobalObject(RADIX_TOKEN.into()));
             } else {
-                let handle = api.kernel_lock_substate(
-                    RENodeId::GlobalObject(self.fn_identifier.package_address.into()),
-                    NodeModuleId::SELF,
-                    SubstateOffset::Package(PackageOffset::CodeType),
-                    LockFlags::read_only(),
-                )?;
-                let code_type: &PackageCodeTypeSubstate = api.kernel_get_substate_ref(handle)?;
-                let code_type = code_type.clone();
-                api.kernel_drop_lock(handle)?;
-
-                match code_type {
-                    PackageCodeTypeSubstate::Wasm => {
-                        node_refs_to_copy.insert(RENodeId::GlobalObject(EPOCH_MANAGER.into()));
-                        node_refs_to_copy.insert(RENodeId::GlobalObject(CLOCK.into()));
-                        node_refs_to_copy.insert(RENodeId::GlobalObject(RADIX_TOKEN.into()));
-                        node_refs_to_copy.insert(RENodeId::GlobalObject(PACKAGE_TOKEN.into()));
-                        node_refs_to_copy
-                            .insert(RENodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()));
-                        node_refs_to_copy
-                            .insert(RENodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()));
-                    }
-                    _ => {}
+                if self.fn_identifier.package_address.is_wasm() {
+                    node_refs_to_copy.insert(RENodeId::GlobalObject(EPOCH_MANAGER.into()));
+                    node_refs_to_copy.insert(RENodeId::GlobalObject(CLOCK.into()));
+                    node_refs_to_copy.insert(RENodeId::GlobalObject(RADIX_TOKEN.into()));
+                    node_refs_to_copy.insert(RENodeId::GlobalObject(PACKAGE_TOKEN.into()));
+                    node_refs_to_copy.insert(RENodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()));
+                    node_refs_to_copy.insert(RENodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()));
                 }
             }
 
@@ -296,7 +265,7 @@ impl Executor for ScryptoExecutor {
             let export_name = self.fn_identifier.ident.to_string(); // TODO: Clean this up
 
             NativeVm::invoke_native_package(
-                NATIVE_PACKAGE_CODE_ID,
+                self.fn_identifier.package_address,
                 self.receiver,
                 &export_name,
                 args,
@@ -345,83 +314,56 @@ impl Executor for ScryptoExecutor {
             )?;
 
             // Interpret
-            let code_type = {
-                let handle = api.kernel_lock_substate(
-                    RENodeId::GlobalObject(self.fn_identifier.package_address.into()),
-                    NodeModuleId::SELF,
-                    SubstateOffset::Package(PackageOffset::CodeType),
-                    LockFlags::read_only(),
-                )?;
-                let code_type: &PackageCodeTypeSubstate = api.kernel_get_substate_ref(handle)?;
-                let code_type = code_type.clone();
-                api.kernel_drop_lock(handle)?;
-                code_type
-            };
-            let output = match code_type {
-                PackageCodeTypeSubstate::Native => {
+            let output = if self.fn_identifier.package_address.is_native() {
+                NativeVm::invoke_native_package(
+                    self.fn_identifier.package_address,
+                    self.receiver,
+                    &export_name,
+                    args,
+                    api,
+                )?
+                .into()
+            } else {
+                let mut wasm_instance = {
                     let handle = api.kernel_lock_substate(
                         RENodeId::GlobalObject(self.fn_identifier.package_address.into()),
                         NodeModuleId::SELF,
                         SubstateOffset::Package(PackageOffset::Code),
                         LockFlags::read_only(),
                     )?;
-                    let code: &PackageCodeSubstate = api.kernel_get_substate_ref(handle)?;
-                    let native_package_code_id = code.code[0];
+                    let wasm_instance = api
+                        .kernel_create_wasm_instance(self.fn_identifier.package_address, handle)?;
                     api.kernel_drop_lock(handle)?;
 
-                    NativeVm::invoke_native_package(
-                        native_package_code_id,
-                        self.receiver,
-                        &export_name,
-                        args,
-                        api,
-                    )?
-                    .into()
-                }
-                PackageCodeTypeSubstate::Wasm => {
-                    let mut wasm_instance = {
-                        let handle = api.kernel_lock_substate(
-                            RENodeId::GlobalObject(self.fn_identifier.package_address.into()),
-                            NodeModuleId::SELF,
-                            SubstateOffset::Package(PackageOffset::Code),
-                            LockFlags::read_only(),
-                        )?;
-                        let wasm_instance = api.kernel_create_wasm_instance(
-                            self.fn_identifier.package_address,
-                            handle,
-                        )?;
-                        api.kernel_drop_lock(handle)?;
+                    wasm_instance
+                };
 
-                        wasm_instance
-                    };
+                let output = {
+                    let mut runtime: Box<dyn WasmRuntime> = Box::new(ScryptoRuntime::new(api));
 
-                    let output = {
-                        let mut runtime: Box<dyn WasmRuntime> = Box::new(ScryptoRuntime::new(api));
-
-                        let mut input = Vec::new();
-                        if let Some(MethodIdentifier(node_id, ..)) = self.receiver {
-                            input.push(
-                                runtime
-                                    .allocate_buffer(
-                                        scrypto_encode(&node_id)
-                                            .expect("Failed to encode component id"),
-                                    )
-                                    .expect("Failed to allocate buffer"),
-                            );
-                        }
+                    let mut input = Vec::new();
+                    if let Some(MethodIdentifier(node_id, ..)) = self.receiver {
                         input.push(
                             runtime
-                                .allocate_buffer(args.into())
+                                .allocate_buffer(
+                                    scrypto_encode(&node_id)
+                                        .expect("Failed to encode component id"),
+                                )
                                 .expect("Failed to allocate buffer"),
                         );
+                    }
+                    input.push(
+                        runtime
+                            .allocate_buffer(args.into())
+                            .expect("Failed to allocate buffer"),
+                    );
 
-                        wasm_instance.invoke_export(&export_name, input, &mut runtime)?
-                    };
+                    wasm_instance.invoke_export(&export_name, input, &mut runtime)?
+                };
 
-                    api.update_wasm_memory_usage(wasm_instance.consumed_memory()?)?;
+                api.update_wasm_memory_usage(wasm_instance.consumed_memory()?)?;
 
-                    output
-                }
+                output
             };
 
             // Validate output
@@ -441,7 +383,7 @@ struct NativeVm;
 
 impl NativeVm {
     pub fn invoke_native_package<Y>(
-        native_package_code_id: u8,
+        native_package_address: PackageAddress,
         receiver: Option<MethodIdentifier>,
         export_name: &str,
         input: IndexedScryptoValue,
@@ -452,43 +394,41 @@ impl NativeVm {
     {
         let receiver = receiver.map(|r| r.0);
 
-        match native_package_code_id {
-            NATIVE_PACKAGE_CODE_ID => Package::invoke_export(&export_name, receiver, input, api),
-            RESOURCE_MANAGER_PACKAGE_CODE_ID => {
+        match native_package_address {
+            PACKAGE_LOADER => Package::invoke_export(&export_name, receiver, input, api),
+            RESOURCE_MANAGER_PACKAGE => {
                 ResourceManagerNativePackage::invoke_export(&export_name, receiver, input, api)
             }
-            EPOCH_MANAGER_PACKAGE_CODE_ID => {
+            EPOCH_MANAGER_PACKAGE => {
                 EpochManagerNativePackage::invoke_export(&export_name, receiver, input, api)
             }
-            IDENTITY_PACKAGE_CODE_ID => {
+            IDENTITY_PACKAGE => {
                 IdentityNativePackage::invoke_export(&export_name, receiver, input, api)
             }
-            CLOCK_PACKAGE_CODE_ID => {
-                ClockNativePackage::invoke_export(&export_name, receiver, input, api)
-            }
-            ACCOUNT_PACKAGE_CODE_ID => {
+            CLOCK_PACKAGE => ClockNativePackage::invoke_export(&export_name, receiver, input, api),
+            ACCOUNT_PACKAGE => {
                 AccountNativePackage::invoke_export(&export_name, receiver, input, api)
             }
-            ACCESS_CONTROLLER_PACKAGE_CODE_ID => {
+            ACCESS_CONTROLLER_PACKAGE => {
                 AccessControllerNativePackage::invoke_export(&export_name, receiver, input, api)
             }
-            TRANSACTION_RUNTIME_CODE_ID => {
+            TRANSACTION_RUNTIME_PACKAGE => {
                 TransactionRuntimeNativePackage::invoke_export(&export_name, receiver, input, api)
             }
-            AUTH_ZONE_CODE_ID => {
+            AUTH_ZONE_PACKAGE => {
                 AuthZoneNativePackage::invoke_export(&export_name, receiver, input, api)
             }
-            METADATA_CODE_ID => {
+            METADATA_PACKAGE => {
                 MetadataNativePackage::invoke_export(&export_name, receiver, input, api)
             }
-            ROYALTY_CODE_ID => {
+            ROYALTY_PACKAGE => {
                 RoyaltyNativePackage::invoke_export(&export_name, receiver, input, api)
             }
-            ACCESS_RULES_CODE_ID => {
+            ACCESS_RULES_PACKAGE => {
                 AccessRulesNativePackage::invoke_export(&export_name, receiver, input, api)
             }
             _ => Err(RuntimeError::InterpreterError(
-                InterpreterError::NativeInvalidCodeId(native_package_code_id),
+                InterpreterError::NativeInvalidPackageAddress(native_package_address),
             )),
         }
     }

@@ -97,6 +97,7 @@ impl TransactionProcessorBlueprint {
             blobs_by_hash.insert(hash(blob), blob);
         }
 
+        // Process instructions
         let mut processor = TransactionProcessor::new(blobs_by_hash);
         let mut outputs = Vec::new();
         for (index, inst) in instructions.into_iter().enumerate() {
@@ -535,6 +536,7 @@ impl TransactionProcessorBlueprint {
             outputs.push(result);
         }
 
+        // Drop worktop
         worktop.sys_drop(api)?;
 
         Ok(IndexedScryptoValue::from_typed(&outputs))

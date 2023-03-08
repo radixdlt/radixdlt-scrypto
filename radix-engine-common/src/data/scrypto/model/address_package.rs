@@ -17,6 +17,17 @@ pub enum PackageAddress {
     Normal([u8; PACKAGE_ADDRESS_LENGTH]),
 }
 
+impl PackageAddress {
+    pub fn is_native(&self) -> bool {
+        match self {
+            Self::Normal(a) => &a[0..25] == &[0; 25],
+        }
+    }
+    pub fn is_wasm(&self) -> bool {
+        !self.is_native()
+    }
+}
+
 impl TryFrom<&[u8]> for PackageAddress {
     type Error = AddressError;
 

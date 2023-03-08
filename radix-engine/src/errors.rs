@@ -208,7 +208,7 @@ pub enum InterpreterError {
     NativeUnexpectedReceiver(String),
     NativeExpectedReceiver(String),
     NativeExportDoesNotExist(String),
-    NativeInvalidCodeId(u8),
+    NativeInvalidPackageAddress(PackageAddress),
 
     ScryptoBlueprintNotFound(PackageAddress, String),
     ScryptoFunctionNotFound(String),

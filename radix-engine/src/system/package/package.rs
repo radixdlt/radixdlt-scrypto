@@ -8,7 +8,6 @@ use crate::system::node_modules::access_rules::{
 };
 use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::package::PackageCodeTypeSubstate;
 use crate::types::*;
 use crate::wasm::{PrepareError, WasmValidator};
 use core::fmt::Debug;
@@ -144,11 +143,8 @@ impl Package {
             dependent_resources: input.dependent_resources.into_iter().collect(),
             dependent_components: input.dependent_components.into_iter().collect(),
         };
-        let code_type = PackageCodeTypeSubstate::Native;
-        let code = PackageCodeSubstate {
-            code: vec![input.native_package_code_id],
-        };
-        let node_init = RENodeInit::GlobalPackage(info, code_type, code);
+        let code = PackageCodeSubstate { code: vec![] };
+        let node_init = RENodeInit::GlobalPackage(info, code);
 
         // Build node module init
         let node_modules = build_package_node_modules(
@@ -205,9 +201,8 @@ impl Package {
             dependent_resources: BTreeSet::new(),
             dependent_components: BTreeSet::new(),
         };
-        let code_type = PackageCodeTypeSubstate::Wasm;
         let code = PackageCodeSubstate { code: input.code };
-        let node_init = RENodeInit::GlobalPackage(info, code_type, code);
+        let node_init = RENodeInit::GlobalPackage(info, code);
 
         // Build node module init
         let node_modules = build_package_node_modules(

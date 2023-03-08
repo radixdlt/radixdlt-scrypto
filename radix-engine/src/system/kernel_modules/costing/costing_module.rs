@@ -20,9 +20,6 @@ use radix_engine_interface::api::package::{
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
-use radix_engine_interface::constants::*;
-use radix_engine_interface::{api::types::RENodeId, *};
-use sbor::rust::collections::BTreeMap;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CostingError {
@@ -150,19 +147,7 @@ impl KernelModule for CostingModule {
 
         // FIXME: algin native packages with wasm package, or read package type info and disallow royalty on native package.
         let package_address = fn_identifier.package_address;
-        if package_address == RESOURCE_MANAGER_PACKAGE
-            || package_address == IDENTITY_PACKAGE
-            || package_address == EPOCH_MANAGER_PACKAGE
-            || package_address == CLOCK_PACKAGE
-            || package_address == ACCOUNT_PACKAGE
-            || package_address == ACCESS_CONTROLLER_PACKAGE
-            || package_address == TRANSACTION_RUNTIME_PACKAGE
-            || package_address == AUTH_ZONE_PACKAGE
-            || package_address == METADATA_PACKAGE
-            || package_address == ROYALTY_PACKAGE
-            || package_address == ACCESS_RULES_PACKAGE
-            || package_address == PACKAGE_LOADER
-        {
+        if package_address.is_native() {
             return Ok(());
         }
 
