@@ -1,7 +1,9 @@
 use radix_engine::errors::{ModuleError, RuntimeError};
 use radix_engine::system::kernel_modules::auth::AuthError;
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
+use radix_engine_interface::api::node_modules::metadata::{
+    MetadataEntry, MetadataValue, METADATA_SET_IDENT,
+};
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -18,7 +20,7 @@ fn cannot_set_package_metadata_with_no_owner() {
             single_function_package_schema("Test", "f"),
             BTreeMap::new(),
             BTreeMap::new(),
-            AccessRules::new(),
+            AccessRulesConfig::new(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -30,7 +32,7 @@ fn cannot_set_package_metadata_with_no_owner() {
         .set_metadata(
             Address::Package(package_address),
             "name".to_string(),
-            "best package ever!".to_string(),
+            MetadataEntry::Value(MetadataValue::String("best package ever!".to_string())),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -42,8 +44,8 @@ fn cannot_set_package_metadata_with_no_owner() {
             RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized { .. }))
         )
     });
-    let metadata = test_runner.get_metadata(Address::Package(package_address));
-    assert!(metadata.get("name").is_none());
+    let value = test_runner.get_metadata(package_address.into(), "name");
+    assert_eq!(value, None);
 }
 
 #[test]
@@ -74,7 +76,7 @@ fn can_set_package_metadata_with_owner() {
         .set_metadata(
             Address::Package(package_address),
             "name".to_string(),
-            "best package ever!".to_string(),
+            MetadataEntry::Value(MetadataValue::String("best package ever!".to_string())),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -84,8 +86,13 @@ fn can_set_package_metadata_with_owner() {
 
     // Assert
     receipt.expect_commit_success();
-    let metadata = test_runner.get_metadata(Address::Package(package_address));
-    assert_eq!(metadata.get("name").unwrap(), "best package ever!");
+    let value = test_runner
+        .get_metadata(package_address.into(), "name")
+        .expect("Should exist");
+    assert_eq!(
+        value,
+        MetadataEntry::Value(MetadataValue::String("best package ever!".to_string()))
+    );
 }
 
 #[test]
@@ -132,7 +139,7 @@ fn can_lock_package_metadata_with_owner() {
         .set_metadata(
             Address::Package(package_address),
             "name".to_string(),
-            "best package ever!".to_string(),
+            MetadataEntry::Value(MetadataValue::String("best package ever!".to_string())),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -147,6 +154,6 @@ fn can_lock_package_metadata_with_owner() {
             RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized { .. }))
         )
     });
-    let metadata = test_runner.get_metadata(Address::Package(package_address));
-    assert!(metadata.get("name").is_none());
+    let value = test_runner.get_metadata(package_address.into(), "name");
+    assert_eq!(value, None);
 }

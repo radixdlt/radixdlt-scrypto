@@ -7,7 +7,7 @@ use sbor::rust::prelude::*;
 // We will change this implementation if that is agreed.
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub enum KeyValueStoreEntrySubstate {
-    Some(ScryptoValue, ScryptoValue),
+    Some(ScryptoValue),
     None,
 }
 
@@ -18,11 +18,9 @@ impl KeyValueStoreEntrySubstate {
 
     pub fn owned_node_ids(&self) -> Vec<RENodeId> {
         match self {
-            KeyValueStoreEntrySubstate::Some(k, v) => {
-                let (_, _, mut owns1, _) = IndexedScryptoValue::from_value(k.clone()).unpack();
-                let (_, _, owns2, _) = IndexedScryptoValue::from_value(v.clone()).unpack();
-                owns1.extend(owns2);
-                owns1
+            KeyValueStoreEntrySubstate::Some(v) => {
+                let (_, _, own, _) = IndexedScryptoValue::from_value(v.clone()).unpack();
+                own
             }
             KeyValueStoreEntrySubstate::None => Vec::new(),
         }
@@ -30,11 +28,9 @@ impl KeyValueStoreEntrySubstate {
 
     pub fn global_references(&self) -> HashSet<RENodeId> {
         match self {
-            KeyValueStoreEntrySubstate::Some(k, v) => {
-                let (_, _, _, mut refs1) = IndexedScryptoValue::from_value(k.clone()).unpack();
-                let (_, _, _, refs2) = IndexedScryptoValue::from_value(v.clone()).unpack();
-                refs1.extend(refs2);
-                refs1
+            KeyValueStoreEntrySubstate::Some(v) => {
+                let (_, _, _, refs) = IndexedScryptoValue::from_value(v.clone()).unpack();
+                refs
             }
             KeyValueStoreEntrySubstate::None => HashSet::new(),
         }

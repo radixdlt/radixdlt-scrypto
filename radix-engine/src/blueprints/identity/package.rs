@@ -72,11 +72,11 @@ impl Identity {
     pub fn create<Y>(
         access_rule: AccessRule,
         api: &mut Y,
-    ) -> Result<(RENodeId, AccessRules), RuntimeError>
+    ) -> Result<(RENodeId, AccessRulesConfig), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let mut access_rules = AccessRules::new();
+        let mut access_rules = AccessRulesConfig::new();
         access_rules.set_access_rule_and_mutability(
             MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
             access_rule.clone(),
@@ -96,13 +96,13 @@ impl Identity {
     pub fn create_virtual<Y>(
         access_rule: AccessRule,
         api: &mut Y,
-    ) -> Result<(RENodeId, AccessRules), RuntimeError>
+    ) -> Result<(RENodeId, AccessRulesConfig), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
         let node_id = api.kernel_allocate_node_id(RENodeType::Object)?;
 
-        let mut access_rules = AccessRules::new();
+        let mut access_rules = AccessRulesConfig::new();
         access_rules.set_access_rule_and_mutability(
             MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
             access_rule.clone(),

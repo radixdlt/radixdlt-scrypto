@@ -391,10 +391,8 @@ fn substate_id(
 }
 
 fn value_hash(value_seed: u8) -> Hash {
-    let fake_kvs_key = scrypto_encode(&vec![value_seed; value_seed as usize]).unwrap();
     let fake_kvs_value = scrypto_encode(&vec![value_seed; value_seed as usize]).unwrap();
     let fake_kvs_entry = PersistedSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::Some(
-        scrypto_decode(&fake_kvs_key).unwrap(),
         scrypto_decode(&fake_kvs_value).unwrap(),
     ));
     hash(scrypto_encode(&fake_kvs_entry).unwrap())

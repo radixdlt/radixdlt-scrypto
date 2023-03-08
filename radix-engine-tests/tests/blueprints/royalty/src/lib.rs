@@ -45,7 +45,8 @@ mod royalty_test {
         }
 
         pub fn claim_component_royalty(address: ComponentAddress) -> Bucket {
-            borrow_component!(address).claim_royalty()
+            let royalty = borrow_component!(address).royalty();
+            royalty.claim_royalty()
         }
     }
 }

@@ -124,7 +124,7 @@ fn test_non_existent_blob_hash() {
             schema: ManifestBlobRef([0; 32]),
             royalty_config: BTreeMap::new(),
             metadata: BTreeMap::new(),
-            access_rules: AccessRules::new(),
+            access_rules: AccessRulesConfig::new(),
         })
         .0
         .build();
