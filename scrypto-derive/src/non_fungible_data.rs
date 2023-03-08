@@ -2,6 +2,8 @@ use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use std::collections::HashMap;
 use syn::*;
+use syn::punctuated::Punctuated;
+use syn::token::Comma;
 
 macro_rules! trace {
     ($($arg:expr),*) => {{
@@ -61,81 +63,16 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
     let output = match data {
         Data::Struct(s) => match s.fields {
             syn::Fields::Named(FieldsNamed { named, .. }) => {
-                // immutable
-                let im: Vec<&Field> = named.iter().filter(|f| !is_mutable(f)).collect();
-                let im_n = Index::from(im.len());
-                let im_ids = im.iter().map(|f| &f.ident);
-                let im_ids2 = im_ids.clone();
-                let im_types = im.iter().map(|f| &f.ty);
-                // mutable
-                let m: Vec<&Field> = named.iter().filter(|f| is_mutable(f)).collect();
-                let m_n = Index::from(m.len());
-                let m_ids = m.iter().map(|f| &f.ident);
-                let m_ids2 = m_ids.clone();
-                let m_types = m.iter().map(|f| &f.ty);
-
-                /*
-                quote! {
-                    impl ::scrypto::prelude::NonFungibleData for #ident {
-                        fn decode(immutable_data: &[u8], mutable_data: &[u8]) -> Result<Self, ::sbor::DecodeError> {
-                            use ::sbor::{value_kind::*, *};
-                            let mut decoder_nm = ::scrypto::data::scrypto::ScryptoDecoder::new(immutable_data, ::scrypto::data::scrypto::SCRYPTO_SBOR_V1_MAX_DEPTH);
-                            decoder_nm.read_and_check_payload_prefix(::scrypto::data::scrypto::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
-                            decoder_nm.read_and_check_value_kind(::scrypto::data::scrypto::ScryptoValueKind::Tuple)?;
-                            decoder_nm.read_and_check_size(#im_n)?;
-
-                            let mut decoder_m = ::scrypto::data::scrypto::ScryptoDecoder::new(mutable_data, ::scrypto::data::scrypto::SCRYPTO_SBOR_V1_MAX_DEPTH);
-                            decoder_m.read_and_check_payload_prefix(::scrypto::data::scrypto::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
-                            decoder_m.read_and_check_value_kind(::scrypto::data::scrypto::ScryptoValueKind::Tuple)?;
-                            decoder_m.read_and_check_size(#m_n)?;
-
-                            let decoded = Self {
-                                #(#im_ids: decoder_nm.decode::<#im_types>()?,)*
-                                #(#m_ids: decoder_m.decode::<#m_types>()?,)*
-                            };
-
-                            decoder_nm.check_end()?;
-                            decoder_m.check_end()?;
-
-                            Ok(decoded)
-                        }
-
-                        fn immutable_data(&self) -> Result<::sbor::rust::vec::Vec<u8>, ::sbor::EncodeError> {
-                            use ::sbor::{value_kind::*, *};
-
-                            let mut bytes = Vec::with_capacity(512);
-                            let mut encoder = ::scrypto::data::scrypto::ScryptoEncoder::new(&mut bytes, ::scrypto::data::scrypto::SCRYPTO_SBOR_V1_MAX_DEPTH);
-                            encoder.write_payload_prefix(::scrypto::data::scrypto::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
-                            encoder.write_value_kind(::scrypto::data::scrypto::ScryptoValueKind::Tuple)?;
-                            encoder.write_size(#im_n)?;
-                            #(
-                                encoder.encode(&self.#im_ids2)?;
-                            )*
-
-                            Ok(bytes)
-                        }
-
-                        fn mutable_data(&self) -> Result<::sbor::rust::vec::Vec<u8>, ::sbor::EncodeError> {
-                            use ::sbor::{value_kind::*, *};
-                            use ::sbor::rust::vec::Vec;
-
-                            let mut bytes = Vec::with_capacity(512);
-                            let mut encoder = ::scrypto::data::scrypto::ScryptoEncoder::new(&mut bytes, ::scrypto::data::scrypto::SCRYPTO_SBOR_V1_MAX_DEPTH);
-                            encoder.write_payload_prefix(::scrypto::data::scrypto::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
-                            encoder.write_value_kind(::scrypto::data::scrypto::ScryptoValueKind::Tuple)?;
-                            encoder.write_size(#m_n)?;
-                            #(
-                                encoder.encode(&self.#m_ids2)?;
-                            )*
-
-                            Ok(bytes)
-                        }
-                    }
-                }
-                 */
+                let mutable_fields: Punctuated<String, Comma> = named.iter()
+                    .filter(|f| is_mutable(f))
+                    .filter_map(|f| {
+                        f.ident.as_ref().map(|f| f.to_string())
+                    })
+                    .collect();
 
                 quote! {
                     impl ::scrypto::prelude::NonFungibleData for #ident {
+                        const MUTABLE_FIELDS: &'static [&'static str] = &[#mutable_fields];
                     }
                 }
             }
