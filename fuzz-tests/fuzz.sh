@@ -103,6 +103,7 @@ elif [ $fuzzer = "afl" ] ; then
         if [ "$run_cmd_arg" != "inf" ] ; then
             run_args="-V ${run_cmd_arg}"
         fi
+        mkdir -p afl/${target}/out
         set -x
         cargo afl fuzz -i fuzz_input/${target} -o afl/${target}/out $run_args target-afl/release/${target}
     fi
