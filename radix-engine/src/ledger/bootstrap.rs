@@ -62,7 +62,7 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::GlobalObject(METADATA_PACKAGE.into()));
         let package_address = METADATA_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE,
+            package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishNativeInput {
@@ -86,7 +86,7 @@ pub fn create_genesis(
         let package_address = ROYALTY_PACKAGE.to_array_without_entity_id();
 
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE,
+            package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishNativeInput {
@@ -109,7 +109,7 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::GlobalObject(ACCESS_RULES_PACKAGE.into()));
         let package_address = ACCESS_RULES_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE,
+            package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishNativeInput {
@@ -132,12 +132,12 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::GlobalObject(RESOURCE_MANAGER_PACKAGE.into()));
         let package_address = RESOURCE_MANAGER_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE,
+            package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                native_package_code_id: RESOURCE_MANAGER_PACKAGE_CODE_ID,
+                native_package_code_id: RESOURCE_MANAGER_CODE_ID,
                 schema: ResourceManagerNativePackage::schema(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
@@ -207,7 +207,7 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::GlobalObject(IDENTITY_PACKAGE.into()));
         let package_address = IDENTITY_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE,
+            package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishNativeInput {
@@ -215,7 +215,7 @@ pub fn create_genesis(
                 schema: IdentityNativePackage::schema(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
-                native_package_code_id: IDENTITY_PACKAGE_CODE_ID,
+                native_package_code_id: IDENTITY_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
                 package_access_rules: BTreeMap::new(),
@@ -230,13 +230,13 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::GlobalObject(EPOCH_MANAGER_PACKAGE.into()));
         let package_address = EPOCH_MANAGER_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE,
+            package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: EpochManagerNativePackage::schema(),
-                native_package_code_id: EPOCH_MANAGER_PACKAGE_CODE_ID,
+                native_package_code_id: EPOCH_MANAGER_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
                 dependent_resources: vec![RADIX_TOKEN, PACKAGE_TOKEN, SYSTEM_TOKEN],
@@ -253,13 +253,13 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::GlobalObject(CLOCK_PACKAGE.into()));
         let package_address = CLOCK_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE,
+            package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: ClockNativePackage::schema(),
-                native_package_code_id: CLOCK_PACKAGE_CODE_ID,
+                native_package_code_id: CLOCK_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
                 dependent_resources: vec![SYSTEM_TOKEN],
@@ -276,13 +276,13 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::GlobalObject(ACCOUNT_PACKAGE.into()));
         let package_address = ACCOUNT_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE,
+            package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: AccountNativePackage::schema(),
-                native_package_code_id: ACCOUNT_PACKAGE_CODE_ID,
+                native_package_code_id: ACCOUNT_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
                 dependent_resources: vec![],
@@ -299,7 +299,7 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::GlobalObject(ACCESS_CONTROLLER_PACKAGE.into()));
         let package_address = ACCESS_CONTROLLER_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE,
+            package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishNativeInput {
@@ -307,7 +307,7 @@ pub fn create_genesis(
                 schema: AccessControllerNativePackage::schema(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new(),
-                native_package_code_id: ACCESS_CONTROLLER_PACKAGE_CODE_ID,
+                native_package_code_id: ACCESS_CONTROLLER_CODE_ID,
                 dependent_resources: vec![PACKAGE_TOKEN],
                 dependent_components: vec![CLOCK],
                 package_access_rules: BTreeMap::new(),
@@ -322,7 +322,7 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::GlobalObject(TRANSACTION_PROCESSOR_PACKAGE.into()));
         let package_address = TRANSACTION_PROCESSOR_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE,
+            package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishNativeInput {
@@ -345,7 +345,7 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::GlobalObject(TRANSACTION_RUNTIME_PACKAGE.into()));
         let package_address = TRANSACTION_RUNTIME_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE,
+            package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishNativeInput {
@@ -368,7 +368,7 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::GlobalObject(AUTH_ZONE_PACKAGE.into()));
         let package_address = AUTH_ZONE_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE,
+            package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishNativeInput {
@@ -455,7 +455,7 @@ pub fn create_genesis(
         let package_address = FAUCET_PACKAGE.to_array_without_entity_id();
         pre_allocated_ids.insert(RENodeId::GlobalObject(FAUCET_PACKAGE.into()));
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE,
+            package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_WASM_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishWasmInput {

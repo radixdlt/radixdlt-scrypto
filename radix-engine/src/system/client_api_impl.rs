@@ -149,7 +149,7 @@ where
         metadata: BTreeMap<String, String>,
     ) -> Result<PackageAddress, RuntimeError> {
         let result = self.call_function(
-            PACKAGE,
+            PACKAGE_PACKAGE,
             PACKAGE_BLUEPRINT,
             PACKAGE_PUBLISH_WASM_IDENT,
             scrypto_encode(&PackageLoaderPublishWasmInput {

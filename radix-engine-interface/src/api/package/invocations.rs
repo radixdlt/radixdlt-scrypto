@@ -7,7 +7,7 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use scrypto_schema::PackageSchema;
 
-pub const PACKAGE_BLUEPRINT: &str = "PackageLoader";
+pub const PACKAGE_BLUEPRINT: &str = "Package";
 
 pub const PACKAGE_PUBLISH_WASM_IDENT: &str = "publish_wasm";
 

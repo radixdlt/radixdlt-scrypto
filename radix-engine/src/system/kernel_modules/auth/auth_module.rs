@@ -59,7 +59,7 @@ impl AuthModule {
         identifier: &FnIdentifier,
         api: &mut Y,
     ) -> Result<MethodAuthorization, RuntimeError> {
-        let auth = if identifier.package_address.eq(&PACKAGE) {
+        let auth = if identifier.package_address.eq(&PACKAGE_PACKAGE) {
             if identifier.blueprint_name.eq(PACKAGE_BLUEPRINT)
                 && identifier.ident.eq(PACKAGE_PUBLISH_NATIVE_IDENT)
             {

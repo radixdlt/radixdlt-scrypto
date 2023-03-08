@@ -52,7 +52,7 @@ fn build_package_node_modules(
     node_modules.insert(
         NodeModuleId::TypeInfo,
         RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-            package_address: PACKAGE,
+            package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             global: true,
         }),
@@ -82,9 +82,9 @@ fn build_package_node_modules(
     node_modules
 }
 
-pub struct Package;
+pub struct PackageNativePackage;
 
-impl Package {
+impl PackageNativePackage {
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<RENodeId>,

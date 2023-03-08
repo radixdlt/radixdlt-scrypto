@@ -285,7 +285,7 @@ impl TransactionProcessorBlueprint {
 
                     // TODO: remove clone by allowing invocation to have references, like in TransactionProcessorRunInvocation.
                     let result = api.call_function(
-                        PACKAGE,
+                        PACKAGE_PACKAGE,
                         PACKAGE_BLUEPRINT,
                         PACKAGE_PUBLISH_WASM_IDENT,
                         scrypto_encode(&PackageLoaderPublishWasmInput {
