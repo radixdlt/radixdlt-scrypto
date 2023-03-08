@@ -34,8 +34,6 @@ impl AccessRules {
     }
 }
 
-// TODO: Should `Encode` and `Decode` be removed so that `ComponentAccessRules` can not be passed
-// between components?
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct AttachedAccessRules(pub Address);
 

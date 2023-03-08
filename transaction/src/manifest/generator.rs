@@ -422,6 +422,13 @@ pub fn generate_instruction(
             key: generate_string(key)?,
             value: generate_typed_value(value, resolver, bech32_decoder, blobs)?,
         },
+        ast::Instruction::RemoveMetadata {
+            entity_address,
+            key,
+        } => Instruction::RemoveMetadata {
+            entity_address: generate_address(entity_address, bech32_decoder)?,
+            key: generate_string(key)?,
+        },
         ast::Instruction::SetPackageRoyaltyConfig {
             package_address,
             royalty_config,

@@ -469,7 +469,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
         };
         writeln!(
             output,
-            "{} {{ amount: {}, resource address: {}{:?}{:?} }}",
+            "{} {{ amount: {}, resource address: {}, {:?}{:?} }}",
             list_item_prefix(last),
             amount,
             resource_address.display(&bech32_encoder),
