@@ -12,7 +12,7 @@ use utils::ContextualDisplay;
 #[derive(Clone, PartialEq, Eq)]
 pub struct IndexedScryptoValue {
     bytes: Vec<u8>,
-    global_references: HashSet<RENodeId>,
+    references: HashSet<RENodeId>,
     owned_nodes: Vec<RENodeId>,
 }
 
@@ -24,7 +24,7 @@ impl IndexedScryptoValue {
             Some(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX),
             true,
         );
-        let mut global_references = HashSet::<RENodeId>::new();
+        let mut references = HashSet::<RENodeId>::new();
         let mut owned_nodes = Vec::<RENodeId>::new();
         loop {
             let event = traverser.next_event();
@@ -36,7 +36,10 @@ impl IndexedScryptoValue {
                     if let traversal::TerminalValueRef::Custom(c) = r {
                         match c.0 {
                             ScryptoCustomValue::Address(a) => {
-                                global_references.insert(a.into());
+                                references.insert(a.into());
+                            }
+                            ScryptoCustomValue::Reference(a) => {
+                                references.insert(RENodeId::Object(a.0));
                             }
                             ScryptoCustomValue::Own(o) => {
                                 owned_nodes.push(match o {
@@ -65,7 +68,7 @@ impl IndexedScryptoValue {
 
         Ok(Self {
             bytes,
-            global_references,
+            references,
             owned_nodes,
         })
     }
@@ -105,8 +108,8 @@ impl IndexedScryptoValue {
         self.bytes.as_slice()
     }
 
-    pub fn global_references(&self) -> &HashSet<RENodeId> {
-        &self.global_references
+    pub fn references(&self) -> &HashSet<RENodeId> {
+        &self.references
     }
 
     pub fn owned_node_ids(&self) -> &Vec<RENodeId> {
@@ -114,7 +117,7 @@ impl IndexedScryptoValue {
     }
 
     pub fn unpack(self) -> (Vec<u8>, Vec<RENodeId>, HashSet<RENodeId>) {
-        (self.bytes, self.owned_nodes, self.global_references)
+        (self.bytes, self.owned_nodes, self.references)
     }
 }
 
@@ -147,14 +150,14 @@ impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for IndexedScryptoVal
 }
 
 pub struct ScryptoValueVisitor {
-    pub global_references: HashSet<RENodeId>,
+    pub references: HashSet<RENodeId>,
     pub owned_nodes: Vec<RENodeId>,
 }
 
 impl ScryptoValueVisitor {
     pub fn new() -> Self {
         Self {
-            global_references: HashSet::new(),
+            references: HashSet::new(),
             owned_nodes: Vec::new(),
         }
     }
@@ -170,7 +173,10 @@ impl ValueVisitor<ScryptoCustomValueKind, ScryptoCustomValue> for ScryptoValueVi
     ) -> Result<(), Self::Err> {
         match value {
             ScryptoCustomValue::Address(value) => {
-                self.global_references.insert(value.clone().into());
+                self.references.insert(value.clone().into());
+            }
+            ScryptoCustomValue::Reference(value) => {
+                self.references.insert(RENodeId::Object(value.0));
             }
             ScryptoCustomValue::Own(value) => {
                 match value {

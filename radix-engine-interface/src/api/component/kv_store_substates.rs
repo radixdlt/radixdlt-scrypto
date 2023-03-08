@@ -28,7 +28,7 @@ impl KeyValueStoreEntrySubstate {
         }
     }
 
-    pub fn global_references(&self) -> HashSet<RENodeId> {
+    pub fn references(&self) -> HashSet<RENodeId> {
         match self {
             KeyValueStoreEntrySubstate::Some(k, v) => {
                 let (_, _, mut refs1) = IndexedScryptoValue::from_scrypto_value(k.clone()).unpack();
