@@ -25,6 +25,6 @@ jobs:
           toolchain: stable
       - name: Add wasm target
         run: rustup target add wasm32-unknown-unknown
-      - uses: boa-dev/criterion-compare-action@v3
+      - uses: radixdlt/criterion-compare-action@update-same-commit
         with:
           branchName: ${{ github.base_ref }}
