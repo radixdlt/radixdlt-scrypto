@@ -8,7 +8,7 @@ pub fn extract_refs_from_manifest(
     let mut global_references = BTreeSet::new();
     let mut local_references = BTreeSet::new();
 
-    for instruction in &instructions {
+    for instruction in instructions {
         extract_refs_from_instruction(&instruction, &mut global_references, &mut local_references);
     }
 
@@ -181,8 +181,9 @@ pub fn extract_refs_from_value(
             }
         }
         Value::Custom { value } => match value {
-            ManifestCustomValue::Address(a) => global_references.insert(to_address(a.clone())),
-            ManifestCustomValue::Reference(a) => local_references.insert(a.clone()),
+            ManifestCustomValue::Address(a) => {
+                global_references.insert(to_address(a.clone()));
+            }
             _ => {}
         },
     }

@@ -1,16 +1,13 @@
 use crate::blueprints::resource::WorktopSubstate;
 use crate::errors::ApplicationError;
+use crate::errors::InterpreterError;
 use crate::errors::RuntimeError;
-use crate::kernel::actor::Actor;
-use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::executor::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
-use crate::wasm::WasmEngine;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::{
@@ -54,217 +51,26 @@ pub enum TransactionProcessorError {
     InvalidPackageSchema(DecodeError),
 }
 
-pub(crate) fn extract_refs_from_instruction(
-    instruction: &Instruction,
-    update: &mut CallFrameUpdate,
-) {
-    match instruction {
-        Instruction::CallFunction {
-            package_address,
-            args,
-            ..
-        } => {
-            update.add_ref(RENodeId::GlobalObject(package_address.clone().into()));
-            let value: ManifestValue =
-                manifest_decode(args).expect("Invalid CALL_FUNCTION arguments");
-            extract_refs_from_value(&value, update);
-
-            if package_address.eq(&EPOCH_MANAGER_PACKAGE) {
-                update.add_ref(RENodeId::GlobalObject(PACKAGE_TOKEN.into()));
-            }
-        }
-        Instruction::PublishPackage { access_rules, .. } => {
-            update.add_ref(RENodeId::GlobalObject(PACKAGE_LOADER.into()));
-
-            // TODO: Remove and cleanup
-            let value: ManifestValue = manifest_decode(&manifest_encode(access_rules).unwrap())
-                .expect("Invalid CALL_FUNCTION arguments");
-            extract_refs_from_value(&value, update);
-        }
-        Instruction::CallMethod {
-            component_address,
-            args,
-            method_name,
-        } => {
-            update.add_ref(RENodeId::GlobalObject(component_address.clone().into()));
-            let value: ManifestValue = manifest_decode(args)
-                .expect(format!("Invalid CALL_METHOD arguments to {}", method_name).as_str());
-            extract_refs_from_value(&value, update);
-        }
-
-        Instruction::SetMetadata { entity_address, .. }
-        | Instruction::SetMethodAccessRule { entity_address, .. } => {
-            let address = to_address(entity_address.clone());
-            let node_id = address.into();
-            update.add_ref(node_id);
-        }
-        Instruction::RecallResource { vault_id, .. } => {
-            // TODO: This needs to be cleaned up
-            // TODO: How does this relate to newly created vaults in the transaction frame?
-            // TODO: Will probably want different spacing for refed vs. owned nodes
-            update.add_ref(RENodeId::Object(*vault_id));
-        }
-
-        Instruction::SetPackageRoyaltyConfig {
-            package_address, ..
-        }
-        | Instruction::ClaimPackageRoyalty {
-            package_address, ..
-        } => {
-            update.add_ref(RENodeId::GlobalObject(package_address.clone().into()));
-        }
-        Instruction::SetComponentRoyaltyConfig {
-            component_address, ..
-        }
-        | Instruction::ClaimComponentRoyalty {
-            component_address, ..
-        } => {
-            update.add_ref(RENodeId::GlobalObject(component_address.clone().into()));
-        }
-        Instruction::TakeFromWorktop {
-            resource_address, ..
-        }
-        | Instruction::TakeFromWorktopByAmount {
-            resource_address, ..
-        }
-        | Instruction::TakeFromWorktopByIds {
-            resource_address, ..
-        }
-        | Instruction::AssertWorktopContains {
-            resource_address, ..
-        }
-        | Instruction::AssertWorktopContainsByAmount {
-            resource_address, ..
-        }
-        | Instruction::AssertWorktopContainsByIds {
-            resource_address, ..
-        }
-        | Instruction::CreateProofFromAuthZone {
-            resource_address, ..
-        }
-        | Instruction::CreateProofFromAuthZoneByAmount {
-            resource_address, ..
-        }
-        | Instruction::CreateProofFromAuthZoneByIds {
-            resource_address, ..
-        }
-        | Instruction::MintFungible {
-            resource_address, ..
-        }
-        | Instruction::MintNonFungible {
-            resource_address, ..
-        }
-        | Instruction::MintUuidNonFungible {
-            resource_address, ..
-        } => {
-            update.add_ref(RENodeId::GlobalObject(resource_address.clone().into()));
-        }
-        Instruction::ReturnToWorktop { .. }
-        | Instruction::PopFromAuthZone { .. }
-        | Instruction::PushToAuthZone { .. }
-        | Instruction::ClearAuthZone { .. }
-        | Instruction::CreateProofFromBucket { .. }
-        | Instruction::CloneProof { .. }
-        | Instruction::DropProof { .. }
-        | Instruction::DropAllProofs { .. }
-        | Instruction::BurnResource { .. }
-        | Instruction::AssertAccessRule { .. } => {}
-    }
-}
-
-pub(crate) fn extract_refs_from_value(value: &ManifestValue, collector: &mut CallFrameUpdate) {
-    match value {
-        Value::Bool { .. }
-        | Value::I8 { .. }
-        | Value::I16 { .. }
-        | Value::I32 { .. }
-        | Value::I64 { .. }
-        | Value::I128 { .. }
-        | Value::U8 { .. }
-        | Value::U16 { .. }
-        | Value::U32 { .. }
-        | Value::U64 { .. }
-        | Value::U128 { .. }
-        | Value::String { .. } => {}
-        Value::Enum { fields, .. } => {
-            for f in fields {
-                extract_refs_from_value(f, collector);
-            }
-        }
-        Value::Array { elements, .. } => {
-            for f in elements {
-                extract_refs_from_value(f, collector);
-            }
-        }
-        Value::Tuple { fields } => {
-            for f in fields {
-                extract_refs_from_value(f, collector);
-            }
-        }
-        Value::Map { entries, .. } => {
-            for f in entries {
-                extract_refs_from_value(&f.0, collector);
-                extract_refs_from_value(&f.1, collector);
-            }
-        }
-        Value::Custom { value } => match value {
-            ManifestCustomValue::Address(a) => {
-                let address = to_address(a.clone());
-                collector.add_ref(RENodeId::GlobalObject(address))
-            }
-            _ => {}
-        },
-    }
-}
-
 pub struct TransactionProcessorBlueprint;
 
 impl TransactionProcessorBlueprint {
-    pub fn resolve<D: KernelSubstateApi>(
-        self,
-        _api: &mut D,
-    ) -> Result<ResolvedInvocation<Self::Exec>, RuntimeError> {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        // TODO: This can be refactored out once any type in sbor is implemented
-        let instructions: Vec<Instruction> = manifest_decode(&self.instructions).unwrap();
-        for instruction in instructions {
-            extract_refs_from_instruction(&instruction, &mut call_frame_update);
-        }
-        call_frame_update.add_ref(RENodeId::GlobalObject(RADIX_TOKEN.into()));
-        call_frame_update.add_ref(RENodeId::GlobalObject(PACKAGE_TOKEN.into()));
-        call_frame_update.add_ref(RENodeId::GlobalObject(EPOCH_MANAGER.into()));
-        call_frame_update.add_ref(RENodeId::GlobalObject(CLOCK.into()));
-        call_frame_update.add_ref(RENodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()));
-        call_frame_update.add_ref(RENodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()));
-
-        let actor = Actor::function(FnIdentifier {
-            package_address: PACKAGE_LOADER,
-            blueprint_name: TRANSACTION_PROCESSOR_BLUEPRINT.to_string(),
-            ident: "run".to_string(),
-        });
-
-        let resolved = ResolvedInvocation {
-            resolved_actor: actor,
-            update: call_frame_update,
-            executor: self,
-            args: IndexedScryptoValue::unit(),
-        };
-
-        Ok(resolved)
-    }
-
-    pub fn execute<Y, W: WasmEngine>(
-        self,
-        _args: IndexedScryptoValue,
+    pub(crate) fn run<Y>(
+        input: IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        for request in self.runtime_validations.as_ref() {
+        let input: TransactionProcessorRunInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
+
+        // Runtime transaction validation
+        for request in input.runtime_validations.as_ref() {
             TransactionProcessor::perform_validation(request, api)?;
         }
 
+        // Create a worktop
         let worktop_node_id = api.kernel_allocate_node_id(RENodeType::Object)?;
         api.kernel_create_node(
             worktop_node_id,
@@ -279,14 +85,15 @@ impl TransactionProcessorBlueprint {
                 })
             ),
         )?;
-
         let worktop = Worktop(worktop_node_id.into());
 
-        let instructions: Vec<Instruction> = manifest_decode(&self.instructions).unwrap();
+        // Decode instructions
+        let instructions: Vec<Instruction> = manifest_decode(&input.instructions).unwrap();
 
+        // Index blobs
         // TODO: defer blob hashing to post fee payments as it's computationally costly
         let mut blobs_by_hash = HashMap::new();
-        for blob in self.blobs.as_ref() {
+        for blob in input.blobs.as_ref() {
             blobs_by_hash.insert(hash(blob), blob);
         }
 
@@ -730,7 +537,7 @@ impl TransactionProcessorBlueprint {
 
         worktop.sys_drop(api)?;
 
-        Ok((outputs, CallFrameUpdate::empty()))
+        Ok(IndexedScryptoValue::from_typed(&outputs))
     }
 }
 
