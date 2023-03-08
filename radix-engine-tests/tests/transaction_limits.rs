@@ -1,5 +1,5 @@
 use radix_engine::{
-    errors::{ModuleError, RuntimeError},
+    errors::{ModuleError, RejectionError, RuntimeError},
     system::kernel_modules::transaction_limits::TransactionLimitsError,
     transaction::{ExecutionConfig, FeeReserveConfig},
     types::*,
@@ -180,7 +180,6 @@ fn transaction_limit_exceeded_invoke_input_size_should_fail() {
     ));
     assert!(code.len() > DEFAULT_MAX_INVOKE_INPUT_SIZE);
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 100.into())
         .publish_package(
             code,
             PackageSchema::default(),
@@ -193,11 +192,15 @@ fn transaction_limit_exceeded_invoke_input_size_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| match e {
-        RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
-            TransactionLimitsError::MaxInvokePayloadSizeExceeded(x),
-        )) => *x == DEFAULT_MAX_INVOKE_INPUT_SIZE + 140,
-        _ => false,
+    receipt.expect_specific_rejection(|e| {
+        matches!(
+            e,
+            RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::ModuleError(
+                ModuleError::TransactionLimitsError(
+                    TransactionLimitsError::MaxInvokePayloadSizeExceeded(_)
+                )
+            ))
+        )
     })
 }
 

@@ -32,6 +32,8 @@ pub const METADATA_PACKAGE: PackageAddress = vanity_address!(EntityType::Package
 pub const ROYALTY_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 11);
 pub const ACCESS_RULES_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 12);
 
+// There should be no need of this function, but many of our configurations are depending on it.
+// Having it in a single place to avoid out-of-sync.
 pub fn is_native_package(address: PackageAddress) -> bool {
     match address {
         PACKAGE_PACKAGE

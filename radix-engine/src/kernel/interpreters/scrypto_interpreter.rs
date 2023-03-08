@@ -316,6 +316,9 @@ impl Executor for ScryptoExecutor {
             .package_address
             .eq(&TRANSACTION_PROCESSOR_PACKAGE)
         {
+            // TODO: the above special rule can be removed if we move schema validation
+            // into a kernel model, and turn it off for genesis.
+
             let export_name = self.fn_identifier.ident.to_string();
 
             NativeVm::invoke_native_package(

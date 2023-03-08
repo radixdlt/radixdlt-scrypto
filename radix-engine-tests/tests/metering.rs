@@ -339,9 +339,8 @@ fn test_publish_large_package() {
                 (export "memory" (memory $0))
             )
         "#,
-        "i".repeat(DEFAULT_MAX_INVOKE_INPUT_SIZE - 140) // ensure we fit within limit
+        "i".repeat(DEFAULT_MAX_INVOKE_INPUT_SIZE - 415) // ensure we fit within limit
     ));
-    assert_eq!(DEFAULT_MAX_INVOKE_INPUT_SIZE - 101, code.len());
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 100.into())
         .publish_package(
