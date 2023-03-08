@@ -32,6 +32,25 @@ pub const METADATA_PACKAGE: PackageAddress = vanity_address!(EntityType::Package
 pub const ROYALTY_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 11);
 pub const ACCESS_RULES_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 12);
 
+pub fn is_native_package(address: PackageAddress) -> bool {
+    match address {
+        PACKAGE_PACKAGE
+        | RESOURCE_MANAGER_PACKAGE
+        | IDENTITY_PACKAGE
+        | EPOCH_MANAGER_PACKAGE
+        | CLOCK_PACKAGE
+        | ACCOUNT_PACKAGE
+        | ACCESS_CONTROLLER_PACKAGE
+        | TRANSACTION_PROCESSOR_PACKAGE
+        | TRANSACTION_RUNTIME_PACKAGE
+        | AUTH_ZONE_PACKAGE
+        | METADATA_PACKAGE
+        | ROYALTY_PACKAGE
+        | ACCESS_RULES_PACKAGE => true,
+        _ => false,
+    }
+}
+
 pub const FAUCET_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 64);
 pub const FAUCET_BLUEPRINT: &str = "Faucet";
 

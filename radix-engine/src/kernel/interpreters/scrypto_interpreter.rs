@@ -5,6 +5,7 @@ use crate::blueprints::clock::ClockNativePackage;
 use crate::blueprints::epoch_manager::EpochManagerNativePackage;
 use crate::blueprints::identity::IdentityNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
+use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::blueprints::transaction_runtime::TransactionRuntimeNativePackage;
 use crate::errors::{InterpreterError, RuntimeError};
 use crate::kernel::actor::Actor;
@@ -310,6 +311,20 @@ impl Executor for ScryptoExecutor {
                 args,
                 api,
             )?
+        } else if self
+            .fn_identifier
+            .package_address
+            .eq(&TRANSACTION_PROCESSOR_PACKAGE)
+        {
+            let export_name = self.fn_identifier.ident.to_string();
+
+            NativeVm::invoke_native_package(
+                TRANSACTION_PROCESSOR_CODE_ID,
+                self.receiver,
+                &export_name,
+                args,
+                api,
+            )?
         } else {
             // Make dependent resources/components visible
             let handle = api.kernel_lock_substate(
@@ -479,6 +494,9 @@ impl NativeVm {
             }
             ACCESS_CONTROLLER_CODE_ID => {
                 AccessControllerNativePackage::invoke_export(&export_name, receiver, input, api)
+            }
+            TRANSACTION_PROCESSOR_CODE_ID => {
+                TransactionProcessorNativePackage::invoke_export(&export_name, receiver, input, api)
             }
             TRANSACTION_RUNTIME_CODE_ID => {
                 TransactionRuntimeNativePackage::invoke_export(&export_name, receiver, input, api)
