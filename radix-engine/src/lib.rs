@@ -1,5 +1,9 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use tikv_jemallocator::Jemalloc;
+#[global_allocator]
+static GLOBAL: Jemalloc = Jemalloc;
+
 extern crate core;
 #[cfg(not(any(feature = "std", feature = "alloc")))]
 compile_error!("Either feature `std` or `alloc` must be enabled for this crate.");
