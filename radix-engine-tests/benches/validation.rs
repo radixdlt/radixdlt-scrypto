@@ -17,7 +17,7 @@ fn bench_ecdsa_secp256k1_validation(c: &mut Criterion) {
     let signer = EcdsaSecp256k1PrivateKey::from_u64(123123123123).unwrap();
     let signature = signer.sign(&message_hash);
 
-    c.bench_function("ECDSA signature validation", |b| {
+    c.bench_function("Validation::verify_ecdsa", |b| {
         b.iter(|| {
             let public_key = recover_ecdsa_secp256k1(&message_hash, &signature).unwrap();
             verify_ecdsa_secp256k1(&message_hash, &public_key, &signature);
@@ -31,7 +31,7 @@ fn bench_eddsa_ed25519_validation(c: &mut Criterion) {
     let public_key = signer.public_key();
     let signature = signer.sign(&message_hash);
 
-    c.bench_function("ED25519 signature validation", |b| {
+    c.bench_function("Validation::verify_ed25519", |b| {
         b.iter(|| {
             verify_eddsa_ed25519(&message_hash, &public_key, &signature);
         })
@@ -82,7 +82,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
 
     let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
 
-    c.bench_function("Transaction validation", |b| {
+    c.bench_function("Validation::validate_manifest", |b| {
         b.iter(|| {
             let intent_hash_manager = TestIntentHashManager::new();
 

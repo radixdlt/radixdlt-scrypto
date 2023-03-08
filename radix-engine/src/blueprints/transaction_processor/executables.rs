@@ -64,9 +64,9 @@ pub enum TransactionProcessorError {
 pub trait NativeOutput: ScryptoEncode + Debug + Send + Sync {}
 impl<T: ScryptoEncode + Debug + Send + Sync> NativeOutput for T {}
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub enum InstructionOutput {
-    CallReturn(IndexedScryptoValue),
+    CallReturn(Vec<u8>),
     None,
 }
 
@@ -462,7 +462,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result, &worktop, api,
                     )?;
-                    InstructionOutput::CallReturn(result)
+                    InstructionOutput::CallReturn(result.into())
                 }
                 Instruction::CallMethod {
                     component_address,
@@ -488,7 +488,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result, &worktop, api,
                     )?;
-                    InstructionOutput::CallReturn(result)
+                    InstructionOutput::CallReturn(result.into())
                 }
                 Instruction::PublishPackage {
                     code,
@@ -528,7 +528,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         api,
                     )?;
 
-                    InstructionOutput::CallReturn(result_indexed)
+                    InstructionOutput::CallReturn(result_indexed.into())
                 }
                 Instruction::BurnResource { bucket_id } => {
                     let bucket = processor.take_bucket(&bucket_id)?;
@@ -543,7 +543,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result, &worktop, api,
                     )?;
-                    InstructionOutput::CallReturn(result)
+                    InstructionOutput::CallReturn(result.into())
                 }
                 Instruction::MintFungible {
                     resource_address,
@@ -559,7 +559,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result, &worktop, api,
                     )?;
-                    InstructionOutput::CallReturn(result)
+                    InstructionOutput::CallReturn(result.into())
                 }
                 Instruction::MintNonFungible {
                     resource_address,
@@ -593,7 +593,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result, &worktop, api,
                     )?;
-                    InstructionOutput::CallReturn(result)
+                    InstructionOutput::CallReturn(result.into())
                 }
                 Instruction::MintUuidNonFungible {
                     resource_address,
@@ -612,7 +612,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result, &worktop, api,
                     )?;
-                    InstructionOutput::CallReturn(result)
+                    InstructionOutput::CallReturn(result.into())
                 }
                 Instruction::RecallResource { vault_id, amount } => {
                     let rtn = api.call_method(
@@ -625,7 +625,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result, &worktop, api,
                     )?;
-                    InstructionOutput::CallReturn(result)
+                    InstructionOutput::CallReturn(result.into())
                 }
                 Instruction::SetMetadata {
                     entity_address,
@@ -652,7 +652,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         api,
                     )?;
 
-                    InstructionOutput::CallReturn(result_indexed)
+                    InstructionOutput::CallReturn(result_indexed.into())
                 }
                 Instruction::SetPackageRoyaltyConfig {
                     package_address,
@@ -675,7 +675,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         api,
                     )?;
 
-                    InstructionOutput::CallReturn(result_indexed)
+                    InstructionOutput::CallReturn(result_indexed.into())
                 }
                 Instruction::SetComponentRoyaltyConfig {
                     component_address,
@@ -698,7 +698,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         api,
                     )?;
 
-                    InstructionOutput::CallReturn(result_indexed)
+                    InstructionOutput::CallReturn(result_indexed.into())
                 }
                 Instruction::ClaimPackageRoyalty { package_address } => {
                     let result = api.call_module_method(
@@ -715,7 +715,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         api,
                     )?;
 
-                    InstructionOutput::CallReturn(result_indexed)
+                    InstructionOutput::CallReturn(result_indexed.into())
                 }
                 Instruction::ClaimComponentRoyalty { component_address } => {
                     let result = api.call_module_method(
@@ -732,7 +732,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         api,
                     )?;
 
-                    InstructionOutput::CallReturn(result_indexed)
+                    InstructionOutput::CallReturn(result_indexed.into())
                 }
                 Instruction::SetMethodAccessRule {
                     entity_address,
@@ -759,7 +759,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         api,
                     )?;
 
-                    InstructionOutput::CallReturn(result_indexed)
+                    InstructionOutput::CallReturn(result_indexed.into())
                 }
                 Instruction::AssertAccessRule { access_rule } => {
                     let rtn = ComponentAuthZone::sys_assert_access_rule(access_rule, api)?;
@@ -768,7 +768,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result, &worktop, api,
                     )?;
-                    InstructionOutput::CallReturn(result)
+                    InstructionOutput::CallReturn(result.into())
                 }
             };
             outputs.push(result);
