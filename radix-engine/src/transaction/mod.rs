@@ -1,5 +1,5 @@
 mod preview_executor;
-mod reference_extractor;
+mod reference_extractor; // TODO: merge with TransactionValidator
 mod transaction_executor;
 mod transaction_receipt;
 
