@@ -41,9 +41,10 @@ impl FeeReserveConfig {
 }
 
 pub struct ExecutionConfig {
-    pub debug: bool,
+    pub genesis: bool,
+    pub kernel_trace: bool,
+    pub execution_trace: Option<usize>,
     pub max_call_depth: usize,
-    pub max_kernel_call_depth_traced: Option<usize>,
     pub abort_when_loan_repaid: bool,
     pub max_wasm_mem_per_transaction: usize,
     pub max_wasm_mem_per_call_frame: usize,
@@ -62,9 +63,10 @@ impl Default for ExecutionConfig {
 impl ExecutionConfig {
     pub fn standard() -> Self {
         Self {
-            debug: false,
+            genesis: false,
+            kernel_trace: false,
+            execution_trace: Some(1),
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-            max_kernel_call_depth_traced: Some(1),
             abort_when_loan_repaid: false,
             max_wasm_mem_per_transaction: DEFAULT_MAX_WASM_MEM_PER_TRANSACTION,
             max_wasm_mem_per_call_frame: DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME,
@@ -75,19 +77,16 @@ impl ExecutionConfig {
         }
     }
 
-    pub fn debug() -> Self {
+    pub fn genesis() -> Self {
         Self {
-            debug: true,
+            genesis: true,
             ..Self::default()
         }
     }
 
-    pub fn with_tracing(trace: bool) -> Self {
-        if trace {
-            Self::debug()
-        } else {
-            Self::standard()
-        }
+    pub fn with_trace(mut self, kernel_trace: bool) -> Self {
+        self.kernel_trace = kernel_trace;
+        self
     }
 
     pub fn up_to_loan_repayment() -> Self {
@@ -100,7 +99,7 @@ impl ExecutionConfig {
     pub fn up_to_loan_repayment_with_debug() -> Self {
         Self {
             abort_when_loan_repaid: true,
-            debug: true,
+            kernel_trace: true,
             ..Self::default()
         }
     }
@@ -194,7 +193,7 @@ where
         let transaction_hash = executable.transaction_hash();
 
         #[cfg(not(feature = "alloc"))]
-        if execution_config.debug {
+        if execution_config.kernel_trace {
             println!("{:-^80}", "Transaction Metadata");
             println!("Transaction hash: {}", transaction_hash);
             println!(
@@ -244,7 +243,6 @@ where
 
             // Create kernel
             let modules = KernelModuleMixer::standard(
-                execution_config.debug,
                 transaction_hash.clone(),
                 executable.auth_zone_params().clone(),
                 fee_reserve,
@@ -318,7 +316,7 @@ where
             result: track_receipt.result,
         };
         #[cfg(not(feature = "alloc"))]
-        if execution_config.debug {
+        if execution_config.kernel_trace {
             println!("{:-^80}", "Cost Analysis");
             let break_down = receipt
                 .execution
