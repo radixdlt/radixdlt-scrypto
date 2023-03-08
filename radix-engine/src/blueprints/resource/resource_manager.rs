@@ -30,19 +30,19 @@ pub struct ResourceManagerSubstate {
     pub resource_address: ResourceAddress, // TODO: Figure out a way to remove?
     pub resource_type: ResourceType,
     pub total_supply: Decimal,
-    pub nf_store_id: Option<KeyValueStoreId>,
+    pub non_fungible_data: Option<(KeyValueStoreId, BTreeSet<String>)>,
 }
 
 impl ResourceManagerSubstate {
     pub fn new(
         resource_type: ResourceType,
-        nf_store_id: Option<KeyValueStoreId>,
+        non_fungible_data: Option<(KeyValueStoreId, BTreeSet<String>)>,
         resource_address: ResourceAddress,
     ) -> ResourceManagerSubstate {
         Self {
             resource_type,
             total_supply: 0.into(),
-            nf_store_id,
+            non_fungible_data,
             resource_address,
         }
     }
@@ -66,6 +66,7 @@ fn build_non_fungible_resource_manager_substate_with_initial_supply<Y>(
     resource_address: ResourceAddress,
     id_type: NonFungibleIdType,
     entries: BTreeMap<NonFungibleLocalId, Vec<u8>>,
+    mutable_fields: BTreeSet<String>,
     _non_fungible_schema: NonFungibleSchema,
     api: &mut Y,
 ) -> Result<(ResourceManagerSubstate, Bucket), RuntimeError>
@@ -77,7 +78,7 @@ where
 
     let mut resource_manager = ResourceManagerSubstate::new(
         ResourceType::NonFungible { id_type },
-        Some(nf_store_id),
+        Some((nf_store_id, mutable_fields)),
         resource_address,
     );
 
@@ -426,6 +427,7 @@ fn create_non_fungible_resource_manager<Y>(
     global_node_id: RENodeId,
     id_type: NonFungibleIdType,
     metadata: BTreeMap<String, String>,
+    mutable_fields: BTreeSet<String>,
     _non_fungible_schema: NonFungibleSchema,
     access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     api: &mut Y,
@@ -439,7 +441,7 @@ where
     let nf_store_id = api.new_key_value_store(schema)?;
     let resource_manager_substate = ResourceManagerSubstate::new(
         ResourceType::NonFungible { id_type },
-        Some(nf_store_id),
+        Some((nf_store_id, mutable_fields)),
         resource_address,
     );
 
@@ -489,6 +491,7 @@ impl ResourceManagerBlueprint {
             global_node_id,
             input.id_type,
             input.metadata,
+            BTreeSet::new(),
             input.non_fungible_schema,
             input.access_rules,
             api,
@@ -517,6 +520,7 @@ impl ResourceManagerBlueprint {
             global_node_id,
             input.id_type,
             input.metadata,
+            BTreeSet::new(),
             input.non_fungible_schema,
             input.access_rules,
             api,
@@ -555,6 +559,7 @@ impl ResourceManagerBlueprint {
                 resource_address,
                 input.id_type,
                 input.entries,
+                BTreeSet::new(),
                 input.non_fungible_schema,
                 api,
             )?;
@@ -610,6 +615,7 @@ impl ResourceManagerBlueprint {
                 resource_address,
                 NonFungibleIdType::UUID,
                 entries,
+                BTreeSet::new(),
                 input.non_fungible_schema,
                 api,
             )?;
@@ -865,14 +871,14 @@ impl ResourceManagerBlueprint {
             let resource_manager: &ResourceManagerSubstate =
                 api.kernel_get_substate_ref(resman_handle)?;
             (
-                resource_manager.nf_store_id.clone(),
+                resource_manager.non_fungible_data.as_ref().unwrap().0.clone(),
                 resource_manager.resource_address,
             )
         };
 
         for (id, non_fungible) in non_fungibles {
             let non_fungible_handle = api.sys_lock_substate(
-                RENodeId::KeyValueStore(nf_store_id.unwrap()),
+                RENodeId::KeyValueStore(nf_store_id),
                 SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
                     scrypto_encode(&id).unwrap(),
                 )),
@@ -943,7 +949,7 @@ impl ResourceManagerBlueprint {
                     ))
                 }
             };
-            let nf_store_id = resource_manager.nf_store_id.unwrap();
+            let nf_store_id = resource_manager.non_fungible_data.as_ref().unwrap().0;
 
             if id_type != NonFungibleIdType::UUID {
                 return Err(RuntimeError::ApplicationError(
@@ -1139,7 +1145,7 @@ impl ResourceManagerBlueprint {
         // Burn non-fungible
         let resource_manager: &ResourceManagerSubstate =
             api.kernel_get_substate_ref(resman_handle)?;
-        if let Some(nf_store_id) = resource_manager.nf_store_id {
+        if let Some((nf_store_id, _)) = resource_manager.non_fungible_data {
             let node_id = RENodeId::KeyValueStore(nf_store_id);
 
             if let DroppedBucketResource::NonFungible(nf) = dropped_bucket.resource {
@@ -1298,8 +1304,9 @@ impl ResourceManagerBlueprint {
         let resource_manager: &ResourceManagerSubstate =
             api.kernel_get_substate_ref(resman_handle)?;
         let nf_store_id = resource_manager
-            .nf_store_id
-            .ok_or(InvokeError::SelfError(ResourceManagerError::NotNonFungible))?;
+            .non_fungible_data
+            .as_ref()
+            .ok_or(InvokeError::SelfError(ResourceManagerError::NotNonFungible))?.0;
         let resource_address = resource_manager.resource_address;
 
         let non_fungible_handle = api.sys_lock_substate(
@@ -1354,8 +1361,9 @@ impl ResourceManagerBlueprint {
         let resource_manager: &ResourceManagerSubstate =
             api.kernel_get_substate_ref(resman_handle)?;
         let nf_store_id = resource_manager
-            .nf_store_id
-            .ok_or(InvokeError::SelfError(ResourceManagerError::NotNonFungible))?;
+            .non_fungible_data
+            .as_ref()
+            .ok_or(InvokeError::SelfError(ResourceManagerError::NotNonFungible))?.0;
 
         let non_fungible_handle = api.sys_lock_substate(
             RENodeId::KeyValueStore(nf_store_id),
@@ -1442,8 +1450,9 @@ impl ResourceManagerBlueprint {
         let resource_manager: &ResourceManagerSubstate =
             api.kernel_get_substate_ref(resman_handle)?;
         let nf_store_id = resource_manager
-            .nf_store_id
-            .ok_or(InvokeError::SelfError(ResourceManagerError::NotNonFungible))?;
+            .non_fungible_data
+            .as_ref()
+            .ok_or(InvokeError::SelfError(ResourceManagerError::NotNonFungible))?.0;
 
         let non_fungible_global_id =
             NonFungibleGlobalId::new(resource_manager.resource_address, input.id.clone());

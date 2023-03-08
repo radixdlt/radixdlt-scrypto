@@ -1006,14 +1006,6 @@ fn generate_non_fungible_mint_params(
                     actual: key_type.clone(),
                 });
             };
-            /*
-            if value_type != &ast::Type::Tuple {
-                return Err(GeneratorError::InvalidAstType {
-                    expected_type: ast::Type::Tuple,
-                    actual: value_type.clone(),
-                });
-            };
-             */
             if elements.len() % 2 != 0 {
                 return Err(GeneratorError::OddNumberOfElements);
             }
@@ -1030,39 +1022,6 @@ fn generate_non_fungible_mint_params(
                 )?;
                 let non_fungible = transform(non_fungible, &mut TemporaryTransformHandler)?;
                 let non_fungible = scrypto_encode(&non_fungible).unwrap();
-                /*
-                let non_fungible_data = match .clone() {
-                    ast::Value::Tuple(values) => {
-                        if values.len() != 2 {
-                            return Err(GeneratorError::InvalidLength {
-                                value_type: ast::Type::Tuple,
-                                expected_length: 2,
-                                actual: values.len(),
-                            });
-                        }
-
-                        let immutable_data = manifest_encode(&generate_args_from_tuple(
-                            &values[0],
-                            resolver,
-                            bech32_decoder,
-                            blobs,
-                        )?)
-                        .map_err(GeneratorError::ArgumentEncodingError)?;
-                        /*
-                        let mutable_data = manifest_encode(&generate_args_from_tuple(
-                            &values[1],
-                            resolver,
-                            bech32_decoder,
-                            blobs,
-                        )?)
-                        .map_err(GeneratorError::ArgumentEncodingError)?;
-                         */
-
-                        immutable_data
-                    }
-                    v => invalid_type!(v, ast::Type::Tuple)?,
-                };
-                 */
                 mint_params.insert(non_fungible_local_id, non_fungible);
             }
 
