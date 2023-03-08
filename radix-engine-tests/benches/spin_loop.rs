@@ -37,7 +37,7 @@ fn bench_spin_loop(c: &mut Criterion) {
         .build();
 
     // Loop
-    c.bench_function("Spin Loop", |b| {
+    c.bench_function("SpinLoop::run", |b| {
         b.iter(|| {
             let receipt = test_runner.execute_manifest(manifest.clone(), vec![]);
             receipt.expect_commit_failure();
