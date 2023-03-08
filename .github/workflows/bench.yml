@@ -1,0 +1,30 @@
+name: Benchmark PR
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+      - docs
+      - alphanet
+      - betanet
+      - release\/*
+
+concurrency:
+  group: benchmark-comparison-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    name: Run bench
+    runs-on: k8s-linux-runner
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Add wasm target
+        run: rustup target add wasm32-unknown-unknown
+      - uses: boa-dev/criterion-compare-action@v3
+        with:
+          branchName: ${{ github.base_ref }}

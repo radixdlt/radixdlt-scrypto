@@ -180,6 +180,10 @@ impl Parser {
                 key: self.parse_value()?,
                 value: self.parse_value()?,
             },
+            TokenKind::RemoveMetadata => Instruction::RemoveMetadata {
+                entity_address: self.parse_value()?,
+                key: self.parse_value()?,
+            },
             TokenKind::SetPackageRoyaltyConfig => Instruction::SetPackageRoyaltyConfig {
                 package_address: self.parse_value()?,
                 royalty_config: self.parse_value()?,

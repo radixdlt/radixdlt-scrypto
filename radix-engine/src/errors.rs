@@ -14,6 +14,7 @@ use crate::system::kernel_modules::events::EventError;
 use crate::system::kernel_modules::node_move::NodeMoveError;
 use crate::system::kernel_modules::transaction_limits::TransactionLimitsError;
 use crate::system::node_modules::access_rules::{AccessRulesChainError, AuthZoneError};
+use crate::system::node_modules::metadata::MetadataPanicError;
 use crate::system::package::PackageError;
 use crate::transaction::AbortReason;
 use crate::types::*;
@@ -337,6 +338,8 @@ pub enum ApplicationError {
     AccessControllerError(AccessControllerError),
 
     EventError(EventError),
+
+    MetadataError(MetadataPanicError),
 }
 
 impl From<TransactionProcessorError> for ApplicationError {

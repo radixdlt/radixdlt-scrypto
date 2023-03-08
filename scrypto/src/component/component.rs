@@ -1,32 +1,31 @@
 use crate::engine::scrypto_env::ScryptoEnv;
-use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesCreateInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
+use crate::modules::{
+    AccessRules, AttachedAccessRules, AttachedMetadata, AttachedRoyalty, Royalty,
 };
-use radix_engine_interface::api::node_modules::metadata::{
-    MetadataCreateInput, MetadataSetInput, METADATA_BLUEPRINT, METADATA_CREATE_IDENT,
-    METADATA_GET_IDENT, METADATA_SET_IDENT,
-};
+use crate::runtime::*;
+use crate::*;
+use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
 use radix_engine_interface::api::node_modules::royalty::{
-    ComponentClaimRoyaltyInput, ComponentRoyaltyCreateInput, ComponentSetRoyaltyConfigInput,
-    COMPONENT_ROYALTY_BLUEPRINT, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
-    COMPONENT_ROYALTY_CREATE_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+    COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
 use radix_engine_interface::api::types::{ObjectId, RENodeId};
-use radix_engine_interface::api::{types::*, ClientObjectApi, ClientPackageApi};
+use radix_engine_interface::api::{types::*, ClientObjectApi};
 use radix_engine_interface::blueprints::resource::{
-    require, AccessRule, AccessRules, Bucket, MethodKey, NonFungibleGlobalId,
+    require, AccessRule, AccessRuleEntry, AccessRulesConfig, MethodKey, NonFungibleGlobalId,
 };
-use radix_engine_interface::constants::{ACCESS_RULES_PACKAGE, METADATA_PACKAGE, ROYALTY_PACKAGE};
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::OWN_ID;
-use radix_engine_interface::data::scrypto::{model::*, ScryptoCustomTypeKind};
 use radix_engine_interface::data::scrypto::{
-    scrypto_decode, scrypto_encode, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
+    scrypto_decode, ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
 };
 use radix_engine_interface::rule;
-use sbor::rust::prelude::*;
-use sbor::*;
-
-use super::ComponentAccessRules;
+use sbor::rust::string::String;
+use sbor::rust::string::ToString;
+use sbor::rust::vec::Vec;
+use sbor::{
+    btreemap, Categorize, Decode, DecodeError, Decoder, Describe, Encode, EncodeError, Encoder,
+    GlobalTypeId, ValueKind,
+};
+use scrypto::modules::Metadata;
 
 pub trait ComponentState<T: Component + LocalComponent>: ScryptoEncode + ScryptoDecode {
     fn instantiate(self) -> T;
@@ -42,35 +41,73 @@ pub trait Component {
     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T;
     fn package_address(&self) -> PackageAddress;
     fn blueprint_name(&self) -> String;
-    // TODO: fn metadata<K: AsRef<str>>(&self, name: K) -> Option<String>;
 }
 
 pub trait LocalComponent: Sized {
     fn globalize_with_modules(
         self,
         access_rules: AccessRules,
-        metadata: BTreeMap<String, String>,
-        config: RoyaltyConfig,
+        metadata: Metadata,
+        royalty: Royalty,
     ) -> ComponentAddress;
 
     fn globalize(self) -> ComponentAddress {
+        let mut access_rules_config = AccessRulesConfig::new();
+        access_rules_config.set_method_access_rule(
+            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
+            AccessRuleEntry::AccessRule(AccessRule::DenyAll),
+        );
+        let access_rules_config =
+            access_rules_config.default(AccessRule::AllowAll, AccessRule::DenyAll);
+
         self.globalize_with_modules(
-            AccessRules::new().default(AccessRule::AllowAll, AccessRule::DenyAll),
-            BTreeMap::new(),
-            RoyaltyConfig::default(),
+            AccessRules::new(access_rules_config),
+            Metadata::new(),
+            Royalty::new(RoyaltyConfig::default()),
         )
     }
 
-    fn globalize_with_royalty_config(self, config: RoyaltyConfig) -> ComponentAddress {
+    fn globalize_with_metadata(self, metadata: Metadata) -> ComponentAddress {
+        let mut access_rules_config = AccessRulesConfig::new();
+        access_rules_config.set_method_access_rule(
+            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
+            AccessRuleEntry::AccessRule(AccessRule::DenyAll),
+        );
+        let access_rules_config =
+            access_rules_config.default(AccessRule::AllowAll, AccessRule::DenyAll);
+
         self.globalize_with_modules(
-            AccessRules::new().default(AccessRule::AllowAll, AccessRule::DenyAll),
-            BTreeMap::new(),
-            config,
+            AccessRules::new(access_rules_config),
+            metadata,
+            Royalty::new(RoyaltyConfig::default()),
         )
     }
 
-    fn globalize_with_access_rules(self, access_rules: AccessRules) -> ComponentAddress {
-        self.globalize_with_modules(access_rules, BTreeMap::new(), RoyaltyConfig::default())
+    fn globalize_with_royalty_config(self, royalty_config: RoyaltyConfig) -> ComponentAddress {
+        let mut access_rules_config = AccessRulesConfig::new();
+        access_rules_config.set_method_access_rule(
+            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
+            AccessRuleEntry::AccessRule(AccessRule::DenyAll),
+        );
+        let access_rules_config =
+            access_rules_config.default(AccessRule::AllowAll, AccessRule::DenyAll);
+
+        self.globalize_with_modules(
+            AccessRules::new(access_rules_config),
+            Metadata::new(),
+            Royalty::new(royalty_config),
+        )
+    }
+
+    fn globalize_with_access_rules(
+        self,
+        access_rules_config: AccessRulesConfig,
+    ) -> ComponentAddress {
+        self.globalize_with_modules(
+            AccessRules::new(access_rules_config),
+            Metadata::new(),
+            Royalty::new(RoyaltyConfig::default()),
+        )
     }
 
     fn globalize_with_owner_badge(
@@ -78,19 +115,19 @@ pub trait LocalComponent: Sized {
         owner_badge: NonFungibleGlobalId,
         royalty_config: RoyaltyConfig,
     ) -> ComponentAddress {
-        let mut access_rules =
-            AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll);
-        access_rules.set_access_rule_and_mutability(
+        let mut access_rules_config =
+            AccessRulesConfig::new().default(AccessRule::AllowAll, AccessRule::AllowAll);
+        access_rules_config.set_access_rule_and_mutability(
             MethodKey::new(NodeModuleId::Metadata, METADATA_GET_IDENT.to_string()),
             AccessRule::AllowAll,
             rule!(require(owner_badge.clone())),
         );
-        access_rules.set_access_rule_and_mutability(
+        access_rules_config.set_access_rule_and_mutability(
             MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
             rule!(require(owner_badge.clone())),
             rule!(require(owner_badge.clone())),
         );
-        access_rules.set_access_rule_and_mutability(
+        access_rules_config.set_access_rule_and_mutability(
             MethodKey::new(
                 NodeModuleId::ComponentRoyalty,
                 COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(),
@@ -98,7 +135,7 @@ pub trait LocalComponent: Sized {
             rule!(require(owner_badge.clone())),
             rule!(require(owner_badge.clone())),
         );
-        access_rules.set_access_rule_and_mutability(
+        access_rules_config.set_access_rule_and_mutability(
             MethodKey::new(
                 NodeModuleId::ComponentRoyalty,
                 COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
@@ -107,7 +144,11 @@ pub trait LocalComponent: Sized {
             rule!(require(owner_badge.clone())),
         );
 
-        self.globalize_with_modules(access_rules, BTreeMap::new(), royalty_config)
+        self.globalize_with_modules(
+            AccessRules::new(access_rules_config),
+            Metadata::new(),
+            Royalty::new(royalty_config),
+        )
     }
 }
 
@@ -141,41 +182,12 @@ impl LocalComponent for OwnedComponent {
     fn globalize_with_modules(
         self,
         access_rules: AccessRules,
-        _metadata: BTreeMap<String, String>,
-        config: RoyaltyConfig,
+        metadata: Metadata,
+        royalty: Royalty,
     ) -> ComponentAddress {
-        let rtn = ScryptoEnv
-            .call_function(
-                METADATA_PACKAGE,
-                METADATA_BLUEPRINT,
-                METADATA_CREATE_IDENT,
-                scrypto_encode(&MetadataCreateInput {}).unwrap(),
-            )
-            .unwrap();
-        let metadata: Own = scrypto_decode(&rtn).unwrap();
-
-        let rtn = ScryptoEnv
-            .call_function(
-                ROYALTY_PACKAGE,
-                COMPONENT_ROYALTY_BLUEPRINT,
-                COMPONENT_ROYALTY_CREATE_IDENT,
-                scrypto_encode(&ComponentRoyaltyCreateInput {
-                    royalty_config: config,
-                })
-                .unwrap(),
-            )
-            .unwrap();
-        let royalty: Own = scrypto_decode(&rtn).unwrap();
-
-        let rtn = ScryptoEnv
-            .call_function(
-                ACCESS_RULES_PACKAGE,
-                ACCESS_RULES_BLUEPRINT,
-                ACCESS_RULES_CREATE_IDENT,
-                scrypto_encode(&AccessRulesCreateInput { access_rules }).unwrap(),
-            )
-            .unwrap();
-        let access_rules: Own = scrypto_decode(&rtn).unwrap();
+        let metadata: Own = Own::Object(metadata.0);
+        let access_rules: Own = Own::Object(access_rules.0);
+        let royalty: Own = Own::Object(royalty.0);
 
         let address = ScryptoEnv
             .globalize(
@@ -196,46 +208,16 @@ impl LocalComponent for OwnedComponent {
 pub struct GlobalComponentRef(pub ComponentAddress);
 
 impl GlobalComponentRef {
-    pub fn access_rules(&self) -> ComponentAccessRules {
-        ComponentAccessRules::new(self.0)
+    pub fn access_rules(&self) -> AttachedAccessRules {
+        AttachedAccessRules(self.0.into())
     }
 
-    pub fn set_royalty_config(&self, royalty_config: RoyaltyConfig) {
-        ScryptoEnv
-            .call_module_method(
-                RENodeId::GlobalObject(self.0.into()),
-                NodeModuleId::ComponentRoyalty,
-                COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
-                scrypto_encode(&ComponentSetRoyaltyConfigInput { royalty_config }).unwrap(),
-            )
-            .unwrap();
+    pub fn metadata(&self) -> AttachedMetadata {
+        AttachedMetadata(self.0.into())
     }
 
-    pub fn claim_royalty(&self) -> Bucket {
-        let rtn = ScryptoEnv
-            .call_module_method(
-                RENodeId::GlobalObject(self.0.into()),
-                NodeModuleId::ComponentRoyalty,
-                COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
-                scrypto_encode(&ComponentClaimRoyaltyInput {}).unwrap(),
-            )
-            .unwrap();
-        scrypto_decode(&rtn).unwrap()
-    }
-
-    pub fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
-        ScryptoEnv
-            .call_module_method(
-                RENodeId::GlobalObject(self.0.into()),
-                NodeModuleId::Metadata,
-                METADATA_SET_IDENT,
-                scrypto_encode(&MetadataSetInput {
-                    key: name.as_ref().to_owned(),
-                    value: value.as_ref().to_owned(),
-                })
-                .unwrap(),
-            )
-            .unwrap();
+    pub fn royalty(&self) -> AttachedRoyalty {
+        AttachedRoyalty(self.0.into())
     }
 }
 

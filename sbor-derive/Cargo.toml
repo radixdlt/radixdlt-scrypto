@@ -5,6 +5,7 @@ edition = "2021"
 
 [lib]
 proc-macro = true
+bench = false
 
 [dependencies]
 proc-macro2 = { version = "1.0.38" }

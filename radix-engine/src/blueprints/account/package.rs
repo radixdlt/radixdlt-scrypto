@@ -10,7 +10,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::AccessRule;
-use radix_engine_interface::blueprints::resource::AccessRules;
+use radix_engine_interface::blueprints::resource::AccessRulesConfig;
 use radix_engine_interface::blueprints::resource::MethodKey;
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver};
 
@@ -447,7 +447,7 @@ impl AccountNativePackage {
                 api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
 
             match entry {
-                KeyValueStoreEntrySubstate::Some(_, value) => {
+                KeyValueStoreEntrySubstate::Some(value) => {
                     Ok(scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
                         .map(|own| Vault(own.vault_id()))
                         .expect("Impossible Case!"))
@@ -551,20 +551,18 @@ impl AccountNativePackage {
                 api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
 
             match entry {
-                KeyValueStoreEntrySubstate::Some(_, value) => {
+                KeyValueStoreEntrySubstate::Some(value) => {
                     scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
                         .map(|own| Vault(own.vault_id()))
                         .expect("Impossible Case!")
                 }
                 KeyValueStoreEntrySubstate::None => {
                     let vault = Vault::sys_new(resource_address, api)?;
-                    let encoded_key = IndexedScryptoValue::from_typed(&resource_address);
                     let encoded_value = IndexedScryptoValue::from_typed(&Own::Vault(vault.0));
 
                     let entry: &mut KeyValueStoreEntrySubstate =
                         api.kernel_get_substate_ref_mut(kv_store_entry_lock_handle)?;
-                    *entry =
-                        KeyValueStoreEntrySubstate::Some(encoded_key.into(), encoded_value.into());
+                    *entry = KeyValueStoreEntrySubstate::Some(encoded_value.into());
 
                     vault
                 }
@@ -627,22 +625,18 @@ impl AccountNativePackage {
                     api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
 
                 match entry {
-                    KeyValueStoreEntrySubstate::Some(_, value) => {
+                    KeyValueStoreEntrySubstate::Some(value) => {
                         scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
                             .map(|own| Vault(own.vault_id()))
                             .expect("Impossible Case!")
                     }
                     KeyValueStoreEntrySubstate::None => {
                         let vault = Vault::sys_new(resource_address, api)?;
-                        let encoded_key = IndexedScryptoValue::from_typed(&resource_address);
                         let encoded_value = IndexedScryptoValue::from_typed(&Own::Vault(vault.0));
 
                         let entry: &mut KeyValueStoreEntrySubstate =
                             api.kernel_get_substate_ref_mut(kv_store_entry_lock_handle)?;
-                        *entry = KeyValueStoreEntrySubstate::Some(
-                            encoded_key.into(),
-                            encoded_value.into(),
-                        );
+                        *entry = KeyValueStoreEntrySubstate::Some(encoded_value.into());
 
                         vault
                     }
@@ -695,7 +689,7 @@ impl AccountNativePackage {
                 api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
 
             match entry {
-                KeyValueStoreEntrySubstate::Some(_, value) => {
+                KeyValueStoreEntrySubstate::Some(value) => {
                     Ok(scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
                         .map(|own| Vault(own.vault_id()))
                         .expect("Impossible Case!"))
@@ -893,8 +887,8 @@ impl AccountNativePackage {
 // Helpers
 //=========
 
-fn access_rules_from_withdraw_rule(withdraw_rule: AccessRule) -> AccessRules {
-    let mut access_rules = AccessRules::new();
+fn access_rules_from_withdraw_rule(withdraw_rule: AccessRule) -> AccessRulesConfig {
+    let mut access_rules = AccessRulesConfig::new();
     access_rules.set_access_rule_and_mutability(
         MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_IDENT.to_string()),
         AccessRule::AllowAll,

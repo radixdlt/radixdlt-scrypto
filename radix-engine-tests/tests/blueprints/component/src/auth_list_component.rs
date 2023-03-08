@@ -11,7 +11,7 @@ mod auth_list_component {
         pub fn create_component(
             count: u8,
             auth: Vec<NonFungibleGlobalId>,
-            access_rules: AccessRules,
+            access_rules: AccessRulesConfig,
         ) -> ComponentAddress {
             let component = Self { count, auth }.instantiate();
             component.globalize_with_access_rules(access_rules)

@@ -103,7 +103,7 @@ impl ClockNativePackage {
             .unwrap()],
         )?;
 
-        let mut access_rules = AccessRules::new();
+        let mut access_rules = AccessRulesConfig::new();
         access_rules.set_method_access_rule(
             MethodKey::new(NodeModuleId::SELF, CLOCK_SET_CURRENT_TIME_IDENT.to_string()),
             rule!(require(AuthAddresses::validator_role())),

@@ -592,8 +592,8 @@ impl ValidatorCreator {
         Ok(unstake_resource_manager.0)
     }
 
-    fn build_access_rules(owner_access_rule: AccessRule) -> AccessRules {
-        let mut access_rules = AccessRules::new();
+    fn build_access_rules(owner_access_rule: AccessRule) -> AccessRulesConfig {
+        let mut access_rules = AccessRulesConfig::new();
         access_rules.set_group_access_rule_and_mutability(
             "owner".to_string(),
             owner_access_rule,

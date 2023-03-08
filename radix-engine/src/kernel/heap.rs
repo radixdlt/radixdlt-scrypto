@@ -44,14 +44,18 @@ impl Heap {
             .ok_or(CallFrameError::RENodeNotOwned(node_id))?;
 
         // TODO: Will clean this up when virtual substates is cleaned up
-        match (&node_id, offset) {
-            (RENodeId::KeyValueStore(..), SubstateOffset::KeyValueStore(..)) => {
+        match (&node_id, module_id, offset) {
+            (_, _, SubstateOffset::KeyValueStore(..)) => {
                 let entry = node.substates.entry((module_id, offset.clone())).or_insert(
                     RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::None),
                 );
                 Ok(entry.to_ref())
             }
-            (RENodeId::NonFungibleStore(..), SubstateOffset::NonFungibleStore(..)) => {
+            (
+                RENodeId::NonFungibleStore(..),
+                NodeModuleId::SELF,
+                SubstateOffset::NonFungibleStore(..),
+            ) => {
                 let entry = node
                     .substates
                     .entry((module_id, offset.clone()))
