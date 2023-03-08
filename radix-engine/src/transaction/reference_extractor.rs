@@ -54,7 +54,7 @@ pub fn extract_refs_from_instruction(
         }
 
         Instruction::PublishPackage { access_rules, .. } => {
-            global_references.insert(PACKAGE_LOADER.clone().into());
+            global_references.insert(PACKAGE.clone().into());
 
             // TODO: Remove and cleanup
             let value: ManifestValue = manifest_decode(&manifest_encode(access_rules).unwrap())

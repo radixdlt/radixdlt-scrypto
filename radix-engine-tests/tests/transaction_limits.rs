@@ -207,7 +207,7 @@ fn transaction_limit_exceeded_direct_invoke_input_size_should_fail() {
     let data: Vec<u8> = (0..DEFAULT_MAX_INVOKE_INPUT_SIZE).map(|_| 0).collect();
     let blueprint_name = "test_blueprint";
     let function_name = "test_fn";
-    let package_address = PACKAGE_LOADER;
+    let package_address = PACKAGE;
 
     // Act
     let ret =

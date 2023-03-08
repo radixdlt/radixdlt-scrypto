@@ -7,9 +7,9 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use scrypto_schema::PackageSchema;
 
-pub const PACKAGE_LOADER_BLUEPRINT: &str = "PackageLoader";
+pub const PACKAGE_BLUEPRINT: &str = "PackageLoader";
 
-pub const PACKAGE_LOADER_PUBLISH_WASM_IDENT: &str = "publish_wasm";
+pub const PACKAGE_PUBLISH_WASM_IDENT: &str = "publish_wasm";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct PackageLoaderPublishWasmInput {
@@ -21,7 +21,7 @@ pub struct PackageLoaderPublishWasmInput {
     pub access_rules: AccessRules,
 }
 
-pub const PACKAGE_LOADER_PUBLISH_NATIVE_IDENT: &str = "publish_native";
+pub const PACKAGE_PUBLISH_NATIVE_IDENT: &str = "publish_native";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct PackageLoaderPublishNativeInput {

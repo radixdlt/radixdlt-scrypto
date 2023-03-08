@@ -52,8 +52,8 @@ fn build_package_node_modules(
     node_modules.insert(
         NodeModuleId::TypeInfo,
         RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-            package_address: PACKAGE_LOADER,
-            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            package_address: PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             global: true,
         }),
     );
@@ -95,7 +95,7 @@ impl Package {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         match export_name {
-            PACKAGE_LOADER_PUBLISH_NATIVE_IDENT => {
+            PACKAGE_PUBLISH_NATIVE_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
@@ -106,7 +106,7 @@ impl Package {
 
                 Self::publish_native(input, api)
             }
-            PACKAGE_LOADER_PUBLISH_WASM_IDENT => {
+            PACKAGE_PUBLISH_WASM_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {

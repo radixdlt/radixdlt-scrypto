@@ -471,7 +471,7 @@ where
                         // TODO: Cleanup
                         {
                             match *package_address {
-                                PACKAGE_LOADER
+                                PACKAGE
                                 | RESOURCE_MANAGER_PACKAGE
                                 | IDENTITY_PACKAGE
                                 | EPOCH_MANAGER_PACKAGE

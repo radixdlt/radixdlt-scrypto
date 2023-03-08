@@ -145,7 +145,7 @@ impl ExecutableInvocation for MethodInvocation {
 
         // TODO: Remove this weirdness or move to a kernel module if we still want to support this
         {
-            if package_address.eq(&PACKAGE_LOADER) {
+            if package_address.eq(&PACKAGE) {
                 node_refs_to_copy.insert(RENodeId::GlobalObject(RADIX_TOKEN.into()));
             } else {
                 let handle = api.kernel_lock_substate(
@@ -217,7 +217,7 @@ impl ExecutableInvocation for FunctionInvocation {
 
         // TODO: Remove this weirdness or move to a kernel module if we still want to support this
         {
-            if self.fn_identifier.package_address.eq(&PACKAGE_LOADER) {
+            if self.fn_identifier.package_address.eq(&PACKAGE) {
                 node_refs_to_copy.insert(RENodeId::GlobalObject(RADIX_TOKEN.into()));
             } else {
                 let handle = api.kernel_lock_substate(
@@ -289,7 +289,7 @@ impl Executor for ScryptoExecutor {
         Y: KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + ClientApi<RuntimeError>,
         W: WasmEngine,
     {
-        let output = if self.fn_identifier.package_address.eq(&PACKAGE_LOADER) {
+        let output = if self.fn_identifier.package_address.eq(&PACKAGE) {
             // TODO: Clean this up
             // Do we need to check against the abi? Probably not since we should be able to verify this
             // in the native package itself.
