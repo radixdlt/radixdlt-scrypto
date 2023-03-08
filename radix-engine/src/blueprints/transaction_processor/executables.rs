@@ -115,8 +115,19 @@ fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFra
             extract_refs_from_value(&value, update);
         }
 
-        Instruction::SetMetadata { entity_address, .. }
-        | Instruction::SetMethodAccessRule { entity_address, .. }
+        Instruction::SetMetadata {
+            entity_address,
+            value,
+            ..
+        } => {
+            for reference in IndexedScryptoValue::from_typed(value).global_references() {
+                update.add_ref(*reference);
+            }
+            let address = to_address(entity_address.clone());
+            let node_id = address.into();
+            update.add_ref(node_id);
+        }
+        Instruction::SetMethodAccessRule { entity_address, .. }
         | Instruction::RemoveMetadata { entity_address, .. } => {
             let address = to_address(entity_address.clone());
             let node_id = address.into();
