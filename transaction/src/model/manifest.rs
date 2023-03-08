@@ -1,7 +1,7 @@
 //use crate::data::{manifest_decode, manifest_encode};
 use crate::model::Instruction;
-use radix_engine_interface::*;
 use radix_engine_interface::data::manifest::*;
+use radix_engine_interface::*;
 use sbor::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
@@ -11,7 +11,6 @@ pub struct TransactionManifest {
 }
 
 impl TransactionManifest {
-
     pub fn from_slice(slice: &[u8]) -> Result<Self, DecodeError> {
         manifest_decode(slice)
     }
