@@ -11,6 +11,7 @@ pub enum ScryptoCustomValue {
     Decimal(Decimal),
     PreciseDecimal(PreciseDecimal),
     NonFungibleLocalId(NonFungibleLocalId),
+    Reference(Reference),
 }
 
 impl ScryptoCustomValue {
@@ -21,6 +22,7 @@ impl ScryptoCustomValue {
             ScryptoCustomValue::Decimal(_) => ScryptoCustomValueKind::Decimal,
             ScryptoCustomValue::PreciseDecimal(_) => ScryptoCustomValueKind::PreciseDecimal,
             ScryptoCustomValue::NonFungibleLocalId(_) => ScryptoCustomValueKind::NonFungibleLocalId,
+            ScryptoCustomValue::Reference(_) => ScryptoCustomValueKind::Reference,
         }
     }
 }
@@ -38,6 +40,7 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for S
             ScryptoCustomValue::Decimal(v) => v.encode_body(encoder),
             ScryptoCustomValue::PreciseDecimal(v) => v.encode_body(encoder),
             ScryptoCustomValue::NonFungibleLocalId(v) => v.encode_body(encoder),
+            ScryptoCustomValue::Reference(v) => v.encode_body(encoder),
         }
     }
 }
@@ -65,6 +68,9 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for S
                 ScryptoCustomValueKind::NonFungibleLocalId => {
                     NonFungibleLocalId::decode_body_with_value_kind(decoder, value_kind)
                         .map(Self::NonFungibleLocalId)
+                }
+                ScryptoCustomValueKind::Reference => {
+                    Reference::decode_body_with_value_kind(decoder, value_kind).map(Self::Reference)
                 }
             },
             _ => Err(DecodeError::UnexpectedCustomValueKind {
