@@ -40,7 +40,7 @@ impl ScryptoBucket for Bucket {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                RENodeId::GlobalResourceManager(resource_address),
+                RENodeId::GlobalObject(resource_address.into()),
                 RESOURCE_MANAGER_CREATE_BUCKET_IDENT,
                 scrypto_encode(&ResourceManagerCreateBucketInput {}).unwrap(),
             )

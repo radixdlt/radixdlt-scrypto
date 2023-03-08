@@ -2,8 +2,8 @@
 extern crate bencher;
 use bencher::Bencher;
 use sbor::{basic_decode, basic_encode};
+use sbor_tests::adapter;
 
-mod adapter;
 mod data;
 
 const REPEAT: usize = 1000;

@@ -29,11 +29,17 @@ temp-env = { version = "0.2.0" }
 [[bin]]
 name = "resim"
 path = "src/bin/resim.rs"
+bench = false
 
 [[bin]]
 name = "scrypto"
 path = "src/bin/scrypto.rs"
+bench = false
 
 [[bin]]
 name = "rtmc"
 path = "src/bin/rtmc.rs"
+bench = false
+
+[lib]
+bench = false
