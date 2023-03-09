@@ -1,8 +1,8 @@
+use crate::blueprints::package::PackageCodeTypeSubstate;
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::system::node_modules::access_rules::*;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::*;
-use crate::system::package::PackageCodeTypeSubstate;
 use crate::types::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::package::*;

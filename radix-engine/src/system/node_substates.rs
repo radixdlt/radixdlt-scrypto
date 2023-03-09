@@ -1,12 +1,12 @@
 use super::node_modules::access_rules::AuthZoneStackSubstate;
 use super::node_modules::access_rules::MethodAccessRulesSubstate;
-use super::package::PackageCodeTypeSubstate;
 use crate::blueprints::access_controller::AccessControllerSubstate;
 use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::clock::ClockSubstate;
 use crate::blueprints::epoch_manager::EpochManagerSubstate;
 use crate::blueprints::epoch_manager::ValidatorSetSubstate;
 use crate::blueprints::epoch_manager::ValidatorSubstate;
+use crate::blueprints::package::PackageCodeTypeSubstate;
 use crate::blueprints::resource::BucketInfoSubstate;
 use crate::blueprints::resource::FungibleProof;
 use crate::blueprints::resource::NonFungibleProof;
