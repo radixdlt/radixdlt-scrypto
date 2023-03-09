@@ -14,6 +14,9 @@ concurrency:
   group: benchmark-comparison-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  ACTIONS_STEP_DEBUG: true
+
 jobs:
   benchmark:
     name: Run bench
@@ -28,5 +31,3 @@ jobs:
       - uses: radixdlt/criterion-compare-action@update-same-commit
         with:
           branchName: ${{ github.base_ref }}
-        env:
-          ACTIONS_STEP_DEBUG: true

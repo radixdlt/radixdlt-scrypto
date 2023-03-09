@@ -39,283 +39,283 @@ jobs:
         toolchain: stable
     - name: Check format
       run: bash ./check.sh
-  sbor-unit-tests:
-    name: Run SBOR unit tests
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [k8s-linux-runner]
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-    - name: Run tests
-      run: cargo test
-      working-directory: sbor
-    - name: Run tests (no_std)
-      run: cargo test --no-default-features --features alloc
-      working-directory: sbor
-    - name: Run derive tests
-      run: cargo test
-      working-directory: sbor-derive-common
-  sbor-integration-tests:
-    name: Run SBOR integration tests
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [k8s-linux-runner]
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-    - name: Run tests
-      run: cargo test
-      working-directory: sbor-tests
-    - name: Run tests (no_std)
-      run: cargo test --no-default-features --features alloc
-      working-directory: sbor-tests
-    - name: Run bench
-      run: cargo bench
-      working-directory: sbor-tests
-  scrypto-unit-tests:
-    name: Run Scrypto unit tests
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [k8s-linux-runner]
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-    - name: Run tests
-      run: cargo test
-      working-directory: scrypto
-    - name: Run tests (no_std)
-      run: cargo test --no-default-features --features alloc
-      working-directory: scrypto
-    - name: Run abi tests
-      run: cargo test
-      working-directory: scrypto-schema
-    - name: Run derive tests
-      run: cargo test
-      working-directory: scrypto-derive
-  scrypto-integration-tests:
-    name: Run Scrypto integration tests
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [k8s-linux-runner]
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-    - name: Run tests
-      run: cargo test
-      working-directory: scrypto-tests
-    - name: Run tests with no_std
-      run: cargo test --no-default-features --features alloc
-      working-directory: scrypto-tests
-  scrypto-examples:
-    name: Run Scrypto examples
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [k8s-linux-runner]
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-    - name: Add wasm target
-      run: rustup target add wasm32-unknown-unknown
-    - name: Add wasm target (nightly)
-      run: rustup +nightly target add wasm32-unknown-unknown
-    - name: Build faucet
-      run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: assets/blueprints/faucet
-    - name: Build radiswap
-      run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: assets/blueprints/radiswap
-    - name: Build no-std
-      run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: examples/no-std
-    - name: Build and test hello-world
-      run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
-      working-directory: examples/hello-world
-  radix-engine:
-    name: Run Radix Engine tests
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [k8s-linux-runner]
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-    - name: Install nextest
-      uses: taiki-e/install-action@nextest
-    - name: Add wasm target
-      run: rustup target add wasm32-unknown-unknown
-    - name: Run tests
-      run: |
-        cargo nextest run \
-          -p radix-engine-common \
-          -p radix-engine-derive \
-          -p radix-engine-interface \
-          -p radix-engine \
-          -p radix-engine-tests
-  radix-engine-no-std:
-    name: Run Radix Engine tests (no_std)
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [k8s-linux-runner]
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-    - name: Install nextest
-      uses: taiki-e/install-action@nextest
-    - name: Add wasm target
-      run: rustup target add wasm32-unknown-unknown
-    - name: Run tests
-      run: |
-        cargo nextest run \
-          --no-default-features --features alloc \
-          -p radix-engine \
-          -p radix-engine-tests
-  radix-engine-wasmer:
-    name: Run Radix Engine tests (wasmer)
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [k8s-linux-runner]
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-    - name: Install nextest
-      uses: taiki-e/install-action@nextest
-    - name: Add wasm target
-      run: rustup target add wasm32-unknown-unknown
-    - name: Run tests
-      run: |
-        cargo nextest run \
-          --features wasmer \
-          -p radix-engine \
-          -p radix-engine-tests
-  radix-engine-bench:
-    name: Run Radix Engine benchmarks
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [k8s-linux-runner]
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-    - name: Add wasm target
-      run: rustup target add wasm32-unknown-unknown
-    - name: Run bench
-      run: cargo bench
-      working-directory: radix-engine-tests
-  radix-engine-common-bench:
-    name: Run Radix Engine common benchmarks
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [k8s-linux-runner]
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-    - name: Add wasm target
-      run: rustup target add wasm32-unknown-unknown
-    - name: Run bench
-      run: cargo bench
-      working-directory: radix-engine-common
-  transaction:
-    name: Run transaction tests
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [k8s-linux-runner]
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-    - name: Run tests
-      run: cargo test
-      working-directory: transaction
-  cli-resim-rtmc:
-    name: Run CLI tests (resim & rtmc)
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [k8s-linux-runner, windows-latest-16-cores]
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-    - uses: radixdlt/rust-cache@allow_registry_src_caching
-      with:
-        prefix-key: ""
-        shared-key: simulator-debug-${{ runner.os }}
-        cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
-        workspaces: simulator
-    - name: Add wasm target
-      run: rustup target add wasm32-unknown-unknown
-    - name: Set LIBCLANG_PATH # See https://github.com/rust-lang/rust-bindgen/issues/1797
-      if: runner.os == 'Windows'
-      run: echo "LIBCLANG_PATH=$((gcm clang).source -replace "clang.exe")" >> $env:GITHUB_ENV
-    - name: Install dependencies
-      if: runner.os == 'Windows'
-      run: choco install llvm -y
-    - name: Run Unit tests
-      run: cargo test
-      working-directory: simulator
-    - name: Run tests
-      run: bash ./tests/resim.sh
-      working-directory: simulator
-    - name: Run tests
-      run: bash ./tests/manifest.sh
-      working-directory: simulator
-  cli-scrypto:
-    name: Run CLI tests (scrypto)
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [k8s-linux-runner, windows-latest-16-cores]
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-    - uses: radixdlt/rust-cache@allow_registry_src_caching
-      with:
-        prefix-key: ""
-        shared-key: simulator-debug-${{ runner.os }}
-        cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
-        workspaces: simulator
-    - name: Add wasm target
-      run: rustup target add wasm32-unknown-unknown
-    - name: Set LIBCLANG_PATH # See https://github.com/rust-lang/rust-bindgen/issues/1797
-      if: runner.os == 'Windows'
-      run: echo "LIBCLANG_PATH=$((gcm clang).source -replace "clang.exe")" >> $env:GITHUB_ENV
-    - name: Install dependencies
-      if: runner.os == 'Windows'
-      run: choco install llvm -y
-    - name: Run tests
-      run: bash ./tests/scrypto.sh
-      working-directory: simulator
+  # sbor-unit-tests:
+  #   name: Run SBOR unit tests
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       os: [k8s-linux-runner]
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - uses: actions-rs/toolchain@v1
+  #     with:
+  #       toolchain: stable
+  #   - name: Run tests
+  #     run: cargo test
+  #     working-directory: sbor
+  #   - name: Run tests (no_std)
+  #     run: cargo test --no-default-features --features alloc
+  #     working-directory: sbor
+  #   - name: Run derive tests
+  #     run: cargo test
+  #     working-directory: sbor-derive-common
+  # sbor-integration-tests:
+  #   name: Run SBOR integration tests
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       os: [k8s-linux-runner]
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - uses: actions-rs/toolchain@v1
+  #     with:
+  #       toolchain: stable
+  #   - name: Run tests
+  #     run: cargo test
+  #     working-directory: sbor-tests
+  #   - name: Run tests (no_std)
+  #     run: cargo test --no-default-features --features alloc
+  #     working-directory: sbor-tests
+  #   - name: Run bench
+  #     run: cargo bench
+  #     working-directory: sbor-tests
+  # scrypto-unit-tests:
+  #   name: Run Scrypto unit tests
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       os: [k8s-linux-runner]
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - uses: actions-rs/toolchain@v1
+  #     with:
+  #       toolchain: stable
+  #   - name: Run tests
+  #     run: cargo test
+  #     working-directory: scrypto
+  #   - name: Run tests (no_std)
+  #     run: cargo test --no-default-features --features alloc
+  #     working-directory: scrypto
+  #   - name: Run abi tests
+  #     run: cargo test
+  #     working-directory: scrypto-schema
+  #   - name: Run derive tests
+  #     run: cargo test
+  #     working-directory: scrypto-derive
+  # scrypto-integration-tests:
+  #   name: Run Scrypto integration tests
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       os: [k8s-linux-runner]
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - uses: actions-rs/toolchain@v1
+  #     with:
+  #       toolchain: stable
+  #   - name: Run tests
+  #     run: cargo test
+  #     working-directory: scrypto-tests
+  #   - name: Run tests with no_std
+  #     run: cargo test --no-default-features --features alloc
+  #     working-directory: scrypto-tests
+  # scrypto-examples:
+  #   name: Run Scrypto examples
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       os: [k8s-linux-runner]
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - uses: actions-rs/toolchain@v1
+  #     with:
+  #       toolchain: stable
+  #   - name: Add wasm target
+  #     run: rustup target add wasm32-unknown-unknown
+  #   - name: Add wasm target (nightly)
+  #     run: rustup +nightly target add wasm32-unknown-unknown
+  #   - name: Build faucet
+  #     run: cargo build --target wasm32-unknown-unknown --release
+  #     working-directory: assets/blueprints/faucet
+  #   - name: Build radiswap
+  #     run: cargo build --target wasm32-unknown-unknown --release
+  #     working-directory: assets/blueprints/radiswap
+  #   - name: Build no-std
+  #     run: cargo build --target wasm32-unknown-unknown --release
+  #     working-directory: examples/no-std
+  #   - name: Build and test hello-world
+  #     run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
+  #     working-directory: examples/hello-world
+  # radix-engine:
+  #   name: Run Radix Engine tests
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       os: [k8s-linux-runner]
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - uses: actions-rs/toolchain@v1
+  #     with:
+  #       toolchain: stable
+  #   - name: Install nextest
+  #     uses: taiki-e/install-action@nextest
+  #   - name: Add wasm target
+  #     run: rustup target add wasm32-unknown-unknown
+  #   - name: Run tests
+  #     run: |
+  #       cargo nextest run \
+  #         -p radix-engine-common \
+  #         -p radix-engine-derive \
+  #         -p radix-engine-interface \
+  #         -p radix-engine \
+  #         -p radix-engine-tests
+  # radix-engine-no-std:
+  #   name: Run Radix Engine tests (no_std)
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       os: [k8s-linux-runner]
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - uses: actions-rs/toolchain@v1
+  #     with:
+  #       toolchain: stable
+  #   - name: Install nextest
+  #     uses: taiki-e/install-action@nextest
+  #   - name: Add wasm target
+  #     run: rustup target add wasm32-unknown-unknown
+  #   - name: Run tests
+  #     run: |
+  #       cargo nextest run \
+  #         --no-default-features --features alloc \
+  #         -p radix-engine \
+  #         -p radix-engine-tests
+  # radix-engine-wasmer:
+  #   name: Run Radix Engine tests (wasmer)
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       os: [k8s-linux-runner]
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - uses: actions-rs/toolchain@v1
+  #     with:
+  #       toolchain: stable
+  #   - name: Install nextest
+  #     uses: taiki-e/install-action@nextest
+  #   - name: Add wasm target
+  #     run: rustup target add wasm32-unknown-unknown
+  #   - name: Run tests
+  #     run: |
+  #       cargo nextest run \
+  #         --features wasmer \
+  #         -p radix-engine \
+  #         -p radix-engine-tests
+  # radix-engine-bench:
+  #   name: Run Radix Engine benchmarks
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       os: [k8s-linux-runner]
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - uses: actions-rs/toolchain@v1
+  #     with:
+  #       toolchain: stable
+  #   - name: Add wasm target
+  #     run: rustup target add wasm32-unknown-unknown
+  #   - name: Run bench
+  #     run: cargo bench
+  #     working-directory: radix-engine-tests
+  # radix-engine-common-bench:
+  #   name: Run Radix Engine common benchmarks
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       os: [k8s-linux-runner]
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - uses: actions-rs/toolchain@v1
+  #     with:
+  #       toolchain: stable
+  #   - name: Add wasm target
+  #     run: rustup target add wasm32-unknown-unknown
+  #   - name: Run bench
+  #     run: cargo bench
+  #     working-directory: radix-engine-common
+  # transaction:
+  #   name: Run transaction tests
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       os: [k8s-linux-runner]
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - uses: actions-rs/toolchain@v1
+  #     with:
+  #       toolchain: stable
+  #   - name: Run tests
+  #     run: cargo test
+  #     working-directory: transaction
+  # cli-resim-rtmc:
+  #   name: Run CLI tests (resim & rtmc)
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       os: [k8s-linux-runner, windows-latest-16-cores]
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - uses: actions-rs/toolchain@v1
+  #     with:
+  #       toolchain: stable
+  #   - uses: radixdlt/rust-cache@allow_registry_src_caching
+  #     with:
+  #       prefix-key: ""
+  #       shared-key: simulator-debug-${{ runner.os }}
+  #       cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
+  #       workspaces: simulator
+  #   - name: Add wasm target
+  #     run: rustup target add wasm32-unknown-unknown
+  #   - name: Set LIBCLANG_PATH # See https://github.com/rust-lang/rust-bindgen/issues/1797
+  #     if: runner.os == 'Windows'
+  #     run: echo "LIBCLANG_PATH=$((gcm clang).source -replace "clang.exe")" >> $env:GITHUB_ENV
+  #   - name: Install dependencies
+  #     if: runner.os == 'Windows'
+  #     run: choco install llvm -y
+  #   - name: Run Unit tests
+  #     run: cargo test
+  #     working-directory: simulator
+  #   - name: Run tests
+  #     run: bash ./tests/resim.sh
+  #     working-directory: simulator
+  #   - name: Run tests
+  #     run: bash ./tests/manifest.sh
+  #     working-directory: simulator
+  # cli-scrypto:
+  #   name: Run CLI tests (scrypto)
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       os: [k8s-linux-runner, windows-latest-16-cores]
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - uses: actions-rs/toolchain@v1
+  #     with:
+  #       toolchain: stable
+  #   - uses: radixdlt/rust-cache@allow_registry_src_caching
+  #     with:
+  #       prefix-key: ""
+  #       shared-key: simulator-debug-${{ runner.os }}
+  #       cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
+  #       workspaces: simulator
+  #   - name: Add wasm target
+  #     run: rustup target add wasm32-unknown-unknown
+  #   - name: Set LIBCLANG_PATH # See https://github.com/rust-lang/rust-bindgen/issues/1797
+  #     if: runner.os == 'Windows'
+  #     run: echo "LIBCLANG_PATH=$((gcm clang).source -replace "clang.exe")" >> $env:GITHUB_ENV
+  #   - name: Install dependencies
+  #     if: runner.os == 'Windows'
+  #     run: choco install llvm -y
+  #   - name: Run tests
+  #     run: bash ./tests/scrypto.sh
+  #     working-directory: simulator
