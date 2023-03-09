@@ -1,15 +1,13 @@
-use crate::blueprints::epoch_manager::EpochChangeEvent;
 use crate::blueprints::resource::NonFungibleSubstate;
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::errors::*;
 use crate::ledger::*;
 use crate::state_manager::StateDiff;
 use crate::system::kernel_modules::costing::FinalizingFeeReserve;
-use crate::system::kernel_modules::costing::RoyaltyReceiver;
 use crate::system::kernel_modules::costing::{CostingError, FeeReserveError};
 use crate::system::kernel_modules::costing::{FeeSummary, SystemLoanFeeReserve};
 use crate::system::kernel_modules::execution_trace::ExecutionTrace;
-use crate::system::kernel_modules::execution_trace::{ExecutionTraceReceipt, TraceActor, VaultOp};
+use crate::system::kernel_modules::execution_trace::{TraceActor, VaultOp};
 use crate::system::node_substates::{
     PersistedSubstate, RuntimeSubstate, SubstateRef, SubstateRefMut,
 };
@@ -75,12 +73,6 @@ pub enum TrackError {
     SubstateLocked(SubstateId, LockState),
     LockUnmodifiedBaseOnNewSubstate(SubstateId),
     LockUnmodifiedBaseOnOnUpdatedSubstate(SubstateId),
-}
-
-pub struct TrackReceipt {
-    pub fee_summary: FeeSummary,
-    pub execution_traces: Vec<ExecutionTrace>,
-    pub result: TransactionResult,
 }
 
 pub struct PreExecutionError {
@@ -439,13 +431,12 @@ impl<'s> Track<'s> {
         execution_traces: Vec<ExecutionTrace>,
         application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
         application_logs: Vec<(Level, String)>,
-    ) -> TrackReceipt {
-        // A `SuccessButFeeLoanNotRepaid` error is issued if a transaction finishes before SYSTEM_LOAN_AMOUNT is reached
-        // and despite enough fee has been locked.
+    ) -> (TransactionResult, Option<BTreeMap<ObjectId, Decimal>>) {
+        // A `SuccessButFeeLoanNotRepaid` error is issued if a transaction finishes before
+        // the SYSTEM_LOAN_AMOUNT is reached (which trigger a repay event) and even though
+        // enough fee has been locked.
         //
-        // This is because the cost unit limit check fails the system loan repayment.
-        //
-        // Thus, we propagate the real error to receipt.
+        // Do another `repay` try during finalization to remedy it.
         if let Err(err) = fee_reserve.repay_all() {
             if invoke_result.is_ok() {
                 invoke_result = Err(RuntimeError::ModuleError(ModuleError::CostingError(
@@ -454,49 +445,37 @@ impl<'s> Track<'s> {
             }
         }
 
-        // Determine result types
-        let result_type = determine_result_type(invoke_result, fee_reserve.fully_repaid());
-
-        // Distribute royalty
-        if result_type.is_commit_success() {
-            // TODO: distribute royalty
-        } else {
-            fee_reserve.revert_royalty_charges();
-        }
-
-        // Finalize fee reserve; no more change allowed.
-        let fee_summary = fee_reserve.finalize();
-
-        // Compute the final result
-        let result = match result_type {
+        match determine_result_type(invoke_result, fee_reserve.fully_repaid()) {
             TransactionResultType::Commit(invoke_result) => {
                 let finalizing_track = FinalizingTrack {
                     substate_store: self.substate_store,
                     new_global_addresses: self.new_global_addresses,
                     loaded_substates: self.loaded_substates.into_iter().collect(),
                 };
-                finalizing_track.calculate_commit_result(
-                    invoke_result,
-                    &fee_summary,
-                    vault_ops,
-                    application_events,
-                    application_logs,
+                let (commit_result, actual_fee_payments) = finalizing_track
+                    .calculate_commit_result(
+                        invoke_result,
+                        fee_reserve,
+                        application_events,
+                        application_logs,
+                    );
+                (
+                    TransactionResult::Commit(commit_result),
+                    Some(actual_fee_payments),
                 )
             }
-            TransactionResultType::Reject(rejection_error) => {
+            TransactionResultType::Reject(rejection_error) => (
                 TransactionResult::Reject(RejectResult {
                     error: rejection_error,
-                })
-            }
-            TransactionResultType::Abort(abort_reason) => TransactionResult::Abort(AbortResult {
-                reason: abort_reason,
-            }),
-        };
-
-        TrackReceipt {
-            fee_summary,
-            result,
-            execution_traces: execution_traces,
+                }),
+                None,
+            ),
+            TransactionResultType::Abort(abort_reason) => (
+                TransactionResult::Abort(AbortResult {
+                    reason: abort_reason,
+                }),
+                None,
+            ),
         }
     }
 }
@@ -505,15 +484,6 @@ pub enum TransactionResultType {
     Commit(Result<Vec<InstructionOutput>, RuntimeError>),
     Reject(RejectionError),
     Abort(AbortReason),
-}
-
-impl TransactionResultType {
-    pub fn is_commit_success(&self) -> bool {
-        match self {
-            Self::Commit(r) => r.is_ok(),
-            _ => false,
-        }
-    }
 }
 
 fn determine_result_type(
@@ -581,37 +551,37 @@ impl<'s> FinalizingTrack<'s> {
     fn calculate_commit_result(
         self,
         invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
-        fee_summary: &FeeSummary,
-        vault_ops: Vec<(TraceActor, ObjectId, VaultOp, usize)>,
+        mut fee_reserve: SystemLoanFeeReserve,
         application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
         application_logs: Vec<(Level, String)>,
-    ) -> TransactionResult {
+    ) -> (CommitResult, BTreeMap<ObjectId, Decimal>) {
         let is_success = invoke_result.is_ok();
 
-        // Commit/rollback application state changes
-        let mut to_persist = HashMap::new();
-        let next_epoch = {
-            // FIXME: schema - update
-            let expected_schema_hash = hash("EpochChangeEvent");
+        // Keep/rollback royalty
+        if !is_success {
+            fee_reserve.revert_royalty_charges();
+        }
+
+        // Keep/rollback events
+        let application_events = if is_success {
             application_events
-                .iter()
-                .find(|(identifier, _)| match identifier {
-                    EventTypeIdentifier(
-                        RENodeId::GlobalObject(
-                            Address::Package(EPOCH_MANAGER_PACKAGE)
-                            | Address::Component(ComponentAddress::EpochManager(..)),
-                        ),
-                        NodeModuleId::SELF,
-                        schema_hash,
-                    ) if *schema_hash == expected_schema_hash => true,
-                    _ => false,
-                })
-                .map(|(_, data)| {
-                    scrypto_decode::<EpochChangeEvent>(data).expect("Impossible Case!")
-                })
-                .map(|event| (event.validators, event.epoch))
+        } else {
+            Vec::new()
         };
-        let new_global_addresses = if is_success {
+
+        // Always keep application logs for better debugging
+        let application_logs = application_logs;
+
+        // Keep/rollback entity changes
+        let entity_changes = if is_success {
+            EntityChanges::new(self.new_global_addresses)
+        } else {
+            EntityChanges::new(Vec::new())
+        };
+
+        // Calculate the substates for persistence
+        let mut to_persist = HashMap::new();
+        if is_success {
             for (id, loaded) in self.loaded_substates {
                 let old_version = match &loaded.metastate {
                     SubstateMetaState::New => None,
@@ -619,8 +589,6 @@ impl<'s> FinalizingTrack<'s> {
                 };
                 to_persist.insert(id, (loaded.substate.to_persisted(), old_version));
             }
-
-            self.new_global_addresses
         } else {
             for (id, loaded) in self.loaded_substates {
                 match loaded.metastate {
@@ -633,10 +601,10 @@ impl<'s> FinalizingTrack<'s> {
                     _ => {}
                 }
             }
-            Vec::new()
         };
 
         // Settle fee payments
+        let fee_summary = fee_reserve.finalize();
         let mut actual_fee_payments: BTreeMap<ObjectId, Decimal> = BTreeMap::new();
         let mut required = fee_summary.total_execution_cost_xrd
             + fee_summary.total_royalty_cost_xrd
@@ -673,92 +641,23 @@ impl<'s> FinalizingTrack<'s> {
             // Record final payments
             *actual_fee_payments.entry(vault_id).or_default() += amount;
         }
-
-        // TODO: update XRD supply or disable it
+        // TODO: update XRD total supply or disable it
         // TODO: pay tips to the lead validator
 
-        for (receiver, amount) in &fee_summary.royalty_cost_unit_breakdown {
-            match receiver {
-                RoyaltyReceiver::Package(package_address) => {
-                    let substate_id = SubstateId(
-                        RENodeId::GlobalObject(package_address.clone().into()),
-                        NodeModuleId::PackageRoyalty,
-                        SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
-                    );
-                    let accumulator_substate = to_persist.get(&substate_id).unwrap();
-                    let royalty_vault_id = accumulator_substate
-                        .0
-                        .package_royalty_accumulator()
-                        .royalty_vault
-                        .expect("FIXME: clean up royalty vault mess")
-                        .vault_id();
-                    let royalty_vault_substate = to_persist
-                        .get_mut(&SubstateId(
-                            RENodeId::Object(royalty_vault_id),
-                            NodeModuleId::SELF,
-                            SubstateOffset::Vault(VaultOffset::LiquidFungible),
-                        ))
-                        .unwrap();
-                    royalty_vault_substate
-                        .0
-                        .vault_liquid_fungible_mut()
-                        .put(
-                            fees.take_by_amount(fee_summary.cost_unit_price * amount.clone())
-                                .unwrap(),
-                        )
-                        .unwrap();
-                }
-                RoyaltyReceiver::Component(node_id) => {
-                    let substate_id = SubstateId(
-                        *node_id,
-                        NodeModuleId::ComponentRoyalty,
-                        SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
-                    );
-                    let accumulator_substate = to_persist.get(&substate_id).unwrap();
-                    let royalty_vault_id = accumulator_substate
-                        .0
-                        .component_royalty_accumulator()
-                        .royalty_vault
-                        .vault_id();
-                    let royalty_vault_substate = to_persist
-                        .get_mut(&SubstateId(
-                            RENodeId::Object(royalty_vault_id),
-                            NodeModuleId::SELF,
-                            SubstateOffset::Vault(VaultOffset::LiquidFungible),
-                        ))
-                        .unwrap();
-                    royalty_vault_substate
-                        .0
-                        .vault_liquid_fungible_mut()
-                        .put(
-                            fees.take_by_amount(fee_summary.cost_unit_price * amount.clone())
-                                .unwrap(),
-                        )
-                        .unwrap();
-                }
-            }
-        }
-
-        // Generate execution trace receipt
-        let execution_trace_receipt =
-            ExecutionTraceReceipt::new(vault_ops, &actual_fee_payments, invoke_result.is_ok());
-
-        // Produce final transaction result
-        TransactionResult::Commit(CommitResult {
-            application_events: match invoke_result.is_ok() {
-                true => application_events,
-                false => Vec::new(),
+        (
+            CommitResult {
+                outcome: match invoke_result {
+                    Ok(output) => TransactionOutcome::Success(output),
+                    Err(error) => TransactionOutcome::Failure(error),
+                },
+                fee_summary,
+                state_updates: Self::generate_diff(self.substate_store, to_persist),
+                entity_changes,
+                application_events,
+                application_logs,
             },
-            outcome: match invoke_result {
-                Ok(output) => TransactionOutcome::Success(output),
-                Err(error) => TransactionOutcome::Failure(error),
-            },
-            state_updates: Self::generate_diff(self.substate_store, to_persist),
-            entity_changes: EntityChanges::new(new_global_addresses),
-            resource_changes: execution_trace_receipt.resource_changes,
-            application_logs,
-            next_epoch,
-        })
+            actual_fee_payments,
+        )
     }
 
     pub fn generate_diff(
