@@ -318,7 +318,7 @@ where
                 VAULT_BLUEPRINT => {
                     let vault_info_substate: VaultInfoSubstate = parser.decode_next()?;
 
-                    let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
+                    let node_id = self.kernel_allocate_node_id(RENodeType::Vault)?;
 
                     let node_init = match vault_info_substate.resource_type {
                         ResourceType::NonFungible { .. } => {
