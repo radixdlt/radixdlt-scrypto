@@ -11,16 +11,11 @@ use crate::{
     system::node::RENodeInit,
     transaction::AbortReason,
 };
-use radix_engine_interface::api::component::{
-    ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
-};
-use radix_engine_interface::api::package::{
-    PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate,
-};
+use radix_engine_interface::api::component::ComponentRoyaltyConfigSubstate;
+use radix_engine_interface::api::package::PackageRoyaltyConfigSubstate;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
-use radix_engine_interface::constants::*;
 use radix_engine_interface::{api::types::RENodeId, *};
 use sbor::rust::collections::BTreeMap;
 
@@ -148,9 +143,9 @@ impl KernelModule for CostingModule {
             }
         };
 
-        /*
-         * Apply package royalty
-         */
+        //===========================
+        // Apply package royalty
+        //===========================
         let package_address = fn_identifier.package_address;
         let handle = api.kernel_lock_substate(
             RENodeId::GlobalObject(package_address.into()),
@@ -160,55 +155,21 @@ impl KernelModule for CostingModule {
         )?;
         let package_royalty_config: &PackageRoyaltyConfigSubstate =
             api.kernel_get_substate_ref(handle)?;
-        let royalty_amount = package_royalty_config
+        let fn_royalty_charge = package_royalty_config
             .royalty_config
             .get(&fn_identifier.blueprint_name)
             .map(|x| x.get_rule(&fn_identifier.ident).clone())
             .unwrap_or(0);
         api.kernel_drop_lock(handle)?;
-
-        // FIXME: refactor to defer substate loading to finalization.
-        let handle = api.kernel_lock_substate(
-            RENodeId::GlobalObject(package_address.into()),
-            NodeModuleId::PackageRoyalty,
-            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
-            LockFlags::read_only(),
-        )?;
-        let package_royalty_accumulator: &PackageRoyaltyAccumulatorSubstate =
-            api.kernel_get_substate_ref(handle)?;
-        {
-            let royalty_vault = package_royalty_accumulator.royalty_vault.clone();
-            let vault_node_id = RENodeId::Object(
-                royalty_vault
-                    .expect("FIXME: cleanup royalty vault mess")
-                    .vault_id(),
-            );
-            let vault_handle = api.kernel_lock_substate(
-                vault_node_id,
-                NodeModuleId::SELF,
-                SubstateOffset::Vault(VaultOffset::Info),
-                LockFlags::read_only(),
-            )?;
-            api.kernel_drop_lock(vault_handle)?;
-            let vault_handle = api.kernel_lock_substate(
-                vault_node_id,
-                NodeModuleId::SELF,
-                SubstateOffset::Vault(VaultOffset::LiquidFungible),
-                LockFlags::MUTABLE,
-            )?;
-            api.kernel_drop_lock(vault_handle)?;
-        }
-        api.kernel_drop_lock(handle)?;
-
         apply_royalty_cost(
             api,
             RoyaltyReceiver::Package(fn_identifier.package_address),
-            royalty_amount,
+            fn_royalty_charge,
         )?;
 
-        /*
-         * Apply component royalty
-         */
+        //===========================
+        // Apply component royalty
+        //===========================
         if let Some(component_node_id) = optional_component {
             let handle = api.kernel_lock_substate(
                 *component_node_id,
@@ -218,45 +179,16 @@ impl KernelModule for CostingModule {
             )?;
             let component_royalty_config: &ComponentRoyaltyConfigSubstate =
                 api.kernel_get_substate_ref(handle)?;
-            let royalty_amount = component_royalty_config
+            let method_royalty_charge = component_royalty_config
                 .royalty_config
                 .get_rule(&fn_identifier.ident)
                 .clone();
             api.kernel_drop_lock(handle)?;
 
-            // FIXME: refactor to defer substate loading to finalization.
-            let handle = api.kernel_lock_substate(
-                *component_node_id,
-                NodeModuleId::ComponentRoyalty,
-                SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
-                LockFlags::read_only(),
-            )?;
-            {
-                let royalty_accumulator: &ComponentRoyaltyAccumulatorSubstate =
-                    api.kernel_get_substate_ref(handle)?;
-                let royalty_vault = royalty_accumulator.royalty_vault.clone();
-                let vault_node_id = RENodeId::Object(royalty_vault.vault_id());
-                let vault_handle = api.kernel_lock_substate(
-                    vault_node_id,
-                    NodeModuleId::SELF,
-                    SubstateOffset::Vault(VaultOffset::Info),
-                    LockFlags::read_only(),
-                )?;
-                api.kernel_drop_lock(vault_handle)?;
-                let vault_handle = api.kernel_lock_substate(
-                    vault_node_id,
-                    NodeModuleId::SELF,
-                    SubstateOffset::Vault(VaultOffset::LiquidFungible),
-                    LockFlags::MUTABLE,
-                )?;
-                api.kernel_drop_lock(vault_handle)?;
-            }
-            api.kernel_drop_lock(handle)?;
-
             apply_royalty_cost(
                 api,
                 RoyaltyReceiver::Component(*component_node_id),
-                royalty_amount,
+                method_royalty_charge,
             )?;
         }
 
