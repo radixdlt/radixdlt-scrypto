@@ -5,6 +5,7 @@
 
 Language for building DeFi apps on Radix.
 
+
 Documentation: https://docs-babylon.radixdlt.com/main/scrypto/introduction.html
 
 ## Installation

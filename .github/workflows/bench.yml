@@ -28,3 +28,5 @@ jobs:
       - uses: radixdlt/criterion-compare-action@update-same-commit
         with:
           branchName: ${{ github.base_ref }}
+        env:
+          ACTIONS_STEP_DEBUG: true
