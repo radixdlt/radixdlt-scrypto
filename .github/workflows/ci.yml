@@ -21,16 +21,11 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
-jobs:
-  cancel_running_workflows:
-    name: Cancel running workflows
-    runs-on: ubuntu-20.04
-    steps:
-      - name: cancel running workflows
-        uses: styfle/cancel-workflow-action@0.11.0
-        with:
-          access_token: ${{ github.token }}
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
+jobs:
   check-code-format:
     name: Check code format
     runs-on: ${{ matrix.os }}

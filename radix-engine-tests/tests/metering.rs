@@ -204,9 +204,9 @@ fn test_radiswap() {
         + 12500 /* DropNode */
         + 25690 /* Invoke */
         + 200000 /* LockSubstate */
-        + 2544410 /* ReadSubstate */
+        + 2551860 /* ReadSubstate */
         + 150000 /* RunNative */
-        + 1622415 /* RunWasm */
+        + 1617190 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1705 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
@@ -313,9 +313,9 @@ fn test_flash_loan() {
         + 22500 /* DropNode */
         + 46570 /* Invoke */
         + 311000 /* LockSubstate */
-        + 5096760 /* ReadSubstate */
+        + 5120040 /* ReadSubstate */
         + 242500 /* RunNative */
-        + 1385135 /* RunWasm */
+        + 1377710 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2475 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
@@ -349,7 +349,7 @@ fn test_publish_large_package() {
             PackageSchema::default(),
             BTreeMap::new(),
             BTreeMap::new(),
-            AccessRules::new(),
+            AccessRulesConfig::new(),
         )
         .build();
 

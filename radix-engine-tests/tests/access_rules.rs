@@ -18,7 +18,7 @@ use transaction::model::TransactionManifest;
 #[ignore] // Unignore once self auth supported in scrypto layer
 fn access_rules_method_auth_can_not_be_mutated_when_locked() {
     // Arrange
-    let access_rules = AccessRules::new()
+    let access_rules = AccessRulesConfig::new()
         .method(
             "deposit_funds",
             rule!(require(RADIX_TOKEN)),
@@ -44,7 +44,7 @@ fn access_rules_method_auth_cant_be_mutated_when_required_proofs_are_not_present
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
-    let access_rules = AccessRules::new()
+    let access_rules = AccessRulesConfig::new()
         .method(
             "deposit_funds",
             rule!(require(RADIX_TOKEN)),
@@ -70,7 +70,7 @@ fn access_rules_method_auth_cant_be_locked_when_required_proofs_are_not_present(
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
-    let access_rules = AccessRules::new()
+    let access_rules = AccessRulesConfig::new()
         .method(
             "deposit_funds",
             rule!(require(RADIX_TOKEN)),
@@ -96,7 +96,7 @@ fn access_rules_method_auth_can_be_mutated_when_required_proofs_are_present() {
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
-    let access_rules = AccessRules::new()
+    let access_rules = AccessRulesConfig::new()
         .method(
             "deposit_funds",
             rule!(require(RADIX_TOKEN)),
@@ -121,7 +121,7 @@ fn access_rules_method_auth_can_be_locked_when_required_proofs_are_present() {
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
-    let access_rules = AccessRules::new()
+    let access_rules = AccessRulesConfig::new()
         .method(
             "deposit_funds",
             rule!(require(RADIX_TOKEN)),
@@ -154,7 +154,7 @@ fn method_that_falls_within_default_cant_have_its_auth_mutated() {
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
-    let access_rules = AccessRules::new()
+    let access_rules = AccessRulesConfig::new()
         .method(
             "deposit_funds",
             rule!(require(RADIX_TOKEN)),
@@ -182,7 +182,7 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
-    let access_rules = AccessRules::new()
+    let access_rules = AccessRulesConfig::new()
         .method(
             "deposit_funds",
             rule!(require(RADIX_TOKEN)),
@@ -242,7 +242,7 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
         let virtual_badge_non_fungible_global_id =
             NonFungibleGlobalId::from_public_key(&public_key);
 
-        let access_rules = manifest_decode::<AccessRules>(&manifest_args!(
+        let access_rules = manifest_decode::<AccessRulesConfig>(&manifest_args!(
             HashMap::<MethodKey, AccessRuleEntry>::new(),
             HashMap::<String, AccessRule>::new(),
             AccessRule::AllowAll,
@@ -434,7 +434,7 @@ struct MutableAccessRulesTestRunner {
 impl MutableAccessRulesTestRunner {
     const BLUEPRINT_NAME: &'static str = "MutableAccessRulesComponent";
 
-    pub fn new(access_rules: AccessRules) -> Self {
+    pub fn new(access_rules: AccessRulesConfig) -> Self {
         let mut test_runner = TestRunner::builder().build();
         let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
 

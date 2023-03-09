@@ -166,11 +166,6 @@ pub enum TypeInfoOffset {
 }
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum MetadataOffset {
-    Metadata,
-}
-
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum RoyaltyOffset {
     RoyaltyConfig,
     RoyaltyAccumulator,
@@ -296,7 +291,6 @@ pub enum SubstateOffset {
     TypeInfo(TypeInfoOffset),
     AccessRules(AccessRulesOffset),
     PackageAccessRules,
-    Metadata(MetadataOffset),
     Royalty(RoyaltyOffset),
     PackageEventSchema(PackageEventSchemaOffset),
 }

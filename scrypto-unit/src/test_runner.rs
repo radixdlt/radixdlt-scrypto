@@ -14,7 +14,6 @@ use radix_engine::kernel::track::Track;
 use radix_engine::ledger::*;
 use radix_engine::system::kernel_modules::costing::FeeTable;
 use radix_engine::system::kernel_modules::costing::SystemLoanFeeReserve;
-use radix_engine::system::node_modules::metadata::MetadataSubstate;
 use radix_engine::system::package::*;
 use radix_engine::transaction::{
     execute_preview, execute_transaction, ExecutionConfig, FeeReserveConfig, PreviewError,
@@ -22,10 +21,11 @@ use radix_engine::transaction::{
 };
 use radix_engine::types::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
+use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::node_modules::auth::{
     AuthAddresses, ACCESS_RULES_BLUEPRINT, FUNCTION_ACCESS_RULES_BLUEPRINT,
 };
-use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
+use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, METADATA_BLUEPRINT};
 use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_BLUEPRINT, PACKAGE_ROYALTY_BLUEPRINT,
 };
@@ -51,6 +51,7 @@ use radix_engine_interface::{dec, rule};
 use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
 use sbor::basic_well_known_types::ANY_ID;
+use scrypto::modules::Mutability::*;
 use scrypto::prelude::*;
 use transaction::builder::ManifestBuilder;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
@@ -232,19 +233,29 @@ impl TestRunner {
         )
     }
 
-    pub fn get_metadata(&mut self, address: Address) -> BTreeMap<String, String> {
-        let metadata = self
+    pub fn get_metadata(&mut self, address: Address, key: &str) -> Option<MetadataEntry> {
+        let metadata_entry = self
             .substate_store
             .get_substate(&SubstateId(
                 address.into(),
                 NodeModuleId::Metadata,
-                SubstateOffset::Metadata(MetadataOffset::Metadata),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                    scrypto_encode(key).unwrap(),
+                )),
             ))
-            .map(|s| s.substate.to_runtime())
-            .unwrap();
+            .map(|s| s.substate.to_runtime())?;
 
-        let metadata: MetadataSubstate = metadata.into();
-        metadata.metadata
+        let metadata_entry: KeyValueStoreEntrySubstate = metadata_entry.into();
+        let metadata_entry = match metadata_entry {
+            KeyValueStoreEntrySubstate::Some(value) => {
+                let value: MetadataEntry =
+                    scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap();
+                Some(value)
+            }
+            KeyValueStoreEntrySubstate::None => None,
+        };
+
+        metadata_entry
     }
 
     pub fn inspect_component_royalty(
@@ -539,7 +550,7 @@ impl TestRunner {
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
-        access_rules: AccessRules,
+        access_rules: AccessRulesConfig,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
@@ -574,7 +585,7 @@ impl TestRunner {
             schema,
             BTreeMap::new(),
             BTreeMap::new(),
-            AccessRules::new(),
+            AccessRulesConfig::new(),
         )
     }
 

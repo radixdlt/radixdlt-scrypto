@@ -13,7 +13,7 @@ mod factory {
             }
             .instantiate();
 
-            let access_rules = AccessRules::new()
+            let access_rules = AccessRulesConfig::new()
                 .method(
                     "set_address",
                     rule!(require(Runtime::package_token())),
@@ -30,7 +30,7 @@ mod factory {
             }
             .instantiate();
 
-            let access_rules = AccessRules::new()
+            let access_rules = AccessRulesConfig::new()
                 .method(
                     "set_address",
                     rule!(require(Runtime::package_token())),

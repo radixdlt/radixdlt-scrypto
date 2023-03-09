@@ -8,7 +8,7 @@ mod cross_component {
     }
 
     impl CrossComponent {
-        pub fn create_component_with_auth(access_rules: AccessRules) -> ComponentAddress {
+        pub fn create_component_with_auth(access_rules: AccessRulesConfig) -> ComponentAddress {
             let component = Self {
                 secret: "Secret".to_owned(),
                 auth_vault: None,

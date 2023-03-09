@@ -7,9 +7,10 @@ use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::ledger::create_genesis;
 use radix_engine::system::kernel_modules::events::EventError;
 use radix_engine::system::node_modules::access_rules::SetRuleEvent;
-use radix_engine::system::node_modules::metadata::SetEntryEvent;
+use radix_engine::system::node_modules::metadata::SetMetadataEvent;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerNextRoundInput, ValidatorUpdateAcceptDelegatedStakeInput,
@@ -1216,7 +1217,7 @@ fn setting_metadata_emits_correct_events() {
         .set_metadata(
             Address::Resource(resource_address),
             "key".into(),
-            "value".into(),
+            MetadataEntry::Value(MetadataValue::I32(1)),
         )
         .build();
 
@@ -1252,7 +1253,7 @@ fn setting_metadata_emits_correct_events() {
                     ref event_event_name,
                 ),
                 ..,
-            )) if is_event_name_equal::<SetEntryEvent, _>(event_event_name) => true,
+            )) if is_event_name_equal::<SetMetadataEvent, _>(event_event_name) => true,
             _ => false,
         });
     }

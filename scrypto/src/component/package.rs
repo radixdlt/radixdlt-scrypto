@@ -1,4 +1,5 @@
 use crate::engine::scrypto_env::ScryptoEnv;
+use crate::modules::AttachedMetadata;
 use crate::runtime::*;
 use radix_engine_interface::api::node_modules::royalty::{
     PackageClaimRoyaltyInput, PackageSetRoyaltyConfigInput, PACKAGE_ROYALTY_CLAIM_ROYALTY_IDENT,
@@ -21,6 +22,10 @@ impl BorrowedPackage {
     /// Invokes a function on this package.
     pub fn call<T: ScryptoDecode>(&self, blueprint_name: &str, function: &str, args: Vec<u8>) -> T {
         Runtime::call_function(self.0, blueprint_name, function, args)
+    }
+
+    pub fn metadata(&self) -> AttachedMetadata {
+        AttachedMetadata(self.0.into())
     }
 
     pub fn set_royalty_config(&self, royalty_config: BTreeMap<String, RoyaltyConfig>) {

@@ -4,6 +4,7 @@
 
 pub use crate::component::*;
 pub use crate::engine::*;
+pub use crate::modules::*;
 pub use crate::resource::*;
 pub use crate::runtime::*;
 pub use crate::{

@@ -18,7 +18,7 @@ use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::system::node_modules::access_rules::{
     AccessRulesNativePackage, SetMutabilityEvent, SetRuleEvent,
 };
-use crate::system::node_modules::metadata::{MetadataNativePackage, SetEntryEvent};
+use crate::system::node_modules::metadata::{MetadataNativePackage, SetMetadataEvent};
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::transaction::{
     execute_transaction, ExecutionConfig, FeeReserveConfig, TransactionReceipt,
@@ -87,13 +87,13 @@ pub fn create_genesis(
                 dependent_resources: vec![],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
-                access_rules: AccessRules::new(),
+                access_rules: AccessRulesConfig::new(),
                 package_access_rules: MetadataNativePackage::function_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
                 event_schema: BTreeMap::from([(
                     METADATA_BLUEPRINT.into(),
                     [generate_full_schema_from_single_type::<
-                        SetEntryEvent,
+                        SetMetadataEvent,
                         ScryptoCustomTypeExtension,
                     >()]
                     .into(),
@@ -119,7 +119,7 @@ pub fn create_genesis(
                 dependent_resources: vec![RADIX_TOKEN],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
-                access_rules: AccessRules::new(),
+                access_rules: AccessRulesConfig::new(),
                 package_access_rules: RoyaltyNativePackage::function_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
                 event_schema: BTreeMap::new(), // TODO: Royalty application events
@@ -143,7 +143,7 @@ pub fn create_genesis(
                 dependent_resources: vec![],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
-                access_rules: AccessRules::new(),
+                access_rules: AccessRulesConfig::new(),
                 package_access_rules: AccessRulesNativePackage::function_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
                 event_schema: BTreeMap::from([(
@@ -180,7 +180,7 @@ pub fn create_genesis(
                 dependent_resources: vec![],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
-                access_rules: AccessRules::new(),
+                access_rules: AccessRulesConfig::new(),
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
                 event_schema: BTreeMap::from([
@@ -297,7 +297,7 @@ pub fn create_genesis(
                 dependent_components: vec![],
                 native_package_code_id: IDENTITY_PACKAGE_CODE_ID,
                 metadata: BTreeMap::new(),
-                access_rules: AccessRules::new(),
+                access_rules: AccessRulesConfig::new(),
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
                 event_schema: BTreeMap::new(),
@@ -319,7 +319,7 @@ pub fn create_genesis(
                 schema: PackageSchema::default(),
                 native_package_code_id: EPOCH_MANAGER_PACKAGE_CODE_ID,
                 metadata: BTreeMap::new(),
-                access_rules: AccessRules::new(),
+                access_rules: AccessRulesConfig::new(),
                 dependent_resources: vec![RADIX_TOKEN, PACKAGE_TOKEN, SYSTEM_TOKEN],
                 dependent_components: vec![],
                 package_access_rules: EpochManagerNativePackage::package_access_rules(),
@@ -388,7 +388,7 @@ pub fn create_genesis(
                 schema: PackageSchema::default(),
                 native_package_code_id: CLOCK_PACKAGE_CODE_ID,
                 metadata: BTreeMap::new(),
-                access_rules: AccessRules::new(),
+                access_rules: AccessRulesConfig::new(),
                 dependent_resources: vec![SYSTEM_TOKEN],
                 dependent_components: vec![],
                 package_access_rules: ClockNativePackage::package_access_rules(),
@@ -412,7 +412,7 @@ pub fn create_genesis(
                 schema: AccountNativePackage::schema(),
                 native_package_code_id: ACCOUNT_PACKAGE_CODE_ID,
                 metadata: BTreeMap::new(),
-                access_rules: AccessRules::new(),
+                access_rules: AccessRulesConfig::new(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
                 package_access_rules: BTreeMap::new(),
@@ -435,7 +435,7 @@ pub fn create_genesis(
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: PackageSchema::default(),
                 metadata: BTreeMap::new(),
-                access_rules: AccessRules::new(),
+                access_rules: AccessRulesConfig::new(),
                 native_package_code_id: ACCESS_CONTROLLER_PACKAGE_CODE_ID,
                 dependent_resources: vec![PACKAGE_TOKEN],
                 dependent_components: vec![CLOCK],
@@ -488,7 +488,7 @@ pub fn create_genesis(
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: PackageSchema::default(),
                 metadata: BTreeMap::new(),
-                access_rules: AccessRules::new(),
+                access_rules: AccessRulesConfig::new(),
                 native_package_code_id: TRANSACTION_RUNTIME_CODE_ID,
                 dependent_resources: vec![],
                 dependent_components: vec![],
@@ -512,7 +512,7 @@ pub fn create_genesis(
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: PackageSchema::default(),
                 metadata: BTreeMap::new(),
-                access_rules: AccessRules::new(),
+                access_rules: AccessRulesConfig::new(),
                 native_package_code_id: AUTH_ZONE_CODE_ID,
                 dependent_resources: vec![],
                 dependent_components: vec![],
@@ -604,7 +604,8 @@ pub fn create_genesis(
                 schema: scrypto_decode(&faucet_abi).unwrap(),
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
-                access_rules: AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll),
+                access_rules: AccessRulesConfig::new()
+                    .default(AccessRule::DenyAll, AccessRule::DenyAll),
                 event_schema: BTreeMap::new(),
             })
             .unwrap(),
@@ -847,6 +848,7 @@ mod tests {
             &genesis_transaction.get_executable(vec![AuthAddresses::system_role()]),
         );
 
+        transaction_receipt.expect_commit_success();
         let commit_result = transaction_receipt.result.expect_commit();
         commit_result.state_updates.commit(&mut substate_store);
 

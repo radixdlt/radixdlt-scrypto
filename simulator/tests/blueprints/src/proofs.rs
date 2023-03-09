@@ -23,7 +23,7 @@ mod proofs {
                 .mint_initial_supply(100);
 
             // Creating the access rules for the component and instantiating an new component
-            let access_rules: AccessRules = AccessRules::new()
+            let access_rules: AccessRulesConfig = AccessRulesConfig::new()
                 .method(
                     "organizational_authenticated_method",
                     organizational_access_rule,

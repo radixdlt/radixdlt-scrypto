@@ -4,7 +4,7 @@ use radix_engine_interface::api::{
     ClientActorApi, ClientNodeApi, ClientObjectApi, ClientPackageApi, ClientSubstateApi,
 };
 use radix_engine_interface::blueprints::logger::Level;
-use radix_engine_interface::blueprints::resource::AccessRules;
+use radix_engine_interface::blueprints::resource::AccessRulesConfig;
 use radix_engine_interface::data::scrypto::model::{Address, PackageAddress};
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::*;
@@ -136,7 +136,7 @@ impl ClientPackageApi<ClientApiError> for ScryptoEnv {
         &mut self,
         code: Vec<u8>,
         schema: PackageSchema,
-        access_rules: AccessRules,
+        access_rules: AccessRulesConfig,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
         event_schema: BTreeMap<String, Vec<(LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>>,
