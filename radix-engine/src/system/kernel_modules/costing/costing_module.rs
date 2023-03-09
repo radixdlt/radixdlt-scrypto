@@ -11,11 +11,13 @@ use crate::{
     system::node::RENodeInit,
     transaction::AbortReason,
 };
+use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
 };
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
+use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::PackageRoyaltySubstate;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::{api::types::RENodeId, *};
@@ -112,7 +114,7 @@ impl KernelModule for CostingModule {
         Ok(())
     }
 
-    fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
+    fn before_push_frame<Y: KernelModuleApi<RuntimeError> + ClientApi<RuntimeError>>(
         api: &mut Y,
         callee: &Option<Actor>,
         _nodes_and_refs: &mut CallFrameUpdate,
@@ -147,19 +149,26 @@ impl KernelModule for CostingModule {
             RENodeId::GlobalObject(package_address.into()),
             NodeModuleId::SELF,
             SubstateOffset::Package(PackageOffset::Royalty),
-            LockFlags::read_only(),
+            LockFlags::MUTABLE,
         )?;
-        let substate: &PackageRoyaltySubstate = api.kernel_get_substate_ref(handle)?;
+        let mut substate: &mut PackageRoyaltySubstate = api.kernel_get_substate_ref_mut(handle)?;
         let royalty_charge = substate
             .blueprint_royalty_configs
             .get(&fn_identifier.blueprint_name)
             .map(|x| x.get_rule(&fn_identifier.ident).clone())
             .unwrap_or(0);
         if royalty_charge > 0 {
-            let vault = substate.royalty_vault;
-            api.kernel_drop_lock(handle)?;
-            apply_royalty_cost(api, royalty_charge, vault.id())?;
+            let vault_id = if let Some(vault) = substate.royalty_vault {
+                vault.id()
+            } else {
+                let new_vault = ResourceManager(RADIX_TOKEN).new_vault(api)?;
+                substate = api.kernel_get_substate_ref_mut(handle)?; // grab ref again to work around single ownership
+                substate.royalty_vault = Some(new_vault);
+                new_vault.id()
+            };
+            apply_royalty_cost(api, royalty_charge, vault_id)?;
         }
+        api.kernel_drop_lock(handle)?;
 
         //===========================
         // Apply component royalty
@@ -183,14 +192,20 @@ impl KernelModule for CostingModule {
                     RENodeId::GlobalObject(component_node_id.clone().into()),
                     NodeModuleId::ComponentRoyalty,
                     SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
-                    LockFlags::read_only(),
+                    LockFlags::MUTABLE,
                 )?;
-                let substate: &ComponentRoyaltyAccumulatorSubstate =
-                    api.kernel_get_substate_ref(handle)?;
-                let vault = substate.royalty_vault.clone();
+                let mut substate: &mut ComponentRoyaltyAccumulatorSubstate =
+                    api.kernel_get_substate_ref_mut(handle)?;
+                let vault_id = if let Some(vault) = substate.royalty_vault {
+                    vault.id()
+                } else {
+                    let new_vault = ResourceManager(RADIX_TOKEN).new_vault(api)?;
+                    substate = api.kernel_get_substate_ref_mut(handle)?; // grab ref again to work around single ownership
+                    substate.royalty_vault = Some(new_vault);
+                    new_vault.id()
+                };
+                apply_royalty_cost(api, royalty_charge, vault_id)?;
                 api.kernel_drop_lock(handle)?;
-
-                apply_royalty_cost(api, royalty_charge, vault.id())?;
             }
         }
 
