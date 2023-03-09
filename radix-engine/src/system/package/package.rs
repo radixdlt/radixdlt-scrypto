@@ -25,7 +25,6 @@ pub enum PackageError {
     InvalidWasm(PrepareError),
 
     InvalidBlueprintWasm(SchemaValidationError),
-    MissingSubstateSchema,
     TooManySubstateSchemas,
 }
 
@@ -33,9 +32,7 @@ fn validate_package_schema(schema: &PackageSchema) -> Result<(), PackageError> {
     for blueprint in schema.blueprints.values() {
         validate_schema(&blueprint.schema).map_err(|e| PackageError::InvalidBlueprintWasm(e))?;
 
-        if blueprint.substates.is_empty() {
-            return Err(PackageError::MissingSubstateSchema);
-        } else if blueprint.substates.len() > 0xff {
+        if blueprint.substates.len() > 0xff {
             return Err(PackageError::TooManySubstateSchemas);
         }
     }
