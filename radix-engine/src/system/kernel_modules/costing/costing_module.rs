@@ -156,10 +156,9 @@ impl KernelModule for CostingModule {
             .map(|x| x.get_rule(&fn_identifier.ident).clone())
             .unwrap_or(0);
         if royalty_charge > 0 {
-            if let Some(vault) = substate.royalty_vault {
-                api.kernel_drop_lock(handle)?;
-                apply_royalty_cost(api, royalty_charge, vault.id())?;
-            }
+            let vault = substate.royalty_vault;
+            api.kernel_drop_lock(handle)?;
+            apply_royalty_cost(api, royalty_charge, vault.id())?;
         }
 
         //===========================

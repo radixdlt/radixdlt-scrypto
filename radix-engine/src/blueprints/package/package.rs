@@ -26,8 +26,6 @@ pub enum PackageError {
 
     InvalidBlueprintWasm(SchemaValidationError),
     TooManySubstateSchemas,
-
-    RoyaltyNotEnabled,
 }
 
 fn validate_package_schema(schema: &PackageSchema) -> Result<(), PackageError> {
@@ -283,16 +281,9 @@ impl PackageNativePackage {
         )?;
 
         let substate: &mut PackageRoyaltySubstate = api.kernel_get_substate_ref_mut(handle)?;
-
-        if substate.royalty_vault.is_none() {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::PackageError(PackageError::RoyaltyNotEnabled),
-            ));
-        } else {
-            substate.blueprint_royalty_configs = input.royalty_config;
-            api.kernel_drop_lock(handle)?;
-            Ok(IndexedScryptoValue::from_typed(&()))
-        }
+        substate.blueprint_royalty_configs = input.royalty_config;
+        api.kernel_drop_lock(handle)?;
+        Ok(IndexedScryptoValue::from_typed(&()))
     }
 
     pub(crate) fn claim_royalty<Y>(
@@ -314,15 +305,10 @@ impl PackageNativePackage {
         )?;
 
         let substate: &mut PackageRoyaltySubstate = api.kernel_get_substate_ref_mut(handle)?;
-
-        if let Some(vault) = substate.royalty_vault.clone() {
-            let mut vault = Vault(vault.vault_id());
-            let bucket = vault.sys_take_all(api)?;
-            Ok(IndexedScryptoValue::from_typed(&bucket))
-        } else {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::PackageError(PackageError::RoyaltyNotEnabled),
-            ));
-        }
+        let bucket = match substate.royalty_vault.clone() {
+            Some(vault) => Vault(vault.vault_id()).sys_take_all(api)?,
+            None => ResourceManager(RADIX_TOKEN).new_empty_bucket(api)?,
+        };
+        Ok(IndexedScryptoValue::from_typed(&bucket))
     }
 }
