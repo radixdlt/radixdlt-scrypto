@@ -25,6 +25,7 @@
         "Secp",
         "Substate",
         "substates",
+        "unregistration",
         "Unstake",
         "unstaked",
         "Untimed",

@@ -5,7 +5,6 @@ use radix_engine_interface::api::{
 };
 use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::blueprints::resource::AccessRulesConfig;
-use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::model::{Address, PackageAddress};
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::*;
@@ -140,11 +139,13 @@ impl ClientPackageApi<ClientApiError> for ScryptoEnv {
         access_rules: AccessRulesConfig,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
+        event_schema: BTreeMap<String, Vec<(LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>>,
     ) -> Result<PackageAddress, ClientApiError> {
         let schema = scrypto_encode(&schema).unwrap();
         let access_rules = scrypto_encode(&access_rules).unwrap();
         let royalty_config = scrypto_encode(&royalty_config).unwrap();
         let metadata = scrypto_encode(&metadata).unwrap();
+        let event_schema = scrypto_encode(&event_schema).unwrap();
 
         let bytes = copy_buffer(unsafe {
             new_package(
@@ -158,6 +159,8 @@ impl ClientPackageApi<ClientApiError> for ScryptoEnv {
                 royalty_config.len(),
                 metadata.as_ptr(),
                 metadata.len(),
+                event_schema.as_ptr(),
+                event_schema.len(),
             )
         });
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
@@ -254,15 +257,16 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
 }
 
 impl ClientEventApi<ClientApiError> for ScryptoEnv {
-    fn emit_raw_event(
+    fn emit_event(
         &mut self,
-        schema_hash: Hash,
+        event_name: String,
         event_data: Vec<u8>,
     ) -> Result<(), ClientApiError> {
+        let event_name = scrypto_encode(&event_name).unwrap();
         unsafe {
             emit_event(
-                schema_hash.0.as_ptr(),
-                schema_hash.0.len(),
+                event_name.as_ptr(),
+                event_name.len(),
                 event_data.as_ptr(),
                 event_data.len(),
             )

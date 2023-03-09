@@ -11,10 +11,6 @@ use radix_engine_interface::api::{types::*, ClientSubstateApi};
 use radix_engine_interface::api::{ClientApi, ClientEventApi};
 use radix_engine_interface::blueprints::resource::*;
 
-use super::events::vault::{
-    DepositResourceEvent, LockFeeEvent, RecallResourceEvent, WithdrawResourceEvent,
-};
-
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum VaultError {
     InvalidRequestData(DecodeError),

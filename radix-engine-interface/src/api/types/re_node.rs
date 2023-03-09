@@ -116,6 +116,7 @@ pub enum NodeModuleId {
     ComponentRoyalty,
     PackageRoyalty,
     FunctionAccessRules,
+    PackageEventSchema,
 }
 
 impl NodeModuleId {
@@ -129,6 +130,7 @@ impl NodeModuleId {
             5u32 => Some(NodeModuleId::ComponentRoyalty),
             6u32 => Some(NodeModuleId::PackageRoyalty),
             7u32 => Some(NodeModuleId::FunctionAccessRules),
+            8u32 => Some(NodeModuleId::PackageEventSchema),
             _ => None,
         }
     }
@@ -143,6 +145,7 @@ impl NodeModuleId {
             NodeModuleId::ComponentRoyalty => 5u32,
             NodeModuleId::PackageRoyalty => 6u32,
             NodeModuleId::FunctionAccessRules => 7u32,
+            NodeModuleId::PackageEventSchema => 8u32,
         }
     }
 }
@@ -166,6 +169,11 @@ pub enum TypeInfoOffset {
 pub enum RoyaltyOffset {
     RoyaltyConfig,
     RoyaltyAccumulator,
+}
+
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum PackageEventSchemaOffset {
+    PackageEventSchema,
 }
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -284,6 +292,7 @@ pub enum SubstateOffset {
     AccessRules(AccessRulesOffset),
     PackageAccessRules,
     Royalty(RoyaltyOffset),
+    PackageEventSchema(PackageEventSchemaOffset),
 }
 
 /// TODO: separate space addresses?

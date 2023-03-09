@@ -1,26 +1,42 @@
+use crate::blueprints::access_controller::{
+    CancelRecoveryProposalEvent, InitiateRecoveryEvent, LockPrimaryRoleEvent, RuleSetUpdateEvent,
+    StopTimedRecoveryEvent, UnlockPrimaryRoleEvent,
+};
 use crate::blueprints::account::AccountNativePackage;
 use crate::blueprints::clock::ClockNativePackage;
-use crate::blueprints::epoch_manager::EpochManagerNativePackage;
+use crate::blueprints::epoch_manager::{
+    ClaimXrdEvent, EpochChangeEvent, EpochManagerNativePackage, RegisterValidatorEvent,
+    RoundChangeEvent, StakeEvent, UnregisterValidatorEvent, UnstakeEvent,
+    UpdateAcceptingStakeDelegationStateEvent,
+};
+use crate::blueprints::resource::{
+    BurnResourceEvent, DepositResourceEvent, LockFeeEvent, MintResourceEvent, RecallResourceEvent,
+    VaultCreationEvent, WithdrawResourceEvent,
+};
 use crate::kernel::interpreters::ScryptoInterpreter;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
-use crate::system::node_modules::access_rules::AccessRulesNativePackage;
-use crate::system::node_modules::metadata::MetadataNativePackage;
+use crate::system::node_modules::access_rules::{
+    AccessRulesNativePackage, SetMutabilityEvent, SetRuleEvent,
+};
+use crate::system::node_modules::metadata::{MetadataNativePackage, SetMetadataEvent};
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::transaction::{
     execute_transaction, ExecutionConfig, FeeReserveConfig, TransactionReceipt,
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_interface::api::node_modules::auth::{AuthAddresses, ACCESS_RULES_BLUEPRINT};
+use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::package::{
     PackageLoaderPublishNativeInput, PackageLoaderPublishWasmInput,
 };
+use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLUEPRINT;
 use radix_engine_interface::blueprints::clock::{
     ClockCreateInput, CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::epoch_manager::{
-    ManifestValidatorInit, EPOCH_MANAGER_BLUEPRINT, EPOCH_MANAGER_CREATE_IDENT,
+    ManifestValidatorInit, EPOCH_MANAGER_BLUEPRINT, EPOCH_MANAGER_CREATE_IDENT, VALIDATOR_BLUEPRINT,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
@@ -74,6 +90,14 @@ pub fn create_genesis(
                 access_rules: AccessRulesConfig::new(),
                 package_access_rules: MetadataNativePackage::function_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
+                event_schema: BTreeMap::from([(
+                    METADATA_BLUEPRINT.into(),
+                    [generate_full_schema_from_single_type::<
+                        SetMetadataEvent,
+                        ScryptoCustomTypeExtension,
+                    >()]
+                    .into(),
+                )]),
             })
             .unwrap(),
         });
@@ -98,6 +122,7 @@ pub fn create_genesis(
                 access_rules: AccessRulesConfig::new(),
                 package_access_rules: RoyaltyNativePackage::function_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
+                event_schema: BTreeMap::new(), // TODO: Royalty application events
             })
             .unwrap(),
         });
@@ -121,6 +146,20 @@ pub fn create_genesis(
                 access_rules: AccessRulesConfig::new(),
                 package_access_rules: AccessRulesNativePackage::function_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
+                event_schema: BTreeMap::from([(
+                    ACCESS_RULES_BLUEPRINT.into(),
+                    [
+                        generate_full_schema_from_single_type::<
+                            SetRuleEvent,
+                            ScryptoCustomTypeExtension,
+                        >(),
+                        generate_full_schema_from_single_type::<
+                            SetMutabilityEvent,
+                            ScryptoCustomTypeExtension,
+                        >(),
+                    ]
+                    .into(),
+                )]),
             })
             .unwrap(),
         });
@@ -144,6 +183,48 @@ pub fn create_genesis(
                 access_rules: AccessRulesConfig::new(),
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
+                event_schema: BTreeMap::from([
+                    (
+                        RESOURCE_MANAGER_BLUEPRINT.into(),
+                        [
+                            generate_full_schema_from_single_type::<
+                                VaultCreationEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                            generate_full_schema_from_single_type::<
+                                MintResourceEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                            generate_full_schema_from_single_type::<
+                                BurnResourceEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                        ]
+                        .into(),
+                    ),
+                    (
+                        VAULT_BLUEPRINT.into(),
+                        [
+                            generate_full_schema_from_single_type::<
+                                LockFeeEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                            generate_full_schema_from_single_type::<
+                                WithdrawResourceEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                            generate_full_schema_from_single_type::<
+                                DepositResourceEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                            generate_full_schema_from_single_type::<
+                                RecallResourceEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                        ]
+                        .into(),
+                    ),
+                ]),
             })
             .unwrap(),
         });
@@ -219,6 +300,7 @@ pub fn create_genesis(
                 access_rules: AccessRulesConfig::new(),
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
+                event_schema: BTreeMap::new(),
             })
             .unwrap(),
         });
@@ -242,6 +324,52 @@ pub fn create_genesis(
                 dependent_components: vec![],
                 package_access_rules: EpochManagerNativePackage::package_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
+                event_schema: BTreeMap::from([
+                    (
+                        EPOCH_MANAGER_BLUEPRINT.into(),
+                        [
+                            generate_full_schema_from_single_type::<
+                                RoundChangeEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                            generate_full_schema_from_single_type::<
+                                EpochChangeEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                        ]
+                        .into(),
+                    ),
+                    (
+                        VALIDATOR_BLUEPRINT.into(),
+                        [
+                            generate_full_schema_from_single_type::<
+                                RegisterValidatorEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                            generate_full_schema_from_single_type::<
+                                UnregisterValidatorEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                            generate_full_schema_from_single_type::<
+                                StakeEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                            generate_full_schema_from_single_type::<
+                                UnstakeEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                            generate_full_schema_from_single_type::<
+                                ClaimXrdEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                            generate_full_schema_from_single_type::<
+                                UpdateAcceptingStakeDelegationStateEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                        ]
+                        .into(),
+                    ),
+                ]),
             })
             .unwrap(),
         });
@@ -265,6 +393,7 @@ pub fn create_genesis(
                 dependent_components: vec![],
                 package_access_rules: ClockNativePackage::package_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
+                event_schema: BTreeMap::new(),
             })
             .unwrap(),
         });
@@ -288,6 +417,7 @@ pub fn create_genesis(
                 dependent_components: vec![],
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
+                event_schema: BTreeMap::new(), // TODO: Account events
             })
             .unwrap(),
         });
@@ -311,6 +441,36 @@ pub fn create_genesis(
                 dependent_components: vec![CLOCK],
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
+                event_schema: BTreeMap::from([(
+                    ACCESS_CONTROLLER_BLUEPRINT.into(),
+                    [
+                        generate_full_schema_from_single_type::<
+                            InitiateRecoveryEvent,
+                            ScryptoCustomTypeExtension,
+                        >(),
+                        generate_full_schema_from_single_type::<
+                            RuleSetUpdateEvent,
+                            ScryptoCustomTypeExtension,
+                        >(),
+                        generate_full_schema_from_single_type::<
+                            CancelRecoveryProposalEvent,
+                            ScryptoCustomTypeExtension,
+                        >(),
+                        generate_full_schema_from_single_type::<
+                            LockPrimaryRoleEvent,
+                            ScryptoCustomTypeExtension,
+                        >(),
+                        generate_full_schema_from_single_type::<
+                            UnlockPrimaryRoleEvent,
+                            ScryptoCustomTypeExtension,
+                        >(),
+                        generate_full_schema_from_single_type::<
+                            StopTimedRecoveryEvent,
+                            ScryptoCustomTypeExtension,
+                        >(),
+                    ]
+                    .into(),
+                )]),
             })
             .unwrap(),
         });
@@ -334,6 +494,7 @@ pub fn create_genesis(
                 dependent_components: vec![],
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::DenyAll,
+                event_schema: BTreeMap::new(),
             })
             .unwrap(),
         });
@@ -357,6 +518,7 @@ pub fn create_genesis(
                 dependent_components: vec![],
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::DenyAll,
+                event_schema: BTreeMap::new(),
             })
             .unwrap(),
         });
@@ -444,6 +606,7 @@ pub fn create_genesis(
                 metadata: BTreeMap::new(),
                 access_rules: AccessRulesConfig::new()
                     .default(AccessRule::DenyAll, AccessRule::DenyAll),
+                event_schema: BTreeMap::new(),
             })
             .unwrap(),
         });

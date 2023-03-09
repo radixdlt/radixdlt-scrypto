@@ -68,11 +68,11 @@ fn test_basic_transfer() {
     // (cd radix-engine && cargo test --test metering -- test_basic_transfer)
     assert_eq!(
         10000 /* CreateNode */
-        + 70500 /* DropLock */
+        + 73500 /* DropLock */
         + 10000 /* DropNode */
         + 11360 /* Invoke */
-        + 71500 /* LockSubstate */
-        + 50000 /* ReadSubstate */
+        + 74500 /* LockSubstate */
+        + 53000 /* ReadSubstate */
         + 67500 /* RunNative */
         + 0 /* RunWasm */
         + 50000 /* TxBaseCost */
@@ -200,11 +200,11 @@ fn test_radiswap() {
     // (cd radix-engine && cargo test --test metering -- test_radiswap)
     assert_eq!(
         15000 /* CreateNode */
-        + 192000 /* DropLock */
+        + 198000 /* DropLock */
         + 12500 /* DropNode */
         + 25690 /* Invoke */
-        + 194000 /* LockSubstate */
-        + 2545860 /* ReadSubstate */
+        + 200000 /* LockSubstate */
+        + 2551860 /* ReadSubstate */
         + 150000 /* RunNative */
         + 1617190 /* RunWasm */
         + 50000 /* TxBaseCost */
@@ -309,11 +309,11 @@ fn test_flash_loan() {
     // (cd radix-engine && cargo test --test metering -- test_flash_loan)
     assert_eq!(
         22500 /* CreateNode */
-        + 292000 /* DropLock */
+        + 303000 /* DropLock */
         + 22500 /* DropNode */
         + 46570 /* Invoke */
-        + 300000 /* LockSubstate */
-        + 5109040 /* ReadSubstate */
+        + 311000 /* LockSubstate */
+        + 5120040 /* ReadSubstate */
         + 242500 /* RunNative */
         + 1377710 /* RunWasm */
         + 50000 /* TxBaseCost */
@@ -339,9 +339,9 @@ fn test_publish_large_package() {
                 (export "memory" (memory $0))
             )
         "#,
-        "i".repeat(DEFAULT_MAX_INVOKE_INPUT_SIZE - 140) // ensure we fit within limit
+        "i".repeat(DEFAULT_MAX_INVOKE_INPUT_SIZE - 144) // ensure we fit within limit
     ));
-    assert_eq!(DEFAULT_MAX_INVOKE_INPUT_SIZE - 101, code.len());
+    assert_eq!(DEFAULT_MAX_INVOKE_INPUT_SIZE - 105, code.len());
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 100.into())
         .publish_package(

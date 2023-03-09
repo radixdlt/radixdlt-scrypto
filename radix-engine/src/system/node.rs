@@ -11,6 +11,8 @@ use radix_engine_interface::api::types::{
     AuthZoneStackOffset, NonFungibleStoreOffset, PackageOffset, SubstateOffset,
 };
 
+use super::node_modules::event_schema::PackageEventSchemaSubstate;
+
 #[derive(Debug)]
 pub enum RENodeModuleInit {
     /* Type info */
@@ -32,6 +34,9 @@ pub enum RENodeModuleInit {
         PackageRoyaltyConfigSubstate,
         PackageRoyaltyAccumulatorSubstate,
     ),
+
+    /* Events */
+    PackageEventSchema(PackageEventSchemaSubstate),
 }
 
 impl RENodeModuleInit {
@@ -74,6 +79,14 @@ impl RENodeModuleInit {
                 substates.insert(
                     SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                     accumulator.into(),
+                );
+            }
+            RENodeModuleInit::PackageEventSchema(event_schema) => {
+                substates.insert(
+                    SubstateOffset::PackageEventSchema(
+                        PackageEventSchemaOffset::PackageEventSchema,
+                    ),
+                    event_schema.into(),
                 );
             }
         }

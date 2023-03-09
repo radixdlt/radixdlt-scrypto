@@ -1,7 +1,9 @@
 use crate::api::types::*;
 use crate::blueprints::resource::AccessRulesConfig;
 use crate::data::scrypto::model::*;
+use radix_engine_common::data::scrypto::ScryptoCustomTypeExtension;
 use sbor::rust::prelude::*;
+use sbor::{LocalTypeIndex, Schema};
 use scrypto_schema::PackageSchema;
 
 pub trait ClientPackageApi<E> {
@@ -12,6 +14,7 @@ pub trait ClientPackageApi<E> {
         access_rules: AccessRulesConfig,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
+        event_schema: BTreeMap<String, Vec<(LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>>,
     ) -> Result<PackageAddress, E>;
 
     fn call_function(
