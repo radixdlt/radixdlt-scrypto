@@ -7,7 +7,6 @@ use crate::blueprints::clock::ClockSubstate;
 use crate::blueprints::epoch_manager::EpochManagerSubstate;
 use crate::blueprints::epoch_manager::ValidatorSetSubstate;
 use crate::blueprints::epoch_manager::ValidatorSubstate;
-use crate::blueprints::identity::IdentitySubstate;
 use crate::blueprints::resource::BucketInfoSubstate;
 use crate::blueprints::resource::FungibleProof;
 use crate::blueprints::resource::NonFungibleProof;
@@ -44,7 +43,6 @@ pub enum PersistedSubstate {
     PackageCode(PackageCodeSubstate),
     Account(AccountSubstate),
     AccessController(AccessControllerSubstate),
-    Identity(IdentitySubstate),
     VaultInfo(VaultInfoSubstate),
     VaultLiquidFungible(LiquidFungibleResource),
     VaultLiquidNonFungible(LiquidNonFungibleResource),
@@ -206,7 +204,6 @@ impl PersistedSubstate {
             }
             PersistedSubstate::Account(value) => RuntimeSubstate::Account(value),
             PersistedSubstate::AccessController(value) => RuntimeSubstate::AccessController(value),
-            PersistedSubstate::Identity(value) => RuntimeSubstate::Identity(value),
 
             /* Node module starts */
             PersistedSubstate::TypeInfo(value) => RuntimeSubstate::TypeInfo(value),
@@ -248,7 +245,6 @@ pub enum RuntimeSubstate {
     TransactionRuntime(TransactionRuntimeSubstate),
     Account(AccountSubstate),
     AccessController(AccessControllerSubstate),
-    Identity(IdentitySubstate),
 
     // TODO: we may want to move some of the static info into `TypeInfo`
     // And split the "Blueprint" into fungible and non-fungible.
@@ -321,7 +317,6 @@ impl RuntimeSubstate {
             RuntimeSubstate::AccessController(value) => {
                 PersistedSubstate::AccessController(value.clone())
             }
-            RuntimeSubstate::Identity(value) => PersistedSubstate::Identity(value.clone()),
 
             /* Node module starts */
             RuntimeSubstate::TypeInfo(value) => PersistedSubstate::TypeInfo(value.clone()),
@@ -394,7 +389,6 @@ impl RuntimeSubstate {
             }
             RuntimeSubstate::Account(value) => PersistedSubstate::Account(value),
             RuntimeSubstate::AccessController(value) => PersistedSubstate::AccessController(value),
-            RuntimeSubstate::Identity(value) => PersistedSubstate::Identity(value),
 
             /* Node module starts */
             RuntimeSubstate::TypeInfo(value) => PersistedSubstate::TypeInfo(value),
@@ -529,7 +523,6 @@ impl RuntimeSubstate {
             RuntimeSubstate::TransactionRuntime(value) => SubstateRefMut::TransactionRuntime(value),
             RuntimeSubstate::Account(value) => SubstateRefMut::Account(value),
             RuntimeSubstate::AccessController(value) => SubstateRefMut::AccessController(value),
-            RuntimeSubstate::Identity(value) => SubstateRefMut::Identity(value),
         }
     }
 
@@ -593,7 +586,6 @@ impl RuntimeSubstate {
             RuntimeSubstate::TransactionRuntime(value) => SubstateRef::TransactionRuntime(value),
             RuntimeSubstate::Account(value) => SubstateRef::Account(value),
             RuntimeSubstate::AccessController(value) => SubstateRef::AccessController(value),
-            RuntimeSubstate::Identity(value) => SubstateRef::Identity(value),
         }
     }
 
@@ -1075,7 +1067,6 @@ pub enum SubstateRef<'a> {
     TransactionRuntime(&'a TransactionRuntimeSubstate),
     Account(&'a AccountSubstate),
     AccessController(&'a AccessControllerSubstate),
-    Identity(&'a IdentitySubstate),
 }
 
 impl<'a> From<SubstateRef<'a>> for &'a VaultInfoSubstate {
@@ -1559,7 +1550,6 @@ pub enum SubstateRefMut<'a> {
     AuthZone(&'a mut AuthZoneStackSubstate),
     Account(&'a mut AccountSubstate),
     AccessController(&'a mut AccessControllerSubstate),
-    Identity(&'a mut IdentitySubstate),
 }
 
 impl<'a> From<SubstateRefMut<'a>> for &'a mut AuthZoneStackSubstate {

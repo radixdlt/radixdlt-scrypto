@@ -318,7 +318,6 @@ impl SubstateProperties {
             SubstateOffset::TransactionRuntime(..) => false,
             SubstateOffset::Account(..) => true,
             SubstateOffset::AccessController(..) => true,
-            SubstateOffset::Identity(..) => true,
             SubstateOffset::TypeInfo(..) => true,
             SubstateOffset::PackageAccessRules => true,
         }

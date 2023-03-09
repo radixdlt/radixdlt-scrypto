@@ -327,10 +327,7 @@ where
                 SubstateOffset::AccessController(AccessControllerOffset::AccessController)
                     => RuntimeSubstate::AccessController(parser.decode_next())
             )),
-            IDENTITY_PACKAGE => RENodeInit::Object(btreemap!(
-                SubstateOffset::Identity(IdentityOffset::Identity)
-                    => RuntimeSubstate::Identity(parser.decode_next())
-            )),
+            IDENTITY_PACKAGE => RENodeInit::Object(btreemap!()),
             ACCOUNT_PACKAGE => RENodeInit::Object(btreemap!(
                 SubstateOffset::Account(AccountOffset::Account)
                     => RuntimeSubstate::Account(parser.decode_next())
