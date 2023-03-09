@@ -151,7 +151,7 @@ where
         let event_schema = scrypto_decode::<
             BTreeMap<String, Vec<(LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>>,
         >(&event_schema)
-        .map_err(WasmRuntimeError::InvalidMetadata)?;
+        .map_err(WasmRuntimeError::InvalidEventSchema)?;
 
         let package_address = self.api.new_package(
             code,
