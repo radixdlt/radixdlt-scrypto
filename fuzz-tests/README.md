@@ -21,16 +21,37 @@ Currently it uses 3 fuzzing engines:
   for our purposes.
 * It does not require fuzz input data, but it is preferred to provide it to increase fuzzing efficiency.
 
-Installation
-`cargo +nightly install cargo-fuzz`
+## Installation
+```
+cargo +nightly install cargo-fuzz
+```
 
 # AFL
 * Similarly to `libfuzzer` it sets `fuzzing` flag by default. Unfortunately there is no easy switch to disable that.
   Thus `cargo afl` shall be built and installed using this [modification](https://github.com/lrubasze/afl.rs/commit/16c25fd74aec105c1b75c1b046e8dfd6b6fd3175)
 * It requires some input data to be provided.
 
-Installation:
+## Installation
 One can use convenience script [install_afl.sh](./install_afl.sh) to install `cargo-afl` with the change mentioned above.
+
+## Machine setup
+Before starting to fuzz AFL checks machine configuration and requests to adjust some settings if required.
+* Linux
+  - do not send core dump notifications to external utilities.
+    This is to notify fuzzer immediately about the crash, so it does not misinterpret crash as timeout.
+    `sudo bash -c "echo core > /proc/sys/kernel/core/core_pattern"`
+
+    Alternatively it is possible to use env `AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1`
+  - disable CPU frequency scaling to provide best performance
+    `sudo bash -c "cd /sys/devices/system/cpu ; echo performance | tee cpu*/cpufreq/scaling_governor >/dev/null"`
+
+    Alternatively it is possible to use env `AFL_SKIP_CPUFREQ=1`
+
+* MacOS
+  If you see an error message like `shmget() failed` above, try running the following command:
+  ```
+  sudo /Users/<username>/.local/share/afl.rs/rustc-1.67.1-d5a82bb/afl.rs-0.12.14/afl/bin/afl-system-config
+  ```
 
 # Input data
 Sample input data shall be placed in [fuzz_input](./fuzz_input) folder in dedicated subfolder.
