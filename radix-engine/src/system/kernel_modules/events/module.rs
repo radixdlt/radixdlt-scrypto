@@ -36,19 +36,6 @@ impl KernelModule for EventsModule {
             for (_, blueprint_event_schemas) in package_event_schema {
                 // TODO: Should we check that the blueprint name is valid for that given package?
 
-                // TODO: Test this once we have support for events in Scrypto.
-                // Ensure that no two events have the same name in the same blueprint.
-                if blueprint_event_schemas.len()
-                    != blueprint_event_schemas
-                        .keys()
-                        .collect::<BTreeSet<_>>()
-                        .len()
-                {
-                    return Err(RuntimeError::ApplicationError(
-                        ApplicationError::EventError(EventError::DuplicateEventNamesFound),
-                    ));
-                }
-
                 for (_, (local_type_index, schema)) in blueprint_event_schemas {
                     // Checking that the schema is itself valid
                     schema.validate().map_err(|_| {

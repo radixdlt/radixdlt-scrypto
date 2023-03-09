@@ -113,37 +113,14 @@ impl Package {
                 default_auth: input.default_package_access_rule,
             }),
         );
-        {
-            let mut package_event_schema = BTreeMap::<
-                String,
-                BTreeMap<String, (LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>,
-            >::new();
-            for (blueprint_name, event_schemas) in input.event_schema {
-                let blueprint_schema = package_event_schema.entry(blueprint_name).or_default();
-                for (local_type_index, schema) in event_schemas {
-                    let event_name = {
-                        (*schema
-                            .resolve_type_metadata(local_type_index)
-                            .map_or(
-                                Err(RuntimeError::ApplicationError(
-                                    ApplicationError::EventError(EventError::InvalidEventSchema),
-                                )),
-                                Ok,
-                            )?
-                            .type_name)
-                            .to_owned()
-                    };
-                    blueprint_schema.insert(event_name, (local_type_index, schema));
-                }
-            }
-
-            node_modules.insert(
-                NodeModuleId::PackageEventSchema,
-                RENodeModuleInit::PackageEventSchema(PackageEventSchemaSubstate(
-                    package_event_schema,
-                )),
-            );
-        }
+        node_modules.insert(
+            NodeModuleId::PackageEventSchema,
+            RENodeModuleInit::PackageEventSchema(PackageEventSchemaSubstate(
+                convert_event_schema(input.event_schema).map_err(|error| {
+                    RuntimeError::ApplicationError(ApplicationError::EventError(error))
+                })?,
+            )),
+        );
 
         let info = PackageInfoSubstate {
             schema: input.schema,
@@ -277,4 +254,35 @@ impl Package {
 
         Ok(IndexedScryptoValue::from_typed(&package_address))
     }
+}
+
+fn convert_event_schema(
+    event_schema: BTreeMap<String, Vec<(LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>>,
+) -> Result<
+    BTreeMap<String, BTreeMap<String, (LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>>,
+    EventError,
+> {
+    let mut package_event_schema = BTreeMap::<
+        String,
+        BTreeMap<String, (LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>,
+    >::new();
+    for (blueprint_name, event_schemas) in event_schema {
+        let blueprint_schema = package_event_schema.entry(blueprint_name).or_default();
+        for (local_type_index, schema) in event_schemas {
+            let event_name = {
+                (*schema
+                    .resolve_type_metadata(local_type_index)
+                    .map_or(Err(EventError::InvalidEventSchema), Ok)?
+                    .type_name)
+                    .to_owned()
+            };
+            // TODO: Add a test once Scrypto events are implemented.
+            if let None = blueprint_schema.insert(event_name, (local_type_index, schema)) {
+                Ok(())
+            } else {
+                Err(EventError::DuplicateEventNamesFound)
+            }?
+        }
+    }
+    Ok(package_event_schema)
 }
