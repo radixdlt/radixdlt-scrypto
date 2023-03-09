@@ -13,7 +13,6 @@ use crate::system::kernel_modules::events::EventError;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::MethodAccessRulesSubstate;
-use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
@@ -144,7 +143,7 @@ where
         &mut self,
         code: Vec<u8>,
         schema: PackageSchema,
-        access_rules: AccessRules,
+        access_rules: AccessRulesConfig,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
     ) -> Result<PackageAddress, RuntimeError> {
@@ -302,9 +301,7 @@ where
                 )),
                 blueprint => panic!("Unexpected blueprint {}", blueprint),
             },
-            METADATA_PACKAGE => RENodeInit::Object(btreemap!(
-                SubstateOffset::Metadata(MetadataOffset::Metadata) => RuntimeSubstate::Metadata(parser.decode_next()),
-            )),
+            METADATA_PACKAGE => RENodeInit::Object(btreemap!()),
             ROYALTY_PACKAGE => match blueprint_ident {
                 COMPONENT_ROYALTY_BLUEPRINT => RENodeInit::Object(btreemap!(
                     SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig) => RuntimeSubstate::ComponentRoyaltyConfig(parser.decode_next()),
@@ -476,19 +473,19 @@ where
                         }));
                     }
 
-                    let mut node = self.kernel_drop_node(node_id)?;
+                    let node = self.kernel_drop_node(node_id)?;
 
-                    let metadata = node
-                        .substates
-                        .remove(&(
-                            NodeModuleId::SELF,
-                            SubstateOffset::Metadata(MetadataOffset::Metadata),
-                        ))
-                        .unwrap();
-                    let metadata: MetadataSubstate = metadata.into();
+                    let mut substates = BTreeMap::new();
+                    for ((module_id, offset), substate) in node.substates {
+                        if let NodeModuleId::SELF = module_id {
+                            substates.insert(offset, substate);
+                        }
+                    }
 
-                    module_init
-                        .insert(NodeModuleId::Metadata, RENodeModuleInit::Metadata(metadata));
+                    module_init.insert(
+                        NodeModuleId::Metadata,
+                        RENodeModuleInit::Metadata(substates),
+                    );
                 }
                 NodeModuleId::ComponentRoyalty => {
                     let node_id = RENodeId::Object(object_id);

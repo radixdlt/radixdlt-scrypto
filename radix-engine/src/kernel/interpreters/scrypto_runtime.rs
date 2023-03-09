@@ -12,7 +12,7 @@ use radix_engine_interface::api::{
     ClientActorApi, ClientNodeApi, ClientObjectApi, ClientPackageApi, ClientSubstateApi,
     ClientUnsafeApi,
 };
-use radix_engine_interface::blueprints::resource::AccessRules;
+use radix_engine_interface::blueprints::resource::AccessRulesConfig;
 use radix_engine_interface::schema::PackageSchema;
 use sbor::rust::vec::Vec;
 use utils::copy_u8_array;
@@ -142,7 +142,7 @@ where
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let schema =
             scrypto_decode::<PackageSchema>(&abi).map_err(WasmRuntimeError::InvalidSchema)?;
-        let access_rules = scrypto_decode::<AccessRules>(&access_rules)
+        let access_rules = scrypto_decode::<AccessRulesConfig>(&access_rules)
             .map_err(WasmRuntimeError::InvalidAccessRulesChain)?;
         let royalty_config = scrypto_decode::<BTreeMap<String, RoyaltyConfig>>(&royalty_config)
             .map_err(WasmRuntimeError::InvalidRoyaltyConfig)?;

@@ -436,10 +436,10 @@ fn generate_stubs(
             fn globalize_with_modules(
                 self,
                 access_rules: AccessRules,
-                metadata: BTreeMap<String, String>,
-                royalty_config: RoyaltyConfig,
+                metadata: Metadata,
+                royalty: Royalty,
             ) -> ComponentAddress {
-                self.component.globalize_with_modules(access_rules, metadata, royalty_config)
+                self.component.globalize_with_modules(access_rules, metadata, royalty)
             }
         }
 
@@ -475,16 +475,16 @@ fn generate_stubs(
         }
 
         impl #component_ref_ident {
-            pub fn access_rules(&self) -> ComponentAccessRules {
+            pub fn access_rules(&self) -> AttachedAccessRules {
                 self.component.access_rules()
             }
 
-            pub fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
-                self.component.set_metadata(name, value);
+            pub fn metadata(&self) -> AttachedMetadata {
+                self.component.metadata()
             }
 
-            pub fn claim_royalty(&self) -> Bucket {
-                self.component.claim_royalty()
+            pub fn royalty(&self) -> AttachedRoyalty {
+                self.component.royalty()
             }
 
             #(#methods)*
@@ -739,10 +739,10 @@ mod tests {
                         fn globalize_with_modules(
                             self,
                             access_rules: AccessRules,
-                            metadata: BTreeMap<String, String>,
-                            royalty_config: RoyaltyConfig,
+                            metadata: Metadata,
+                            royalty: Royalty,
                         ) -> ComponentAddress {
-                            self.component.globalize_with_modules(access_rules, metadata, royalty_config)
+                            self.component.globalize_with_modules(access_rules, metadata, royalty)
                         }
                     }
 
@@ -782,16 +782,16 @@ mod tests {
                     }
 
                     impl TestGlobalComponentRef {
-                        pub fn access_rules(&self) -> ComponentAccessRules {
+                        pub fn access_rules(&self) -> AttachedAccessRules {
                             self.component.access_rules()
                         }
 
-                        pub fn set_metadata<K: AsRef<str>, V: AsRef<str>>(&self, name: K, value: V) {
-                            self.component.set_metadata(name, value);
+                        pub fn metadata(&self) -> AttachedMetadata {
+                            self.component.metadata()
                         }
 
-                        pub fn claim_royalty(&self) -> Bucket {
-                            self.component.claim_royalty()
+                        pub fn royalty(&self) -> AttachedRoyalty {
+                            self.component.royalty()
                         }
 
                         pub fn x(&self, arg0: u32) -> u32 {

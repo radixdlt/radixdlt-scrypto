@@ -467,6 +467,15 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, value)?;
             f.write_str(";")?;
         }
+        Instruction::RemoveMetadata {
+            entity_address,
+            key,
+        } => {
+            f.write_str("REMOVE_METADATA")?;
+            format_typed_value(f, context, entity_address)?;
+            format_typed_value(f, context, key)?;
+            f.write_str(";")?;
+        }
         Instruction::SetPackageRoyaltyConfig {
             package_address,
             royalty_config,

@@ -51,7 +51,8 @@ mod royalty_test {
 
         pub fn disable_component_royalty(address: ComponentAddress, proof: Proof) {
             proof.authorize(|| {
-                borrow_component!(address).set_royalty_config(RoyaltyConfig::default());
+                let royalty = borrow_component!(address).royalty();
+                royalty.set_config(RoyaltyConfig::default());
             })
         }
 
@@ -60,7 +61,10 @@ mod royalty_test {
         }
 
         pub fn claim_component_royalty(address: ComponentAddress, proof: Proof) -> Bucket {
-            proof.authorize(|| borrow_component!(address).claim_royalty())
+            proof.authorize(|| {
+                let royalty = borrow_component!(address).royalty();
+                royalty.claim_royalty()
+            })
         }
     }
 }

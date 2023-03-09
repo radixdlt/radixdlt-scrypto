@@ -1,10 +1,10 @@
 use crate::engine::wasm_api::*;
-use radix_engine_interface::api::types::Level;
-use radix_engine_interface::api::{types::*, ClientEventApi, ClientLoggerApi, LockFlags};
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::{
     ClientActorApi, ClientNodeApi, ClientObjectApi, ClientPackageApi, ClientSubstateApi,
 };
-use radix_engine_interface::blueprints::resource::AccessRules;
+use radix_engine_interface::api::{ClientEventApi, ClientLoggerApi, LockFlags};
+use radix_engine_interface::blueprints::resource::AccessRulesConfig;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::model::{Address, PackageAddress};
 use radix_engine_interface::data::scrypto::*;
@@ -137,7 +137,7 @@ impl ClientPackageApi<ClientApiError> for ScryptoEnv {
         &mut self,
         code: Vec<u8>,
         schema: PackageSchema,
-        access_rules: AccessRules,
+        access_rules: AccessRulesConfig,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
     ) -> Result<PackageAddress, ClientApiError> {

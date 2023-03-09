@@ -47,7 +47,7 @@ impl<V: ScryptoEncode> Drop for DataRef<V> {
 }
 
 pub enum OriginalData {
-    KeyValueStoreEntry(ScryptoValue, ScryptoValue),
+    KeyValueStoreEntry(ScryptoValue),
     ComponentAppState(Vec<u8>),
 }
 
@@ -77,9 +77,8 @@ impl<V: ScryptoEncode> Drop for DataRefMut<V> {
     fn drop(&mut self) {
         let mut env = ScryptoEnv;
         let substate = match &self.original_data {
-            OriginalData::KeyValueStoreEntry(k, _) => {
+            OriginalData::KeyValueStoreEntry(_) => {
                 scrypto_encode(&KeyValueStoreEntrySubstate::Some(
-                    k.clone(),
                     scrypto_decode(&scrypto_encode(&self.value).unwrap()).unwrap(),
                 ))
                 .unwrap()

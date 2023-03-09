@@ -6,17 +6,18 @@ use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::{
     FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
-use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::system::node_substates::RuntimeSubstate;
 use crate::system::type_info::PackageCodeTypeSubstate;
 use crate::types::*;
 use crate::wasm::{PrepareError, WasmValidator};
 use core::fmt::Debug;
 use native_sdk::resource::ResourceManager;
+use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::resource::{AccessRule, AccessRules};
+use radix_engine_interface::blueprints::resource::{AccessRule, AccessRulesConfig};
 use radix_engine_interface::schema::PackageSchema;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -45,9 +46,21 @@ fn build_package_node_modules(
     royalty_vault: Option<Own>,
     royalty_config: BTreeMap<String, RoyaltyConfig>,
     metadata: BTreeMap<String, String>,
-    access_rules: AccessRules,
+    access_rules: AccessRulesConfig,
     function_access_rules: FunctionAccessRulesSubstate,
 ) -> BTreeMap<NodeModuleId, RENodeModuleInit> {
+    let mut metadata_substates = BTreeMap::new();
+    for (key, value) in metadata {
+        metadata_substates.insert(
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                scrypto_encode(&key).unwrap(),
+            )),
+            RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::Some(
+                ScryptoValue::String { value },
+            )),
+        );
+    }
+
     let mut node_modules = BTreeMap::new();
     node_modules.insert(
         NodeModuleId::TypeInfo,
@@ -66,7 +79,7 @@ fn build_package_node_modules(
     );
     node_modules.insert(
         NodeModuleId::Metadata,
-        RENodeModuleInit::Metadata(MetadataSubstate { metadata: metadata }),
+        RENodeModuleInit::Metadata(metadata_substates),
     );
     node_modules.insert(
         NodeModuleId::AccessRules,

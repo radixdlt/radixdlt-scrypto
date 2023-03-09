@@ -1,40 +1,48 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 use radix_engine_derive::*;
 use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesSetMethodAccessRuleInput, AccessRulesSetMethodMutabilityInput,
+    AccessRulesCreateInput, AccessRulesSetMethodAccessRuleInput,
+    AccessRulesSetMethodMutabilityInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
     ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT, ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
 };
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::*;
-use radix_engine_interface::blueprints::resource::{AccessRule, AccessRuleEntry, MethodKey};
+use radix_engine_interface::blueprints::resource::{
+    AccessRule, AccessRuleEntry, AccessRulesConfig, MethodKey,
+};
+use radix_engine_interface::constants::ACCESS_RULES_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
-use radix_engine_interface::data::scrypto::scrypto_encode;
+use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 
-// TODO: Should `Encode` and `Decode` be removed so that `ComponentAccessRules` can not be passed
-// between components?
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct ComponentAccessRules {
-    component: ComponentIdentifier,
+#[derive(PartialEq, Eq, Hash, Clone)]
+pub struct AccessRules(pub ObjectId);
+
+impl AccessRules {
+    pub fn new(access_rules: AccessRulesConfig) -> Self {
+        let rtn = ScryptoEnv
+            .call_function(
+                ACCESS_RULES_PACKAGE,
+                ACCESS_RULES_BLUEPRINT,
+                ACCESS_RULES_CREATE_IDENT,
+                scrypto_encode(&AccessRulesCreateInput { access_rules }).unwrap(),
+            )
+            .unwrap();
+        let access_rules: Own = scrypto_decode(&rtn).unwrap();
+        Self(access_rules.id())
+    }
 }
 
-impl ComponentAccessRules {
-    pub(crate) fn new<T: Into<ComponentIdentifier>>(component: T) -> Self {
-        Self {
-            component: component.into(),
-        }
-    }
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct AttachedAccessRules(pub Address);
 
-    pub fn component_identifier(&self) -> &ComponentIdentifier {
-        &self.component
-    }
-
+impl AttachedAccessRules {
     pub fn set_method_auth(&mut self, method_name: &str, access_rule: AccessRule) {
         // TODO: allow setting method auth on other modules besides self
         ScryptoEnv
             .call_module_method(
-                self.component.clone().into(),
+                self.0.clone().into(),
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
@@ -50,7 +58,7 @@ impl ComponentAccessRules {
         // TODO: allow locking method auth on other modules besides self
         ScryptoEnv
             .call_module_method(
-                self.component.clone().into(),
+                self.0.clone().into(),
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
@@ -60,35 +68,6 @@ impl ComponentAccessRules {
                 .unwrap(),
             )
             .unwrap();
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum ComponentIdentifier {
-    RENodeId(ObjectId),
-    Address(ComponentAddress),
-}
-
-impl From<ObjectId> for ComponentIdentifier {
-    fn from(value: ObjectId) -> Self {
-        ComponentIdentifier::RENodeId(value)
-    }
-}
-
-impl From<ComponentAddress> for ComponentIdentifier {
-    fn from(value: ComponentAddress) -> Self {
-        ComponentIdentifier::Address(value)
-    }
-}
-
-impl From<ComponentIdentifier> for RENodeId {
-    fn from(value: ComponentIdentifier) -> Self {
-        match value {
-            ComponentIdentifier::RENodeId(node_id) => RENodeId::Object(node_id),
-            ComponentIdentifier::Address(component_address) => {
-                RENodeId::GlobalObject(component_address.into())
-            }
-        }
     }
 }
 

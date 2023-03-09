@@ -20,6 +20,8 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 pub mod component;
 /// Scrypto engine abstraction.
 pub mod engine;
+/// Scrypto module abstraction.
+pub mod modules;
 /// Scrypto preludes.
 pub mod prelude;
 /// Scrypto resource abstraction.

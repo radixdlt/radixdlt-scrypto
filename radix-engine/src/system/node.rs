@@ -1,6 +1,5 @@
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::system::node_modules::access_rules::*;
-use crate::system::node_modules::metadata::MetadataSubstate;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::*;
 use crate::system::type_info::PackageCodeTypeSubstate;
@@ -15,7 +14,7 @@ pub enum RENodeModuleInit {
     TypeInfo(TypeInfoSubstate),
 
     /* Metadata */
-    Metadata(MetadataSubstate),
+    Metadata(BTreeMap<SubstateOffset, RuntimeSubstate>),
 
     /* Access rules */
     MethodAccessRules(MethodAccessRulesSubstate),
@@ -36,11 +35,8 @@ impl RENodeModuleInit {
     pub fn to_substates(self) -> HashMap<SubstateOffset, RuntimeSubstate> {
         let mut substates = HashMap::<SubstateOffset, RuntimeSubstate>::new();
         match self {
-            RENodeModuleInit::Metadata(metadata) => {
-                substates.insert(
-                    SubstateOffset::Metadata(MetadataOffset::Metadata),
-                    metadata.into(),
-                );
+            RENodeModuleInit::Metadata(metadata_substates) => {
+                substates.extend(metadata_substates);
             }
             RENodeModuleInit::MethodAccessRules(access_rules) => {
                 substates.insert(
