@@ -8,6 +8,11 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use utils::ContextualDisplay;
 
+
+pub const ENTITY_BYTES_LENGTH: usize = 1;
+pub const ADDRESS_HASH_LENGTH: usize = 26;
+pub const ADDRESS_LENGTH: usize = ENTITY_BYTES_LENGTH + ADDRESS_HASH_LENGTH;
+
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Address {
     Package(PackageAddress),
@@ -26,7 +31,7 @@ impl Address {
     pub fn decode_body_common<X: CustomValueKind, D: Decoder<X>>(
         decoder: &mut D,
     ) -> Result<Self, DecodeError> {
-        let slice = decoder.read_slice(27)?;
+        let slice = decoder.read_slice(ADDRESS_LENGTH)?;
         PackageAddress::try_from(slice)
             .map(|x| Address::Package(x))
             .or(ComponentAddress::try_from(slice).map(|x| Address::Component(x)))
