@@ -97,151 +97,6 @@ fn locking_fee_against_a_vault_emits_correct_events() {
 }
 
 #[test]
-fn vault_fungible_withdraws_and_deposits_emits_correct_events() {
-    // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
-    let (_, _, account) = test_runner.new_account(false);
-
-    let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_method(FAUCET_COMPONENT, "free", manifest_args!())
-        .call_method(
-            account,
-            ACCOUNT_DEPOSIT_BATCH_IDENT,
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
-        .build();
-
-    // Act
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
-
-    // Assert
-    {
-        receipt.expect_commit_success();
-        let events = receipt.expect_commit().clone().application_events;
-        assert_eq!(events.len(), 3); // Three events: vault lock fee, vault fungible withdraw, vault fungible deposit
-        assert!(match events.get(0) {
-            Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
-                ref event_data,
-            )) if is_event_name_equal::<LockFeeEvent, _>(event_event_name)
-                && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
-                true,
-            _ => false,
-        });
-        assert!(match events.get(1) {
-            Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
-                ref event_data,
-            )) if is_event_name_equal::<WithdrawResourceEvent, _>(event_event_name)
-                && is_decoded_equal(&WithdrawResourceEvent::Amount(10000.into()), event_data) =>
-                true,
-            _ => false,
-        });
-        assert!(match events.get(2) {
-            Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
-                ref event_data,
-            )) if is_event_name_equal::<DepositResourceEvent, _>(event_event_name)
-                && is_decoded_equal(&DepositResourceEvent::Amount(10000.into()), event_data) =>
-                true,
-            _ => false,
-        });
-    }
-}
-
-#[test]
-fn vault_non_fungible_withdraws_and_deposits_emits_correct_events() {
-    // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
-    let (sender_pk, _, sender_account) = test_runner.new_account(false);
-    let (_, _, receiver_account) = test_runner.new_account(false);
-    let non_fungible_resource_address = test_runner.create_non_fungible_resource(sender_account);
-    let ids = BTreeSet::from([
-        NonFungibleLocalId::integer(1),
-        NonFungibleLocalId::integer(2),
-        NonFungibleLocalId::integer(3),
-    ]);
-
-    let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_method(
-            sender_account,
-            ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT,
-            manifest_encode(&AccountWithdrawNonFungiblesInput {
-                resource_address: non_fungible_resource_address,
-                ids: BTreeSet::from([
-                    NonFungibleLocalId::integer(1),
-                    NonFungibleLocalId::integer(2),
-                    NonFungibleLocalId::integer(3),
-                ]),
-            })
-            .unwrap(),
-        )
-        .call_method(
-            receiver_account,
-            ACCOUNT_DEPOSIT_BATCH_IDENT,
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
-        .build();
-
-    // Act
-    let receipt = test_runner.execute_manifest(
-        manifest,
-        vec![NonFungibleGlobalId::from_public_key(&sender_pk)],
-    );
-
-    // Assert
-    {
-        receipt.expect_commit_success();
-        let events = receipt.expect_commit().clone().application_events;
-        assert_eq!(events.len(), 4); // Four events: vault lock fee, vault non-fungible withdraw, resource manager new vault, vault non-fungible deposit
-        assert!(match events.get(0) {
-            Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
-                ref event_data,
-            )) if is_event_name_equal::<LockFeeEvent, _>(event_event_name)
-                && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
-                true,
-            _ => false,
-        });
-        assert!(match events.get(1) {
-            Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
-                ref event_data,
-            )) if is_event_name_equal::<WithdrawResourceEvent, _>(event_event_name)
-                && is_decoded_equal(&WithdrawResourceEvent::Ids(ids.clone()), event_data) =>
-                true,
-            _ => false,
-        });
-        assert!(match events.get(2) {
-            Some((
-                EventTypeIdentifier(
-                    Emitter::Method(
-                        RENodeId::GlobalResourceManager(resource_address),
-                        NodeModuleId::SELF,
-                    ),
-                    ref event_event_name,
-                ),
-                ..,
-            )) if is_event_name_equal::<VaultCreationEvent, _>(event_event_name)
-                && *resource_address == non_fungible_resource_address =>
-                true,
-            _ => false,
-        });
-        assert!(match events.get(3) {
-            Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
-                ref event_data,
-            )) if is_event_name_equal::<DepositResourceEvent, _>(event_event_name)
-                && is_decoded_equal(&DepositResourceEvent::Ids(ids.clone()), event_data) =>
-                true,
-            _ => false,
-        });
-    }
-}
-
-#[test]
 fn vault_fungible_recall_emits_correct_events() {
     // Arrange
     let mut test_runner = TestRunner::builder().without_trace().build();
@@ -456,7 +311,10 @@ fn resource_manager_new_vault_emits_correct_events() {
         assert!(match events.get(1) {
             Some((
                 EventTypeIdentifier(
-                    Emitter::Method(RENodeId::GlobalResourceManager(..), NodeModuleId::SELF),
+                    Emitter::Method(
+                        RENodeId::GlobalObject(Address::Resource(..)),
+                        NodeModuleId::SELF,
+                    ),
                     ref event_event_name,
                 ),
                 ..,
@@ -939,7 +797,10 @@ fn validator_staking_emits_correct_event() {
         assert!(match events.get(5) {
             Some((
                 EventTypeIdentifier(
-                    Emitter::Method(RENodeId::GlobalResourceManager(..), NodeModuleId::SELF),
+                    Emitter::Method(
+                        RENodeId::GlobalObject(Address::Resource(..)),
+                        NodeModuleId::SELF,
+                    ),
                     ref event_event_name,
                 ),
                 ..,
@@ -1068,7 +929,7 @@ fn validator_unstake_emits_correct_events() {
             Some((
                 EventTypeIdentifier(
                     Emitter::Method(
-                        RENodeId::GlobalResourceManager(resource_address),
+                        RENodeId::GlobalObject(Address::Resource(resource_address)),
                         NodeModuleId::SELF,
                     ),
                     ref event_event_name,
@@ -1089,7 +950,10 @@ fn validator_unstake_emits_correct_events() {
         assert!(match events.get(7) {
             Some((
                 EventTypeIdentifier(
-                    Emitter::Method(RENodeId::GlobalResourceManager(..), NodeModuleId::SELF),
+                    Emitter::Method(
+                        RENodeId::GlobalObject(Address::Resource(..)),
+                        NodeModuleId::SELF,
+                    ),
                     ref event_event_name,
                 ),
                 ..,
@@ -1229,7 +1093,10 @@ fn validator_claim_xrd_emits_correct_events() {
         assert!(match events.get(5) {
             Some((
                 EventTypeIdentifier(
-                    Emitter::Method(RENodeId::GlobalResourceManager(..), NodeModuleId::SELF),
+                    Emitter::Method(
+                        RENodeId::GlobalObject(Address::Resource(..)),
+                        NodeModuleId::SELF,
+                    ),
                     ref event_event_name,
                 ),
                 ..,

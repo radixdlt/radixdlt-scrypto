@@ -252,7 +252,7 @@ impl TestRunner {
         component_address: ComponentAddress,
     ) -> Option<Decimal> {
         if let Some(output) = self.substate_store.get_substate(&SubstateId(
-            RENodeId::GlobalComponent(component_address),
+            RENodeId::GlobalObject(component_address.into()),
             NodeModuleId::ComponentRoyalty,
             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
         )) {
@@ -276,7 +276,7 @@ impl TestRunner {
 
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
         if let Some(output) = self.substate_store.get_substate(&SubstateId(
-            RENodeId::GlobalPackage(package_address),
+            RENodeId::GlobalObject(package_address.into()),
             NodeModuleId::PackageRoyalty,
             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
         )) {
@@ -323,7 +323,7 @@ impl TestRunner {
         component_address: ComponentAddress,
         resource_address: ResourceAddress,
     ) -> Vec<ObjectId> {
-        let node_id = RENodeId::GlobalComponent(component_address);
+        let node_id = RENodeId::GlobalObject(component_address.into());
         let mut vault_finder = VaultFinder::new(resource_address);
 
         let mut state_tree_visitor =
@@ -384,7 +384,7 @@ impl TestRunner {
         &mut self,
         component_address: ComponentAddress,
     ) -> HashMap<ResourceAddress, Decimal> {
-        let node_id = RENodeId::GlobalComponent(component_address);
+        let node_id = RENodeId::GlobalObject(component_address.into());
         let mut accounter = ResourceAccounter::new(&self.substate_store);
         accounter.add_resources(node_id).unwrap();
         accounter.into_map()
@@ -444,7 +444,7 @@ impl TestRunner {
 
     pub fn get_validator_info(&mut self, system_address: ComponentAddress) -> ValidatorSubstate {
         let substate_id = SubstateId(
-            RENodeId::GlobalComponent(system_address),
+            RENodeId::GlobalObject(system_address.into()),
             NodeModuleId::SELF,
             SubstateOffset::Validator(ValidatorOffset::Validator),
         );
@@ -460,7 +460,7 @@ impl TestRunner {
 
     pub fn get_validator_with_key(&mut self, key: &EcdsaSecp256k1PublicKey) -> ComponentAddress {
         let substate_id = SubstateId(
-            RENodeId::GlobalComponent(EPOCH_MANAGER),
+            RENodeId::GlobalObject(EPOCH_MANAGER.into()),
             NodeModuleId::SELF,
             SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet),
         );
@@ -1161,7 +1161,7 @@ impl TestRunner {
                 }
             }
             EventTypeIdentifier(Emitter::Function(node_id, _, blueprint_name), event_name) => {
-                let RENodeId::GlobalPackage(package_address) = node_id else {
+                let RENodeId::GlobalObject(Address::Package(package_address)) = node_id else {
                     panic!("must be a package address")
                 };
                 (
@@ -1173,7 +1173,7 @@ impl TestRunner {
         };
 
         let substate_id = SubstateId(
-            RENodeId::GlobalPackage(package_address),
+            RENodeId::GlobalObject(Address::Package(package_address)),
             NodeModuleId::PackageEventSchema,
             SubstateOffset::PackageEventSchema(PackageEventSchemaOffset::PackageEventSchema),
         );

@@ -287,25 +287,8 @@ impl<'s> Track<'s> {
         assert!(!self.loaded_substates.contains_key(&substate_id));
 
         match &substate_id {
-            SubstateId(
-                RENodeId::GlobalComponent(component_address),
-                NodeModuleId::TypeInfo,
-                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-            ) => {
-                self.new_global_addresses
-                    .push(Address::Component(*component_address));
-            }
-            SubstateId(
-                RENodeId::GlobalResourceManager(resource_address),
-                NodeModuleId::TypeInfo,
-                ..,
-            ) => {
-                self.new_global_addresses
-                    .push(Address::Resource(*resource_address));
-            }
-            SubstateId(RENodeId::GlobalPackage(package_address), NodeModuleId::TypeInfo, ..) => {
-                self.new_global_addresses
-                    .push(Address::Package(*package_address));
+            SubstateId(RENodeId::GlobalObject(address), NodeModuleId::TypeInfo, ..) => {
+                self.new_global_addresses.push(*address);
             }
             _ => {}
         }
@@ -459,7 +442,7 @@ impl<'s> Track<'s> {
         self,
         mut invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
         mut fee_reserve: SystemLoanFeeReserve,
-        vault_ops: Vec<(TraceActor, ObjectId, VaultOp)>,
+        vault_ops: Vec<(TraceActor, ObjectId, VaultOp, usize)>,
         events: Vec<TrackedEvent>,
         application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
         application_logs: Vec<(Level, String)>,
@@ -586,7 +569,7 @@ impl<'s> FinalizingTrack<'s> {
         self,
         invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
         fee_summary: &mut FeeSummary,
-        vault_ops: Vec<(TraceActor, ObjectId, VaultOp)>,
+        vault_ops: Vec<(TraceActor, ObjectId, VaultOp, usize)>,
         application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
         application_logs: Vec<(Level, String)>,
     ) -> TransactionResult {
@@ -612,12 +595,14 @@ impl<'s> FinalizingTrack<'s> {
                 .find(|(identifier, _)| match identifier {
                     EventTypeIdentifier(
                         Emitter::Function(
-                            RENodeId::GlobalPackage(EPOCH_MANAGER_PACKAGE),
+                            RENodeId::GlobalObject(Address::Package(EPOCH_MANAGER_PACKAGE)),
                             NodeModuleId::SELF,
                             ..,
                         )
                         | Emitter::Method(
-                            RENodeId::GlobalComponent(ComponentAddress::EpochManager(..)),
+                            RENodeId::GlobalObject(Address::Component(
+                                ComponentAddress::EpochManager(..),
+                            )),
                             NodeModuleId::SELF,
                         ),
                         event_name,
@@ -706,7 +691,7 @@ impl<'s> FinalizingTrack<'s> {
             match receiver {
                 RoyaltyReceiver::Package(package_address) => {
                     let substate_id = SubstateId(
-                        RENodeId::GlobalPackage(*package_address),
+                        RENodeId::GlobalObject(package_address.clone().into()),
                         NodeModuleId::PackageRoyalty,
                         SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                     );

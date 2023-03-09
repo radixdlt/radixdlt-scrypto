@@ -146,10 +146,10 @@ impl ExecutableInvocation for MethodInvocation {
         // TODO: Remove this weirdness or move to a kernel module if we still want to support this
         {
             if package_address.eq(&PACKAGE_LOADER) {
-                node_refs_to_copy.insert(RENodeId::GlobalResourceManager(RADIX_TOKEN));
+                node_refs_to_copy.insert(RENodeId::GlobalObject(RADIX_TOKEN.into()));
             } else {
                 let handle = api.kernel_lock_substate(
-                    RENodeId::GlobalPackage(fn_identifier.package_address),
+                    RENodeId::GlobalObject(fn_identifier.package_address.into()),
                     NodeModuleId::SELF,
                     SubstateOffset::Package(PackageOffset::CodeType),
                     LockFlags::read_only(),
@@ -160,21 +160,21 @@ impl ExecutableInvocation for MethodInvocation {
 
                 match code_type {
                     PackageCodeTypeSubstate::Wasm => {
-                        node_refs_to_copy.insert(RENodeId::GlobalComponent(EPOCH_MANAGER));
-                        node_refs_to_copy.insert(RENodeId::GlobalComponent(CLOCK));
-                        node_refs_to_copy.insert(RENodeId::GlobalResourceManager(RADIX_TOKEN));
-                        node_refs_to_copy.insert(RENodeId::GlobalResourceManager(PACKAGE_TOKEN));
+                        node_refs_to_copy.insert(RENodeId::GlobalObject(EPOCH_MANAGER.into()));
+                        node_refs_to_copy.insert(RENodeId::GlobalObject(CLOCK.into()));
+                        node_refs_to_copy.insert(RENodeId::GlobalObject(RADIX_TOKEN.into()));
+                        node_refs_to_copy.insert(RENodeId::GlobalObject(PACKAGE_TOKEN.into()));
                         node_refs_to_copy
-                            .insert(RENodeId::GlobalResourceManager(ECDSA_SECP256K1_TOKEN));
+                            .insert(RENodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()));
                         node_refs_to_copy
-                            .insert(RENodeId::GlobalResourceManager(EDDSA_ED25519_TOKEN));
+                            .insert(RENodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()));
                     }
                     _ => {}
                 }
             }
 
             // TODO: remove? currently needed for `Runtime::package_address()` API.
-            node_refs_to_copy.insert(RENodeId::GlobalPackage(package_address));
+            node_refs_to_copy.insert(RENodeId::GlobalObject(package_address.into()));
         }
 
         let executor = ScryptoExecutor {
@@ -219,10 +219,10 @@ impl ExecutableInvocation for FunctionInvocation {
         // TODO: Remove this weirdness or move to a kernel module if we still want to support this
         {
             if self.fn_identifier.package_address.eq(&PACKAGE_LOADER) {
-                node_refs_to_copy.insert(RENodeId::GlobalResourceManager(RADIX_TOKEN));
+                node_refs_to_copy.insert(RENodeId::GlobalObject(RADIX_TOKEN.into()));
             } else {
                 let handle = api.kernel_lock_substate(
-                    RENodeId::GlobalPackage(self.fn_identifier.package_address),
+                    RENodeId::GlobalObject(self.fn_identifier.package_address.into()),
                     NodeModuleId::SELF,
                     SubstateOffset::Package(PackageOffset::CodeType),
                     LockFlags::read_only(),
@@ -233,21 +233,23 @@ impl ExecutableInvocation for FunctionInvocation {
 
                 match code_type {
                     PackageCodeTypeSubstate::Wasm => {
-                        node_refs_to_copy.insert(RENodeId::GlobalComponent(EPOCH_MANAGER));
-                        node_refs_to_copy.insert(RENodeId::GlobalComponent(CLOCK));
-                        node_refs_to_copy.insert(RENodeId::GlobalResourceManager(RADIX_TOKEN));
-                        node_refs_to_copy.insert(RENodeId::GlobalResourceManager(PACKAGE_TOKEN));
+                        node_refs_to_copy.insert(RENodeId::GlobalObject(EPOCH_MANAGER.into()));
+                        node_refs_to_copy.insert(RENodeId::GlobalObject(CLOCK.into()));
+                        node_refs_to_copy.insert(RENodeId::GlobalObject(RADIX_TOKEN.into()));
+                        node_refs_to_copy.insert(RENodeId::GlobalObject(PACKAGE_TOKEN.into()));
                         node_refs_to_copy
-                            .insert(RENodeId::GlobalResourceManager(ECDSA_SECP256K1_TOKEN));
+                            .insert(RENodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()));
                         node_refs_to_copy
-                            .insert(RENodeId::GlobalResourceManager(EDDSA_ED25519_TOKEN));
+                            .insert(RENodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()));
                     }
                     _ => {}
                 }
             }
 
             // TODO: remove? currently needed for `Runtime::package_address()` API.
-            node_refs_to_copy.insert(RENodeId::GlobalPackage(self.fn_identifier.package_address));
+            node_refs_to_copy.insert(RENodeId::GlobalObject(
+                self.fn_identifier.package_address.into(),
+            ));
         }
 
         let resolved = TemporaryResolvedInvocation {
@@ -304,7 +306,7 @@ impl Executor for ScryptoExecutor {
         } else {
             // Make dependent resources/components visible
             let handle = api.kernel_lock_substate(
-                RENodeId::GlobalPackage(self.fn_identifier.package_address),
+                RENodeId::GlobalObject(self.fn_identifier.package_address.into()),
                 NodeModuleId::SELF,
                 SubstateOffset::Package(PackageOffset::Info),
                 LockFlags::read_only(),
@@ -313,7 +315,7 @@ impl Executor for ScryptoExecutor {
 
             let code_type = {
                 let handle = api.kernel_lock_substate(
-                    RENodeId::GlobalPackage(self.fn_identifier.package_address),
+                    RENodeId::GlobalObject(self.fn_identifier.package_address.into()),
                     NodeModuleId::SELF,
                     SubstateOffset::Package(PackageOffset::CodeType),
                     LockFlags::read_only(),
@@ -327,7 +329,7 @@ impl Executor for ScryptoExecutor {
             let output = match code_type {
                 PackageCodeTypeSubstate::Native => {
                     let handle = api.kernel_lock_substate(
-                        RENodeId::GlobalPackage(self.fn_identifier.package_address),
+                        RENodeId::GlobalObject(self.fn_identifier.package_address.into()),
                         NodeModuleId::SELF,
                         SubstateOffset::Package(PackageOffset::Code),
                         LockFlags::read_only(),
@@ -352,7 +354,7 @@ impl Executor for ScryptoExecutor {
                 PackageCodeTypeSubstate::Wasm => {
                     let schema = {
                         let handle = api.kernel_lock_substate(
-                            RENodeId::GlobalPackage(self.fn_identifier.package_address),
+                            RENodeId::GlobalObject(self.fn_identifier.package_address.into()),
                             NodeModuleId::SELF,
                             SubstateOffset::Package(PackageOffset::Info),
                             LockFlags::read_only(),
@@ -383,7 +385,7 @@ impl Executor for ScryptoExecutor {
 
                     let mut instance = {
                         let handle = api.kernel_lock_substate(
-                            RENodeId::GlobalPackage(self.fn_identifier.package_address),
+                            RENodeId::GlobalObject(self.fn_identifier.package_address.into()),
                             NodeModuleId::SELF,
                             SubstateOffset::Package(PackageOffset::Code),
                             LockFlags::read_only(),

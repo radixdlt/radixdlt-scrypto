@@ -804,7 +804,7 @@ where
             }) => Ok((
                 EventTypeIdentifier(
                     Emitter::Function(
-                        RENodeId::GlobalPackage(package_address),
+                        RENodeId::GlobalObject(Address::Package(package_address)),
                         NodeModuleId::SELF,
                         blueprint_name.clone(),
                     ),
@@ -821,7 +821,7 @@ where
         // Reading the schema to validate the payload against it
         let (local_type_index, schema) = {
             let handle = self.kernel_lock_substate(
-                RENodeId::GlobalPackage(package_address),
+                RENodeId::GlobalObject(Address::Package(package_address)),
                 NodeModuleId::PackageEventSchema,
                 SubstateOffset::PackageEventSchema(PackageEventSchemaOffset::PackageEventSchema),
                 LockFlags::read_only(),

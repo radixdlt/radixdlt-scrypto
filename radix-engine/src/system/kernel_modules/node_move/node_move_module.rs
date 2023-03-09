@@ -79,12 +79,9 @@ impl NodeMoveModule {
 
             RENodeId::TransactionRuntime
             | RENodeId::AuthZoneStack
-            | RENodeId::GlobalResourceManager(..)
             | RENodeId::KeyValueStore(..)
             | RENodeId::NonFungibleStore(..)
-            | RENodeId::GlobalPackage(..)
-            | RENodeId::Worktop
-            | RENodeId::GlobalComponent(..) => Err(RuntimeError::ModuleError(
+            | RENodeId::GlobalObject(..) => Err(RuntimeError::ModuleError(
                 ModuleError::NodeMoveError(NodeMoveError::CantMoveDownstream(node_id)),
             )),
         }
@@ -99,12 +96,9 @@ impl NodeMoveModule {
 
             RENodeId::TransactionRuntime
             | RENodeId::AuthZoneStack
-            | RENodeId::GlobalResourceManager(..)
             | RENodeId::KeyValueStore(..)
             | RENodeId::NonFungibleStore(..)
-            | RENodeId::GlobalPackage(..)
-            | RENodeId::Worktop
-            | RENodeId::GlobalComponent(..) => Err(RuntimeError::ModuleError(
+            | RENodeId::GlobalObject(..) => Err(RuntimeError::ModuleError(
                 ModuleError::NodeMoveError(NodeMoveError::CantMoveUpstream(node_id)),
             )),
         }

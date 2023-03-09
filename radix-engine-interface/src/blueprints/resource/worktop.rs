@@ -9,7 +9,9 @@ pub const WORKTOP_BLUEPRINT: &str = "Worktop";
 pub const WORKTOP_DROP_IDENT: &str = "Worktop_drop";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
-pub struct WorktopDropInput {}
+pub struct WorktopDropInput {
+    pub worktop: Own,
+}
 
 pub const WORKTOP_PUT_IDENT: &str = "Worktop_put";
 

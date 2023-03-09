@@ -136,15 +136,15 @@ impl VisibilityProperties {
                             ActorIdentifier::Function(..) => match (node_id, offset) {
                                 // READ package code & abi
                                 (
-                                    RENodeId::GlobalPackage(_),
+                                    RENodeId::GlobalObject(_),
                                     SubstateOffset::Package(PackageOffset::Info), // TODO: Remove
                                 )
                                 | (
-                                    RENodeId::GlobalPackage(_),
+                                    RENodeId::GlobalObject(_),
                                     SubstateOffset::Package(PackageOffset::CodeType), // TODO: Remove
                                 )
                                 | (
-                                    RENodeId::GlobalPackage(_),
+                                    RENodeId::GlobalObject(_),
                                     SubstateOffset::Package(PackageOffset::Code), // TODO: Remove
                                 ) => read_only,
                                 // READ global substates
@@ -165,15 +165,15 @@ impl VisibilityProperties {
                                     match (node_id, offset) {
                                         // READ package code & abi
                                         (
-                                            RENodeId::GlobalPackage(_),
+                                            RENodeId::GlobalObject(_),
                                             SubstateOffset::Package(PackageOffset::Info), // TODO: Remove
                                         )
                                         | (
-                                            RENodeId::GlobalPackage(_),
+                                            RENodeId::GlobalObject(_),
                                             SubstateOffset::Package(PackageOffset::CodeType), // TODO: Remove
                                         )
                                         | (
-                                            RENodeId::GlobalPackage(_),
+                                            RENodeId::GlobalObject(_),
                                             SubstateOffset::Package(PackageOffset::Code), // TODO: Remove
                                         ) => read_only,
                                         // READ/WRITE KVStore entry
@@ -193,20 +193,20 @@ impl VisibilityProperties {
                                     }
                                 }
                                 MethodIdentifier(
-                                    RENodeId::GlobalComponent(component_address),
+                                    RENodeId::GlobalObject(Address::Component(component_address)),
                                     ..,
                                 ) => match (node_id, offset) {
                                     // READ package code & abi
                                     (
-                                        RENodeId::GlobalPackage(_),
+                                        RENodeId::GlobalObject(_),
                                         SubstateOffset::Package(PackageOffset::Info), // TODO: Remove
                                     )
                                     | (
-                                        RENodeId::GlobalPackage(_),
+                                        RENodeId::GlobalObject(_),
                                         SubstateOffset::Package(PackageOffset::CodeType), // TODO: Remove
                                     )
                                     | (
-                                        RENodeId::GlobalPackage(_),
+                                        RENodeId::GlobalObject(_),
                                         SubstateOffset::Package(PackageOffset::Code), // TODO: Remove
                                     ) => read_only,
                                     // READ/WRITE KVStore entry
@@ -218,7 +218,7 @@ impl VisibilityProperties {
                                     ) => true,
                                     // READ/WRITE component application state
                                     (
-                                        RENodeId::GlobalComponent(addr),
+                                        RENodeId::GlobalObject(Address::Component(addr)),
                                         SubstateOffset::Component(ComponentOffset::State0),
                                     ) => addr.eq(component_address),
                                     // Otherwise, false
@@ -276,7 +276,7 @@ impl VisibilityProperties {
                                     }
                                 }
                                 MethodIdentifier(
-                                    RENodeId::GlobalComponent(component_address),
+                                    RENodeId::GlobalObject(Address::Component(component_address)),
                                     ..,
                                 ) => match (node_id, offset) {
                                     (
@@ -286,7 +286,7 @@ impl VisibilityProperties {
                                         )),
                                     ) => true,
                                     (
-                                        RENodeId::GlobalComponent(addr),
+                                        RENodeId::GlobalObject(Address::Component(addr)),
                                         SubstateOffset::Component(ComponentOffset::State0),
                                     ) => addr.eq(component_address),
                                     _ => false,
