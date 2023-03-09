@@ -58,7 +58,7 @@ impl From<String> for AccessRuleEntry {
 
 /// Method authorization rules for a component
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct AccessRules {
+pub struct AccessRulesConfig {
     method_auth: BTreeMap<MethodKey, AccessRuleEntry>,
     grouped_auth: BTreeMap<String, AccessRule>,
     default_auth: AccessRule,
@@ -67,7 +67,7 @@ pub struct AccessRules {
     default_auth_mutability: AccessRule,
 }
 
-impl AccessRules {
+impl AccessRulesConfig {
     pub fn new() -> Self {
         Self {
             method_auth: BTreeMap::new(),
@@ -224,8 +224,11 @@ impl AccessRules {
     }
 }
 
-pub fn package_access_rules_from_owner_badge(owner_badge: &NonFungibleGlobalId) -> AccessRules {
-    let mut access_rules = AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll);
+pub fn package_access_rules_from_owner_badge(
+    owner_badge: &NonFungibleGlobalId,
+) -> AccessRulesConfig {
+    let mut access_rules =
+        AccessRulesConfig::new().default(AccessRule::DenyAll, AccessRule::DenyAll);
     access_rules.set_access_rule_and_mutability(
         MethodKey::new(NodeModuleId::Metadata, METADATA_GET_IDENT.to_string()),
         AccessRule::AllowAll,

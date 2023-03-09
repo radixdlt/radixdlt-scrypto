@@ -5,17 +5,17 @@ mod mutable_access_rules_component {
     struct MutableAccessRulesComponent {}
 
     impl MutableAccessRulesComponent {
-        pub fn new(access_rules: AccessRules) -> ComponentAddress {
+        pub fn new(access_rules: AccessRulesConfig) -> ComponentAddress {
             let component = Self {}.instantiate();
             component.globalize_with_access_rules(access_rules)
         }
 
-        pub fn access_rules_function(component_address: ComponentAddress) -> ComponentAccessRules {
+        pub fn access_rules_function(component_address: ComponentAddress) -> AttachedAccessRules {
             let component = borrow_component!(component_address);
             component.access_rules()
         }
 
-        pub fn access_rules_method(&self) -> Vec<ComponentAccessRules> {
+        pub fn access_rules_method(&self) -> Vec<AttachedAccessRules> {
             todo!("Support for self");
         }
 

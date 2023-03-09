@@ -187,7 +187,7 @@ where
 
 fn build_access_rules(
     mut access_rules_map: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-) -> (AccessRules, AccessRules) {
+) -> (AccessRulesConfig, AccessRulesConfig) {
     let (mint_access_rule, mint_mutability) = access_rules_map
         .remove(&Mint)
         .unwrap_or((DenyAll, rule!(deny_all)));
@@ -202,7 +202,7 @@ fn build_access_rules(
         .remove(&UpdateMetadata)
         .unwrap_or((DenyAll, rule!(deny_all)));
 
-    let mut resman_access_rules = AccessRules::new();
+    let mut resman_access_rules = AccessRulesConfig::new();
     resman_access_rules.set_access_rule_and_mutability(
         MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
         update_metadata_access_rule,
@@ -315,7 +315,7 @@ fn build_access_rules(
         .remove(&ResourceMethodAuthKey::Recall)
         .unwrap_or((DenyAll, rule!(deny_all)));
 
-    let mut vault_access_rules = AccessRules::new();
+    let mut vault_access_rules = AccessRulesConfig::new();
     vault_access_rules.set_group_access_rule_and_mutability(
         "withdraw".to_string(),
         withdraw_access_rule,
