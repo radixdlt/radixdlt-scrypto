@@ -148,15 +148,10 @@ impl KernelModule for CostingModule {
             }
         };
 
-        // FIXME: algin native packages with wasm package, or read package type info and disallow royalty on native package.
-        let package_address = fn_identifier.package_address;
-        if is_native_package(package_address) {
-            return Ok(());
-        }
-
         /*
          * Apply package royalty
          */
+        let package_address = fn_identifier.package_address;
         let handle = api.kernel_lock_substate(
             RENodeId::GlobalObject(package_address.into()),
             NodeModuleId::PackageRoyalty,
