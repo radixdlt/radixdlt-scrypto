@@ -1,4 +1,4 @@
-use super::{CostingReason, RoyaltyReceiver};
+use super::CostingReason;
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use sbor::rust::collections::*;
@@ -24,7 +24,7 @@ pub struct FeeSummary {
     /// The execution cost breakdown
     pub execution_cost_unit_breakdown: BTreeMap<CostingReason, u32>,
     /// The royalty cost breakdown.
-    pub royalty_cost_unit_breakdown: BTreeMap<RoyaltyReceiver, u32>,
+    pub royalty_cost_unit_breakdown: BTreeMap<ObjectId, u32>,
 }
 
 impl FeeSummary {

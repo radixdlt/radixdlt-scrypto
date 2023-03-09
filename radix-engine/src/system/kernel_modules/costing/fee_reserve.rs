@@ -40,8 +40,8 @@ pub trait PreExecutionFeeReserve {
 pub trait ExecutionFeeReserve {
     fn consume_royalty(
         &mut self,
-        receiver: RoyaltyReceiver,
         cost_units: u32,
+        recipient_vault_id: ObjectId,
     ) -> Result<(), FeeReserveError>;
 
     fn consume_multiplied_execution(
@@ -70,12 +70,6 @@ pub trait FinalizingFeeReserve {
 }
 
 pub trait FeeReserve: PreExecutionFeeReserve + ExecutionFeeReserve + FinalizingFeeReserve {}
-
-#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, ScryptoSbor)]
-pub enum RoyaltyReceiver {
-    Package(PackageAddress),
-    Component(ComponentAddress),
-}
 
 #[repr(usize)]
 #[derive(
@@ -135,7 +129,7 @@ pub struct SystemLoanFeeReserve {
     /// Execution cost breakdown
     execution: [u32; CostingReason::COUNT],
     /// Royalty cost breakdown
-    royalty: HashMap<RoyaltyReceiver, u32>,
+    royalty: HashMap<ObjectId, u32>,
 
     /// Cache: effective execution price
     effective_execution_price: u128,
@@ -285,7 +279,7 @@ impl SystemLoanFeeReserve {
         self.royalty.clear();
     }
 
-    pub fn royalty(&self) -> &HashMap<RoyaltyReceiver, u32> {
+    pub fn royalty(&self) -> &HashMap<ObjectId, u32> {
         &self.royalty
     }
 
@@ -318,15 +312,15 @@ impl SystemLoanFeeReserve {
 impl PreExecutionFeeReserve for SystemLoanFeeReserve {
     fn consume_deferred(
         &mut self,
-        amount: u32,
+        cost_units: u32,
         multiplier: usize,
         reason: CostingReason,
     ) -> Result<(), FeeReserveError> {
-        if amount == 0 {
+        if cost_units == 0 {
             return Ok(());
         }
 
-        let units_consumed = checked_multiply(amount, multiplier)?;
+        let units_consumed = checked_multiply(cost_units, multiplier)?;
 
         checked_assign_add(
             &mut self.execution_deferred[reason as usize],
@@ -341,15 +335,18 @@ impl PreExecutionFeeReserve for SystemLoanFeeReserve {
 impl ExecutionFeeReserve for SystemLoanFeeReserve {
     fn consume_royalty(
         &mut self,
-        receiver: RoyaltyReceiver,
-        amount: u32,
+        cost_units: u32,
+        recipient_vault_id: ObjectId,
     ) -> Result<(), FeeReserveError> {
-        if amount == 0 {
+        if cost_units == 0 {
             return Ok(());
         }
 
-        self.consume(amount.into(), self.execution_price())?;
-        checked_assign_add(self.royalty.entry(receiver).or_default(), amount)?;
+        self.consume(cost_units.into(), self.execution_price())?;
+        checked_assign_add(
+            self.royalty.entry(recipient_vault_id).or_default(),
+            cost_units,
+        )?;
 
         if self.remaining_loan_balance == 0 && !self.fully_repaid() {
             self.repay_all()?;
@@ -546,9 +543,7 @@ mod tests {
         fee_reserve
             .consume_multiplied_execution(2, 1, CostingReason::Invoke)
             .unwrap();
-        fee_reserve
-            .consume_royalty(RoyaltyReceiver::Package(FAUCET_PACKAGE), 2)
-            .unwrap();
+        fee_reserve.consume_royalty(2, TEST_VAULT_ID).unwrap();
         fee_reserve
             .lock_fee(TEST_VAULT_ID, xrd(100), false)
             .unwrap();
@@ -559,6 +554,6 @@ mod tests {
         assert_eq!(summary.total_execution_cost_xrd, dec!("10.1"));
         assert_eq!(summary.total_royalty_cost_xrd, dec!("10"));
         assert_eq!(summary.bad_debt_xrd, dec!("0"));
-        assert_eq!(summary.vault_locks, vec![(TEST_VAULT_ID, xrd(100), false)],);
+        assert_eq!(summary.vault_locks, vec![(TEST_VAULT_ID, xrd(100), false)]);
     }
 }

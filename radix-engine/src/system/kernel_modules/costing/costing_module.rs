@@ -11,7 +11,9 @@ use crate::{
     system::node::RENodeInit,
     transaction::AbortReason,
 };
-use radix_engine_interface::api::component::ComponentRoyaltyConfigSubstate;
+use radix_engine_interface::api::component::{
+    ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
+};
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::blueprints::package::PackageRoyaltySubstate;
@@ -68,13 +70,13 @@ where
 
 fn apply_royalty_cost<Y: KernelModuleApi<RuntimeError>>(
     api: &mut Y,
-    receiver: RoyaltyReceiver,
-    amount: u32,
+    cost_units: u32,
+    recipient_vault_id: ObjectId,
 ) -> Result<(), RuntimeError> {
     api.kernel_get_module_state()
         .costing
         .fee_reserve
-        .consume_royalty(receiver, amount)
+        .consume_royalty(cost_units, recipient_vault_id)
         .map_err(|e| {
             RuntimeError::ModuleError(ModuleError::CostingError(CostingError::FeeReserveError(e)))
         })
@@ -147,19 +149,18 @@ impl KernelModule for CostingModule {
             SubstateOffset::Package(PackageOffset::Royalty),
             LockFlags::read_only(),
         )?;
-        let package_royalty_config: &PackageRoyaltySubstate =
-            api.kernel_get_substate_ref(handle)?;
-        let fn_royalty_charge = package_royalty_config
+        let substate: &PackageRoyaltySubstate = api.kernel_get_substate_ref(handle)?;
+        let royalty_charge = substate
             .blueprint_royalty_configs
             .get(&fn_identifier.blueprint_name)
             .map(|x| x.get_rule(&fn_identifier.ident).clone())
             .unwrap_or(0);
-        api.kernel_drop_lock(handle)?;
-        apply_royalty_cost(
-            api,
-            RoyaltyReceiver::Package(fn_identifier.package_address),
-            fn_royalty_charge,
-        )?;
+        if royalty_charge > 0 {
+            if let Some(vault) = substate.royalty_vault {
+                api.kernel_drop_lock(handle)?;
+                apply_royalty_cost(api, royalty_charge, vault.id())?;
+            }
+        }
 
         //===========================
         // Apply component royalty
@@ -171,19 +172,27 @@ impl KernelModule for CostingModule {
                 SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
                 LockFlags::read_only(),
             )?;
-            let component_royalty_config: &ComponentRoyaltyConfigSubstate =
-                api.kernel_get_substate_ref(handle)?;
-            let method_royalty_charge = component_royalty_config
+            let substate: &ComponentRoyaltyConfigSubstate = api.kernel_get_substate_ref(handle)?;
+            let royalty_charge = substate
                 .royalty_config
                 .get_rule(&fn_identifier.ident)
                 .clone();
             api.kernel_drop_lock(handle)?;
 
-            apply_royalty_cost(
-                api,
-                RoyaltyReceiver::Component(*component_node_id),
-                method_royalty_charge,
-            )?;
+            if royalty_charge > 0 {
+                let handle = api.kernel_lock_substate(
+                    RENodeId::GlobalObject(component_node_id.clone().into()),
+                    NodeModuleId::ComponentRoyalty,
+                    SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
+                    LockFlags::read_only(),
+                )?;
+                let substate: &ComponentRoyaltyAccumulatorSubstate =
+                    api.kernel_get_substate_ref(handle)?;
+                let vault = substate.royalty_vault.clone();
+                api.kernel_drop_lock(handle)?;
+
+                apply_royalty_cost(api, royalty_charge, vault.id())?;
+            }
         }
 
         Ok(())
