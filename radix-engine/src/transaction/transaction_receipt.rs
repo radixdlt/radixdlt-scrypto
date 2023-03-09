@@ -367,7 +367,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                 "Transaction Fee:".bold().green(),
                 c.fee_summary.total_execution_cost_xrd,
                 c.fee_summary.total_royalty_cost_xrd,
-                c.fee_summary.bad_debt_xrd,
+                c.fee_summary.total_bad_debt_xrd,
             )?;
 
             write!(
@@ -375,7 +375,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                 "\n{} {} limit, {} consumed, {} XRD per cost unit, {}% tip",
                 "Cost Units:".bold().green(),
                 c.fee_summary.cost_unit_limit,
-                c.fee_summary.total_cost_units_consumed,
+                c.fee_summary.execution_cost_sum,
                 c.fee_summary.cost_unit_price,
                 c.fee_summary.tip_percentage
             )?;

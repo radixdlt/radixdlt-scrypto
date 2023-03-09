@@ -334,7 +334,7 @@ where
                     println!("{:-^80}", "Cost Analysis");
                     let break_down = commit
                         .fee_summary
-                        .execution_cost_unit_breakdown
+                        .execution_cost_breakdown
                         .iter()
                         .map(|(k, v)| (k.to_string(), v))
                         .collect::<BTreeMap<String, &u32>>();
@@ -345,7 +345,7 @@ where
                     println!("{:-^80}", "Cost Totals");
                     println!(
                         "{:<30}: {:>10}",
-                        "Total Cost Units Consumed", commit.fee_summary.total_cost_units_consumed
+                        "Total Cost Units Consumed", commit.fee_summary.execution_cost_sum
                     );
                     println!(
                         "{:<30}: {:>10}",

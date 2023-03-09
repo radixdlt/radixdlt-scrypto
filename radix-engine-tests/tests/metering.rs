@@ -78,7 +78,7 @@ fn test_basic_transfer() {
         + 1320 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
         + 16000, /* WriteSubstate */
-        commit_result.fee_summary.total_cost_units_consumed
+        commit_result.fee_summary.execution_cost_sum
     );
 }
 
@@ -212,7 +212,7 @@ fn test_radiswap() {
         + 100000 /* TxSignatureVerification */
         + 38000 /* WriteSubstate */
         + 2, /* royalty in cost units */
-        commit_result.fee_summary.total_cost_units_consumed
+        commit_result.fee_summary.execution_cost_sum
     );
 }
 
@@ -321,7 +321,7 @@ fn test_flash_loan() {
         + 100000 /* TxSignatureVerification */
         + 66500 /* WriteSubstate */
         + 2, /* royalty in cost units */
-        commit_result.fee_summary.total_cost_units_consumed
+        commit_result.fee_summary.execution_cost_sum
     );
 }
 
@@ -358,8 +358,8 @@ fn test_publish_large_package() {
 
     // Assert
     assert!(
-        commit_result.fee_summary.total_cost_units_consumed > 60000000
-            && commit_result.fee_summary.total_cost_units_consumed < 70000000
+        commit_result.fee_summary.execution_cost_sum > 60000000
+            && commit_result.fee_summary.execution_cost_sum < 70000000
     );
 }
 

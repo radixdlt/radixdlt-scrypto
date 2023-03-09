@@ -3,6 +3,7 @@ use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::errors::*;
 use crate::ledger::*;
 use crate::state_manager::StateDiff;
+use crate::system::kernel_modules::costing::u128_to_decimal;
 use crate::system::kernel_modules::costing::FinalizingFeeReserve;
 use crate::system::kernel_modules::costing::{CostingError, FeeReserveError};
 use crate::system::kernel_modules::costing::{FeeSummary, SystemLoanFeeReserve};
@@ -422,7 +423,7 @@ impl<'s> Track<'s> {
     }
 
     pub fn finalize(
-        self,
+        mut self,
         mut invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
         mut fee_reserve: SystemLoanFeeReserve,
         application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
@@ -443,16 +444,58 @@ impl<'s> Track<'s> {
 
         match determine_result_type(invoke_result, fee_reserve.fully_repaid()) {
             TransactionResultType::Commit(invoke_result) => {
+                let is_success = invoke_result.is_ok();
+
+                // Keep/rollback royalty
+                if is_success {
+                    for (recipient_vault_id, amount) in fee_reserve.royalty() {
+                        let node_id = RENodeId::Object(*recipient_vault_id);
+                        let module_id = NodeModuleId::SELF;
+                        let offset = SubstateOffset::Vault(VaultOffset::LiquidFungible);
+                        self.acquire_lock(
+                            SubstateId(node_id, module_id, offset.clone()),
+                            LockFlags::MUTABLE,
+                        )
+                        .unwrap();
+                        let substate: &mut LiquidFungibleResource =
+                            self.get_substate_mut(node_id, module_id, &offset).into();
+                        substate
+                            .put(LiquidFungibleResource::new(u128_to_decimal(*amount)))
+                            .unwrap();
+                        self.release_lock(SubstateId(node_id, module_id, offset.clone()), false)
+                            .unwrap();
+                    }
+                } else {
+                    fee_reserve.revert_royalty();
+                }
+
+                // Keep/rollback events
+                let application_events = if is_success {
+                    application_events
+                } else {
+                    Vec::new()
+                };
+
+                // Always keep application logs for better debuggability
+                let application_logs = application_logs;
+
+                // Keep/rollback entity changes
+                let entity_changes = if is_success {
+                    EntityChanges::new(self.new_global_addresses)
+                } else {
+                    EntityChanges::new(Vec::new())
+                };
+
                 let finalizing_track = FinalizingTrack {
                     substate_store: self.substate_store,
-                    new_global_addresses: self.new_global_addresses,
                     loaded_substates: self.loaded_substates.into_iter().collect(),
                 };
                 TransactionResult::Commit(finalizing_track.calculate_commit_result(
                     invoke_result,
-                    fee_reserve,
                     application_events,
                     application_logs,
+                    entity_changes,
+                    fee_reserve,
                 ))
             }
             TransactionResultType::Reject(rejection_error) => {
@@ -530,7 +573,6 @@ fn determine_result_type(
 /// This is just used when finalizing track into a commit
 struct FinalizingTrack<'s> {
     substate_store: &'s dyn ReadableSubstateStore,
-    new_global_addresses: Vec<Address>,
     loaded_substates: BTreeMap<SubstateId, LoadedSubstate>,
 }
 
@@ -538,33 +580,12 @@ impl<'s> FinalizingTrack<'s> {
     fn calculate_commit_result(
         self,
         invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
-        mut fee_reserve: SystemLoanFeeReserve,
         application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
         application_logs: Vec<(Level, String)>,
+        entity_changes: EntityChanges,
+        fee_reserve: SystemLoanFeeReserve,
     ) -> CommitResult {
         let is_success = invoke_result.is_ok();
-
-        // Keep/rollback royalty
-        if !is_success {
-            fee_reserve.revert_royalty_charges();
-        }
-
-        // Keep/rollback events
-        let application_events = if is_success {
-            application_events
-        } else {
-            Vec::new()
-        };
-
-        // Always keep application logs for better debugging
-        let application_logs = application_logs;
-
-        // Keep/rollback entity changes
-        let entity_changes = if is_success {
-            EntityChanges::new(self.new_global_addresses)
-        } else {
-            EntityChanges::new(Vec::new())
-        };
 
         // Calculate the substates for persistence
         let mut to_persist = HashMap::new();
@@ -590,14 +611,14 @@ impl<'s> FinalizingTrack<'s> {
             }
         };
 
-        // Settle fee payments
+        // Finalize fee payments
         let fee_summary = fee_reserve.finalize();
         let mut actual_fee_payments: BTreeMap<ObjectId, Decimal> = BTreeMap::new();
         let mut required = fee_summary.total_execution_cost_xrd
             + fee_summary.total_royalty_cost_xrd
-            - fee_summary.bad_debt_xrd;
+            - fee_summary.total_bad_debt_xrd;
         let mut fees: LiquidFungibleResource = LiquidFungibleResource::default();
-        for (vault_id, mut locked, contingent) in fee_summary.vault_locks.iter().cloned().rev() {
+        for (vault_id, mut locked, contingent) in fee_summary.locked_fees.iter().cloned().rev() {
             let amount = if contingent {
                 if is_success {
                     Decimal::min(locked.amount(), required)

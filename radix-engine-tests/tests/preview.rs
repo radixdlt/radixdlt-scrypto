@@ -41,8 +41,8 @@ fn test_transaction_preview_cost_estimate() {
         test_runner.execute_transaction(make_executable(&network, &notarized_transaction));
     let commit_result = receipt.expect_commit(true);
     assert_eq!(
-        commit_result.fee_summary.total_cost_units_consumed,
-        commit_result.fee_summary.total_cost_units_consumed
+        commit_result.fee_summary.execution_cost_sum,
+        commit_result.fee_summary.execution_cost_sum
     );
 }
 
