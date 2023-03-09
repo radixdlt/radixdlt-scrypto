@@ -21,8 +21,6 @@ pub struct FeeSummary {
     pub bad_debt_xrd: Decimal,
     /// The vaults locked for XRD payment
     pub vault_locks: Vec<(ObjectId, LiquidFungibleResource, bool)>,
-    /// The resultant vault charges in XRD (only present on commit)
-    pub vault_payments_xrd: Option<BTreeMap<ObjectId, Decimal>>,
     /// The execution cost breakdown
     pub execution_cost_unit_breakdown: BTreeMap<CostingReason, u32>,
     /// The royalty cost breakdown.

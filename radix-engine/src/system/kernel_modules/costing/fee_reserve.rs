@@ -279,6 +279,17 @@ impl SystemLoanFeeReserve {
         Ok(())
     }
 
+    pub fn revert_royalty_charges(&mut self) {
+        let royalty = self.total_royalty_cost();
+        self.total_cost_units_consumed -= royalty;
+        self.royalty.clear();
+    }
+
+    #[inline]
+    pub fn fully_repaid(&self) -> bool {
+        self.xrd_owed == 0 && self.execution_deferred_total == 0
+    }
+
     #[inline]
     fn execution_price(&self) -> u128 {
         self.effective_execution_price
@@ -290,8 +301,13 @@ impl SystemLoanFeeReserve {
     }
 
     #[inline]
-    fn fully_repaid(&self) -> bool {
-        self.xrd_owed == 0 && self.execution_deferred_total == 0
+    fn total_execution_cost(&self) -> u32 {
+        self.execution.iter().sum()
+    }
+
+    #[inline]
+    fn total_royalty_cost(&self) -> u32 {
+        self.royalty.values().sum()
     }
 }
 
@@ -399,14 +415,13 @@ impl FinalizingFeeReserve for SystemLoanFeeReserve {
             tip_percentage: self.tip_percentage,
             total_cost_units_consumed: self.total_cost_units_consumed,
             total_execution_cost_xrd: u128_to_decimal(
-                self.execution_price() * self.execution.iter().sum::<u32>() as u128,
+                self.execution_price() * self.total_execution_cost() as u128,
             ),
             total_royalty_cost_xrd: u128_to_decimal(
-                self.royalty_price() * self.royalty.values().sum::<u32>() as u128,
+                self.royalty_price() * self.total_royalty_cost() as u128,
             ),
             bad_debt_xrd: u128_to_decimal(self.xrd_owed),
             vault_locks: self.payments,
-            vault_payments_xrd: None, // Resolved later
             execution_cost_unit_breakdown: self
                 .execution
                 .into_iter()

@@ -436,7 +436,7 @@ impl<'s> Track<'s> {
         mut invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
         mut fee_reserve: SystemLoanFeeReserve,
         vault_ops: Vec<(TraceActor, ObjectId, VaultOp, usize)>,
-        kernel_traces: Vec<ExecutionTrace>,
+        execution_traces: Vec<ExecutionTrace>,
         application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
         application_logs: Vec<(Level, String)>,
     ) -> TrackReceipt {
@@ -454,10 +454,21 @@ impl<'s> Track<'s> {
             }
         }
 
-        // Close fee reserve
-        let mut fee_summary = fee_reserve.finalize();
+        // Determine result types
+        let result_type = determine_result_type(invoke_result, fee_reserve.fully_repaid());
 
-        let result = match determine_result_type(invoke_result, &fee_summary) {
+        // Distribute royalty
+        if result_type.is_commit_success() {
+            // TODO: distribute royalty
+        } else {
+            fee_reserve.revert_royalty_charges();
+        }
+
+        // Finalize fee reserve; no more change allowed.
+        let fee_summary = fee_reserve.finalize();
+
+        // Compute the final result
+        let result = match result_type {
             TransactionResultType::Commit(invoke_result) => {
                 let finalizing_track = FinalizingTrack {
                     substate_store: self.substate_store,
@@ -466,7 +477,7 @@ impl<'s> Track<'s> {
                 };
                 finalizing_track.calculate_commit_result(
                     invoke_result,
-                    &mut fee_summary,
+                    &fee_summary,
                     vault_ops,
                     application_events,
                     application_logs,
@@ -485,7 +496,7 @@ impl<'s> Track<'s> {
         TrackReceipt {
             fee_summary,
             result,
-            execution_traces: kernel_traces,
+            execution_traces: execution_traces,
         }
     }
 }
@@ -496,9 +507,18 @@ pub enum TransactionResultType {
     Abort(AbortReason),
 }
 
+impl TransactionResultType {
+    pub fn is_commit_success(&self) -> bool {
+        match self {
+            Self::Commit(r) => r.is_ok(),
+            _ => false,
+        }
+    }
+}
+
 fn determine_result_type(
     invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
-    fee_summary: &FeeSummary,
+    is_loan_fully_repaid: bool,
 ) -> TransactionResultType {
     // First - check for required rejections from explicit invoke result errors
     match &invoke_result {
@@ -538,7 +558,7 @@ fn determine_result_type(
     }
 
     // Check for errors before loan is repaid - in which case, we also reject
-    if !fee_summary.loan_fully_repaid() {
+    if !is_loan_fully_repaid {
         return match invoke_result {
             Ok(..) => TransactionResultType::Reject(RejectionError::SuccessButFeeLoanNotRepaid),
             Err(error) => {
@@ -561,7 +581,7 @@ impl<'s> FinalizingTrack<'s> {
     fn calculate_commit_result(
         self,
         invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
-        fee_summary: &mut FeeSummary,
+        fee_summary: &FeeSummary,
         vault_ops: Vec<(TraceActor, ObjectId, VaultOp, usize)>,
         application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
         application_logs: Vec<(Level, String)>,
@@ -616,13 +636,7 @@ impl<'s> FinalizingTrack<'s> {
             Vec::new()
         };
 
-        // Revert royalty in case of failure
-        if !is_success {
-            fee_summary.total_royalty_cost_xrd = Decimal::ZERO;
-            fee_summary.royalty_cost_unit_breakdown = BTreeMap::new();
-        }
-
-        // Finalize payments
+        // Settle fee payments
         let mut actual_fee_payments: BTreeMap<ObjectId, Decimal> = BTreeMap::new();
         let mut required = fee_summary.total_execution_cost_xrd
             + fee_summary.total_royalty_cost_xrd
@@ -659,7 +673,6 @@ impl<'s> FinalizingTrack<'s> {
             // Record final payments
             *actual_fee_payments.entry(vault_id).or_default() += amount;
         }
-        fee_summary.vault_payments_xrd = Some(actual_fee_payments);
 
         // TODO: update XRD supply or disable it
         // TODO: pay tips to the lead validator
@@ -726,12 +739,11 @@ impl<'s> FinalizingTrack<'s> {
             }
         }
 
-        // Generate commit result
-        let execution_trace_receipt = ExecutionTraceReceipt::new(
-            vault_ops,
-            fee_summary.vault_payments_xrd.as_ref().unwrap(),
-            invoke_result.is_ok(),
-        );
+        // Generate execution trace receipt
+        let execution_trace_receipt =
+            ExecutionTraceReceipt::new(vault_ops, &actual_fee_payments, invoke_result.is_ok());
+
+        // Produce final transaction result
         TransactionResult::Commit(CommitResult {
             application_events: match invoke_result.is_ok() {
                 true => application_events,
