@@ -55,17 +55,24 @@ pub fn extract_refs_from_instruction(
 
         Instruction::PublishPackage { access_rules, .. } => {
             global_references.insert(PACKAGE_PACKAGE.clone().into());
-
             // TODO: Remove and cleanup
-            let value: ManifestValue = manifest_decode(&manifest_encode(access_rules).unwrap())
-                .expect("Invalid CALL_FUNCTION arguments");
+            let value: ManifestValue =
+                manifest_decode(&manifest_encode(access_rules).unwrap()).unwrap();
             extract_refs_from_value(&value, global_references, local_references);
         }
-
-        Instruction::SetMetadata { entity_address, .. }
+        Instruction::SetMetadata {
+            entity_address,
+            value,
+            ..
+        } => {
+            global_references.insert(to_address(entity_address.clone()).into());
+            // TODO: Remove and cleanup
+            let value: ManifestValue = manifest_decode(&manifest_encode(value).unwrap()).unwrap();
+            extract_refs_from_value(&value, global_references, local_references);
+        }
+        Instruction::RemoveMetadata { entity_address, .. }
         | Instruction::SetMethodAccessRule { entity_address, .. } => {
-            let address = to_address(entity_address.clone());
-            global_references.insert(address.clone().into());
+            global_references.insert(to_address(entity_address.clone()).into());
         }
         Instruction::RecallResource { vault_id, .. } => {
             // TODO: This needs to be cleaned up
@@ -137,8 +144,7 @@ pub fn extract_refs_from_instruction(
         | Instruction::DropProof { .. }
         | Instruction::DropAllProofs { .. }
         | Instruction::BurnResource { .. }
-        | Instruction::AssertAccessRule { .. }
-        | Instruction::RemoveMetadata { .. } => {}
+        | Instruction::AssertAccessRule { .. } => {}
     }
 }
 
