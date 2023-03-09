@@ -18,7 +18,7 @@ pub struct PackageLoaderPublishWasmInput {
     pub schema: PackageSchema,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,
     pub metadata: BTreeMap<String, String>,
-    pub access_rules: AccessRules,
+    pub access_rules: AccessRulesConfig,
 }
 
 pub const PACKAGE_PUBLISH_NATIVE_IDENT: &str = "publish_native";
@@ -31,7 +31,7 @@ pub struct PackageLoaderPublishNativeInput {
     pub dependent_resources: Vec<ResourceAddress>,
     pub dependent_components: Vec<ComponentAddress>,
     pub metadata: BTreeMap<String, String>,
-    pub access_rules: AccessRules,
+    pub access_rules: AccessRulesConfig,
 
     pub package_access_rules: BTreeMap<FnKey, AccessRule>,
     pub default_package_access_rule: AccessRule,

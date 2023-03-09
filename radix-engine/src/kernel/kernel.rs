@@ -169,7 +169,7 @@ where
         };
 
         let access_rules = {
-            let mut access_rules = AccessRules::new();
+            let mut access_rules = AccessRulesConfig::new();
             access_rules.set_access_rule_and_mutability(
                 MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_IDENT.to_string()),
                 AccessRule::AllowAll,

@@ -5,7 +5,6 @@ use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use native_sdk::access_rules::AccessRulesObject;
 use native_sdk::metadata::Metadata;
@@ -24,8 +23,7 @@ impl IdentityNativePackage {
     pub fn schema() -> PackageSchema {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-        let mut substates = Vec::new();
-        substates.push(aggregator.add_child_type_and_descendents::<IdentitySubstate>());
+        let substates = Vec::new();
 
         let mut functions = BTreeMap::new();
         functions.insert(
@@ -101,20 +99,17 @@ impl IdentityNativePackage {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct IdentitySubstate {}
-
 pub struct IdentityBlueprint;
 
 impl IdentityBlueprint {
     pub fn create<Y>(
         access_rule: AccessRule,
         api: &mut Y,
-    ) -> Result<(RENodeId, AccessRules), RuntimeError>
+    ) -> Result<(RENodeId, AccessRulesConfig), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let mut access_rules = AccessRules::new();
+        let mut access_rules = AccessRulesConfig::new();
         access_rules.set_access_rule_and_mutability(
             MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
             access_rule.clone(),
@@ -126,10 +121,7 @@ impl IdentityBlueprint {
             AccessRule::DenyAll,
         );
 
-        let component_id = api.new_object(
-            IDENTITY_BLUEPRINT,
-            vec![scrypto_encode(&IdentitySubstate {}).unwrap()],
-        )?;
+        let component_id = api.new_object(IDENTITY_BLUEPRINT, vec![])?;
 
         Ok((RENodeId::Object(component_id), access_rules))
     }
@@ -137,11 +129,11 @@ impl IdentityBlueprint {
     pub fn create_virtual<Y>(
         access_rule: AccessRule,
         api: &mut Y,
-    ) -> Result<(RENodeId, AccessRules), RuntimeError>
+    ) -> Result<(RENodeId, AccessRulesConfig), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let mut access_rules = AccessRules::new();
+        let mut access_rules = AccessRulesConfig::new();
         access_rules.set_access_rule_and_mutability(
             MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
             access_rule.clone(),
@@ -156,9 +148,7 @@ impl IdentityBlueprint {
         let node_id = api.kernel_allocate_node_id(RENodeType::Object)?;
         api.kernel_create_node(
             node_id,
-            RENodeInit::Object(btreemap!(
-                SubstateOffset::Identity(IdentityOffset::Identity) => RuntimeSubstate::Identity(IdentitySubstate {}),
-            )),
+            RENodeInit::Object(btreemap!()),
             btreemap!(
                 NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
                     package_address: IDENTITY_PACKAGE,

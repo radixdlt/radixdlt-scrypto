@@ -13,7 +13,9 @@ use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
 };
-use radix_engine_interface::api::node_modules::metadata::{MetadataSetInput, METADATA_SET_IDENT};
+use radix_engine_interface::api::node_modules::metadata::{
+    MetadataRemoveInput, MetadataSetInput, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
+};
 use radix_engine_interface::api::node_modules::royalty::{
     ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput, PackageClaimRoyaltyInput,
     PackageSetRoyaltyConfigInput, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
@@ -401,9 +403,31 @@ impl TransactionProcessorBlueprint {
                         METADATA_SET_IDENT,
                         scrypto_encode(&MetadataSetInput {
                             key: key.clone(),
-                            value: value.clone(),
+                            value: scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap(),
                         })
                         .unwrap(),
+                    )?;
+
+                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result_indexed,
+                        &worktop,
+                        api,
+                    )?;
+
+                    InstructionOutput::CallReturn(result_indexed.into())
+                }
+                Instruction::RemoveMetadata {
+                    entity_address,
+                    key,
+                } => {
+                    let address = to_address(entity_address);
+                    let receiver = address.into();
+                    let result = api.call_module_method(
+                        receiver,
+                        NodeModuleId::Metadata,
+                        METADATA_REMOVE_IDENT,
+                        scrypto_encode(&MetadataRemoveInput { key: key.clone() }).unwrap(),
                     )?;
 
                     let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();

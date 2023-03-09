@@ -1,6 +1,7 @@
 use radix_engine_common::data::scrypto::model::*;
+use radix_engine_interface::api::node_modules::metadata::MetadataEntry;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::blueprints::resource::{AccessRule, AccessRules, MethodKey};
+use radix_engine_interface::blueprints::resource::{AccessRule, AccessRulesConfig, MethodKey};
 use radix_engine_interface::data::manifest::model::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;
@@ -102,7 +103,7 @@ pub enum Instruction {
         schema: ManifestBlobRef,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
-        access_rules: AccessRules,
+        access_rules: AccessRulesConfig,
     },
 
     BurnResource {
@@ -117,7 +118,12 @@ pub enum Instruction {
     SetMetadata {
         entity_address: ManifestAddress,
         key: String,
-        value: String,
+        value: MetadataEntry,
+    },
+
+    RemoveMetadata {
+        entity_address: ManifestAddress,
+        key: String,
     },
 
     SetPackageRoyaltyConfig {
@@ -163,8 +169,6 @@ pub enum Instruction {
         access_rule: AccessRule,
     },
 
-    ///
-    /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallFunction {
         package_address: PackageAddress,
         blueprint_name: String,
@@ -172,9 +176,6 @@ pub enum Instruction {
         args: Vec<u8>,
     },
 
-    /// Calls a method.
-    ///
-    /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallMethod {
         component_address: ComponentAddress,
         method_name: String,

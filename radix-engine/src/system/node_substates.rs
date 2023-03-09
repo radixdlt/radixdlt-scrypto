@@ -1,6 +1,5 @@
 use super::node_modules::access_rules::AuthZoneStackSubstate;
 use super::node_modules::access_rules::MethodAccessRulesSubstate;
-use super::node_modules::metadata::MetadataSubstate;
 use super::package::PackageCodeTypeSubstate;
 use crate::blueprints::access_controller::AccessControllerSubstate;
 use crate::blueprints::account::AccountSubstate;
@@ -8,7 +7,6 @@ use crate::blueprints::clock::ClockSubstate;
 use crate::blueprints::epoch_manager::EpochManagerSubstate;
 use crate::blueprints::epoch_manager::ValidatorSetSubstate;
 use crate::blueprints::epoch_manager::ValidatorSubstate;
-use crate::blueprints::identity::IdentitySubstate;
 use crate::blueprints::resource::BucketInfoSubstate;
 use crate::blueprints::resource::FungibleProof;
 use crate::blueprints::resource::NonFungibleProof;
@@ -45,7 +43,6 @@ pub enum PersistedSubstate {
     PackageCode(PackageCodeSubstate),
     Account(AccountSubstate),
     AccessController(AccessControllerSubstate),
-    Identity(IdentitySubstate),
     VaultInfo(VaultInfoSubstate),
     VaultLiquidFungible(LiquidFungibleResource),
     VaultLiquidNonFungible(LiquidNonFungibleResource),
@@ -58,9 +55,6 @@ pub enum PersistedSubstate {
     /* Access rules */
     MethodAccessRules(MethodAccessRulesSubstate),
     FunctionAccessRules(FunctionAccessRulesSubstate),
-
-    /* Metadata */
-    Metadata(MetadataSubstate),
 
     /* Royalty */
     ComponentRoyaltyConfig(ComponentRoyaltyConfigSubstate),
@@ -210,7 +204,6 @@ impl PersistedSubstate {
             }
             PersistedSubstate::Account(value) => RuntimeSubstate::Account(value),
             PersistedSubstate::AccessController(value) => RuntimeSubstate::AccessController(value),
-            PersistedSubstate::Identity(value) => RuntimeSubstate::Identity(value),
 
             /* Node module starts */
             PersistedSubstate::TypeInfo(value) => RuntimeSubstate::TypeInfo(value),
@@ -220,7 +213,6 @@ impl PersistedSubstate {
             PersistedSubstate::FunctionAccessRules(value) => {
                 RuntimeSubstate::FunctionAccessRules(value)
             }
-            PersistedSubstate::Metadata(value) => RuntimeSubstate::Metadata(value),
             PersistedSubstate::PackageRoyaltyConfig(value) => {
                 RuntimeSubstate::PackageRoyaltyConfig(value)
             }
@@ -253,7 +245,6 @@ pub enum RuntimeSubstate {
     TransactionRuntime(TransactionRuntimeSubstate),
     Account(AccountSubstate),
     AccessController(AccessControllerSubstate),
-    Identity(IdentitySubstate),
 
     // TODO: we may want to move some of the static info into `TypeInfo`
     // And split the "Blueprint" into fungible and non-fungible.
@@ -279,9 +270,6 @@ pub enum RuntimeSubstate {
     /* Access rules */
     MethodAccessRules(MethodAccessRulesSubstate),
     FunctionAccessRules(FunctionAccessRulesSubstate),
-
-    /* Metadata */
-    Metadata(MetadataSubstate),
 
     /* Royalty */
     ComponentRoyaltyConfig(ComponentRoyaltyConfigSubstate),
@@ -329,7 +317,6 @@ impl RuntimeSubstate {
             RuntimeSubstate::AccessController(value) => {
                 PersistedSubstate::AccessController(value.clone())
             }
-            RuntimeSubstate::Identity(value) => PersistedSubstate::Identity(value.clone()),
 
             /* Node module starts */
             RuntimeSubstate::TypeInfo(value) => PersistedSubstate::TypeInfo(value.clone()),
@@ -339,7 +326,6 @@ impl RuntimeSubstate {
             RuntimeSubstate::FunctionAccessRules(value) => {
                 PersistedSubstate::FunctionAccessRules(value.clone())
             }
-            RuntimeSubstate::Metadata(value) => PersistedSubstate::Metadata(value.clone()),
             RuntimeSubstate::ComponentRoyaltyConfig(value) => {
                 PersistedSubstate::ComponentRoyaltyConfig(value.clone())
             }
@@ -403,7 +389,6 @@ impl RuntimeSubstate {
             }
             RuntimeSubstate::Account(value) => PersistedSubstate::Account(value),
             RuntimeSubstate::AccessController(value) => PersistedSubstate::AccessController(value),
-            RuntimeSubstate::Identity(value) => PersistedSubstate::Identity(value),
 
             /* Node module starts */
             RuntimeSubstate::TypeInfo(value) => PersistedSubstate::TypeInfo(value),
@@ -413,7 +398,6 @@ impl RuntimeSubstate {
             RuntimeSubstate::FunctionAccessRules(value) => {
                 PersistedSubstate::FunctionAccessRules(value)
             }
-            RuntimeSubstate::Metadata(value) => PersistedSubstate::Metadata(value),
             RuntimeSubstate::ComponentRoyaltyConfig(value) => {
                 PersistedSubstate::ComponentRoyaltyConfig(value)
             }
@@ -482,7 +466,6 @@ impl RuntimeSubstate {
                 SubstateRefMut::CurrentTimeRoundedToMinutes(value)
             }
             RuntimeSubstate::MethodAccessRules(value) => SubstateRefMut::MethodAccessRules(value),
-            RuntimeSubstate::Metadata(value) => SubstateRefMut::Metadata(value),
             RuntimeSubstate::ResourceManager(value) => SubstateRefMut::ResourceManager(value),
             RuntimeSubstate::TypeInfo(value) => SubstateRefMut::TypeInfo(value),
             RuntimeSubstate::ComponentState(value) => SubstateRefMut::ComponentState(value),
@@ -540,7 +523,6 @@ impl RuntimeSubstate {
             RuntimeSubstate::TransactionRuntime(value) => SubstateRefMut::TransactionRuntime(value),
             RuntimeSubstate::Account(value) => SubstateRefMut::Account(value),
             RuntimeSubstate::AccessController(value) => SubstateRefMut::AccessController(value),
-            RuntimeSubstate::Identity(value) => SubstateRefMut::Identity(value),
         }
     }
 
@@ -554,7 +536,6 @@ impl RuntimeSubstate {
                 SubstateRef::CurrentTimeRoundedToMinutes(value)
             }
             RuntimeSubstate::MethodAccessRules(value) => SubstateRef::MethodAccessRules(value),
-            RuntimeSubstate::Metadata(value) => SubstateRef::Metadata(value),
             RuntimeSubstate::ResourceManager(value) => SubstateRef::ResourceManager(value),
             RuntimeSubstate::ComponentState(value) => SubstateRef::ComponentState(value),
             RuntimeSubstate::ComponentRoyaltyConfig(value) => {
@@ -605,7 +586,6 @@ impl RuntimeSubstate {
             RuntimeSubstate::TransactionRuntime(value) => SubstateRef::TransactionRuntime(value),
             RuntimeSubstate::Account(value) => SubstateRef::Account(value),
             RuntimeSubstate::AccessController(value) => SubstateRef::AccessController(value),
-            RuntimeSubstate::Identity(value) => SubstateRef::Identity(value),
         }
     }
 
@@ -638,14 +618,6 @@ impl RuntimeSubstate {
             kv_store_entry
         } else {
             panic!("Not a KVEntry");
-        }
-    }
-
-    pub fn metadata(&self) -> &MetadataSubstate {
-        if let RuntimeSubstate::Metadata(metadata) = self {
-            metadata
-        } else {
-            panic!("Not metadata");
         }
     }
 
@@ -685,12 +657,6 @@ impl RuntimeSubstate {
 impl Into<RuntimeSubstate> for MethodAccessRulesSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::MethodAccessRules(self)
-    }
-}
-
-impl Into<RuntimeSubstate> for MetadataSubstate {
-    fn into(self) -> RuntimeSubstate {
-        RuntimeSubstate::Metadata(self)
     }
 }
 
@@ -1033,16 +999,6 @@ impl Into<MethodAccessRulesSubstate> for RuntimeSubstate {
     }
 }
 
-impl Into<MetadataSubstate> for RuntimeSubstate {
-    fn into(self) -> MetadataSubstate {
-        if let RuntimeSubstate::Metadata(substate) = self {
-            substate
-        } else {
-            panic!("Not metadata");
-        }
-    }
-}
-
 impl Into<ValidatorSetSubstate> for RuntimeSubstate {
     fn into(self) -> ValidatorSetSubstate {
         if let RuntimeSubstate::ValidatorSet(substate) = self {
@@ -1108,11 +1064,9 @@ pub enum SubstateRef<'a> {
     CurrentTimeRoundedToMinutes(&'a ClockSubstate),
     MethodAccessRules(&'a MethodAccessRulesSubstate),
     PackageAccessRules(&'a FunctionAccessRulesSubstate),
-    Metadata(&'a MetadataSubstate),
     TransactionRuntime(&'a TransactionRuntimeSubstate),
     Account(&'a AccountSubstate),
     AccessController(&'a AccessControllerSubstate),
-    Identity(&'a IdentitySubstate),
 }
 
 impl<'a> From<SubstateRef<'a>> for &'a VaultInfoSubstate {
@@ -1353,15 +1307,6 @@ impl<'a> From<SubstateRef<'a>> for &'a MethodAccessRulesSubstate {
     }
 }
 
-impl<'a> From<SubstateRef<'a>> for &'a MetadataSubstate {
-    fn from(value: SubstateRef<'a>) -> Self {
-        match value {
-            SubstateRef::Metadata(value) => value,
-            _ => panic!("Not global"),
-        }
-    }
-}
-
 impl<'a> From<SubstateRef<'a>> for &'a TransactionRuntimeSubstate {
     fn from(value: SubstateRef<'a>) -> Self {
         match value {
@@ -1596,7 +1541,6 @@ pub enum SubstateRefMut<'a> {
     Validator(&'a mut ValidatorSubstate),
     CurrentTimeRoundedToMinutes(&'a mut ClockSubstate),
     MethodAccessRules(&'a mut MethodAccessRulesSubstate),
-    Metadata(&'a mut MetadataSubstate),
     ProofInfo(&'a mut ProofInfoSubstate),
     FungibleProof(&'a mut FungibleProof),
     NonFungibleProof(&'a mut NonFungibleProof),
@@ -1606,7 +1550,6 @@ pub enum SubstateRefMut<'a> {
     AuthZone(&'a mut AuthZoneStackSubstate),
     Account(&'a mut AccountSubstate),
     AccessController(&'a mut AccessControllerSubstate),
-    Identity(&'a mut IdentitySubstate),
 }
 
 impl<'a> From<SubstateRefMut<'a>> for &'a mut AuthZoneStackSubstate {
@@ -1749,15 +1692,6 @@ impl<'a> From<SubstateRefMut<'a>> for &'a mut MethodAccessRulesSubstate {
         match value {
             SubstateRefMut::MethodAccessRules(value) => value,
             _ => panic!("Not a logger"),
-        }
-    }
-}
-
-impl<'a> From<SubstateRefMut<'a>> for &'a mut MetadataSubstate {
-    fn from(value: SubstateRefMut<'a>) -> Self {
-        match value {
-            SubstateRefMut::Metadata(value) => value,
-            _ => panic!("Not metadata"),
         }
     }
 }

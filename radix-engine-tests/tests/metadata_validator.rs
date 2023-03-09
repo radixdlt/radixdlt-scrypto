@@ -1,6 +1,7 @@
 use radix_engine::errors::{ModuleError, RuntimeError};
 use radix_engine::system::kernel_modules::auth::AuthError;
 use radix_engine::types::*;
+use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -43,15 +44,20 @@ fn can_set_validator_metadata_with_owner() {
         .set_metadata(
             Address::Component(component_address),
             "name".to_string(),
-            "best package ever!".to_string(),
+            MetadataEntry::Value(MetadataValue::String("best package ever!".to_string())),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![owner_id]);
 
     // Assert
     receipt.expect_commit_success();
-    let metadata = test_runner.get_metadata(Address::Component(component_address));
-    assert_eq!(metadata.get("name").unwrap(), "best package ever!");
+    let value = test_runner
+        .get_metadata(component_address.into(), "name")
+        .expect("Should exist");
+    assert_eq!(
+        value,
+        MetadataEntry::Value(MetadataValue::String("best package ever!".to_string()))
+    );
 }
 
 #[test]
@@ -69,7 +75,7 @@ fn cannot_set_validator_metadata_without_owner() {
         .set_metadata(
             Address::Component(component_address),
             "name".to_string(),
-            "best package ever!".to_string(),
+            MetadataEntry::Value(MetadataValue::String("best package ever!".to_string())),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

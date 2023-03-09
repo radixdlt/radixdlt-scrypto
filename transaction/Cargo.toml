@@ -21,3 +21,6 @@ default = ["std"]
 std = ["sbor/std", "utils/std", "radix-engine-interface/std", "hex/std", "ed25519-dalek/std", "secp256k1/std"]
 alloc = ["sbor/alloc", "utils/alloc", "radix-engine-interface/alloc", "hex/alloc", "ed25519-dalek/alloc", "secp256k1/alloc", "lazy_static/spin_no_std"]
 serde = ["serde/derive"]
+
+[lib]
+bench = false

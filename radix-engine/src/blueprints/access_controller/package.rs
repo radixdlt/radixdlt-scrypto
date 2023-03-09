@@ -11,7 +11,6 @@ use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
-use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{ACCESS_CONTROLLER_PACKAGE, PACKAGE_TOKEN};
@@ -21,6 +20,7 @@ use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::schema::Receiver;
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::*;
+use radix_engine_interface::{api::*, rule};
 use sbor::rust::vec;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -792,8 +792,8 @@ fn access_rule_or(access_rules: Vec<AccessRule>) -> AccessRule {
 // Helpers
 //=========
 
-fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRules {
-    let mut access_rules = AccessRules::new();
+fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
+    let mut access_rules = AccessRulesConfig::new();
 
     // Primary Role Rules
     let primary_group = "primary";
@@ -960,7 +960,7 @@ where
 fn update_access_rules<Y>(
     api: &mut Y,
     receiver: RENodeId,
-    access_rules: AccessRules,
+    access_rules: AccessRulesConfig,
 ) -> Result<(), RuntimeError>
 where
     Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,

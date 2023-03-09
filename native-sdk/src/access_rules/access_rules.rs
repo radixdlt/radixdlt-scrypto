@@ -2,7 +2,7 @@ use radix_engine_interface::api::node_modules::auth::{
     AccessRulesCreateInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
 };
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::resource::AccessRules;
+use radix_engine_interface::blueprints::resource::AccessRulesConfig;
 use radix_engine_interface::constants::ACCESS_RULES_PACKAGE;
 use radix_engine_interface::data::scrypto::model::Own;
 use radix_engine_interface::data::scrypto::*;
@@ -12,7 +12,7 @@ pub struct AccessRulesObject;
 
 impl AccessRulesObject {
     pub fn sys_new<Y, E: Debug + ScryptoDecode>(
-        access_rules: AccessRules,
+        access_rules: AccessRulesConfig,
         api: &mut Y,
     ) -> Result<Own, E>
     where

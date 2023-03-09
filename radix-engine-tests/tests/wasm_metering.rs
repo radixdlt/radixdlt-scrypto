@@ -16,7 +16,7 @@ fn test_loop() {
         single_function_package_schema("Test", "f"),
         BTreeMap::new(),
         BTreeMap::new(),
-        AccessRules::new(),
+        AccessRulesConfig::new(),
     );
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
@@ -42,7 +42,7 @@ fn test_loop_out_of_cost_unit() {
         single_function_package_schema("Test", "f"),
         BTreeMap::new(),
         BTreeMap::new(),
-        AccessRules::new(),
+        AccessRulesConfig::new(),
     );
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 450.into())
@@ -67,7 +67,7 @@ fn test_recursion() {
         single_function_package_schema("Test", "f"),
         BTreeMap::new(),
         BTreeMap::new(),
-        AccessRules::new(),
+        AccessRulesConfig::new(),
     );
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
@@ -91,7 +91,7 @@ fn test_recursion_stack_overflow() {
         single_function_package_schema("Test", "f"),
         BTreeMap::new(),
         BTreeMap::new(),
-        AccessRules::new(),
+        AccessRulesConfig::new(),
     );
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
@@ -119,7 +119,7 @@ fn test_grow_memory() {
         single_function_package_schema("Test", "f"),
         BTreeMap::new(),
         BTreeMap::new(),
-        AccessRules::new(),
+        AccessRulesConfig::new(),
     );
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
@@ -143,7 +143,7 @@ fn test_grow_memory_out_of_cost_unit() {
         single_function_package_schema("Test", "f"),
         BTreeMap::new(),
         BTreeMap::new(),
-        AccessRules::new(),
+        AccessRulesConfig::new(),
     );
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())

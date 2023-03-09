@@ -1,5 +1,5 @@
 use crate::api::types::*;
-use crate::blueprints::resource::AccessRules;
+use crate::blueprints::resource::AccessRulesConfig;
 use crate::data::scrypto::model::*;
 use sbor::rust::prelude::*;
 use scrypto_schema::PackageSchema;
@@ -9,7 +9,7 @@ pub trait ClientPackageApi<E> {
         &mut self,
         code: Vec<u8>,
         schema: PackageSchema,
-        access_rules: AccessRules,
+        access_rules: AccessRulesConfig,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
     ) -> Result<PackageAddress, E>;

@@ -11,6 +11,8 @@ use crate::{
 };
 use radix_engine_interface::blueprints::transaction_runtime::TRANSACTION_RUNTIME_BLUEPRINT;
 use radix_engine_interface::crypto::Hash;
+use sbor::btreemap;
+use sbor::rust::string::ToString;
 
 #[derive(Debug, Clone)]
 pub struct TransactionRuntimeModule {

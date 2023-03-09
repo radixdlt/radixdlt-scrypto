@@ -1,8 +1,10 @@
 use crate::api::types::*;
+use core::cell::RefCell;
 use core::convert::Infallible;
 use radix_engine_common::data::scrypto::model::*;
 use radix_engine_common::data::scrypto::*;
 use sbor::path::SborPathBuf;
+use sbor::rust::cell::Ref;
 use sbor::rust::fmt;
 use sbor::rust::prelude::*;
 use sbor::traversal::TraversalEvent;
@@ -14,6 +16,7 @@ pub struct IndexedScryptoValue {
     bytes: Vec<u8>,
     references: HashSet<RENodeId>,
     owned_nodes: Vec<RENodeId>,
+    scrypto_value: RefCell<Option<ScryptoValue>>,
 }
 
 impl IndexedScryptoValue {
@@ -70,17 +73,35 @@ impl IndexedScryptoValue {
             bytes,
             references,
             owned_nodes,
+            scrypto_value: RefCell::new(None),
         })
+    }
+
+    fn get_scrypto_value(&self) -> Ref<ScryptoValue> {
+        let is_empty = { self.scrypto_value.borrow().is_none() };
+
+        if is_empty {
+            *self.scrypto_value.borrow_mut() = Some(
+                scrypto_decode::<ScryptoValue>(&self.bytes)
+                    .expect("Failed to decode bytes in IndexedScryptoValue"),
+            );
+        }
+
+        Ref::map(self.scrypto_value.borrow(), |v| v.as_ref().unwrap())
     }
 
     pub fn unit() -> Self {
         Self::from_typed(&())
     }
 
-    /// Converts a rust value into `IndexedScryptoValue`, assuming it follows RE semantics.
     pub fn from_typed<T: ScryptoEncode + ?Sized>(value: &T) -> Self {
         let bytes = scrypto_encode(value).expect("Failed to encode trusted Rust value");
         Self::new(bytes).expect("Failed to index trusted Rust value")
+    }
+
+    pub fn from_scrypto_value(value: ScryptoValue) -> Self {
+        let bytes = scrypto_encode(&value).expect("Failed to encode trusted ScryptoValue");
+        Self::new(bytes).expect("Failed to index trusted ScryptoValue")
     }
 
     pub fn from_slice(slice: &[u8]) -> Result<Self, DecodeError> {
@@ -91,13 +112,12 @@ impl IndexedScryptoValue {
         Self::new(vec)
     }
 
-    pub fn from_scrypto_value(value: ScryptoValue) -> Self {
-        let bytes = scrypto_encode(&value).expect("Failed to encode trusted ScryptoValue");
-        Self::new(bytes).expect("Failed to index trusted ScryptoValue")
+    pub fn to_scrypto_value(&self) -> ScryptoValue {
+        self.get_scrypto_value().clone()
     }
 
-    pub fn to_scrypto_value(&self) -> ScryptoValue {
-        scrypto_decode(&self.bytes).expect("Failed to decode bytes in IndexedScryptoValue")
+    pub fn as_scrypto_value(&self) -> Ref<ScryptoValue> {
+        self.get_scrypto_value()
     }
 
     pub fn as_typed<T: ScryptoDecode>(&self) -> Result<T, DecodeError> {
@@ -131,7 +151,7 @@ impl fmt::Debug for IndexedScryptoValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         format_scrypto_value(
             f,
-            &self.to_scrypto_value(),
+            &self.as_scrypto_value(),
             &ScryptoValueDisplayContext::no_context(),
         )
     }
@@ -145,7 +165,7 @@ impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for IndexedScryptoVal
         f: &mut F,
         context: &ScryptoValueDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
-        format_scrypto_value(f, &self.to_scrypto_value(), context)
+        format_scrypto_value(f, &self.as_scrypto_value(), context)
     }
 }
 

@@ -235,14 +235,11 @@ impl<'s> Track<'s> {
         offset: &SubstateOffset,
     ) -> SubstateRef {
         let runtime_substate = match (node_id, offset) {
-            (
-                RENodeId::KeyValueStore(..),
-                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
-            )
+            (_, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)))
             | (
                 RENodeId::NonFungibleStore(..),
                 SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..)),
-            ) => self.read_key_value(node_id, offset),
+            ) => self.read_key_value(node_id, module_id, offset),
             _ => {
                 let substate_id = SubstateId(node_id, module_id, offset.clone());
                 &self
@@ -262,16 +259,12 @@ impl<'s> Track<'s> {
         offset: &SubstateOffset,
     ) -> SubstateRefMut {
         let runtime_substate = match (node_id, module_id, offset) {
-            (
-                RENodeId::KeyValueStore(..),
-                NodeModuleId::SELF,
-                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
-            )
+            (_, _, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)))
             | (
                 RENodeId::NonFungibleStore(..),
                 NodeModuleId::SELF,
                 SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..)),
-            ) => self.read_key_value_mut(node_id, offset),
+            ) => self.read_key_value_mut(node_id, module_id, offset),
             _ => {
                 let substate_id = SubstateId(node_id, module_id, offset.clone());
                 &mut self
@@ -305,13 +298,18 @@ impl<'s> Track<'s> {
     }
 
     /// Returns the value of a key value pair
-    fn read_key_value(&mut self, node_id: RENodeId, offset: &SubstateOffset) -> &RuntimeSubstate {
+    fn read_key_value(
+        &mut self,
+        node_id: RENodeId,
+        module_id: NodeModuleId,
+        offset: &SubstateOffset,
+    ) -> &RuntimeSubstate {
         match (node_id, offset) {
             (
                 RENodeId::NonFungibleStore(..),
                 SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..)),
             ) => {
-                let substate_id = SubstateId(node_id, NodeModuleId::SELF, offset.clone());
+                let substate_id = SubstateId(node_id, module_id, offset.clone());
                 if !self.loaded_substates.contains_key(&substate_id) {
                     let output = self.load_substate(&substate_id);
                     let (substate, version) = output
@@ -333,11 +331,8 @@ impl<'s> Track<'s> {
 
                 &self.loaded_substates.get(&substate_id).unwrap().substate
             }
-            (
-                RENodeId::KeyValueStore(..),
-                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
-            ) => {
-                let substate_id = SubstateId(node_id, NodeModuleId::SELF, offset.clone());
+            (_, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))) => {
+                let substate_id = SubstateId(node_id, module_id, offset.clone());
                 if !self.loaded_substates.contains_key(&substate_id) {
                     let output = self.load_substate(&substate_id);
                     let (substate, version) = output
@@ -369,6 +364,7 @@ impl<'s> Track<'s> {
     fn read_key_value_mut(
         &mut self,
         node_id: RENodeId,
+        module_id: NodeModuleId,
         offset: &SubstateOffset,
     ) -> &mut RuntimeSubstate {
         match (node_id, offset) {
@@ -376,7 +372,7 @@ impl<'s> Track<'s> {
                 RENodeId::NonFungibleStore(..),
                 SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..)),
             ) => {
-                let substate_id = SubstateId(node_id, NodeModuleId::SELF, offset.clone());
+                let substate_id = SubstateId(node_id, module_id, offset.clone());
                 if !self.loaded_substates.contains_key(&substate_id) {
                     let output = self.load_substate(&substate_id);
                     let (substate, version) = output
@@ -402,11 +398,8 @@ impl<'s> Track<'s> {
                     .unwrap()
                     .substate
             }
-            (
-                RENodeId::KeyValueStore(..),
-                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
-            ) => {
-                let substate_id = SubstateId(node_id, NodeModuleId::SELF, offset.clone());
+            (_, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))) => {
+                let substate_id = SubstateId(node_id, module_id, offset.clone());
                 if !self.loaded_substates.contains_key(&substate_id) {
                     let output = self.load_substate(&substate_id);
                     let (substate, version) = output

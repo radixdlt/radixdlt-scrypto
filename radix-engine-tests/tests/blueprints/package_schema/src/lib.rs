@@ -16,7 +16,7 @@ mod schema_component {
         ) -> ComponentAddress {
             let component = Self {}.instantiate();
             component.globalize_with_access_rules(
-                AccessRules::new()
+                AccessRulesConfig::new()
                     .method("no_method", rule!(require("something")), rule!(deny_all))
                     .default(rule!(allow_all), AccessRule::DenyAll),
             )

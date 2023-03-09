@@ -117,6 +117,11 @@ pub enum Instruction {
         value: Value,
     },
 
+    RemoveMetadata {
+        entity_address: Value,
+        key: Value,
+    },
+
     SetPackageRoyaltyConfig {
         package_address: Value,
         royalty_config: Value,

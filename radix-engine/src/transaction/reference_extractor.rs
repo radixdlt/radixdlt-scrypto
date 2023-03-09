@@ -137,7 +137,8 @@ pub fn extract_refs_from_instruction(
         | Instruction::DropProof { .. }
         | Instruction::DropAllProofs { .. }
         | Instruction::BurnResource { .. }
-        | Instruction::AssertAccessRule { .. } => {}
+        | Instruction::AssertAccessRule { .. }
+        | Instruction::RemoveMetadata { .. } => {}
     }
 }
 
