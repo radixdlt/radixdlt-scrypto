@@ -1,7 +1,7 @@
 use super::PackageCodeTypeSubstate;
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::kernel_modules::costing::FIXED_HIGH_FEE;
+use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_MEDIUM_FEE};
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::{
@@ -12,7 +12,7 @@ use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use crate::wasm::{PrepareError, WasmValidator};
 use core::fmt::Debug;
-use native_sdk::resource::ResourceManager;
+use native_sdk::resource::{ResourceManager, Vault};
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::{ClientApi, LockFlags};
@@ -26,6 +26,8 @@ pub enum PackageError {
 
     InvalidBlueprintWasm(SchemaValidationError),
     TooManySubstateSchemas,
+
+    RoyaltyNotEnabled,
 }
 
 fn validate_package_schema(schema: &PackageSchema) -> Result<(), PackageError> {
@@ -270,20 +272,25 @@ impl PackageNativePackage {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
 
-        // TODO: auth check
+        // FIXME: double check if auth is set up for any package
+
         let handle = api.sys_lock_substate(
             receiver,
-            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
+            SubstateOffset::Package(PackageOffset::Royalty),
             LockFlags::MUTABLE,
         )?;
 
-        let package_royalty: &mut PackageRoyaltySubstate =
-            api.kernel_get_substate_ref_mut(handle)?;
-        package_royalty_config.blueprint_royalty_configs = input.royalty_config;
+        let substate: &mut PackageRoyaltySubstate = api.kernel_get_substate_ref_mut(handle)?;
 
-        api.kernel_drop_lock(handle)?;
-
-        Ok(IndexedScryptoValue::from_typed(&()))
+        if substate.royalty_vault.is_none() {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::PackageError(PackageError::RoyaltyNotEnabled),
+            ));
+        } else {
+            substate.blueprint_royalty_configs = input.royalty_config;
+            api.kernel_drop_lock(handle)?;
+            Ok(IndexedScryptoValue::from_typed(&()))
+        }
     }
 
     pub(crate) fn claim_royalty<Y>(
@@ -304,16 +311,16 @@ impl PackageNativePackage {
             LockFlags::MUTABLE,
         )?;
 
-        let substate: &mut PackageRoyaltyAccumulatorSubstate =
-            api.kernel_get_substate_ref_mut(handle)?;
-        let royalty_vault = substate.royalty_vault.clone();
-        let mut vault = Vault(
-            royalty_vault
-                .expect("FIXME: cleanup royalty vault madness")
-                .vault_id(),
-        );
-        let bucket = vault.sys_take_all(api)?;
+        let substate: &mut PackageRoyaltySubstate = api.kernel_get_substate_ref_mut(handle)?;
 
-        Ok(IndexedScryptoValue::from_typed(&bucket))
+        if let Some(vault) = substate.royalty_vault.clone() {
+            let mut vault = Vault(vault.vault_id());
+            let bucket = vault.sys_take_all(api)?;
+            Ok(IndexedScryptoValue::from_typed(&bucket))
+        } else {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::PackageError(PackageError::RoyaltyNotEnabled),
+            ));
+        }
     }
 }
