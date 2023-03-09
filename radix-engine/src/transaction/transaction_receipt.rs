@@ -1,3 +1,4 @@
+use crate::blueprints::epoch_manager::{EpochChangeEvent, Validator};
 use crate::errors::*;
 use crate::state_manager::StateDiff;
 use crate::system::kernel_modules::costing::FeeSummary;
@@ -53,14 +54,6 @@ impl TransactionResult {
             _ => false,
         }
     }
-
-    pub fn expect_commit(&self) -> &CommitResult {
-        match self {
-            TransactionResult::Commit(c) => c,
-            TransactionResult::Reject(_) => panic!("Transaction was rejected"),
-            TransactionResult::Abort(_) => panic!("Transaction was aborted"),
-        }
-    }
 }
 
 #[derive(Debug, Clone, ScryptoSbor)]
@@ -74,6 +67,28 @@ pub struct CommitResult {
     pub application_logs: Vec<(Level, String)>,
 }
 
+impl CommitResult {
+    pub fn next_epoch(&self) -> Option<(BTreeMap<ComponentAddress, Validator>, u64)> {
+        // FIXME: schema - update
+        let expected_schema_hash = hash("EpochChangeEvent");
+        self.application_events
+            .iter()
+            .find(|(identifier, _)| match identifier {
+                EventTypeIdentifier(
+                    RENodeId::GlobalObject(
+                        Address::Package(EPOCH_MANAGER_PACKAGE)
+                        | Address::Component(ComponentAddress::EpochManager(..)),
+                    ),
+                    NodeModuleId::SELF,
+                    schema_hash,
+                ) if *schema_hash == expected_schema_hash => true,
+                _ => false,
+            })
+            .map(|(_, data)| scrypto_decode::<EpochChangeEvent>(data).expect("Impossible Case!"))
+            .map(|event| (event.validators, event.epoch))
+    }
+}
+
 /// Captures whether a transaction's commit outcome is Success or Failure
 #[derive(Debug, Clone, ScryptoSbor)]
 pub enum TransactionOutcome {
@@ -82,6 +97,10 @@ pub enum TransactionOutcome {
 }
 
 impl TransactionOutcome {
+    pub fn is_success(&self) -> bool {
+        matches!(self, Self::Success(_))
+    }
+
     pub fn expect_success(&self) -> &Vec<InstructionOutput> {
         match self {
             TransactionOutcome::Success(results) => results,
@@ -152,14 +171,10 @@ pub enum AbortReason {
 #[derive(Clone, ScryptoSbor)]
 pub struct TransactionReceipt {
     pub result: TransactionResult,
-    pub execution: TransactionExecutionTrace,
+    pub execution_trace: TransactionExecutionTrace,
 }
 
 impl TransactionReceipt {
-    pub fn is_commit(&self) -> bool {
-        matches!(self.result, TransactionResult::Commit(_))
-    }
-
     pub fn is_commit_success(&self) -> bool {
         matches!(
             self.result,
@@ -184,9 +199,14 @@ impl TransactionReceipt {
         matches!(self.result, TransactionResult::Reject(_))
     }
 
-    pub fn expect_commit(&self) -> &CommitResult {
+    pub fn expect_commit(&self, success: bool) -> &CommitResult {
         match &self.result {
-            TransactionResult::Commit(c) => c,
+            TransactionResult::Commit(c) => {
+                if c.outcome.is_success() != success {
+                    panic!("Transaction outcome (success or not) does not match")
+                }
+                c
+            }
             TransactionResult::Reject(_) => panic!("Transaction was rejected"),
             TransactionResult::Abort(_) => panic!("Transaction was aborted"),
         }
@@ -283,17 +303,17 @@ impl TransactionReceipt {
     }
 
     pub fn new_package_addresses(&self) -> &Vec<PackageAddress> {
-        let commit = self.expect_commit();
+        let commit = self.expect_commit(true);
         &commit.entity_changes.new_package_addresses
     }
 
     pub fn new_component_addresses(&self) -> &Vec<ComponentAddress> {
-        let commit = self.expect_commit();
+        let commit = self.expect_commit(true);
         &commit.entity_changes.new_component_addresses
     }
 
     pub fn new_resource_addresses(&self) -> &Vec<ResourceAddress> {
-        let commit = self.expect_commit();
+        let commit = self.expect_commit(true);
         &commit.entity_changes.new_resource_addresses
     }
 }

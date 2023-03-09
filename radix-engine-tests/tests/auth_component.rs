@@ -32,7 +32,7 @@ fn cannot_make_cross_component_process_call_dataout_authorization() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
     let secured_component = receipt
-        .expect_commit()
+        .expect_commit(true)
         .entity_changes
         .new_component_addresses[0];
 
@@ -48,7 +48,7 @@ fn cannot_make_cross_component_process_call_dataout_authorization() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
     let my_component = receipt
-        .expect_commit()
+        .expect_commit(true)
         .entity_changes
         .new_component_addresses[0];
 
@@ -94,7 +94,7 @@ fn can_make_cross_component_process_call_data_authorization() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
     let secured_component = receipt
-        .expect_commit()
+        .expect_commit(true)
         .entity_changes
         .new_component_addresses[0];
 
@@ -110,7 +110,7 @@ fn can_make_cross_component_process_call_data_authorization() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
     let my_component = receipt
-        .expect_commit()
+        .expect_commit(true)
         .entity_changes
         .new_component_addresses[0];
 
@@ -171,7 +171,7 @@ fn root_auth_zone_does_not_carry_over_cross_component_calls() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
     let secured_component = receipt
-        .expect_commit()
+        .expect_commit(true)
         .entity_changes
         .new_component_addresses[0];
 
@@ -187,7 +187,7 @@ fn root_auth_zone_does_not_carry_over_cross_component_calls() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
     let my_component = receipt
-        .expect_commit()
+        .expect_commit(true)
         .entity_changes
         .new_component_addresses[0];
 

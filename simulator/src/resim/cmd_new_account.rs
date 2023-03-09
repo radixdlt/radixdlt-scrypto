@@ -58,7 +58,7 @@ impl NewAccount {
         let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 
         if let Some(ref receipt) = receipt {
-            let commit_result = receipt.result.expect_commit();
+            let commit_result = receipt.expect_commit(true);
             commit_result
                 .outcome
                 .success_or_else(|err| TransactionFailed(err.clone()))?;
@@ -107,7 +107,7 @@ impl NewAccount {
             )?
             .unwrap();
             let resource_address = receipt
-                .expect_commit()
+                .expect_commit(true)
                 .entity_changes
                 .new_resource_addresses[0];
             let owner_badge =

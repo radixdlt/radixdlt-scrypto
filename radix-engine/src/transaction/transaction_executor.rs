@@ -216,7 +216,7 @@ where
                 Ok(fee_reserve) => fee_reserve,
                 Err(err) => {
                     return TransactionReceipt {
-                        execution: TransactionExecutionTrace {
+                        execution_trace: TransactionExecutionTrace {
                             execution_traces: vec![],
                             resource_changes: index_map_new(),
                             resources_usage: ResourcesUsage::default(),
@@ -320,7 +320,7 @@ where
         // Produce final receipt
         let receipt = TransactionReceipt {
             result: transaction_result,
-            execution: TransactionExecutionTrace {
+            execution_trace: TransactionExecutionTrace {
                 execution_traces,
                 resource_changes,
                 resources_usage,

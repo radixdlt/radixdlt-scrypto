@@ -51,7 +51,7 @@ mod multi_threaded_test {
                     &TestTransaction::new(manifest.clone(), 1, DEFAULT_COST_UNIT_LIMIT)
                         .get_executable(vec![NonFungibleGlobalId::from_public_key(&public_key)]),
                 )
-                .expect_commit()
+                .expect_commit(true)
                 .entity_changes
                 .new_component_addresses[0];
 
@@ -72,7 +72,7 @@ mod multi_threaded_test {
                     &TestTransaction::new(manifest.clone(), 1, DEFAULT_COST_UNIT_LIMIT)
                         .get_executable(vec![NonFungibleGlobalId::from_public_key(&public_key)]),
                 )
-                .expect_commit();
+                .expect_commit(true);
 
                 account
             })
@@ -100,7 +100,7 @@ mod multi_threaded_test {
                 &TestTransaction::new(manifest.clone(), nonce, DEFAULT_COST_UNIT_LIMIT)
                     .get_executable(vec![NonFungibleGlobalId::from_public_key(&public_key)]),
             )
-            .expect_commit();
+            .expect_commit(true);
         }
 
         // Create a transfer manifest

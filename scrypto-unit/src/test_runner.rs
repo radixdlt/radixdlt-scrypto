@@ -416,7 +416,7 @@ impl TestRunner {
         receipt.expect_commit_success();
 
         let account_component = receipt
-            .expect_commit()
+            .expect_commit(true)
             .entity_changes
             .new_component_addresses[0];
 
@@ -534,7 +534,7 @@ impl TestRunner {
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
         let address = receipt
-            .expect_commit()
+            .expect_commit(true)
             .entity_changes
             .new_component_addresses[0];
         address
@@ -555,7 +555,10 @@ impl TestRunner {
 
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
-        receipt.expect_commit().entity_changes.new_package_addresses[0]
+        receipt
+            .expect_commit(true)
+            .entity_changes
+            .new_package_addresses[0]
     }
 
     pub fn publish_package_with_owner(
@@ -571,7 +574,10 @@ impl TestRunner {
 
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
-        receipt.expect_commit().entity_changes.new_package_addresses[0]
+        receipt
+            .expect_commit(true)
+            .entity_changes
+            .new_package_addresses[0]
     }
 
     pub fn compile_and_publish<P: AsRef<Path>>(&mut self, package_dir: P) -> PackageAddress {
@@ -751,7 +757,7 @@ impl TestRunner {
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
         receipt
-            .expect_commit()
+            .expect_commit(true)
             .entity_changes
             .new_resource_addresses[0]
     }
@@ -897,7 +903,7 @@ impl TestRunner {
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
         receipt
-            .expect_commit()
+            .expect_commit(true)
             .entity_changes
             .new_resource_addresses[0]
     }
@@ -923,7 +929,7 @@ impl TestRunner {
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
         receipt
-            .expect_commit()
+            .expect_commit(true)
             .entity_changes
             .new_resource_addresses[0]
     }
@@ -950,7 +956,7 @@ impl TestRunner {
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
         receipt
-            .expect_commit()
+            .expect_commit(true)
             .entity_changes
             .new_resource_addresses[0]
     }

@@ -26,7 +26,7 @@ fn can_emit_basic_event_from_scrypto() {
     // Assert
     {
         receipt.expect_commit_success();
-        let mut application_events = receipt.expect_commit().application_events.clone();
+        let mut application_events = receipt.expect_commit(true).application_events.clone();
         application_events.remove(0); // Removing the first event which is the lock fee against the faucet.
 
         let expected_events = vec![(

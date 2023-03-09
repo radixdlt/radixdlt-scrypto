@@ -56,7 +56,6 @@ use clap::{Parser, Subcommand};
 use radix_engine::kernel::interpreters::ScryptoInterpreter;
 use radix_engine::ledger::ReadableSubstateStore;
 use radix_engine::transaction::execute_and_commit_transaction;
-use radix_engine::transaction::CommitResult;
 use radix_engine::transaction::TransactionOutcome;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::transaction::TransactionResult;
@@ -250,30 +249,21 @@ pub fn handle_manifest<O: std::io::Write>(
 }
 
 pub fn process_receipt(receipt: TransactionReceipt) -> Result<TransactionReceipt, Error> {
-    match receipt.result {
+    match &receipt.result {
         TransactionResult::Commit(commit) => {
             let mut configs = get_configs()?;
             configs.nonce = get_nonce()? + 1;
             set_configs(&configs)?;
 
-            match commit.outcome {
-                TransactionOutcome::Failure(error) => Err(Error::TransactionFailed(error)),
-                TransactionOutcome::Success(output) => Ok(TransactionReceipt {
-                    execution: receipt.execution,
-                    result: TransactionResult::Commit(CommitResult {
-                        outcome: TransactionOutcome::Success(output),
-                        state_updates: commit.state_updates,
-                        entity_changes: commit.entity_changes,
-                        resource_changes: commit.resource_changes,
-                        application_logs: commit.application_logs,
-                        application_events: commit.application_events,
-                        next_epoch: commit.next_epoch,
-                    }),
-                }),
+            match &commit.outcome {
+                TransactionOutcome::Failure(error) => Err(Error::TransactionFailed(error.clone())),
+                TransactionOutcome::Success(_) => Ok(receipt),
             }
         }
-        TransactionResult::Reject(rejection) => Err(Error::TransactionRejected(rejection.error)),
-        TransactionResult::Abort(result) => Err(Error::TransactionAborted(result.reason)),
+        TransactionResult::Reject(rejection) => {
+            Err(Error::TransactionRejected(rejection.error.clone()))
+        }
+        TransactionResult::Abort(result) => Err(Error::TransactionAborted(result.reason.clone())),
     }
 }
 

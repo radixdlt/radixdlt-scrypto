@@ -634,8 +634,7 @@ where
             &genesis_transaction.get_executable(vec![AuthAddresses::system_role()]),
         );
 
-        let commit_result = transaction_receipt.expect_commit();
-        commit_result.outcome.expect_success();
+        let commit_result = transaction_receipt.expect_commit(true);
         commit_result.state_updates.commit(substate_store);
 
         Some(transaction_receipt)
@@ -675,10 +674,9 @@ mod tests {
         println!("{:?}", transaction_receipt);
 
         transaction_receipt.expect_commit_success();
-        let commit_result = transaction_receipt.expect_commit();
+        let commit_result = transaction_receipt.expect_commit(true);
         commit_result
-            .next_epoch
-            .as_ref()
+            .next_epoch()
             .expect("There should be a new epoch.");
 
         let genesis_receipt = genesis_result(&transaction_receipt);
@@ -708,10 +706,11 @@ mod tests {
         );
 
         transaction_receipt.expect_commit_success();
-        let commit_result = transaction_receipt.result.expect_commit();
+        let commit_result = transaction_receipt.expect_commit(true);
         commit_result.state_updates.commit(&mut substate_store);
 
-        assert!(commit_result
+        assert!(transaction_receipt
+            .execution_trace
             .resource_changes
             .iter()
             .flat_map(|(_, rc)| rc)

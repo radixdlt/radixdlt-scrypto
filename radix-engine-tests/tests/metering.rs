@@ -59,8 +59,7 @@ fn test_basic_transfer() {
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key1)],
     );
-
-    receipt.expect_commit_success();
+    let commit_result = receipt.expect_commit(true);
 
     // Assert
     // NOTE: If this test fails, it should print out the actual fee table in the error logs.
@@ -79,7 +78,7 @@ fn test_basic_transfer() {
         + 1320 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
         + 16000, /* WriteSubstate */
-        receipt.execution.fee_summary.total_cost_units_consumed
+        commit_result.fee_summary.total_cost_units_consumed
     );
 }
 
@@ -194,6 +193,7 @@ fn test_radiswap() {
             - (btc_init_amount * eth_init_amount)
                 / (btc_init_amount + (btc_to_swap - btc_to_swap * fee_amount))
     );
+    let commit_result = receipt.expect_commit(true);
 
     // NOTE: If this test fails, it should print out the actual fee table in the error logs.
     // Or you can run just this test with the below:
@@ -212,7 +212,7 @@ fn test_radiswap() {
         + 100000 /* TxSignatureVerification */
         + 38000 /* WriteSubstate */
         + 2, /* royalty in cost units */
-        receipt.execution.fee_summary.total_cost_units_consumed
+        commit_result.fee_summary.total_cost_units_consumed
     );
 }
 
@@ -292,15 +292,15 @@ fn test_flash_loan() {
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&pk3)],
     );
-    receipt.expect_commit_success();
+    let commit_result = receipt.expect_commit(true);
     let new_balance = test_runner.account_balance(account3, RADIX_TOKEN).unwrap();
     assert!(test_runner
         .account_balance(account3, promise_token_address)
         .is_none());
     assert_eq!(
         old_balance - new_balance,
-        receipt.execution.fee_summary.total_execution_cost_xrd
-            + receipt.execution.fee_summary.total_royalty_cost_xrd
+        commit_result.fee_summary.total_execution_cost_xrd
+            + commit_result.fee_summary.total_royalty_cost_xrd
             + (repay_amount - loan_amount)
     );
 
@@ -321,7 +321,7 @@ fn test_flash_loan() {
         + 100000 /* TxSignatureVerification */
         + 66500 /* WriteSubstate */
         + 2, /* royalty in cost units */
-        receipt.execution.fee_summary.total_cost_units_consumed
+        commit_result.fee_summary.total_cost_units_consumed
     );
 }
 
@@ -354,12 +354,12 @@ fn test_publish_large_package() {
 
     let (receipt, _) = execute_with_time_logging(&mut test_runner, manifest, vec![]);
 
-    receipt.expect_commit_success();
+    let commit_result = receipt.expect_commit(true);
 
     // Assert
     assert!(
-        receipt.execution.fee_summary.total_cost_units_consumed > 60000000
-            && receipt.execution.fee_summary.total_cost_units_consumed < 70000000
+        commit_result.fee_summary.total_cost_units_consumed > 60000000
+            && commit_result.fee_summary.total_cost_units_consumed < 70000000
     );
 }
 
@@ -394,7 +394,7 @@ fn should_be_able_run_large_manifest() {
     );
 
     // Assert
-    receipt.expect_commit_success();
+    receipt.expect_commit(true);
 }
 
 #[test]
@@ -419,7 +419,7 @@ fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
     );
 
     // Assert
-    receipt.expect_commit_success();
+    receipt.expect_commit(true);
 }
 
 fn setup_test_runner_with_fee_blueprint_component() -> (TestRunner, ComponentAddress) {
@@ -440,10 +440,8 @@ fn setup_test_runner_with_fee_blueprint_component() -> (TestRunner, ComponentAdd
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-    let component_address = receipt1
-        .expect_commit()
-        .entity_changes
-        .new_component_addresses[0];
+    let commit_result = receipt1.expect_commit(true);
+    let component_address = commit_result.entity_changes.new_component_addresses[0];
 
     (test_runner, component_address)
 }
