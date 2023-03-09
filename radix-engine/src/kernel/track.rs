@@ -617,7 +617,6 @@ impl<'s> FinalizingTrack<'s> {
         let mut required = fee_summary.total_execution_cost_xrd
             + fee_summary.total_royalty_cost_xrd
             - fee_summary.total_bad_debt_xrd;
-        let mut fees: LiquidFungibleResource = LiquidFungibleResource::default();
         for (vault_id, mut locked, contingent) in fee_summary.locked_fees.iter().cloned().rev() {
             let amount = if contingent {
                 if is_success {
@@ -629,11 +628,9 @@ impl<'s> FinalizingTrack<'s> {
                 Decimal::min(locked.amount(), required)
             };
 
-            // Deduct fee required
-            required = required - amount;
-
-            // Collect fees into collector
-            fees.put(locked.take_by_amount(amount).unwrap()).unwrap();
+            // Take fees
+            locked.take_by_amount(amount).unwrap();
+            required -= amount;
 
             // Refund overpayment
             let substate_id = SubstateId(
@@ -649,6 +646,7 @@ impl<'s> FinalizingTrack<'s> {
             // Record final payments
             *actual_fee_payments.entry(vault_id).or_default() += amount;
         }
+
         // TODO: update XRD total supply or disable it
         // TODO: pay tips to the lead validator
 

@@ -1374,6 +1374,13 @@ impl<'a> SubstateRef<'a> {
                 }
                 (references, Vec::new())
             }
+            SubstateRef::PackageRoyalty(substate) => {
+                let mut owns = Vec::new();
+                if let Some(vault) = substate.royalty_vault {
+                    owns.push(RENodeId::Object(vault.id()));
+                }
+                (HashSet::new(), owns)
+            }
             SubstateRef::TypeInfo(substate) => {
                 let mut references = HashSet::new();
                 references.insert(RENodeId::GlobalObject(substate.package_address.into()));

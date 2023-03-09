@@ -93,6 +93,7 @@ impl VisibilityProperties {
                 SubstateOffset::Package(PackageOffset::Info) => read_only,
                 SubstateOffset::Package(PackageOffset::CodeType) => read_only,
                 SubstateOffset::Package(PackageOffset::Code) => read_only,
+                SubstateOffset::Package(PackageOffset::Royalty) => read_only,
                 SubstateOffset::Component(ComponentOffset::State0) => read_only,
                 SubstateOffset::PackageAccessRules => read_only,
                 SubstateOffset::TypeInfo(_) => read_only,

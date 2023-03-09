@@ -112,7 +112,7 @@ pub enum NodeModuleId {
     TypeInfo,
     Metadata,
     AccessRules,
-    AccessRules1,
+    AccessRules1, // TODO: remove
     ComponentRoyalty,
     FunctionAccessRules, // TODO: remove
 }
