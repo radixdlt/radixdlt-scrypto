@@ -4,12 +4,9 @@ use crate::*;
 use sbor::rust::fmt;
 use sbor::rust::prelude::*;
 
-pub const INTERNAL_OBJECT_B0: u8 = 3u8;
-pub const INTERNAL_OBJECT_NORMAL_COMPONENT_B1: u8 = 0u8;
-pub const INTERNAL_OBJECT_VAULT_B1: u8 = 1u8;
-
-pub const INTERNAL_KV_STORE_B0: u8 = 4u8;
-pub const INTERNAL_KV_STORE_B1: u8 = 0u8;
+pub const INTERNAL_OBJECT_NORMAL_COMPONENT_ID: u8 = 0x0d;
+pub const INTERNAL_OBJECT_VAULT_ID: u8 = 0x0e;
+pub const INTERNAL_KV_STORE_ID: u8 = 0x0f;
 
 // TODO: Remove when better type system implemented
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor)]
@@ -59,14 +56,14 @@ impl fmt::Debug for RENodeId {
     }
 }
 
-impl Into<[u8; 36]> for RENodeId {
-    fn into(self) -> [u8; 36] {
+impl Into<[u8; OBJECT_ID_LENGTH]> for RENodeId {
+    fn into(self) -> [u8; OBJECT_ID_LENGTH] {
         match self {
             RENodeId::KeyValueStore(id) => id,
             RENodeId::NonFungibleStore(id) => id,
             RENodeId::Object(id) => id,
-            RENodeId::TransactionRuntime => [4u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
-            RENodeId::AuthZoneStack => [5u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
+            RENodeId::TransactionRuntime => [4u8; OBJECT_ID_LENGTH], // TODO: Remove, this is here to preserve receiver in invocation for now
+            RENodeId::AuthZoneStack => [5u8; OBJECT_ID_LENGTH], // TODO: Remove, this is here to preserve receiver in invocation for now
             _ => panic!("Not a stored id: {:?}", self),
         }
     }

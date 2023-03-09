@@ -8,7 +8,6 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use utils::ContextualDisplay;
 
-
 pub const ENTITY_BYTES_LENGTH: usize = 1;
 pub const ADDRESS_HASH_LENGTH: usize = 26;
 pub const ADDRESS_LENGTH: usize = ENTITY_BYTES_LENGTH + ADDRESS_HASH_LENGTH;

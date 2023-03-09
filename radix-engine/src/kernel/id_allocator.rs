@@ -118,11 +118,14 @@ impl IdAllocator {
         }
     }
 
-    fn next_object_id(&mut self, node_id: [u8; 2]) -> Result<[u8; 36], IdAllocationError> {
-        let mut buf = [0u8; 36];
-        (&mut buf[0..2]).copy_from_slice(&node_id);
-        (&mut buf[2..32]).copy_from_slice(&self.transaction_hash.0[0..30]);
-        (&mut buf[32..]).copy_from_slice(&self.next()?.to_le_bytes());
+    fn next_object_id(
+        &mut self,
+        entity_id: u8,
+    ) -> Result<[u8; OBJECT_ID_LENGTH], IdAllocationError> {
+        let mut buf = [0u8; OBJECT_ID_LENGTH];
+        buf[0] = entity_id;
+        (&mut buf[1..27]).copy_from_slice(&self.transaction_hash.0[0..26]);
+        (&mut buf[27..]).copy_from_slice(&self.next()?.to_le_bytes());
         Ok(buf)
     }
 
@@ -210,20 +213,20 @@ impl IdAllocator {
     }
 
     pub fn new_object_id(&mut self) -> Result<ObjectId, IdAllocationError> {
-        self.next_object_id([INTERNAL_OBJECT_B0, INTERNAL_OBJECT_NORMAL_COMPONENT_B1])
+        self.next_object_id(INTERNAL_OBJECT_NORMAL_COMPONENT_ID)
     }
 
     pub fn new_vault_id(&mut self) -> Result<ObjectId, IdAllocationError> {
-        self.next_object_id([INTERNAL_OBJECT_B0, INTERNAL_OBJECT_VAULT_B1])
+        self.next_object_id(INTERNAL_OBJECT_VAULT_ID)
     }
 
     /// Creates a new key value store ID.
     pub fn new_kv_store_id(&mut self) -> Result<KeyValueStoreId, IdAllocationError> {
-        self.next_object_id([INTERNAL_KV_STORE_B0, INTERNAL_KV_STORE_B1])
+        self.next_object_id(INTERNAL_KV_STORE_ID)
     }
 
     /// Creates a new non-fungible store ID.
     pub fn new_nf_store_id(&mut self) -> Result<NonFungibleStoreId, IdAllocationError> {
-        self.next_object_id([INTERNAL_KV_STORE_B0, INTERNAL_KV_STORE_B1])
+        self.next_object_id(INTERNAL_KV_STORE_ID)
     }
 }

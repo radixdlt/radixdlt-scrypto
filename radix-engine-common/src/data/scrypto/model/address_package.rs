@@ -1,9 +1,9 @@
-use radix_engine_common::data::scrypto::model::*;
 use crate::address::{AddressDisplayContext, AddressError, EntityType, NO_NETWORK};
 use crate::data::manifest::ManifestCustomValueKind;
 use crate::data::scrypto::*;
 use crate::well_known_scrypto_custom_type;
 use crate::*;
+use radix_engine_common::data::scrypto::model::*;
 use sbor::rust::fmt;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -75,7 +75,11 @@ well_known_scrypto_custom_type!(
     PACKAGE_ADDRESS_ID
 );
 
-manifest_type!(PackageAddress, ManifestCustomValueKind::Address, ADDRESS_LENGTH);
+manifest_type!(
+    PackageAddress,
+    ManifestCustomValueKind::Address,
+    ADDRESS_LENGTH
+);
 
 //========
 // text
