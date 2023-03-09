@@ -283,23 +283,22 @@ impl TestRunner {
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
         if let Some(output) = self.substate_store.get_substate(&SubstateId(
             RENodeId::GlobalObject(package_address.into()),
-            NodeModuleId::PackageRoyalty,
-            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
+            NodeModuleId::SELF,
+            SubstateOffset::Package(PackageOffset::Royalty),
         )) {
-            let royalty_vault: Own = output
+            output
                 .substate
-                .package_royalty_accumulator()
+                .package_royalty()
                 .royalty_vault
-                .expect("FIXME: cleanup royalty vault mess")
-                .clone();
-
-            self.substate_store
-                .get_substate(&SubstateId(
-                    RENodeId::Object(royalty_vault.vault_id()),
-                    NodeModuleId::SELF,
-                    SubstateOffset::Vault(VaultOffset::LiquidFungible),
-                ))
-                .map(|mut output| output.substate.vault_liquid_fungible_mut().amount())
+                .and_then(|vault| {
+                    self.substate_store
+                        .get_substate(&SubstateId(
+                            RENodeId::Object(vault.vault_id()),
+                            NodeModuleId::SELF,
+                            SubstateOffset::Vault(VaultOffset::LiquidFungible),
+                        ))
+                        .map(|mut output| output.substate.vault_liquid_fungible_mut().amount())
+                })
         } else {
             None
         }
