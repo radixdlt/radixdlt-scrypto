@@ -148,7 +148,7 @@ impl fmt::Debug for IndexedScryptoValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         format_scrypto_value(
             f,
-            &self.to_scrypto_value(),
+            &self.as_scrypto_value(),
             &ScryptoValueDisplayContext::no_context(),
         )
     }
@@ -162,7 +162,7 @@ impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for IndexedScryptoVal
         f: &mut F,
         context: &ScryptoValueDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
-        format_scrypto_value(f, &self.to_scrypto_value(), context)
+        format_scrypto_value(f, &self.as_scrypto_value(), context)
     }
 }
 

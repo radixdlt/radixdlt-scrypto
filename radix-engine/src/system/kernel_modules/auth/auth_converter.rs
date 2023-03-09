@@ -122,9 +122,9 @@ fn soft_to_hard_resource_list(
                                     && field_types[0] == LocalTypeIndex::WellKnown(RESOURCE_ADDRESS_ID)
                                     && field_types[1]
                                         == LocalTypeIndex::WellKnown(NON_FUNGIBLE_LOCAL_ID_ID) =>  {
-                                            let value = value.to_scrypto_value();
+                                            let value = value.as_scrypto_value();
                                             let v = sbor_path
-                                                .get_from_value(&value )
+                                                .get_from_value(&value)
                                                 .expect(format!("Value missing at {:?}", schema_path).as_str());
 
                                             HardProofRuleResourceList::List(
