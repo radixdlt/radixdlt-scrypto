@@ -1,7 +1,6 @@
 use crate::errors::*;
 use crate::kernel::actor::{Actor, ActorIdentifier};
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::event::TrackedEvent;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
 use crate::system::node::RENodeInit;
@@ -30,10 +29,10 @@ pub struct ExecutionTraceModule {
     current_kernel_call_depth: usize,
 
     /// A stack of traced kernel call inputs, their origin, and the instruction index.
-    traced_kernel_call_inputs_stack: Vec<(ResourceSummary, KernelCallOrigin, usize)>,
+    traced_kernel_call_inputs_stack: Vec<(ResourceSummary, Origin, usize)>,
 
     /// A mapping of complete KernelCallTrace stacks (\w both inputs and outputs), indexed by depth.
-    kernel_call_traces_stacks: IndexMap<usize, Vec<KernelCallTrace>>,
+    kernel_call_traces_stacks: IndexMap<usize, Vec<ExecutionTrace>>,
 
     /// Vault operations: (Caller, Vault ID, operation, instruction index)
     vault_ops: Vec<(TraceActor, ObjectId, VaultOp, usize)>,
@@ -171,31 +170,31 @@ pub enum TraceActor {
 }
 
 #[derive(Debug, Clone, ScryptoSbor)]
-pub struct KernelCallTrace {
-    pub origin: KernelCallOrigin,
+pub struct ExecutionTrace {
+    pub origin: Origin,
     pub kernel_call_depth: usize,
     pub current_frame_actor: TraceActor,
     pub current_frame_depth: usize,
     pub instruction_index: usize,
     pub input: ResourceSummary,
     pub output: ResourceSummary,
-    pub children: Vec<KernelCallTrace>,
+    pub children: Vec<ExecutionTrace>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub enum KernelCallOrigin {
+pub enum Origin {
     ScryptoFunction(FnIdentifier),
     ScryptoMethod(FnIdentifier),
     CreateNode,
     DropNode,
 }
 
-impl KernelCallTrace {
+impl ExecutionTrace {
     pub fn worktop_changes(
         &self,
         worktop_changes_aggregator: &mut IndexMap<usize, Vec<WorktopChange>>,
     ) {
-        if let KernelCallOrigin::ScryptoMethod(fn_identifier) = &self.origin {
+        if let Origin::ScryptoMethod(fn_identifier) = &self.origin {
             if fn_identifier.blueprint_name == WORKTOP_BLUEPRINT
                 && fn_identifier.package_address == RESOURCE_MANAGER_PACKAGE
             {
@@ -383,7 +382,7 @@ impl ExecutionTraceModule {
 
             let traced_input = (
                 ResourceSummary::default(),
-                KernelCallOrigin::CreateNode,
+                Origin::CreateNode,
                 instruction_index,
             );
             self.traced_kernel_call_inputs_stack.push(traced_input);
@@ -417,11 +416,7 @@ impl ExecutionTraceModule {
         if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
             let instruction_index = self.instruction_index();
 
-            let traced_input = (
-                resource_summary,
-                KernelCallOrigin::DropNode,
-                instruction_index,
-            );
+            let traced_input = (resource_summary, Origin::DropNode, instruction_index);
             self.traced_kernel_call_inputs_stack.push(traced_input);
         }
 
@@ -458,12 +453,8 @@ impl ExecutionTraceModule {
                     fn_identifier: identifier,
                     identifier: receiver,
                 }) => match receiver {
-                    ActorIdentifier::Method(..) => {
-                        KernelCallOrigin::ScryptoMethod(identifier.clone())
-                    }
-                    ActorIdentifier::Function(..) => {
-                        KernelCallOrigin::ScryptoFunction(identifier.clone())
-                    }
+                    ActorIdentifier::Method(..) => Origin::ScryptoMethod(identifier.clone()),
+                    ActorIdentifier::Function(..) => Origin::ScryptoFunction(identifier.clone()),
                 },
                 _ => panic!("Should not get here."),
             };
@@ -577,7 +568,7 @@ impl ExecutionTraceModule {
         //   At some depth (up to the tracing limit) there must have been at least one traced input/output
         //   so we need to include the full path up to the root.
         if !traced_input.is_empty() || !traced_output.is_empty() || !child_traces.is_empty() {
-            let trace = KernelCallTrace {
+            let trace = ExecutionTrace {
                 origin,
                 kernel_call_depth: self.current_kernel_call_depth,
                 current_frame_actor: current_actor,
@@ -600,17 +591,14 @@ impl ExecutionTraceModule {
         mut self,
     ) -> (
         Vec<(TraceActor, ObjectId, VaultOp, usize)>,
-        Vec<TrackedEvent>,
+        Vec<ExecutionTrace>,
     ) {
-        let mut events = Vec::new();
+        let mut execution_traces = Vec::new();
         for (_, traces) in self.kernel_call_traces_stacks.drain(..) {
-            // Emit an output event for each "root" kernel call trace
-            for trace in traces {
-                events.push(TrackedEvent::KernelCallTrace(trace));
-            }
+            execution_traces.extend(traces);
         }
 
-        (self.vault_ops, events)
+        (self.vault_ops, execution_traces)
     }
 
     fn instruction_index(&self) -> usize {

@@ -220,7 +220,7 @@ where
                     return TransactionReceipt {
                         execution: TransactionExecution {
                             fee_summary: err.fee_summary,
-                            events: vec![],
+                            execution_traces: vec![],
                             resources_usage: ResourcesUsage::default(),
                         },
                         result: TransactionResult::Reject(RejectResult {
@@ -314,7 +314,7 @@ where
         let receipt = TransactionReceipt {
             execution: TransactionExecution {
                 fee_summary: track_receipt.fee_summary,
-                events: track_receipt.events,
+                execution_traces: track_receipt.execution_traces,
                 resources_usage,
             },
             result: track_receipt.result,

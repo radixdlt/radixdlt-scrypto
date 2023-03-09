@@ -8,6 +8,7 @@ use crate::system::kernel_modules::costing::FinalizingFeeReserve;
 use crate::system::kernel_modules::costing::RoyaltyReceiver;
 use crate::system::kernel_modules::costing::{CostingError, FeeReserveError};
 use crate::system::kernel_modules::costing::{FeeSummary, SystemLoanFeeReserve};
+use crate::system::kernel_modules::execution_trace::ExecutionTrace;
 use crate::system::kernel_modules::execution_trace::{ExecutionTraceReceipt, TraceActor, VaultOp};
 use crate::system::node_substates::{
     PersistedSubstate, RuntimeSubstate, SubstateRef, SubstateRefMut,
@@ -26,8 +27,6 @@ use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::crypto::hash;
 use sbor::rust::collections::*;
-
-use super::event::TrackedEvent;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]
 pub enum LockState {
@@ -80,8 +79,8 @@ pub enum TrackError {
 
 pub struct TrackReceipt {
     pub fee_summary: FeeSummary,
+    pub execution_traces: Vec<ExecutionTrace>,
     pub result: TransactionResult,
-    pub events: Vec<TrackedEvent>,
 }
 
 pub struct PreExecutionError {
@@ -437,7 +436,7 @@ impl<'s> Track<'s> {
         mut invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
         mut fee_reserve: SystemLoanFeeReserve,
         vault_ops: Vec<(TraceActor, ObjectId, VaultOp, usize)>,
-        events: Vec<TrackedEvent>,
+        kernel_traces: Vec<ExecutionTrace>,
         application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
         application_logs: Vec<(Level, String)>,
     ) -> TrackReceipt {
@@ -486,7 +485,7 @@ impl<'s> Track<'s> {
         TrackReceipt {
             fee_summary,
             result,
-            events,
+            execution_traces: kernel_traces,
         }
     }
 }
