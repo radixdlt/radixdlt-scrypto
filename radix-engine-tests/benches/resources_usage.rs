@@ -11,8 +11,8 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::dec;
 use radix_engine_interface::rule;
 use transaction::builder::ManifestBuilder;
+use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::TestTransaction;
-use transaction::signing::EcdsaSecp256k1PrivateKey;
 
 #[derive(Eq, PartialEq, Hash, Clone, Copy)]
 struct Bytes(usize);
@@ -232,7 +232,7 @@ fn transfer_test(c: &mut Criterion) {
                     .get_executable(vec![NonFungibleGlobalId::from_public_key(&public_key)]),
             );
 
-            fwk.add_measurement(&commit_result.resources_usage);
+            fwk.add_measurement(&receipt.execution_trace.resources_usage);
 
             receipt.expect_commit_success();
             nonce += 1;
