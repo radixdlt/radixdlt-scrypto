@@ -23,7 +23,7 @@ fn soft_to_hard_decimal(
             if let Some((sbor_path, ty)) = schema_path.to_sbor_path(schema, type_index) {
                 match &ty {
                     ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Decimal) => {
-                        let value = value.to_scrypto_value();
+                        let value = value.as_scrypto_value();
 
                         let v = sbor_path
                             .get_from_value(&value)
@@ -56,7 +56,7 @@ fn soft_to_hard_count(
             if let Some((sbor_path, ty)) = schema_path.to_sbor_path(schema, type_index) {
                 match &ty {
                     ScryptoTypeKind::U8 => {
-                        let value = value.to_scrypto_value();
+                        let value = value.as_scrypto_value();
 
                         let v = sbor_path
                             .get_from_value(&value)
@@ -99,7 +99,7 @@ fn soft_to_hard_resource_list(
                     TypeKind::Array { element_type, .. }
                         if *element_type == LocalTypeIndex::WellKnown(RESOURCE_ADDRESS_ID) =>
                     {
-                        let value = value.to_scrypto_value();
+                        let value = value.as_scrypto_value();
 
                         let v = sbor_path
                             .get_from_value(&value)
@@ -160,7 +160,7 @@ fn soft_to_hard_resource(
             if let Some((sbor_path, ty)) = schema_path.to_sbor_path(schema, type_index) {
                 match &ty {
                     TypeKind::Custom(ScryptoCustomTypeKind::ResourceAddress) => {
-                        let value = value.to_scrypto_value();
+                        let value = value.as_scrypto_value();
 
                         let v = sbor_path
                             .get_from_value(&value)
@@ -193,7 +193,7 @@ fn soft_to_hard_resource_or_non_fungible(
             if let Some((sbor_path, ty)) = schema_path.to_sbor_path(schema, type_index) {
                 match &ty {
                     TypeKind::Custom(ScryptoCustomTypeKind::ResourceAddress) => {
-                        let value = value.to_scrypto_value();
+                        let value = value.as_scrypto_value();
 
                         let v = sbor_path
                             .get_from_value(&value)
@@ -211,7 +211,7 @@ fn soft_to_hard_resource_or_non_fungible(
                             && field_types[1]
                                 == LocalTypeIndex::WellKnown(NON_FUNGIBLE_LOCAL_ID_ID) =>
                     {
-                        let value = value.to_scrypto_value();
+                        let value = value.as_scrypto_value();
 
                         let v = sbor_path
                             .get_from_value(&value)
