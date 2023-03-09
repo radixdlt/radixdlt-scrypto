@@ -47,15 +47,14 @@ pub struct PackageInfoSubstate {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct PackageRoyaltyConfigSubstate {
-    pub royalty_config: BTreeMap<String, RoyaltyConfig>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct PackageRoyaltyAccumulatorSubstate {
+pub struct PackageRoyaltySubstate {
     /// The vault for collecting package royalties.
     ///
     /// It's optional to break circular dependency - creating package royalty vaults
     /// requires the `resource` package existing in the first place.
     pub royalty_vault: Option<Own>,
+
+    /// Royalty configuration per blueprint
+    ///   TODO: replace with KVStore
+    pub blueprint_royalty_configs: BTreeMap<String, RoyaltyConfig>,
 }

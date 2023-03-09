@@ -24,7 +24,6 @@ use radix_engine_interface::api::component::{
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
-use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::Level;
 use radix_engine_interface::api::types::*;
@@ -34,6 +33,7 @@ use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::identity::*;
+use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::PackageSchema;
 use sbor::rust::string::ToString;
@@ -420,10 +420,7 @@ where
 
         for (module_id, object_id) in modules {
             match module_id {
-                NodeModuleId::SELF
-                | NodeModuleId::TypeInfo
-                | NodeModuleId::PackageRoyalty
-                | NodeModuleId::FunctionAccessRules => {
+                NodeModuleId::SELF | NodeModuleId::TypeInfo | NodeModuleId::FunctionAccessRules => {
                     return Err(RuntimeError::SystemError(SystemError::InvalidModule))
                 }
                 NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {

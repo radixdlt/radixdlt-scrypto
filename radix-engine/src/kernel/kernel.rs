@@ -27,7 +27,6 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::access_rules::AccessRulesObject;
 use native_sdk::metadata::Metadata;
-use radix_engine_interface::api::package::PackageCodeSubstate;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
     LockHandle, ProofOffset, RENodeId, SubstateId, SubstateOffset,
@@ -36,6 +35,7 @@ use radix_engine_interface::api::{ClientObjectApi, ClientPackageApi};
 use radix_engine_interface::blueprints::account::{
     ACCOUNT_BLUEPRINT, ACCOUNT_DEPOSIT_BATCH_IDENT, ACCOUNT_DEPOSIT_IDENT,
 };
+use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use sbor::rust::mem;

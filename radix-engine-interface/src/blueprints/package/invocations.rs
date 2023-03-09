@@ -37,6 +37,22 @@ pub struct PackageLoaderPublishNativeInput {
     pub default_package_access_rule: AccessRule,
 }
 
-pub const TRANSACTION_PROCESSOR_BLUEPRINT: &str = "TransactionProcessor";
+pub const PACKAGE_SET_ROYALTY_CONFIG_IDENT: &str = "PackageRoyalty_set_royalty_config";
 
-pub const TRANSACTION_PROCESSOR_RUN_IDENT: &str = "run";
+#[derive(
+    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
+)]
+pub struct PackageSetRoyaltyConfigInput {
+    pub royalty_config: BTreeMap<String, RoyaltyConfig>, // TODO: optimize to allow per blueprint configuration.
+}
+
+pub type PackageSetRoyaltyConfigOutput = ();
+
+pub const PACKAGE_CLAIM_ROYALTY_IDENT: &str = "PackageRoyalty_claim_royalty";
+
+#[derive(
+    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
+)]
+pub struct PackageClaimRoyaltyInput {}
+
+pub type PackageClaimRoyaltyOutput = Bucket;

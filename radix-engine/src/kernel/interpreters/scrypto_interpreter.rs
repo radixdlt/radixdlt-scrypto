@@ -24,12 +24,10 @@ use radix_engine_interface::api::node_modules::auth::{
     ACCESS_RULES_BLUEPRINT, FUNCTION_ACCESS_RULES_BLUEPRINT,
 };
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
-use radix_engine_interface::api::node_modules::royalty::{
-    COMPONENT_ROYALTY_BLUEPRINT, PACKAGE_ROYALTY_BLUEPRINT,
-};
-use radix_engine_interface::api::package::*;
+use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::schema::BlueprintSchema;
 
 fn validate_input(
@@ -119,10 +117,6 @@ impl ExecutableInvocation for MethodInvocation {
             NodeModuleId::ComponentRoyalty => {
                 // TODO: Check if type has royalty
                 (ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT.to_string())
-            }
-            NodeModuleId::PackageRoyalty => {
-                // TODO: Check if type has royalty
-                (ROYALTY_PACKAGE, PACKAGE_ROYALTY_BLUEPRINT.to_string())
             }
             NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {
                 // TODO: Check if type has access rules

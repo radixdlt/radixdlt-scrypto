@@ -11,12 +11,12 @@ use crate::transaction::*;
 use crate::types::*;
 use crate::wasm::*;
 use radix_engine_constants::*;
-use radix_engine_interface::api::package::{
-    TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
-};
 use radix_engine_interface::api::ClientPackageApi;
 use radix_engine_interface::blueprints::transaction_processor::{
     InstructionOutput, TransactionProcessorRunInput,
+};
+use radix_engine_interface::blueprints::transaction_processor::{
+    TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
 use sbor::rust::borrow::Cow;
 use transaction::model::*;

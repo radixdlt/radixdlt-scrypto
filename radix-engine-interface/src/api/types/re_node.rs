@@ -114,8 +114,7 @@ pub enum NodeModuleId {
     AccessRules,
     AccessRules1,
     ComponentRoyalty,
-    PackageRoyalty,
-    FunctionAccessRules,
+    FunctionAccessRules, // TODO: remove
 }
 
 impl NodeModuleId {
@@ -127,7 +126,6 @@ impl NodeModuleId {
             3u32 => Some(NodeModuleId::AccessRules),
             4u32 => Some(NodeModuleId::AccessRules1),
             5u32 => Some(NodeModuleId::ComponentRoyalty),
-            6u32 => Some(NodeModuleId::PackageRoyalty),
             7u32 => Some(NodeModuleId::FunctionAccessRules),
             _ => None,
         }
@@ -141,7 +139,6 @@ impl NodeModuleId {
             NodeModuleId::AccessRules => 3u32,
             NodeModuleId::AccessRules1 => 4u32,
             NodeModuleId::ComponentRoyalty => 5u32,
-            NodeModuleId::PackageRoyalty => 6u32,
             NodeModuleId::FunctionAccessRules => 7u32,
         }
     }
@@ -179,6 +176,7 @@ pub enum PackageOffset {
     Info,
     CodeType,
     Code,
+    Royalty,
 }
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -264,6 +262,7 @@ pub enum SubstateOffset {
     AuthZoneStack(AuthZoneStackOffset),
     Component(ComponentOffset),
     Package(PackageOffset),
+    PackageAccessRules,
     ResourceManager(ResourceManagerOffset),
     KeyValueStore(KeyValueStoreOffset),
     NonFungibleStore(NonFungibleStoreOffset),
@@ -282,7 +281,6 @@ pub enum SubstateOffset {
     // TODO: align with module ID allocation?
     TypeInfo(TypeInfoOffset),
     AccessRules(AccessRulesOffset),
-    PackageAccessRules,
     Royalty(RoyaltyOffset),
 }
 

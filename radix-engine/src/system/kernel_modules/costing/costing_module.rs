@@ -12,9 +12,9 @@ use crate::{
     transaction::AbortReason,
 };
 use radix_engine_interface::api::component::ComponentRoyaltyConfigSubstate;
-use radix_engine_interface::api::package::PackageRoyaltyConfigSubstate;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
+use radix_engine_interface::blueprints::package::PackageRoyaltySubstate;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::{api::types::RENodeId, *};
 use sbor::rust::collections::BTreeMap;
@@ -143,14 +143,14 @@ impl KernelModule for CostingModule {
         let package_address = fn_identifier.package_address;
         let handle = api.kernel_lock_substate(
             RENodeId::GlobalObject(package_address.into()),
-            NodeModuleId::PackageRoyalty,
-            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
+            NodeModuleId::SELF,
+            SubstateOffset::Package(PackageOffset::Royalty),
             LockFlags::read_only(),
         )?;
-        let package_royalty_config: &PackageRoyaltyConfigSubstate =
+        let package_royalty_config: &PackageRoyaltySubstate =
             api.kernel_get_substate_ref(handle)?;
         let fn_royalty_charge = package_royalty_config
-            .royalty_config
+            .blueprint_royalty_configs
             .get(&fn_identifier.blueprint_name)
             .map(|x| x.get_rule(&fn_identifier.ident).clone())
             .unwrap_or(0);

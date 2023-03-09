@@ -14,9 +14,9 @@ use crate::wasm::{PrepareError, WasmValidator};
 use core::fmt::Debug;
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
-use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{ClientApi, LockFlags};
+use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{AccessRule, AccessRulesConfig};
 use radix_engine_interface::schema::PackageSchema;
 
@@ -40,8 +40,6 @@ fn validate_package_schema(schema: &PackageSchema) -> Result<(), PackageError> {
 }
 
 fn build_package_node_modules(
-    royalty_vault: Option<Own>,
-    royalty_config: BTreeMap<String, RoyaltyConfig>,
     metadata: BTreeMap<String, String>,
     access_rules: AccessRulesConfig,
     function_access_rules: FunctionAccessRulesSubstate,
@@ -66,13 +64,6 @@ fn build_package_node_modules(
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             global: true,
         }),
-    );
-    node_modules.insert(
-        NodeModuleId::PackageRoyalty,
-        RENodeModuleInit::PackageRoyalty(
-            PackageRoyaltyConfigSubstate { royalty_config },
-            PackageRoyaltyAccumulatorSubstate { royalty_vault },
-        ),
     );
     node_modules.insert(
         NodeModuleId::Metadata,
@@ -127,6 +118,25 @@ impl PackageNativePackage {
 
                 Self::publish_wasm(input, api)
             }
+
+            PACKAGE_SET_ROYALTY_CONFIG_IDENT => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+
+                Self::set_royalty_config(receiver, input, api)
+            }
+            PACKAGE_CLAIM_ROYALTY_IDENT => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+
+                Self::claim_royalty(receiver, input, api)
+            }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
             )),
@@ -158,12 +168,14 @@ impl PackageNativePackage {
         let code = PackageCodeSubstate {
             code: vec![input.native_package_code_id],
         };
-        let node_init = RENodeInit::GlobalPackage(info, code_type, code);
+        let royalty = PackageRoyaltySubstate {
+            royalty_vault: None,
+            blueprint_royalty_configs: BTreeMap::new(),
+        };
+        let node_init = RENodeInit::GlobalPackage(info, code_type, code, royalty);
 
         // Build node module init
         let node_modules = build_package_node_modules(
-            None,
-            BTreeMap::new(),
             input.metadata,
             input.access_rules,
             FunctionAccessRulesSubstate {
@@ -217,12 +229,14 @@ impl PackageNativePackage {
         };
         let code_type = PackageCodeTypeSubstate::Wasm;
         let code = PackageCodeSubstate { code: input.code };
-        let node_init = RENodeInit::GlobalPackage(info, code_type, code);
+        let royalty = PackageRoyaltySubstate {
+            royalty_vault: Some(ResourceManager(RADIX_TOKEN).new_vault(api)?),
+            blueprint_royalty_configs: input.royalty_config,
+        };
+        let node_init = RENodeInit::GlobalPackage(info, code_type, code, royalty);
 
         // Build node module init
         let node_modules = build_package_node_modules(
-            Some(ResourceManager(RADIX_TOKEN).new_vault(api)?),
-            input.royalty_config,
             input.metadata,
             input.access_rules,
             FunctionAccessRulesSubstate {
@@ -242,5 +256,64 @@ impl PackageNativePackage {
         // Return
         let package_address: PackageAddress = node_id.into();
         Ok(IndexedScryptoValue::from_typed(&package_address))
+    }
+
+    pub(crate) fn set_royalty_config<Y>(
+        receiver: RENodeId,
+        input: IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let input: PackageSetRoyaltyConfigInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
+
+        // TODO: auth check
+        let handle = api.sys_lock_substate(
+            receiver,
+            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
+            LockFlags::MUTABLE,
+        )?;
+
+        let package_royalty: &mut PackageRoyaltySubstate =
+            api.kernel_get_substate_ref_mut(handle)?;
+        package_royalty_config.blueprint_royalty_configs = input.royalty_config;
+
+        api.kernel_drop_lock(handle)?;
+
+        Ok(IndexedScryptoValue::from_typed(&()))
+    }
+
+    pub(crate) fn claim_royalty<Y>(
+        receiver: RENodeId,
+        input: IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let _input: PackageClaimRoyaltyInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
+
+        let handle = api.sys_lock_substate(
+            receiver,
+            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
+            LockFlags::MUTABLE,
+        )?;
+
+        let substate: &mut PackageRoyaltyAccumulatorSubstate =
+            api.kernel_get_substate_ref_mut(handle)?;
+        let royalty_vault = substate.royalty_vault.clone();
+        let mut vault = Vault(
+            royalty_vault
+                .expect("FIXME: cleanup royalty vault madness")
+                .vault_id(),
+        );
+        let bucket = vault.sys_take_all(api)?;
+
+        Ok(IndexedScryptoValue::from_typed(&bucket))
     }
 }

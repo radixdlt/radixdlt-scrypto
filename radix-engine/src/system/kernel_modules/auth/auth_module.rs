@@ -20,12 +20,12 @@ use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate
 use crate::types::*;
 use radix_engine_interface::api::component::ComponentStateSubstate;
 use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::package::{
-    PackageInfoSubstate, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT,
-};
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, RENodeId, SubstateOffset, VaultOffset,
+};
+use radix_engine_interface::blueprints::package::{
+    PackageInfoSubstate, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT,
 };
 use radix_engine_interface::blueprints::resource::*;
 use transaction::model::AuthZoneParams;
