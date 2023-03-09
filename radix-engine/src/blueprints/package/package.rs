@@ -88,6 +88,8 @@ fn build_package_node_modules(
 pub struct PackageNativePackage;
 
 impl PackageNativePackage {
+    // FIXME: add the schema for package package.
+
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<RENodeId>,
