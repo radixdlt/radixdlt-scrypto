@@ -210,20 +210,20 @@ impl IdAllocator {
     }
 
     pub fn new_object_id(&mut self) -> Result<ObjectId, IdAllocationError> {
-        self.next_object_id(INTERNAL_NORMAL_COMPONENT_ID)
+        self.next_object_id([INTERNAL_OBJECT_B0, INTERNAL_OBJECT_NORMAL_COMPONENT_B1])
     }
 
     pub fn new_vault_id(&mut self) -> Result<ObjectId, IdAllocationError> {
-        self.next_object_id(INTERNAL_VAULT_ID)
+        self.next_object_id([INTERNAL_OBJECT_B0, INTERNAL_OBJECT_VAULT_B1])
     }
 
     /// Creates a new key value store ID.
     pub fn new_kv_store_id(&mut self) -> Result<KeyValueStoreId, IdAllocationError> {
-        self.next_object_id(INTERNAL_KV_STORE_ID)
+        self.next_object_id([INTERNAL_KV_STORE_B0, INTERNAL_KV_STORE_B1])
     }
 
     /// Creates a new non-fungible store ID.
     pub fn new_nf_store_id(&mut self) -> Result<NonFungibleStoreId, IdAllocationError> {
-        self.next_object_id(INTERNAL_KV_STORE_ID)
+        self.next_object_id([INTERNAL_KV_STORE_B0, INTERNAL_KV_STORE_B1])
     }
 }

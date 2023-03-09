@@ -4,9 +4,12 @@ use crate::*;
 use sbor::rust::fmt;
 use sbor::rust::prelude::*;
 
-pub const INTERNAL_NORMAL_COMPONENT_ID: [u8; 2] = [3u8, 0u8];
-pub const INTERNAL_VAULT_ID: [u8; 2] = [3u8, 1u8];
-pub const INTERNAL_KV_STORE_ID: [u8; 2] = [4u8, 0u8];
+pub const INTERNAL_OBJECT_B0: u8 = 3u8;
+pub const INTERNAL_OBJECT_NORMAL_COMPONENT_B1: u8 = 0u8;
+pub const INTERNAL_OBJECT_VAULT_B1: u8 = 1u8;
+
+pub const INTERNAL_KV_STORE_B0: u8 = 4u8;
+pub const INTERNAL_KV_STORE_B1: u8 = 0u8;
 
 // TODO: Remove when better type system implemented
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor)]
