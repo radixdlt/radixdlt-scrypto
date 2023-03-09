@@ -8,6 +8,7 @@ mod substates;
 mod vault;
 mod worktop;
 
+pub use events::*;
 pub use executables::*;
 pub use substates::*;
 pub use worktop::*;

@@ -189,6 +189,8 @@ fn new_package(
     royalty_config_len: u32,
     metadata_ptr: u32,
     metadata_len: u32,
+    event_schema_ptr: u32,
+    event_schema_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
@@ -209,6 +211,12 @@ fn new_package(
                 royalty_config_len,
             )?,
             read_memory(caller.as_context_mut(), memory, metadata_ptr, metadata_len)?,
+            read_memory(
+                caller.as_context_mut(),
+                memory,
+                event_schema_ptr,
+                event_schema_len,
+            )?,
         )
         .map(|buffer| buffer.0)
 }
@@ -367,18 +375,18 @@ fn consume_cost_units(
 
 fn emit_event(
     mut caller: Caller<'_, HostState>,
-    schema_hash_ptr: u32,
-    schema_hash_len: u32,
+    event_name_ptr: u32,
+    event_name_len: u32,
     event_data_ptr: u32,
     event_data_len: u32,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
     let (memory, runtime) = grab_runtime!(caller);
 
-    let schema_hash = read_memory(
+    let event_name = read_memory(
         caller.as_context_mut(),
         memory,
-        schema_hash_ptr,
-        schema_hash_len,
+        event_name_ptr,
+        event_name_len,
     )?;
     let event_data = read_memory(
         caller.as_context_mut(),
@@ -387,7 +395,7 @@ fn emit_event(
         event_data_len,
     )?;
 
-    runtime.emit_event(schema_hash, event_data)
+    runtime.emit_event(event_name, event_data)
 }
 
 fn log_message(
@@ -510,7 +518,9 @@ impl WasmiModule {
              royalty_config_ptr: u32,
              royalty_config_len: u32,
              metadata_ptr: u32,
-             metadata_len: u32|
+             metadata_len: u32,
+             event_schema_ptr: u32,
+             event_schema_len: u32|
              -> Result<u64, Trap> {
                 new_package(
                     caller,
@@ -524,6 +534,8 @@ impl WasmiModule {
                     royalty_config_len,
                     metadata_ptr,
                     metadata_len,
+                    event_schema_ptr,
+                    event_schema_len,
                 )
                 .map_err(|e| e.into())
             },
@@ -658,15 +670,15 @@ impl WasmiModule {
         let host_emit_event = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
-             schema_hash_ptr: u32,
-             schema_hash_len: u32,
+             event_name_ptr: u32,
+             event_name_len: u32,
              event_data_ptr: u32,
              event_data_len: u32|
              -> Result<(), Trap> {
                 emit_event(
                     caller,
-                    schema_hash_ptr,
-                    schema_hash_len,
+                    event_name_ptr,
+                    event_name_len,
                     event_data_ptr,
                     event_data_len,
                 )
