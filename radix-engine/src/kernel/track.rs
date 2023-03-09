@@ -6,8 +6,6 @@ use crate::state_manager::StateDiff;
 use crate::system::kernel_modules::costing::FinalizingFeeReserve;
 use crate::system::kernel_modules::costing::{CostingError, FeeReserveError};
 use crate::system::kernel_modules::costing::{FeeSummary, SystemLoanFeeReserve};
-use crate::system::kernel_modules::execution_trace::ExecutionTrace;
-use crate::system::kernel_modules::execution_trace::{TraceActor, VaultOp};
 use crate::system::node_substates::{
     PersistedSubstate, RuntimeSubstate, SubstateRef, SubstateRefMut,
 };
@@ -427,11 +425,9 @@ impl<'s> Track<'s> {
         self,
         mut invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
         mut fee_reserve: SystemLoanFeeReserve,
-        vault_ops: Vec<(TraceActor, ObjectId, VaultOp, usize)>,
-        execution_traces: Vec<ExecutionTrace>,
         application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
         application_logs: Vec<(Level, String)>,
-    ) -> (TransactionResult, Option<BTreeMap<ObjectId, Decimal>>) {
+    ) -> TransactionResult {
         // A `SuccessButFeeLoanNotRepaid` error is issued if a transaction finishes before
         // the SYSTEM_LOAN_AMOUNT is reached (which trigger a repay event) and even though
         // enough fee has been locked.
@@ -452,30 +448,21 @@ impl<'s> Track<'s> {
                     new_global_addresses: self.new_global_addresses,
                     loaded_substates: self.loaded_substates.into_iter().collect(),
                 };
-                let (commit_result, actual_fee_payments) = finalizing_track
-                    .calculate_commit_result(
-                        invoke_result,
-                        fee_reserve,
-                        application_events,
-                        application_logs,
-                    );
-                (
-                    TransactionResult::Commit(commit_result),
-                    Some(actual_fee_payments),
-                )
+                TransactionResult::Commit(finalizing_track.calculate_commit_result(
+                    invoke_result,
+                    fee_reserve,
+                    application_events,
+                    application_logs,
+                ))
             }
-            TransactionResultType::Reject(rejection_error) => (
+            TransactionResultType::Reject(rejection_error) => {
                 TransactionResult::Reject(RejectResult {
                     error: rejection_error,
-                }),
-                None,
-            ),
-            TransactionResultType::Abort(abort_reason) => (
-                TransactionResult::Abort(AbortResult {
-                    reason: abort_reason,
-                }),
-                None,
-            ),
+                })
+            }
+            TransactionResultType::Abort(abort_reason) => TransactionResult::Abort(AbortResult {
+                reason: abort_reason,
+            }),
         }
     }
 }
@@ -554,7 +541,7 @@ impl<'s> FinalizingTrack<'s> {
         mut fee_reserve: SystemLoanFeeReserve,
         application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
         application_logs: Vec<(Level, String)>,
-    ) -> (CommitResult, BTreeMap<ObjectId, Decimal>) {
+    ) -> CommitResult {
         let is_success = invoke_result.is_ok();
 
         // Keep/rollback royalty
@@ -644,20 +631,18 @@ impl<'s> FinalizingTrack<'s> {
         // TODO: update XRD total supply or disable it
         // TODO: pay tips to the lead validator
 
-        (
-            CommitResult {
-                outcome: match invoke_result {
-                    Ok(output) => TransactionOutcome::Success(output),
-                    Err(error) => TransactionOutcome::Failure(error),
-                },
-                fee_summary,
-                state_updates: Self::generate_diff(self.substate_store, to_persist),
-                entity_changes,
-                application_events,
-                application_logs,
+        CommitResult {
+            outcome: match invoke_result {
+                Ok(output) => TransactionOutcome::Success(output),
+                Err(error) => TransactionOutcome::Failure(error),
             },
+            fee_summary,
             actual_fee_payments,
-        )
+            state_updates: Self::generate_diff(self.substate_store, to_persist),
+            entity_changes,
+            application_events,
+            application_logs,
+        }
     }
 
     pub fn generate_diff(

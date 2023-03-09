@@ -1,4 +1,3 @@
-use crate::blueprints::epoch_manager::Validator;
 use crate::errors::*;
 use crate::state_manager::StateDiff;
 use crate::system::kernel_modules::costing::FeeSummary;
@@ -23,13 +22,13 @@ pub struct ResourcesUsage {
 }
 
 #[derive(Debug, Clone, ScryptoSbor)]
-pub struct TransactionExecution {
-    pub fee_summary: FeeSummary,
+pub struct TransactionExecutionTrace {
     pub execution_traces: Vec<ExecutionTrace>,
+    pub resource_changes: IndexMap<usize, Vec<ResourceChange>>,
     pub resources_usage: ResourcesUsage,
 }
 
-impl TransactionExecution {
+impl TransactionExecutionTrace {
     pub fn worktop_changes(&self) -> IndexMap<usize, Vec<WorktopChange>> {
         let mut aggregator = index_map_new::<usize, Vec<WorktopChange>>();
         for trace in &self.execution_traces {
@@ -48,6 +47,13 @@ pub enum TransactionResult {
 }
 
 impl TransactionResult {
+    pub fn is_commit_success(&self) -> bool {
+        match self {
+            TransactionResult::Commit(c) => matches!(c.outcome, TransactionOutcome::Success(_)),
+            _ => false,
+        }
+    }
+
     pub fn expect_commit(&self) -> &CommitResult {
         match self {
             TransactionResult::Commit(c) => c,
@@ -60,12 +66,12 @@ impl TransactionResult {
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct CommitResult {
     pub outcome: TransactionOutcome,
+    pub fee_summary: FeeSummary,
+    pub actual_fee_payments: BTreeMap<ObjectId, Decimal>,
     pub state_updates: StateDiff,
     pub entity_changes: EntityChanges,
-    pub resource_changes: IndexMap<usize, Vec<ResourceChange>>,
-    pub application_logs: Vec<(Level, String)>,
     pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
-    pub next_epoch: Option<(BTreeMap<ComponentAddress, Validator>, u64)>,
+    pub application_logs: Vec<(Level, String)>,
 }
 
 /// Captures whether a transaction's commit outcome is Success or Failure
@@ -145,8 +151,8 @@ pub enum AbortReason {
 /// Represents a transaction receipt.
 #[derive(Clone, ScryptoSbor)]
 pub struct TransactionReceipt {
-    pub execution: TransactionExecution, // THIS FIELD IS USEFUL FOR DEBUGGING EVEN IF THE TRANSACTION IS REJECTED
     pub result: TransactionResult,
+    pub execution: TransactionExecutionTrace,
 }
 
 impl TransactionReceipt {
@@ -316,10 +322,9 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
         f: &mut F,
         context: &AddressDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
-        let execution = &self.execution;
         let result = &self.result;
-
         let bech32_encoder = context.encoder;
+        let context = ScryptoValueDisplayContext::with_optional_bench32(bech32_encoder);
 
         write!(
             f,
@@ -335,26 +340,26 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
             },
         )?;
 
-        write!(
-            f,
-            "\n{} {} XRD used for execution, {} XRD used for royalty, {} XRD in bad debt",
-            "Transaction Fee:".bold().green(),
-            execution.fee_summary.total_execution_cost_xrd,
-            execution.fee_summary.total_royalty_cost_xrd,
-            execution.fee_summary.bad_debt_xrd,
-        )?;
-
-        write!(
-            f,
-            "\n{} {} limit, {} consumed, {} XRD per cost unit, {}% tip",
-            "Cost Units:".bold().green(),
-            execution.fee_summary.cost_unit_limit,
-            execution.fee_summary.total_cost_units_consumed,
-            execution.fee_summary.cost_unit_price,
-            execution.fee_summary.tip_percentage
-        )?;
-
         if let TransactionResult::Commit(c) = &result {
+            write!(
+                f,
+                "\n{} {} XRD used for execution, {} XRD used for royalty, {} XRD in bad debt",
+                "Transaction Fee:".bold().green(),
+                c.fee_summary.total_execution_cost_xrd,
+                c.fee_summary.total_royalty_cost_xrd,
+                c.fee_summary.bad_debt_xrd,
+            )?;
+
+            write!(
+                f,
+                "\n{} {} limit, {} consumed, {} XRD per cost unit, {}% tip",
+                "Cost Units:".bold().green(),
+                c.fee_summary.cost_unit_limit,
+                c.fee_summary.total_cost_units_consumed,
+                c.fee_summary.cost_unit_price,
+                c.fee_summary.tip_percentage
+            )?;
+
             write!(
                 f,
                 "\n{} {}",
@@ -392,11 +397,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                     event_data_value
                 )?;
             }
-        }
 
-        let context = ScryptoValueDisplayContext::with_optional_bench32(bech32_encoder);
-
-        if let TransactionResult::Commit(c) = &result {
             if let TransactionOutcome::Success(outputs) = &c.outcome {
                 write!(f, "\n{}", "Outputs:".bold().green())?;
                 for (i, output) in outputs.iter().enumerate() {
@@ -413,9 +414,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                     )?;
                 }
             }
-        }
 
-        if let TransactionResult::Commit(c) = &result {
             write!(
                 f,
                 "\n{} {}",

@@ -75,11 +75,6 @@ impl From<&BucketSnapshot> for ResourceSpecifier {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct ExecutionTraceReceipt {
-    pub resource_changes: IndexMap<usize, Vec<ResourceChange>>,
-}
-
 #[derive(Debug, Clone)]
 pub enum VaultOp {
     Create(Decimal),               // TODO: add trace of vault creation
@@ -587,18 +582,18 @@ impl ExecutionTraceModule {
         }
     }
 
-    pub fn collect_events(
+    pub fn collect_traces(
         mut self,
     ) -> (
-        Vec<(TraceActor, ObjectId, VaultOp, usize)>,
         Vec<ExecutionTrace>,
+        Vec<(TraceActor, ObjectId, VaultOp, usize)>,
     ) {
         let mut execution_traces = Vec::new();
         for (_, traces) in self.kernel_call_traces_stacks.drain(..) {
             execution_traces.extend(traces);
         }
 
-        (self.vault_ops, execution_traces)
+        (execution_traces, self.vault_ops)
     }
 
     fn instruction_index(&self) -> usize {
@@ -659,98 +654,95 @@ impl ExecutionTraceModule {
     }
 }
 
-impl ExecutionTraceReceipt {
-    // TODO: is it better to derive resource changes from substate diff, instead of execution trace?
-    // The current approach relies on various runtime invariants.
+pub fn calculate_resource_changes(
+    vault_ops: Vec<(TraceActor, ObjectId, VaultOp, usize)>,
+    actual_fee_payments: &BTreeMap<ObjectId, Decimal>,
+    is_commit_success: bool,
+) -> IndexMap<usize, Vec<ResourceChange>> {
+    // FIXME: revert non-fee operations if `is_commit_success == false`
 
-    pub fn new(
-        ops: Vec<(TraceActor, ObjectId, VaultOp, usize)>,
-        actual_fee_payments: &BTreeMap<ObjectId, Decimal>,
-        is_commit_success: bool,
-    ) -> Self {
-        let mut vault_changes = index_map_new::<
-            usize,
-            IndexMap<RENodeId, IndexMap<ObjectId, (ResourceAddress, Decimal)>>,
-        >();
-        let mut vault_locked_by = index_map_new::<ObjectId, RENodeId>();
-        for (actor, vault_id, vault_op, instruction_index) in ops {
-            if let TraceActor::Actor(Actor {
-                identifier: ActorIdentifier::Method(MethodIdentifier(node_id, ..)),
-                ..
-            }) = actor
-            {
-                match vault_op {
-                    VaultOp::Create(_) => todo!("Not supported yet!"),
-                    VaultOp::Put(resource_address, amount) => {
-                        vault_changes
-                            .entry(instruction_index)
-                            .or_default()
-                            .entry(node_id)
-                            .or_default()
-                            .entry(vault_id)
-                            .or_insert((resource_address, Decimal::zero()))
-                            .1 += amount;
-                    }
-                    VaultOp::Take(resource_address, amount) => {
-                        vault_changes
-                            .entry(instruction_index)
-                            .or_default()
-                            .entry(node_id)
-                            .or_default()
-                            .entry(vault_id)
-                            .or_insert((resource_address, Decimal::zero()))
-                            .1 -= amount;
-                    }
-                    VaultOp::LockFee => {
-                        vault_changes
-                            .entry(instruction_index)
-                            .or_default()
-                            .entry(node_id)
-                            .or_default()
-                            .entry(vault_id)
-                            .or_insert((RADIX_TOKEN, Decimal::zero()))
-                            .1 -= 0;
+    let mut vault_changes =
+        index_map_new::<usize, IndexMap<RENodeId, IndexMap<ObjectId, (ResourceAddress, Decimal)>>>(
+        );
+    let mut vault_locked_by = index_map_new::<ObjectId, RENodeId>();
+    for (actor, vault_id, vault_op, instruction_index) in vault_ops {
+        if let TraceActor::Actor(Actor {
+            identifier: ActorIdentifier::Method(MethodIdentifier(node_id, ..)),
+            ..
+        }) = actor
+        {
+            match vault_op {
+                VaultOp::Create(_) => todo!("Not supported yet!"),
+                VaultOp::Put(resource_address, amount) => {
+                    vault_changes
+                        .entry(instruction_index)
+                        .or_default()
+                        .entry(node_id)
+                        .or_default()
+                        .entry(vault_id)
+                        .or_insert((resource_address, Decimal::zero()))
+                        .1 += amount;
+                }
+                VaultOp::Take(resource_address, amount) => {
+                    vault_changes
+                        .entry(instruction_index)
+                        .or_default()
+                        .entry(node_id)
+                        .or_default()
+                        .entry(vault_id)
+                        .or_insert((resource_address, Decimal::zero()))
+                        .1 -= amount;
+                }
+                VaultOp::LockFee => {
+                    vault_changes
+                        .entry(instruction_index)
+                        .or_default()
+                        .entry(node_id)
+                        .or_default()
+                        .entry(vault_id)
+                        .or_insert((RADIX_TOKEN, Decimal::zero()))
+                        .1 -= 0;
 
-                        // Hack: Additional check to avoid second `lock_fee` attempts (runtime failure) from
-                        // polluting the `vault_locked_by` index.
-                        if !vault_locked_by.contains_key(&vault_id) {
-                            vault_locked_by.insert(vault_id, node_id);
-                        }
+                    // Hack: Additional check to avoid second `lock_fee` attempts (runtime failure) from
+                    // polluting the `vault_locked_by` index.
+                    if !vault_locked_by.contains_key(&vault_id) {
+                        vault_locked_by.insert(vault_id, node_id);
                     }
                 }
             }
         }
-
-        let mut resource_changes = index_map_new::<usize, Vec<ResourceChange>>();
-        for (instruction_index, instruction_resource_changes) in vault_changes {
-            for (node_id, map) in instruction_resource_changes {
-                for (vault_id, (resource_address, delta)) in map {
-                    // Amount = put/take amount - fee_amount
-                    let fee_amount = actual_fee_payments
-                        .get(&vault_id)
-                        .cloned()
-                        .unwrap_or_default();
-                    let amount = if is_commit_success {
-                        delta
-                    } else {
-                        Decimal::zero()
-                    } - fee_amount;
-
-                    // Add a resource change log if non-zero
-                    if !amount.is_zero() {
-                        resource_changes.entry(instruction_index).or_default().push(
-                            ResourceChange {
-                                resource_address,
-                                node_id,
-                                vault_id,
-                                amount,
-                            },
-                        );
-                    }
-                }
-            }
-        }
-
-        ExecutionTraceReceipt { resource_changes }
     }
+
+    let mut resource_changes = index_map_new::<usize, Vec<ResourceChange>>();
+    for (instruction_index, instruction_resource_changes) in vault_changes {
+        for (node_id, map) in instruction_resource_changes {
+            for (vault_id, (resource_address, delta)) in map {
+                // Amount = put/take amount - fee_amount
+                let fee_amount = actual_fee_payments
+                    .get(&vault_id)
+                    .cloned()
+                    .unwrap_or_default();
+                let amount = if is_commit_success {
+                    delta
+                } else {
+                    Decimal::zero()
+                } - fee_amount;
+
+                // Add a resource change log if non-zero
+                if !amount.is_zero() {
+                    resource_changes
+                        .entry(instruction_index)
+                        .or_default()
+                        .push(ResourceChange {
+                            resource_address,
+                            node_id,
+                            vault_id,
+                            amount,
+                        });
+                }
+            }
+        }
+    }
+
+    resource_changes
 }

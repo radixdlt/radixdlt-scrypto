@@ -123,16 +123,10 @@ impl KernelModule for CostingModule {
                 fn_identifier,
             }) => {
                 let maybe_component = match &identifier {
-                    ActorIdentifier::Method(MethodIdentifier(node_id, ..))
-                        if matches!(
-                            node_id,
-                            RENodeId::GlobalObject(Address::Component(ComponentAddress::Normal(
-                                ..
-                            )))
-                        ) =>
-                    {
-                        Some(node_id)
-                    }
+                    ActorIdentifier::Method(MethodIdentifier(node_id, ..)) => match node_id {
+                        RENodeId::GlobalObject(Address::Component(address)) => Some(address),
+                        _ => None,
+                    },
                     _ => None,
                 };
 
@@ -172,7 +166,7 @@ impl KernelModule for CostingModule {
         //===========================
         if let Some(component_node_id) = optional_component {
             let handle = api.kernel_lock_substate(
-                *component_node_id,
+                RENodeId::GlobalObject(component_node_id.clone().into()),
                 NodeModuleId::ComponentRoyalty,
                 SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig),
                 LockFlags::read_only(),

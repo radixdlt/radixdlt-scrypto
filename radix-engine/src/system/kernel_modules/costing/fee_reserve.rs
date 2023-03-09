@@ -74,7 +74,7 @@ pub trait FeeReserve: PreExecutionFeeReserve + ExecutionFeeReserve + FinalizingF
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, ScryptoSbor)]
 pub enum RoyaltyReceiver {
     Package(PackageAddress),
-    Component(RENodeId),
+    Component(ComponentAddress),
 }
 
 #[repr(usize)]
@@ -283,6 +283,10 @@ impl SystemLoanFeeReserve {
         let royalty = self.total_royalty_cost();
         self.total_cost_units_consumed -= royalty;
         self.royalty.clear();
+    }
+
+    pub fn royalty(&self) -> &HashMap<RoyaltyReceiver, u32> {
+        &self.royalty
     }
 
     #[inline]
