@@ -32,21 +32,12 @@ impl AuthZoneStackSubstate {
         method_auth: &MethodAuthorization,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
-        let mut barrier_crossings_allowed = 1u32;
-        if is_barrier {
-            barrier_crossings_allowed -= 1;
-        }
-
-        if !AuthVerification::verify_method_auth(
-            barrier_crossings_allowed,
+        AuthVerification::verify_method_auth(
+            if is_barrier { 0 } else { 1 },
             method_auth,
             &self,
             api,
-        )? {
-            return Ok(false);
-        }
-
-        Ok(true)
+        )
     }
 
     pub fn push_auth_zone(
@@ -146,7 +137,7 @@ impl AuthZone {
     }
 
     pub fn clear_virtual_proofs(&mut self) {
-        self.virtual_non_fungibles.clear();
+        self.virtual_resources.clear();
         self.virtual_non_fungibles.clear();
         self.virtual_non_fungibles_non_extending.clear();
     }
