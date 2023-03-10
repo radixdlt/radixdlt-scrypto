@@ -276,6 +276,7 @@ impl SystemLoanFeeReserve {
     }
 
     pub fn revert_royalty(&mut self) {
+        self.xrd_balance += self.royalty_committed.values().sum::<u128>();
         self.royalty_committed.clear();
     }
 
