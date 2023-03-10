@@ -12,7 +12,7 @@ pub const PACKAGE_BLUEPRINT: &str = "Package";
 pub const PACKAGE_PUBLISH_WASM_IDENT: &str = "publish_wasm";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct PackageLoaderPublishWasmInput {
+pub struct PackagePublishWasmInput {
     pub package_address: Option<[u8; 26]>, // TODO: Clean this up
     pub code: Vec<u8>,
     pub schema: PackageSchema,
@@ -21,10 +21,12 @@ pub struct PackageLoaderPublishWasmInput {
     pub access_rules: AccessRulesConfig,
 }
 
+pub type PackagePublishWasmOutput = PackageAddress;
+
 pub const PACKAGE_PUBLISH_NATIVE_IDENT: &str = "publish_native";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct PackageLoaderPublishNativeInput {
+pub struct PackagePublishNativeInput {
     pub package_address: Option<[u8; 26]>, // TODO: Clean this up
     pub native_package_code_id: u8,
     pub schema: PackageSchema,
@@ -36,6 +38,8 @@ pub struct PackageLoaderPublishNativeInput {
     pub package_access_rules: BTreeMap<FnKey, AccessRule>,
     pub default_package_access_rule: AccessRule,
 }
+
+pub type PackagePublishNativeOutput = PackageAddress;
 
 pub const PACKAGE_SET_ROYALTY_CONFIG_IDENT: &str = "PackageRoyalty_set_royalty_config";
 

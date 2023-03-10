@@ -60,6 +60,7 @@ impl AuthModule {
         api: &mut Y,
     ) -> Result<MethodAuthorization, RuntimeError> {
         let auth = if identifier.package_address.eq(&PACKAGE_PACKAGE) {
+            // TODO: remove
             if identifier.blueprint_name.eq(PACKAGE_BLUEPRINT)
                 && identifier.ident.eq(PACKAGE_PUBLISH_NATIVE_IDENT)
             {

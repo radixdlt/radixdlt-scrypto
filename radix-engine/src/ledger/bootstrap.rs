@@ -4,6 +4,7 @@ use crate::blueprints::auth_zone::AuthZoneNativePackage;
 use crate::blueprints::clock::ClockNativePackage;
 use crate::blueprints::epoch_manager::EpochManagerNativePackage;
 use crate::blueprints::identity::IdentityNativePackage;
+use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::blueprints::transaction_runtime::TransactionRuntimeNativePackage;
@@ -26,7 +27,7 @@ use radix_engine_interface::blueprints::epoch_manager::{
 };
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::package::{
-    PackageLoaderPublishNativeInput, PackageLoaderPublishWasmInput,
+    PackagePublishNativeInput, PackagePublishWasmInput,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
@@ -57,6 +58,29 @@ pub fn create_genesis(
     let mut instructions = Vec::new();
     let mut pre_allocated_ids = BTreeSet::new();
 
+    // Package Package
+    {
+        pre_allocated_ids.insert(RENodeId::GlobalObject(PACKAGE_PACKAGE.into()));
+        let package_address = PACKAGE_PACKAGE.to_array_without_entity_id();
+        instructions.push(Instruction::CallFunction {
+            package_address: PACKAGE_PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
+            args: manifest_encode(&PackagePublishNativeInput {
+                package_address: Some(package_address), // TODO: Clean this up
+                native_package_code_id: PACKAGE_CODE_ID,
+                schema: PackageNativePackage::schema(),
+                dependent_resources: vec![],
+                dependent_components: vec![],
+                metadata: BTreeMap::new(),
+                access_rules: AccessRulesConfig::new(),
+                package_access_rules: PackageNativePackage::function_access_rules(),
+                default_package_access_rule: AccessRule::DenyAll,
+            })
+            .unwrap(),
+        });
+    }
+
     // Metadata Package
     {
         pre_allocated_ids.insert(RENodeId::GlobalObject(METADATA_PACKAGE.into()));
@@ -65,7 +89,7 @@ pub fn create_genesis(
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishNativeInput {
+            args: manifest_encode(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: METADATA_CODE_ID,
                 schema: MetadataNativePackage::schema(),
@@ -89,7 +113,7 @@ pub fn create_genesis(
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishNativeInput {
+            args: manifest_encode(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: ROYALTY_CODE_ID,
                 schema: RoyaltyNativePackage::schema(),
@@ -112,7 +136,7 @@ pub fn create_genesis(
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishNativeInput {
+            args: manifest_encode(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: ACCESS_RULES_CODE_ID,
                 schema: AccessRulesNativePackage::schema(),
@@ -135,7 +159,7 @@ pub fn create_genesis(
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishNativeInput {
+            args: manifest_encode(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: RESOURCE_MANAGER_CODE_ID,
                 schema: ResourceManagerNativePackage::schema(),
@@ -210,7 +234,7 @@ pub fn create_genesis(
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishNativeInput {
+            args: manifest_encode(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: IdentityNativePackage::schema(),
                 dependent_resources: vec![],
@@ -233,7 +257,7 @@ pub fn create_genesis(
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishNativeInput {
+            args: manifest_encode(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: EpochManagerNativePackage::schema(),
                 native_package_code_id: EPOCH_MANAGER_CODE_ID,
@@ -256,7 +280,7 @@ pub fn create_genesis(
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishNativeInput {
+            args: manifest_encode(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: ClockNativePackage::schema(),
                 native_package_code_id: CLOCK_CODE_ID,
@@ -279,7 +303,7 @@ pub fn create_genesis(
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishNativeInput {
+            args: manifest_encode(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: AccountNativePackage::schema(),
                 native_package_code_id: ACCOUNT_CODE_ID,
@@ -302,7 +326,7 @@ pub fn create_genesis(
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishNativeInput {
+            args: manifest_encode(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: AccessControllerNativePackage::schema(),
                 metadata: BTreeMap::new(),
@@ -325,7 +349,7 @@ pub fn create_genesis(
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishNativeInput {
+            args: manifest_encode(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: TransactionProcessorNativePackage::schema(),
                 metadata: BTreeMap::new(),
@@ -348,7 +372,7 @@ pub fn create_genesis(
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishNativeInput {
+            args: manifest_encode(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: TransactionRuntimeNativePackage::schema(),
                 metadata: BTreeMap::new(),
@@ -371,7 +395,7 @@ pub fn create_genesis(
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishNativeInput {
+            args: manifest_encode(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: AuthZoneNativePackage::schema(),
                 metadata: BTreeMap::new(),
@@ -458,7 +482,7 @@ pub fn create_genesis(
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_WASM_IDENT.to_string(),
-            args: manifest_encode(&PackageLoaderPublishWasmInput {
+            args: manifest_encode(&PackagePublishWasmInput {
                 package_address: Some(package_address),
                 code: faucet_code,
                 schema: scrypto_decode(&faucet_abi).unwrap(),

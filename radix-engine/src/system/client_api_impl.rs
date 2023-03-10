@@ -151,7 +151,7 @@ where
             PACKAGE_PACKAGE,
             PACKAGE_BLUEPRINT,
             PACKAGE_PUBLISH_WASM_IDENT,
-            scrypto_encode(&PackageLoaderPublishWasmInput {
+            scrypto_encode(&PackagePublishWasmInput {
                 package_address: None,
                 code,
                 schema,

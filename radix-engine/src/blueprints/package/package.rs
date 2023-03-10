@@ -17,8 +17,8 @@ use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::package::*;
-use radix_engine_interface::blueprints::resource::{AccessRule, AccessRulesConfig};
-use radix_engine_interface::schema::PackageSchema;
+use radix_engine_interface::blueprints::resource::{require, AccessRule, AccessRulesConfig, FnKey};
+use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PackageError {
@@ -88,6 +88,81 @@ pub struct PackageNativePackage;
 impl PackageNativePackage {
     // FIXME: add the schema for package package.
 
+    pub fn schema() -> PackageSchema {
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+
+        let substates = Vec::new();
+
+        let mut functions = BTreeMap::new();
+        functions.insert(
+            PACKAGE_PUBLISH_WASM_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<PackagePublishWasmInput>(),
+                output: aggregator.add_child_type_and_descendents::<PackagePublishWasmOutput>(),
+                export_name: PACKAGE_PUBLISH_WASM_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<PackagePublishNativeInput>(),
+                output: aggregator.add_child_type_and_descendents::<PackagePublishNativeOutput>(),
+                export_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            PACKAGE_SET_ROYALTY_CONFIG_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(schema::Receiver::SelfRefMut),
+                input: aggregator.add_child_type_and_descendents::<PackageSetRoyaltyConfigInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<PackageSetRoyaltyConfigOutput>(),
+                export_name: PACKAGE_SET_ROYALTY_CONFIG_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            PACKAGE_CLAIM_ROYALTY_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(schema::Receiver::SelfRefMut),
+                input: aggregator.add_child_type_and_descendents::<PackageClaimRoyaltyInput>(),
+                output: aggregator.add_child_type_and_descendents::<PackageClaimRoyaltyOutput>(),
+                export_name: PACKAGE_CLAIM_ROYALTY_IDENT.to_string(),
+            },
+        );
+
+        let schema = generate_full_schema(aggregator);
+        PackageSchema {
+            blueprints: btreemap!(
+                PACKAGE_BLUEPRINT.to_string() => BlueprintSchema {
+                    schema,
+                    substates,
+                    functions
+                }
+            ),
+        }
+    }
+
+    pub fn function_access_rules() -> BTreeMap<FnKey, AccessRule> {
+        let mut access_rules = BTreeMap::new();
+        access_rules.insert(
+            FnKey::new(
+                PACKAGE_BLUEPRINT.to_string(),
+                PACKAGE_PUBLISH_WASM_IDENT.to_string(),
+            ),
+            rule!(allow_all),
+        );
+        access_rules.insert(
+            FnKey::new(
+                PACKAGE_BLUEPRINT.to_string(),
+                PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
+            ),
+            rule!(require(SYSTEM_TOKEN)),
+        );
+        access_rules
+    }
+
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<RENodeId>,
@@ -152,7 +227,7 @@ impl PackageNativePackage {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: PackageLoaderPublishNativeInput = input.as_typed().map_err(|e| {
+        let input: PackagePublishNativeInput = input.as_typed().map_err(|e| {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
 
@@ -206,7 +281,7 @@ impl PackageNativePackage {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: PackageLoaderPublishWasmInput = input.as_typed().map_err(|e| {
+        let input: PackagePublishWasmInput = input.as_typed().map_err(|e| {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
 
