@@ -375,7 +375,7 @@ impl PackageNativePackage {
 
         let handle = api.sys_lock_substate(
             receiver,
-            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
+            SubstateOffset::Package(PackageOffset::Royalty),
             LockFlags::MUTABLE,
         )?;
 

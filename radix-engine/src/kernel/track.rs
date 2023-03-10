@@ -448,7 +448,7 @@ impl<'s> Track<'s> {
 
                 // Keep/rollback royalty
                 if is_success {
-                    for (recipient_vault_id, amount) in fee_reserve.royalty() {
+                    for (recipient_vault_id, amount) in fee_reserve.royalty_cost() {
                         let node_id = RENodeId::Object(*recipient_vault_id);
                         let module_id = NodeModuleId::SELF;
                         let offset = SubstateOffset::Vault(VaultOffset::LiquidFungible);

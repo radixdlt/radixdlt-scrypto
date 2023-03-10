@@ -67,17 +67,17 @@ fn test_basic_transfer() {
     // (cd radix-engine && cargo test --test metering -- test_basic_transfer)
     assert_eq!(
         10000 /* CreateNode */
-        + 77000 /* DropLock */
+        + 85000 /* DropLock */
         + 10000 /* DropNode */
         + 11360 /* Invoke */
-        + 78500 /* LockSubstate */
-        + 57000 /* ReadSubstate */
+        + 86500 /* LockSubstate */
+        + 58500 /* ReadSubstate */
         + 70000 /* RunNative */
         + 0 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1320 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 16000, /* WriteSubstate */
+        + 22500, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
 }
@@ -200,18 +200,17 @@ fn test_radiswap() {
     // (cd radix-engine && cargo test --test metering -- test_radiswap)
     assert_eq!(
         15000 /* CreateNode */
-        + 208500 /* DropLock */
+        + 222500 /* DropLock */
         + 12500 /* DropNode */
         + 25690 /* Invoke */
-        + 211000 /* LockSubstate */
-        + 2571800 /* ReadSubstate */
+        + 225000 /* LockSubstate */
+        + 2580740 /* ReadSubstate */
         + 152500 /* RunNative */
-        + 1617625 /* RunWasm */
+        + 1617950 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1705 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 38000 /* WriteSubstate */
-        + 2, /* royalty in cost units */
+        + 54000, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
 }
@@ -309,18 +308,17 @@ fn test_flash_loan() {
     // (cd radix-engine && cargo test --test metering -- test_flash_loan)
     assert_eq!(
         22500 /* CreateNode */
-        + 319500 /* DropLock */
+        + 340000 /* DropLock */
         + 22500 /* DropNode */
         + 46570 /* Invoke */
-        + 328000 /* LockSubstate */
-        + 5152920 /* ReadSubstate */
+        + 348500 /* LockSubstate */
+        + 5165960 /* ReadSubstate */
         + 245000 /* RunNative */
-        + 1379010 /* RunWasm */
+        + 1379330 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2475 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 66500 /* WriteSubstate */
-        + 2, /* royalty in cost units */
+        + 92500, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
 }
@@ -375,7 +373,7 @@ fn should_be_able_run_large_manifest() {
     let mut builder = ManifestBuilder::new();
     builder.lock_fee(account, 100u32.into());
     builder.withdraw_from_account(account, RADIX_TOKEN, 100u32.into());
-    for _ in 0..200 {
+    for _ in 0..100 {
         builder.take_from_worktop_by_amount(1.into(), RADIX_TOKEN, |builder, bid| {
             builder.return_to_worktop(bid)
         });

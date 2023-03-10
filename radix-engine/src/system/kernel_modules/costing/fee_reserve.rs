@@ -13,7 +13,11 @@ use strum::EnumCount;
 pub enum FeeReserveError {
     InsufficientBalance,
     Overflow,
-    LimitExceeded,
+    LimitExceeded {
+        limit: u32,
+        committed: u32,
+        new: u32,
+    },
     LoanRepaymentFailed,
     Abort(AbortReason),
 }
@@ -211,7 +215,11 @@ impl SystemLoanFeeReserve {
         reason: CostingReason,
     ) -> Result<(), FeeReserveError> {
         if checked_add(self.execution_committed_sum, cost_units)? > self.cost_unit_limit {
-            return Err(FeeReserveError::LimitExceeded);
+            return Err(FeeReserveError::LimitExceeded {
+                limit: self.cost_unit_limit,
+                committed: self.execution_committed_sum,
+                new: cost_units,
+            });
         }
 
         let amount = self.effective_execution_price * cost_units as u128;
@@ -230,10 +238,6 @@ impl SystemLoanFeeReserve {
         cost_units: u32,
         recipient_vault_id: ObjectId,
     ) -> Result<(), FeeReserveError> {
-        if checked_add(self.execution_committed_sum, cost_units)? > self.cost_unit_limit {
-            return Err(FeeReserveError::LimitExceeded);
-        }
-
         let amount = self.effective_royalty_price * cost_units as u128;
         if self.xrd_balance < amount {
             return Err(FeeReserveError::InsufficientBalance);
@@ -247,21 +251,19 @@ impl SystemLoanFeeReserve {
     }
 
     pub fn repay_all(&mut self) -> Result<(), FeeReserveError> {
-        // Apply deferred execution costs
+        // Apply deferred execution cost
         for i in 0..CostingReason::COUNT {
-            self.consume_execution(
-                self.execution_deferred[i],
-                CostingReason::from_repr(i).unwrap(),
-            )?;
+            let cost_units = self.execution_deferred[i];
+            self.consume_execution_internal(cost_units, CostingReason::from_repr(i).unwrap())?;
             self.execution_deferred[i] = 0;
         }
 
-        // Repay owed
-        if self.xrd_balance < self.xrd_owed {
+        // Repay owed with balance
+        self.xrd_owed -= min(self.xrd_balance, self.xrd_owed);
+
+        // Check outstanding loan
+        if self.xrd_owed != 0 {
             return Err(FeeReserveError::LoanRepaymentFailed);
-        } else {
-            self.xrd_balance -= self.xrd_owed;
-            self.xrd_owed = 0;
         }
 
         if self.abort_when_loan_repaid {
@@ -277,8 +279,16 @@ impl SystemLoanFeeReserve {
         self.royalty_committed.clear();
     }
 
-    pub fn royalty(&self) -> &HashMap<ObjectId, u128> {
+    pub fn royalty_cost(&self) -> &HashMap<ObjectId, u128> {
         &self.royalty_committed
+    }
+
+    pub fn execution_cost(&self) -> BTreeMap<CostingReason, u32> {
+        self.execution_committed
+            .into_iter()
+            .enumerate()
+            .map(|(i, sum)| (CostingReason::from_repr(i).unwrap(), sum))
+            .collect()
     }
 
     #[inline]
@@ -380,9 +390,8 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
 }
 
 impl FinalizingFeeReserve for SystemLoanFeeReserve {
-    fn finalize(mut self) -> FeeSummary {
-        self.xrd_owed -= min(self.xrd_balance, self.xrd_owed);
-
+    fn finalize(self) -> FeeSummary {
+        let execution_cost_breakdown = self.execution_cost();
         FeeSummary {
             cost_unit_limit: self.cost_unit_limit,
             cost_unit_price: u128_to_decimal(self.cost_unit_price),
@@ -390,15 +399,10 @@ impl FinalizingFeeReserve for SystemLoanFeeReserve {
             total_execution_cost_xrd: u128_to_decimal(
                 self.effective_execution_price * self.execution_committed_sum as u128,
             ),
-            total_royalty_cost_xrd: u128_to_decimal(self.royalty().values().sum::<u128>()),
+            total_royalty_cost_xrd: u128_to_decimal(self.royalty_cost().values().sum::<u128>()),
             total_bad_debt_xrd: u128_to_decimal(self.xrd_owed),
             locked_fees: self.payments,
-            execution_cost_breakdown: self
-                .execution_committed
-                .into_iter()
-                .enumerate()
-                .map(|(i, sum)| (CostingReason::from_repr(i).unwrap(), sum))
-                .collect(),
+            execution_cost_breakdown,
             execution_cost_sum: self.execution_committed_sum,
         }
     }
@@ -451,6 +455,7 @@ mod tests {
             Err(FeeReserveError::InsufficientBalance),
             fee_reserve.consume_multiplied_execution(6, 1, CostingReason::Invoke)
         );
+        fee_reserve.repay_all().unwrap();
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
         assert_eq!(summary.execution_cost_sum, 0);
@@ -466,6 +471,7 @@ mod tests {
         fee_reserve
             .lock_fee(TEST_VAULT_ID, xrd(100), false)
             .unwrap();
+        fee_reserve.repay_all().unwrap();
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
         assert_eq!(summary.execution_cost_sum, 0);
@@ -481,6 +487,7 @@ mod tests {
         fee_reserve
             .lock_fee(TEST_VAULT_ID, xrd(100), false)
             .unwrap();
+        fee_reserve.repay_all().unwrap();
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
         assert_eq!(summary.execution_cost_sum, 0);
@@ -497,6 +504,10 @@ mod tests {
         fee_reserve
             .consume_multiplied_execution(2, 1, CostingReason::Invoke)
             .unwrap();
+        assert_eq!(
+            fee_reserve.repay_all(),
+            Err(FeeReserveError::LoanRepaymentFailed)
+        );
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), false);
         assert_eq!(summary.execution_cost_sum, 2);

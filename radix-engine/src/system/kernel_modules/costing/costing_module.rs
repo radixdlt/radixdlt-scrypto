@@ -91,7 +91,6 @@ impl KernelModule for CostingModule {
         input_size: usize,
     ) -> Result<(), RuntimeError> {
         let current_depth = api.kernel_get_current_depth();
-
         if current_depth == api.kernel_get_module_state().costing.max_call_depth {
             return Err(RuntimeError::ModuleError(ModuleError::CostingError(
                 CostingError::MaxCallDepthLimitReached,
