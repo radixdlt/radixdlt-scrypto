@@ -438,7 +438,9 @@ impl AuthZoneBlueprint {
         )?;
         let auth_zone_stack: &mut AuthZoneStackSubstate =
             api.kernel_get_substate_ref_mut(handle)?;
-        let proofs = auth_zone_stack.cur_auth_zone_mut().drain();
+        let auth_zone = auth_zone_stack.cur_auth_zone_mut();
+        auth_zone.clear_virtual_proofs();
+        let proofs = auth_zone.drain();
         api.sys_drop_lock(handle)?;
 
         for proof in proofs {
