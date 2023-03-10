@@ -40,6 +40,20 @@ impl ComponentAuthZone {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
+    pub fn sys_clear_virtual_proofs<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        api: &mut Y,
+    ) -> Result<(), E>
+    where
+        Y: ClientApi<E>,
+    {
+        let rtn = api.call_method(
+            RENodeId::AuthZoneStack,
+            AUTH_ZONE_CLEAR_VIRTUAL_PROOFS_IDENT,
+            scrypto_encode(&AuthZoneClearVirtualProofsInput {}).unwrap(),
+        )?;
+        Ok(scrypto_decode(&rtn).unwrap())
+    }
+
     pub fn sys_pop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(api: &mut Y) -> Result<Proof, E>
     where
         Y: ClientApi<E>,

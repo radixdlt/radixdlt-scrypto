@@ -215,6 +215,10 @@ impl TransactionProcessorBlueprint {
                     ComponentAuthZone::sys_clear(api)?;
                     InstructionOutput::None
                 }
+                Instruction::DropAllVirtualProofs => {
+                    ComponentAuthZone::sys_clear_virtual_proofs(api)?;
+                    InstructionOutput::None
+                }
                 Instruction::CallFunction {
                     package_address,
                     blueprint_name,
