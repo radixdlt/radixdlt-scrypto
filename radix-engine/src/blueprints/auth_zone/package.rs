@@ -469,13 +469,7 @@ impl AuthZoneBlueprint {
         )?;
         let auth_zone_stack: &mut AuthZoneStackSubstate =
             api.kernel_get_substate_ref_mut(handle)?;
-        for auth_zone in auth_zone_stack.auth_zones.iter_mut().rev() {
-            auth_zone.clear_virtual_proofs();
-            if auth_zone.barrier {
-                // allow crossing barrier once
-                break;
-            }
-        }
+        auth_zone_stack.cur_auth_zone_mut().clear_virtual_proofs();
         api.sys_drop_lock(handle)?;
 
         Ok(IndexedScryptoValue::from_typed(&()))

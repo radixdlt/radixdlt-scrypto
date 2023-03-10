@@ -94,7 +94,7 @@ impl TransactionValidator<NotarizedTransaction> for NotarizedTransactionValidato
                 payload_size,
                 auth_zone_params: AuthZoneParams {
                     initial_proofs: AuthAddresses::signer_set(&signer_keys),
-                    virtualizable_proofs_resource_addresses: BTreeSet::new(),
+                    virtual_resource_addresses: BTreeSet::new(),
                 },
                 fee_payment: FeePayment::User {
                     cost_unit_limit: header.cost_unit_limit,
@@ -132,10 +132,10 @@ impl NotarizedTransactionValidator {
         self.validate_intent(&intent_hash, intent, intent_hash_manager)?;
         let initial_proofs = AuthAddresses::signer_set(&preview_intent.signer_public_keys);
 
-        let mut virtualizable_proofs_resource_addresses = BTreeSet::new();
+        let mut virtual_resource_addresses = BTreeSet::new();
         if flags.assume_all_signature_proofs {
-            virtualizable_proofs_resource_addresses.insert(ECDSA_SECP256K1_TOKEN);
-            virtualizable_proofs_resource_addresses.insert(EDDSA_ED25519_TOKEN);
+            virtual_resource_addresses.insert(ECDSA_SECP256K1_TOKEN);
+            virtual_resource_addresses.insert(EDDSA_ED25519_TOKEN);
         }
 
         let header = &intent.header;
@@ -158,7 +158,7 @@ impl NotarizedTransactionValidator {
                 payload_size: 0,
                 auth_zone_params: AuthZoneParams {
                     initial_proofs,
-                    virtualizable_proofs_resource_addresses,
+                    virtual_resource_addresses,
                 },
                 fee_payment,
                 runtime_validations: vec![

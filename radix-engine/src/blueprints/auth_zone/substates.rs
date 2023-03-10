@@ -11,19 +11,12 @@ pub struct AuthZoneStackSubstate {
 }
 
 impl AuthZoneStackSubstate {
-    pub fn new(
-        proofs: Vec<Proof>,
-        virtual_resources: BTreeSet<ResourceAddress>,
-        virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
-    ) -> Self {
-        Self {
-            auth_zones: vec![AuthZone::new_with_virtual_proofs(
-                proofs,
-                virtual_resources,
-                virtual_non_fungibles,
-                false,
-            )],
-        }
+    pub fn new() -> Self {
+        Self { auth_zones: vec![] }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.auth_zones.is_empty()
     }
 
     pub fn check_auth<Y: ClientObjectApi<RuntimeError>>(
@@ -40,13 +33,7 @@ impl AuthZoneStackSubstate {
         )
     }
 
-    pub fn push_auth_zone(
-        &mut self,
-        virtual_non_fungibles_non_extending: BTreeSet<NonFungibleGlobalId>,
-        barrier: bool,
-    ) {
-        let auth_zone =
-            AuthZone::new_with_virtual_non_fungibles(virtual_non_fungibles_non_extending, barrier);
+    pub fn push_auth_zone(&mut self, auth_zone: AuthZone) {
         self.auth_zones.push(auth_zone);
     }
 
@@ -77,7 +64,7 @@ impl AuthZoneStackSubstate {
 pub struct AuthZone {
     pub(super) proofs: Vec<Proof>,
     // Virtualized resources, note that one cannot create proofs with virtual resources but only be used for AuthZone checks
-    pub(super) virtual_resources: BTreeSet<ResourceAddress>,
+    pub(super) virtual_resource_addresses: BTreeSet<ResourceAddress>,
     pub(super) virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
     pub(super) virtual_non_fungibles_non_extending: BTreeSet<NonFungibleGlobalId>,
     pub(super) barrier: bool,
@@ -87,7 +74,7 @@ impl Clone for AuthZone {
     fn clone(&self) -> Self {
         Self {
             proofs: self.proofs.iter().map(|p| Proof(p.0)).collect(),
-            virtual_resources: self.virtual_resources.clone(),
+            virtual_resource_addresses: self.virtual_resource_addresses.clone(),
             virtual_non_fungibles: self.virtual_non_fungibles.clone(),
             virtual_non_fungibles_non_extending: self.virtual_non_fungibles_non_extending.clone(),
             barrier: self.barrier.clone(),
@@ -96,30 +83,18 @@ impl Clone for AuthZone {
 }
 
 impl AuthZone {
-    fn new_with_virtual_non_fungibles(
+    pub fn new(
+        proofs: Vec<Proof>,
+        virtual_resource_addresses: BTreeSet<ResourceAddress>,
+        virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
         virtual_non_fungibles_non_extending: BTreeSet<NonFungibleGlobalId>,
         barrier: bool,
     ) -> Self {
         Self {
-            proofs: vec![],
-            virtual_resources: BTreeSet::new(),
-            virtual_non_fungibles: BTreeSet::new(),
-            virtual_non_fungibles_non_extending,
-            barrier,
-        }
-    }
-
-    fn new_with_virtual_proofs(
-        proofs: Vec<Proof>,
-        virtual_resources: BTreeSet<ResourceAddress>,
-        virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
-        barrier: bool,
-    ) -> Self {
-        Self {
             proofs,
-            virtual_resources,
+            virtual_resource_addresses,
             virtual_non_fungibles,
-            virtual_non_fungibles_non_extending: BTreeSet::new(),
+            virtual_non_fungibles_non_extending,
             barrier,
         }
     }
@@ -137,7 +112,7 @@ impl AuthZone {
     }
 
     pub fn clear_virtual_proofs(&mut self) {
-        self.virtual_resources.clear();
+        self.virtual_resource_addresses.clear();
         self.virtual_non_fungibles.clear();
         self.virtual_non_fungibles_non_extending.clear();
     }
