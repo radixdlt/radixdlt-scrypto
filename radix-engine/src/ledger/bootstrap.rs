@@ -822,6 +822,12 @@ mod tests {
             .as_ref()
             .expect("There should be a new epoch.");
 
+        assert!(transaction_receipt
+            .result
+            .expect_commit()
+            .entity_changes
+            .new_package_addresses
+            .contains(&PACKAGE_LOADER));
         let genesis_receipt = genesis_result(&transaction_receipt);
         assert_eq!(genesis_receipt.faucet_component, FAUCET_COMPONENT);
     }

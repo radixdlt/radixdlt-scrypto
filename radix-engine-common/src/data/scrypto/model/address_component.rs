@@ -4,6 +4,7 @@ use crate::data::manifest::ManifestCustomValueKind;
 use crate::data::scrypto::*;
 use crate::well_known_scrypto_custom_type;
 use crate::*;
+use radix_engine_common::data::scrypto::model::*;
 use sbor::rust::fmt;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -13,17 +14,17 @@ use utils::{copy_u8_array, ContextualDisplay};
 /// An instance of a blueprint, which lives in the ledger state.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ComponentAddress {
-    Normal([u8; 26]),
-    Account([u8; 26]),
-    Identity([u8; 26]),
-    Clock([u8; 26]),
-    EpochManager([u8; 26]),
-    Validator([u8; 26]),
-    EcdsaSecp256k1VirtualAccount([u8; 26]),
-    EddsaEd25519VirtualAccount([u8; 26]),
-    EcdsaSecp256k1VirtualIdentity([u8; 26]),
-    EddsaEd25519VirtualIdentity([u8; 26]),
-    AccessController([u8; 26]),
+    Normal([u8; ADDRESS_HASH_LENGTH]),
+    Account([u8; ADDRESS_HASH_LENGTH]),
+    Identity([u8; ADDRESS_HASH_LENGTH]),
+    Clock([u8; ADDRESS_HASH_LENGTH]),
+    EpochManager([u8; ADDRESS_HASH_LENGTH]),
+    Validator([u8; ADDRESS_HASH_LENGTH]),
+    EcdsaSecp256k1VirtualAccount([u8; ADDRESS_HASH_LENGTH]),
+    EddsaEd25519VirtualAccount([u8; ADDRESS_HASH_LENGTH]),
+    EcdsaSecp256k1VirtualIdentity([u8; ADDRESS_HASH_LENGTH]),
+    EddsaEd25519VirtualIdentity([u8; ADDRESS_HASH_LENGTH]),
+    AccessController([u8; ADDRESS_HASH_LENGTH]),
 }
 
 impl TryFrom<&[u8]> for ComponentAddress {
@@ -31,7 +32,7 @@ impl TryFrom<&[u8]> for ComponentAddress {
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
-            27 => match EntityType::try_from(slice[0])
+            ADDRESS_LENGTH => match EntityType::try_from(slice[0])
                 .map_err(|_| AddressError::InvalidEntityTypeId(slice[0]))?
             {
                 EntityType::NormalComponent => Ok(Self::Normal(copy_u8_array(&slice[1..]))),
@@ -65,7 +66,7 @@ impl TryFrom<&[u8]> for ComponentAddress {
 }
 
 impl ComponentAddress {
-    pub fn to_array_without_entity_id(&self) -> [u8; 26] {
+    pub fn to_array_without_entity_id(&self) -> [u8; ADDRESS_HASH_LENGTH] {
         match self {
             Self::Normal(v)
             | Self::Account(v)
@@ -149,11 +150,15 @@ well_known_scrypto_custom_type!(
     ComponentAddress,
     ScryptoCustomValueKind::Address,
     Type::ComponentAddress,
-    27,
+    ADDRESS_LENGTH,
     COMPONENT_ADDRESS_ID
 );
 
-manifest_type!(ComponentAddress, ManifestCustomValueKind::Address, 27);
+manifest_type!(
+    ComponentAddress,
+    ManifestCustomValueKind::Address,
+    ADDRESS_LENGTH
+);
 
 //======
 // text
