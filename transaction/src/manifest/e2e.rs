@@ -62,8 +62,38 @@ ASSERT_WORKTOP_CONTAINS
 TAKE_FROM_WORKTOP
     Address("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag")
     Bucket("bucket2");
+RETURN_TO_WORKTOP
+    Bucket("bucket2");
+TAKE_FROM_WORKTOP_BY_IDS
+    Array<NonFungibleLocalId>(NonFungibleLocalId("#1#"))
+    Address("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag")
+    Bucket("bucket3");
+CALL_METHOD
+    Address("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064")
+    "deposit_batch"
+    Expression("ENTIRE_WORKTOP");
+"##,
+        );
+    }
+
+    #[test]
+    fn test_resource_auth_zone() {
+        compile_and_decompile_with_inversion_test(
+            "resource_auth_zone",
+            include_str!("../../examples/resources/auth_zone.rtm"),
+            &NetworkDefinition::simulator(),
+            vec![],
+            r##"
+CALL_METHOD
+    Address("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064")
+    "withdraw"
+    Address("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag")
+    Decimal("5");
+TAKE_FROM_WORKTOP
+    Address("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag")
+    Bucket("bucket1");
 CREATE_PROOF_FROM_BUCKET
-    Bucket("bucket2")
+    Bucket("bucket1")
     Proof("proof1");
 CLONE_PROOF
     Proof("proof1")
@@ -81,12 +111,23 @@ POP_FROM_AUTH_ZONE
     Proof("proof3");
 DROP_PROOF
     Proof("proof3");
-RETURN_TO_WORKTOP
-    Bucket("bucket2");
-TAKE_FROM_WORKTOP_BY_IDS
-    Array<NonFungibleLocalId>(NonFungibleLocalId("#1#"))
+CALL_METHOD
+    Address("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064")
+    "create_proof_by_amount"
     Address("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag")
-    Bucket("bucket3");
+    Decimal("5");
+CREATE_PROOF_FROM_AUTH_ZONE
+    Address("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag")
+    Proof("proof4");
+CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT
+    Decimal("1")
+    Address("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag")
+    Proof("proof5");
+CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS
+    Array<NonFungibleLocalId>(NonFungibleLocalId("#123#"))
+    Address("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag")
+    Proof("proof6");
+CLEAR_AUTH_ZONE;
 DROP_ALL_PROOFS;
 CALL_METHOD
     Address("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064")
