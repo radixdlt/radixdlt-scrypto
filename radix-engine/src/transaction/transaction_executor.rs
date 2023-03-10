@@ -197,7 +197,10 @@ where
         if execution_config.kernel_trace {
             println!("{:-^80}", "Transaction Metadata");
             println!("Transaction hash: {}", transaction_hash);
-            println!("Pre-allocated IDs: {:?}", executable.pre_allocated_ids());
+            println!(
+                "Preallocated Node IDs: {:?}",
+                executable.pre_allocated_ids()
+            );
             println!("Number of blobs: {}", executable.blobs().len());
 
             println!("{:-^80}", "Engine Execution Log");

@@ -86,8 +86,6 @@ fn build_package_node_modules(
 pub struct PackageNativePackage;
 
 impl PackageNativePackage {
-    // FIXME: add the schema for package package.
-
     pub fn schema() -> PackageSchema {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 

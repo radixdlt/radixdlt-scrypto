@@ -446,7 +446,7 @@ impl<'s> Track<'s> {
             TransactionResultType::Commit(invoke_result) => {
                 let is_success = invoke_result.is_ok();
 
-                // Keep/rollback royalty
+                // Commit/rollback royalty
                 if is_success {
                     for (recipient_vault_id, amount) in fee_reserve.royalty_cost() {
                         let node_id = RENodeId::Object(*recipient_vault_id);
@@ -476,7 +476,7 @@ impl<'s> Track<'s> {
                     Vec::new()
                 };
 
-                // Always keep application logs for better debuggability
+                // Keep logs always, for better debuggability
                 let application_logs = application_logs;
 
                 // Keep/rollback entity changes
