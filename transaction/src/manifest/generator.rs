@@ -35,8 +35,8 @@ use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::manifest::model::*;
 use radix_engine_interface::data::manifest::*;
 use radix_engine_interface::data::scrypto::model::*;
-use radix_engine_interface::manifest_args;
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
+use radix_engine_interface::{manifest_args, manifest_vec};
 use sbor::rust::borrow::Borrow;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
@@ -369,7 +369,7 @@ pub fn generate_instruction(
                 package_address,
                 blueprint_name,
                 function_name,
-                args: manifest_encode(&args).unwrap(),
+                args: manifest_transcode(&args).unwrap(),
             }
         }
         ast::Instruction::CallMethod {
@@ -386,7 +386,7 @@ pub fn generate_instruction(
             Instruction::CallMethod {
                 component_address,
                 method_name,
-                args: manifest_encode(&args).unwrap(),
+                args: manifest_transcode(&args).unwrap(),
             }
         }
         ast::Instruction::PublishPackage {
@@ -496,7 +496,7 @@ pub fn generate_instruction(
         } => Instruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
-            args: manifest_encode(&EpochManagerCreateValidatorInput {
+            args: manifest_transcode(&EpochManagerCreateValidatorInput {
                 key: generate_typed_value(key, resolver, bech32_decoder, blobs)?,
                 owner_access_rule: generate_typed_value(
                     owner_access_rule,
@@ -515,7 +515,7 @@ pub fn generate_instruction(
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT.to_string(),
-            args: manifest_encode(&ResourceManagerCreateFungibleInput {
+            args: manifest_transcode(&ResourceManagerCreateFungibleInput {
                 divisibility: generate_u8(divisibility)?,
                 metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
                 access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
@@ -531,7 +531,7 @@ pub fn generate_instruction(
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT.to_string(),
-            args: manifest_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
+            args: manifest_transcode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
                 divisibility: generate_u8(divisibility)?,
                 metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
                 access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
@@ -547,7 +547,7 @@ pub fn generate_instruction(
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT.to_string(),
-            args: manifest_encode(&ResourceManagerCreateNonFungibleInput {
+            args: manifest_transcode(&ResourceManagerCreateNonFungibleInput {
                 id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
                 metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
                 access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
@@ -564,7 +564,7 @@ pub fn generate_instruction(
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT
                 .to_string(),
-            args: manifest_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
+            args: manifest_transcode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
                 id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
                 metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
                 access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
@@ -608,7 +608,7 @@ pub fn generate_instruction(
             package_address: IDENTITY_PACKAGE,
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
             function_name: IDENTITY_CREATE_IDENT.to_string(),
-            args: manifest_encode(&IdentityCreateInput {
+            args: manifest_transcode(&IdentityCreateInput {
                 access_rule: generate_typed_value::<AccessRule>(
                     access_rule,
                     resolver,
@@ -622,7 +622,7 @@ pub fn generate_instruction(
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
             function_name: ACCOUNT_CREATE_GLOBAL_IDENT.to_string(),
-            args: manifest_encode(&AccountCreateGlobalInput {
+            args: manifest_transcode(&AccountCreateGlobalInput {
                 withdraw_rule: generate_typed_value(
                     withdraw_rule,
                     resolver,
@@ -1579,8 +1579,8 @@ mod tests {
                 entries: BTreeMap::from([(
                     NonFungibleLocalId::integer(1),
                     (
-                        manifest_args!(String::from("Hello World"), dec!("12")),
-                        manifest_args!(12u8, 19u128)
+                        manifest_vec!(String::from("Hello World"), dec!("12")),
+                        manifest_vec!(12u8, 19u128)
                     )
                 )])
             },
@@ -1621,7 +1621,7 @@ mod tests {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT.to_string(),
-                args: manifest_encode(&ResourceManagerCreateNonFungibleInput {
+                args: manifest_transcode(&ResourceManagerCreateNonFungibleInput {
                     id_type: NonFungibleIdType::Integer,
                     metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
                     access_rules: BTreeMap::from([
@@ -1649,7 +1649,7 @@ mod tests {
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
-                args: manifest_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
+                args: manifest_transcode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
                     id_type: NonFungibleIdType::Integer,
                     metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
                     access_rules: BTreeMap::from([
@@ -1665,8 +1665,8 @@ mod tests {
                     entries: BTreeMap::from([(
                         NonFungibleLocalId::integer(1),
                         (
-                            manifest_args!(String::from("Hello World"), dec!("12")),
-                            manifest_args!(12u8, 19u128)
+                            manifest_vec!(String::from("Hello World"), dec!("12")),
+                            manifest_vec!(12u8, 19u128)
                         )
                     )]),
                 })
@@ -1683,7 +1683,7 @@ mod tests {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT.to_string(),
-                args: manifest_encode(&ResourceManagerCreateFungibleInput {
+                args: manifest_transcode(&ResourceManagerCreateFungibleInput {
                     divisibility: 18,
                     metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
                     access_rules: BTreeMap::from([
@@ -1711,7 +1711,7 @@ mod tests {
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
-                args: manifest_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
+                args: manifest_transcode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
                     divisibility: 18,
                     metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
                     access_rules: BTreeMap::from([
@@ -1753,8 +1753,8 @@ mod tests {
             Instruction::MintUuidNonFungible {
                 resource_address: resource,
                 entries: Vec::from([(
-                    manifest_args!(String::from("Hello World"), dec!("12")),
-                    manifest_args!(12u8, 19u128)
+                    manifest_vec!(String::from("Hello World"), dec!("12")),
+                    manifest_vec!(12u8, 19u128)
                 )])
             },
         );
@@ -1769,7 +1769,7 @@ mod tests {
             Instruction::CallMethod {
                 component_address: EPOCH_MANAGER,
                 method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
-                args: manifest_encode(&EpochManagerCreateValidatorInput {
+                args: manifest_transcode(&EpochManagerCreateValidatorInput {
                     key: EcdsaSecp256k1PrivateKey::from_u64(2u64)
                         .unwrap()
                         .public_key(),

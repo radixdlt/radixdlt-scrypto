@@ -85,7 +85,7 @@ impl ShowLedger {
         let instructions = vec![Instruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
-            args: manifest_encode(&EpochManagerGetCurrentEpochInput).unwrap(),
+            args: manifest_transcode(&EpochManagerGetCurrentEpochInput).unwrap(),
         }];
         let blobs = vec![];
         let initial_proofs = vec![];
@@ -101,7 +101,7 @@ impl ShowLedger {
         let instructions = vec![Instruction::CallMethod {
             component_address: CLOCK,
             method_name: CLOCK_GET_CURRENT_TIME_IDENT.to_string(),
-            args: manifest_encode(&ClockGetCurrentTimeInput { precision }).unwrap(),
+            args: manifest_transcode(&ClockGetCurrentTimeInput { precision }).unwrap(),
         }];
         let blobs = vec![];
         let initial_proofs = vec![];
