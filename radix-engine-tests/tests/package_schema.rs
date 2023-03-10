@@ -42,7 +42,7 @@ enum ExpectedResult {
     InvalidOutput,
 }
 
-fn test_arg(method_name: &str, args: Vec<u8>, expected_result: ExpectedResult) {
+fn test_arg(method_name: &str, args: ManifestValue, expected_result: ExpectedResult) {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/package_schema");
@@ -86,100 +86,100 @@ fn test_arg(method_name: &str, args: Vec<u8>, expected_result: ExpectedResult) {
 fn test_invalid_output_fails() {
     test_arg(
         "invalid_output",
-        manifest_encode(&()).unwrap(),
+        manifest_transcode(&()).unwrap(),
         InvalidOutput,
     )
 }
 
 #[test]
 fn test_input_arg_unit_succeeds() {
-    test_arg("unit", manifest_encode(&()).unwrap(), Success)
+    test_arg("unit", manifest_transcode(&()).unwrap(), Success)
 }
 
 #[test]
 fn test_invalid_input_arg_unit_fails() {
-    test_arg("unit", manifest_encode(&0u8).unwrap(), InvalidInput)
+    test_arg("unit", manifest_transcode(&0u8).unwrap(), InvalidInput)
 }
 
 #[test]
 fn test_input_arg_bool_succeeds() {
-    test_arg("bool", manifest_encode(&true).unwrap(), Success)
+    test_arg("bool", manifest_transcode(&true).unwrap(), Success)
 }
 
 #[test]
 fn test_invalid_input_arg_bool_fails() {
-    test_arg("unit", manifest_encode(&0u8).unwrap(), InvalidInput)
+    test_arg("unit", manifest_transcode(&0u8).unwrap(), InvalidInput)
 }
 
 #[test]
 fn test_input_arg_ivalue_succeeds() {
-    test_arg("i8", manifest_encode(&0i8).unwrap(), Success);
-    test_arg("i16", manifest_encode(&0i16).unwrap(), Success);
-    test_arg("i32", manifest_encode(&0i32).unwrap(), Success);
-    test_arg("i64", manifest_encode(&0i64).unwrap(), Success);
-    test_arg("i128", manifest_encode(&0i128).unwrap(), Success);
+    test_arg("i8", manifest_transcode(&0i8).unwrap(), Success);
+    test_arg("i16", manifest_transcode(&0i16).unwrap(), Success);
+    test_arg("i32", manifest_transcode(&0i32).unwrap(), Success);
+    test_arg("i64", manifest_transcode(&0i64).unwrap(), Success);
+    test_arg("i128", manifest_transcode(&0i128).unwrap(), Success);
 }
 
 #[test]
 fn test_input_arg_ivalue_fails() {
-    test_arg("i8", manifest_encode(&()).unwrap(), InvalidInput);
-    test_arg("i16", manifest_encode(&()).unwrap(), InvalidInput);
-    test_arg("i32", manifest_encode(&()).unwrap(), InvalidInput);
-    test_arg("i64", manifest_encode(&()).unwrap(), InvalidInput);
-    test_arg("i128", manifest_encode(&()).unwrap(), InvalidInput);
+    test_arg("i8", manifest_transcode(&()).unwrap(), InvalidInput);
+    test_arg("i16", manifest_transcode(&()).unwrap(), InvalidInput);
+    test_arg("i32", manifest_transcode(&()).unwrap(), InvalidInput);
+    test_arg("i64", manifest_transcode(&()).unwrap(), InvalidInput);
+    test_arg("i128", manifest_transcode(&()).unwrap(), InvalidInput);
 }
 
 #[test]
 fn test_input_arg_uvalue_succeeds() {
-    test_arg("u8", manifest_encode(&0u8).unwrap(), Success);
-    test_arg("u16", manifest_encode(&0u16).unwrap(), Success);
-    test_arg("u32", manifest_encode(&0u32).unwrap(), Success);
-    test_arg("u64", manifest_encode(&0u64).unwrap(), Success);
-    test_arg("u128", manifest_encode(&0u128).unwrap(), Success);
+    test_arg("u8", manifest_transcode(&0u8).unwrap(), Success);
+    test_arg("u16", manifest_transcode(&0u16).unwrap(), Success);
+    test_arg("u32", manifest_transcode(&0u32).unwrap(), Success);
+    test_arg("u64", manifest_transcode(&0u64).unwrap(), Success);
+    test_arg("u128", manifest_transcode(&0u128).unwrap(), Success);
 }
 
 #[test]
 fn test_input_arg_uvalue_fails() {
-    test_arg("u8", manifest_encode(&()).unwrap(), InvalidInput);
-    test_arg("u16", manifest_encode(&()).unwrap(), InvalidInput);
-    test_arg("u32", manifest_encode(&()).unwrap(), InvalidInput);
-    test_arg("u64", manifest_encode(&()).unwrap(), InvalidInput);
-    test_arg("u128", manifest_encode(&()).unwrap(), InvalidInput);
+    test_arg("u8", manifest_transcode(&()).unwrap(), InvalidInput);
+    test_arg("u16", manifest_transcode(&()).unwrap(), InvalidInput);
+    test_arg("u32", manifest_transcode(&()).unwrap(), InvalidInput);
+    test_arg("u64", manifest_transcode(&()).unwrap(), InvalidInput);
+    test_arg("u128", manifest_transcode(&()).unwrap(), InvalidInput);
 }
 
 #[test]
 fn test_input_arg_result_succeeds() {
     let okay: Result<(), ()> = Ok(());
     let error: Result<(), ()> = Err(());
-    test_arg("result", manifest_encode(&okay).unwrap(), Success);
-    test_arg("result", manifest_encode(&error).unwrap(), Success);
+    test_arg("result", manifest_transcode(&okay).unwrap(), Success);
+    test_arg("result", manifest_transcode(&error).unwrap(), Success);
 }
 
 #[test]
 fn test_invalid_input_arg_result_fails() {
-    test_arg("result", manifest_encode(&0u8).unwrap(), InvalidInput);
+    test_arg("result", manifest_transcode(&0u8).unwrap(), InvalidInput);
 }
 
 #[test]
 fn test_input_arg_tree_map_succeeds() {
     let mut tree_map = BTreeMap::new();
     tree_map.insert((), ());
-    test_arg("tree_map", manifest_encode(&tree_map).unwrap(), Success);
+    test_arg("tree_map", manifest_transcode(&tree_map).unwrap(), Success);
 }
 
 #[test]
 fn test_invalid_input_arg_tree_map_fails() {
-    test_arg("tree_map", manifest_encode(&0u8).unwrap(), InvalidInput);
+    test_arg("tree_map", manifest_transcode(&0u8).unwrap(), InvalidInput);
 }
 
 #[test]
 fn test_input_arg_hash_set_succeeds() {
     let mut hash_set = HashSet::new();
     hash_set.insert(());
-    test_arg("hash_set", manifest_encode(&hash_set).unwrap(), Success);
+    test_arg("hash_set", manifest_transcode(&hash_set).unwrap(), Success);
 }
 
 #[test]
 fn test_invalid_input_arg_hash_set_fails() {
-    test_arg("hash_set", manifest_encode(&0u8).unwrap(), InvalidInput);
+    test_arg("hash_set", manifest_transcode(&0u8).unwrap(), InvalidInput);
 }

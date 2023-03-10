@@ -240,7 +240,7 @@ pub fn stop_timed_recovery_with_no_access_fails() {
         .call_method(
             test_runner.access_controller_component_address,
             "stop_timed_recovery",
-            manifest_encode(&AccessControllerStopTimedRecoveryInput {
+            manifest_transcode(&AccessControllerStopTimedRecoveryInput {
                 rule_set: RuleSet {
                     primary_role: rule!(require(RADIX_TOKEN)),
                     recovery_role: rule!(require(RADIX_TOKEN)),
@@ -1492,7 +1492,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 "create_proof",
-                manifest_encode(&AccessControllerCreateProofInput {}).unwrap(),
+                manifest_transcode(&AccessControllerCreateProofInput {}).unwrap(),
             )
             .pop_from_auth_zone(|builder, _| builder)
             .build();
@@ -1518,7 +1518,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 method_name,
-                manifest_encode(&AccessControllerInitiateRecoveryAsPrimaryInput {
+                manifest_transcode(&AccessControllerInitiateRecoveryAsPrimaryInput {
                     rule_set: RuleSet {
                         primary_role: proposed_primary_role,
                         recovery_role: proposed_recovery_role,
@@ -1561,7 +1561,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 method_name,
-                manifest_encode(
+                manifest_transcode(
                     &AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput {
                         rule_set: RuleSet {
                             primary_role: proposed_primary_role,
@@ -1590,7 +1590,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT,
-                manifest_encode(&AccessControllerTimedConfirmRecoveryInput {
+                manifest_transcode(&AccessControllerTimedConfirmRecoveryInput {
                     rule_set: RuleSet {
                         primary_role: proposed_primary_role,
                         recovery_role: proposed_recovery_role,
@@ -1616,7 +1616,8 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 method_name,
-                manifest_encode(&AccessControllerCancelPrimaryRoleRecoveryProposalInput).unwrap(),
+                manifest_transcode(&AccessControllerCancelPrimaryRoleRecoveryProposalInput)
+                    .unwrap(),
             )
             .build();
         self.execute_manifest(manifest)
@@ -1628,7 +1629,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 "lock_primary_role",
-                manifest_encode(&AccessControllerLockPrimaryRoleInput {}).unwrap(),
+                manifest_transcode(&AccessControllerLockPrimaryRoleInput {}).unwrap(),
             )
             .build();
         self.execute_manifest(manifest)
@@ -1640,7 +1641,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 "unlock_primary_role",
-                manifest_encode(&AccessControllerUnlockPrimaryRoleInput {}).unwrap(),
+                manifest_transcode(&AccessControllerUnlockPrimaryRoleInput {}).unwrap(),
             )
             .build();
         self.execute_manifest(manifest)
@@ -1659,7 +1660,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 "stop_timed_recovery",
-                manifest_encode(&AccessControllerStopTimedRecoveryInput {
+                manifest_transcode(&AccessControllerStopTimedRecoveryInput {
                     rule_set: RuleSet {
                         primary_role: proposed_primary_role,
                         recovery_role: proposed_recovery_role,
