@@ -5,9 +5,10 @@ use rand_chacha::ChaCha8Rng;
 use std::{time::Instant, u128};
 
 use clap::{arg, value_parser, Command};
-use log::{debug, info, Level, LevelFilter, Log, Metadata, Record};
+use log::{debug, info, trace, Level, LevelFilter, Log, Metadata, Record};
 
 use crate::TxStatus;
+use std::fs;
 
 const MIN_LEN: usize = 0;
 const MAX_LEN: usize = 1024;
@@ -36,7 +37,7 @@ struct DataFuzzer {
     max_steps: u32,
     max_duration: u128,
     max_len: usize,
-    input_file: Option<String>,
+    input_files: Vec<String>,
 }
 
 impl DataFuzzer {
@@ -47,7 +48,7 @@ impl DataFuzzer {
             max_steps: 0,
             max_duration: 0,
             max_len: MAX_LEN,
-            input_file: None,
+            input_files: vec![],
         }
     }
 
@@ -62,8 +63,28 @@ impl DataFuzzer {
         false
     }
 
-    fn set_input_file(&mut self, path: &String) {
-        self.input_file = Some(path.to_string());
+    fn set_input_data(&mut self, path: &String) {
+        if fs::metadata(path).unwrap().is_file() {
+            self.input_files.push(path.to_string());
+        }
+        else {
+            let mut files = fs::read_dir(path)
+                .unwrap()
+                .filter_map(|res| {
+                    let dir_entry = res.unwrap();
+                    if dir_entry.file_type().unwrap().is_file() {
+                        Some(dir_entry.path().to_str().unwrap().to_string())
+                    }
+                    else {
+                        None
+                    }
+                })
+                .collect::<Vec<String>>();
+            files.sort();
+            files.reverse();
+            self.input_files = files;
+        }
+        self.max_steps = self.input_files.len() as u32;
     }
 
     fn set_max_len(&mut self, len: usize) {
@@ -91,9 +112,13 @@ impl DataFuzzer {
     }
 
     fn get_data(&mut self) -> Vec<u8> {
-        match &self.input_file {
-            Some(input_file) => std::fs::read(input_file).unwrap(),
-            None => self.get_rand_vector(),
+        if !self.input_files.is_empty() {
+            let file = self.input_files.pop().unwrap();
+            trace!("reading file = {}", file);
+            fs::read(file).unwrap()
+        }
+        else {
+            self.get_rand_vector()
         }
     }
 }
@@ -124,7 +149,7 @@ It allows to:
                 .value_parser(value_parser!(usize)),
         )
         .arg(
-            arg!([input] "Input file (if provided then fuzzer runs once using data from file).\nUseful for reproducing problematic cases.")
+            arg!([input] "Input file (if provided then fuzzer runs once using data from file) or folder with files.\nUseful for reproducing problematic cases.")
                 .required(false),
         )
         .arg(arg!(-v --verbose ... "Verbose").required(false))
@@ -135,8 +160,7 @@ It allows to:
     let mut fuzzer = DataFuzzer::new();
 
     if let Some(input) = matches.get_one::<String>("input") {
-        fuzzer.set_input_file(input);
-        fuzzer.set_max_steps(1);
+        fuzzer.set_input_data(input);
     } else {
         if let Some(val) = matches.get_one::<u32>("iterations") {
             fuzzer.set_max_steps(*val);
