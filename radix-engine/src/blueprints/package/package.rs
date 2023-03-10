@@ -307,7 +307,7 @@ impl PackageNativePackage {
         let code_type = PackageCodeTypeSubstate::Wasm;
         let code = PackageCodeSubstate { code: input.code };
         let royalty = PackageRoyaltySubstate {
-            royalty_vault: Some(ResourceManager(RADIX_TOKEN).new_vault(api)?),
+            royalty_vault: None,
             blueprint_royalty_configs: input.royalty_config,
         };
         let node_init = RENodeInit::GlobalPackage(info, code_type, code, royalty);
