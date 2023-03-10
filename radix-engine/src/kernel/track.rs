@@ -559,7 +559,7 @@ struct FinalizingTrack<'s> {
 
 impl<'s> FinalizingTrack<'s> {
     fn calculate_commit_result(
-        self,
+        mut self,
         invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
         fee_summary: &mut FeeSummary,
         vault_ops: Vec<(TraceActor, ObjectId, VaultOp, usize)>,
@@ -614,6 +614,12 @@ impl<'s> FinalizingTrack<'s> {
                     SubstateMetaState::Existing { old_version, .. } => Some(*old_version),
                 };
                 to_persist.insert(id, (loaded.substate.to_persisted(), old_version));
+            }
+
+            // TODO: Is there a better way to include this?
+            if matches!(next_epoch, Some((_, 1))) {
+                self.new_global_addresses
+                    .insert(0, Address::Package(PACKAGE_LOADER));
             }
 
             self.new_global_addresses
