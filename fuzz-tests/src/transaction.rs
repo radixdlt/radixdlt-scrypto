@@ -183,13 +183,13 @@ pub enum TxStatus {
 fn test_fuzz_tx() {
     let mut fuzzer = Fuzzer::new();
     let data = std::fs::read(
-        "fuzz_input/transaction/manifest_03b4c3062404b7492262614c420febdc37f5d2fcd268a04225640b1233e44f76.raw",
+        "fuzz_input/transaction/manifest_01995e0d6005c34ad99fba993ebe1443ef55c4db71ed037de12afb3eb28bbfae.raw",
     )
     .unwrap();
     assert!(matches!(fuzzer.fuzz_tx_manifest(&data), TxStatus::CommitSuccess));
 
     let data = std::fs::read(
-        "fuzz_input/transaction/manifest_014fdae5e61df8796d8e1461ac3f3037c2f96d0c878b6f2072e507414858eecf.raw",
+        "fuzz_input/transaction//manifest_0113970c0a72935c8c27ddd97a9396d1839f0173bf9ed091f9706aa61db8417e.raw",
     )
     .unwrap();
     assert!(matches!(fuzzer.fuzz_tx_manifest(&data), TxStatus::CommitFailure));
