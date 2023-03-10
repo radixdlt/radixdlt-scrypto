@@ -137,6 +137,7 @@ impl Parser {
                 proof: self.parse_value()?,
             },
             TokenKind::DropAllProofs => Instruction::DropAllProofs,
+            TokenKind::DropAllVirtualProofs => Instruction::DropAllVirtualProofs,
             TokenKind::CallFunction => Instruction::CallFunction {
                 package_address: self.parse_value()?,
                 blueprint_name: self.parse_value()?,

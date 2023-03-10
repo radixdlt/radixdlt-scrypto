@@ -268,6 +268,11 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::DropAllProofs).0
     }
 
+    /// Drops all virtual proofs.
+    pub fn drop_all_virtual_proofs(&mut self) -> &mut Self {
+        self.add_instruction(Instruction::DropAllVirtualProofs).0
+    }
+
     /// Creates a fungible resource
     pub fn create_fungible_resource<R: Into<AccessRule>>(
         &mut self,

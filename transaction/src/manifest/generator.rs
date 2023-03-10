@@ -351,6 +351,12 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             Instruction::DropAllProofs
         }
+        ast::Instruction::DropAllVirtualProofs => {
+            id_validator
+                .drop_all_proofs()
+                .map_err(GeneratorError::IdValidationError)?;
+            Instruction::DropAllVirtualProofs
+        }
         ast::Instruction::CallFunction {
             package_address,
             blueprint_name,

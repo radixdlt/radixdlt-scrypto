@@ -20,6 +20,9 @@ CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT Decimal("1") ResourceAddress("resource_sim
 CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS Array<NonFungibleLocalId>(NonFungibleLocalId("#123#")) ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Proof("proof5");
 CLEAR_AUTH_ZONE;
 
+# Drop all virtual proofs in the auth zone.
+DROP_ALL_VIRTUAL_PROOFS;
+
 # Drop all proofs, and move resources to account
 DROP_ALL_PROOFS;
 CALL_METHOD ComponentAddress("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064") "deposit_batch" Expression("ENTIRE_WORKTOP");
