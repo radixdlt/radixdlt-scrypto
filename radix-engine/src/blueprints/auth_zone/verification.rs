@@ -116,7 +116,7 @@ impl AuthVerification {
                         return Ok(true);
                     }
                     if auth_zone
-                        .virtual_resource_addresses
+                        .virtual_resources
                         .contains(&non_fungible_global_id.resource_address())
                     {
                         return Ok(true);

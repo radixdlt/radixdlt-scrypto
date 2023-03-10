@@ -1086,7 +1086,7 @@ impl TestRunner {
             transaction_hash,
             AuthZoneParams {
                 initial_proofs: vec![],
-                virtual_resource_addresses: BTreeSet::new(),
+                virtual_resources: BTreeSet::new(),
             },
             SystemLoanFeeReserve::no_fee(),
             FeeTable::new(),

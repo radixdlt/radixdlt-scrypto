@@ -444,7 +444,7 @@ impl KernelModule for AuthModule {
             let auth_zone = if auth_zone_stack.is_empty() {
                 AuthZone::new(
                     vec![],
-                    auth_zone_params.virtual_resource_addresses,
+                    auth_zone_params.virtual_resources,
                     auth_zone_params.initial_proofs.into_iter().collect(),
                     virtual_non_fungibles_non_extending,
                     is_barrier,

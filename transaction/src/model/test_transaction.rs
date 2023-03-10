@@ -38,7 +38,7 @@ impl TestTransaction {
                 payload_size,
                 auth_zone_params: AuthZoneParams {
                     initial_proofs,
-                    virtual_resource_addresses: BTreeSet::new(),
+                    virtual_resources: BTreeSet::new(),
                 },
                 fee_payment: FeePayment::User {
                     cost_unit_limit: self.cost_unit_limit,
