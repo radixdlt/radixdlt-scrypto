@@ -8,7 +8,11 @@ use sbor::*;
 use utils::copy_u8_array;
 
 // TODO: Unify with Address
-pub const OBJECT_ID_LENGTH: usize = 31;
+pub const ENTITY_BYTES_LENGTH: usize = 1;
+pub const OBJECT_HASH_LENGTH: usize = 26;
+pub const OBJECT_HASH_END: usize = ENTITY_BYTES_LENGTH + OBJECT_HASH_LENGTH;
+pub const OBJECT_INDEX_LENGTH: usize = 4;
+pub const OBJECT_ID_LENGTH: usize = ENTITY_BYTES_LENGTH + OBJECT_HASH_LENGTH + OBJECT_INDEX_LENGTH;
 
 // TODO: it's still up to debate whether this should be an enum OR dedicated types for each variant.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

@@ -124,8 +124,9 @@ impl IdAllocator {
     ) -> Result<[u8; OBJECT_ID_LENGTH], IdAllocationError> {
         let mut buf = [0u8; OBJECT_ID_LENGTH];
         buf[0] = entity_id;
-        (&mut buf[1..27]).copy_from_slice(&self.transaction_hash.0[0..26]);
-        (&mut buf[27..]).copy_from_slice(&self.next()?.to_le_bytes());
+        (&mut buf[1..OBJECT_HASH_END])
+            .copy_from_slice(&self.transaction_hash.0[0..OBJECT_HASH_LENGTH]);
+        (&mut buf[OBJECT_HASH_END..]).copy_from_slice(&self.next()?.to_le_bytes());
         Ok(buf)
     }
 
