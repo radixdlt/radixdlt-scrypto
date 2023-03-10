@@ -10,7 +10,7 @@ cargo clean
 
 # clean this and other workspaces folders
 (
-    find "." -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
+    find "." -mindepth 2 -maxdepth 4 -type f \( -name Cargo.toml \) -print \
     | awk '{print substr($1, 1, length($1)-length("Cargo.toml"))}' \
     | xargs -I '{}' bash -c "echo cleaning '{}'; cd '{}'; cargo clean"
 )
