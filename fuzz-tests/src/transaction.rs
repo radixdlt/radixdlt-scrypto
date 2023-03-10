@@ -159,7 +159,6 @@ impl Fuzzer {
                 }
             }
             Err(_err) => {
-                //println!("manifest decoding error {:?}", err);
                 TxStatus::DecodeError
             }
         }
@@ -172,18 +171,27 @@ pub enum TxStatus {
     CommitSuccess,
     // Transaction commit failure
     CommitFailure,
-    // TransactionIntent parse error
+    // Transaction manifest parse error
     DecodeError,
 }
 
 #[test]
+// This test verifies whether it is still possible to parse manifest raw files and execute them.
+// If it fails with TxStatus::DecodeError then most likely that manifest format has changed and
+// input files shall be recreated.
 fn test_fuzz_tx() {
     let mut fuzzer = Fuzzer::new();
     let data = std::fs::read(
-        "fuzz_input/transaction/manifest_e057a3853ccb0e33c8b61f2cde91f655473b202c6c095e2202c2ad93caee4e34.raw",
+        "fuzz_input/transaction/manifest_03b4c3062404b7492262614c420febdc37f5d2fcd268a04225640b1233e44f76.raw",
     )
     .unwrap();
-    fuzzer.fuzz_tx_manifest(&data);
+    assert!(matches!(fuzzer.fuzz_tx_manifest(&data), TxStatus::CommitSuccess));
+
+    let data = std::fs::read(
+        "fuzz_input/transaction/manifest_014fdae5e61df8796d8e1461ac3f3037c2f96d0c878b6f2072e507414858eecf.raw",
+    )
+    .unwrap();
+    assert!(matches!(fuzzer.fuzz_tx_manifest(&data), TxStatus::CommitFailure));
 }
 
 // Fuzzer entry points
