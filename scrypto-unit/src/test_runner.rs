@@ -262,19 +262,19 @@ impl TestRunner {
             NodeModuleId::ComponentRoyalty,
             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
         )) {
-            let royalty_vault: Own = output
+            output
                 .substate
                 .component_royalty_accumulator()
                 .royalty_vault
-                .clone();
-
-            self.substate_store
-                .get_substate(&SubstateId(
-                    RENodeId::Object(royalty_vault.vault_id()),
-                    NodeModuleId::SELF,
-                    SubstateOffset::Vault(VaultOffset::LiquidFungible),
-                ))
-                .map(|mut output| output.substate.vault_liquid_fungible_mut().amount())
+                .and_then(|vault| {
+                    self.substate_store
+                        .get_substate(&SubstateId(
+                            RENodeId::Object(vault.vault_id()),
+                            NodeModuleId::SELF,
+                            SubstateOffset::Vault(VaultOffset::LiquidFungible),
+                        ))
+                        .map(|mut output| output.substate.vault_liquid_fungible_mut().amount())
+                })
         } else {
             None
         }

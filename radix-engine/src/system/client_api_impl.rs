@@ -364,6 +364,8 @@ where
         node_id: RENodeId,
         modules: BTreeMap<NodeModuleId, ObjectId>,
     ) -> Result<Address, RuntimeError> {
+        // FIXME check completeness of modules
+
         let node_type = match node_id {
             RENodeId::Object(..) => {
                 let (package_address, blueprint) = TypeInfoBlueprint::get_type(node_id, self)?;
@@ -390,6 +392,35 @@ where
         modules: BTreeMap<NodeModuleId, ObjectId>,
         address: Address,
     ) -> Result<Address, RuntimeError> {
+        let module_ids = modules.keys().cloned().collect::<BTreeSet<NodeModuleId>>();
+        let standard_object = btreeset!(
+            NodeModuleId::Metadata,
+            NodeModuleId::ComponentRoyalty,
+            NodeModuleId::AccessRules
+        );
+        // TODO: remove
+        let package_object = btreeset!(
+            NodeModuleId::Metadata,
+            NodeModuleId::ComponentRoyalty,
+            NodeModuleId::AccessRules,
+            NodeModuleId::FunctionAccessRules,
+        );
+        // TODO: remove
+        let resource_manager_object = btreeset!(
+            NodeModuleId::Metadata,
+            NodeModuleId::ComponentRoyalty,
+            NodeModuleId::AccessRules,
+            NodeModuleId::AccessRules1
+        );
+        if module_ids != standard_object
+            && module_ids != package_object
+            && module_ids != resource_manager_object
+        {
+            return Err(RuntimeError::SystemError(SystemError::InvalidModuleSet(
+                node_id, module_ids,
+            )));
+        }
+
         let node = self.kernel_drop_node(node_id)?;
 
         let mut module_substates = BTreeMap::new();

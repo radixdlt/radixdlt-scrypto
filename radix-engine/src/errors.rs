@@ -187,6 +187,7 @@ pub enum CallFrameError {
 pub enum SystemError {
     InvalidLockFlags,
     CannotGlobalize,
+    InvalidModuleSet(RENodeId, BTreeSet<NodeModuleId>),
     InvalidModule,
     InvalidModuleType {
         expected_package: PackageAddress,
