@@ -7,6 +7,8 @@ use std::{time::Instant, u128};
 use clap::{arg, value_parser, Command};
 use log::{debug, info, Level, LevelFilter, Log, Metadata, Record};
 
+use crate::TxStatus;
+
 const MIN_LEN: usize = 0;
 const MAX_LEN: usize = 1024;
 
@@ -156,7 +158,7 @@ It allows to:
 
 pub fn fuzz<F>(mut closure: F)
 where
-    F: FnMut(&[u8]),
+    F: FnMut(&[u8]) -> TxStatus,
 {
     let mut fuzzer = fuzz_init();
 
@@ -164,13 +166,14 @@ where
     let start = Instant::now();
     while !fuzzer.should_stop(cnt, start.elapsed().as_millis()) {
         let data = fuzzer.get_data();
+        let status = closure(&data);
         debug!(
-            "step= {} duration= {} ms data len={}",
+            "step= {} duration= {} ms data len={} status={:?}",
             cnt,
             start.elapsed().as_millis(),
-            data.len()
+            data.len(),
+            status
         );
-        closure(&data);
 
         cnt += 1;
     }

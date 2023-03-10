@@ -16,9 +16,9 @@ mod simple_fuzzer;
 use radix_engine::types::{ComponentAddress, EcdsaSecp256k1PublicKey, ResourceAddress};
 use radix_engine_interface::blueprints::resource::{FromPublicKey, NonFungibleGlobalId};
 use scrypto_unit::TestRunner;
+use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::Instruction;
 use transaction::model::TransactionManifest;
-use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 
 struct Account {
     public_key: EcdsaSecp256k1PublicKey,
@@ -93,7 +93,9 @@ impl Fuzzer {
                     component_address, ..
                 }
                 | Instruction::ClaimComponentRoyalty { component_address } => {
-                    if let Some(address) = self.get_account(&component_address.to_array_without_entity_id()) {
+                    if let Some(address) =
+                        self.get_account(&component_address.to_array_without_entity_id())
+                    {
                         *component_address = address;
                     }
                 }
@@ -127,7 +129,9 @@ impl Fuzzer {
                 | Instruction::MintUuidNonFungible {
                     resource_address, ..
                 } => {
-                    if let Some(address) = self.get_resource(&resource_address.to_array_without_entity_id()) {
+                    if let Some(address) =
+                        self.get_resource(&resource_address.to_array_without_entity_id())
+                    {
                         *resource_address = address;
                     }
                 }
@@ -141,28 +145,35 @@ impl Fuzzer {
         match result {
             Ok(mut manifest) => {
                 self.smart_mutate_manifest(&mut manifest);
-                let _receipt = self.runner.execute_manifest(
+                let receipt = self.runner.execute_manifest(
                     manifest,
                     vec![NonFungibleGlobalId::from_public_key(
                         &self.accounts[0].public_key,
                     )],
                 );
-
-                TxStatus::Ok
+                if receipt.is_commit_success() {
+                    TxStatus::CommitSuccess
+                }
+                else {
+                    TxStatus::CommitFailure
+                }
             }
             Err(_err) => {
                 //println!("manifest decoding error {:?}", err);
-                TxStatus::Error
+                TxStatus::DecodeError
             }
         }
     }
 }
 
-enum TxStatus {
-    // TransactionIntent successfully parsed
-    Ok,
+#[derive(Debug)]
+pub enum TxStatus {
+    // Transaction commit success
+    CommitSuccess,
+    // Transaction commit failure
+    CommitFailure,
     // TransactionIntent parse error
-    Error,
+    DecodeError,
 }
 
 #[test]
@@ -177,7 +188,7 @@ fn test_fuzz_tx() {
 
 // Fuzzer entry points
 #[cfg(feature = "libfuzzer-sys")]
-fuzz_target!(|data: &[u8]| {
+fuzz_target!(|data: &[u8]|{
     unsafe {
         static mut FUZZER: Lazy<Fuzzer> = Lazy::new(|| Fuzzer::new());
 
@@ -201,7 +212,7 @@ fn main() {
 fn main() {
     let mut fuzzer = Fuzzer::new();
 
-    simple_fuzzer::fuzz(|data: &[u8]| {
-        fuzzer.fuzz_tx_manifest(data);
+    simple_fuzzer::fuzz(|data: &[u8]| -> TxStatus {
+        fuzzer.fuzz_tx_manifest(data)
     });
 }
