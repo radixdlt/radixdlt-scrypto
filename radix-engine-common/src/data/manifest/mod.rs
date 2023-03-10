@@ -40,3 +40,9 @@ pub fn manifest_decode<T: ManifestDecode>(buf: &[u8]) -> Result<T, DecodeError> 
     ManifestDecoder::new(buf, MANIFEST_SBOR_V1_MAX_DEPTH)
         .decode_payload(MANIFEST_SBOR_V1_PAYLOAD_PREFIX)
 }
+
+pub fn manifest_transcode<T: ManifestEncode + ?Sized, P: ManifestDecode>(
+    value: &T,
+) -> Result<P, DecodeError> {
+    manifest_decode(&manifest_encode(value).unwrap())
+}
