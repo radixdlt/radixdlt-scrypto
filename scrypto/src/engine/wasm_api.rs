@@ -42,10 +42,7 @@ extern "C" {
         app_states_len: usize,
     ) -> Buffer;
 
-    pub fn new_key_value_store(
-        schema_ptr: *const u8,
-        schema_len: usize,
-    ) -> Buffer;
+    pub fn new_key_value_store(schema_ptr: *const u8, schema_len: usize) -> Buffer;
 
     pub fn globalize_component(
         component_id_ptr: *const u8,
@@ -91,6 +88,8 @@ extern "C" {
         royalty_config: usize,
         metadata_ptr: *const u8,
         metadata_len: usize,
+        event_schema_ptr: *const u8,
+        event_schema_len: usize,
     ) -> Buffer;
 
     /// Invokes a function on a blueprint.
@@ -149,8 +148,8 @@ extern "C" {
     //===============
 
     pub fn emit_event(
-        schema_hash_ptr: *const u8,
-        schema_hash_len: usize,
+        event_name_ptr: *const u8,
+        event_name_len: usize,
         event_data_ptr: *const u8,
         event_data_len: usize,
     );
@@ -183,10 +182,7 @@ pub unsafe fn new_component(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn new_key_value_store(
-    _schema_ptr: *const u8,
-    _schema_len: usize,
-) -> Buffer {
+pub unsafe fn new_key_value_store(_schema_ptr: *const u8, _schema_len: usize) -> Buffer {
     todo!()
 }
 
@@ -245,6 +241,8 @@ pub unsafe fn new_package(
     _royalty_config: usize,
     _metadata_ptr: *const u8,
     _metadata_len: usize,
+    _event_schema_ptr: *const u8,
+    _event_schema_len: usize,
 ) -> Buffer {
     todo!()
 }
@@ -299,8 +297,8 @@ pub unsafe fn get_actor() -> Buffer {
 
 #[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn emit_event(
-    _schema_hash_ptr: *const u8,
-    _schema_hash_len: usize,
+    _event_name_ptr: *const u8,
+    _event_name_len: usize,
     _event_data_ptr: *const u8,
     _event_data_len: usize,
 ) {

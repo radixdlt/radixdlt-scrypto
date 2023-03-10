@@ -5,7 +5,9 @@ compile_error!("Either feature `std` or `alloc` must be enabled for this crate."
 #[cfg(all(feature = "std", feature = "alloc"))]
 compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
-use radix_engine_common::data::scrypto::{ScryptoCustomTypeKind, ScryptoDescribe, ScryptoSchema, ScryptoValue};
+use radix_engine_common::data::scrypto::{
+    ScryptoCustomTypeKind, ScryptoDescribe, ScryptoSchema, ScryptoValue,
+};
 use sbor::rust::prelude::*;
 use sbor::*;
 

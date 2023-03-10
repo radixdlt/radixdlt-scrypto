@@ -86,13 +86,17 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                     );
                     if let PersistedSubstate::KeyValueStoreEntry(entry) = substate {
                         if let Some(value) = entry {
-                            let (_, _, own, _) = IndexedScryptoValue::from_value(value.clone()).unpack();
+                            let (_, _, own, _) =
+                                IndexedScryptoValue::from_value(value.clone()).unpack();
                             for child_node_id in own {
-                                self.traverse_recursive(Some(&substate_id), child_node_id, depth + 1)
-                                    .expect("Broken Node Store");
+                                self.traverse_recursive(
+                                    Some(&substate_id),
+                                    child_node_id,
+                                    depth + 1,
+                                )
+                                .expect("Broken Node Store");
                             }
                         }
-
                     }
                 }
             }
@@ -111,8 +115,12 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
 
                 match type_substate {
                     TypeInfoSubstate::Object {
-                        package_address, blueprint_name, ..
-                    } if package_address.eq(&RESOURCE_MANAGER_PACKAGE) && blueprint_name.eq(VAULT_BLUEPRINT) => {
+                        package_address,
+                        blueprint_name,
+                        ..
+                    } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                        && blueprint_name.eq(VAULT_BLUEPRINT) =>
+                    {
                         if let Some(output_value) = self.substate_store.get_substate(&SubstateId(
                             node_id,
                             NodeModuleId::SELF,

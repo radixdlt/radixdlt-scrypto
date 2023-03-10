@@ -45,9 +45,10 @@ impl Heap {
         // TODO: Will clean this up when virtual substates is cleaned up
         match (&node_id, module_id, offset) {
             (_, _, SubstateOffset::KeyValueStore(..)) => {
-                let entry = node.substates.entry((module_id, offset.clone())).or_insert(
-                    RuntimeSubstate::KeyValueStoreEntry(Option::None),
-                );
+                let entry = node
+                    .substates
+                    .entry((module_id, offset.clone()))
+                    .or_insert(RuntimeSubstate::KeyValueStoreEntry(Option::None));
                 Ok(entry.to_ref())
             }
             _ => node
@@ -72,9 +73,10 @@ impl Heap {
         // TODO: Will clean this up when virtual substates is cleaned up
         match (&node_id, offset) {
             (_, SubstateOffset::KeyValueStore(..)) => {
-                let entry = node.substates.entry((module_id, offset.clone())).or_insert(
-                    RuntimeSubstate::KeyValueStoreEntry(Option::None),
-                );
+                let entry = node
+                    .substates
+                    .entry((module_id, offset.clone()))
+                    .or_insert(RuntimeSubstate::KeyValueStoreEntry(Option::None));
                 Ok(entry.to_ref_mut())
             }
             _ => node

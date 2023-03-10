@@ -57,7 +57,7 @@ pub trait MetadataObject {
                 node_id,
                 module_id,
                 METADATA_SET_IDENT,
-                scrypto_encode(&MetadataSet {
+                scrypto_encode(&MetadataSetInput {
                     key: name.as_ref().to_owned(),
                     value,
                 })
@@ -74,7 +74,7 @@ pub trait MetadataObject {
                 node_id,
                 module_id,
                 METADATA_SET_IDENT,
-                scrypto_encode(&MetadataSet {
+                scrypto_encode(&MetadataSetInput {
                     key: name.as_ref().to_owned(),
                     value: value.to_metadata_entry(),
                 })

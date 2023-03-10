@@ -1,9 +1,9 @@
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use std::collections::HashMap;
-use syn::*;
 use syn::punctuated::Punctuated;
 use syn::token::Comma;
+use syn::*;
 
 macro_rules! trace {
     ($($arg:expr),*) => {{
@@ -63,11 +63,10 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
     let output = match data {
         Data::Struct(s) => match s.fields {
             syn::Fields::Named(FieldsNamed { named, .. }) => {
-                let mutable_fields: Punctuated<String, Comma> = named.iter()
+                let mutable_fields: Punctuated<String, Comma> = named
+                    .iter()
                     .filter(|f| is_mutable(f))
-                    .filter_map(|f| {
-                        f.ident.as_ref().map(|f| f.to_string())
-                    })
+                    .filter_map(|f| f.ident.as_ref().map(|f| f.to_string()))
                     .collect();
 
                 quote! {
@@ -127,6 +126,7 @@ mod tests {
             output,
             quote! {
                 impl ::scrypto::prelude::NonFungibleData for MyStruct {
+                    const MUTABLE_FIELDS : & 'static [& 'static str] = & ["field_2"] ;
                 }
             },
         );

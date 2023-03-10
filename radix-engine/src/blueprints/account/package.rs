@@ -446,14 +446,10 @@ impl AccountNativePackage {
                 api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
 
             match entry {
-                Option::Some(value) => {
-                    Ok(scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
-                        .map(|own| Vault(own.vault_id()))
-                        .expect("Impossible Case!"))
-                }
-                Option::None => {
-                    Err(AccountError::VaultDoesNotExist { resource_address })
-                }
+                Option::Some(value) => Ok(scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
+                    .map(|own| Vault(own.vault_id()))
+                    .expect("Impossible Case!")),
+                Option::None => Err(AccountError::VaultDoesNotExist { resource_address }),
             }
         }?;
 
@@ -550,11 +546,9 @@ impl AccountNativePackage {
                 api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
 
             match entry {
-                Option::Some(value) => {
-                    scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
-                        .map(|own| Vault(own.vault_id()))
-                        .expect("Impossible Case!")
-                }
+                Option::Some(value) => scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
+                    .map(|own| Vault(own.vault_id()))
+                    .expect("Impossible Case!"),
                 Option::None => {
                     let vault = Vault::sys_new(resource_address, api)?;
                     let encoded_value = IndexedScryptoValue::from_typed(&Own::Vault(vault.0));
@@ -624,11 +618,9 @@ impl AccountNativePackage {
                     api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
 
                 match entry {
-                    Option::Some(value) => {
-                        scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
-                            .map(|own| Vault(own.vault_id()))
-                            .expect("Impossible Case!")
-                    }
+                    Option::Some(value) => scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
+                        .map(|own| Vault(own.vault_id()))
+                        .expect("Impossible Case!"),
                     Option::None => {
                         let vault = Vault::sys_new(resource_address, api)?;
                         let encoded_value = IndexedScryptoValue::from_typed(&Own::Vault(vault.0));
@@ -688,14 +680,10 @@ impl AccountNativePackage {
                 api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
 
             match entry {
-                Option::Some(value) => {
-                    Ok(scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
-                        .map(|own| Vault(own.vault_id()))
-                        .expect("Impossible Case!"))
-                }
-                Option::None => {
-                    Err(AccountError::VaultDoesNotExist { resource_address })
-                }
+                Option::Some(value) => Ok(scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
+                    .map(|own| Vault(own.vault_id()))
+                    .expect("Impossible Case!")),
+                Option::None => Err(AccountError::VaultDoesNotExist { resource_address }),
             }
         }?;
 

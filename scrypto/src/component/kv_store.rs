@@ -16,13 +16,20 @@ use crate::runtime::{DataRef, DataRefMut, OriginalData};
 // TODO: optimize `rust_value -> bytes -> scrypto_value` conversion.
 
 /// A scalable key-value map which loads entries on demand.
-pub struct KeyValueStore<K: ScryptoEncode + ScryptoDecode + ScryptoDescribe, V: ScryptoEncode + ScryptoDecode + ScryptoDescribe> {
+pub struct KeyValueStore<
+    K: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
+    V: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
+> {
     pub id: KeyValueStoreId,
     pub key: PhantomData<K>,
     pub value: PhantomData<V>,
 }
 
-impl<K: ScryptoEncode + ScryptoDecode + ScryptoDescribe, V: ScryptoEncode + ScryptoDecode + ScryptoDescribe> KeyValueStore<K, V> {
+impl<
+        K: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
+        V: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
+    > KeyValueStore<K, V>
+{
     /// Creates a new key value store.
     pub fn new() -> Self {
         let mut env = ScryptoEnv;
@@ -110,15 +117,9 @@ impl<K: ScryptoEncode + ScryptoDecode + ScryptoDescribe, V: ScryptoEncode + Scry
                 LockFlags::MUTABLE,
             )
             .unwrap();
-        let substate: Option<ScryptoValue> = Option::Some(
-            scrypto_decode(&value_payload).unwrap(),
-        );
-        env.sys_write_substate(
-            handle,
-            scrypto_encode(&substate)
-            .unwrap(),
-        )
-        .unwrap();
+        let substate: Option<ScryptoValue> = Option::Some(scrypto_decode(&value_payload).unwrap());
+        env.sys_write_substate(handle, scrypto_encode(&substate).unwrap())
+            .unwrap();
         env.sys_drop_lock(handle).unwrap();
     }
 }
@@ -126,8 +127,10 @@ impl<K: ScryptoEncode + ScryptoDecode + ScryptoDescribe, V: ScryptoEncode + Scry
 //========
 // binary
 //========
-impl<K: ScryptoEncode + ScryptoDecode + ScryptoDescribe, V: ScryptoEncode + ScryptoDecode + ScryptoDescribe>
-    Categorize<ScryptoCustomValueKind> for KeyValueStore<K, V>
+impl<
+        K: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
+        V: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
+    > Categorize<ScryptoCustomValueKind> for KeyValueStore<K, V>
 {
     #[inline]
     fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
@@ -174,8 +177,10 @@ impl<
     }
 }
 
-impl<K: ScryptoEncode + ScryptoDecode + ScryptoDescribe, V: ScryptoEncode + ScryptoDecode + ScryptoDescribe>
-    Describe<ScryptoCustomTypeKind> for KeyValueStore<K, V>
+impl<
+        K: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
+        V: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
+    > Describe<ScryptoCustomTypeKind> for KeyValueStore<K, V>
 {
     const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown([OWN_KEY_VALUE_STORE_ID]);
 }

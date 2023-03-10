@@ -18,12 +18,8 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::*;
 use radix_engine_interface::schema::{KeyValueStoreSchema, NonFungibleSchema};
-
-use super::events::resource_manager::BurnResourceEvent;
-use super::events::resource_manager::MintResourceEvent;
-use super::events::resource_manager::VaultCreationEvent;
+use radix_engine_interface::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ResourceManagerSubstate {
@@ -447,9 +443,7 @@ where
 
     let object_id = api.new_object(
         RESOURCE_MANAGER_BLUEPRINT,
-        vec![
-            scrypto_encode(&resource_manager_substate).unwrap(),
-        ],
+        vec![scrypto_encode(&resource_manager_substate).unwrap()],
     )?;
 
     let (resman_access_rules, vault_access_rules) = build_access_rules(access_rules);
@@ -871,7 +865,12 @@ impl ResourceManagerBlueprint {
             let resource_manager: &ResourceManagerSubstate =
                 api.kernel_get_substate_ref(resman_handle)?;
             (
-                resource_manager.non_fungible_data.as_ref().unwrap().0.clone(),
+                resource_manager
+                    .non_fungible_data
+                    .as_ref()
+                    .unwrap()
+                    .0
+                    .clone(),
                 resource_manager.resource_address,
             )
         };
@@ -901,7 +900,7 @@ impl ResourceManagerBlueprint {
 
                 // FIXME: verify data
                 //let value: ScryptoValue =
-                    //scrypto_decode(&scrypto_encode(&non_fungible).unwrap()).unwrap();
+                //scrypto_decode(&scrypto_encode(&non_fungible).unwrap()).unwrap();
                 *non_fungible_mut = Option::Some(non_fungible);
             }
 
@@ -984,7 +983,7 @@ impl ResourceManagerBlueprint {
                     // FIXME: verify data
                     //let non_fungible = NonFungible::new(data.0, data.1);
                     let value: ScryptoValue = scrypto_decode(&data).unwrap();
-                        //scrypto_decode(&scrypto_encode(&non_fungible).unwrap()).unwrap();
+                    //scrypto_decode(&scrypto_encode(&non_fungible).unwrap()).unwrap();
                     *non_fungible_mut = Option::Some(value);
 
                     api.sys_drop_lock(non_fungible_handle)?;
@@ -1306,7 +1305,8 @@ impl ResourceManagerBlueprint {
         let nf_store_id = resource_manager
             .non_fungible_data
             .as_ref()
-            .ok_or(InvokeError::SelfError(ResourceManagerError::NotNonFungible))?.0;
+            .ok_or(InvokeError::SelfError(ResourceManagerError::NotNonFungible))?
+            .0;
         let resource_address = resource_manager.resource_address;
 
         let non_fungible_handle = api.sys_lock_substate(
@@ -1363,7 +1363,8 @@ impl ResourceManagerBlueprint {
         let nf_store_id = resource_manager
             .non_fungible_data
             .as_ref()
-            .ok_or(InvokeError::SelfError(ResourceManagerError::NotNonFungible))?.0;
+            .ok_or(InvokeError::SelfError(ResourceManagerError::NotNonFungible))?
+            .0;
 
         let non_fungible_handle = api.sys_lock_substate(
             RENodeId::KeyValueStore(nf_store_id),
@@ -1452,7 +1453,8 @@ impl ResourceManagerBlueprint {
         let nf_store_id = resource_manager
             .non_fungible_data
             .as_ref()
-            .ok_or(InvokeError::SelfError(ResourceManagerError::NotNonFungible))?.0;
+            .ok_or(InvokeError::SelfError(ResourceManagerError::NotNonFungible))?
+            .0;
 
         let non_fungible_global_id =
             NonFungibleGlobalId::new(resource_manager.resource_address, input.id.clone());
@@ -1464,8 +1466,7 @@ impl ResourceManagerBlueprint {
             )),
             LockFlags::read_only(),
         )?;
-        let wrapper: &Option<ScryptoValue> =
-            api.kernel_get_substate_ref(non_fungible_handle)?;
+        let wrapper: &Option<ScryptoValue> = api.kernel_get_substate_ref(non_fungible_handle)?;
         if let Option::Some(non_fungible) = wrapper {
             Ok(IndexedScryptoValue::from_typed(non_fungible))
         } else {

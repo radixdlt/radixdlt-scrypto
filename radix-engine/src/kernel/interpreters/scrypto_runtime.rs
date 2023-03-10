@@ -15,7 +15,6 @@ use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::blueprints::resource::AccessRulesConfig;
 use radix_engine_interface::schema::{KeyValueStoreSchema, PackageSchema};
 use sbor::rust::vec::Vec;
-use utils::copy_u8_array;
 
 /// A shim between ClientApi and WASM, with buffer capability.
 pub struct ScryptoRuntime<'y, Y>
@@ -139,6 +138,7 @@ where
         access_rules: Vec<u8>,
         royalty_config: Vec<u8>,
         metadata: Vec<u8>,
+        event_schema: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let schema =
             scrypto_decode::<PackageSchema>(&abi).map_err(WasmRuntimeError::InvalidSchema)?;
@@ -148,10 +148,19 @@ where
             .map_err(WasmRuntimeError::InvalidRoyaltyConfig)?;
         let metadata = scrypto_decode::<BTreeMap<String, String>>(&metadata)
             .map_err(WasmRuntimeError::InvalidMetadata)?;
+        let event_schema = scrypto_decode::<
+            BTreeMap<String, Vec<(LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>>,
+        >(&event_schema)
+        .map_err(WasmRuntimeError::InvalidEventSchema)?;
 
-        let package_address =
-            self.api
-                .new_package(code, schema, access_rules, royalty_config, metadata)?;
+        let package_address = self.api.new_package(
+            code,
+            schema,
+            access_rules,
+            royalty_config,
+            metadata,
+            event_schema,
+        )?;
         let package_address_encoded =
             scrypto_encode(&package_address).expect("Failed to encode package address");
 
@@ -192,7 +201,10 @@ where
         self.allocate_buffer(component_address_encoded)
     }
 
-    fn new_key_value_store(&mut self, schema: Vec<u8>) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+    fn new_key_value_store(
+        &mut self,
+        schema: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let schema = scrypto_decode::<KeyValueStoreSchema>(&schema)
             .map_err(WasmRuntimeError::InvalidKeyValueStoreSchema)?;
 
@@ -290,11 +302,13 @@ where
 
     fn emit_event(
         &mut self,
-        schema_hash: Vec<u8>,
+        event_name: Vec<u8>,
         event: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
-        self.api
-            .emit_raw_event(Hash(copy_u8_array(&schema_hash)), event)?;
+        self.api.emit_event(
+            scrypto_decode(&event_name).expect("Failed to decode level"),
+            event,
+        )?;
         Ok(())
     }
 
@@ -365,6 +379,7 @@ impl WasmRuntime for NopWasmRuntime {
         access_rules_chain: Vec<u8>,
         royalty_config: Vec<u8>,
         metadata: Vec<u8>,
+        event_schema: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
@@ -385,7 +400,10 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn new_key_value_store(&mut self, schema: Vec<u8>) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+    fn new_key_value_store(
+        &mut self,
+        schema: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
@@ -444,7 +462,7 @@ impl WasmRuntime for NopWasmRuntime {
 
     fn emit_event(
         &mut self,
-        schema_hash: Vec<u8>,
+        event_name: Vec<u8>,
         event: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))

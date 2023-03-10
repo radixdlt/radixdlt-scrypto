@@ -114,12 +114,18 @@ impl ExecutableInvocation for MethodInvocation {
                 let type_info = TypeInfoBlueprint::get_type(self.identifier.0, api)?;
                 match type_info {
                     TypeInfoSubstate::Object {
-                        package_address, blueprint_name, ..
+                        package_address,
+                        blueprint_name,
+                        ..
                     } => (package_address, blueprint_name),
 
-                    TypeInfoSubstate::KeyValueStore(..) => return Err(RuntimeError::InterpreterError(InterpreterError::CallMethodOnKeyValueStore)),
+                    TypeInfoSubstate::KeyValueStore(..) => {
+                        return Err(RuntimeError::InterpreterError(
+                            InterpreterError::CallMethodOnKeyValueStore,
+                        ))
+                    }
                 }
-            },
+            }
             NodeModuleId::Metadata => {
                 // TODO: Check if type has metadata
                 (METADATA_PACKAGE, METADATA_BLUEPRINT.to_string())

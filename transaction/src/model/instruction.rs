@@ -121,6 +121,11 @@ pub enum Instruction {
         value: MetadataEntry,
     },
 
+    RemoveMetadata {
+        entity_address: ManifestAddress,
+        key: String,
+    },
+
     SetPackageRoyaltyConfig {
         package_address: PackageAddress,
         royalty_config: BTreeMap<String, RoyaltyConfig>,

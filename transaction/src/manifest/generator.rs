@@ -74,6 +74,8 @@ pub enum GeneratorError {
     InvalidExpression(String),
     InvalidComponent(String),
     InvalidKeyValueStore(String),
+    InvalidBucket(String),
+    InvalidProof(String),
     InvalidVault(String),
     InvalidEcdsaSecp256k1PublicKey(String),
     InvalidEcdsaSecp256k1Signature(String),
@@ -424,6 +426,13 @@ pub fn generate_instruction(
             key: generate_string(key)?,
             value: generate_typed_value(value, resolver, bech32_decoder, blobs)?,
         },
+        ast::Instruction::RemoveMetadata {
+            entity_address,
+            key,
+        } => Instruction::RemoveMetadata {
+            entity_address: generate_address(entity_address, bech32_decoder)?,
+            key: generate_string(key)?,
+        },
         ast::Instruction::SetPackageRoyaltyConfig {
             package_address,
             royalty_config,
@@ -536,6 +545,7 @@ pub fn generate_instruction(
         },
         ast::Instruction::CreateNonFungibleResource {
             id_type,
+            schema,
             metadata,
             access_rules,
         } => Instruction::CallFunction {
@@ -544,7 +554,7 @@ pub fn generate_instruction(
             function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT.to_string(),
             args: manifest_encode(&ResourceManagerCreateNonFungibleInput {
                 id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
-                non_fungible_schema: NonFungibleSchema::new(),
+                non_fungible_schema: generate_typed_value(schema, resolver, bech32_decoder, blobs)?,
                 metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
                 access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
             })
@@ -967,20 +977,26 @@ fn generate_byte_vec_from_hex(value: &ast::Value) -> Result<Vec<u8>, GeneratorEr
 struct TemporaryTransformHandler;
 
 impl TransformHandler<GeneratorError> for TemporaryTransformHandler {
-    fn replace_bucket(&mut self, b: ManifestBucket) -> Result<Own, GeneratorError> {
-        todo!()
+    fn replace_bucket(&mut self, _: ManifestBucket) -> Result<Own, GeneratorError> {
+        Err(GeneratorError::InvalidBucket(
+            "Bucket not allowed".to_string(),
+        ))
     }
 
-    fn replace_proof(&mut self, p: ManifestProof) -> Result<Own, GeneratorError> {
-        todo!()
+    fn replace_proof(&mut self, _: ManifestProof) -> Result<Own, GeneratorError> {
+        Err(GeneratorError::InvalidProof(
+            "Proof not allowed".to_string(),
+        ))
     }
 
-    fn replace_expression(&mut self, e: ManifestExpression) -> Result<Vec<Own>, GeneratorError> {
-        todo!()
+    fn replace_expression(&mut self, _: ManifestExpression) -> Result<Vec<Own>, GeneratorError> {
+        Err(GeneratorError::InvalidExpression(
+            "Expression not allowed".to_string(),
+        ))
     }
 
-    fn replace_blob(&mut self, b: ManifestBlobRef) -> Result<Vec<u8>, GeneratorError> {
-        todo!()
+    fn replace_blob(&mut self, _: ManifestBlobRef) -> Result<Vec<u8>, GeneratorError> {
+        Err(GeneratorError::InvalidBlobHash)
     }
 }
 
@@ -999,7 +1015,7 @@ fn generate_non_fungible_mint_params(
     blobs: &BTreeMap<Hash, Vec<u8>>,
 ) -> Result<BTreeMap<NonFungibleLocalId, Vec<u8>>, GeneratorError> {
     match value {
-        ast::Value::Map(key_type, value_type, elements) => {
+        ast::Value::Map(key_type, _value_type, elements) => {
             if key_type != &ast::Type::NonFungibleLocalId {
                 return Err(GeneratorError::InvalidAstType {
                     expected_type: ast::Type::NonFungibleLocalId,
@@ -1013,13 +1029,8 @@ fn generate_non_fungible_mint_params(
             let mut mint_params = BTreeMap::new();
             for i in 0..elements.len() / 2 {
                 let non_fungible_local_id = generate_non_fungible_local_id(&elements[i * 2])?;
-                let non_fungible = generate_value(
-                    &elements[i * 2 + 1],
-                    None,
-                    resolver,
-                    bech32_decoder,
-                    blobs,
-                )?;
+                let non_fungible =
+                    generate_value(&elements[i * 2 + 1], None, resolver, bech32_decoder, blobs)?;
                 let non_fungible = transform(non_fungible, &mut TemporaryTransformHandler)?;
                 let non_fungible = scrypto_encode(&non_fungible).unwrap();
                 mint_params.insert(non_fungible_local_id, non_fungible);
@@ -1041,13 +1052,7 @@ fn generate_uuid_non_fungible_mint_params(
         ast::Value::Array(_kind, elements) => {
             let mut mint_params = Vec::new();
             for element in elements.into_iter() {
-                let non_fungible = generate_value(
-                    element,
-                    None,
-                    resolver,
-                    bech32_decoder,
-                    blobs,
-                )?;
+                let non_fungible = generate_value(element, None, resolver, bech32_decoder, blobs)?;
                 let non_fungible = transform(non_fungible, &mut TemporaryTransformHandler)?;
                 let non_fungible = scrypto_encode(&non_fungible).unwrap();
                 mint_params.push(non_fungible);
@@ -1523,7 +1528,6 @@ mod tests {
                 amount: dec!("100")
             },
         );
-
     }
 
     #[test]
@@ -1555,7 +1559,7 @@ mod tests {
     #[test]
     fn test_create_non_fungible_instruction() {
         generate_instruction_ok!(
-            r#"CREATE_NON_FUNGIBLE_RESOURCE Enum("NonFungibleIdType::Integer") Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")));"#,
+            r#"CREATE_NON_FUNGIBLE_RESOURCE Enum("NonFungibleIdType::Integer") Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum(0u8, 64u8)) Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")));"#,
             Instruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),

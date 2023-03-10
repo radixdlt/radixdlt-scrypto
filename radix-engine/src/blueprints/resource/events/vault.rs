@@ -1,23 +1,23 @@
 use crate::types::*;
 
-#[derive(ScryptoSbor)]
+#[derive(ScryptoSbor, PartialEq, Eq)]
 pub struct LockFeeEvent {
     pub amount: Decimal,
 }
 
-#[derive(ScryptoSbor)]
+#[derive(ScryptoSbor, PartialEq, Eq)]
 pub enum WithdrawResourceEvent {
     Amount(Decimal),
     Ids(BTreeSet<NonFungibleLocalId>),
 }
 
-#[derive(ScryptoSbor)]
+#[derive(ScryptoSbor, PartialEq, Eq, Debug)]
 pub enum DepositResourceEvent {
     Amount(Decimal),
     Ids(BTreeSet<NonFungibleLocalId>),
 }
 
-#[derive(ScryptoSbor)]
+#[derive(ScryptoSbor, PartialEq, Eq)]
 pub enum RecallResourceEvent {
     Amount(Decimal),
     Ids(BTreeSet<NonFungibleLocalId>),

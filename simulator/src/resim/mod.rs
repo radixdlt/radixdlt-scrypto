@@ -55,6 +55,7 @@ pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
 use clap::{Parser, Subcommand};
 use radix_engine::kernel::interpreters::ScryptoInterpreter;
 use radix_engine::ledger::ReadableSubstateStore;
+use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::CommitResult;
 use radix_engine::transaction::TransactionOutcome;
@@ -72,7 +73,6 @@ use radix_engine_stores::rocks_db::RadixEngineDB;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
-use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use transaction::builder::ManifestBuilder;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::manifest::decompile;
@@ -348,7 +348,11 @@ pub fn get_blueprint(
     let type_info = output.substate.type_info();
 
     match type_info {
-        TypeInfoSubstate::Object { package_address, blueprint_name, ..} => Ok((*package_address, blueprint_name.to_string())),
+        TypeInfoSubstate::Object {
+            package_address,
+            blueprint_name,
+            ..
+        } => Ok((*package_address, blueprint_name.to_string())),
         _ => panic!("Unexpected"),
     }
 }

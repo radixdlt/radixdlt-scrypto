@@ -180,6 +180,10 @@ impl Parser {
                 key: self.parse_value()?,
                 value: self.parse_value()?,
             },
+            TokenKind::RemoveMetadata => Instruction::RemoveMetadata {
+                entity_address: self.parse_value()?,
+                key: self.parse_value()?,
+            },
             TokenKind::SetPackageRoyaltyConfig => Instruction::SetPackageRoyaltyConfig {
                 package_address: self.parse_value()?,
                 royalty_config: self.parse_value()?,
@@ -226,6 +230,7 @@ impl Parser {
             }
             TokenKind::CreateNonFungibleResource => Instruction::CreateNonFungibleResource {
                 id_type: self.parse_value()?,
+                schema: self.parse_value()?,
                 metadata: self.parse_value()?,
                 access_rules: self.parse_value()?,
             },

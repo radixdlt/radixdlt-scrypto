@@ -117,6 +117,11 @@ pub enum Instruction {
         value: Value,
     },
 
+    RemoveMetadata {
+        entity_address: Value,
+        key: Value,
+    },
+
     SetPackageRoyaltyConfig {
         package_address: Value,
         royalty_config: Value,
@@ -173,6 +178,7 @@ pub enum Instruction {
 
     CreateNonFungibleResource {
         id_type: Value,
+        schema: Value,
         metadata: Value,
         access_rules: Value,
     },

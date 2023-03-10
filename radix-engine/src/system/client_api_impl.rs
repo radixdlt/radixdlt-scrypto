@@ -7,9 +7,9 @@ use crate::errors::{ApplicationError, RuntimeError};
 use crate::errors::{KernelError, SystemError};
 use crate::kernel::actor::{Actor, ActorIdentifier};
 use crate::kernel::kernel::Kernel;
-use crate::kernel::kernel_api::{KernelNodeApi, LockInfo};
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::{Invokable, KernelInternalApi};
+use crate::kernel::kernel_api::{KernelNodeApi, LockInfo};
 use crate::kernel::module::KernelModule;
 use crate::kernel::module_mixer::KernelModuleMixer;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
@@ -41,6 +41,8 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{KeyValueStoreSchema, PackageSchema};
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+
+use super::node_modules::event_schema::PackageEventSchemaSubstate;
 
 impl<'g, 's, W> ClientNodeApi<RuntimeError> for Kernel<'g, 's, W>
 where
@@ -93,16 +95,19 @@ where
         lock_handle: LockHandle,
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        let LockInfo { node_id, module_id, offset, .. } = self.kernel_get_lock_info(lock_handle)?;
+        let LockInfo {
+            node_id,
+            module_id,
+            offset,
+            ..
+        } = self.kernel_get_lock_info(lock_handle)?;
 
         if module_id.eq(&NodeModuleId::SELF) {
             let type_info = TypeInfoBlueprint::get_type(node_id, self)?;
             match type_info {
                 TypeInfoSubstate::KeyValueStore(schema) => {
                     validate_payload_against_schema(&buffer, &schema.schema, schema.value)
-                        .map_err(|_| {
-                            RuntimeError::KernelError(KernelError::InvalidOverwrite)
-                        })?;
+                        .map_err(|_| RuntimeError::KernelError(KernelError::InvalidOverwrite))?;
                 }
                 _ => {}
             }
@@ -155,6 +160,7 @@ where
         access_rules: AccessRulesConfig,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
+        event_schema: BTreeMap<String, Vec<(LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>>,
     ) -> Result<PackageAddress, RuntimeError> {
         let result = self.call_function(
             PACKAGE_LOADER,
@@ -167,6 +173,7 @@ where
                 access_rules,
                 royalty_config,
                 metadata,
+                event_schema,
             })
             .unwrap(),
         )?;
@@ -326,7 +333,7 @@ where
                 VAULT_BLUEPRINT => {
                     let vault_info_substate: VaultInfoSubstate = parser.decode_next()?;
 
-                    let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
+                    let node_id = self.kernel_allocate_node_id(RENodeType::Vault)?;
 
                     let node_init = match vault_info_substate.resource_type {
                         ResourceType::NonFungible { .. } => {
@@ -509,10 +516,10 @@ where
                 let type_info = TypeInfoBlueprint::get_type(node_id, self)?;
                 let (package_address, blueprint) = match type_info {
                     TypeInfoSubstate::Object {
-                        package_address, blueprint_name, global,
-                    } if !global => {
-                        (package_address, blueprint_name)
-                    }
+                        package_address,
+                        blueprint_name,
+                        global,
+                    } if !global => (package_address, blueprint_name),
                     _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
                 };
 
@@ -577,7 +584,8 @@ where
                 NodeModuleId::SELF
                 | NodeModuleId::TypeInfo
                 | NodeModuleId::PackageRoyalty
-                | NodeModuleId::FunctionAccessRules => {
+                | NodeModuleId::FunctionAccessRules
+                | NodeModuleId::PackageEventSchema => {
                     return Err(RuntimeError::SystemError(SystemError::InvalidModule))
                 }
                 NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {
@@ -720,14 +728,23 @@ where
     ) -> Result<(PackageAddress, String), RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(node_id, self)?;
         let blueprint = match type_info {
-            TypeInfoSubstate::Object { package_address, blueprint_name, ..} => (package_address, blueprint_name),
-            TypeInfoSubstate::KeyValueStore(..) => return Err(RuntimeError::SystemError(SystemError::NotAnObject)),
+            TypeInfoSubstate::Object {
+                package_address,
+                blueprint_name,
+                ..
+            } => (package_address, blueprint_name),
+            TypeInfoSubstate::KeyValueStore(..) => {
+                return Err(RuntimeError::SystemError(SystemError::NotAnObject))
+            }
         };
 
         Ok(blueprint)
     }
 
-    fn new_key_value_store(&mut self, schema: KeyValueStoreSchema) -> Result<KeyValueStoreId, RuntimeError> {
+    fn new_key_value_store(
+        &mut self,
+        schema: KeyValueStoreSchema,
+    ) -> Result<KeyValueStoreId, RuntimeError> {
         let node_id = self.kernel_allocate_node_id(RENodeType::KeyValueStore)?;
 
         self.kernel_create_node(
@@ -775,43 +792,104 @@ impl<'g, 's, W> ClientEventApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    fn emit_raw_event(
-        &mut self,
-        schema_hash: Hash,
-        event_data: Vec<u8>,
-    ) -> Result<(), RuntimeError> {
+    fn emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), RuntimeError> {
         // Costing event emission.
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
         // Construct the event type identifier based on the current actor
-        let event_type_id = match self.kernel_get_current_actor() {
+        let (event_type_id, package_address, blueprint_name) = match self.kernel_get_current_actor()
+        {
             Some(Actor {
                 identifier: ActorIdentifier::Method(MethodIdentifier(node_id, node_module_id, ..)),
                 ..
-            }) => Ok(EventTypeIdentifier(node_id, node_module_id, schema_hash)),
+            }) => {
+                let event_type_id = EventTypeIdentifier(
+                    Emitter::Method(node_id, node_module_id),
+                    event_name.clone(),
+                );
+                let (package_address, blueprint_name) = match node_module_id {
+                    NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {
+                        Ok((ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT.into()))
+                    }
+                    NodeModuleId::ComponentRoyalty => {
+                        Ok((ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT.into()))
+                    }
+                    NodeModuleId::PackageRoyalty => {
+                        Ok((ROYALTY_PACKAGE, PACKAGE_ROYALTY_BLUEPRINT.into()))
+                    }
+                    NodeModuleId::FunctionAccessRules => {
+                        Ok((ACCESS_RULES_PACKAGE, FUNCTION_ACCESS_RULES_BLUEPRINT.into()))
+                    }
+                    NodeModuleId::Metadata => Ok((METADATA_PACKAGE, METADATA_BLUEPRINT.into())),
+                    NodeModuleId::SELF => self.get_object_type_info(node_id),
+                    NodeModuleId::TypeInfo | NodeModuleId::PackageEventSchema => {
+                        Err(RuntimeError::ApplicationError(
+                            ApplicationError::EventError(EventError::NoAssociatedPackage),
+                        ))
+                    }
+                }?;
+
+                Ok((event_type_id, package_address, blueprint_name.to_owned()))
+            }
             Some(Actor {
                 identifier:
                     ActorIdentifier::Function(FnIdentifier {
-                        package_address, ..
+                        package_address,
+                        blueprint_name,
+                        ..
                     }),
                 ..
-            }) => Ok(EventTypeIdentifier(
-                RENodeId::GlobalObject(package_address.into()),
-                NodeModuleId::SELF,
-                schema_hash,
+            }) => Ok((
+                EventTypeIdentifier(
+                    Emitter::Function(
+                        RENodeId::GlobalObject(Address::Package(package_address)),
+                        NodeModuleId::SELF,
+                        blueprint_name.clone(),
+                    ),
+                    event_name.clone(),
+                ),
+                package_address,
+                blueprint_name.to_owned(),
             )),
             _ => Err(RuntimeError::ApplicationError(
                 ApplicationError::EventError(EventError::InvalidActor),
             )),
         }?;
 
-        // TODO: Validate that the event schema matches that given by the event schema hash.
-        // Need to wait for David's PR for schema validation and move away from LegacyDescribe
-        // over to new Describe.
+        // Reading the schema to validate the payload against it
+        let (local_type_index, schema) = {
+            let handle = self.kernel_lock_substate(
+                RENodeId::GlobalObject(Address::Package(package_address)),
+                NodeModuleId::PackageEventSchema,
+                SubstateOffset::PackageEventSchema(PackageEventSchemaOffset::PackageEventSchema),
+                LockFlags::read_only(),
+            )?;
+            let package_schema =
+                self.kernel_get_substate_ref::<PackageEventSchemaSubstate>(handle)?;
+            let contained_schema = package_schema
+                .0
+                .get(&blueprint_name)
+                .and_then(|blueprint_schema| blueprint_schema.get(&event_name))
+                .map_or(
+                    Err(RuntimeError::ApplicationError(
+                        ApplicationError::EventError(EventError::SchemaNotFoundError {
+                            package_address,
+                            blueprint_name,
+                            event_name,
+                        }),
+                    )),
+                    |item| Ok(item.clone()),
+                )?;
+            self.kernel_drop_lock(handle)?;
+            contained_schema
+        };
 
-        // NOTE: We need to ensure that the event being emitted is an SBOR struct or an enum,
-        // this is not done here, this should be done at event registration time. Thus, if the
-        // event has been successfully registered, it can be emitted (from a schema POV).
+        // Validating the event data against the event schema
+        validate_payload_against_schema(&event_data, &schema, local_type_index).map_err(|_| {
+            RuntimeError::ApplicationError(ApplicationError::EventError(
+                EventError::InvalidEventSchema,
+            ))
+        })?;
 
         // Adding the event to the event store
         self.kernel_get_module_state()

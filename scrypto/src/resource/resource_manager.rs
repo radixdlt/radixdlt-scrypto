@@ -322,10 +322,7 @@ impl ResourceManager {
         data: T,
     ) -> Bucket {
         let mut entries = BTreeMap::new();
-        entries.insert(
-            id.clone(),
-            scrypto_encode(&data).unwrap(),
-        );
+        entries.insert(id.clone(), scrypto_encode(&data).unwrap());
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
@@ -388,7 +385,8 @@ impl ResourceManager {
                 scrypto_encode(&ResourceManagerUpdateNonFungibleDataInput {
                     id: id.clone(),
                     data: scrypto_encode(&new_data).unwrap(),
-                }).unwrap(),
+                })
+                .unwrap(),
             )
             .unwrap();
     }

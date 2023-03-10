@@ -468,6 +468,15 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, value)?;
             f.write_str(";")?;
         }
+        Instruction::RemoveMetadata {
+            entity_address,
+            key,
+        } => {
+            f.write_str("REMOVE_METADATA")?;
+            format_typed_value(f, context, entity_address)?;
+            format_typed_value(f, context, key)?;
+            f.write_str(";")?;
+        }
         Instruction::SetPackageRoyaltyConfig {
             package_address,
             royalty_config,
@@ -580,13 +589,9 @@ pub fn format_encoded_args<F: fmt::Write>(
 fn transform_non_fungible_mint_params(
     mint_params: &BTreeMap<NonFungibleLocalId, Vec<u8>>,
 ) -> Result<BTreeMap<NonFungibleLocalId, Vec<u8>>, DecodeError> {
-    let mut mint_params_manifest_value =
-        BTreeMap::<NonFungibleLocalId, Vec<u8>>::new();
+    let mut mint_params_manifest_value = BTreeMap::<NonFungibleLocalId, Vec<u8>>::new();
     for (id, data) in mint_params.into_iter() {
-        mint_params_manifest_value.insert(
-            id.clone(),
-                data.clone(),
-        );
+        mint_params_manifest_value.insert(id.clone(), data.clone());
     }
     Ok(mint_params_manifest_value)
 }

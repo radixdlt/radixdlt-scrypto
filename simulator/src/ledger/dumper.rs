@@ -111,7 +111,11 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
 
             let raw_state = IndexedScryptoValue::from_slice(&state.raw).unwrap();
             let (package_address, blueprint_name) = match type_info_substate {
-                TypeInfoSubstate::Object { package_address, blueprint_name, ..} => (package_address, blueprint_name),
+                TypeInfoSubstate::Object {
+                    package_address,
+                    blueprint_name,
+                    ..
+                } => (package_address, blueprint_name),
                 _ => panic!("Unexpected"),
             };
             let access_rules = access_rules_chain_substate.access_rules;
@@ -475,7 +479,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
         };
         writeln!(
             output,
-            "{} {{ amount: {}, resource address: {}{:?}{:?} }}",
+            "{} {{ amount: {}, resource address: {}, {:?}{:?} }}",
             list_item_prefix(last),
             amount,
             resource_address.display(&bech32_encoder),
@@ -496,10 +500,11 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                 .unwrap();
 
             let ids = vault.ids();
+            let non_fungible_id = resource_manager.non_fungible_data.unwrap().0;
             for (inner_last, id) in ids.iter().identify_last() {
                 let non_fungible: Option<ScryptoValue> = substate_store
                     .get_substate(&SubstateId(
-                        RENodeId::KeyValueStore(resource_manager.nf_store_id.unwrap()),
+                        RENodeId::KeyValueStore(non_fungible_id),
                         NodeModuleId::SELF,
                         SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
                             scrypto_encode(id).unwrap(),
@@ -509,7 +514,6 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                     .map(|s| s.into())
                     .unwrap();
                 if let Option::Some(value) = non_fungible {
-
                     let id = IndexedScryptoValue::from_typed(id);
                     let value_display_context =
                         ScryptoValueDisplayContext::with_optional_bench32(Some(&bech32_encoder));

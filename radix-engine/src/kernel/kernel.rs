@@ -12,9 +12,7 @@ use super::module_mixer::KernelModuleMixer;
 use super::track::{Track, TrackError};
 use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::identity::Identity;
-use crate::blueprints::resource::{
-    BucketInfoSubstate, FungibleProof, NonFungibleProof, ProofInfoSubstate,
-};
+use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::kernel::kernel_api::TemporaryResolvedInvocation;

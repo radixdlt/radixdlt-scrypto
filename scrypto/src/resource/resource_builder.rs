@@ -684,9 +684,7 @@ impl<A: ConfiguredAuth>
                         access_rules: self.auth.into_access_rules(),
                         entries: entries
                             .into_iter()
-                            .map(|data| {
-                                scrypto_encode(&data).unwrap()
-                            })
+                            .map(|data| scrypto_encode(&data).unwrap())
                             .collect(),
                     },
                 )
@@ -711,12 +709,7 @@ fn map_entries<T: IntoIterator<Item = (Y, V)>, V: NonFungibleData, Y: IsNonFungi
 ) -> BTreeMap<NonFungibleLocalId, Vec<u8>> {
     entries
         .into_iter()
-        .map(|(id, data)| {
-            (
-                id.into(),
-                scrypto_encode(&data).unwrap(),
-            )
-        })
+        .map(|(id, data)| (id.into(), scrypto_encode(&data).unwrap()))
         .collect()
 }
 

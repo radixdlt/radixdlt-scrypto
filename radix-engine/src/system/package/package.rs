@@ -1,11 +1,13 @@
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::FIXED_HIGH_FEE;
+use crate::system::kernel_modules::events::EventError;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::{
     FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
+use crate::system::node_modules::event_schema::PackageEventSchemaSubstate;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::RuntimeSubstate;
 use crate::system::type_info::PackageCodeTypeSubstate;
@@ -90,9 +92,7 @@ impl Package {
                 SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
                     scrypto_encode(&key).unwrap(),
                 )),
-                RuntimeSubstate::KeyValueStoreEntry(Option::Some(
-                    ScryptoValue::String { value },
-                )),
+                RuntimeSubstate::KeyValueStoreEntry(Option::Some(ScryptoValue::String { value })),
             );
         }
 
@@ -119,6 +119,14 @@ impl Package {
                 access_rules: input.package_access_rules,
                 default_auth: input.default_package_access_rule,
             }),
+        );
+        node_modules.insert(
+            NodeModuleId::PackageEventSchema,
+            RENodeModuleInit::PackageEventSchema(PackageEventSchemaSubstate(
+                convert_event_schema(input.event_schema).map_err(|error| {
+                    RuntimeError::ApplicationError(ApplicationError::EventError(error))
+                })?,
+            )),
         );
 
         let info = PackageInfoSubstate {
@@ -193,9 +201,7 @@ impl Package {
                 SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
                     scrypto_encode(&key).unwrap(),
                 )),
-                RuntimeSubstate::KeyValueStoreEntry(Option::Some(
-                    ScryptoValue::String { value },
-                )),
+                RuntimeSubstate::KeyValueStoreEntry(Option::Some(ScryptoValue::String { value })),
             );
         }
 
@@ -237,6 +243,10 @@ impl Package {
                 default_auth: AccessRule::AllowAll,
             }),
         );
+        node_modules.insert(
+            NodeModuleId::PackageEventSchema,
+            RENodeModuleInit::PackageEventSchema(PackageEventSchemaSubstate(BTreeMap::new())), // TODO: To rework in Pt3
+        );
 
         // Create package node
         let node_id = if let Some(address) = input.package_address {
@@ -259,4 +269,35 @@ impl Package {
 
         Ok(IndexedScryptoValue::from_typed(&package_address))
     }
+}
+
+fn convert_event_schema(
+    event_schema: BTreeMap<String, Vec<(LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>>,
+) -> Result<
+    BTreeMap<String, BTreeMap<String, (LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>>,
+    EventError,
+> {
+    let mut package_event_schema = BTreeMap::<
+        String,
+        BTreeMap<String, (LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>,
+    >::new();
+    for (blueprint_name, event_schemas) in event_schema {
+        let blueprint_schema = package_event_schema.entry(blueprint_name).or_default();
+        for (local_type_index, schema) in event_schemas {
+            let event_name = {
+                (*schema
+                    .resolve_type_metadata(local_type_index)
+                    .map_or(Err(EventError::InvalidEventSchema), Ok)?
+                    .type_name)
+                    .to_owned()
+            };
+            // TODO: Add a test once Scrypto events are implemented.
+            if let None = blueprint_schema.insert(event_name, (local_type_index, schema)) {
+                Ok(())
+            } else {
+                Err(EventError::DuplicateEventNamesFound)
+            }?
+        }
+    }
+    Ok(package_event_schema)
 }
