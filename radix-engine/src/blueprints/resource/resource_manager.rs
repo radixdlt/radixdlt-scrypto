@@ -20,6 +20,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::schema::{KeyValueStoreSchema, NonFungibleSchema};
 use radix_engine_interface::*;
+use std::borrow::Cow;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ResourceManagerSubstate {
@@ -74,13 +75,34 @@ where
     let key_schema = generate_full_schema(aggregator);
     let mut kv_schema = non_fungible_schema.schema;
     kv_schema.type_kinds.extend(key_schema.type_kinds);
+    {
+        let mut variants = BTreeMap::new();
+        variants.insert(OPTION_VARIANT_NONE, vec![]);
+        variants.insert(OPTION_VARIANT_SOME, vec![non_fungible_schema.non_fungible]);
+        let type_kind = TypeKind::Enum { variants };
+        kv_schema.type_kinds.push(type_kind);
+    }
     kv_schema.type_metadata.extend(key_schema.type_metadata);
-    kv_schema.type_validations.extend(key_schema.type_validations);
+    {
+        let metadata = TypeMetadata {
+            type_name: Cow::Borrowed("Option"),
+            children: Children::EnumVariants(btreemap!(
+                OPTION_VARIANT_NONE => TypeMetadata::no_child_names("None"),
+                OPTION_VARIANT_SOME => TypeMetadata::unnamed_fields("Some"),
+            )),
+        };
+        kv_schema.type_metadata.push(metadata);
+    }
+    kv_schema
+        .type_validations
+        .extend(key_schema.type_validations);
+    kv_schema.type_validations.push(TypeValidation::None);
+    let value_index = LocalTypeIndex::SchemaLocalIndex(kv_schema.type_validations.len() - 1);
 
     let kv_schema = KeyValueStoreSchema {
         schema: kv_schema,
         key: non_fungible_type,
-        value: non_fungible_schema.non_fungible,
+        value: value_index,
     };
 
     let nf_store_id = api.new_key_value_store(kv_schema)?;
@@ -434,7 +456,7 @@ fn create_non_fungible_resource_manager<Y>(
     id_type: NonFungibleIdType,
     metadata: BTreeMap<String, String>,
     mutable_fields: BTreeSet<String>,
-    _non_fungible_schema: NonFungibleSchema,
+    non_fungible_schema: NonFungibleSchema,
     access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     api: &mut Y,
 ) -> Result<ResourceAddress, RuntimeError>
@@ -443,8 +465,44 @@ where
 {
     let resource_address: ResourceAddress = global_node_id.into();
 
-    let schema = KeyValueStoreSchema::new::<NonFungibleLocalId, NonFungible>();
-    let nf_store_id = api.new_key_value_store(schema)?;
+    let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+    let non_fungible_type = aggregator.add_child_type_and_descendents::<NonFungibleLocalId>();
+    let key_schema = generate_full_schema(aggregator);
+    let mut kv_schema = non_fungible_schema.schema;
+    kv_schema.type_kinds.extend(key_schema.type_kinds);
+    {
+        let mut variants = BTreeMap::new();
+        variants.insert(OPTION_VARIANT_NONE, vec![]);
+        variants.insert(OPTION_VARIANT_SOME, vec![non_fungible_schema.non_fungible]);
+        let type_kind = TypeKind::Enum { variants };
+        kv_schema.type_kinds.push(type_kind);
+    }
+    kv_schema.type_metadata.extend(key_schema.type_metadata);
+    {
+        let metadata = TypeMetadata {
+            type_name: Cow::Borrowed("Option"),
+            children: Children::EnumVariants(btreemap!(
+                OPTION_VARIANT_NONE => TypeMetadata::no_child_names("None"),
+                OPTION_VARIANT_SOME => TypeMetadata::unnamed_fields("Some"),
+            )),
+        };
+        kv_schema.type_metadata.push(metadata);
+    }
+    kv_schema
+        .type_validations
+        .extend(key_schema.type_validations);
+    kv_schema.type_validations.push(TypeValidation::None);
+
+    let value_index = LocalTypeIndex::SchemaLocalIndex(kv_schema.type_validations.len() - 1);
+
+    let kv_schema = KeyValueStoreSchema {
+        schema: kv_schema,
+        key: non_fungible_type,
+        value: value_index,
+    };
+
+    let nf_store_id = api.new_key_value_store(kv_schema)?;
+
     let resource_manager_substate = ResourceManagerSubstate::new(
         ResourceType::NonFungible { id_type },
         Some((nf_store_id, mutable_fields)),
