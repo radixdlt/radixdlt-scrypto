@@ -59,16 +59,16 @@ pub enum ResourceManagerError {
     InvalidNonFungibleIdType,
 }
 
-fn build_non_fungible_resource_manager_substate_with_initial_supply<Y>(
+fn build_non_fungible_resource_manager_substate<Y>(
     resource_address: ResourceAddress,
     id_type: NonFungibleIdType,
-    entries: BTreeMap<NonFungibleLocalId, Vec<u8>>,
+    supply: usize,
     mutable_fields: BTreeSet<String>,
     non_fungible_schema: NonFungibleSchema,
     api: &mut Y,
-) -> Result<(ResourceManagerSubstate, Bucket), RuntimeError>
-where
-    Y: KernelSubstateApi + ClientApi<RuntimeError>,
+) -> Result<(ResourceManagerSubstate, KeyValueStoreId), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
 {
     let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
     let non_fungible_type = aggregator.add_child_type_and_descendents::<NonFungibleLocalId>();
@@ -107,12 +107,60 @@ where
 
     let nf_store_id = api.new_key_value_store(kv_schema)?;
 
-    let mut resource_manager = ResourceManagerSubstate::new(
-        ResourceType::NonFungible { id_type },
-        Some((nf_store_id, mutable_fields)),
+    let resource_manager = ResourceManagerSubstate {
         resource_address,
-    );
+        resource_type: ResourceType::NonFungible { id_type },
+        total_supply: supply.into(),
+        non_fungible_data: Some((nf_store_id, mutable_fields)),
+    };
 
+    Ok((resource_manager, nf_store_id))
+}
+
+
+fn globalize_resource_manager<Y>(
+    resource_address: ResourceAddress,
+    substate: ResourceManagerSubstate,
+    access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    metadata: BTreeMap<String, String>,
+    api: &mut Y,
+) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+{
+    let object_id = api.new_object(
+        RESOURCE_MANAGER_BLUEPRINT,
+        vec![scrypto_encode(&substate).unwrap()],
+    )?;
+
+    let (resman_access_rules, vault_access_rules) = build_access_rules(access_rules);
+    let resman_access_rules = AccessRulesObject::sys_new(resman_access_rules, api)?;
+    let vault_access_rules = AccessRulesObject::sys_new(vault_access_rules, api)?;
+    let metadata = Metadata::sys_create_with_data(metadata, api)?;
+
+    api.globalize_with_address(
+        RENodeId::Object(object_id),
+        btreemap!(
+                NodeModuleId::AccessRules => resman_access_rules.id(),
+                NodeModuleId::AccessRules1 => vault_access_rules.id(),
+                NodeModuleId::Metadata => metadata.id(),
+            ),
+        resource_address.into(),
+    )?;
+
+    Ok(())
+}
+
+fn build_non_fungible_bucket<Y>(
+    resource_address: ResourceAddress,
+    id_type: NonFungibleIdType,
+    nf_store_id: KeyValueStoreId,
+    entries: BTreeMap<NonFungibleLocalId, Vec<u8>>,
+    api: &mut Y,
+) -> Result<Bucket, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>
+{
     let bucket = {
         for (non_fungible_local_id, data) in &entries {
             if non_fungible_local_id.id_type() != id_type {
@@ -140,7 +188,6 @@ where
 
             api.sys_drop_lock(non_fungible_handle)?;
         }
-        resource_manager.total_supply = entries.len().into();
         let ids = entries.into_keys().collect();
 
         let info = BucketInfoSubstate {
@@ -157,6 +204,31 @@ where
 
         Bucket(bucket_id)
     };
+
+    Ok(bucket)
+}
+
+fn build_non_fungible_resource_manager_substate_with_initial_supply<Y>(
+    resource_address: ResourceAddress,
+    id_type: NonFungibleIdType,
+    entries: BTreeMap<NonFungibleLocalId, Vec<u8>>,
+    mutable_fields: BTreeSet<String>,
+    non_fungible_schema: NonFungibleSchema,
+    api: &mut Y,
+) -> Result<(ResourceManagerSubstate, Bucket), RuntimeError>
+where
+    Y: KernelSubstateApi + ClientApi<RuntimeError>,
+{
+    let (resource_manager, nf_store_id) = build_non_fungible_resource_manager_substate(
+        resource_address,
+        id_type,
+        entries.len(),
+        mutable_fields,
+        non_fungible_schema,
+        api
+    )?;
+
+    let bucket = build_non_fungible_bucket(resource_address, id_type, nf_store_id, entries, api)?;
 
     Ok((resource_manager, bucket))
 }
@@ -451,144 +523,65 @@ fn build_access_rules(
     (resman_access_rules, vault_access_rules)
 }
 
-fn create_non_fungible_resource_manager<Y>(
-    global_node_id: RENodeId,
-    id_type: NonFungibleIdType,
-    metadata: BTreeMap<String, String>,
-    mutable_fields: BTreeSet<String>,
-    non_fungible_schema: NonFungibleSchema,
-    access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    api: &mut Y,
-) -> Result<ResourceAddress, RuntimeError>
-where
-    Y: KernelSubstateApi + ClientApi<RuntimeError>,
-{
-    let resource_address: ResourceAddress = global_node_id.into();
-
-    let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-    let non_fungible_type = aggregator.add_child_type_and_descendents::<NonFungibleLocalId>();
-    let key_schema = generate_full_schema(aggregator);
-    let mut kv_schema = non_fungible_schema.schema;
-    kv_schema.type_kinds.extend(key_schema.type_kinds);
-    {
-        let mut variants = BTreeMap::new();
-        variants.insert(OPTION_VARIANT_NONE, vec![]);
-        variants.insert(OPTION_VARIANT_SOME, vec![non_fungible_schema.non_fungible]);
-        let type_kind = TypeKind::Enum { variants };
-        kv_schema.type_kinds.push(type_kind);
-    }
-    kv_schema.type_metadata.extend(key_schema.type_metadata);
-    {
-        let metadata = TypeMetadata {
-            type_name: Cow::Borrowed("Option"),
-            children: Children::EnumVariants(btreemap!(
-                OPTION_VARIANT_NONE => TypeMetadata::no_child_names("None"),
-                OPTION_VARIANT_SOME => TypeMetadata::unnamed_fields("Some"),
-            )),
-        };
-        kv_schema.type_metadata.push(metadata);
-    }
-    kv_schema
-        .type_validations
-        .extend(key_schema.type_validations);
-    kv_schema.type_validations.push(TypeValidation::None);
-
-    let value_index = LocalTypeIndex::SchemaLocalIndex(kv_schema.type_validations.len() - 1);
-
-    let kv_schema = KeyValueStoreSchema {
-        schema: kv_schema,
-        key: non_fungible_type,
-        value: value_index,
-    };
-
-    let nf_store_id = api.new_key_value_store(kv_schema)?;
-
-    let resource_manager_substate = ResourceManagerSubstate::new(
-        ResourceType::NonFungible { id_type },
-        Some((nf_store_id, mutable_fields)),
-        resource_address,
-    );
-
-    let object_id = api.new_object(
-        RESOURCE_MANAGER_BLUEPRINT,
-        vec![scrypto_encode(&resource_manager_substate).unwrap()],
-    )?;
-
-    let (resman_access_rules, vault_access_rules) = build_access_rules(access_rules);
-    let resman_access_rules = AccessRulesObject::sys_new(resman_access_rules, api)?;
-    let vault_access_rules = AccessRulesObject::sys_new(vault_access_rules, api)?;
-    let metadata = Metadata::sys_create_with_data(metadata, api)?;
-
-    api.globalize_with_address(
-        RENodeId::Object(object_id),
-        btreemap!(
-            NodeModuleId::AccessRules => resman_access_rules.id(),
-            NodeModuleId::AccessRules1 => vault_access_rules.id(),
-            NodeModuleId::Metadata => metadata.id(),
-        ),
-        resource_address.into(),
-    )?;
-
-    Ok(resource_address)
-}
 
 pub struct ResourceManagerBlueprint;
 
 impl ResourceManagerBlueprint {
     pub(crate) fn create_non_fungible<Y>(
-        input: ScryptoValue,
+        id_type: NonFungibleIdType,
+        non_fungible_schema: NonFungibleSchema,
+        metadata: BTreeMap<String, String>,
+        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<ResourceAddress, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
-        let input: ResourceManagerCreateNonFungibleInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
-
         let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalResourceManager)?;
-        let address = create_non_fungible_resource_manager(
-            global_node_id,
-            input.id_type,
-            input.metadata,
-            BTreeSet::new(),
-            input.non_fungible_schema,
-            input.access_rules,
+        let resource_address: ResourceAddress = global_node_id.into();
+        Self::create_non_fungible_with_address(
+            id_type,
+            non_fungible_schema,
+            metadata,
+            access_rules,
+            resource_address.to_array_without_entity_id(),
             api,
-        )?;
-        Ok(IndexedScryptoValue::from_typed(&address))
+        )
     }
 
     pub(crate) fn create_non_fungible_with_address<Y>(
-        input: ScryptoValue,
+        id_type: NonFungibleIdType,
+        non_fungible_schema: NonFungibleSchema,
+        metadata: BTreeMap<String, String>,
+        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+        resource_address: [u8; 26], // TODO: Clean this up
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<ResourceAddress, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
-        let input: ResourceManagerCreateNonFungibleWithAddressInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let resource_address = ResourceAddress::Normal(resource_address);
 
         // If address isn't user frame allocated or pre_allocated then
         // using this node_id will fail on create_node below
-        let global_node_id =
-            RENodeId::GlobalObject(ResourceAddress::Normal(input.resource_address).into());
-        let address = create_non_fungible_resource_manager(
-            global_node_id,
-            input.id_type,
-            input.metadata,
+        let (resource_manager_substate, _) = build_non_fungible_resource_manager_substate(
+            resource_address,
+            id_type,
+            0,
             BTreeSet::new(),
-            input.non_fungible_schema,
-            input.access_rules,
+            non_fungible_schema,
+            api
+        )?;
+
+        globalize_resource_manager(
+            resource_address,
+            resource_manager_substate,
+            access_rules,
+            metadata,
             api,
         )?;
 
-        Ok(IndexedScryptoValue::from_typed(&address))
+        Ok(resource_address)
     }
 
     pub(crate) fn create_non_fungible_with_initial_supply<Y>(
@@ -626,24 +619,12 @@ impl ResourceManagerBlueprint {
                 api,
             )?;
 
-        let object_id = api.new_object(
-            RESOURCE_MANAGER_BLUEPRINT,
-            vec![scrypto_encode(&resource_manager_substate).unwrap()],
-        )?;
-
-        let (resman_access_rules, vault_access_rules) = build_access_rules(input.access_rules);
-        let resman_access_rules = AccessRulesObject::sys_new(resman_access_rules, api)?;
-        let vault_access_rules = AccessRulesObject::sys_new(vault_access_rules, api)?;
-        let metadata = Metadata::sys_create_with_data(input.metadata, api)?;
-
-        api.globalize_with_address(
-            RENodeId::Object(object_id),
-            btreemap!(
-                NodeModuleId::AccessRules => resman_access_rules.id(),
-                NodeModuleId::AccessRules1 => vault_access_rules.id(),
-                NodeModuleId::Metadata => metadata.id(),
-            ),
-            resource_address.into(),
+        globalize_resource_manager(
+            resource_address,
+            resource_manager_substate,
+            input.access_rules,
+            input.metadata,
+            api,
         )?;
 
         Ok(IndexedScryptoValue::from_typed(&(resource_address, bucket)))
@@ -682,24 +663,12 @@ impl ResourceManagerBlueprint {
                 api,
             )?;
 
-        let object_id = api.new_object(
-            RESOURCE_MANAGER_BLUEPRINT,
-            vec![scrypto_encode(&resource_manager_substate).unwrap()],
-        )?;
-
-        let (resman_access_rules, vault_access_rules) = build_access_rules(input.access_rules);
-        let resman_access_rules = AccessRulesObject::sys_new(resman_access_rules, api)?;
-        let vault_access_rules = AccessRulesObject::sys_new(vault_access_rules, api)?;
-        let metadata = Metadata::sys_create_with_data(input.metadata, api)?;
-
-        api.globalize_with_address(
-            RENodeId::Object(object_id),
-            btreemap!(
-                NodeModuleId::AccessRules => resman_access_rules.id(),
-                NodeModuleId::AccessRules1 => vault_access_rules.id(),
-                NodeModuleId::Metadata => metadata.id(),
-            ),
-            resource_address.into(),
+        globalize_resource_manager(
+            resource_address,
+            resource_manager_substate,
+            input.access_rules,
+            input.metadata,
+            api,
         )?;
 
         Ok(IndexedScryptoValue::from_typed(&(resource_address, bucket)))

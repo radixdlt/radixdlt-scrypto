@@ -30,7 +30,22 @@ impl ResourceManagerNativePackage {
                         InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
-                ResourceManagerBlueprint::create_non_fungible(input, api)
+
+                // TODO: Remove decode/encode mess
+                let input: ResourceManagerCreateNonFungibleInput =
+                    scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                        RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                    })?;
+
+                let rtn = ResourceManagerBlueprint::create_non_fungible(
+                    input.id_type,
+                    input.non_fungible_schema,
+                    input.metadata,
+                    input.access_rules,
+                    api
+                )?;
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
@@ -40,7 +55,22 @@ impl ResourceManagerNativePackage {
                         InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
-                ResourceManagerBlueprint::create_non_fungible_with_address(input, api)
+                // TODO: Remove decode/encode mess
+                let input: ResourceManagerCreateNonFungibleWithAddressInput =
+                    scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                        RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                    })?;
+
+                let rtn = ResourceManagerBlueprint::create_non_fungible_with_address(
+                    input.id_type,
+                    input.non_fungible_schema,
+                    input.metadata,
+                    input.access_rules,
+                    input.resource_address,
+                    api,
+                )?;
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
