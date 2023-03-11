@@ -63,14 +63,27 @@ fn build_non_fungible_resource_manager_substate_with_initial_supply<Y>(
     id_type: NonFungibleIdType,
     entries: BTreeMap<NonFungibleLocalId, Vec<u8>>,
     mutable_fields: BTreeSet<String>,
-    _non_fungible_schema: NonFungibleSchema,
+    non_fungible_schema: NonFungibleSchema,
     api: &mut Y,
 ) -> Result<(ResourceManagerSubstate, Bucket), RuntimeError>
 where
     Y: KernelSubstateApi + ClientApi<RuntimeError>,
 {
-    let schema = KeyValueStoreSchema::new::<NonFungibleLocalId, NonFungible>();
-    let nf_store_id = api.new_key_value_store(schema)?;
+    let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+    let non_fungible_type = aggregator.add_child_type_and_descendents::<NonFungibleLocalId>();
+    let key_schema = generate_full_schema(aggregator);
+    let mut kv_schema = non_fungible_schema.schema;
+    kv_schema.type_kinds.extend(key_schema.type_kinds);
+    kv_schema.type_metadata.extend(key_schema.type_metadata);
+    kv_schema.type_validations.extend(key_schema.type_validations);
+
+    let kv_schema = KeyValueStoreSchema {
+        schema: kv_schema,
+        key: non_fungible_type,
+        value: non_fungible_schema.non_fungible,
+    };
+
+    let nf_store_id = api.new_key_value_store(kv_schema)?;
 
     let mut resource_manager = ResourceManagerSubstate::new(
         ResourceType::NonFungible { id_type },
@@ -98,14 +111,11 @@ where
                 )),
                 LockFlags::MUTABLE,
             )?;
-            let non_fungible_mut: &mut Option<ScryptoValue> =
-                api.kernel_get_substate_ref_mut(non_fungible_handle)?;
 
-            // FIXME: verify data
-            //let non_fungible = NonFungible::new(data.0.clone(), data.1.clone());
+            // TODO: Change interface so that we accept Option instead
             let value: ScryptoValue = scrypto_decode(data).unwrap();
+            api.sys_write_substate(non_fungible_handle, scrypto_encode(&Some(value)).unwrap())?;
 
-            *non_fungible_mut = Option::Some(value);
             api.sys_drop_lock(non_fungible_handle)?;
         }
         resource_manager.total_supply = entries.len().into();
