@@ -13,23 +13,23 @@
 # a method for creating a proof and locking a fee at the same time. Therefore, locking a fee will be
 # its own method call and creating a proof will be its own method call.
 CALL_METHOD 
-    ComponentAddress("${account_component_address}") 
+    Address("${account_component_address}") 
     "lock_fee"
     Decimal("10");
 
 # We have a badge in our account component which allows us to mint this resource. So, we create a 
 # proof from this badge which will allow us to mint the resource
 CALL_METHOD
-    ComponentAddress("${account_component_address}")
+    Address("${account_component_address}")
     "create_proof_by_amount"
-    ResourceAddress("${minter_badge_resource_address}")
+    Address("${minter_badge_resource_address}")
     Decimal("1");
 
 # Minting a single non-fungible token from the resource. This non-fungible token has no data (this
 # is what the 5c2100 bit means, it's the SBOR representation of an empty struct) and has an id that
 # is user specified.
 MINT_NON_FUNGIBLE
-    ResourceAddress("${mintable_resource_address}") 
+    Address("${mintable_resource_address}") 
     Map<NonFungibleLocalId, Tuple>(
         NonFungibleLocalId("${non_fungible_local_id}"), 
         Tuple(
@@ -40,6 +40,6 @@ MINT_NON_FUNGIBLE
 
 # Depositing the entirety of the newly minted tokens into out account
 CALL_METHOD
-    ComponentAddress("${account_component_address}") 
+    Address("${account_component_address}") 
     "deposit_batch"
     Expression("ENTIRE_WORKTOP");
