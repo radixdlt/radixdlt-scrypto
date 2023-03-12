@@ -31,9 +31,9 @@ impl ResourceManagerNativePackage {
                 FunctionSchema {
                     receiver: None,
                     input: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerCreateFungibleInput>(),
+                        .add_child_type_and_descendents::<FungibleResourceManagerCreateInput>(),
                     output: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerCreateFungibleOutput>(),
+                        .add_child_type_and_descendents::<FungibleResourceManagerCreateOutput>(),
                     export_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 },
             );
@@ -42,9 +42,9 @@ impl ResourceManagerNativePackage {
                 FunctionSchema {
                     receiver: None,
                     input: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerCreateFungibleWithInitialSupplyInput>(),
+                        .add_child_type_and_descendents::<FungibleResourceManagerCreateWithInitialSupplyInput>(),
                     output: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerCreateFungibleWithInitialSupplyOutput>(),
+                        .add_child_type_and_descendents::<FungibleResourceManagerCreateWithInitialSupplyOutput>(),
                     export_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string(),
                 },
             );
@@ -53,9 +53,9 @@ impl ResourceManagerNativePackage {
                 FunctionSchema {
                     receiver: None,
                     input: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput>(),
+                        .add_child_type_and_descendents::<FungibleResourceManagerCreateWithInitialSupplyAndAddressInput>(),
                     output: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerCreateFungibleWithInitialSupplyAndAddressOutput>(),
+                        .add_child_type_and_descendents::<FungibleResourceManagerCreateWithInitialSupplyAndAddressOutput>(),
                     export_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT.to_string(),
                 },
             );
@@ -65,9 +65,9 @@ impl ResourceManagerNativePackage {
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRefMut),
                     input: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerMintFungibleInput>(),
+                        .add_child_type_and_descendents::<FungibleResourceManagerMintInput>(),
                     output: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerMintFungibleOutput>(),
+                        .add_child_type_and_descendents::<FungibleResourceManagerMintOutput>(),
                     export_name: FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
                 },
             );
@@ -150,9 +150,9 @@ impl ResourceManagerNativePackage {
                 FunctionSchema {
                     receiver: None,
                     input: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerCreateNonFungibleInput>(),
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateInput>(),
                     output: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerCreateNonFungibleOutput>(),
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateOutput>(),
                     export_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 },
             );
@@ -161,9 +161,9 @@ impl ResourceManagerNativePackage {
                 FunctionSchema {
                     receiver: None,
                     input: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerCreateNonFungibleWithAddressInput>(),
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateWithAddressInput>(),
                     output: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerCreateNonFungibleWithAddressOutput>(),
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateWithAddressOutput>(),
                     export_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
                 },
             );
@@ -172,9 +172,9 @@ impl ResourceManagerNativePackage {
                 FunctionSchema {
                     receiver: None,
                     input: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerCreateNonFungibleWithInitialSupplyInput>(),
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateWithInitialSupplyInput>(),
                     output: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerCreateNonFungibleWithInitialSupplyOutput>(),
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateWithInitialSupplyOutput>(),
                     export_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string(),
                 },
             );
@@ -183,9 +183,9 @@ impl ResourceManagerNativePackage {
                 FunctionSchema {
                     receiver: None,
                     input: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerCreateUuidNonFungibleWithInitialSupplyInput>(),
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateUuidWithInitialSupplyInput>(),
                     output: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerCreateUuidNonFungibleWithInitialSupplyOutput>(),
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateUuidWithInitialSupplyOutput>(),
                     export_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT.to_string(),
                 },
             );
@@ -195,9 +195,9 @@ impl ResourceManagerNativePackage {
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRefMut),
                     input: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerMintNonFungibleInput>(),
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintInput>(),
                     output: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerMintNonFungibleOutput>(),
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintOutput>(),
                     export_name: NON_FUNGIBLE_MINT_RESOURCE_MANAGER_MINT_IDENT.to_string(),
                 },
             );
@@ -207,9 +207,9 @@ impl ResourceManagerNativePackage {
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRef),
                     input: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerGetNonFungibleInput>(),
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerGetNonFungibleInput>(),
                     output: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerGetNonFungibleOutput>(),
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerGetNonFungibleOutput>(),
                     export_name: NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT.to_string(),
                 },
             );
@@ -219,9 +219,9 @@ impl ResourceManagerNativePackage {
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRefMut),
                     input: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerUpdateNonFungibleDataInput>(),
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerUpdateDataInput>(),
                     output: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerUpdateNonFungibleDataOutput>(),
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerUpdateDataOutput>(),
                     export_name: NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT.to_string(),
                 },
             );
@@ -230,9 +230,9 @@ impl ResourceManagerNativePackage {
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRefMut),
                     input: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerNonFungibleExistsInput>(),
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerExistsInput>(),
                     output: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerNonFungibleExistsOutput>(),
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerExistsOutput>(),
                     export_name: NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT.to_string(),
                 },
             );
@@ -242,10 +242,10 @@ impl ResourceManagerNativePackage {
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRefMut),
                     input: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerMintUuidNonFungibleInput>(
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintUuidInput>(
                         ),
                     output: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerMintUuidNonFungibleOutput>(
+                        .add_child_type_and_descendents::<NonFungibleResourceManagerMintUuidOutput>(
                         ),
                     export_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string(),
                 },
@@ -816,7 +816,7 @@ impl ResourceManagerNativePackage {
                         InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
-                let input: ResourceManagerCreateFungibleInput = input.as_typed().map_err(|e| {
+                let input: FungibleResourceManagerCreateInput = input.as_typed().map_err(|e| {
                     RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                 })?;
                 let rtn = FungibleResourceManagerBlueprint::create(
@@ -835,7 +835,7 @@ impl ResourceManagerNativePackage {
                         InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
-                let input: ResourceManagerCreateFungibleWithInitialSupplyInput =
+                let input: FungibleResourceManagerCreateWithInitialSupplyInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                     })?;
@@ -856,7 +856,7 @@ impl ResourceManagerNativePackage {
                         InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
-                let input: ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput =
+                let input: FungibleResourceManagerCreateWithInitialSupplyAndAddressInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                     })?;
@@ -876,7 +876,7 @@ impl ResourceManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                let input: ResourceManagerMintFungibleInput = input.as_typed().map_err(|e| {
+                let input: FungibleResourceManagerMintInput = input.as_typed().map_err(|e| {
                     RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                 })?;
                 let rtn = FungibleResourceManagerBlueprint::mint(receiver, input.amount, api)?;
@@ -953,7 +953,7 @@ impl ResourceManagerNativePackage {
                         InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
-                let input: ResourceManagerCreateNonFungibleInput =
+                let input: NonFungibleResourceManagerCreateInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                     })?;
@@ -974,7 +974,7 @@ impl ResourceManagerNativePackage {
                         InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
-                let input: ResourceManagerCreateNonFungibleWithAddressInput =
+                let input: NonFungibleResourceManagerCreateWithAddressInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                     })?;
@@ -996,7 +996,7 @@ impl ResourceManagerNativePackage {
                         InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
-                let input: ResourceManagerCreateNonFungibleWithInitialSupplyInput =
+                let input: NonFungibleResourceManagerCreateWithInitialSupplyInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                     })?;
@@ -1019,7 +1019,7 @@ impl ResourceManagerNativePackage {
                     ));
                 }
 
-                let input: ResourceManagerCreateUuidNonFungibleWithInitialSupplyInput =
+                let input: NonFungibleResourceManagerCreateUuidWithInitialSupplyInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                     })?;
@@ -1040,7 +1040,7 @@ impl ResourceManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                let input: ResourceManagerMintNonFungibleInput = input.as_typed().map_err(|e| {
+                let input: NonFungibleResourceManagerMintInput = input.as_typed().map_err(|e| {
                     RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                 })?;
                 let rtn = NonFungibleResourceManagerBlueprint::mint_non_fungible(
@@ -1056,7 +1056,7 @@ impl ResourceManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                let input: ResourceManagerMintUuidNonFungibleInput =
+                let input: NonFungibleResourceManagerMintUuidInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                     })?;
@@ -1111,7 +1111,7 @@ impl ResourceManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                let input: ResourceManagerUpdateNonFungibleDataInput =
+                let input: NonFungibleResourceManagerUpdateDataInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                     })?;
@@ -1126,7 +1126,7 @@ impl ResourceManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                let input: ResourceManagerNonFungibleExistsInput =
+                let input: NonFungibleResourceManagerExistsInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                     })?;
@@ -1166,7 +1166,7 @@ impl ResourceManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                let input: ResourceManagerGetNonFungibleInput = input.as_typed().map_err(|e| {
+                let input: NonFungibleResourceManagerGetNonFungibleInput = input.as_typed().map_err(|e| {
                     RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                 })?;
                 let rtn =

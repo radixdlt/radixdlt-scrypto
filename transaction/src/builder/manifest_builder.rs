@@ -285,7 +285,7 @@ impl ManifestBuilder {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: "create_fungible_with_initial_supply".to_string(),
-                args: manifest_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
+                args: manifest_encode(&FungibleResourceManagerCreateWithInitialSupplyInput {
                     divisibility,
                     metadata,
                     access_rules,
@@ -298,7 +298,7 @@ impl ManifestBuilder {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-                args: manifest_encode(&ResourceManagerCreateFungibleInput {
+                args: manifest_encode(&FungibleResourceManagerCreateInput {
                     divisibility,
                     metadata,
                     access_rules,
@@ -339,7 +339,7 @@ impl ManifestBuilder {
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
-                args: manifest_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
+                args: manifest_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
                     id_type,
                     non_fungible_schema: NonFungibleSchema::new(),
                     metadata,
@@ -353,7 +353,7 @@ impl ManifestBuilder {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-                args: manifest_encode(&ResourceManagerCreateNonFungibleInput {
+                args: manifest_encode(&NonFungibleResourceManagerCreateInput {
                     id_type,
                     non_fungible_schema: NonFungibleSchema::new(),
                     metadata,

@@ -87,7 +87,7 @@ impl EpochManagerBlueprint {
                 RESOURCE_MANAGER_PACKAGE,
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT,
-                scrypto_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
+                scrypto_encode(&NonFungibleResourceManagerCreateWithAddressInput {
                     id_type: NonFungibleIdType::Bytes,
                     non_fungible_schema: NonFungibleSchema::new(),
                     metadata,

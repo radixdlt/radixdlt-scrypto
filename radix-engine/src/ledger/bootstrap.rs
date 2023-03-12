@@ -257,7 +257,7 @@ pub fn create_genesis(
             function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT
                 .to_string(),
             args: manifest_encode(
-                &ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput {
+                &FungibleResourceManagerCreateWithInitialSupplyAndAddressInput {
                     divisibility: 18,
                     metadata,
                     access_rules,
@@ -280,7 +280,7 @@ pub fn create_genesis(
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
-            args: manifest_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
+            args: manifest_encode(&NonFungibleResourceManagerCreateWithAddressInput {
                 id_type: NonFungibleIdType::Bytes,
                 non_fungible_schema: NonFungibleSchema::new(),
                 metadata,
@@ -544,7 +544,7 @@ pub fn create_genesis(
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
-            args: manifest_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
+            args: manifest_encode(&NonFungibleResourceManagerCreateWithAddressInput {
                 id_type: NonFungibleIdType::Bytes,
                 non_fungible_schema: NonFungibleSchema::new(),
                 metadata,
@@ -566,7 +566,7 @@ pub fn create_genesis(
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
-            args: manifest_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
+            args: manifest_encode(&NonFungibleResourceManagerCreateWithAddressInput {
                 id_type: NonFungibleIdType::Bytes,
                 non_fungible_schema: NonFungibleSchema::new(),
                 metadata,
@@ -588,7 +588,7 @@ pub fn create_genesis(
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
-            args: manifest_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
+            args: manifest_encode(&NonFungibleResourceManagerCreateWithAddressInput {
                 id_type: NonFungibleIdType::Bytes,
                 non_fungible_schema: NonFungibleSchema::new(),
                 metadata,

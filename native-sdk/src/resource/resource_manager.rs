@@ -32,7 +32,7 @@ impl ResourceManager {
                 RESOURCE_MANAGER_PACKAGE,
                 FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
-                scrypto_encode(&ResourceManagerCreateFungibleInput {
+                scrypto_encode(&FungibleResourceManagerCreateInput {
                     metadata,
                     access_rules,
                     divisibility,
@@ -59,7 +59,7 @@ impl ResourceManager {
                 RESOURCE_MANAGER_PACKAGE,
                 FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-                scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
+                scrypto_encode(&FungibleResourceManagerCreateWithInitialSupplyInput {
                     metadata,
                     access_rules,
                     divisibility,
@@ -87,7 +87,7 @@ impl ResourceManager {
             RESOURCE_MANAGER_PACKAGE,
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
-            scrypto_encode(&ResourceManagerCreateNonFungibleInput {
+            scrypto_encode(&NonFungibleResourceManagerCreateInput {
                 id_type,
                 non_fungible_schema,
                 metadata,
@@ -114,7 +114,7 @@ impl ResourceManager {
         let rtn = api.call_method(
             RENodeId::GlobalObject(self.0.into()),
             NON_FUNGIBLE_MINT_RESOURCE_MANAGER_MINT_IDENT,
-            scrypto_encode(&ResourceManagerMintNonFungibleInput { entries }).unwrap(),
+            scrypto_encode(&NonFungibleResourceManagerMintInput { entries }).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())
@@ -136,7 +136,7 @@ impl ResourceManager {
         let rtn = api.call_method(
             RENodeId::GlobalObject(self.0.into()),
             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
-            scrypto_encode(&ResourceManagerMintUuidNonFungibleInput { entries }).unwrap(),
+            scrypto_encode(&NonFungibleResourceManagerMintUuidInput { entries }).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())
@@ -154,7 +154,7 @@ impl ResourceManager {
         let rtn = api.call_method(
             RENodeId::GlobalObject(self.0.into()),
             FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
-            scrypto_encode(&ResourceManagerMintFungibleInput { amount }).unwrap(),
+            scrypto_encode(&FungibleResourceManagerMintInput { amount }).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())
@@ -171,7 +171,7 @@ impl ResourceManager {
         let rtn = api.call_method(
             RENodeId::GlobalObject(self.0.into()),
             NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT,
-            scrypto_encode(&ResourceManagerGetNonFungibleInput { id }).unwrap(),
+            scrypto_encode(&NonFungibleResourceManagerGetNonFungibleInput { id }).unwrap(),
         )?;
 
         let data = scrypto_decode(&rtn).unwrap();

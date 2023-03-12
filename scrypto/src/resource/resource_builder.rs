@@ -400,7 +400,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                     RESOURCE_MANAGER_PACKAGE,
                     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                     FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
-                    scrypto_encode(&ResourceManagerCreateFungibleInput {
+                    scrypto_encode(&FungibleResourceManagerCreateInput {
                         divisibility,
                         metadata,
                         access_rules,
@@ -418,7 +418,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                     RESOURCE_MANAGER_PACKAGE,
                     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
-                    scrypto_encode(&ResourceManagerCreateNonFungibleInput {
+                    scrypto_encode(&NonFungibleResourceManagerCreateInput {
                         id_type,
                         non_fungible_schema: NonFungibleSchema::new(),
                         metadata,
@@ -475,7 +475,7 @@ impl<A: ConfiguredAuth> InProgressResourceBuilder<FungibleResourceType, A> {
                 RESOURCE_MANAGER_PACKAGE,
                 FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-                scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
+                scrypto_encode(&FungibleResourceManagerCreateWithInitialSupplyInput {
                     divisibility: self.resource_type.divisibility,
                     metadata: self.metadata,
                     access_rules: self.auth.into_access_rules(),
@@ -524,7 +524,7 @@ impl<A: ConfiguredAuth>
                 RESOURCE_MANAGER_PACKAGE,
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-                scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
+                scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
                     id_type: StringNonFungibleLocalId::id_type(),
                     non_fungible_schema: NonFungibleSchema::new_schema::<V>(),
                     metadata: self.metadata,
@@ -574,7 +574,7 @@ impl<A: ConfiguredAuth>
                 RESOURCE_MANAGER_PACKAGE,
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-                scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
+                scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
                     id_type: IntegerNonFungibleLocalId::id_type(),
                     non_fungible_schema: NonFungibleSchema::new(),
                     metadata: self.metadata,
@@ -624,7 +624,7 @@ impl<A: ConfiguredAuth>
                 RESOURCE_MANAGER_PACKAGE,
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-                scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
+                scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
                     id_type: BytesNonFungibleLocalId::id_type(),
                     non_fungible_schema: NonFungibleSchema::new(),
                     metadata: self.metadata,
@@ -678,7 +678,7 @@ impl<A: ConfiguredAuth>
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(
-                    &ResourceManagerCreateUuidNonFungibleWithInitialSupplyInput {
+                    &NonFungibleResourceManagerCreateUuidWithInitialSupplyInput {
                         non_fungible_schema: NonFungibleSchema::new(),
                         metadata: self.metadata,
                         access_rules: self.auth.into_access_rules(),

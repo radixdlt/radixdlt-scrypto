@@ -275,7 +275,7 @@ impl ResourceManager {
             .call_method(
                 RENodeId::GlobalObject(self.0.into()),
                 NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT,
-                scrypto_encode(&ResourceManagerNonFungibleExistsInput { id: id.clone() }).unwrap(),
+                scrypto_encode(&NonFungibleResourceManagerExistsInput { id: id.clone() }).unwrap(),
             )
             .unwrap();
 
@@ -305,7 +305,7 @@ impl ResourceManager {
             .call_method(
                 RENodeId::GlobalObject(self.0.into()),
                 FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
-                scrypto_encode(&ResourceManagerMintFungibleInput {
+                scrypto_encode(&FungibleResourceManagerMintInput {
                     amount: amount.into(),
                 })
                 .unwrap(),
@@ -328,7 +328,7 @@ impl ResourceManager {
             .call_method(
                 RENodeId::GlobalObject(self.0.into()),
                 NON_FUNGIBLE_MINT_RESOURCE_MANAGER_MINT_IDENT,
-                scrypto_encode(&ResourceManagerMintNonFungibleInput { entries }).unwrap(),
+                scrypto_encode(&NonFungibleResourceManagerMintInput { entries }).unwrap(),
             )
             .unwrap();
 
@@ -345,7 +345,7 @@ impl ResourceManager {
             .call_method(
                 RENodeId::GlobalObject(self.0.into()),
                 NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
-                scrypto_encode(&ResourceManagerMintUuidNonFungibleInput { entries }).unwrap(),
+                scrypto_encode(&NonFungibleResourceManagerMintUuidInput { entries }).unwrap(),
             )
             .unwrap();
 
@@ -362,7 +362,7 @@ impl ResourceManager {
             .call_method(
                 RENodeId::GlobalObject(self.0.into()),
                 NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT,
-                scrypto_encode(&ResourceManagerGetNonFungibleInput { id: id.clone() }).unwrap(),
+                scrypto_encode(&NonFungibleResourceManagerGetNonFungibleInput { id: id.clone() }).unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()
@@ -382,7 +382,7 @@ impl ResourceManager {
             .call_method(
                 RENodeId::GlobalObject(self.0.into()),
                 NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT,
-                scrypto_encode(&ResourceManagerUpdateNonFungibleDataInput {
+                scrypto_encode(&NonFungibleResourceManagerUpdateDataInput {
                     id: id.clone(),
                     data: scrypto_encode(&new_data).unwrap(),
                 })

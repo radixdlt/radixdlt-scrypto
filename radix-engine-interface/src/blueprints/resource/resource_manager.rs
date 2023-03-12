@@ -2,15 +2,10 @@ use crate::blueprints::resource::*;
 use crate::data::scrypto::model::*;
 use crate::math::*;
 use crate::*;
-use radix_engine_common::data::scrypto::ScryptoValue;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
-use scrypto_schema::NonFungibleSchema;
 
 pub const FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT: &str = "FungibleResourceManager";
-
-pub const NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT: &str = "NonFungibleResourceManager";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor, ManifestSbor)]
 pub enum ResourceMethodAuthKey {
@@ -26,32 +21,32 @@ pub enum ResourceMethodAuthKey {
 pub const FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT: &str = "create_fungible";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct ResourceManagerCreateFungibleInput {
+pub struct FungibleResourceManagerCreateInput {
     pub divisibility: u8,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
 }
 
-pub type ResourceManagerCreateFungibleOutput = ResourceAddress;
+pub type FungibleResourceManagerCreateOutput = ResourceAddress;
 
 pub const FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT: &str =
     "create_fungible_with_initial_supply";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct ResourceManagerCreateFungibleWithInitialSupplyInput {
+pub struct FungibleResourceManagerCreateWithInitialSupplyInput {
     pub divisibility: u8,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub initial_supply: Decimal,
 }
 
-pub type ResourceManagerCreateFungibleWithInitialSupplyOutput = (ResourceAddress, Bucket);
+pub type FungibleResourceManagerCreateWithInitialSupplyOutput = (ResourceAddress, Bucket);
 
 pub const FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT: &str =
     "create_fungible_with_initial_supply_and_address";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput {
+pub struct FungibleResourceManagerCreateWithInitialSupplyAndAddressInput {
     pub divisibility: u8,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -59,77 +54,7 @@ pub struct ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput {
     pub resource_address: [u8; 26], // TODO: Clean this up
 }
 
-pub type ResourceManagerCreateFungibleWithInitialSupplyAndAddressOutput = (ResourceAddress, Bucket);
-
-pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT: &str = "create_non_fungible";
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct ResourceManagerCreateNonFungibleInput {
-    pub id_type: NonFungibleIdType,
-    pub non_fungible_schema: NonFungibleSchema,
-    pub metadata: BTreeMap<String, String>,
-    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-}
-
-pub type ResourceManagerCreateNonFungibleOutput = ResourceAddress;
-
-pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT: &str =
-    "create_non_fungible_with_initial_supply";
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct ResourceManagerCreateNonFungibleWithInitialSupplyInput {
-    pub id_type: NonFungibleIdType,
-    pub non_fungible_schema: NonFungibleSchema,
-    pub metadata: BTreeMap<String, String>,
-    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    pub entries: BTreeMap<NonFungibleLocalId, Vec<u8>>,
-}
-
-pub type ResourceManagerCreateNonFungibleWithInitialSupplyOutput = (ResourceAddress, Bucket);
-
-pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT: &str =
-    "create_non_fungible_with_address";
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct ResourceManagerCreateNonFungibleWithAddressInput {
-    pub id_type: NonFungibleIdType,
-    pub non_fungible_schema: NonFungibleSchema,
-    pub metadata: BTreeMap<String, String>,
-    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    pub resource_address: [u8; 26], // TODO: Clean this up
-}
-
-pub type ResourceManagerCreateNonFungibleWithAddressOutput = ResourceAddress;
-
-pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT: &str =
-    "create_uuid_non_fungible_with_initial_supply";
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct ResourceManagerCreateUuidNonFungibleWithInitialSupplyInput {
-    pub non_fungible_schema: NonFungibleSchema,
-    pub metadata: BTreeMap<String, String>,
-    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    pub entries: Vec<Vec<u8>>,
-}
-
-pub type ResourceManagerCreateUuidNonFungibleWithInitialSupplyOutput = (ResourceAddress, Bucket);
-
-pub const BUCKET_BURN_IDENT: &str = "burn_bucket";
-
-#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
-pub struct BucketBurnInput {
-    pub bucket: Bucket,
-}
-
-pub type BucketBurnOutput = ();
-
-impl Clone for BucketBurnInput {
-    fn clone(&self) -> Self {
-        Self {
-            bucket: Bucket(self.bucket.0),
-        }
-    }
-}
+pub type FungibleResourceManagerCreateWithInitialSupplyAndAddressOutput = (ResourceAddress, Bucket);
 
 pub const RESOURCE_MANAGER_BURN_IDENT: &str = "burn";
 pub const FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME: &str = "burn_FungibleResourceManager";
@@ -164,60 +89,14 @@ pub struct ResourceManagerCreateBucketInput {}
 
 pub type ResourceManagerCreateBucketOutput = Bucket;
 
-pub const NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT: &str = "update_non_fungible_data";
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct ResourceManagerUpdateNonFungibleDataInput {
-    pub id: NonFungibleLocalId,
-    pub data: Vec<u8>,
-}
-
-pub type ResourceManagerUpdateNonFungibleDataOutput = ();
-
-pub const NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT: &str = "non_fungible_exists";
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct ResourceManagerNonFungibleExistsInput {
-    pub id: NonFungibleLocalId,
-}
-
-pub type ResourceManagerNonFungibleExistsOutput = bool;
-
-pub const NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT: &str = "get_non_fungible";
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct ResourceManagerGetNonFungibleInput {
-    pub id: NonFungibleLocalId,
-}
-
-pub type ResourceManagerGetNonFungibleOutput = ScryptoValue;
-
-pub const NON_FUNGIBLE_MINT_RESOURCE_MANAGER_MINT_IDENT: &str = "mint_non_fungible";
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct ResourceManagerMintNonFungibleInput {
-    pub entries: BTreeMap<NonFungibleLocalId, Vec<u8>>,
-}
-
-pub type ResourceManagerMintNonFungibleOutput = Bucket;
-
-pub const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT: &str = "mint_uuid_non_fungible";
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct ResourceManagerMintUuidNonFungibleInput {
-    pub entries: Vec<Vec<u8>>,
-}
-
-pub type ResourceManagerMintUuidNonFungibleOutput = Bucket;
-
 pub const FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT: &str = "mint_fungible";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct ResourceManagerMintFungibleInput {
+pub struct FungibleResourceManagerMintInput {
     pub amount: Decimal,
 }
 
-pub type ResourceManagerMintFungibleOutput = Bucket;
+pub type FungibleResourceManagerMintOutput = Bucket;
 
 pub const RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT: &str = "get_resource_type";
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME: &str =

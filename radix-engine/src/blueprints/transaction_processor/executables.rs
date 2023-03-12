@@ -567,7 +567,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let rtn = api.call_method(
                         RENodeId::GlobalObject(resource_address.into()),
                         FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
-                        scrypto_encode(&ResourceManagerMintFungibleInput { amount }).unwrap(),
+                        scrypto_encode(&FungibleResourceManagerMintInput { amount }).unwrap(),
                     )?;
 
                     let result = IndexedScryptoValue::from_vec(rtn).unwrap();
@@ -601,7 +601,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let rtn = api.call_method(
                         RENodeId::GlobalObject(resource_address.into()),
                         NON_FUNGIBLE_MINT_RESOURCE_MANAGER_MINT_IDENT,
-                        scrypto_encode(&ResourceManagerMintNonFungibleInput { entries }).unwrap(),
+                        scrypto_encode(&NonFungibleResourceManagerMintInput { entries }).unwrap(),
                     )?;
                     let result = IndexedScryptoValue::from_vec(rtn).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
@@ -616,7 +616,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let rtn = api.call_method(
                         RENodeId::GlobalObject(resource_address.into()),
                         NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
-                        scrypto_encode(&ResourceManagerMintUuidNonFungibleInput {
+                        scrypto_encode(&NonFungibleResourceManagerMintUuidInput {
                             entries: entries,
                         })
                         .unwrap(),
