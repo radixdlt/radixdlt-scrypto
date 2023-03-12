@@ -241,7 +241,7 @@ impl KernelModule for KernelModuleMixer {
         api: &mut Y,
         actor: &Option<Actor>,
         update: &mut CallFrameUpdate,
-        args: &ScryptoValue,
+        args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {

@@ -3,9 +3,8 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::{
-    ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, TemporaryResolvedInvocation,
-};
+use crate::kernel::executor::*;
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::RuntimeSubstate;
@@ -258,7 +257,7 @@ impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
     fn resolve<D: KernelSubstateApi>(
         self,
         _api: &mut D,
-    ) -> Result<TemporaryResolvedInvocation<Self::Exec>, RuntimeError> {
+    ) -> Result<ResolvedInvocation<Self::Exec>, RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
         // TODO: This can be refactored out once any type in sbor is implemented
         let instructions: Vec<Instruction> = manifest_decode(&self.instructions).unwrap();
@@ -278,11 +277,11 @@ impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
             ident: "run".to_string(),
         });
 
-        let resolved = TemporaryResolvedInvocation {
+        let resolved = ResolvedInvocation {
             resolved_actor: actor,
             update: call_frame_update,
             executor: self,
-            args: ScryptoValue::Tuple { fields: vec![] },
+            args: IndexedScryptoValue::unit(),
         };
 
         Ok(resolved)
@@ -298,7 +297,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
     fn execute<Y, W: WasmEngine>(
         self,
-        _args: ScryptoValue,
+        _args: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where

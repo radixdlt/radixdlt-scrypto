@@ -1,6 +1,7 @@
 pub mod actor;
 pub mod call_frame;
 pub mod event;
+pub mod executor;
 pub mod heap;
 pub mod id_allocator;
 pub mod interpreters;

@@ -94,7 +94,7 @@ impl AuthModule {
 
     fn method_auth<Y: KernelModuleApi<RuntimeError>>(
         identifier: &MethodIdentifier,
-        args: &ScryptoValue,
+        args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<MethodAuthorization, RuntimeError> {
         let auth = match identifier {
@@ -356,7 +356,7 @@ impl KernelModule for AuthModule {
         api: &mut Y,
         next_actor: &Option<Actor>,
         call_frame_update: &mut CallFrameUpdate,
-        args: &ScryptoValue,
+        args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         if matches!(
             next_actor,

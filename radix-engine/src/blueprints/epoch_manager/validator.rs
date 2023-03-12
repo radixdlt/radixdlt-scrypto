@@ -52,17 +52,15 @@ pub struct ValidatorBlueprint;
 impl ValidatorBlueprint {
     pub fn register<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
-        let _input: ValidatorRegisterInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let _input: ValidatorRegisterInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
         let handle = api.sys_lock_substate(receiver, offset.clone(), LockFlags::MUTABLE)?;
@@ -107,17 +105,15 @@ impl ValidatorBlueprint {
 
     pub fn unregister<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
-        let _input: ValidatorUnregisterInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let _input: ValidatorUnregisterInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
         let handle = api.sys_lock_substate(receiver, offset.clone(), LockFlags::MUTABLE)?;
@@ -154,17 +150,15 @@ impl ValidatorBlueprint {
 
     pub fn stake<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
-        let input: ValidatorStakeInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: ValidatorStakeInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         // Prepare the event and emit it once the operations succeed
         let event = {
@@ -228,17 +222,15 @@ impl ValidatorBlueprint {
 
     pub fn unstake<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
-        let input: ValidatorUnstakeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: ValidatorUnstakeInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         // Prepare event and emit it once operations finish
         let event = {
@@ -331,17 +323,15 @@ impl ValidatorBlueprint {
 
     pub fn claim_xrd<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
-        let input: ValidatorClaimXrdInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: ValidatorClaimXrdInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let handle = api.sys_lock_substate(
             receiver,
@@ -402,17 +392,15 @@ impl ValidatorBlueprint {
 
     pub fn update_key<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
-        let input: ValidatorUpdateKeyInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: ValidatorUpdateKeyInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let handle = api.sys_lock_substate(
             receiver,
@@ -450,17 +438,15 @@ impl ValidatorBlueprint {
 
     pub fn update_accept_delegated_stake<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
-        let input: ValidatorUpdateAcceptDelegatedStakeInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: ValidatorUpdateAcceptDelegatedStakeInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let rule = if input.accept_delegated_stake {
             AccessRuleEntry::AccessRule(AccessRule::AllowAll)
