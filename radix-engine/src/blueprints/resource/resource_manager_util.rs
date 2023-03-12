@@ -1,10 +1,14 @@
+use crate::errors::RuntimeError;
 use crate::types::*;
+use native_sdk::access_rules::AccessRulesObject;
+use native_sdk::metadata::Metadata;
 use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
+use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::*;
 
-pub fn build_access_rules(
+fn build_access_rules(
     mut access_rules_map: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
 ) -> (AccessRulesConfig, AccessRulesConfig) {
     let (mint_access_rule, mint_mutability) = access_rules_map
@@ -239,4 +243,32 @@ pub fn build_access_rules(
     );
 
     (resman_access_rules, vault_access_rules)
+}
+
+pub fn globalize_resource_manager<Y>(
+    object_id: ObjectId,
+    resource_address: ResourceAddress,
+    access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    metadata: BTreeMap<String, String>,
+    api: &mut Y,
+) -> Result<(), RuntimeError>
+where
+    Y: ClientApi<RuntimeError>,
+{
+    let (resman_access_rules, vault_access_rules) = build_access_rules(access_rules);
+    let resman_access_rules = AccessRulesObject::sys_new(resman_access_rules, api)?;
+    let vault_access_rules = AccessRulesObject::sys_new(vault_access_rules, api)?;
+    let metadata = Metadata::sys_create_with_data(metadata, api)?;
+
+    api.globalize_with_address(
+        RENodeId::Object(object_id),
+        btreemap!(
+            NodeModuleId::AccessRules => resman_access_rules.id(),
+            NodeModuleId::AccessRules1 => vault_access_rules.id(),
+            NodeModuleId::Metadata => metadata.id(),
+        ),
+        resource_address.into(),
+    )?;
+
+    Ok(())
 }

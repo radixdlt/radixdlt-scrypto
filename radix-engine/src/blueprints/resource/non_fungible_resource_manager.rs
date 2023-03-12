@@ -6,8 +6,6 @@ use crate::kernel::heap::DroppedBucket;
 use crate::kernel::heap::DroppedBucketResource;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
-use native_sdk::access_rules::AccessRulesObject;
-use native_sdk::metadata::Metadata;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{RENodeId, ResourceManagerOffset, SubstateOffset};
@@ -94,39 +92,6 @@ where
     };
 
     Ok((resource_manager, nf_store_id))
-}
-
-fn globalize_non_fungible_resource_manager<Y>(
-    resource_address: ResourceAddress,
-    substate: NonFungibleResourceManagerSubstate,
-    access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    metadata: BTreeMap<String, String>,
-    api: &mut Y,
-) -> Result<(), RuntimeError>
-where
-    Y: ClientApi<RuntimeError>,
-{
-    let object_id = api.new_object(
-        NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-        vec![scrypto_encode(&substate).unwrap()],
-    )?;
-
-    let (resman_access_rules, vault_access_rules) = build_access_rules(access_rules);
-    let resman_access_rules = AccessRulesObject::sys_new(resman_access_rules, api)?;
-    let vault_access_rules = AccessRulesObject::sys_new(vault_access_rules, api)?;
-    let metadata = Metadata::sys_create_with_data(metadata, api)?;
-
-    api.globalize_with_address(
-        RENodeId::Object(object_id),
-        btreemap!(
-            NodeModuleId::AccessRules => resman_access_rules.id(),
-            NodeModuleId::AccessRules1 => vault_access_rules.id(),
-            NodeModuleId::Metadata => metadata.id(),
-        ),
-        resource_address.into(),
-    )?;
-
-    Ok(())
 }
 
 fn build_non_fungible_bucket<Y>(
@@ -238,13 +203,12 @@ impl NonFungibleResourceManagerBlueprint {
             api,
         )?;
 
-        globalize_non_fungible_resource_manager(
-            resource_address,
-            resource_manager_substate,
-            access_rules,
-            metadata,
-            api,
+        let object_id = api.new_object(
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            vec![scrypto_encode(&resource_manager_substate).unwrap()],
         )?;
+
+        globalize_resource_manager(object_id, resource_address, access_rules, metadata, api)?;
 
         Ok(resource_address)
     }
@@ -284,13 +248,12 @@ impl NonFungibleResourceManagerBlueprint {
         let bucket =
             build_non_fungible_bucket(resource_address, id_type, nf_store_id, entries, api)?;
 
-        globalize_non_fungible_resource_manager(
-            resource_address,
-            resource_manager,
-            access_rules,
-            metadata,
-            api,
+        let object_id = api.new_object(
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            vec![scrypto_encode(&resource_manager).unwrap()],
         )?;
+
+        globalize_resource_manager(object_id, resource_address, access_rules, metadata, api)?;
 
         Ok((resource_address, bucket))
     }
@@ -332,13 +295,12 @@ impl NonFungibleResourceManagerBlueprint {
             api,
         )?;
 
-        globalize_non_fungible_resource_manager(
-            resource_address,
-            resource_manager,
-            access_rules,
-            metadata,
-            api,
+        let object_id = api.new_object(
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            vec![scrypto_encode(&resource_manager).unwrap()],
         )?;
+
+        globalize_resource_manager(object_id, resource_address, access_rules, metadata, api)?;
 
         Ok((resource_address, bucket))
     }

@@ -6,8 +6,6 @@ use crate::kernel::heap::DroppedBucket;
 use crate::kernel::heap::DroppedBucketResource;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
-use native_sdk::access_rules::AccessRulesObject;
-use native_sdk::metadata::Metadata;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{RENodeId, ResourceManagerOffset, SubstateOffset};
@@ -31,103 +29,52 @@ pub struct FungibleResourceManagerSubstate {
     pub total_supply: Decimal,
 }
 
-fn build_fungible_resource_manager_substate_with_initial_supply<Y>(
+fn build_fungible_bucket<Y>(
     resource_address: ResourceAddress,
     divisibility: u8,
-    initial_supply: Decimal,
+    amount: Decimal,
     api: &mut Y,
-) -> Result<(FungibleResourceManagerSubstate, Bucket), RuntimeError>
+) -> Result<Bucket, RuntimeError>
 where
-    Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    Y: ClientApi<RuntimeError>,
 {
-    let mut resource_manager = FungibleResourceManagerSubstate {
+    // check amount
+    let resource_type = ResourceType::Fungible { divisibility };
+    if !resource_type.check_amount(amount) {
+        return Err(RuntimeError::ApplicationError(
+            ApplicationError::ResourceManagerError(FungibleResourceManagerError::InvalidAmount(
+                amount,
+                divisibility,
+            )),
+        ));
+    }
+
+    // TODO: refactor this into mint function
+    if amount > dec!("1000000000000000000") {
+        return Err(RuntimeError::ApplicationError(
+            ApplicationError::ResourceManagerError(
+                FungibleResourceManagerError::MaxMintAmountExceeded,
+            ),
+        ));
+    }
+
+    let bucket_info = BucketInfoSubstate {
         resource_address,
-        divisibility,
-        total_supply: 0.into(),
+        resource_type: ResourceType::Fungible { divisibility },
     };
-
-    let bucket = {
-        // check amount
-        let resource_type = ResourceType::Fungible { divisibility };
-        if !resource_type.check_amount(initial_supply) {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::ResourceManagerError(
-                    FungibleResourceManagerError::InvalidAmount(initial_supply, divisibility),
-                ),
-            ));
-        }
-
-        // TODO: refactor this into mint function
-        if initial_supply > dec!("1000000000000000000") {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::ResourceManagerError(
-                    FungibleResourceManagerError::MaxMintAmountExceeded,
-                ),
-            ));
-        }
-        resource_manager.total_supply = initial_supply;
-
-        let bucket_info = BucketInfoSubstate {
-            resource_address,
-            resource_type: ResourceType::Fungible { divisibility },
-        };
-        let liquid_resource = LiquidFungibleResource::new(initial_supply);
-        let bucket_id = api.new_object(
-            BUCKET_BLUEPRINT,
-            vec![
-                scrypto_encode(&bucket_info).unwrap(),
-                scrypto_encode(&liquid_resource).unwrap(),
-                scrypto_encode(&LockedFungibleResource::default()).unwrap(),
-                scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
-                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
-            ],
-        )?;
-
-        Bucket(bucket_id)
-    };
-
-    Ok((resource_manager, bucket))
-}
-
-fn create_fungible_resource_manager<Y>(
-    global_node_id: RENodeId,
-    divisibility: u8,
-    metadata: BTreeMap<String, String>,
-    access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    api: &mut Y,
-) -> Result<ResourceAddress, RuntimeError>
-where
-    Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
-{
-    let resource_address: ResourceAddress = global_node_id.into();
-
-    let resource_manager_substate = FungibleResourceManagerSubstate {
-        divisibility,
-        resource_address,
-        total_supply: 0.into(),
-    };
-
-    let object_id = api.new_object(
-        FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-        vec![scrypto_encode(&resource_manager_substate).unwrap()],
+    let liquid_resource = LiquidFungibleResource::new(amount);
+    let bucket_id = api.new_object(
+        BUCKET_BLUEPRINT,
+        vec![
+            scrypto_encode(&bucket_info).unwrap(),
+            scrypto_encode(&liquid_resource).unwrap(),
+            scrypto_encode(&LockedFungibleResource::default()).unwrap(),
+            scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
+            scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
+        ],
     )?;
 
-    let (resman_access_rules, vault_access_rules) = build_access_rules(access_rules);
-    let resman_access_rules = AccessRulesObject::sys_new(resman_access_rules, api)?;
-    let vault_access_rules = AccessRulesObject::sys_new(vault_access_rules, api)?;
-    let metadata = Metadata::sys_create_with_data(metadata, api)?;
-
-    api.globalize_with_address(
-        RENodeId::Object(object_id),
-        btreemap!(
-            NodeModuleId::AccessRules => resman_access_rules.id(),
-            NodeModuleId::AccessRules1 => vault_access_rules.id(),
-            NodeModuleId::Metadata => metadata.id(),
-        ),
-        resource_address.into(),
-    )?;
-
-    Ok(resource_address)
+    Ok(Bucket(bucket_id))
 }
 
 pub struct FungibleResourceManagerBlueprint;
@@ -143,14 +90,22 @@ impl FungibleResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalResourceManager)?;
-        let address = create_fungible_resource_manager(
-            global_node_id,
+        let resource_address: ResourceAddress = global_node_id.into();
+
+        let resource_manager_substate = FungibleResourceManagerSubstate {
             divisibility,
-            metadata,
-            access_rules,
-            api,
+            resource_address,
+            total_supply: 0.into(),
+        };
+
+        let object_id = api.new_object(
+            FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            vec![scrypto_encode(&resource_manager_substate).unwrap()],
         )?;
-        Ok(address)
+
+        globalize_resource_manager(object_id, resource_address, access_rules, metadata, api)?;
+
+        Ok(resource_address)
     }
 
     pub(crate) fn create_with_initial_supply<Y>(
@@ -166,35 +121,14 @@ impl FungibleResourceManagerBlueprint {
         let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalResourceManager)?;
         let resource_address: ResourceAddress = global_node_id.into();
 
-        let (resource_manager_substate, bucket) =
-            build_fungible_resource_manager_substate_with_initial_supply(
-                resource_address,
-                divisibility,
-                initial_supply,
-                api,
-            )?;
-
-        let object_id = api.new_object(
-            FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-            vec![scrypto_encode(&resource_manager_substate).unwrap()],
-        )?;
-
-        let (resman_access_rules, vault_access_rules) = build_access_rules(access_rules);
-        let resman_access_rules = AccessRulesObject::sys_new(resman_access_rules, api)?;
-        let vault_access_rules = AccessRulesObject::sys_new(vault_access_rules, api)?;
-        let metadata = Metadata::sys_create_with_data(metadata, api)?;
-
-        api.globalize_with_address(
-            RENodeId::Object(object_id),
-            btreemap!(
-                NodeModuleId::AccessRules => resman_access_rules.id(),
-                NodeModuleId::AccessRules1 => vault_access_rules.id(),
-                NodeModuleId::Metadata => metadata.id(),
-            ),
-            resource_address.into(),
-        )?;
-
-        Ok((resource_address, bucket))
+        Self::create_with_initial_supply_and_address(
+            divisibility,
+            metadata,
+            access_rules,
+            initial_supply,
+            resource_address.to_array_without_entity_id(),
+            api,
+        )
     }
 
     pub(crate) fn create_with_initial_supply_and_address<Y>(
@@ -208,37 +142,22 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let global_node_id =
-            RENodeId::GlobalObject(ResourceAddress::Normal(resource_address).into());
-        let resource_address: ResourceAddress = global_node_id.into();
+        let resource_address: ResourceAddress = ResourceAddress::Normal(resource_address);
 
-        let (resource_manager_substate, bucket) =
-            build_fungible_resource_manager_substate_with_initial_supply(
-                resource_address,
-                divisibility,
-                initial_supply,
-                api,
-            )?;
+        let resource_manager_substate = FungibleResourceManagerSubstate {
+            divisibility,
+            resource_address,
+            total_supply: initial_supply,
+        };
 
         let object_id = api.new_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             vec![scrypto_encode(&resource_manager_substate).unwrap()],
         )?;
 
-        let (resman_access_rules, vault_access_rules) = build_access_rules(access_rules);
-        let resman_access_rules = AccessRulesObject::sys_new(resman_access_rules, api)?;
-        let vault_access_rules = AccessRulesObject::sys_new(vault_access_rules, api)?;
-        let metadata = Metadata::sys_create_with_data(metadata, api)?;
+        let bucket = build_fungible_bucket(resource_address, divisibility, initial_supply, api)?;
 
-        api.globalize_with_address(
-            RENodeId::Object(object_id),
-            btreemap!(
-                NodeModuleId::AccessRules => resman_access_rules.id(),
-                NodeModuleId::AccessRules1 => vault_access_rules.id(),
-                NodeModuleId::Metadata => metadata.id(),
-            ),
-            resource_address.into(),
-        )?;
+        globalize_resource_manager(object_id, resource_address, access_rules, metadata, api)?;
 
         Ok((resource_address, bucket))
     }
