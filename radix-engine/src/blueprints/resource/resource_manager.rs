@@ -22,19 +22,19 @@ use radix_engine_interface::*;
 use std::borrow::Cow;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct ResourceManagerSubstate {
+pub struct FungibleResourceManagerSubstate {
     pub resource_address: ResourceAddress, // TODO: Figure out a way to remove?
-    pub resource_type: ResourceType,
+    pub divisibility: u8,
     pub total_supply: Decimal,
 }
 
-impl ResourceManagerSubstate {
+impl FungibleResourceManagerSubstate {
     pub fn new(
-        resource_type: ResourceType,
+        divisibility: u8,
         resource_address: ResourceAddress,
-    ) -> ResourceManagerSubstate {
+    ) -> FungibleResourceManagerSubstate {
         Self {
-            resource_type,
+            divisibility,
             total_supply: 0.into(),
             resource_address,
         }
@@ -44,8 +44,8 @@ impl ResourceManagerSubstate {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerSubstate {
     pub resource_address: ResourceAddress, // TODO: Figure out a way to remove?
-    pub resource_type: ResourceType,
     pub total_supply: Decimal,
+    pub id_type: NonFungibleIdType,
     pub non_fungible_table: KeyValueStoreId,
     pub mutable_fields: BTreeSet<String>,
 }
@@ -57,10 +57,8 @@ pub enum ResourceManagerError {
     MaxMintAmountExceeded,
     NonFungibleAlreadyExists(NonFungibleGlobalId),
     NonFungibleNotFound(NonFungibleGlobalId),
-    NotNonFungible,
     MismatchingBucketResource,
     NonFungibleIdTypeDoesNotMatch(NonFungibleIdType, NonFungibleIdType),
-    ResourceTypeDoesNotMatch,
     InvalidNonFungibleIdType,
 }
 
@@ -114,7 +112,7 @@ where
 
     let resource_manager = NonFungibleResourceManagerSubstate {
         resource_address,
-        resource_type: ResourceType::NonFungible { id_type },
+        id_type,
         total_supply: supply.into(),
         non_fungible_table: nf_store_id,
         mutable_fields,
@@ -218,18 +216,16 @@ fn build_fungible_resource_manager_substate_with_initial_supply<Y>(
     divisibility: u8,
     initial_supply: Decimal,
     api: &mut Y,
-) -> Result<(ResourceManagerSubstate, Bucket), RuntimeError>
+) -> Result<(FungibleResourceManagerSubstate, Bucket), RuntimeError>
 where
     Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
 {
-    let mut resource_manager = ResourceManagerSubstate::new(
-        ResourceType::Fungible { divisibility },
-        resource_address,
-    );
+    let mut resource_manager = FungibleResourceManagerSubstate::new(divisibility, resource_address);
 
     let bucket = {
         // check amount
-        if !resource_manager.resource_type.check_amount(initial_supply) {
+        let resource_type = ResourceType::Fungible { divisibility };
+        if !resource_type.check_amount(initial_supply) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::ResourceManagerError(ResourceManagerError::InvalidAmount(
                     initial_supply,
@@ -821,20 +817,7 @@ impl ResourceManagerBlueprint {
             let resource_manager: &mut NonFungibleResourceManagerSubstate =
                 api.kernel_get_substate_ref_mut(resman_handle)?;
             let resource_address = resource_manager.resource_address;
-            let resource_type = resource_manager.resource_type;
-
-            let id_type = match resource_manager.resource_type {
-                ResourceType::NonFungible { id_type } => id_type,
-                _ => {
-                    return Err(RuntimeError::ApplicationError(
-                        ApplicationError::ResourceManagerError(
-                            ResourceManagerError::ResourceTypeDoesNotMatch,
-                        ),
-                    ))
-                }
-            };
-
-            if id_type == NonFungibleIdType::UUID {
+            if resource_manager.id_type == NonFungibleIdType::UUID {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::ResourceManagerError(
                         ResourceManagerError::InvalidNonFungibleIdType,
@@ -848,12 +831,12 @@ impl ResourceManagerBlueprint {
             let mut ids = BTreeSet::new();
             let mut non_fungibles = BTreeMap::new();
             for (id, data) in input.entries.clone().into_iter() {
-                if id.id_type() != id_type {
+                if id.id_type() != resource_manager.id_type {
                     return Err(RuntimeError::ApplicationError(
                         ApplicationError::ResourceManagerError(
                             ResourceManagerError::NonFungibleIdTypeDoesNotMatch(
                                 id.id_type(),
-                                id_type,
+                                resource_manager.id_type,
                             ),
                         ),
                     ));
@@ -867,7 +850,9 @@ impl ResourceManagerBlueprint {
 
             let info = BucketInfoSubstate {
                 resource_address,
-                resource_type,
+                resource_type: ResourceType::NonFungible {
+                    id_type: resource_manager.id_type,
+                },
             };
             let bucket_id = api.new_object(
                 BUCKET_BLUEPRINT,
@@ -954,17 +939,8 @@ impl ResourceManagerBlueprint {
             let resource_manager: &mut NonFungibleResourceManagerSubstate =
                 api.kernel_get_substate_ref_mut(resman_handle)?;
             let resource_address = resource_manager.resource_address;
-            let id_type = match resource_manager.resource_type {
-                ResourceType::NonFungible { id_type } => id_type,
-                _ => {
-                    return Err(RuntimeError::ApplicationError(
-                        ApplicationError::ResourceManagerError(
-                            ResourceManagerError::ResourceTypeDoesNotMatch,
-                        ),
-                    ))
-                }
-            };
             let nf_store_id = resource_manager.non_fungible_table;
+            let id_type = resource_manager.id_type;
 
             if id_type != NonFungibleIdType::UUID {
                 return Err(RuntimeError::ApplicationError(
@@ -1021,11 +997,7 @@ impl ResourceManagerBlueprint {
             (bucket_id, ids)
         };
 
-        Runtime::emit_event(api,
-                            MintNonFungibleResourceEvent {
-                                ids,
-                            },
-                            )?;
+        Runtime::emit_event(api, MintNonFungibleResourceEvent { ids })?;
 
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
@@ -1050,57 +1022,54 @@ impl ResourceManagerBlueprint {
         )?;
 
         let bucket_id = {
-            let resource_manager: &mut ResourceManagerSubstate =
+            let resource_manager: &mut FungibleResourceManagerSubstate =
                 api.kernel_get_substate_ref_mut(resman_handle)?;
-            let resource_type = resource_manager.resource_type;
+            let divisibility = resource_manager.divisibility;
+            let resource_type = ResourceType::Fungible { divisibility };
 
-            if let ResourceType::Fungible { divisibility } = resource_type {
-                // check amount
-                if !resource_type.check_amount(input.amount) {
-                    return Err(RuntimeError::ApplicationError(
-                        ApplicationError::ResourceManagerError(
-                            ResourceManagerError::InvalidAmount(input.amount, divisibility),
-                        ),
-                    ));
-                }
+            // check amount
+            if !resource_type.check_amount(input.amount) {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::ResourceManagerError(ResourceManagerError::InvalidAmount(
+                        input.amount,
+                        divisibility,
+                    )),
+                ));
+            }
 
-                // Practically impossible to overflow the Decimal type with this limit in place.
-                if input.amount > dec!("1000000000000000000") {
-                    return Err(RuntimeError::ApplicationError(
-                        ApplicationError::ResourceManagerError(
-                            ResourceManagerError::MaxMintAmountExceeded,
-                        ),
-                    ));
-                }
-
-                resource_manager.total_supply += input.amount;
-
-                let bucket_info = BucketInfoSubstate {
-                    resource_address: resource_manager.resource_address,
-                    resource_type: ResourceType::Fungible { divisibility },
-                };
-                let liquid_resource = LiquidFungibleResource::new(input.amount);
-                let bucket_id = api.new_object(
-                    BUCKET_BLUEPRINT,
-                    vec![
-                        scrypto_encode(&bucket_info).unwrap(),
-                        scrypto_encode(&liquid_resource).unwrap(),
-                    ],
-                )?;
-
-                bucket_id
-            } else {
+            // Practically impossible to overflow the Decimal type with this limit in place.
+            if input.amount > dec!("1000000000000000000") {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::ResourceManagerError(
-                        ResourceManagerError::ResourceTypeDoesNotMatch,
+                        ResourceManagerError::MaxMintAmountExceeded,
                     ),
                 ));
             }
+
+            resource_manager.total_supply += input.amount;
+
+            let bucket_info = BucketInfoSubstate {
+                resource_address: resource_manager.resource_address,
+                resource_type: ResourceType::Fungible { divisibility },
+            };
+            let liquid_resource = LiquidFungibleResource::new(input.amount);
+            let bucket_id = api.new_object(
+                BUCKET_BLUEPRINT,
+                vec![
+                    scrypto_encode(&bucket_info).unwrap(),
+                    scrypto_encode(&liquid_resource).unwrap(),
+                ],
+            )?;
+
+            bucket_id
         };
 
-        Runtime::emit_event(api, MintFungibleResourceEvent {
-            amount: input.amount,
-        })?;
+        Runtime::emit_event(
+            api,
+            MintFungibleResourceEvent {
+                amount: input.amount,
+            },
+        )?;
 
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
@@ -1132,14 +1101,17 @@ impl ResourceManagerBlueprint {
         // Construct the event and only emit it once all of the operations are done.
         match dropped_bucket.resource {
             DroppedBucketResource::Fungible(resource) => {
-                Runtime::emit_event(api, BurnFungibleResourceEvent {
-                    amount: resource.amount(),
-                })?;
+                Runtime::emit_event(
+                    api,
+                    BurnFungibleResourceEvent {
+                        amount: resource.amount(),
+                    },
+                )?;
 
                 // Check if resource matches
                 // TODO: Move this check into actor check
                 {
-                    let resource_manager: &mut ResourceManagerSubstate =
+                    let resource_manager: &mut FungibleResourceManagerSubstate =
                         api.kernel_get_substate_ref_mut(resman_handle)?;
                     if dropped_bucket.info.resource_address != resource_manager.resource_address {
                         return Err(RuntimeError::ApplicationError(
@@ -1156,9 +1128,12 @@ impl ResourceManagerBlueprint {
                 }
             }
             DroppedBucketResource::NonFungible(resource) => {
-                Runtime::emit_event(api, BurnNonFungibleResourceEvent {
-                    ids: resource.ids().clone(),
-                })?;
+                Runtime::emit_event(
+                    api,
+                    BurnNonFungibleResourceEvent {
+                        ids: resource.ids().clone(),
+                    },
+                )?;
 
                 // Check if resource matches
                 // TODO: Move this check into actor check
@@ -1225,43 +1200,39 @@ impl ResourceManagerBlueprint {
 
         let bucket_id = match blueprint_name.as_str() {
             RESOURCE_MANAGER_BLUEPRINT => {
-                let resource_manager: &ResourceManagerSubstate =
+                let resource_manager: &FungibleResourceManagerSubstate =
                     api.kernel_get_substate_ref(resman_handle)?;
-                let resource_address: ResourceAddress = resource_manager.resource_address;
-                let bucket_id = match resource_manager.resource_type {
-                    ResourceType::Fungible { divisibility } => api.new_object(
-                        BUCKET_BLUEPRINT,
-                        vec![
-                            scrypto_encode(&BucketInfoSubstate {
-                                resource_address,
-                                resource_type: ResourceType::Fungible { divisibility },
-                            })
-                                .unwrap(),
-                            scrypto_encode(&LiquidFungibleResource::new_empty()).unwrap(),
-                        ],
-                    )?,
-                    ResourceType::NonFungible { .. } => panic!("Unexpected"),
-                };
+                let resource_address = resource_manager.resource_address;
+                let divisibility = resource_manager.divisibility;
+                let bucket_id = api.new_object(
+                    BUCKET_BLUEPRINT,
+                    vec![
+                        scrypto_encode(&BucketInfoSubstate {
+                            resource_address,
+                            resource_type: ResourceType::Fungible { divisibility },
+                        })
+                        .unwrap(),
+                        scrypto_encode(&LiquidFungibleResource::new_empty()).unwrap(),
+                    ],
+                )?;
                 bucket_id
             }
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT => {
                 let resource_manager: &NonFungibleResourceManagerSubstate =
                     api.kernel_get_substate_ref(resman_handle)?;
-                let resource_address: ResourceAddress = resource_manager.resource_address;
-                let bucket_id = match resource_manager.resource_type {
-                    ResourceType::Fungible { .. } => panic!("Unexpected"),
-                    ResourceType::NonFungible { id_type } => api.new_object(
-                        BUCKET_BLUEPRINT,
-                        vec![
-                            scrypto_encode(&BucketInfoSubstate {
-                                resource_address,
-                                resource_type: ResourceType::NonFungible { id_type },
-                            })
-                                .unwrap(),
-                            scrypto_encode(&LiquidNonFungibleResource::new_empty()).unwrap(),
-                        ],
-                    )?,
-                };
+                let resource_address = resource_manager.resource_address;
+                let id_type = resource_manager.id_type;
+                let bucket_id = api.new_object(
+                    BUCKET_BLUEPRINT,
+                    vec![
+                        scrypto_encode(&BucketInfoSubstate {
+                            resource_address,
+                            resource_type: ResourceType::NonFungible { id_type },
+                        })
+                        .unwrap(),
+                        scrypto_encode(&LiquidNonFungibleResource::new_empty()).unwrap(),
+                    ],
+                )?;
                 bucket_id
             }
             _ => panic!("Unexpected"),
@@ -1293,47 +1264,39 @@ impl ResourceManagerBlueprint {
 
         let vault_id = match blueprint_name.as_str() {
             RESOURCE_MANAGER_BLUEPRINT => {
-                let resource_manager: &ResourceManagerSubstate =
+                let resource_manager: &FungibleResourceManagerSubstate =
                     api.kernel_get_substate_ref(resman_handle)?;
-                let resource_address: ResourceAddress = resource_manager.resource_address;
-                let vault_id = match resource_manager.resource_type {
-                    ResourceType::Fungible { divisibility } => {
-                        let info = VaultInfoSubstate {
-                            resource_address,
-                            resource_type: ResourceType::Fungible { divisibility },
-                        };
-                        api.new_object(
-                            VAULT_BLUEPRINT,
-                            vec![
-                                scrypto_encode(&info).unwrap(),
-                                scrypto_encode(&LiquidFungibleResource::new_empty()).unwrap(),
-                            ],
-                        )?
-                    }
-                    ResourceType::NonFungible { .. } => panic!("Unexpected")
+                let resource_address = resource_manager.resource_address;
+                let divisibility = resource_manager.divisibility;
+                let info = VaultInfoSubstate {
+                    resource_address,
+                    resource_type: ResourceType::Fungible { divisibility },
                 };
+                let vault_id = api.new_object(
+                    VAULT_BLUEPRINT,
+                    vec![
+                        scrypto_encode(&info).unwrap(),
+                        scrypto_encode(&LiquidFungibleResource::new_empty()).unwrap(),
+                    ],
+                )?;
                 vault_id
             }
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT => {
                 let resource_manager: &NonFungibleResourceManagerSubstate =
                     api.kernel_get_substate_ref(resman_handle)?;
-                let resource_address: ResourceAddress = resource_manager.resource_address;
-                let vault_id = match resource_manager.resource_type {
-                    ResourceType::Fungible { .. } => panic!("Unexpected"),
-                    ResourceType::NonFungible { id_type } => {
-                        let info = VaultInfoSubstate {
-                            resource_address,
-                            resource_type: ResourceType::NonFungible { id_type },
-                        };
-                        api.new_object(
-                            VAULT_BLUEPRINT,
-                            vec![
-                                scrypto_encode(&info).unwrap(),
-                                scrypto_encode(&LiquidNonFungibleResource::new_empty()).unwrap(),
-                            ],
-                        )?
-                    }
+                let resource_address = resource_manager.resource_address;
+                let id_type = resource_manager.id_type;
+                let info = VaultInfoSubstate {
+                    resource_address,
+                    resource_type: ResourceType::NonFungible { id_type },
                 };
+                let vault_id = api.new_object(
+                    VAULT_BLUEPRINT,
+                    vec![
+                        scrypto_encode(&info).unwrap(),
+                        scrypto_encode(&LiquidNonFungibleResource::new_empty()).unwrap(),
+                    ],
+                )?;
                 vault_id
             }
             _ => panic!("Unexpected"),
@@ -1382,12 +1345,7 @@ impl ResourceManagerBlueprint {
         )?;
         let non_fungible_mut: &mut Option<ScryptoValue> =
             api.kernel_get_substate_ref_mut(non_fungible_handle)?;
-        if let Option::Some(ref mut non_fungible_substate) = non_fungible_mut {
-            /*
-            let mut non_fungible: NonFungible =
-                scrypto_decode(&scrypto_encode(non_fungible_substate).unwrap()).unwrap();
-            non_fungible.set_mutable_data(input.data);
-             */
+        if let Some(ref mut non_fungible_substate) = non_fungible_mut {
             *non_fungible_substate = scrypto_decode(&input.data).unwrap();
         } else {
             let non_fungible_global_id = NonFungibleGlobalId::new(resource_address, input.id);
@@ -1462,16 +1420,20 @@ impl ResourceManagerBlueprint {
         let (_package_address, blueprint_name) = api.get_object_type_info(receiver)?;
         let resource_type = match blueprint_name.as_str() {
             RESOURCE_MANAGER_BLUEPRINT => {
-                let resource_manager: &ResourceManagerSubstate =
+                let resource_manager: &FungibleResourceManagerSubstate =
                     api.kernel_get_substate_ref(resman_handle)?;
-                resource_manager.resource_type
+                ResourceType::Fungible {
+                    divisibility: resource_manager.divisibility,
+                }
             }
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT => {
                 let resource_manager: &NonFungibleResourceManagerSubstate =
                     api.kernel_get_substate_ref(resman_handle)?;
-                resource_manager.resource_type
+                ResourceType::NonFungible {
+                    id_type: resource_manager.id_type,
+                }
             }
-            _ => panic!("Unexpected")
+            _ => panic!("Unexpected"),
         };
 
         Ok(IndexedScryptoValue::from_typed(&resource_type))
@@ -1494,7 +1456,7 @@ impl ResourceManagerBlueprint {
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::read_only(),
         )?;
-        let resource_manager: &ResourceManagerSubstate =
+        let resource_manager: &FungibleResourceManagerSubstate =
             api.kernel_get_substate_ref(resman_handle)?;
         let total_supply = resource_manager.total_supply;
         Ok(IndexedScryptoValue::from_typed(&total_supply))
@@ -1558,10 +1520,8 @@ where
 {
     let resource_address: ResourceAddress = global_node_id.into();
 
-    let resource_manager_substate = ResourceManagerSubstate::new(
-        ResourceType::Fungible { divisibility },
-        resource_address,
-    );
+    let resource_manager_substate =
+        FungibleResourceManagerSubstate::new(divisibility, resource_address);
 
     let object_id = api.new_object(
         RESOURCE_MANAGER_BLUEPRINT,

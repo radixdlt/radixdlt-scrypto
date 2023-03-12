@@ -265,7 +265,7 @@ where
         let (node_id, node_init) = match package_address {
             RESOURCE_MANAGER_PACKAGE => match blueprint_ident {
                 RESOURCE_MANAGER_BLUEPRINT => {
-                    let substate: ResourceManagerSubstate = parser.decode_next()?;
+                    let substate: FungibleResourceManagerSubstate = parser.decode_next()?;
                     parser.end()?;
 
                     let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
