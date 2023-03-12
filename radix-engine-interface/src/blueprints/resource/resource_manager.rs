@@ -143,6 +143,8 @@ pub struct ResourceManagerBurnInput {
 pub type ResourceManagerBurnOutput = ();
 
 pub const RESOURCE_MANAGER_CREATE_VAULT_IDENT: &str = "create_vault";
+pub const FUNGIBLE_RESOURCE_MANAGER_CREATE_VAULT_EXPORT_NAME: &str = "create_vault_FungibleResourceManager";
+pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_VAULT_EXPORT_NAME: &str = "create_vault_NonFungibleResourceManager";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct ResourceManagerCreateVaultInput {}

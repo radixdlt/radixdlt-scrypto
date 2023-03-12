@@ -107,7 +107,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerCreateVaultInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerCreateVaultOutput>(),
-                    export_name: RESOURCE_MANAGER_CREATE_VAULT_IDENT.to_string(),
+                    export_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_VAULT_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -284,7 +284,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerCreateVaultInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerCreateVaultOutput>(),
-                    export_name: RESOURCE_MANAGER_CREATE_VAULT_IDENT.to_string(),
+                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_VAULT_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -1015,13 +1015,29 @@ impl ResourceManagerNativePackage {
                 let rtn = NonFungibleResourceManagerBlueprint::create_bucket(receiver, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            RESOURCE_MANAGER_CREATE_VAULT_IDENT => {
+            FUNGIBLE_RESOURCE_MANAGER_CREATE_VAULT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                ResourceManagerBlueprint::create_vault(receiver, input, api)
+                let _input: ResourceManagerCreateVaultInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = ResourceManagerBlueprint::create_vault(receiver, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_VAULT_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                let _input: ResourceManagerCreateVaultInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = NonFungibleResourceManagerBlueprint::create_vault(receiver, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;

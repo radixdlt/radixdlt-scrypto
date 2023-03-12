@@ -621,7 +621,48 @@ impl NonFungibleResourceManagerBlueprint {
         }
 
         Ok(())
+    }
 
+    pub(crate) fn create_vault<Y>(
+        receiver: RENodeId,
+        api: &mut Y,
+    ) -> Result<Own, RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let resman_handle = api.sys_lock_substate(
+            receiver,
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            LockFlags::MUTABLE,
+        )?;
+
+        let resource_manager: &NonFungibleResourceManagerSubstate =
+            api.kernel_get_substate_ref(resman_handle)?;
+        let resource_address = resource_manager.resource_address;
+        let id_type = resource_manager.id_type;
+        let info = VaultInfoSubstate {
+            resource_address,
+            resource_type: ResourceType::NonFungible { id_type },
+        };
+        let vault_id = api.new_object(
+            VAULT_BLUEPRINT,
+            vec![
+                scrypto_encode(&info).unwrap(),
+                scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
+                scrypto_encode(&LockedFungibleResource::default()).unwrap(),
+                scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
+                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
+            ],
+        )?;
+
+        Runtime::emit_event(
+            api,
+            VaultCreationEvent {
+                vault_id: RENodeId::Object(vault_id),
+            },
+        )?;
+
+        Ok(Own::Vault(vault_id))
     }
 }
 
@@ -1250,7 +1291,7 @@ impl ResourceManagerBlueprint {
                     resource_manager.total_supply -= resource.amount();
                 }
             }
-            DroppedBucketResource::NonFungible(resource) => {
+            DroppedBucketResource::NonFungible(..) => {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::ResourceManagerError(
                         ResourceManagerError::MismatchingBucketResource,
@@ -1300,69 +1341,35 @@ impl ResourceManagerBlueprint {
 
     pub(crate) fn create_vault<Y>(
         receiver: RENodeId,
-        input: IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<Own, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let _input: ResourceManagerCreateVaultInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-
         let resman_handle = api.sys_lock_substate(
             receiver,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::MUTABLE,
         )?;
 
-        let (_package_address, blueprint_name) = api.get_object_type_info(receiver)?;
-
-        let vault_id = match blueprint_name.as_str() {
-            RESOURCE_MANAGER_BLUEPRINT => {
-                let resource_manager: &FungibleResourceManagerSubstate =
-                    api.kernel_get_substate_ref(resman_handle)?;
-                let resource_address = resource_manager.resource_address;
-                let divisibility = resource_manager.divisibility;
-                let info = VaultInfoSubstate {
-                    resource_address,
-                    resource_type: ResourceType::Fungible { divisibility },
-                };
-                let vault_id = api.new_object(
-                    VAULT_BLUEPRINT,
-                    vec![
-                        scrypto_encode(&info).unwrap(),
-                        scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
-                        scrypto_encode(&LockedFungibleResource::default()).unwrap(),
-                        scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
-                        scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
-                    ],
-                )?;
-                vault_id
-            }
-            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT => {
-                let resource_manager: &NonFungibleResourceManagerSubstate =
-                    api.kernel_get_substate_ref(resman_handle)?;
-                let resource_address = resource_manager.resource_address;
-                let id_type = resource_manager.id_type;
-                let info = VaultInfoSubstate {
-                    resource_address,
-                    resource_type: ResourceType::NonFungible { id_type },
-                };
-                let vault_id = api.new_object(
-                    VAULT_BLUEPRINT,
-                    vec![
-                        scrypto_encode(&info).unwrap(),
-                        scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
-                        scrypto_encode(&LockedFungibleResource::default()).unwrap(),
-                        scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
-                        scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
-                    ],
-                )?;
-                vault_id
-            }
-            _ => panic!("Unexpected"),
+        let resource_manager: &FungibleResourceManagerSubstate =
+            api.kernel_get_substate_ref(resman_handle)?;
+        let resource_address = resource_manager.resource_address;
+        let divisibility = resource_manager.divisibility;
+        let info = VaultInfoSubstate {
+            resource_address,
+            resource_type: ResourceType::Fungible { divisibility },
         };
+        let vault_id = api.new_object(
+            VAULT_BLUEPRINT,
+            vec![
+                scrypto_encode(&info).unwrap(),
+                scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
+                scrypto_encode(&LockedFungibleResource::default()).unwrap(),
+                scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
+                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
+            ],
+        )?;
 
         Runtime::emit_event(
             api,
@@ -1371,7 +1378,7 @@ impl ResourceManagerBlueprint {
             },
         )?;
 
-        Ok(IndexedScryptoValue::from_typed(&Own::Vault(vault_id)))
+        Ok(Own::Vault(vault_id))
     }
 
     pub(crate) fn update_non_fungible_data<Y>(
