@@ -175,7 +175,7 @@ pub fn create_genesis(
                 default_package_access_rule: AccessRule::AllowAll,
                 event_schema: BTreeMap::from([
                     (
-                        RESOURCE_MANAGER_BLUEPRINT.into(),
+                        FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.into(),
                         [
                             generate_full_schema_from_single_type::<
                                 VaultCreationEvent,
@@ -253,7 +253,7 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::GlobalObject(RADIX_TOKEN.into()));
         instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
-            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT
                 .to_string(),
             args: manifest_encode(

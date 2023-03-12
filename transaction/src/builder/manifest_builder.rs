@@ -283,7 +283,7 @@ impl ManifestBuilder {
         if let Some(initial_supply) = initial_supply {
             self.add_instruction(Instruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
-                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: "create_fungible_with_initial_supply".to_string(),
                 args: manifest_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
                     divisibility,
@@ -296,7 +296,7 @@ impl ManifestBuilder {
         } else {
             self.add_instruction(Instruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
-                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: manifest_encode(&ResourceManagerCreateFungibleInput {
                     divisibility,

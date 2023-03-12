@@ -8,7 +8,7 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use scrypto_schema::NonFungibleSchema;
 
-pub const RESOURCE_MANAGER_BLUEPRINT: &str = "ResourceManager";
+pub const FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT: &str = "FungibleResourceManager";
 
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT: &str = "NonFungibleResourceManager";
 

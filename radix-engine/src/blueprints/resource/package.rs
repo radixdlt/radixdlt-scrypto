@@ -788,7 +788,7 @@ impl ResourceManagerNativePackage {
 
         PackageSchema {
             blueprints: btreemap!(
-                RESOURCE_MANAGER_BLUEPRINT.to_string() => fungible_resource_manager_schema,
+                FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => fungible_resource_manager_schema,
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string() => non_fungible_resource_manager_schema,
                 VAULT_BLUEPRINT.to_string() => vault_schema,
                 BUCKET_BLUEPRINT.to_string() => bucket_schema,

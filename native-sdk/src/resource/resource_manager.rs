@@ -30,7 +30,7 @@ impl ResourceManager {
         let result = api
             .call_function(
                 RESOURCE_MANAGER_PACKAGE,
-                RESOURCE_MANAGER_BLUEPRINT,
+                FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
                 scrypto_encode(&ResourceManagerCreateFungibleInput {
                     metadata,
@@ -57,7 +57,7 @@ impl ResourceManager {
         let result = api
             .call_function(
                 RESOURCE_MANAGER_PACKAGE,
-                RESOURCE_MANAGER_BLUEPRINT,
+                FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
                     metadata,

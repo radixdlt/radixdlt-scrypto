@@ -398,7 +398,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
             } => ScryptoEnv
                 .call_function(
                     RESOURCE_MANAGER_PACKAGE,
-                    RESOURCE_MANAGER_BLUEPRINT,
+                    FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                     FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
                     scrypto_encode(&ResourceManagerCreateFungibleInput {
                         divisibility,
@@ -473,7 +473,7 @@ impl<A: ConfiguredAuth> InProgressResourceBuilder<FungibleResourceType, A> {
         ScryptoEnv
             .call_function(
                 RESOURCE_MANAGER_PACKAGE,
-                RESOURCE_MANAGER_BLUEPRINT,
+                FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
                     divisibility: self.resource_type.divisibility,

@@ -23,7 +23,7 @@ use radix_engine_interface::blueprints::resource::{
     ResourceManagerCreateNonFungibleWithInitialSupplyInput, FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
     FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
-    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT, RESOURCE_MANAGER_BLUEPRINT,
+    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
 };
 use radix_engine_interface::blueprints::resource::{
     NonFungibleGlobalId, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -518,7 +518,7 @@ pub fn generate_instruction(
             access_rules,
         } => Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
-            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
             args: manifest_encode(&ResourceManagerCreateFungibleInput {
                 divisibility: generate_u8(divisibility)?,
@@ -534,7 +534,7 @@ pub fn generate_instruction(
             initial_supply,
         } => Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
-            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string(),
             args: manifest_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
                 divisibility: generate_u8(divisibility)?,
@@ -1567,7 +1567,7 @@ mod tests {
             r#"CREATE_FUNGIBLE_RESOURCE 18u8 Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")));"#,
             Instruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
-                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: manifest_encode(&ResourceManagerCreateFungibleInput {
                     divisibility: 18,
@@ -1594,7 +1594,7 @@ mod tests {
             r#"CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY 18u8 Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll"))) Decimal("500");"#,
             Instruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
-                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
                 args: manifest_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {

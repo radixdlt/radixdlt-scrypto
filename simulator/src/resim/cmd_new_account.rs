@@ -4,7 +4,7 @@ use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::{
     require, FromPublicKey, ResourceManagerCreateNonFungibleWithInitialSupplyInput,
     ResourceMethodAuthKey, RESOURCE_MANAGER_BLUEPRINT,
-    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
+    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
 };
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::rule;
@@ -70,8 +70,8 @@ impl NewAccount {
                 .call_method(FAUCET_COMPONENT, "free", manifest_args!())
                 .add_instruction(Instruction::CallFunction {
                     package_address: RESOURCE_MANAGER_PACKAGE,
-                    blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                    function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT
+                    blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                    function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                         .to_string(),
                     args: manifest_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
                         id_type: NonFungibleIdType::Integer,

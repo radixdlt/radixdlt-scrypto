@@ -291,7 +291,7 @@ where
         let mut parser = SubstateSchemaParser::new(&mut app_states);
         let node_init = match package_address {
             RESOURCE_MANAGER_PACKAGE => match blueprint_ident {
-                RESOURCE_MANAGER_BLUEPRINT => RENodeInit::Object(btreemap!(
+                FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT => RENodeInit::Object(btreemap!(
                     SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => RuntimeSubstate::ResourceManager(parser.decode_next())
                 )),
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT => RENodeInit::Object(btreemap!(

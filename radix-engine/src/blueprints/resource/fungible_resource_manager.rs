@@ -108,7 +108,7 @@ where
     };
 
     let object_id = api.new_object(
-        RESOURCE_MANAGER_BLUEPRINT,
+        FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
         vec![scrypto_encode(&resource_manager_substate).unwrap()],
     )?;
 
@@ -175,7 +175,7 @@ impl FungibleResourceManagerBlueprint {
             )?;
 
         let object_id = api.new_object(
-            RESOURCE_MANAGER_BLUEPRINT,
+            FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             vec![scrypto_encode(&resource_manager_substate).unwrap()],
         )?;
 
@@ -221,7 +221,7 @@ impl FungibleResourceManagerBlueprint {
             )?;
 
         let object_id = api.new_object(
-            RESOURCE_MANAGER_BLUEPRINT,
+            FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             vec![scrypto_encode(&resource_manager_substate).unwrap()],
         )?;
 
