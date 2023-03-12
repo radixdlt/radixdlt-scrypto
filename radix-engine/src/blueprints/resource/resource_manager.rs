@@ -45,6 +45,14 @@ impl ResourceManagerSubstate {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct NonFungibleResourceManagerSubstate {
+    pub resource_address: ResourceAddress, // TODO: Figure out a way to remove?
+    pub resource_type: ResourceType,
+    pub total_supply: Decimal,
+    pub non_fungible_data: Option<(KeyValueStoreId, BTreeSet<String>)>,
+}
+
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ResourceManagerError {
@@ -66,7 +74,7 @@ fn build_non_fungible_resource_manager_substate<Y>(
     mutable_fields: BTreeSet<String>,
     non_fungible_schema: NonFungibleSchema,
     api: &mut Y,
-) -> Result<(ResourceManagerSubstate, KeyValueStoreId), RuntimeError>
+) -> Result<(NonFungibleResourceManagerSubstate, KeyValueStoreId), RuntimeError>
 where
     Y: ClientApi<RuntimeError>,
 {
@@ -107,7 +115,7 @@ where
 
     let nf_store_id = api.new_key_value_store(kv_schema)?;
 
-    let resource_manager = ResourceManagerSubstate {
+    let resource_manager = NonFungibleResourceManagerSubstate {
         resource_address,
         resource_type: ResourceType::NonFungible { id_type },
         total_supply: supply.into(),
@@ -117,9 +125,9 @@ where
     Ok((resource_manager, nf_store_id))
 }
 
-fn globalize_resource_manager<Y>(
+fn globalize_non_fungible_resource_manager<Y>(
     resource_address: ResourceAddress,
-    substate: ResourceManagerSubstate,
+    substate: NonFungibleResourceManagerSubstate,
     access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     metadata: BTreeMap<String, String>,
     api: &mut Y,
@@ -128,7 +136,7 @@ where
     Y: ClientApi<RuntimeError>,
 {
     let object_id = api.new_object(
-        RESOURCE_MANAGER_BLUEPRINT,
+        NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
         vec![scrypto_encode(&substate).unwrap()],
     )?;
 
@@ -546,7 +554,7 @@ impl ResourceManagerBlueprint {
             api,
         )?;
 
-        globalize_resource_manager(
+        globalize_non_fungible_resource_manager(
             resource_address,
             resource_manager_substate,
             access_rules,
@@ -592,7 +600,7 @@ impl ResourceManagerBlueprint {
         let bucket =
             build_non_fungible_bucket(resource_address, id_type, nf_store_id, entries, api)?;
 
-        globalize_resource_manager(
+        globalize_non_fungible_resource_manager(
             resource_address,
             resource_manager,
             access_rules,
@@ -640,7 +648,7 @@ impl ResourceManagerBlueprint {
             api,
         )?;
 
-        globalize_resource_manager(
+        globalize_non_fungible_resource_manager(
             resource_address,
             resource_manager,
             access_rules,
@@ -813,7 +821,7 @@ impl ResourceManagerBlueprint {
         )?;
 
         let (bucket_id, non_fungibles) = {
-            let resource_manager: &mut ResourceManagerSubstate =
+            let resource_manager: &mut NonFungibleResourceManagerSubstate =
                 api.kernel_get_substate_ref_mut(resman_handle)?;
             let resource_address = resource_manager.resource_address;
             let resource_type = resource_manager.resource_type;
@@ -876,7 +884,7 @@ impl ResourceManagerBlueprint {
         };
 
         let (nf_store_id, resource_address) = {
-            let resource_manager: &ResourceManagerSubstate =
+            let resource_manager: &NonFungibleResourceManagerSubstate =
                 api.kernel_get_substate_ref(resman_handle)?;
             (
                 resource_manager
@@ -951,7 +959,7 @@ impl ResourceManagerBlueprint {
         )?;
 
         let (bucket_id, ids) = {
-            let resource_manager: &mut ResourceManagerSubstate =
+            let resource_manager: &mut NonFungibleResourceManagerSubstate =
                 api.kernel_get_substate_ref_mut(resman_handle)?;
             let resource_address = resource_manager.resource_address;
             let id_type = match resource_manager.resource_type {
@@ -1135,62 +1143,73 @@ impl ResourceManagerBlueprint {
                 Runtime::emit_event(api, BurnFungibleResourceEvent {
                     amount: resource.amount(),
                 })?;
+
+                // Check if resource matches
+                // TODO: Move this check into actor check
+                {
+                    let resource_manager: &mut ResourceManagerSubstate =
+                        api.kernel_get_substate_ref_mut(resman_handle)?;
+                    if dropped_bucket.info.resource_address != resource_manager.resource_address {
+                        return Err(RuntimeError::ApplicationError(
+                            ApplicationError::ResourceManagerError(
+                                ResourceManagerError::MismatchingBucketResource,
+                            ),
+                        ));
+                    }
+
+                    // Update total supply
+                    // TODO: there might be better for maintaining total supply, especially for non-fungibles
+                    // Update total supply
+                    resource_manager.total_supply -= dropped_bucket.amount();
+                }
             }
             DroppedBucketResource::NonFungible(ref resource) => {
                 Runtime::emit_event(api, BurnNonFungibleResourceEvent {
                     ids: resource.ids().clone(),
                 })?;
-            }
-        }
 
-        // Check if resource matches
-        // TODO: Move this check into actor check
-        {
-            let resource_manager: &ResourceManagerSubstate =
-                api.kernel_get_substate_ref(resman_handle)?;
-            if dropped_bucket.info.resource_address != resource_manager.resource_address {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::ResourceManagerError(
-                        ResourceManagerError::MismatchingBucketResource,
-                    ),
-                ));
-            }
-        }
-        // Update total supply
-        // TODO: there might be better for maintaining total supply, especially for non-fungibles
-        // where we can leverage capabilities of key-value map.
+                // Check if resource matches
+                // TODO: Move this check into actor check
+                {
+                    let resource_manager: &mut NonFungibleResourceManagerSubstate =
+                        api.kernel_get_substate_ref_mut(resman_handle)?;
+                    if dropped_bucket.info.resource_address != resource_manager.resource_address {
+                        return Err(RuntimeError::ApplicationError(
+                            ApplicationError::ResourceManagerError(
+                                ResourceManagerError::MismatchingBucketResource,
+                            ),
+                        ));
+                    }
 
-        // Update total supply
-        {
-            let resource_manager: &mut ResourceManagerSubstate =
-                api.kernel_get_substate_ref_mut(resman_handle)?;
-            resource_manager.total_supply -= dropped_bucket.amount();
-        }
+                    // Update total supply
+                    // TODO: there might be better for maintaining total supply, especially for non-fungibles
+                    // Update total supply
+                    resource_manager.total_supply -= dropped_bucket.amount();
 
-        // Burn non-fungible
-        let resource_manager: &ResourceManagerSubstate =
-            api.kernel_get_substate_ref(resman_handle)?;
-        if let Some((nf_store_id, _)) = resource_manager.non_fungible_data {
-            let node_id = RENodeId::KeyValueStore(nf_store_id);
+                    // Burn non-fungible
+                    if let Some((nf_store_id, _)) = resource_manager.non_fungible_data {
+                        let node_id = RENodeId::KeyValueStore(nf_store_id);
 
-            if let DroppedBucketResource::NonFungible(nf) = dropped_bucket.resource {
-                for id in nf.into_ids() {
-                    let non_fungible_handle = api.sys_lock_substate(
-                        node_id,
-                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
-                            scrypto_encode(&id).unwrap(),
-                        )),
-                        LockFlags::MUTABLE,
-                    )?;
+                        if let DroppedBucketResource::NonFungible(nf) = dropped_bucket.resource {
+                            for id in nf.into_ids() {
+                                let non_fungible_handle = api.sys_lock_substate(
+                                    node_id,
+                                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                                        scrypto_encode(&id).unwrap(),
+                                    )),
+                                    LockFlags::MUTABLE,
+                                )?;
 
-                    let non_fungible_mut: &mut Option<ScryptoValue> =
-                        api.kernel_get_substate_ref_mut(non_fungible_handle)?;
-                    *non_fungible_mut = Option::None;
-                    api.sys_drop_lock(non_fungible_handle)?;
+                                let non_fungible_mut: &mut Option<ScryptoValue> =
+                                    api.kernel_get_substate_ref_mut(non_fungible_handle)?;
+                                *non_fungible_mut = Option::None;
+                                api.sys_drop_lock(non_fungible_handle)?;
+                            }
+                        }
+                    }
                 }
             }
         }
-
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -1214,32 +1233,50 @@ impl ResourceManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let resource_manager: &ResourceManagerSubstate =
-            api.kernel_get_substate_ref(resman_handle)?;
-        let resource_address: ResourceAddress = resource_manager.resource_address;
-        let bucket_id = match resource_manager.resource_type {
-            ResourceType::Fungible { divisibility } => api.new_object(
-                BUCKET_BLUEPRINT,
-                vec![
-                    scrypto_encode(&BucketInfoSubstate {
-                        resource_address,
-                        resource_type: ResourceType::Fungible { divisibility },
-                    })
-                    .unwrap(),
-                    scrypto_encode(&LiquidFungibleResource::new_empty()).unwrap(),
-                ],
-            )?,
-            ResourceType::NonFungible { id_type } => api.new_object(
-                BUCKET_BLUEPRINT,
-                vec![
-                    scrypto_encode(&BucketInfoSubstate {
-                        resource_address,
-                        resource_type: ResourceType::NonFungible { id_type },
-                    })
-                    .unwrap(),
-                    scrypto_encode(&LiquidNonFungibleResource::new_empty()).unwrap(),
-                ],
-            )?,
+        let (_package_address, blueprint_name) = api.get_object_type_info(receiver)?;
+
+        let bucket_id = match blueprint_name.as_str() {
+            RESOURCE_MANAGER_BLUEPRINT => {
+                let resource_manager: &ResourceManagerSubstate =
+                    api.kernel_get_substate_ref(resman_handle)?;
+                let resource_address: ResourceAddress = resource_manager.resource_address;
+                let bucket_id = match resource_manager.resource_type {
+                    ResourceType::Fungible { divisibility } => api.new_object(
+                        BUCKET_BLUEPRINT,
+                        vec![
+                            scrypto_encode(&BucketInfoSubstate {
+                                resource_address,
+                                resource_type: ResourceType::Fungible { divisibility },
+                            })
+                                .unwrap(),
+                            scrypto_encode(&LiquidFungibleResource::new_empty()).unwrap(),
+                        ],
+                    )?,
+                    ResourceType::NonFungible { .. } => panic!("Unexpected"),
+                };
+                bucket_id
+            }
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT => {
+                let resource_manager: &NonFungibleResourceManagerSubstate =
+                    api.kernel_get_substate_ref(resman_handle)?;
+                let resource_address: ResourceAddress = resource_manager.resource_address;
+                let bucket_id = match resource_manager.resource_type {
+                    ResourceType::Fungible { .. } => panic!("Unexpected"),
+                    ResourceType::NonFungible { id_type } => api.new_object(
+                        BUCKET_BLUEPRINT,
+                        vec![
+                            scrypto_encode(&BucketInfoSubstate {
+                                resource_address,
+                                resource_type: ResourceType::NonFungible { id_type },
+                            })
+                                .unwrap(),
+                            scrypto_encode(&LiquidNonFungibleResource::new_empty()).unwrap(),
+                        ],
+                    )?,
+                };
+                bucket_id
+            }
+            _ => panic!("Unexpected"),
         };
 
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
@@ -1264,36 +1301,54 @@ impl ResourceManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let resource_manager: &ResourceManagerSubstate =
-            api.kernel_get_substate_ref(resman_handle)?;
-        let resource_address: ResourceAddress = resource_manager.resource_address;
-        let vault_id = match resource_manager.resource_type {
-            ResourceType::Fungible { divisibility } => {
-                let info = VaultInfoSubstate {
-                    resource_address,
-                    resource_type: ResourceType::Fungible { divisibility },
+        let (_package_address, blueprint_name) = api.get_object_type_info(receiver)?;
+
+        let vault_id = match blueprint_name.as_str() {
+            RESOURCE_MANAGER_BLUEPRINT => {
+                let resource_manager: &ResourceManagerSubstate =
+                    api.kernel_get_substate_ref(resman_handle)?;
+                let resource_address: ResourceAddress = resource_manager.resource_address;
+                let vault_id = match resource_manager.resource_type {
+                    ResourceType::Fungible { divisibility } => {
+                        let info = VaultInfoSubstate {
+                            resource_address,
+                            resource_type: ResourceType::Fungible { divisibility },
+                        };
+                        api.new_object(
+                            VAULT_BLUEPRINT,
+                            vec![
+                                scrypto_encode(&info).unwrap(),
+                                scrypto_encode(&LiquidFungibleResource::new_empty()).unwrap(),
+                            ],
+                        )?
+                    }
+                    ResourceType::NonFungible { .. } => panic!("Unexpected")
                 };
-                api.new_object(
-                    VAULT_BLUEPRINT,
-                    vec![
-                        scrypto_encode(&info).unwrap(),
-                        scrypto_encode(&LiquidFungibleResource::new_empty()).unwrap(),
-                    ],
-                )?
+                vault_id
             }
-            ResourceType::NonFungible { id_type } => {
-                let info = VaultInfoSubstate {
-                    resource_address,
-                    resource_type: ResourceType::NonFungible { id_type },
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT => {
+                let resource_manager: &NonFungibleResourceManagerSubstate =
+                    api.kernel_get_substate_ref(resman_handle)?;
+                let resource_address: ResourceAddress = resource_manager.resource_address;
+                let vault_id = match resource_manager.resource_type {
+                    ResourceType::Fungible { .. } => panic!("Unexpected"),
+                    ResourceType::NonFungible { id_type } => {
+                        let info = VaultInfoSubstate {
+                            resource_address,
+                            resource_type: ResourceType::NonFungible { id_type },
+                        };
+                        api.new_object(
+                            VAULT_BLUEPRINT,
+                            vec![
+                                scrypto_encode(&info).unwrap(),
+                                scrypto_encode(&LiquidNonFungibleResource::new_empty()).unwrap(),
+                            ],
+                        )?
+                    }
                 };
-                api.new_object(
-                    VAULT_BLUEPRINT,
-                    vec![
-                        scrypto_encode(&info).unwrap(),
-                        scrypto_encode(&LiquidNonFungibleResource::new_empty()).unwrap(),
-                    ],
-                )?
+                vault_id
             }
+            _ => panic!("Unexpected"),
         };
 
         Runtime::emit_event(
@@ -1325,7 +1380,7 @@ impl ResourceManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let resource_manager: &ResourceManagerSubstate =
+        let resource_manager: &NonFungibleResourceManagerSubstate =
             api.kernel_get_substate_ref(resman_handle)?;
         let nf_store_id = resource_manager
             .non_fungible_data
@@ -1383,7 +1438,7 @@ impl ResourceManagerBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let resource_manager: &ResourceManagerSubstate =
+        let resource_manager: &NonFungibleResourceManagerSubstate =
             api.kernel_get_substate_ref(resman_handle)?;
         let nf_store_id = resource_manager
             .non_fungible_data
@@ -1424,9 +1479,20 @@ impl ResourceManagerBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let resource_manager: &ResourceManagerSubstate =
-            api.kernel_get_substate_ref(resman_handle)?;
-        let resource_type = resource_manager.resource_type;
+        let (_package_address, blueprint_name) = api.get_object_type_info(receiver)?;
+        let resource_type = match blueprint_name.as_str() {
+            RESOURCE_MANAGER_BLUEPRINT => {
+                let resource_manager: &ResourceManagerSubstate =
+                    api.kernel_get_substate_ref(resman_handle)?;
+                resource_manager.resource_type
+            }
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT => {
+                let resource_manager: &NonFungibleResourceManagerSubstate =
+                    api.kernel_get_substate_ref(resman_handle)?;
+                resource_manager.resource_type
+            }
+            _ => panic!("Unexpected")
+        };
 
         Ok(IndexedScryptoValue::from_typed(&resource_type))
     }
@@ -1473,7 +1539,7 @@ impl ResourceManagerBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let resource_manager: &ResourceManagerSubstate =
+        let resource_manager: &NonFungibleResourceManagerSubstate =
             api.kernel_get_substate_ref(resman_handle)?;
         let nf_store_id = resource_manager
             .non_fungible_data

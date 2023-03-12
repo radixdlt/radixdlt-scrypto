@@ -193,11 +193,21 @@ pub fn create_genesis(
                                 ScryptoCustomTypeExtension,
                             >(),
                             generate_full_schema_from_single_type::<
-                                MintNonFungibleResourceEvent,
+                                BurnFungibleResourceEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                        ]
+                        .into(),
+                    ),
+                    (
+                        NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.into(),
+                        [
+                            generate_full_schema_from_single_type::<
+                                VaultCreationEvent,
                                 ScryptoCustomTypeExtension,
                             >(),
                             generate_full_schema_from_single_type::<
-                                BurnFungibleResourceEvent,
+                                MintNonFungibleResourceEvent,
                                 ScryptoCustomTypeExtension,
                             >(),
                             generate_full_schema_from_single_type::<
@@ -205,7 +215,7 @@ pub fn create_genesis(
                                 ScryptoCustomTypeExtension,
                             >(),
                         ]
-                        .into(),
+                            .into(),
                     ),
                     (
                         VAULT_BLUEPRINT.into(),

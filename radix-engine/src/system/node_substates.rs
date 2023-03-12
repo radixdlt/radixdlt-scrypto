@@ -31,6 +31,7 @@ pub enum PersistedSubstate {
     Validator(ValidatorSubstate),
     CurrentTimeRoundedToMinutes(CurrentTimeRoundedToMinutesSubstate),
     ResourceManager(ResourceManagerSubstate),
+    NonFungibleResourceManager(NonFungibleResourceManagerSubstate),
     ComponentState(ComponentStateSubstate),
     PackageInfo(PackageInfoSubstate),
     PackageCodeType(PackageCodeTypeSubstate),
@@ -185,6 +186,7 @@ impl PersistedSubstate {
                 RuntimeSubstate::CurrentTimeRoundedToMinutes(value)
             }
             PersistedSubstate::ResourceManager(value) => RuntimeSubstate::ResourceManager(value),
+            PersistedSubstate::NonFungibleResourceManager(value) => RuntimeSubstate::NonFungibleResourceManager(value),
             PersistedSubstate::ComponentState(value) => RuntimeSubstate::ComponentState(value),
             PersistedSubstate::PackageInfo(value) => RuntimeSubstate::PackageInfo(value),
             PersistedSubstate::PackageCodeType(value) => RuntimeSubstate::PackageCodeType(value),
@@ -242,6 +244,7 @@ pub enum RuntimeSubstate {
     Validator(ValidatorSubstate),
     CurrentTimeRoundedToMinutes(CurrentTimeRoundedToMinutesSubstate),
     ResourceManager(ResourceManagerSubstate),
+    NonFungibleResourceManager(NonFungibleResourceManagerSubstate),
     ComponentState(ComponentStateSubstate),
     PackageCode(PackageCodeSubstate),
     PackageInfo(PackageInfoSubstate),
@@ -301,6 +304,9 @@ impl RuntimeSubstate {
             }
             RuntimeSubstate::ResourceManager(value) => {
                 PersistedSubstate::ResourceManager(value.clone())
+            }
+            RuntimeSubstate::NonFungibleResourceManager(value) => {
+                PersistedSubstate::NonFungibleResourceManager(value.clone())
             }
             RuntimeSubstate::ComponentState(value) => {
                 PersistedSubstate::ComponentState(value.clone())
@@ -376,6 +382,7 @@ impl RuntimeSubstate {
                 PersistedSubstate::CurrentTimeRoundedToMinutes(value)
             }
             RuntimeSubstate::ResourceManager(value) => PersistedSubstate::ResourceManager(value),
+            RuntimeSubstate::NonFungibleResourceManager(value) => PersistedSubstate::NonFungibleResourceManager(value),
             RuntimeSubstate::ComponentState(value) => PersistedSubstate::ComponentState(value),
             RuntimeSubstate::PackageInfo(value) => PersistedSubstate::PackageInfo(value),
             RuntimeSubstate::PackageCodeType(value) => PersistedSubstate::PackageCodeType(value),
@@ -474,6 +481,7 @@ impl RuntimeSubstate {
             }
             RuntimeSubstate::MethodAccessRules(value) => SubstateRefMut::MethodAccessRules(value),
             RuntimeSubstate::ResourceManager(value) => SubstateRefMut::ResourceManager(value),
+            RuntimeSubstate::NonFungibleResourceManager(value) => SubstateRefMut::NonFungibleResourceManager(value),
             RuntimeSubstate::TypeInfo(value) => SubstateRefMut::TypeInfo(value),
             RuntimeSubstate::ComponentState(value) => SubstateRefMut::ComponentState(value),
             RuntimeSubstate::ComponentRoyaltyConfig(value) => {
@@ -544,6 +552,7 @@ impl RuntimeSubstate {
             }
             RuntimeSubstate::MethodAccessRules(value) => SubstateRef::MethodAccessRules(value),
             RuntimeSubstate::ResourceManager(value) => SubstateRef::ResourceManager(value),
+            RuntimeSubstate::NonFungibleResourceManager(value) => SubstateRef::NonFungibleResourceManager(value),
             RuntimeSubstate::ComponentState(value) => SubstateRef::ComponentState(value),
             RuntimeSubstate::ComponentRoyaltyConfig(value) => {
                 SubstateRef::ComponentRoyaltyConfig(value)
@@ -941,7 +950,7 @@ impl Into<EpochManagerSubstate> for RuntimeSubstate {
         if let RuntimeSubstate::EpochManager(system) = self {
             system
         } else {
-            panic!("Not a resource manager");
+            panic!("Not an epoch manager ");
         }
     }
 }
@@ -1054,6 +1063,7 @@ pub enum SubstateRef<'a> {
     FungibleProof(&'a FungibleProof),
     NonFungibleProof(&'a NonFungibleProof),
     ResourceManager(&'a ResourceManagerSubstate),
+    NonFungibleResourceManager(&'a NonFungibleResourceManagerSubstate),
     EpochManager(&'a EpochManagerSubstate),
     ValidatorSet(&'a ValidatorSetSubstate),
     Validator(&'a ValidatorSubstate),
@@ -1268,6 +1278,16 @@ impl<'a> From<SubstateRef<'a>> for &'a ResourceManagerSubstate {
     }
 }
 
+impl<'a> From<SubstateRef<'a>> for &'a NonFungibleResourceManagerSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::NonFungibleResourceManager(value) => value,
+            _ => panic!("Not a non fungible resource manager"),
+        }
+    }
+}
+
+
 impl<'a> From<SubstateRef<'a>> for &'a PackageInfoSubstate {
     fn from(value: SubstateRef<'a>) -> Self {
         match value {
@@ -1443,6 +1463,13 @@ impl<'a> SubstateRef<'a> {
                 }
                 (HashSet::new(), owned_nodes)
             }
+            SubstateRef::NonFungibleResourceManager(substate) => {
+                let mut owned_nodes = Vec::new();
+                if let Some((nf_store_id, _)) = substate.non_fungible_data {
+                    owned_nodes.push(RENodeId::KeyValueStore(nf_store_id));
+                }
+                (HashSet::new(), owned_nodes)
+            }
             SubstateRef::Validator(substate) => {
                 let mut references = HashSet::new();
                 let mut owned_nodes = Vec::new();
@@ -1530,6 +1557,7 @@ pub enum SubstateRefMut<'a> {
     BucketLockedFungible(&'a mut LockedFungibleResource),
     BucketLockedNonFungible(&'a mut LockedNonFungibleResource),
     ResourceManager(&'a mut ResourceManagerSubstate),
+    NonFungibleResourceManager(&'a mut NonFungibleResourceManagerSubstate),
     EpochManager(&'a mut EpochManagerSubstate),
     ValidatorSet(&'a mut ValidatorSetSubstate),
     Validator(&'a mut ValidatorSubstate),
@@ -1570,6 +1598,15 @@ impl<'a> From<SubstateRefMut<'a>> for &'a mut ResourceManagerSubstate {
         match value {
             SubstateRefMut::ResourceManager(value) => value,
             _ => panic!("Not a resource manager"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRefMut<'a>> for &'a mut NonFungibleResourceManagerSubstate {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::NonFungibleResourceManager(value) => value,
+            _ => panic!("Not a non fungible resource manager"),
         }
     }
 }

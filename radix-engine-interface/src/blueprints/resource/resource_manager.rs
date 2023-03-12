@@ -9,6 +9,8 @@ use scrypto_schema::NonFungibleSchema;
 
 pub const RESOURCE_MANAGER_BLUEPRINT: &str = "ResourceManager";
 
+pub const NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT: &str = "NonFungibleResourceManager";
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor, ManifestSbor)]
 pub enum ResourceMethodAuthKey {
     Mint,

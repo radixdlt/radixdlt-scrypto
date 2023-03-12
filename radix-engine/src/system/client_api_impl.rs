@@ -276,6 +276,18 @@ where
                         )),
                     )
                 }
+                NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT => {
+                    let substate: NonFungibleResourceManagerSubstate = parser.decode_next()?;
+                    parser.end()?;
+
+                    let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
+                    (
+                        node_id,
+                        RENodeInit::Object(btreemap!(
+                            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => RuntimeSubstate::NonFungibleResourceManager(substate)
+                        )),
+                    )
+                }
                 PROOF_BLUEPRINT => {
                     let proof_info_substate: ProofInfoSubstate = parser.decode_next()?;
 
