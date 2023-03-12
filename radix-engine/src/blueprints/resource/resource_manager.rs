@@ -8,7 +8,6 @@ use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use native_sdk::access_rules::AccessRulesObject;
 use native_sdk::metadata::Metadata;
-use native_sdk::resource::SysBucket;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
 use radix_engine_interface::api::substate_api::LockFlags;
@@ -1281,26 +1280,6 @@ impl FungibleResourceManagerBlueprint {
         Ok(IndexedScryptoValue::from_typed(&(resource_address, bucket)))
     }
 
-    pub(crate) fn burn_bucket<Y>(
-        input: IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
-    {
-        let input: ResourceManagerBurnBucketInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-
-        if input.bucket.sys_amount(api)?.is_zero() {
-            api.kernel_drop_node(RENodeId::Object(input.bucket.0))?;
-        } else {
-            let resource_address = input.bucket.sys_resource_address(api)?;
-            native_sdk::resource::ResourceManager(resource_address).burn(input.bucket, api)?;
-        }
-
-        Ok(IndexedScryptoValue::from_typed(&()))
-    }
 
     pub(crate) fn mint<Y>(
         receiver: RENodeId,

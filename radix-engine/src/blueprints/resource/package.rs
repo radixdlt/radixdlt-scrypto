@@ -59,17 +59,7 @@ impl ResourceManagerNativePackage {
                     export_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT.to_string(),
                 },
             );
-            functions.insert(
-                BURN_BUCKET_IDENT.to_string(),
-                FunctionSchema {
-                    receiver: None,
-                    input: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerBurnBucketInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerBurnBucketOutput>(),
-                    export_name: BURN_BUCKET_IDENT.to_string(),
-                },
-            );
+
             functions.insert(
                 FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
                 FunctionSchema {
@@ -506,6 +496,17 @@ impl ResourceManagerNativePackage {
 
         let mut functions = BTreeMap::new();
         functions.insert(
+            BUCKET_BURN_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator
+                    .add_child_type_and_descendents::<BucketBurnInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<BucketBurnOutput>(),
+                export_name: BUCKET_BURN_IDENT.to_string(),
+            },
+        );
+        functions.insert(
             BUCKET_DROP_EMPTY_IDENT.to_string(),
             FunctionSchema {
                 receiver: None,
@@ -809,16 +810,6 @@ impl ResourceManagerNativePackage {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         match export_name {
-            BURN_BUCKET_IDENT => {
-                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
-
-                if receiver.is_some() {
-                    return Err(RuntimeError::InterpreterError(
-                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
-                FungibleResourceManagerBlueprint::burn_bucket(input, api)
-            }
             FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
@@ -1318,6 +1309,20 @@ impl ResourceManagerNativePackage {
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 ProofBlueprint::get_resource_address(receiver, input, api)
+            }
+            BUCKET_BURN_IDENT => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                if receiver.is_some() {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    ));
+                }
+                let input: BucketBurnInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = BucketBlueprint::burn(input.bucket, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             BUCKET_DROP_EMPTY_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;

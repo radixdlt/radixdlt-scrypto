@@ -549,9 +549,9 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let bucket = processor.take_bucket(&bucket_id)?;
                     let rtn = api.call_function(
                         RESOURCE_MANAGER_PACKAGE,
-                        RESOURCE_MANAGER_BLUEPRINT,
-                        BURN_BUCKET_IDENT,
-                        scrypto_encode(&ResourceManagerBurnBucketInput { bucket }).unwrap(),
+                        BUCKET_BLUEPRINT,
+                        BUCKET_BURN_IDENT,
+                        scrypto_encode(&BucketBurnInput { bucket }).unwrap(),
                     )?;
 
                     let result = IndexedScryptoValue::from_vec(rtn).unwrap();

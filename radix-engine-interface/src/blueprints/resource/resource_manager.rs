@@ -114,16 +114,16 @@ pub struct ResourceManagerCreateUuidNonFungibleWithInitialSupplyInput {
 
 pub type ResourceManagerCreateUuidNonFungibleWithInitialSupplyOutput = (ResourceAddress, Bucket);
 
-pub const BURN_BUCKET_IDENT: &str = "burn_bucket";
+pub const BUCKET_BURN_IDENT: &str = "burn_bucket";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
-pub struct ResourceManagerBurnBucketInput {
+pub struct BucketBurnInput {
     pub bucket: Bucket,
 }
 
-pub type ResourceManagerBurnBucketOutput = ();
+pub type BucketBurnOutput = ();
 
-impl Clone for ResourceManagerBurnBucketInput {
+impl Clone for BucketBurnInput {
     fn clone(&self) -> Self {
         Self {
             bucket: Bucket(self.bucket.0),

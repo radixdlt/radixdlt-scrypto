@@ -492,6 +492,23 @@ impl NonFungibleBucket {
 pub struct BucketBlueprint;
 
 impl BucketBlueprint {
+    pub(crate) fn burn<Y>(
+        bucket: Bucket,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        if bucket.sys_amount(api)?.is_zero() {
+            api.kernel_drop_node(RENodeId::Object(bucket.0))?;
+        } else {
+            let resource_address = bucket.sys_resource_address(api)?;
+            native_sdk::resource::ResourceManager(resource_address).burn(bucket, api)?;
+        }
+
+        Ok(())
+    }
+
     pub fn drop_empty<Y>(
         input: IndexedScryptoValue,
         api: &mut Y,
