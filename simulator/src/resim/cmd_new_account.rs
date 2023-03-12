@@ -2,9 +2,9 @@ use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::{
-    require, FromPublicKey, ResourceManagerCreateNonFungibleWithInitialSupplyInput,
-    ResourceMethodAuthKey, NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-    RESOURCE_MANAGER_BLUEPRINT,
+    require, FromPublicKey, NonFungibleResourceManagerCreateWithInitialSupplyInput,
+    ResourceMethodAuthKey, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
 };
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::rule;
@@ -73,7 +73,7 @@ impl NewAccount {
                     blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                     function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                         .to_string(),
-                    args: manifest_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
+                    args: manifest_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
                         id_type: NonFungibleIdType::Integer,
                         non_fungible_schema: NonFungibleSchema::new(),
                         metadata: btreemap!(

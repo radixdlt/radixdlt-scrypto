@@ -91,7 +91,6 @@ fn build_package_node_modules(
         NodeModuleId::FunctionAccessRules,
         RENodeModuleInit::FunctionAccessRules(function_access_rules),
     );
-
     node_modules.insert(
         NodeModuleId::PackageEventSchema,
         RENodeModuleInit::PackageEventSchema(PackageEventSchemaSubstate(event_schema)),
@@ -167,7 +166,6 @@ impl Package {
             code: vec![input.native_package_code_id],
         };
         let node_init = RENodeInit::GlobalPackage(info, code_type, code);
-
         let event_schema = convert_event_schema(input.event_schema)
             .map_err(|error| RuntimeError::ApplicationError(ApplicationError::EventError(error)))?;
 

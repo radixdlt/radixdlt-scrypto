@@ -2,7 +2,11 @@ use crate::blueprints::access_controller::*;
 use crate::blueprints::account::AccountNativePackage;
 use crate::blueprints::auth_zone::AuthZoneNativePackage;
 use crate::blueprints::clock::ClockNativePackage;
-use crate::blueprints::epoch_manager::*;
+use crate::blueprints::epoch_manager::{
+    ClaimXrdEvent, EpochChangeEvent, EpochManagerNativePackage, RegisterValidatorEvent,
+    RoundChangeEvent, StakeEvent, UnregisterValidatorEvent, UnstakeEvent,
+    UpdateAcceptingStakeDelegationStateEvent,
+};
 use crate::blueprints::identity::IdentityNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::resource::*;
@@ -29,9 +33,7 @@ use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLU
 use radix_engine_interface::blueprints::clock::{
     ClockCreateInput, CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT,
 };
-use radix_engine_interface::blueprints::epoch_manager::{
-    ManifestValidatorInit, EPOCH_MANAGER_BLUEPRINT, EPOCH_MANAGER_CREATE_IDENT, VALIDATOR_BLUEPRINT,
-};
+use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use radix_engine_interface::schema::NonFungibleSchema;
