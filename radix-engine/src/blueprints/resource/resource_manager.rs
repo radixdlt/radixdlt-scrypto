@@ -504,6 +504,47 @@ fn build_access_rules(
     (resman_access_rules, vault_access_rules)
 }
 
+
+pub struct NonFungibleResourceManagerBlueprint;
+
+impl NonFungibleResourceManagerBlueprint {
+
+    pub(crate) fn create_bucket<Y>(
+        receiver: RENodeId,
+        api: &mut Y,
+    ) -> Result<Bucket, RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let resman_handle = api.sys_lock_substate(
+            receiver,
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            LockFlags::MUTABLE,
+        )?;
+
+        let resource_manager: &NonFungibleResourceManagerSubstate =
+            api.kernel_get_substate_ref(resman_handle)?;
+        let resource_address = resource_manager.resource_address;
+        let id_type = resource_manager.id_type;
+        let bucket_id = api.new_object(
+            BUCKET_BLUEPRINT,
+            vec![
+                scrypto_encode(&BucketInfoSubstate {
+                    resource_address,
+                    resource_type: ResourceType::NonFungible { id_type },
+                })
+                    .unwrap(),
+                scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
+                scrypto_encode(&LockedFungibleResource::default()).unwrap(),
+                scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
+                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
+            ],
+        )?;
+
+        Ok(Bucket(bucket_id))
+
+    }}
+
 pub struct ResourceManagerBlueprint;
 
 impl ResourceManagerBlueprint {
@@ -1185,71 +1226,38 @@ impl ResourceManagerBlueprint {
 
     pub(crate) fn create_bucket<Y>(
         receiver: RENodeId,
-        input: IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<Bucket, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let _input: ResourceManagerCreateBucketInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-
         let resman_handle = api.sys_lock_substate(
             receiver,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::MUTABLE,
         )?;
 
-        let (_package_address, blueprint_name) = api.get_object_type_info(receiver)?;
+        let resource_manager: &FungibleResourceManagerSubstate =
+            api.kernel_get_substate_ref(resman_handle)?;
+        let resource_address = resource_manager.resource_address;
+        let divisibility = resource_manager.divisibility;
+        let bucket_id = api.new_object(
+            BUCKET_BLUEPRINT,
+            vec![
+                scrypto_encode(&BucketInfoSubstate {
+                    resource_address,
+                    resource_type: ResourceType::Fungible { divisibility },
+                })
+                    .unwrap(),
+                scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
+                scrypto_encode(&LockedFungibleResource::default()).unwrap(),
+                scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
+                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
+            ],
+        )?;
 
-        let bucket_id = match blueprint_name.as_str() {
-            RESOURCE_MANAGER_BLUEPRINT => {
-                let resource_manager: &FungibleResourceManagerSubstate =
-                    api.kernel_get_substate_ref(resman_handle)?;
-                let resource_address = resource_manager.resource_address;
-                let divisibility = resource_manager.divisibility;
-                let bucket_id = api.new_object(
-                    BUCKET_BLUEPRINT,
-                    vec![
-                        scrypto_encode(&BucketInfoSubstate {
-                            resource_address,
-                            resource_type: ResourceType::Fungible { divisibility },
-                        })
-                        .unwrap(),
-                        scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
-                        scrypto_encode(&LockedFungibleResource::default()).unwrap(),
-                        scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
-                        scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
-                    ],
-                )?;
-                bucket_id
-            }
-            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT => {
-                let resource_manager: &NonFungibleResourceManagerSubstate =
-                    api.kernel_get_substate_ref(resman_handle)?;
-                let resource_address = resource_manager.resource_address;
-                let id_type = resource_manager.id_type;
-                let bucket_id = api.new_object(
-                    BUCKET_BLUEPRINT,
-                    vec![
-                        scrypto_encode(&BucketInfoSubstate {
-                            resource_address,
-                            resource_type: ResourceType::NonFungible { id_type },
-                        })
-                        .unwrap(),
-                        scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
-                        scrypto_encode(&LockedFungibleResource::default()).unwrap(),
-                        scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
-                        scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
-                    ],
-                )?;
-                bucket_id
-            }
-            _ => panic!("Unexpected"),
-        };
+        Ok(Bucket(bucket_id))
 
-        Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
 
     pub(crate) fn create_vault<Y>(

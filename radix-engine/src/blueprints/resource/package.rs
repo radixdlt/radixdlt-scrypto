@@ -254,6 +254,8 @@ impl ResourceManagerNativePackage {
                     export_name: RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE_IDENT.to_string(),
                 },
             );
+
+
             functions.insert(
                 RESOURCE_MANAGER_CREATE_BUCKET_IDENT.to_string(),
                 FunctionSchema {
@@ -262,7 +264,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerCreateBucketInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerCreateBucketOutput>(),
-                    export_name: RESOURCE_MANAGER_CREATE_BUCKET_IDENT.to_string(),
+                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -975,7 +977,27 @@ impl ResourceManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                ResourceManagerBlueprint::create_bucket(receiver, input, api)
+
+                let _input: ResourceManagerCreateBucketInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+
+                let rtn = ResourceManagerBlueprint::create_bucket(receiver, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+
+                let _input: ResourceManagerCreateBucketInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+
+                let rtn = NonFungibleResourceManagerBlueprint::create_bucket(receiver, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             RESOURCE_MANAGER_CREATE_VAULT_IDENT => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;

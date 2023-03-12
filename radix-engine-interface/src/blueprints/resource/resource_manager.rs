@@ -149,6 +149,8 @@ pub type ResourceManagerCreateVaultOutput = crate::blueprints::resource::Vault;
 
 pub const RESOURCE_MANAGER_CREATE_BUCKET_IDENT: &str = "create_bucket";
 
+pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_EXPORT_NAME: &str = "create_bucket_NonFungibleResourceManager";
+
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct ResourceManagerCreateBucketInput {}
 
