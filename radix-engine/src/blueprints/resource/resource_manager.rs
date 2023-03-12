@@ -18,38 +18,21 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;
 
+
+/// Represents an error when accessing a bucket.
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum FungibleResourceManagerError {
+    InvalidAmount(Decimal, u8),
+    MaxMintAmountExceeded,
+    MismatchingBucketResource,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct FungibleResourceManagerSubstate {
     pub resource_address: ResourceAddress, // TODO: Figure out a way to remove?
     pub divisibility: u8,
     pub total_supply: Decimal,
 }
-
-impl FungibleResourceManagerSubstate {
-    pub fn new(
-        divisibility: u8,
-        resource_address: ResourceAddress,
-    ) -> FungibleResourceManagerSubstate {
-        Self {
-            divisibility,
-            total_supply: 0.into(),
-            resource_address,
-        }
-    }
-}
-
-/// Represents an error when accessing a bucket.
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum ResourceManagerError {
-    InvalidAmount(Decimal, u8),
-    MaxMintAmountExceeded,
-    NonFungibleAlreadyExists(NonFungibleGlobalId),
-    NonFungibleNotFound(NonFungibleGlobalId),
-    MismatchingBucketResource,
-    NonFungibleIdTypeDoesNotMatch(NonFungibleIdType, NonFungibleIdType),
-    InvalidNonFungibleIdType,
-}
-
 
 fn build_fungible_resource_manager_substate_with_initial_supply<Y>(
     resource_address: ResourceAddress,
@@ -60,14 +43,18 @@ fn build_fungible_resource_manager_substate_with_initial_supply<Y>(
 where
     Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
 {
-    let mut resource_manager = FungibleResourceManagerSubstate::new(divisibility, resource_address);
+    let mut resource_manager = FungibleResourceManagerSubstate {
+        resource_address,
+        divisibility,
+        total_supply: 0.into(),
+    };
 
     let bucket = {
         // check amount
         let resource_type = ResourceType::Fungible { divisibility };
         if !resource_type.check_amount(initial_supply) {
             return Err(RuntimeError::ApplicationError(
-                ApplicationError::ResourceManagerError(ResourceManagerError::InvalidAmount(
+                ApplicationError::ResourceManagerError(FungibleResourceManagerError::InvalidAmount(
                     initial_supply,
                     divisibility,
                 )),
@@ -77,7 +64,7 @@ where
         // TODO: refactor this into mint function
         if initial_supply > dec!("1000000000000000000") {
             return Err(RuntimeError::ApplicationError(
-                ApplicationError::ResourceManagerError(ResourceManagerError::MaxMintAmountExceeded),
+                ApplicationError::ResourceManagerError(FungibleResourceManagerError::MaxMintAmountExceeded),
             ));
         }
         resource_manager.total_supply = initial_supply;
@@ -488,7 +475,7 @@ impl FungibleResourceManagerBlueprint {
             // check amount
             if !resource_type.check_amount(input.amount) {
                 return Err(RuntimeError::ApplicationError(
-                    ApplicationError::ResourceManagerError(ResourceManagerError::InvalidAmount(
+                    ApplicationError::ResourceManagerError(FungibleResourceManagerError::InvalidAmount(
                         input.amount,
                         divisibility,
                     )),
@@ -499,7 +486,7 @@ impl FungibleResourceManagerBlueprint {
             if input.amount > dec!("1000000000000000000") {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::ResourceManagerError(
-                        ResourceManagerError::MaxMintAmountExceeded,
+                        FungibleResourceManagerError::MaxMintAmountExceeded,
                     ),
                 ));
             }
@@ -571,7 +558,7 @@ impl FungibleResourceManagerBlueprint {
                     if dropped_bucket.info.resource_address != resource_manager.resource_address {
                         return Err(RuntimeError::ApplicationError(
                             ApplicationError::ResourceManagerError(
-                                ResourceManagerError::MismatchingBucketResource,
+                                FungibleResourceManagerError::MismatchingBucketResource,
                             ),
                         ));
                     }
@@ -585,7 +572,7 @@ impl FungibleResourceManagerBlueprint {
             DroppedBucketResource::NonFungible(..) => {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::ResourceManagerError(
-                        ResourceManagerError::MismatchingBucketResource,
+                        FungibleResourceManagerError::MismatchingBucketResource,
                     ),
                 ));
             }
@@ -719,7 +706,11 @@ where
     let resource_address: ResourceAddress = global_node_id.into();
 
     let resource_manager_substate =
-        FungibleResourceManagerSubstate::new(divisibility, resource_address);
+        FungibleResourceManagerSubstate {
+            divisibility,
+            resource_address,
+            total_supply: 0.into(),
+        };
 
     let object_id = api.new_object(
         RESOURCE_MANAGER_BLUEPRINT,

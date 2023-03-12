@@ -18,6 +18,17 @@ use radix_engine_interface::schema::{KeyValueStoreSchema, NonFungibleSchema};
 use radix_engine_interface::*;
 use std::borrow::Cow;
 
+
+/// Represents an error when accessing a bucket.
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum NonFungibleResourceManagerError {
+    NonFungibleAlreadyExists(NonFungibleGlobalId),
+    NonFungibleNotFound(NonFungibleGlobalId),
+    MismatchingBucketResource,
+    NonFungibleIdTypeDoesNotMatch(NonFungibleIdType, NonFungibleIdType),
+    InvalidNonFungibleIdType,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerSubstate {
     pub resource_address: ResourceAddress, // TODO: Figure out a way to remove?
@@ -133,8 +144,8 @@ fn build_non_fungible_bucket<Y>(
         for (non_fungible_local_id, data) in &entries {
             if non_fungible_local_id.id_type() != id_type {
                 return Err(RuntimeError::ApplicationError(
-                    ApplicationError::ResourceManagerError(
-                        ResourceManagerError::NonFungibleIdTypeDoesNotMatch(
+                    ApplicationError::NonFungibleResourceManagerError(
+                        NonFungibleResourceManagerError::NonFungibleIdTypeDoesNotMatch(
                             non_fungible_local_id.id_type(),
                             id_type,
                         ),
@@ -256,8 +267,8 @@ impl NonFungibleResourceManagerBlueprint {
         // TODO: Do this check in a better way (e.g. via type check)
         if id_type == NonFungibleIdType::UUID {
             return Err(RuntimeError::ApplicationError(
-                ApplicationError::ResourceManagerError(
-                    ResourceManagerError::InvalidNonFungibleIdType,
+                ApplicationError::NonFungibleResourceManagerError(
+                    NonFungibleResourceManagerError::InvalidNonFungibleIdType,
                 ),
             ));
         }
@@ -354,8 +365,8 @@ impl NonFungibleResourceManagerBlueprint {
             let resource_address = resource_manager.resource_address;
             if resource_manager.id_type == NonFungibleIdType::UUID {
                 return Err(RuntimeError::ApplicationError(
-                    ApplicationError::ResourceManagerError(
-                        ResourceManagerError::InvalidNonFungibleIdType,
+                    ApplicationError::NonFungibleResourceManagerError(
+                        NonFungibleResourceManagerError::InvalidNonFungibleIdType,
                     ),
                 ));
             }
@@ -368,8 +379,8 @@ impl NonFungibleResourceManagerBlueprint {
             for (id, data) in entries.clone().into_iter() {
                 if id.id_type() != resource_manager.id_type {
                     return Err(RuntimeError::ApplicationError(
-                        ApplicationError::ResourceManagerError(
-                            ResourceManagerError::NonFungibleIdTypeDoesNotMatch(
+                        ApplicationError::NonFungibleResourceManagerError(
+                            NonFungibleResourceManagerError::NonFungibleIdTypeDoesNotMatch(
                                 id.id_type(),
                                 resource_manager.id_type,
                             ),
@@ -425,10 +436,10 @@ impl NonFungibleResourceManagerBlueprint {
                 let non_fungible_mut: &mut Option<ScryptoValue> =
                     api.kernel_get_substate_ref_mut(non_fungible_handle)?;
 
-                if let Option::Some(..) = non_fungible_mut {
+                if let Some(..) = non_fungible_mut {
                     return Err(RuntimeError::ApplicationError(
-                        ApplicationError::ResourceManagerError(
-                            ResourceManagerError::NonFungibleAlreadyExists(
+                        ApplicationError::NonFungibleResourceManagerError(
+                            NonFungibleResourceManagerError::NonFungibleAlreadyExists(
                                 NonFungibleGlobalId::new(resource_address, id),
                             ),
                         ),
@@ -477,8 +488,8 @@ impl NonFungibleResourceManagerBlueprint {
 
             if id_type != NonFungibleIdType::UUID {
                 return Err(RuntimeError::ApplicationError(
-                    ApplicationError::ResourceManagerError(
-                        ResourceManagerError::InvalidNonFungibleIdType,
+                    ApplicationError::NonFungibleResourceManagerError(
+                        NonFungibleResourceManagerError::InvalidNonFungibleIdType,
                     ),
                 ));
             }
@@ -570,7 +581,7 @@ impl NonFungibleResourceManagerBlueprint {
         } else {
             let non_fungible_global_id = NonFungibleGlobalId::new(resource_address, id);
             return Err(RuntimeError::ApplicationError(
-                ApplicationError::ResourceManagerError(ResourceManagerError::NonFungibleNotFound(
+                ApplicationError::NonFungibleResourceManagerError(NonFungibleResourceManagerError::NonFungibleNotFound(
                     non_fungible_global_id,
                 )),
             ));
@@ -642,7 +653,7 @@ impl NonFungibleResourceManagerBlueprint {
             Ok(non_fungible.clone())
         } else {
             Err(RuntimeError::ApplicationError(
-                ApplicationError::ResourceManagerError(ResourceManagerError::NonFungibleNotFound(
+                ApplicationError::NonFungibleResourceManagerError(NonFungibleResourceManagerError::NonFungibleNotFound(
                     non_fungible_global_id,
                 )),
             ))
@@ -703,8 +714,8 @@ impl NonFungibleResourceManagerBlueprint {
         match dropped_bucket.resource {
             DroppedBucketResource::Fungible(..) => {
                 return Err(RuntimeError::ApplicationError(
-                    ApplicationError::ResourceManagerError(
-                        ResourceManagerError::MismatchingBucketResource,
+                    ApplicationError::NonFungibleResourceManagerError(
+                        NonFungibleResourceManagerError::MismatchingBucketResource,
                     ),
                 ));
             }
@@ -723,8 +734,8 @@ impl NonFungibleResourceManagerBlueprint {
                         api.kernel_get_substate_ref_mut(resman_handle)?;
                     if dropped_bucket.info.resource_address != resource_manager.resource_address {
                         return Err(RuntimeError::ApplicationError(
-                            ApplicationError::ResourceManagerError(
-                                ResourceManagerError::MismatchingBucketResource,
+                            ApplicationError::NonFungibleResourceManagerError(
+                                NonFungibleResourceManagerError::MismatchingBucketResource,
                             ),
                         ));
                     }

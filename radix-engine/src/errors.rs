@@ -1,9 +1,7 @@
 use crate::blueprints::access_controller::AccessControllerError;
 use crate::blueprints::account::AccountError;
 use crate::blueprints::epoch_manager::{EpochManagerError, ValidatorError};
-use crate::blueprints::resource::{
-    BucketError, ProofError, ResourceManagerError, VaultError, WorktopError,
-};
+use crate::blueprints::resource::{BucketError, NonFungibleResourceManagerError, ProofError, FungibleResourceManagerError, VaultError, WorktopError};
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::blueprints::transaction_runtime::TransactionRuntimeError;
 use crate::kernel::actor::{Actor, ExecutionMode};
@@ -321,7 +319,9 @@ pub enum ApplicationError {
 
     ValidatorError(ValidatorError),
 
-    ResourceManagerError(ResourceManagerError),
+    ResourceManagerError(FungibleResourceManagerError),
+
+    NonFungibleResourceManagerError(NonFungibleResourceManagerError),
 
     AccessRulesChainError(AccessRulesChainError),
 
@@ -364,8 +364,8 @@ impl From<EpochManagerError> for ApplicationError {
     }
 }
 
-impl From<ResourceManagerError> for ApplicationError {
-    fn from(value: ResourceManagerError) -> Self {
+impl From<FungibleResourceManagerError> for ApplicationError {
+    fn from(value: FungibleResourceManagerError) -> Self {
         Self::ResourceManagerError(value)
     }
 }
