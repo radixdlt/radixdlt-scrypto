@@ -71,6 +71,7 @@ impl IdAllocator {
                 .new_nf_store_id()
                 .map(|id| RENodeId::NonFungibleStore(id)),
             RENodeType::Object => self.new_object_id().map(|id| RENodeId::Object(id)),
+            RENodeType::Vault => self.new_vault_id().map(|id| RENodeId::Object(id)),
             RENodeType::GlobalPackage => self
                 .new_package_address()
                 .map(|address| RENodeId::GlobalObject(address.into())),
@@ -117,10 +118,15 @@ impl IdAllocator {
         }
     }
 
-    fn next_id(&mut self) -> Result<[u8; 36], IdAllocationError> {
-        let mut buf = [0u8; 36];
-        (&mut buf[0..32]).copy_from_slice(&self.transaction_hash.0);
-        (&mut buf[32..]).copy_from_slice(&self.next()?.to_le_bytes());
+    fn next_object_id(
+        &mut self,
+        entity_id: u8,
+    ) -> Result<[u8; OBJECT_ID_LENGTH], IdAllocationError> {
+        let mut buf = [0u8; OBJECT_ID_LENGTH];
+        buf[0] = entity_id;
+        (&mut buf[1..OBJECT_HASH_END])
+            .copy_from_slice(&self.transaction_hash.0[0..OBJECT_HASH_LENGTH]);
+        (&mut buf[OBJECT_HASH_END..]).copy_from_slice(&self.next()?.to_le_bytes());
         Ok(buf)
     }
 
@@ -208,16 +214,20 @@ impl IdAllocator {
     }
 
     pub fn new_object_id(&mut self) -> Result<ObjectId, IdAllocationError> {
-        self.next_id()
+        self.next_object_id(INTERNAL_OBJECT_NORMAL_COMPONENT_ID)
+    }
+
+    pub fn new_vault_id(&mut self) -> Result<ObjectId, IdAllocationError> {
+        self.next_object_id(INTERNAL_OBJECT_VAULT_ID)
     }
 
     /// Creates a new key value store ID.
     pub fn new_kv_store_id(&mut self) -> Result<KeyValueStoreId, IdAllocationError> {
-        self.next_id()
+        self.next_object_id(INTERNAL_KV_STORE_ID)
     }
 
     /// Creates a new non-fungible store ID.
     pub fn new_nf_store_id(&mut self) -> Result<NonFungibleStoreId, IdAllocationError> {
-        self.next_id()
+        self.next_object_id(INTERNAL_KV_STORE_ID)
     }
 }

@@ -1,5 +1,12 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+// Jemalloc disabled for wasmer builds due to issue with handling of stack overflow.
+#[cfg(not(feature = "wasmer"))]
+use tikv_jemallocator::Jemalloc;
+#[cfg(not(feature = "wasmer"))]
+#[global_allocator]
+static GLOBAL: Jemalloc = Jemalloc;
+
 extern crate core;
 #[cfg(not(any(feature = "std", feature = "alloc")))]
 compile_error!("Either feature `std` or `alloc` must be enabled for this crate.");

@@ -1,5 +1,6 @@
 use super::node_modules::access_rules::AuthZoneStackSubstate;
 use super::node_modules::access_rules::MethodAccessRulesSubstate;
+use super::node_modules::event_schema::PackageEventSchemaSubstate;
 use super::type_info::PackageCodeTypeSubstate;
 use crate::blueprints::access_controller::AccessControllerSubstate;
 use crate::blueprints::account::AccountSubstate;
@@ -65,6 +66,9 @@ pub enum PersistedSubstate {
     /* KVStore entry */
     NonFungible(NonFungibleSubstate),
     KeyValueStoreEntry(KeyValueStoreEntrySubstate),
+
+    /* Event Schema */
+    PackageEventSchema(PackageEventSchemaSubstate),
 }
 
 impl PersistedSubstate {
@@ -137,6 +141,14 @@ impl PersistedSubstate {
             state
         } else {
             panic!("Not a resource manager substate");
+        }
+    }
+
+    pub fn event_schema(&self) -> &PackageEventSchemaSubstate {
+        if let PersistedSubstate::PackageEventSchema(state) = self {
+            state
+        } else {
+            panic!("Not a PackageEventSchema");
         }
     }
 }
@@ -225,6 +237,9 @@ impl PersistedSubstate {
             PersistedSubstate::ComponentRoyaltyAccumulator(value) => {
                 RuntimeSubstate::ComponentRoyaltyAccumulator(value)
             }
+            PersistedSubstate::PackageEventSchema(value) => {
+                RuntimeSubstate::PackageEventSchema(value)
+            }
         }
     }
 }
@@ -280,6 +295,9 @@ pub enum RuntimeSubstate {
     /* KVStore entry */
     NonFungible(NonFungibleSubstate),
     KeyValueStoreEntry(KeyValueStoreEntrySubstate),
+
+    /* Event Schema */
+    PackageEventSchema(PackageEventSchemaSubstate),
 }
 
 impl RuntimeSubstate {
@@ -337,6 +355,9 @@ impl RuntimeSubstate {
             }
             RuntimeSubstate::PackageRoyaltyAccumulator(value) => {
                 PersistedSubstate::PackageRoyaltyAccumulator(value.clone())
+            }
+            RuntimeSubstate::PackageEventSchema(value) => {
+                PersistedSubstate::PackageEventSchema(value.clone())
             }
             /* Node module ends */
             RuntimeSubstate::AuthZoneStack(..)
@@ -409,6 +430,9 @@ impl RuntimeSubstate {
             }
             RuntimeSubstate::PackageRoyaltyAccumulator(value) => {
                 PersistedSubstate::PackageRoyaltyAccumulator(value)
+            }
+            RuntimeSubstate::PackageEventSchema(value) => {
+                PersistedSubstate::PackageEventSchema(value)
             }
             /* Node module ends */
             RuntimeSubstate::AuthZoneStack(..)
@@ -523,6 +547,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::TransactionRuntime(value) => SubstateRefMut::TransactionRuntime(value),
             RuntimeSubstate::Account(value) => SubstateRefMut::Account(value),
             RuntimeSubstate::AccessController(value) => SubstateRefMut::AccessController(value),
+            RuntimeSubstate::PackageEventSchema(value) => SubstateRefMut::PackageEventSchema(value),
         }
     }
 
@@ -586,6 +611,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::TransactionRuntime(value) => SubstateRef::TransactionRuntime(value),
             RuntimeSubstate::Account(value) => SubstateRef::Account(value),
             RuntimeSubstate::AccessController(value) => SubstateRef::AccessController(value),
+            RuntimeSubstate::PackageEventSchema(value) => SubstateRef::PackageEventSchema(value),
         }
     }
 
@@ -782,6 +808,12 @@ impl Into<RuntimeSubstate> for AccountSubstate {
 impl Into<RuntimeSubstate> for AccessControllerSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::AccessController(self)
+    }
+}
+
+impl Into<RuntimeSubstate> for PackageEventSchemaSubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::PackageEventSchema(self)
     }
 }
 
@@ -1067,6 +1099,7 @@ pub enum SubstateRef<'a> {
     TransactionRuntime(&'a TransactionRuntimeSubstate),
     Account(&'a AccountSubstate),
     AccessController(&'a AccessControllerSubstate),
+    PackageEventSchema(&'a PackageEventSchemaSubstate),
 }
 
 impl<'a> From<SubstateRef<'a>> for &'a VaultInfoSubstate {
@@ -1352,6 +1385,15 @@ impl<'a> From<SubstateRef<'a>> for &'a AuthZoneStackSubstate {
     }
 }
 
+impl<'a> From<SubstateRef<'a>> for &'a PackageEventSchemaSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::PackageEventSchema(value) => value,
+            _ => panic!("Not an PackageEventSchema"),
+        }
+    }
+}
+
 impl<'a> SubstateRef<'a> {
     pub fn to_scrypto_value(&self) -> IndexedScryptoValue {
         match self {
@@ -1550,6 +1592,7 @@ pub enum SubstateRefMut<'a> {
     AuthZone(&'a mut AuthZoneStackSubstate),
     Account(&'a mut AccountSubstate),
     AccessController(&'a mut AccessControllerSubstate),
+    PackageEventSchema(&'a mut PackageEventSchemaSubstate),
 }
 
 impl<'a> From<SubstateRefMut<'a>> for &'a mut AuthZoneStackSubstate {
