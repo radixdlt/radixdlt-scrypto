@@ -664,6 +664,28 @@ impl NonFungibleResourceManagerBlueprint {
 
         Ok(Own::Vault(vault_id))
     }
+
+    pub(crate) fn get_resource_type<Y>(
+        receiver: RENodeId,
+        api: &mut Y,
+    ) -> Result<ResourceType, RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let resman_handle = api.sys_lock_substate(
+            receiver,
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            LockFlags::read_only(),
+        )?;
+
+        let resource_manager: &NonFungibleResourceManagerSubstate =
+            api.kernel_get_substate_ref(resman_handle)?;
+        let resource_type = ResourceType::NonFungible {
+            id_type: resource_manager.id_type,
+        };
+
+        Ok(resource_type)
+    }
 }
 
 pub struct ResourceManagerBlueprint;
@@ -1467,42 +1489,24 @@ impl ResourceManagerBlueprint {
 
     pub(crate) fn get_resource_type<Y>(
         receiver: RENodeId,
-        input: IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<ResourceType, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let _input: ResourceManagerGetResourceTypeInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-
         let resman_handle = api.sys_lock_substate(
             receiver,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             LockFlags::read_only(),
         )?;
 
-        let (_package_address, blueprint_name) = api.get_object_type_info(receiver)?;
-        let resource_type = match blueprint_name.as_str() {
-            RESOURCE_MANAGER_BLUEPRINT => {
-                let resource_manager: &FungibleResourceManagerSubstate =
-                    api.kernel_get_substate_ref(resman_handle)?;
-                ResourceType::Fungible {
-                    divisibility: resource_manager.divisibility,
-                }
-            }
-            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT => {
-                let resource_manager: &NonFungibleResourceManagerSubstate =
-                    api.kernel_get_substate_ref(resman_handle)?;
-                ResourceType::NonFungible {
-                    id_type: resource_manager.id_type,
-                }
-            }
-            _ => panic!("Unexpected"),
+        let resource_manager: &FungibleResourceManagerSubstate =
+            api.kernel_get_substate_ref(resman_handle)?;
+        let resource_type = ResourceType::Fungible {
+            divisibility: resource_manager.divisibility,
         };
 
-        Ok(IndexedScryptoValue::from_typed(&resource_type))
+        Ok(resource_type)
     }
 
     pub(crate) fn get_total_supply<Y>(

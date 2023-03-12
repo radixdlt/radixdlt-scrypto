@@ -216,6 +216,8 @@ pub struct ResourceManagerMintFungibleInput {
 pub type ResourceManagerMintFungibleOutput = Bucket;
 
 pub const RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT: &str = "get_resource_type";
+pub const NON_FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME: &str = "get_resource_type_NonFungibleResourceManager";
+pub const FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME: &str = "get_resource_type_FungibleResourceManager";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct ResourceManagerGetResourceTypeInput {}
