@@ -1456,18 +1456,13 @@ impl<'a> SubstateRef<'a> {
                 }
                 (references, Vec::new())
             }
-            SubstateRef::ResourceManager(substate) => {
-                let mut owned_nodes = Vec::new();
-                if let Some((nf_store_id, _)) = substate.non_fungible_data {
-                    owned_nodes.push(RENodeId::KeyValueStore(nf_store_id));
-                }
-                (HashSet::new(), owned_nodes)
+            SubstateRef::ResourceManager(..) => {
+                (HashSet::new(), Vec::new())
             }
             SubstateRef::NonFungibleResourceManager(substate) => {
                 let mut owned_nodes = Vec::new();
-                if let Some((nf_store_id, _)) = substate.non_fungible_data {
-                    owned_nodes.push(RENodeId::KeyValueStore(nf_store_id));
-                }
+                owned_nodes.push(RENodeId::KeyValueStore(substate.non_fungible_table));
+
                 (HashSet::new(), owned_nodes)
             }
             SubstateRef::Validator(substate) => {

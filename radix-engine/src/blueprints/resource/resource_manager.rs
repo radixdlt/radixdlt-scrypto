@@ -1,6 +1,5 @@
 use crate::blueprints::resource::vault::VaultInfoSubstate;
 use crate::blueprints::resource::*;
-use crate::errors::InvokeError;
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::heap::DroppedBucket;
@@ -27,19 +26,16 @@ pub struct ResourceManagerSubstate {
     pub resource_address: ResourceAddress, // TODO: Figure out a way to remove?
     pub resource_type: ResourceType,
     pub total_supply: Decimal,
-    pub non_fungible_data: Option<(KeyValueStoreId, BTreeSet<String>)>,
 }
 
 impl ResourceManagerSubstate {
     pub fn new(
         resource_type: ResourceType,
-        non_fungible_data: Option<(KeyValueStoreId, BTreeSet<String>)>,
         resource_address: ResourceAddress,
     ) -> ResourceManagerSubstate {
         Self {
             resource_type,
             total_supply: 0.into(),
-            non_fungible_data,
             resource_address,
         }
     }
@@ -50,7 +46,8 @@ pub struct NonFungibleResourceManagerSubstate {
     pub resource_address: ResourceAddress, // TODO: Figure out a way to remove?
     pub resource_type: ResourceType,
     pub total_supply: Decimal,
-    pub non_fungible_data: Option<(KeyValueStoreId, BTreeSet<String>)>,
+    pub non_fungible_table: KeyValueStoreId,
+    pub mutable_fields: BTreeSet<String>,
 }
 
 /// Represents an error when accessing a bucket.
@@ -119,7 +116,8 @@ where
         resource_address,
         resource_type: ResourceType::NonFungible { id_type },
         total_supply: supply.into(),
-        non_fungible_data: Some((nf_store_id, mutable_fields)),
+        non_fungible_table: nf_store_id,
+        mutable_fields,
     };
 
     Ok((resource_manager, nf_store_id))
@@ -226,7 +224,6 @@ where
 {
     let mut resource_manager = ResourceManagerSubstate::new(
         ResourceType::Fungible { divisibility },
-        None,
         resource_address,
     );
 
@@ -887,12 +884,7 @@ impl ResourceManagerBlueprint {
             let resource_manager: &NonFungibleResourceManagerSubstate =
                 api.kernel_get_substate_ref(resman_handle)?;
             (
-                resource_manager
-                    .non_fungible_data
-                    .as_ref()
-                    .unwrap()
-                    .0
-                    .clone(),
+                resource_manager.non_fungible_table,
                 resource_manager.resource_address,
             )
         };
@@ -972,7 +964,7 @@ impl ResourceManagerBlueprint {
                     ))
                 }
             };
-            let nf_store_id = resource_manager.non_fungible_data.as_ref().unwrap().0;
+            let nf_store_id = resource_manager.non_fungible_table;
 
             if id_type != NonFungibleIdType::UUID {
                 return Err(RuntimeError::ApplicationError(
@@ -1139,7 +1131,7 @@ impl ResourceManagerBlueprint {
 
         // Construct the event and only emit it once all of the operations are done.
         match dropped_bucket.resource {
-            DroppedBucketResource::Fungible(ref resource) => {
+            DroppedBucketResource::Fungible(resource) => {
                 Runtime::emit_event(api, BurnFungibleResourceEvent {
                     amount: resource.amount(),
                 })?;
@@ -1160,10 +1152,10 @@ impl ResourceManagerBlueprint {
                     // Update total supply
                     // TODO: there might be better for maintaining total supply, especially for non-fungibles
                     // Update total supply
-                    resource_manager.total_supply -= dropped_bucket.amount();
+                    resource_manager.total_supply -= resource.amount();
                 }
             }
-            DroppedBucketResource::NonFungible(ref resource) => {
+            DroppedBucketResource::NonFungible(resource) => {
                 Runtime::emit_event(api, BurnNonFungibleResourceEvent {
                     ids: resource.ids().clone(),
                 })?;
@@ -1184,28 +1176,24 @@ impl ResourceManagerBlueprint {
                     // Update total supply
                     // TODO: there might be better for maintaining total supply, especially for non-fungibles
                     // Update total supply
-                    resource_manager.total_supply -= dropped_bucket.amount();
+                    resource_manager.total_supply -= resource.amount();
 
                     // Burn non-fungible
-                    if let Some((nf_store_id, _)) = resource_manager.non_fungible_data {
-                        let node_id = RENodeId::KeyValueStore(nf_store_id);
+                    let node_id = RENodeId::KeyValueStore(resource_manager.non_fungible_table);
 
-                        if let DroppedBucketResource::NonFungible(nf) = dropped_bucket.resource {
-                            for id in nf.into_ids() {
-                                let non_fungible_handle = api.sys_lock_substate(
-                                    node_id,
-                                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
-                                        scrypto_encode(&id).unwrap(),
-                                    )),
-                                    LockFlags::MUTABLE,
-                                )?;
+                    for id in resource.into_ids() {
+                        let non_fungible_handle = api.sys_lock_substate(
+                            node_id,
+                            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                                scrypto_encode(&id).unwrap(),
+                            )),
+                            LockFlags::MUTABLE,
+                        )?;
 
-                                let non_fungible_mut: &mut Option<ScryptoValue> =
-                                    api.kernel_get_substate_ref_mut(non_fungible_handle)?;
-                                *non_fungible_mut = Option::None;
-                                api.sys_drop_lock(non_fungible_handle)?;
-                            }
-                        }
+                        let non_fungible_mut: &mut Option<ScryptoValue> =
+                            api.kernel_get_substate_ref_mut(non_fungible_handle)?;
+                        *non_fungible_mut = Option::None;
+                        api.sys_drop_lock(non_fungible_handle)?;
                     }
                 }
             }
@@ -1382,15 +1370,11 @@ impl ResourceManagerBlueprint {
 
         let resource_manager: &NonFungibleResourceManagerSubstate =
             api.kernel_get_substate_ref(resman_handle)?;
-        let nf_store_id = resource_manager
-            .non_fungible_data
-            .as_ref()
-            .ok_or(InvokeError::SelfError(ResourceManagerError::NotNonFungible))?
-            .0;
         let resource_address = resource_manager.resource_address;
+        let non_fungible_table_id = resource_manager.non_fungible_table;
 
         let non_fungible_handle = api.sys_lock_substate(
-            RENodeId::KeyValueStore(nf_store_id),
+            RENodeId::KeyValueStore(non_fungible_table_id),
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
                 scrypto_encode(&input.id).unwrap(),
             )),
@@ -1440,14 +1424,10 @@ impl ResourceManagerBlueprint {
 
         let resource_manager: &NonFungibleResourceManagerSubstate =
             api.kernel_get_substate_ref(resman_handle)?;
-        let nf_store_id = resource_manager
-            .non_fungible_data
-            .as_ref()
-            .ok_or(InvokeError::SelfError(ResourceManagerError::NotNonFungible))?
-            .0;
+        let non_fungible_table_id = resource_manager.non_fungible_table;
 
         let non_fungible_handle = api.sys_lock_substate(
-            RENodeId::KeyValueStore(nf_store_id),
+            RENodeId::KeyValueStore(non_fungible_table_id),
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
                 scrypto_encode(&input.id).unwrap(),
             )),
@@ -1541,17 +1521,13 @@ impl ResourceManagerBlueprint {
 
         let resource_manager: &NonFungibleResourceManagerSubstate =
             api.kernel_get_substate_ref(resman_handle)?;
-        let nf_store_id = resource_manager
-            .non_fungible_data
-            .as_ref()
-            .ok_or(InvokeError::SelfError(ResourceManagerError::NotNonFungible))?
-            .0;
+        let non_fungible_table_id = resource_manager.non_fungible_table;
 
         let non_fungible_global_id =
             NonFungibleGlobalId::new(resource_manager.resource_address, input.id.clone());
 
         let non_fungible_handle = api.sys_lock_substate(
-            RENodeId::KeyValueStore(nf_store_id),
+            RENodeId::KeyValueStore(non_fungible_table_id),
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
                 scrypto_encode(&input.id).unwrap(),
             )),
@@ -1584,7 +1560,6 @@ where
 
     let resource_manager_substate = ResourceManagerSubstate::new(
         ResourceType::Fungible { divisibility },
-        None,
         resource_address,
     );
 
