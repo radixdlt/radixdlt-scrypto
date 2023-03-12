@@ -67,8 +67,8 @@ fn build_non_fungible_resource_manager_substate<Y>(
     non_fungible_schema: NonFungibleSchema,
     api: &mut Y,
 ) -> Result<(ResourceManagerSubstate, KeyValueStoreId), RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
+where
+    Y: ClientApi<RuntimeError>,
 {
     let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
     let non_fungible_type = aggregator.add_child_type_and_descendents::<NonFungibleLocalId>();
@@ -117,7 +117,6 @@ fn build_non_fungible_resource_manager_substate<Y>(
     Ok((resource_manager, nf_store_id))
 }
 
-
 fn globalize_resource_manager<Y>(
     resource_address: ResourceAddress,
     substate: ResourceManagerSubstate,
@@ -125,8 +124,8 @@ fn globalize_resource_manager<Y>(
     metadata: BTreeMap<String, String>,
     api: &mut Y,
 ) -> Result<(), RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
+where
+    Y: ClientApi<RuntimeError>,
 {
     let object_id = api.new_object(
         RESOURCE_MANAGER_BLUEPRINT,
@@ -141,10 +140,10 @@ fn globalize_resource_manager<Y>(
     api.globalize_with_address(
         RENodeId::Object(object_id),
         btreemap!(
-                NodeModuleId::AccessRules => resman_access_rules.id(),
-                NodeModuleId::AccessRules1 => vault_access_rules.id(),
-                NodeModuleId::Metadata => metadata.id(),
-            ),
+            NodeModuleId::AccessRules => resman_access_rules.id(),
+            NodeModuleId::AccessRules1 => vault_access_rules.id(),
+            NodeModuleId::Metadata => metadata.id(),
+        ),
         resource_address.into(),
     )?;
 
@@ -158,8 +157,8 @@ fn build_non_fungible_bucket<Y>(
     entries: BTreeMap<NonFungibleLocalId, Vec<u8>>,
     api: &mut Y,
 ) -> Result<Bucket, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>
+where
+    Y: ClientApi<RuntimeError>,
 {
     let bucket = {
         for (non_fungible_local_id, data) in &entries {
@@ -206,31 +205,6 @@ fn build_non_fungible_bucket<Y>(
     };
 
     Ok(bucket)
-}
-
-fn build_non_fungible_resource_manager_substate_with_initial_supply<Y>(
-    resource_address: ResourceAddress,
-    id_type: NonFungibleIdType,
-    entries: BTreeMap<NonFungibleLocalId, Vec<u8>>,
-    mutable_fields: BTreeSet<String>,
-    non_fungible_schema: NonFungibleSchema,
-    api: &mut Y,
-) -> Result<(ResourceManagerSubstate, Bucket), RuntimeError>
-where
-    Y: KernelSubstateApi + ClientApi<RuntimeError>,
-{
-    let (resource_manager, nf_store_id) = build_non_fungible_resource_manager_substate(
-        resource_address,
-        id_type,
-        entries.len(),
-        mutable_fields,
-        non_fungible_schema,
-        api
-    )?;
-
-    let bucket = build_non_fungible_bucket(resource_address, id_type, nf_store_id, entries, api)?;
-
-    Ok((resource_manager, bucket))
 }
 
 fn build_fungible_resource_manager_substate_with_initial_supply<Y>(
@@ -523,7 +497,6 @@ fn build_access_rules(
     (resman_access_rules, vault_access_rules)
 }
 
-
 pub struct ResourceManagerBlueprint;
 
 impl ResourceManagerBlueprint {
@@ -570,7 +543,7 @@ impl ResourceManagerBlueprint {
             0,
             BTreeSet::new(),
             non_fungible_schema,
-            api
+            api,
         )?;
 
         globalize_resource_manager(
@@ -585,23 +558,21 @@ impl ResourceManagerBlueprint {
     }
 
     pub(crate) fn create_non_fungible_with_initial_supply<Y>(
-        input: ScryptoValue,
+        id_type: NonFungibleIdType,
+        non_fungible_schema: NonFungibleSchema,
+        metadata: BTreeMap<String, String>,
+        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+        entries: BTreeMap<NonFungibleLocalId, Vec<u8>>,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<(ResourceAddress, Bucket), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
-        let input: ResourceManagerCreateNonFungibleWithInitialSupplyInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
-
         let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalResourceManager)?;
         let resource_address: ResourceAddress = global_node_id.into();
 
         // TODO: Do this check in a better way (e.g. via type check)
-        if input.id_type == NonFungibleIdType::UUID {
+        if id_type == NonFungibleIdType::UUID {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::ResourceManagerError(
                     ResourceManagerError::InvalidNonFungibleIdType,
@@ -609,69 +580,75 @@ impl ResourceManagerBlueprint {
             ));
         }
 
-        let (resource_manager_substate, bucket) =
-            build_non_fungible_resource_manager_substate_with_initial_supply(
-                resource_address,
-                input.id_type,
-                input.entries,
-                BTreeSet::new(),
-                input.non_fungible_schema,
-                api,
-            )?;
-
-        globalize_resource_manager(
+        let (resource_manager, nf_store_id) = build_non_fungible_resource_manager_substate(
             resource_address,
-            resource_manager_substate,
-            input.access_rules,
-            input.metadata,
+            id_type,
+            entries.len(),
+            BTreeSet::new(),
+            non_fungible_schema,
             api,
         )?;
 
-        Ok(IndexedScryptoValue::from_typed(&(resource_address, bucket)))
+        let bucket =
+            build_non_fungible_bucket(resource_address, id_type, nf_store_id, entries, api)?;
+
+        globalize_resource_manager(
+            resource_address,
+            resource_manager,
+            access_rules,
+            metadata,
+            api,
+        )?;
+
+        Ok((resource_address, bucket))
     }
 
     pub(crate) fn create_uuid_non_fungible_with_initial_supply<Y>(
-        input: ScryptoValue,
+        non_fungible_schema: NonFungibleSchema,
+        metadata: BTreeMap<String, String>,
+        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+        entries: Vec<Vec<u8>>,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<(ResourceAddress, Bucket), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
-        let input: ResourceManagerCreateUuidNonFungibleWithInitialSupplyInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
-
         let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalResourceManager)?;
         let resource_address: ResourceAddress = global_node_id.into();
 
-        let mut entries = BTreeMap::new();
-        for entry in input.entries {
+        let mut non_fungible_entries = BTreeMap::new();
+        for entry in entries {
             let uuid = Runtime::generate_uuid(api)?;
             let id = NonFungibleLocalId::uuid(uuid).unwrap();
-            entries.insert(id, entry);
+            non_fungible_entries.insert(id, entry);
         }
 
-        let (resource_manager_substate, bucket) =
-            build_non_fungible_resource_manager_substate_with_initial_supply(
-                resource_address,
-                NonFungibleIdType::UUID,
-                entries,
-                BTreeSet::new(),
-                input.non_fungible_schema,
-                api,
-            )?;
-
-        globalize_resource_manager(
+        let (resource_manager, nf_store_id) = build_non_fungible_resource_manager_substate(
             resource_address,
-            resource_manager_substate,
-            input.access_rules,
-            input.metadata,
+            NonFungibleIdType::UUID,
+            non_fungible_entries.len(),
+            BTreeSet::new(),
+            non_fungible_schema,
             api,
         )?;
 
-        Ok(IndexedScryptoValue::from_typed(&(resource_address, bucket)))
+        let bucket = build_non_fungible_bucket(
+            resource_address,
+            NonFungibleIdType::UUID,
+            nf_store_id,
+            non_fungible_entries,
+            api,
+        )?;
+
+        globalize_resource_manager(
+            resource_address,
+            resource_manager,
+            access_rules,
+            metadata,
+            api,
+        )?;
+
+        Ok((resource_address, bucket))
     }
 
     pub(crate) fn create_fungible<Y>(

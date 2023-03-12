@@ -42,7 +42,7 @@ impl ResourceManagerNativePackage {
                     input.non_fungible_schema,
                     input.metadata,
                     input.access_rules,
-                    api
+                    api,
                 )?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -80,7 +80,22 @@ impl ResourceManagerNativePackage {
                         InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
-                ResourceManagerBlueprint::create_non_fungible_with_initial_supply(input, api)
+                // TODO: Remove decode/encode mess
+                let input: ResourceManagerCreateNonFungibleWithInitialSupplyInput =
+                    scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                        RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                    })?;
+
+                let rtn = ResourceManagerBlueprint::create_non_fungible_with_initial_supply(
+                    input.id_type,
+                    input.non_fungible_schema,
+                    input.metadata,
+                    input.access_rules,
+                    input.entries,
+                    api,
+                )?;
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             RESOURCE_MANAGER_CREATE_UUID_NON_FUNGIBLE_WITH_INITIAL_SUPPLY => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
@@ -90,7 +105,21 @@ impl ResourceManagerNativePackage {
                         InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
-                ResourceManagerBlueprint::create_uuid_non_fungible_with_initial_supply(input, api)
+                // TODO: Remove decode/encode mess
+                let input: ResourceManagerCreateUuidNonFungibleWithInitialSupplyInput =
+                    scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                        RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                    })?;
+
+                let rtn = ResourceManagerBlueprint::create_uuid_non_fungible_with_initial_supply(
+                    input.non_fungible_schema,
+                    input.metadata,
+                    input.access_rules,
+                    input.entries,
+                    api,
+                )?;
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
