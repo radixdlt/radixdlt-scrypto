@@ -3,9 +3,9 @@ use crate::blueprints::account::AccountNativePackage;
 use crate::blueprints::auth_zone::AuthZoneNativePackage;
 use crate::blueprints::clock::ClockNativePackage;
 use crate::blueprints::epoch_manager::*;
-use crate::blueprints::resource::*;
 use crate::blueprints::identity::IdentityNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
+use crate::blueprints::resource::*;
 use crate::blueprints::transaction_runtime::TransactionRuntimeNativePackage;
 use crate::kernel::interpreters::ScryptoInterpreter;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
@@ -254,7 +254,7 @@ pub fn create_genesis(
         instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT
+            function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT
                 .to_string(),
             args: manifest_encode(
                 &ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput {

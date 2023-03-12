@@ -215,7 +215,7 @@ impl SysBucket for Bucket {
         let rtn = api.call_function(
             RESOURCE_MANAGER_PACKAGE,
             RESOURCE_MANAGER_BLUEPRINT,
-            RESOURCE_MANAGER_BURN_BUCKET_IDENT,
+            BURN_BUCKET_IDENT,
             scrypto_encode(&ResourceManagerBurnBucketInput {
                 bucket: Bucket(self.0),
             })

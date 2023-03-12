@@ -1,8 +1,8 @@
-use radix_engine_common::data::scrypto::ScryptoValue;
 use crate::blueprints::resource::*;
 use crate::data::scrypto::model::*;
 use crate::math::*;
 use crate::*;
+use radix_engine_common::data::scrypto::ScryptoValue;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -23,7 +23,7 @@ pub enum ResourceMethodAuthKey {
     Recall,
 }
 
-pub const RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT: &str = "create_fungible";
+pub const FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT: &str = "create_fungible";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct ResourceManagerCreateFungibleInput {
@@ -34,7 +34,7 @@ pub struct ResourceManagerCreateFungibleInput {
 
 pub type ResourceManagerCreateFungibleOutput = ResourceAddress;
 
-pub const RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT: &str =
+pub const FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT: &str =
     "create_fungible_with_initial_supply";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
@@ -47,7 +47,7 @@ pub struct ResourceManagerCreateFungibleWithInitialSupplyInput {
 
 pub type ResourceManagerCreateFungibleWithInitialSupplyOutput = (ResourceAddress, Bucket);
 
-pub const RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT: &str =
+pub const FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT: &str =
     "create_fungible_with_initial_supply_and_address";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
@@ -114,7 +114,7 @@ pub struct ResourceManagerCreateUuidNonFungibleWithInitialSupplyInput {
 
 pub type ResourceManagerCreateUuidNonFungibleWithInitialSupplyOutput = (ResourceAddress, Bucket);
 
-pub const RESOURCE_MANAGER_BURN_BUCKET_IDENT: &str = "burn_bucket";
+pub const BURN_BUCKET_IDENT: &str = "burn_bucket";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct ResourceManagerBurnBucketInput {
@@ -143,8 +143,10 @@ pub struct ResourceManagerBurnInput {
 pub type ResourceManagerBurnOutput = ();
 
 pub const RESOURCE_MANAGER_CREATE_VAULT_IDENT: &str = "create_vault";
-pub const FUNGIBLE_RESOURCE_MANAGER_CREATE_VAULT_EXPORT_NAME: &str = "create_vault_FungibleResourceManager";
-pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_VAULT_EXPORT_NAME: &str = "create_vault_NonFungibleResourceManager";
+pub const FUNGIBLE_RESOURCE_MANAGER_CREATE_VAULT_EXPORT_NAME: &str =
+    "create_vault_FungibleResourceManager";
+pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_VAULT_EXPORT_NAME: &str =
+    "create_vault_NonFungibleResourceManager";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct ResourceManagerCreateVaultInput {}
@@ -152,8 +154,10 @@ pub struct ResourceManagerCreateVaultInput {}
 pub type ResourceManagerCreateVaultOutput = Vault;
 
 pub const RESOURCE_MANAGER_CREATE_BUCKET_IDENT: &str = "create_bucket";
-pub const FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_EXPORT_NAME: &str = "create_bucket_FungibleResourceManager";
-pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_EXPORT_NAME: &str = "create_bucket_NonFungibleResourceManager";
+pub const FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_EXPORT_NAME: &str =
+    "create_bucket_FungibleResourceManager";
+pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_EXPORT_NAME: &str =
+    "create_bucket_NonFungibleResourceManager";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct ResourceManagerCreateBucketInput {}
@@ -206,7 +210,7 @@ pub struct ResourceManagerMintUuidNonFungibleInput {
 
 pub type ResourceManagerMintUuidNonFungibleOutput = Bucket;
 
-pub const RESOURCE_MANAGER_MINT_FUNGIBLE_IDENT: &str = "mint_fungible";
+pub const FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT: &str = "mint_fungible";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct ResourceManagerMintFungibleInput {
@@ -216,8 +220,10 @@ pub struct ResourceManagerMintFungibleInput {
 pub type ResourceManagerMintFungibleOutput = Bucket;
 
 pub const RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT: &str = "get_resource_type";
-pub const NON_FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME: &str = "get_resource_type_NonFungibleResourceManager";
-pub const FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME: &str = "get_resource_type_FungibleResourceManager";
+pub const NON_FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME: &str =
+    "get_resource_type_NonFungibleResourceManager";
+pub const FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME: &str =
+    "get_resource_type_FungibleResourceManager";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct ResourceManagerGetResourceTypeInput {}
@@ -225,8 +231,10 @@ pub struct ResourceManagerGetResourceTypeInput {}
 pub type ResourceManagerGetResourceTypeOutput = ResourceType;
 
 pub const RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT: &str = "get_total_supply";
-pub const NON_FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME: &str = "get_total_supply_NonFungibleResourceManager";
-pub const FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME: &str = "get_total_supply_FungibleResourceManager";
+pub const NON_FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME: &str =
+    "get_total_supply_NonFungibleResourceManager";
+pub const FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME: &str =
+    "get_total_supply_FungibleResourceManager";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct ResourceManagerGetTotalSupplyInput {}

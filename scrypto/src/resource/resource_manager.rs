@@ -304,7 +304,7 @@ impl ResourceManager {
         let rtn = env
             .call_method(
                 RENodeId::GlobalObject(self.0.into()),
-                RESOURCE_MANAGER_MINT_FUNGIBLE_IDENT,
+                FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
                 scrypto_encode(&ResourceManagerMintFungibleInput {
                     amount: amount.into(),
                 })

@@ -355,7 +355,8 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
             );
 
             if let Some(substate) = substate.kv_store_entry() {
-                let (_, own, _) = IndexedScryptoValue::from_scrypto_value(substate.clone()).unpack();
+                let (_, own, _) =
+                    IndexedScryptoValue::from_scrypto_value(substate.clone()).unpack();
                 for owned_node in own {
                     match owned_node {
                         RENodeId::Object(vault_id) => {

@@ -31,7 +31,7 @@ impl ResourceManager {
             .call_function(
                 RESOURCE_MANAGER_PACKAGE,
                 RESOURCE_MANAGER_BLUEPRINT,
-                RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT,
+                FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
                 scrypto_encode(&ResourceManagerCreateFungibleInput {
                     metadata,
                     access_rules,
@@ -58,7 +58,7 @@ impl ResourceManager {
             .call_function(
                 RESOURCE_MANAGER_PACKAGE,
                 RESOURCE_MANAGER_BLUEPRINT,
-                RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
+                FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
                     metadata,
                     access_rules,
@@ -153,7 +153,7 @@ impl ResourceManager {
     {
         let rtn = api.call_method(
             RENodeId::GlobalObject(self.0.into()),
-            RESOURCE_MANAGER_MINT_FUNGIBLE_IDENT,
+            FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
             scrypto_encode(&ResourceManagerMintFungibleInput { amount }).unwrap(),
         )?;
 

@@ -899,7 +899,6 @@ impl Into<NonFungibleResourceManagerSubstate> for RuntimeSubstate {
     }
 }
 
-
 impl Into<PackageCodeSubstate> for RuntimeSubstate {
     fn into(self) -> PackageCodeSubstate {
         if let RuntimeSubstate::PackageCode(code) = self {

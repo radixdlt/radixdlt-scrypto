@@ -550,7 +550,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let rtn = api.call_function(
                         RESOURCE_MANAGER_PACKAGE,
                         RESOURCE_MANAGER_BLUEPRINT,
-                        RESOURCE_MANAGER_BURN_BUCKET_IDENT,
+                        BURN_BUCKET_IDENT,
                         scrypto_encode(&ResourceManagerBurnBucketInput { bucket }).unwrap(),
                     )?;
 
@@ -566,7 +566,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 } => {
                     let rtn = api.call_method(
                         RENodeId::GlobalObject(resource_address.into()),
-                        RESOURCE_MANAGER_MINT_FUNGIBLE_IDENT,
+                        FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
                         scrypto_encode(&ResourceManagerMintFungibleInput { amount }).unwrap(),
                     )?;
 

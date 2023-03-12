@@ -21,62 +21,64 @@ impl ResourceManagerNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut substates = Vec::new();
-            substates.push(aggregator.add_child_type_and_descendents::<FungibleResourceManagerSubstate>());
+            substates.push(
+                aggregator.add_child_type_and_descendents::<FungibleResourceManagerSubstate>(),
+            );
 
             let mut functions = BTreeMap::new();
             functions.insert(
-                RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT.to_string(),
+                FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 FunctionSchema {
                     receiver: None,
                     input: aggregator
                         .add_child_type_and_descendents::<ResourceManagerCreateFungibleInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerCreateFungibleOutput>(),
-                    export_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT.to_string(),
+                    export_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 },
             );
             functions.insert(
-                RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT.to_string(),
+                FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string(),
                 FunctionSchema {
                     receiver: None,
                     input: aggregator
                         .add_child_type_and_descendents::<ResourceManagerCreateFungibleWithInitialSupplyInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerCreateFungibleWithInitialSupplyOutput>(),
-                    export_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT.to_string(),
+                    export_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string(),
                 },
             );
             functions.insert(
-                RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT.to_string(),
+                FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT.to_string(),
                 FunctionSchema {
                     receiver: None,
                     input: aggregator
                         .add_child_type_and_descendents::<ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerCreateFungibleWithInitialSupplyAndAddressOutput>(),
-                    export_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT.to_string(),
+                    export_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT.to_string(),
                 },
             );
             functions.insert(
-                RESOURCE_MANAGER_BURN_BUCKET_IDENT.to_string(),
+                BURN_BUCKET_IDENT.to_string(),
                 FunctionSchema {
                     receiver: None,
                     input: aggregator
                         .add_child_type_and_descendents::<ResourceManagerBurnBucketInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerBurnBucketOutput>(),
-                    export_name: RESOURCE_MANAGER_BURN_BUCKET_IDENT.to_string(),
+                    export_name: BURN_BUCKET_IDENT.to_string(),
                 },
             );
             functions.insert(
-                RESOURCE_MANAGER_MINT_FUNGIBLE_IDENT.to_string(),
+                FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRefMut),
                     input: aggregator
                         .add_child_type_and_descendents::<ResourceManagerMintFungibleInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerMintFungibleOutput>(),
-                    export_name: RESOURCE_MANAGER_MINT_FUNGIBLE_IDENT.to_string(),
+                    export_name: FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
                 },
             );
             functions.insert(
@@ -84,7 +86,8 @@ impl ResourceManagerNativePackage {
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRefMut),
                     input: aggregator.add_child_type_and_descendents::<ResourceManagerBurnInput>(),
-                    output: aggregator.add_child_type_and_descendents::<ResourceManagerBurnOutput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<ResourceManagerBurnOutput>(),
                     export_name: FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME.to_string(),
                 },
             );
@@ -119,7 +122,8 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerGetResourceTypeInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerGetResourceTypeOutput>(),
-                    export_name: FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME.to_string(),
+                    export_name: FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME
+                        .to_string(),
                 },
             );
             functions.insert(
@@ -146,7 +150,9 @@ impl ResourceManagerNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut substates = Vec::new();
-            substates.push(aggregator.add_child_type_and_descendents::<NonFungibleResourceManagerSubstate>());
+            substates.push(
+                aggregator.add_child_type_and_descendents::<NonFungibleResourceManagerSubstate>(),
+            );
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -194,7 +200,6 @@ impl ResourceManagerNativePackage {
                 },
             );
 
-
             functions.insert(
                 NON_FUNGIBLE_MINT_RESOURCE_MANAGER_MINT_IDENT.to_string(),
                 FunctionSchema {
@@ -206,7 +211,6 @@ impl ResourceManagerNativePackage {
                     export_name: NON_FUNGIBLE_MINT_RESOURCE_MANAGER_MINT_IDENT.to_string(),
                 },
             );
-
 
             functions.insert(
                 NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT.to_string(),
@@ -248,13 +252,14 @@ impl ResourceManagerNativePackage {
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRefMut),
                     input: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerMintUuidNonFungibleInput>(),
+                        .add_child_type_and_descendents::<ResourceManagerMintUuidNonFungibleInput>(
+                        ),
                     output: aggregator
-                        .add_child_type_and_descendents::<ResourceManagerMintUuidNonFungibleOutput>(),
+                        .add_child_type_and_descendents::<ResourceManagerMintUuidNonFungibleOutput>(
+                        ),
                     export_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string(),
                 },
             );
-
 
             functions.insert(
                 RESOURCE_MANAGER_CREATE_BUCKET_IDENT.to_string(),
@@ -264,7 +269,8 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerCreateBucketInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerCreateBucketOutput>(),
-                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_EXPORT_NAME.to_string(),
+                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_EXPORT_NAME
+                        .to_string(),
                 },
             );
             functions.insert(
@@ -272,7 +278,8 @@ impl ResourceManagerNativePackage {
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRefMut),
                     input: aggregator.add_child_type_and_descendents::<ResourceManagerBurnInput>(),
-                    output: aggregator.add_child_type_and_descendents::<ResourceManagerBurnOutput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<ResourceManagerBurnOutput>(),
                     export_name: NON_FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME.to_string(),
                 },
             );
@@ -295,7 +302,8 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerGetResourceTypeInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerGetResourceTypeOutput>(),
-                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME.to_string(),
+                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME
+                        .to_string(),
                 },
             );
             functions.insert(
@@ -306,7 +314,8 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerGetTotalSupplyInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerGetTotalSupplyOutput>(),
-                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME.to_string(),
+                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME
+                        .to_string(),
                 },
             );
 
@@ -800,6 +809,117 @@ impl ResourceManagerNativePackage {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         match export_name {
+            BURN_BUCKET_IDENT => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                if receiver.is_some() {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    ));
+                }
+                FungibleResourceManagerBlueprint::burn_bucket(input, api)
+            }
+            FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT => {
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
+
+                if receiver.is_some() {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    ));
+                }
+                FungibleResourceManagerBlueprint::create(input, api)
+            }
+            FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT => {
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
+
+                if receiver.is_some() {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    ));
+                }
+                FungibleResourceManagerBlueprint::create_with_initial_supply(input, api)
+            }
+            FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT => {
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
+
+                if receiver.is_some() {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    ));
+                }
+                FungibleResourceManagerBlueprint::create_with_initial_supply_and_address(input, api)
+            }
+            FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT => {
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                FungibleResourceManagerBlueprint::mint(receiver, input, api)
+            }
+            FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                let input: ResourceManagerBurnInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = FungibleResourceManagerBlueprint::burn(receiver, input.bucket, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+
+                let _input: ResourceManagerCreateBucketInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+
+                let rtn = FungibleResourceManagerBlueprint::create_bucket(receiver, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            FUNGIBLE_RESOURCE_MANAGER_CREATE_VAULT_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                let _input: ResourceManagerCreateVaultInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = FungibleResourceManagerBlueprint::create_vault(receiver, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                let _input: ResourceManagerGetResourceTypeInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                    })?;
+                let rtn = FungibleResourceManagerBlueprint::get_resource_type(receiver, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                let _input: ResourceManagerGetTotalSupplyInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = FungibleResourceManagerBlueprint::get_total_supply(receiver, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
@@ -808,9 +928,10 @@ impl ResourceManagerNativePackage {
                         InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
-                let input: ResourceManagerCreateNonFungibleInput = input.as_typed().map_err(|e| {
-                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-                })?;
+                let input: ResourceManagerCreateNonFungibleInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                    })?;
                 let rtn = NonFungibleResourceManagerBlueprint::create(
                     input.id_type,
                     input.non_fungible_schema,
@@ -888,48 +1009,6 @@ impl ResourceManagerNativePackage {
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT => {
-                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
-
-                if receiver.is_some() {
-                    return Err(RuntimeError::InterpreterError(
-                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
-                ResourceManagerBlueprint::create_fungible(input, api)
-            }
-            RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT => {
-                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
-
-                if receiver.is_some() {
-                    return Err(RuntimeError::InterpreterError(
-                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
-                ResourceManagerBlueprint::create_fungible_with_initial_supply(input, api)
-            }
-            RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT => {
-                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
-
-                if receiver.is_some() {
-                    return Err(RuntimeError::InterpreterError(
-                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
-                ResourceManagerBlueprint::create_fungible_with_initial_supply_and_address(
-                    input, api,
-                )
-            }
-            RESOURCE_MANAGER_BURN_BUCKET_IDENT => {
-                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
-
-                if receiver.is_some() {
-                    return Err(RuntimeError::InterpreterError(
-                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
-                ResourceManagerBlueprint::burn_bucket(input, api)
-            }
             NON_FUNGIBLE_MINT_RESOURCE_MANAGER_MINT_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
@@ -939,7 +1018,11 @@ impl ResourceManagerNativePackage {
                 let input: ResourceManagerMintNonFungibleInput = input.as_typed().map_err(|e| {
                     RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                 })?;
-                let rtn = NonFungibleResourceManagerBlueprint::mint_non_fungible(receiver, input.entries, api)?;
+                let rtn = NonFungibleResourceManagerBlueprint::mint_non_fungible(
+                    receiver,
+                    input.entries,
+                    api,
+                )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT => {
@@ -948,30 +1031,15 @@ impl ResourceManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                let input: ResourceManagerMintUuidNonFungibleInput = input.as_typed().map_err(|e| {
-                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-                })?;
-                let rtn = NonFungibleResourceManagerBlueprint::mint_uuid_non_fungible(receiver, input.entries, api)?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            RESOURCE_MANAGER_MINT_FUNGIBLE_IDENT => {
-                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
-
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                ResourceManagerBlueprint::mint_fungible(receiver, input, api)
-            }
-            FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
-
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                let input: ResourceManagerBurnInput = input.as_typed().map_err(|e| {
-                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-                })?;
-                let rtn = ResourceManagerBlueprint::burn(receiver, input.bucket, api)?;
+                let input: ResourceManagerMintUuidNonFungibleInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                    })?;
+                let rtn = NonFungibleResourceManagerBlueprint::mint_uuid_non_fungible(
+                    receiver,
+                    input.entries,
+                    api,
+                )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME => {
@@ -986,20 +1054,6 @@ impl ResourceManagerNativePackage {
                 let rtn = NonFungibleResourceManagerBlueprint::burn(receiver, input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
-
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-
-                let _input: ResourceManagerCreateBucketInput = input.as_typed().map_err(|e| {
-                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-                })?;
-
-                let rtn = ResourceManagerBlueprint::create_bucket(receiver, api)?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
@@ -1012,18 +1066,6 @@ impl ResourceManagerNativePackage {
                 })?;
 
                 let rtn = NonFungibleResourceManagerBlueprint::create_bucket(receiver, api)?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            FUNGIBLE_RESOURCE_MANAGER_CREATE_VAULT_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
-
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                let _input: ResourceManagerCreateVaultInput = input.as_typed().map_err(|e| {
-                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-                })?;
-                let rtn = ResourceManagerBlueprint::create_vault(receiver, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_VAULT_EXPORT_NAME => {
@@ -1044,10 +1086,13 @@ impl ResourceManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                let input: ResourceManagerUpdateNonFungibleDataInput = input.as_typed().map_err(|e| {
-                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-                })?;
-                let rtn = NonFungibleResourceManagerBlueprint::update_non_fungible_data(receiver, input.id, input.data, api)?;
+                let input: ResourceManagerUpdateNonFungibleDataInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                    })?;
+                let rtn = NonFungibleResourceManagerBlueprint::update_non_fungible_data(
+                    receiver, input.id, input.data, api,
+                )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT => {
@@ -1056,22 +1101,13 @@ impl ResourceManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                let input: ResourceManagerNonFungibleExistsInput = input.as_typed().map_err(|e| {
-                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-                })?;
-                let rtn = NonFungibleResourceManagerBlueprint::non_fungible_exists(receiver, input.id, api)?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                let _input: ResourceManagerGetResourceTypeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-                })?;
-                let rtn = ResourceManagerBlueprint::get_resource_type(receiver, api)?;
+                let input: ResourceManagerNonFungibleExistsInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                    })?;
+                let rtn = NonFungibleResourceManagerBlueprint::non_fungible_exists(
+                    receiver, input.id, api,
+                )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME => {
@@ -1080,22 +1116,11 @@ impl ResourceManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                let _input: ResourceManagerGetResourceTypeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-                })?;
+                let _input: ResourceManagerGetResourceTypeInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                    })?;
                 let rtn = NonFungibleResourceManagerBlueprint::get_resource_type(receiver, api)?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                let _input: ResourceManagerGetTotalSupplyInput = input.as_typed().map_err(|e| {
-                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-                })?;
-                let rtn = ResourceManagerBlueprint::get_total_supply(receiver, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME => {
@@ -1119,7 +1144,8 @@ impl ResourceManagerNativePackage {
                 let input: ResourceManagerGetNonFungibleInput = input.as_typed().map_err(|e| {
                     RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                 })?;
-                let rtn = NonFungibleResourceManagerBlueprint::get_non_fungible(receiver, input.id, api)?;
+                let rtn =
+                    NonFungibleResourceManagerBlueprint::get_non_fungible(receiver, input.id, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VAULT_LOCK_FEE_IDENT => {

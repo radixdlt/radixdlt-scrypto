@@ -17,15 +17,16 @@ use radix_engine_interface::blueprints::epoch_manager::{
 use radix_engine_interface::blueprints::identity::{
     IdentityCreateInput, IDENTITY_BLUEPRINT, IDENTITY_CREATE_IDENT,
 };
-use radix_engine_interface::blueprints::resource::{NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, NonFungibleGlobalId};
 use radix_engine_interface::blueprints::resource::{
     AccessRule, ResourceManagerCreateFungibleInput,
     ResourceManagerCreateFungibleWithInitialSupplyInput, ResourceManagerCreateNonFungibleInput,
-    ResourceManagerCreateNonFungibleWithInitialSupplyInput, RESOURCE_MANAGER_BLUEPRINT,
-    RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT,
-    RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
+    ResourceManagerCreateNonFungibleWithInitialSupplyInput, FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+    FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
-    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT, RESOURCE_MANAGER_BLUEPRINT,
+};
+use radix_engine_interface::blueprints::resource::{
+    NonFungibleGlobalId, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
 };
 use radix_engine_interface::constants::{
     ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, EPOCH_MANAGER, IDENTITY_PACKAGE,
@@ -518,7 +519,7 @@ pub fn generate_instruction(
         } => Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT.to_string(),
+            function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
             args: manifest_encode(&ResourceManagerCreateFungibleInput {
                 divisibility: generate_u8(divisibility)?,
                 metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
@@ -534,7 +535,7 @@ pub fn generate_instruction(
         } => Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT.to_string(),
+            function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string(),
             args: manifest_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
                 divisibility: generate_u8(divisibility)?,
                 metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
@@ -1567,7 +1568,7 @@ mod tests {
             Instruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT.to_string(),
+                function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: manifest_encode(&ResourceManagerCreateFungibleInput {
                     divisibility: 18,
                     metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
@@ -1594,7 +1595,7 @@ mod tests {
             Instruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT
+                function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
                 args: manifest_encode(&ResourceManagerCreateFungibleWithInitialSupplyInput {
                     divisibility: 18,

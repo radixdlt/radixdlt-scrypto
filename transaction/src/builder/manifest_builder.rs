@@ -297,7 +297,7 @@ impl ManifestBuilder {
             self.add_instruction(Instruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT.to_string(),
+                function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: manifest_encode(&ResourceManagerCreateFungibleInput {
                     divisibility,
                     metadata,

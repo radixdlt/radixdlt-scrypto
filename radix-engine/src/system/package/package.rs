@@ -46,7 +46,10 @@ fn build_package_node_modules(
     metadata: BTreeMap<String, String>,
     access_rules: AccessRulesConfig,
     function_access_rules: FunctionAccessRulesSubstate,
-    event_schema: BTreeMap<String, BTreeMap<String, (LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>>,
+    event_schema: BTreeMap<
+        String,
+        BTreeMap<String, (LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>,
+    >,
 ) -> BTreeMap<NodeModuleId, RENodeModuleInit> {
     let mut metadata_substates = BTreeMap::new();
     for (key, value) in metadata {
@@ -88,7 +91,6 @@ fn build_package_node_modules(
         NodeModuleId::FunctionAccessRules,
         RENodeModuleInit::FunctionAccessRules(function_access_rules),
     );
-
 
     node_modules.insert(
         NodeModuleId::PackageEventSchema,
@@ -166,9 +168,8 @@ impl Package {
         };
         let node_init = RENodeInit::GlobalPackage(info, code_type, code);
 
-        let event_schema = convert_event_schema(input.event_schema).map_err(|error| {
-            RuntimeError::ApplicationError(ApplicationError::EventError(error))
-        })?;
+        let event_schema = convert_event_schema(input.event_schema)
+            .map_err(|error| RuntimeError::ApplicationError(ApplicationError::EventError(error)))?;
 
         // Build node module init
         let node_modules = build_package_node_modules(

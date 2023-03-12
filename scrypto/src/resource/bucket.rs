@@ -69,7 +69,7 @@ impl ScryptoBucket for Bucket {
             .call_function(
                 RESOURCE_MANAGER_PACKAGE,
                 RESOURCE_MANAGER_BLUEPRINT,
-                RESOURCE_MANAGER_BURN_BUCKET_IDENT,
+                BURN_BUCKET_IDENT,
                 scrypto_encode(&ResourceManagerBurnInput {
                     bucket: Bucket(self.0),
                 })
