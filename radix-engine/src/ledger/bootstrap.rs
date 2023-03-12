@@ -9,10 +9,7 @@ use crate::blueprints::epoch_manager::{
     RoundChangeEvent, StakeEvent, UnregisterValidatorEvent, UnstakeEvent,
     UpdateAcceptingStakeDelegationStateEvent,
 };
-use crate::blueprints::resource::{
-    BurnResourceEvent, DepositResourceEvent, LockFeeEvent, MintResourceEvent, RecallResourceEvent,
-    VaultCreationEvent, WithdrawResourceEvent,
-};
+use crate::blueprints::resource::{BurnFungibleResourceEvent, BurnNonFungibleResourceEvent, DepositResourceEvent, LockFeeEvent, MintFungibleResourceEvent, MintNonFungibleResourceEvent, RecallResourceEvent, VaultCreationEvent, WithdrawResourceEvent};
 use crate::kernel::interpreters::ScryptoInterpreter;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::system::node_modules::access_rules::{
@@ -192,11 +189,19 @@ pub fn create_genesis(
                                 ScryptoCustomTypeExtension,
                             >(),
                             generate_full_schema_from_single_type::<
-                                MintResourceEvent,
+                                MintFungibleResourceEvent,
                                 ScryptoCustomTypeExtension,
                             >(),
                             generate_full_schema_from_single_type::<
-                                BurnResourceEvent,
+                                MintNonFungibleResourceEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                            generate_full_schema_from_single_type::<
+                                BurnFungibleResourceEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                            generate_full_schema_from_single_type::<
+                                BurnNonFungibleResourceEvent,
                                 ScryptoCustomTypeExtension,
                             >(),
                         ]

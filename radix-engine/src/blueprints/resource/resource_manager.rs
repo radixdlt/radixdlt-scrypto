@@ -923,7 +923,9 @@ impl ResourceManagerBlueprint {
 
         Runtime::emit_event(
             api,
-            MintResourceEvent::Ids(input.entries.into_iter().map(|(k, _)| k).collect()),
+            MintNonFungibleResourceEvent {
+                ids: input.entries.into_iter().map(|(k, _)| k).collect(),
+            },
         )?;
 
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
@@ -1019,7 +1021,11 @@ impl ResourceManagerBlueprint {
             (bucket_id, ids)
         };
 
-        Runtime::emit_event(api, MintResourceEvent::Ids(ids))?;
+        Runtime::emit_event(api,
+                            MintNonFungibleResourceEvent {
+                                ids,
+                            },
+                            )?;
 
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
@@ -1092,7 +1098,9 @@ impl ResourceManagerBlueprint {
             }
         };
 
-        Runtime::emit_event(api, MintResourceEvent::Amount(input.amount))?;
+        Runtime::emit_event(api, MintFungibleResourceEvent {
+            amount: input.amount,
+        })?;
 
         Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
     }
@@ -1122,14 +1130,18 @@ impl ResourceManagerBlueprint {
             .into();
 
         // Construct the event and only emit it once all of the operations are done.
-        let event = match dropped_bucket.resource {
+        match dropped_bucket.resource {
             DroppedBucketResource::Fungible(ref resource) => {
-                BurnResourceEvent::Amount(resource.amount())
+                Runtime::emit_event(api, BurnFungibleResourceEvent {
+                    amount: resource.amount(),
+                })?;
             }
             DroppedBucketResource::NonFungible(ref resource) => {
-                BurnResourceEvent::Ids(resource.ids().clone())
+                Runtime::emit_event(api, BurnNonFungibleResourceEvent {
+                    ids: resource.ids().clone(),
+                })?;
             }
-        };
+        }
 
         // Check if resource matches
         // TODO: Move this check into actor check
@@ -1179,7 +1191,6 @@ impl ResourceManagerBlueprint {
             }
         }
 
-        Runtime::emit_event(api, event)?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
