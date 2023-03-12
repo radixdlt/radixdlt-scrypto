@@ -1,7 +1,7 @@
 use crate::blueprints::resource::vault::VaultInfoSubstate;
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
-use crate::errors::{ApplicationError, InterpreterError};
+use crate::errors::ApplicationError;
 use crate::kernel::heap::DroppedBucket;
 use crate::kernel::heap::DroppedBucketResource;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
@@ -134,47 +134,43 @@ pub struct FungibleResourceManagerBlueprint;
 
 impl FungibleResourceManagerBlueprint {
     pub(crate) fn create<Y>(
-        input: IndexedScryptoValue,
+        divisibility: u8,
+        metadata: BTreeMap<String, String>,
+        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<ResourceAddress, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: ResourceManagerCreateFungibleInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-
         let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalResourceManager)?;
         let address = create_fungible_resource_manager(
             global_node_id,
-            input.divisibility,
-            input.metadata,
-            input.access_rules,
+            divisibility,
+            metadata,
+            access_rules,
             api,
         )?;
-        Ok(IndexedScryptoValue::from_typed(&address))
+        Ok(address)
     }
 
     pub(crate) fn create_with_initial_supply<Y>(
-        input: IndexedScryptoValue,
+        divisibility: u8,
+        metadata: BTreeMap<String, String>,
+        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+        initial_supply: Decimal,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<(ResourceAddress, Bucket), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: ResourceManagerCreateFungibleWithInitialSupplyInput =
-            input.as_typed().map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
-
         let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalResourceManager)?;
         let resource_address: ResourceAddress = global_node_id.into();
 
         let (resource_manager_substate, bucket) =
             build_fungible_resource_manager_substate_with_initial_supply(
                 resource_address,
-                input.divisibility,
-                input.initial_supply,
+                divisibility,
+                initial_supply,
                 api,
             )?;
 
@@ -183,10 +179,10 @@ impl FungibleResourceManagerBlueprint {
             vec![scrypto_encode(&resource_manager_substate).unwrap()],
         )?;
 
-        let (resman_access_rules, vault_access_rules) = build_access_rules(input.access_rules);
+        let (resman_access_rules, vault_access_rules) = build_access_rules(access_rules);
         let resman_access_rules = AccessRulesObject::sys_new(resman_access_rules, api)?;
         let vault_access_rules = AccessRulesObject::sys_new(vault_access_rules, api)?;
-        let metadata = Metadata::sys_create_with_data(input.metadata, api)?;
+        let metadata = Metadata::sys_create_with_data(metadata, api)?;
 
         api.globalize_with_address(
             RENodeId::Object(object_id),
@@ -198,30 +194,29 @@ impl FungibleResourceManagerBlueprint {
             resource_address.into(),
         )?;
 
-        Ok(IndexedScryptoValue::from_typed(&(resource_address, bucket)))
+        Ok((resource_address, bucket))
     }
 
     pub(crate) fn create_with_initial_supply_and_address<Y>(
-        input: IndexedScryptoValue,
+        divisibility: u8,
+        metadata: BTreeMap<String, String>,
+        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+        initial_supply: Decimal,
+        resource_address: [u8; 26], // TODO: Clean this up
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<(ResourceAddress, Bucket), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput =
-            input.as_typed().map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
-
         let global_node_id =
-            RENodeId::GlobalObject(ResourceAddress::Normal(input.resource_address).into());
+            RENodeId::GlobalObject(ResourceAddress::Normal(resource_address).into());
         let resource_address: ResourceAddress = global_node_id.into();
 
         let (resource_manager_substate, bucket) =
             build_fungible_resource_manager_substate_with_initial_supply(
                 resource_address,
-                input.divisibility,
-                input.initial_supply,
+                divisibility,
+                initial_supply,
                 api,
             )?;
 
@@ -230,10 +225,10 @@ impl FungibleResourceManagerBlueprint {
             vec![scrypto_encode(&resource_manager_substate).unwrap()],
         )?;
 
-        let (resman_access_rules, vault_access_rules) = build_access_rules(input.access_rules);
+        let (resman_access_rules, vault_access_rules) = build_access_rules(access_rules);
         let resman_access_rules = AccessRulesObject::sys_new(resman_access_rules, api)?;
         let vault_access_rules = AccessRulesObject::sys_new(vault_access_rules, api)?;
-        let metadata = Metadata::sys_create_with_data(input.metadata, api)?;
+        let metadata = Metadata::sys_create_with_data(metadata, api)?;
 
         api.globalize_with_address(
             RENodeId::Object(object_id),
@@ -245,21 +240,17 @@ impl FungibleResourceManagerBlueprint {
             resource_address.into(),
         )?;
 
-        Ok(IndexedScryptoValue::from_typed(&(resource_address, bucket)))
+        Ok((resource_address, bucket))
     }
 
     pub(crate) fn mint<Y>(
         receiver: RENodeId,
-        input: IndexedScryptoValue,
+        amount: Decimal,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<Bucket, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: ResourceManagerMintFungibleInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-
         let resman_handle = api.sys_lock_substate(
             receiver,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
@@ -273,16 +264,16 @@ impl FungibleResourceManagerBlueprint {
             let resource_type = ResourceType::Fungible { divisibility };
 
             // check amount
-            if !resource_type.check_amount(input.amount) {
+            if !resource_type.check_amount(amount) {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::ResourceManagerError(
-                        FungibleResourceManagerError::InvalidAmount(input.amount, divisibility),
+                        FungibleResourceManagerError::InvalidAmount(amount, divisibility),
                     ),
                 ));
             }
 
             // Practically impossible to overflow the Decimal type with this limit in place.
-            if input.amount > dec!("1000000000000000000") {
+            if amount > dec!("1000000000000000000") {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::ResourceManagerError(
                         FungibleResourceManagerError::MaxMintAmountExceeded,
@@ -290,13 +281,13 @@ impl FungibleResourceManagerBlueprint {
                 ));
             }
 
-            resource_manager.total_supply += input.amount;
+            resource_manager.total_supply += amount;
 
             let bucket_info = BucketInfoSubstate {
                 resource_address: resource_manager.resource_address,
                 resource_type: ResourceType::Fungible { divisibility },
             };
-            let liquid_resource = LiquidFungibleResource::new(input.amount);
+            let liquid_resource = LiquidFungibleResource::new(amount);
             let bucket_id = api.new_object(
                 BUCKET_BLUEPRINT,
                 vec![
@@ -311,14 +302,9 @@ impl FungibleResourceManagerBlueprint {
             bucket_id
         };
 
-        Runtime::emit_event(
-            api,
-            MintFungibleResourceEvent {
-                amount: input.amount,
-            },
-        )?;
+        Runtime::emit_event(api, MintFungibleResourceEvent { amount })?;
 
-        Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
+        Ok(Bucket(bucket_id))
     }
 
     pub(crate) fn burn<Y>(

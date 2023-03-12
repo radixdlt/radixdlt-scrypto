@@ -816,7 +816,16 @@ impl ResourceManagerNativePackage {
                         InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
-                FungibleResourceManagerBlueprint::create(input, api)
+                let input: ResourceManagerCreateFungibleInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = FungibleResourceManagerBlueprint::create(
+                    input.divisibility,
+                    input.metadata,
+                    input.access_rules,
+                    api,
+                )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
@@ -826,7 +835,18 @@ impl ResourceManagerNativePackage {
                         InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
-                FungibleResourceManagerBlueprint::create_with_initial_supply(input, api)
+                let input: ResourceManagerCreateFungibleWithInitialSupplyInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                    })?;
+                let rtn = FungibleResourceManagerBlueprint::create_with_initial_supply(
+                    input.divisibility,
+                    input.metadata,
+                    input.access_rules,
+                    input.initial_supply,
+                    api,
+                )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
@@ -836,7 +856,19 @@ impl ResourceManagerNativePackage {
                         InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
-                FungibleResourceManagerBlueprint::create_with_initial_supply_and_address(input, api)
+                let input: ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                    })?;
+                let rtn = FungibleResourceManagerBlueprint::create_with_initial_supply_and_address(
+                    input.divisibility,
+                    input.metadata,
+                    input.access_rules,
+                    input.initial_supply,
+                    input.resource_address,
+                    api,
+                )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
@@ -844,7 +876,11 @@ impl ResourceManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                FungibleResourceManagerBlueprint::mint(receiver, input, api)
+                let input: ResourceManagerMintFungibleInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = FungibleResourceManagerBlueprint::mint(receiver, input.amount, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
