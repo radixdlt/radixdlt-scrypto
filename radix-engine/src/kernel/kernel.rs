@@ -12,7 +12,7 @@ use super::module::KernelModule;
 use super::module_mixer::KernelModuleMixer;
 use super::track::{Track, TrackError};
 use crate::blueprints::account::AccountSubstate;
-use crate::blueprints::identity::Identity;
+use crate::blueprints::identity::IdentityBlueprint;
 use crate::blueprints::resource::{
     BucketInfoSubstate, FungibleProof, NonFungibleProof, ProofInfoSubstate,
 };
@@ -215,7 +215,7 @@ where
         );
 
         let access_rule = rule!(require(non_fungible_global_id));
-        let (local_id, access_rules) = Identity::create_virtual(access_rule, self)?;
+        let (local_id, access_rules) = IdentityBlueprint::create_virtual(access_rule, self)?;
 
         let access_rules = AccessRulesObject::sys_new(access_rules, self)?;
         let metadata = Metadata::sys_create(self)?;
@@ -689,7 +689,7 @@ where
             (RENodeId::GlobalObject(Address::Package(..)), RENodeInit::GlobalPackage(..)) => {}
             (RENodeId::Object(..), RENodeInit::Object(..)) => {}
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
-            (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
+            (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore) => {}
             (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {}
             (RENodeId::TransactionRuntime, RENodeInit::TransactionRuntime(..)) => {}
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id))),

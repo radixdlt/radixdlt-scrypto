@@ -13,9 +13,41 @@ use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::schema::BlueprintSchema;
+use radix_engine_interface::schema::FunctionSchema;
+use radix_engine_interface::schema::PackageSchema;
 
 pub struct IdentityNativePackage;
+
 impl IdentityNativePackage {
+    pub fn schema() -> PackageSchema {
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+
+        let substates = Vec::new();
+
+        let mut functions = BTreeMap::new();
+        functions.insert(
+            IDENTITY_CREATE_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<IdentityCreateInput>(),
+                output: aggregator.add_child_type_and_descendents::<IdentityCreateOutput>(),
+                export_name: IDENTITY_CREATE_IDENT.to_string(),
+            },
+        );
+
+        let schema = generate_full_schema(aggregator);
+        PackageSchema {
+            blueprints: btreemap!(
+                IDENTITY_BLUEPRINT.to_string() => BlueprintSchema {
+                    schema,
+                    substates,
+                    functions
+                }
+            ),
+        }
+    }
+
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<RENodeId>,
@@ -53,7 +85,7 @@ impl IdentityNativePackage {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
 
-        let (node_id, access_rules) = Identity::create(input.access_rule, api)?;
+        let (node_id, access_rules) = IdentityBlueprint::create(input.access_rule, api)?;
         let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
         let metadata = Metadata::sys_create(api)?;
         let address = api.globalize(
@@ -67,9 +99,9 @@ impl IdentityNativePackage {
     }
 }
 
-pub struct Identity;
+pub struct IdentityBlueprint;
 
-impl Identity {
+impl IdentityBlueprint {
     pub fn create<Y>(
         access_rule: AccessRule,
         api: &mut Y,
@@ -101,8 +133,6 @@ impl Identity {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
     {
-        let node_id = api.kernel_allocate_node_id(RENodeType::Object)?;
-
         let mut access_rules = AccessRulesConfig::new();
         access_rules.set_access_rule_and_mutability(
             MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
@@ -115,6 +145,7 @@ impl Identity {
             AccessRule::DenyAll,
         );
 
+        let node_id = api.kernel_allocate_node_id(RENodeType::Object)?;
         api.kernel_create_node(
             node_id,
             RENodeInit::Object(btreemap!()),

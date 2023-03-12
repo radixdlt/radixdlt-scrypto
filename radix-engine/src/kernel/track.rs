@@ -20,8 +20,8 @@ use crate::transaction::{AbortReason, AbortResult, CommitResult};
 use crate::types::*;
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::api::types::Level;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::crypto::hash;
 use sbor::rust::collections::*;
@@ -649,7 +649,7 @@ impl<'s> FinalizingTrack<'s> {
         let mut required = fee_summary.total_execution_cost_xrd
             + fee_summary.total_royalty_cost_xrd
             - fee_summary.bad_debt_xrd;
-        let mut fees: LiquidFungibleResource = LiquidFungibleResource::new_empty();
+        let mut fees: LiquidFungibleResource = LiquidFungibleResource::default();
         for (vault_id, mut locked, contingent) in fee_summary.vault_locks.iter().cloned().rev() {
             let amount = if contingent {
                 if is_success {
@@ -698,7 +698,8 @@ impl<'s> FinalizingTrack<'s> {
                     let royalty_vault_id = accumulator_substate
                         .0
                         .package_royalty_accumulator()
-                        .royalty
+                        .royalty_vault
+                        .expect("FIXME: clean up royalty vault mess")
                         .vault_id();
                     let royalty_vault_substate = to_persist
                         .get_mut(&SubstateId(
@@ -726,7 +727,7 @@ impl<'s> FinalizingTrack<'s> {
                     let royalty_vault_id = accumulator_substate
                         .0
                         .component_royalty_accumulator()
-                        .royalty
+                        .royalty_vault
                         .vault_id();
                     let royalty_vault_substate = to_persist
                         .get_mut(&SubstateId(

@@ -1,6 +1,7 @@
 mod event_id;
 mod indexed_value;
 mod invocation;
+mod level;
 mod package_code;
 mod re_node;
 mod re_node_ids;
@@ -11,6 +12,7 @@ mod wasm;
 pub use event_id::*;
 pub use indexed_value::*;
 pub use invocation::*;
+pub use level::*;
 pub use package_code::*;
 pub use re_node::*;
 pub use re_node_ids::*;

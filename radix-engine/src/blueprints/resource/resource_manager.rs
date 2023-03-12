@@ -71,7 +71,7 @@ where
     let nf_store_node_id = api.kernel_allocate_node_id(RENodeType::NonFungibleStore)?;
     api.kernel_create_node(
         nf_store_node_id,
-        RENodeInit::NonFungibleStore(NonFungibleStore::new()),
+        RENodeInit::NonFungibleStore,
         BTreeMap::new(),
     )?;
     let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
@@ -118,7 +118,10 @@ where
             BUCKET_BLUEPRINT,
             vec![
                 scrypto_encode(&info).unwrap(),
+                scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
+                scrypto_encode(&LockedFungibleResource::default()).unwrap(),
                 scrypto_encode(&LiquidNonFungibleResource::new(ids)).unwrap(),
+                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
             ],
         )?;
 
@@ -172,6 +175,9 @@ where
             vec![
                 scrypto_encode(&bucket_info).unwrap(),
                 scrypto_encode(&liquid_resource).unwrap(),
+                scrypto_encode(&LockedFungibleResource::default()).unwrap(),
+                scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
+                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
             ],
         )?;
 
@@ -217,7 +223,7 @@ fn build_access_rules(
     resman_access_rules.set_group_and_mutability(
         MethodKey::new(
             NodeModuleId::SELF,
-            RESOURCE_MANAGER_MINT_NON_FUNGIBLE.to_string(),
+            RESOURCE_MANAGER_MINT_NON_FUNGIBLE_IDENT.to_string(),
         ),
         "mint".to_string(),
         DenyAll,
@@ -225,7 +231,7 @@ fn build_access_rules(
     resman_access_rules.set_group_and_mutability(
         MethodKey::new(
             NodeModuleId::SELF,
-            RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE.to_string(),
+            RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE_IDENT.to_string(),
         ),
         "mint".to_string(),
         DenyAll,
@@ -233,7 +239,7 @@ fn build_access_rules(
     resman_access_rules.set_group_and_mutability(
         MethodKey::new(
             NodeModuleId::SELF,
-            RESOURCE_MANAGER_MINT_FUNGIBLE.to_string(),
+            RESOURCE_MANAGER_MINT_FUNGIBLE_IDENT.to_string(),
         ),
         "mint".to_string(),
         DenyAll,
@@ -433,7 +439,7 @@ where
     let nf_store_node_id = api.kernel_allocate_node_id(RENodeType::NonFungibleStore)?;
     api.kernel_create_node(
         nf_store_node_id,
-        RENodeInit::NonFungibleStore(NonFungibleStore::new()),
+        RENodeInit::NonFungibleStore,
         BTreeMap::new(),
     )?;
     let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
@@ -836,7 +842,10 @@ impl ResourceManagerBlueprint {
                 BUCKET_BLUEPRINT,
                 vec![
                     scrypto_encode(&info).unwrap(),
+                    scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
+                    scrypto_encode(&LockedFungibleResource::default()).unwrap(),
                     scrypto_encode(&LiquidNonFungibleResource::new(ids)).unwrap(),
+                    scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
                 ],
             )?;
 
@@ -962,7 +971,10 @@ impl ResourceManagerBlueprint {
                 BUCKET_BLUEPRINT,
                 vec![
                     scrypto_encode(&info).unwrap(),
+                    scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
+                    scrypto_encode(&LockedFungibleResource::default()).unwrap(),
                     scrypto_encode(&LiquidNonFungibleResource::new(ids.clone())).unwrap(),
+                    scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
                 ],
             )?;
 
@@ -1028,6 +1040,9 @@ impl ResourceManagerBlueprint {
                     vec![
                         scrypto_encode(&bucket_info).unwrap(),
                         scrypto_encode(&liquid_resource).unwrap(),
+                        scrypto_encode(&LockedFungibleResource::default()).unwrap(),
+                        scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
+                        scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
                     ],
                 )?;
 
@@ -1158,7 +1173,10 @@ impl ResourceManagerBlueprint {
                         resource_type: ResourceType::Fungible { divisibility },
                     })
                     .unwrap(),
-                    scrypto_encode(&LiquidFungibleResource::new_empty()).unwrap(),
+                    scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
+                    scrypto_encode(&LockedFungibleResource::default()).unwrap(),
+                    scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
+                    scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
                 ],
             )?,
             ResourceType::NonFungible { id_type } => api.new_object(
@@ -1169,7 +1187,10 @@ impl ResourceManagerBlueprint {
                         resource_type: ResourceType::NonFungible { id_type },
                     })
                     .unwrap(),
-                    scrypto_encode(&LiquidNonFungibleResource::new_empty()).unwrap(),
+                    scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
+                    scrypto_encode(&LockedFungibleResource::default()).unwrap(),
+                    scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
+                    scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
                 ],
             )?,
         };
@@ -1208,7 +1229,10 @@ impl ResourceManagerBlueprint {
                     VAULT_BLUEPRINT,
                     vec![
                         scrypto_encode(&info).unwrap(),
-                        scrypto_encode(&LiquidFungibleResource::new_empty()).unwrap(),
+                        scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
+                        scrypto_encode(&LockedFungibleResource::default()).unwrap(),
+                        scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
+                        scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
                     ],
                 )?
             }
@@ -1221,7 +1245,10 @@ impl ResourceManagerBlueprint {
                     VAULT_BLUEPRINT,
                     vec![
                         scrypto_encode(&info).unwrap(),
-                        scrypto_encode(&LiquidNonFungibleResource::new_empty()).unwrap(),
+                        scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
+                        scrypto_encode(&LockedFungibleResource::default()).unwrap(),
+                        scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
+                        scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
                     ],
                 )?
             }

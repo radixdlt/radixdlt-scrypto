@@ -9,6 +9,8 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::*;
 
+use super::Proof;
+
 pub const BUCKET_BLUEPRINT: &str = "Bucket";
 
 pub const BUCKET_DROP_EMPTY_IDENT: &str = "Bucket_drop_empty";
@@ -18,6 +20,8 @@ pub struct BucketDropEmptyInput {
     pub bucket: Bucket,
 }
 
+pub type BucketDropEmptyOutput = ();
+
 pub const BUCKET_TAKE_IDENT: &str = "Bucket_take";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
@@ -25,12 +29,16 @@ pub struct BucketTakeInput {
     pub amount: Decimal,
 }
 
+pub type BucketTakeOutput = Bucket;
+
 pub const BUCKET_PUT_IDENT: &str = "Bucket_put";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct BucketPutInput {
     pub bucket: Bucket,
 }
+
+pub type BucketPutOutput = ();
 
 impl Clone for BucketPutInput {
     fn clone(&self) -> Self {
@@ -47,53 +55,71 @@ pub struct BucketTakeNonFungiblesInput {
     pub ids: BTreeSet<NonFungibleLocalId>,
 }
 
+pub type BucketTakeNonFungiblesOutput = Bucket;
+
 pub const BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT: &str = "Bucket_get_non_fungible_local_ids";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct BucketGetNonFungibleLocalIdsInput {}
+
+pub type BucketGetNonFungibleLocalIdsOutput = BTreeSet<NonFungibleLocalId>;
 
 pub const BUCKET_GET_AMOUNT_IDENT: &str = "Bucket_get_amount";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct BucketGetAmountInput {}
 
+pub type BucketGetAmountOutput = Decimal;
+
 pub const BUCKET_GET_RESOURCE_ADDRESS_IDENT: &str = "Bucket_get_resource_address";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct BucketGetResourceAddressInput {}
+
+pub type BucketGetResourceAddressOutput = ResourceAddress;
 
 pub const BUCKET_CREATE_PROOF_IDENT: &str = "Bucket_create_proof";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct BucketCreateProofInput {}
 
+pub type BucketCreateProofOutput = Proof;
+
+pub const BUCKET_LOCK_AMOUNT_IDENT: &str = "Bucket_lock_amount";
+
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct BucketLockAmountInput {
     pub amount: Decimal,
 }
 
-pub const BUCKET_LOCK_AMOUNT_IDENT: &str = "Bucket_lock_amount";
+pub type BucketLockAmountOutput = ();
+
+pub const BUCKET_UNLOCK_AMOUNT_IDENT: &str = "Bucket_unlock_amount";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct BucketUnlockAmountInput {
     pub amount: Decimal,
 }
 
-pub const BUCKET_UNLOCK_AMOUNT_IDENT: &str = "Bucket_unlock_amount";
+pub type BucketUnlockAmountOutput = ();
+
+pub const BUCKET_LOCK_NON_FUNGIBLES_IDENT: &str = "Bucket_lock_non_fungibles";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct BucketLockNonFungiblesInput {
     pub local_ids: BTreeSet<NonFungibleLocalId>,
 }
 
-pub const BUCKET_LOCK_NON_FUNGIBLES_IDENT: &str = "Bucket_lock_non_fungibles";
+pub type BucketLockNonFungiblesOutput = ();
+
+pub const BUCKET_UNLOCK_NON_FUNGIBLES_IDENT: &str = "Bucket_unlock_non_fungibles";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct BucketUnlockNonFungiblesInput {
     pub local_ids: BTreeSet<NonFungibleLocalId>,
 }
 
-pub const BUCKET_UNLOCK_NON_FUNGIBLES_IDENT: &str = "Bucket_unlock_non_fungibles";
+pub type BucketUnlockNonFungiblesOutput = ();
 
 //========
 // Stub

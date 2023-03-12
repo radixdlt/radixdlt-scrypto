@@ -312,6 +312,39 @@ impl Executor for ScryptoExecutor {
             )?;
             api.kernel_drop_lock(handle)?;
 
+            // Load schema
+            let schema = {
+                let handle = api.kernel_lock_substate(
+                    RENodeId::GlobalObject(self.fn_identifier.package_address.into()),
+                    NodeModuleId::SELF,
+                    SubstateOffset::Package(PackageOffset::Info),
+                    LockFlags::read_only(),
+                )?;
+                let package_info: &PackageInfoSubstate = api.kernel_get_substate_ref(handle)?;
+                let schema = package_info
+                    .schema
+                    .blueprints
+                    .get(&self.fn_identifier.blueprint_name)
+                    .ok_or(RuntimeError::InterpreterError(
+                        InterpreterError::ScryptoBlueprintNotFound(
+                            self.fn_identifier.package_address,
+                            self.fn_identifier.blueprint_name.clone(),
+                        ),
+                    ))?
+                    .clone();
+                api.kernel_drop_lock(handle)?;
+                schema
+            };
+
+            //  Validate input
+            let export_name = validate_input(
+                &schema,
+                &self.fn_identifier.ident,
+                self.receiver.is_some(),
+                &args,
+            )?;
+
+            // Interpret
             let code_type = {
                 let handle = api.kernel_lock_substate(
                     RENodeId::GlobalObject(self.fn_identifier.package_address.into()),
@@ -324,7 +357,6 @@ impl Executor for ScryptoExecutor {
                 api.kernel_drop_lock(handle)?;
                 code_type
             };
-
             let output = match code_type {
                 PackageCodeTypeSubstate::Native => {
                     let handle = api.kernel_lock_substate(
@@ -337,11 +369,6 @@ impl Executor for ScryptoExecutor {
                     let native_package_code_id = code.code[0];
                     api.kernel_drop_lock(handle)?;
 
-                    // TODO: Clean this up
-                    // Do we need to check against the abi? Probably not since we should be able to verify this
-                    // in the native package itself.
-                    let export_name = self.fn_identifier.ident.to_string();
-
                     NativeVm::invoke_native_package(
                         native_package_code_id,
                         self.receiver,
@@ -349,40 +376,10 @@ impl Executor for ScryptoExecutor {
                         args,
                         api,
                     )?
+                    .into()
                 }
                 PackageCodeTypeSubstate::Wasm => {
-                    let schema = {
-                        let handle = api.kernel_lock_substate(
-                            RENodeId::GlobalObject(self.fn_identifier.package_address.into()),
-                            NodeModuleId::SELF,
-                            SubstateOffset::Package(PackageOffset::Info),
-                            LockFlags::read_only(),
-                        )?;
-                        let package_info: &PackageInfoSubstate =
-                            api.kernel_get_substate_ref(handle)?;
-                        let schema = package_info
-                            .schema
-                            .blueprints
-                            .get(&self.fn_identifier.blueprint_name)
-                            .ok_or(RuntimeError::InterpreterError(
-                                InterpreterError::ScryptoBlueprintNotFound(
-                                    self.fn_identifier.package_address,
-                                    self.fn_identifier.blueprint_name.clone(),
-                                ),
-                            ))?
-                            .clone();
-                        api.kernel_drop_lock(handle)?;
-                        schema
-                    };
-
-                    let export_name = validate_input(
-                        &schema,
-                        &self.fn_identifier.ident,
-                        self.receiver.is_some(),
-                        &args,
-                    )?;
-
-                    let mut instance = {
+                    let mut wasm_instance = {
                         let handle = api.kernel_lock_substate(
                             RENodeId::GlobalObject(self.fn_identifier.package_address.into()),
                             NodeModuleId::SELF,
@@ -418,16 +415,17 @@ impl Executor for ScryptoExecutor {
                                 .expect("Failed to allocate buffer"),
                         );
 
-                        instance.invoke_export(&export_name, input, &mut runtime)?
+                        wasm_instance.invoke_export(&export_name, input, &mut runtime)?
                     };
 
-                    api.update_wasm_memory_usage(instance.consumed_memory()?)?;
+                    api.update_wasm_memory_usage(wasm_instance.consumed_memory()?)?;
 
-                    validate_output(&schema, &self.fn_identifier.ident, output)?
+                    output
                 }
             };
 
-            output
+            // Validate output
+            validate_output(&schema, &self.fn_identifier.ident, output)?
         };
 
         let update = CallFrameUpdate {

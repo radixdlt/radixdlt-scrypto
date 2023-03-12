@@ -126,7 +126,7 @@ pub struct AccountLockFeeAndWithdrawInput {
     pub amount: Decimal,
 }
 
-pub type AccountLockFeeAndWithdrawOutput = ();
+pub type AccountLockFeeAndWithdrawOutput = Bucket;
 
 //==================================
 // Account Withdraw By Ids And Lock
@@ -142,7 +142,7 @@ pub struct AccountLockFeeAndWithdrawNonFungiblesInput {
     pub ids: BTreeSet<NonFungibleLocalId>,
 }
 
-pub type AccountLockFeeAndWithdrawNonFungiblesOutput = ();
+pub type AccountLockFeeAndWithdrawNonFungiblesOutput = Bucket;
 
 //======================
 // Account Create Proof

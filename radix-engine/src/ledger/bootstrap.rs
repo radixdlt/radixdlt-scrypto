@@ -1,18 +1,15 @@
-use crate::blueprints::access_controller::{
-    CancelRecoveryProposalEvent, InitiateRecoveryEvent, LockPrimaryRoleEvent, RuleSetUpdateEvent,
-    StopTimedRecoveryEvent, UnlockPrimaryRoleEvent,
-};
+use crate::blueprints::access_controller::*;
 use crate::blueprints::account::AccountNativePackage;
+use crate::blueprints::auth_zone::AuthZoneNativePackage;
 use crate::blueprints::clock::ClockNativePackage;
 use crate::blueprints::epoch_manager::{
     ClaimXrdEvent, EpochChangeEvent, EpochManagerNativePackage, RegisterValidatorEvent,
     RoundChangeEvent, StakeEvent, UnregisterValidatorEvent, UnstakeEvent,
     UpdateAcceptingStakeDelegationStateEvent,
 };
-use crate::blueprints::resource::{
-    BurnResourceEvent, DepositResourceEvent, LockFeeEvent, MintResourceEvent, RecallResourceEvent,
-    VaultCreationEvent, WithdrawResourceEvent,
-};
+use crate::blueprints::identity::IdentityNativePackage;
+use crate::blueprints::resource::*;
+use crate::blueprints::transaction_runtime::TransactionRuntimeNativePackage;
 use crate::kernel::interpreters::ScryptoInterpreter;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::system::node_modules::access_rules::{
@@ -35,12 +32,9 @@ use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLU
 use radix_engine_interface::blueprints::clock::{
     ClockCreateInput, CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT,
 };
-use radix_engine_interface::blueprints::epoch_manager::{
-    ManifestValidatorInit, EPOCH_MANAGER_BLUEPRINT, EPOCH_MANAGER_CREATE_IDENT, VALIDATOR_BLUEPRINT,
-};
+use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
-use radix_engine_interface::schema::PackageSchema;
 use transaction::model::{Instruction, SystemTransaction};
 use transaction::validation::ManifestIdAllocator;
 
@@ -68,10 +62,6 @@ pub fn create_genesis(
     let mut instructions = Vec::new();
     let mut pre_allocated_ids = BTreeSet::new();
 
-    // FIXME: schema - add schema for native packages
-    // Dev tools, mainly resim, use schema to construct call arguments from string.
-    // They should be able to do so for native blueprints.
-
     // Metadata Package
     {
         pre_allocated_ids.insert(RENodeId::GlobalObject(METADATA_PACKAGE.into()));
@@ -83,7 +73,7 @@ pub fn create_genesis(
             args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: METADATA_CODE_ID,
-                schema: PackageSchema::default(),
+                schema: MetadataNativePackage::schema(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
@@ -115,7 +105,7 @@ pub fn create_genesis(
             args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: ROYALTY_CODE_ID,
-                schema: PackageSchema::default(),
+                schema: RoyaltyNativePackage::schema(),
                 dependent_resources: vec![RADIX_TOKEN],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
@@ -139,7 +129,7 @@ pub fn create_genesis(
             args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: ACCESS_RULES_CODE_ID,
-                schema: PackageSchema::default(),
+                schema: AccessRulesNativePackage::schema(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
@@ -176,7 +166,7 @@ pub fn create_genesis(
             args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: RESOURCE_MANAGER_PACKAGE_CODE_ID,
-                schema: PackageSchema::default(),
+                schema: ResourceManagerNativePackage::schema(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
@@ -292,7 +282,7 @@ pub fn create_genesis(
             function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                schema: PackageSchema::default(),
+                schema: IdentityNativePackage::schema(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
                 native_package_code_id: IDENTITY_PACKAGE_CODE_ID,
@@ -316,7 +306,7 @@ pub fn create_genesis(
             function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                schema: PackageSchema::default(),
+                schema: EpochManagerNativePackage::schema(),
                 native_package_code_id: EPOCH_MANAGER_PACKAGE_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRulesConfig::new(),
@@ -385,7 +375,7 @@ pub fn create_genesis(
             function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                schema: PackageSchema::default(),
+                schema: ClockNativePackage::schema(),
                 native_package_code_id: CLOCK_PACKAGE_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRulesConfig::new(),
@@ -433,7 +423,7 @@ pub fn create_genesis(
             function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                schema: PackageSchema::default(),
+                schema: AccessControllerNativePackage::schema(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRulesConfig::new(),
                 native_package_code_id: ACCESS_CONTROLLER_PACKAGE_CODE_ID,
@@ -486,7 +476,7 @@ pub fn create_genesis(
             function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                schema: PackageSchema::default(),
+                schema: TransactionRuntimeNativePackage::schema(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRulesConfig::new(),
                 native_package_code_id: TRANSACTION_RUNTIME_CODE_ID,
@@ -510,7 +500,7 @@ pub fn create_genesis(
             function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                schema: PackageSchema::default(),
+                schema: AuthZoneNativePackage::schema(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRulesConfig::new(),
                 native_package_code_id: AUTH_ZONE_CODE_ID,
@@ -545,7 +535,6 @@ pub fn create_genesis(
         });
     }
 
-    // TODO: Perhaps combine with ecdsa token?
     // EDDSA ED25519 Token
     {
         let metadata: BTreeMap<String, String> = BTreeMap::new();
@@ -567,7 +556,6 @@ pub fn create_genesis(
         });
     }
 
-    // TODO: Perhaps combine with ecdsa token?
     // System Token
     {
         let metadata: BTreeMap<String, String> = BTreeMap::new();
@@ -600,7 +588,7 @@ pub fn create_genesis(
             function_name: PACKAGE_LOADER_PUBLISH_WASM_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishWasmInput {
                 package_address: Some(package_address),
-                code: faucet_code, // TODO: Use blob here instead?
+                code: faucet_code,
                 schema: scrypto_decode(&faucet_abi).unwrap(),
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),

@@ -1,9 +1,9 @@
 use crate::engine::wasm_api::*;
-use radix_engine_interface::api::{types::*, ClientEventApi, ClientLoggerApi, LockFlags};
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::api::{
     ClientActorApi, ClientNodeApi, ClientObjectApi, ClientPackageApi, ClientSubstateApi,
 };
-use radix_engine_interface::blueprints::logger::Level;
+use radix_engine_interface::api::{ClientEventApi, ClientLoggerApi, LockFlags};
 use radix_engine_interface::blueprints::resource::AccessRulesConfig;
 use radix_engine_interface::data::scrypto::model::{Address, PackageAddress};
 use radix_engine_interface::data::scrypto::*;

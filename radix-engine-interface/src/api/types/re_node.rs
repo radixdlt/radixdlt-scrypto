@@ -213,8 +213,8 @@ pub enum NonFungibleStoreOffset {
 pub enum VaultOffset {
     Info,
     LiquidFungible,
-    LiquidNonFungible,
     LockedFungible,
+    LiquidNonFungible,
     LockedNonFungible,
 }
 
@@ -234,8 +234,8 @@ pub enum ValidatorOffset {
 pub enum BucketOffset {
     Info,
     LiquidFungible,
-    LiquidNonFungible,
     LockedFungible,
+    LiquidNonFungible,
     LockedNonFungible,
 }
 

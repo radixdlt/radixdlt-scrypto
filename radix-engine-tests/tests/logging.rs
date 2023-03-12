@@ -1,5 +1,5 @@
 use radix_engine::{transaction::TransactionReceipt, types::*};
-use radix_engine_interface::blueprints::logger::Level;
+use radix_engine_interface::api::types::Level;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 

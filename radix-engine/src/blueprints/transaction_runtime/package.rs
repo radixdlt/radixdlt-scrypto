@@ -7,6 +7,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::transaction_runtime::*;
+use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver};
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub enum TransactionRuntimeError {
@@ -20,7 +21,50 @@ pub struct TransactionRuntimeSubstate {
 }
 
 pub struct TransactionRuntimeNativePackage;
+
 impl TransactionRuntimeNativePackage {
+    pub fn schema() -> PackageSchema {
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+
+        let mut substates = Vec::new();
+        substates.push(aggregator.add_child_type_and_descendents::<TransactionRuntimeSubstate>());
+
+        let mut functions = BTreeMap::new();
+        functions.insert(
+            TRANSACTION_RUNTIME_GET_HASH_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRef),
+                input: aggregator
+                    .add_child_type_and_descendents::<TransactionRuntimeGetHashInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<TransactionRuntimeGetHashOutput>(),
+                export_name: TRANSACTION_RUNTIME_GET_HASH_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            TRANSACTION_RUNTIME_GENERATE_UUID_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator
+                    .add_child_type_and_descendents::<TransactionRuntimeGenerateUuidInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<TransactionRuntimeGenerateUuidInputOutput>(),
+                export_name: TRANSACTION_RUNTIME_GENERATE_UUID_IDENT.to_string(),
+            },
+        );
+
+        let schema = generate_full_schema(aggregator);
+        PackageSchema {
+            blueprints: btreemap!(
+                TRANSACTION_RUNTIME_BLUEPRINT.to_string() => BlueprintSchema {
+                    schema,
+                    substates,
+                    functions
+                }
+            ),
+        }
+    }
+
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<RENodeId>,
@@ -87,7 +131,7 @@ impl TransactionRuntimeNativePackage {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let _input: TransactionRuntimeGenerateUuid = input.as_typed().map_err(|e| {
+        let _input: TransactionRuntimeGenerateUuidInput = input.as_typed().map_err(|e| {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
 

@@ -26,7 +26,7 @@ fn named_type_kind(
     name: &'static str,
     custom_type_kind: ScryptoCustomTypeKind,
 ) -> TypeData<ScryptoCustomTypeKind, LocalTypeIndex> {
-    TypeData::named_no_child_names(name, TypeKind::Custom(custom_type_kind))
+    TypeData::no_child_names(TypeKind::Custom(custom_type_kind), name)
 }
 
 create_well_known_lookup!(

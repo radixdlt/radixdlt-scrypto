@@ -118,9 +118,9 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
                 // Aggregate substates
-                let mut substates = BTreeMap::new();
+                let mut substates = Vec::new();
                 let type_index = aggregator.add_child_type_and_descendents::<#bp_ident>();
-                substates.insert(0, type_index);
+                substates.push(type_index);
 
                 // Aggregate functions
                 let mut functions = BTreeMap::new();
@@ -687,9 +687,9 @@ mod tests {
                         use ::sbor::schema::*;
                         use ::sbor::*;
                         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-                        let mut substates = BTreeMap::new();
+                        let mut substates = Vec::new();
                         let type_index = aggregator.add_child_type_and_descendents::<Test>();
-                        substates.insert(0, type_index);
+                        substates.push(type_index);
                         let mut functions = BTreeMap::new();
                         functions.insert(
                             "x".to_string(),

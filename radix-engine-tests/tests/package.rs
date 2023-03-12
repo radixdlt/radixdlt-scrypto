@@ -4,7 +4,7 @@ use radix_engine::types::*;
 use radix_engine::wasm::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
-use sbor::basic_well_known_types::ANY_ID;
+use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -148,7 +148,7 @@ fn test_basic_package_missing_export() {
                 type_metadata: vec![],
                 type_validations: vec![],
             },
-            substates: btreemap!(),
+            substates: vec![LocalTypeIndex::WellKnown(UNIT_ID)],
             functions: btreemap!(
                 "f".to_string() => FunctionSchema {
                     receiver: Option::None,

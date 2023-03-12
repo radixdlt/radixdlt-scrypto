@@ -1,4 +1,4 @@
-use crate::blueprints::logger::Level;
+use crate::api::types::Level;
 use crate::sbor::rust::string::String;
 
 pub trait ClientLoggerApi<E> {

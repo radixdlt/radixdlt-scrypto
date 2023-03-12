@@ -257,11 +257,13 @@ impl AuthModule {
                 .get(&blueprint_ident)
                 .expect("Blueprint schema not found")
                 .clone();
-            let index = schema
-                .substates
-                .get(&0)
-                .expect("Substate schema [offset: 0] not found")
-                .clone();
+            let index = match schema.substates.get(0) {
+                Some(index) => index.clone(),
+                None => {
+                    return Self::method_authorization_contextless(receiver, module_id, key, api);
+                }
+            };
+
             api.kernel_drop_lock(handle)?;
             (schema, index)
         };

@@ -1,4 +1,3 @@
-use crate::blueprints::resource::*;
 use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::system::node_modules::access_rules::*;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
@@ -7,9 +6,7 @@ use crate::system::type_info::PackageCodeTypeSubstate;
 use crate::types::*;
 use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::package::*;
-use radix_engine_interface::api::types::{
-    AuthZoneStackOffset, NonFungibleStoreOffset, PackageOffset, SubstateOffset,
-};
+use radix_engine_interface::api::types::{AuthZoneStackOffset, PackageOffset, SubstateOffset};
 
 use super::node_modules::event_schema::PackageEventSchemaSubstate;
 
@@ -106,7 +103,7 @@ pub enum RENodeInit {
     Object(BTreeMap<SubstateOffset, RuntimeSubstate>),
     AuthZoneStack(AuthZoneStackSubstate),
     KeyValueStore,
-    NonFungibleStore(NonFungibleStore),
+    NonFungibleStore,
     TransactionRuntime(TransactionRuntimeSubstate),
 }
 
@@ -123,7 +120,7 @@ impl RENodeInit {
             RENodeInit::GlobalObject(object_substates) | RENodeInit::Object(object_substates) => {
                 substates.extend(object_substates);
             }
-            RENodeInit::KeyValueStore => {}
+            RENodeInit::KeyValueStore | RENodeInit::NonFungibleStore => {}
             RENodeInit::GlobalPackage(package_info, code_type, code) => {
                 substates.insert(
                     SubstateOffset::Package(PackageOffset::Info),
@@ -134,14 +131,6 @@ impl RENodeInit {
                     code_type.into(),
                 );
                 substates.insert(SubstateOffset::Package(PackageOffset::Code), code.into());
-            }
-            RENodeInit::NonFungibleStore(non_fungible_store) => {
-                for (id, non_fungible) in non_fungible_store.loaded_non_fungibles {
-                    substates.insert(
-                        SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id)),
-                        non_fungible.into(),
-                    );
-                }
             }
             RENodeInit::TransactionRuntime(transaction_hash) => {
                 substates.insert(

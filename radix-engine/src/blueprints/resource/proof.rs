@@ -23,7 +23,6 @@ impl LocalRef {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ProofError {
-    InvalidRequestData(DecodeError),
     /// Error produced by a resource container.
     ResourceError(ResourceError),
     /// Can't generate zero-amount or empty non-fungible set proofs.
@@ -67,7 +66,7 @@ impl ProofInfoSubstate {
     }
 }
 
-#[derive(Debug, Clone, ScryptoSbor)]
+#[derive(Debug, Clone, ScryptoSbor, Default)]
 pub struct FungibleProof {
     pub total_locked: Decimal,
     /// The supporting containers.
@@ -128,7 +127,7 @@ impl FungibleProof {
     }
 }
 
-#[derive(Debug, Clone, ScryptoSbor)]
+#[derive(Debug, Clone, ScryptoSbor, Default)]
 pub struct NonFungibleProof {
     /// The total locked amount or non-fungible ids.
     pub total_locked: BTreeSet<NonFungibleLocalId>,
@@ -226,6 +225,7 @@ impl ProofBlueprint {
                 vec![
                     scrypto_encode(&proof_info).unwrap(),
                     scrypto_encode(&clone).unwrap(),
+                    scrypto_encode(&NonFungibleProof::default()).unwrap(),
                 ],
             )?;
 
@@ -245,6 +245,7 @@ impl ProofBlueprint {
                 PROOF_BLUEPRINT,
                 vec![
                     scrypto_encode(&proof_info).unwrap(),
+                    scrypto_encode(&FungibleProof::default()).unwrap(),
                     scrypto_encode(&clone).unwrap(),
                 ],
             )?;

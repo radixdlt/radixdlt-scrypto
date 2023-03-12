@@ -44,7 +44,7 @@ pub fn validate_childless_metadata(
 ) -> Result<(), SchemaValidationError> {
     validate_type_name(type_metadata.type_name.as_ref())?;
 
-    if !matches!(type_metadata.children, Children::None) {
+    if !matches!(type_metadata.child_names, None) {
         return Err(SchemaValidationError::TypeMetadataContainedUnexpectedChildNames);
     }
     return Ok(());
@@ -55,36 +55,29 @@ pub fn validate_fields_metadata(
     field_count: usize,
 ) -> Result<(), SchemaValidationError> {
     validate_type_name(type_metadata.type_name.as_ref())?;
-    validate_fields_child_names(&type_metadata.children, field_count)?;
+    if let Some(child_names) = &type_metadata.child_names.as_ref() {
+        validate_fields_child_names(child_names, field_count)?;
+    }
     Ok(())
 }
 
 pub fn validate_fields_child_names(
-    child_names: &Children,
+    child_names: &ChildNames,
     field_count: usize,
 ) -> Result<(), SchemaValidationError> {
     match child_names {
-        Children::None => {
-            if field_count != 0 {
-                return Err(SchemaValidationError::TypeMetadataContainedWrongNumberOfChildren);
+        ChildNames::NamedFields(field_names) => {
+            if field_names.len() != field_count {
+                return Err(
+                    SchemaValidationError::TypeMetadataFieldNameCountDoesNotMatchFieldCount,
+                );
             }
-        }
-        Children::UnnamedFields => {
-            if field_count == 0 {
-                return Err(SchemaValidationError::TypeMetadataContainedWrongNumberOfChildren);
-            }
-        }
-        Children::NamedFields(fields_metadata) => {
-            if field_count == 0 || fields_metadata.len() != field_count {
-                return Err(SchemaValidationError::TypeMetadataContainedWrongNumberOfChildren);
-            }
-            for field_metadata in fields_metadata.iter() {
-                let FieldMetadata { field_name } = field_metadata;
+            for field_name in field_names.iter() {
                 validate_field_name(field_name)?;
             }
         }
-        Children::EnumVariants(_) => {
-            return Err(SchemaValidationError::TypeMetadataForFieldsContainedEnumVariantChildNames)
+        ChildNames::EnumVariants(_) => {
+            return Err(SchemaValidationError::TypeMetadataContainedUnexpectedEnumVariants)
         }
     }
     Ok(())
@@ -96,41 +89,33 @@ pub fn validate_enum_metadata(
 ) -> Result<(), SchemaValidationError> {
     let TypeMetadata {
         type_name,
-        children,
+        child_names,
     } = type_metadata;
     validate_type_name(type_name.as_ref())?;
 
-    match &children {
-        Children::None | Children::UnnamedFields | Children::NamedFields(_) => {
-            return Err(SchemaValidationError::TypeMetadataForEnumIsNotEnumVariantChildNames)
+    match child_names {
+        Some(ChildNames::NamedFields(_)) => {
+            Err(SchemaValidationError::TypeMetadataContainedUnexpectedNamedFields)
         }
-        Children::EnumVariants(variants_metadata) => {
+        Some(ChildNames::EnumVariants(variants_metadata)) => {
             if variants_metadata.len() != variants.len() {
-                return Err(SchemaValidationError::TypeMetadataContainedWrongNumberOfChildren);
+                return Err(SchemaValidationError::TypeMetadataContainedWrongNumberOfVariants);
             }
             for (discriminator, variant_metadata) in variants_metadata.iter() {
                 let Some(child_types) = variants.get(discriminator) else {
                     return Err(SchemaValidationError::TypeMetadataHasMismatchingEnumDiscriminator)
                 };
 
-                let TypeMetadata {
-                    type_name,
-                    children,
-                } = variant_metadata;
-                validate_enum_variant_name(type_name.as_ref())?;
-                validate_fields_child_names(children, child_types.len())?;
+                validate_fields_metadata(variant_metadata, child_types.len())?;
             }
+            Ok(())
         }
+        None => Ok(()),
     }
-    Ok(())
 }
 
 fn validate_type_name(name: &str) -> Result<(), SchemaValidationError> {
     validate_ident("type name", name)
-}
-
-fn validate_enum_variant_name(name: &str) -> Result<(), SchemaValidationError> {
-    validate_ident("enum variant", name)
 }
 
 fn validate_field_name(name: &str) -> Result<(), SchemaValidationError> {

@@ -10,6 +10,7 @@ use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver};
 
 use super::{
     compose_proof_by_amount, compose_proof_by_ids, AuthZoneStackSubstate, ComposeProofError,
@@ -17,7 +18,6 @@ use super::{
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthZoneError {
-    InvalidRequestData(DecodeError),
     EmptyAuthZone,
     AssertAccessRuleFailed,
     ComposeProofError(ComposeProofError),
@@ -26,6 +26,102 @@ pub enum AuthZoneError {
 pub struct AuthZoneNativePackage;
 
 impl AuthZoneNativePackage {
+    pub fn schema() -> PackageSchema {
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+
+        let mut substates = Vec::new();
+        substates.push(aggregator.add_child_type_and_descendents::<AuthZoneStackSubstate>());
+
+        let mut functions = BTreeMap::new();
+        functions.insert(
+            AUTH_ZONE_POP_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator.add_child_type_and_descendents::<AuthZonePopInput>(),
+                output: aggregator.add_child_type_and_descendents::<AuthZonePopOutput>(),
+                export_name: AUTH_ZONE_POP_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            AUTH_ZONE_PUSH_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator.add_child_type_and_descendents::<AuthZonePushInput>(),
+                output: aggregator.add_child_type_and_descendents::<AuthZonePushOutput>(),
+                export_name: AUTH_ZONE_PUSH_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            AUTH_ZONE_CREATE_PROOF_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofInput>(),
+                output: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofOutput>(),
+                export_name: AUTH_ZONE_CREATE_PROOF_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator
+                    .add_child_type_and_descendents::<AuthZoneCreateProofByAmountInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AuthZoneCreateProofByAmountOutput>(),
+                export_name: AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            AUTH_ZONE_CREATE_PROOF_BY_IDS_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofByIdsInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AuthZoneCreateProofByIdsOutput>(),
+                export_name: AUTH_ZONE_CREATE_PROOF_BY_IDS_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            AUTH_ZONE_CLEAR_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator.add_child_type_and_descendents::<AuthZoneClearInput>(),
+                output: aggregator.add_child_type_and_descendents::<AuthZoneClearOutput>(),
+                export_name: AUTH_ZONE_CLEAR_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            AUTH_ZONE_DRAIN_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator.add_child_type_and_descendents::<AuthZoneDrainInput>(),
+                output: aggregator.add_child_type_and_descendents::<AuthZoneDrainOutput>(),
+                export_name: AUTH_ZONE_DRAIN_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator.add_child_type_and_descendents::<AuthZoneAssertAccessRuleInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AuthZoneAssertAccessRuleOutput>(),
+                export_name: AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT.to_string(),
+            },
+        );
+
+        let schema = generate_full_schema(aggregator);
+        PackageSchema {
+            blueprints: btreemap!(
+                AUTH_ZONE_BLUEPRINT.to_string() => BlueprintSchema {
+                    schema,
+                    substates,
+                    functions
+                }
+            ),
+        }
+    }
+
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<RENodeId>,

@@ -6,7 +6,7 @@ use radix_engine_interface::blueprints::epoch_manager::{
 };
 use radix_engine_interface::blueprints::resource::NonFungibleGlobalId;
 use radix_engine_interface::blueprints::transaction_runtime::{
-    TransactionRuntimeGenerateUuid, TransactionRuntimeGetHashInput,
+    TransactionRuntimeGenerateUuidInput, TransactionRuntimeGetHashInput,
     TRANSACTION_RUNTIME_GENERATE_UUID_IDENT, TRANSACTION_RUNTIME_GET_HASH_IDENT,
 };
 use radix_engine_interface::constants::{EPOCH_MANAGER, PACKAGE_TOKEN};
@@ -107,7 +107,7 @@ impl Runtime {
             .call_method(
                 RENodeId::TransactionRuntime,
                 TRANSACTION_RUNTIME_GENERATE_UUID_IDENT,
-                scrypto_encode(&TransactionRuntimeGenerateUuid {}).unwrap(),
+                scrypto_encode(&TransactionRuntimeGenerateUuidInput {}).unwrap(),
             )
             .unwrap();
         scrypto_decode(&output).unwrap()

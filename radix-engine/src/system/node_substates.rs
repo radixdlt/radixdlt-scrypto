@@ -4,7 +4,7 @@ use super::node_modules::event_schema::PackageEventSchemaSubstate;
 use super::type_info::PackageCodeTypeSubstate;
 use crate::blueprints::access_controller::AccessControllerSubstate;
 use crate::blueprints::account::AccountSubstate;
-use crate::blueprints::clock::CurrentTimeRoundedToMinutesSubstate;
+use crate::blueprints::clock::ClockSubstate;
 use crate::blueprints::epoch_manager::EpochManagerSubstate;
 use crate::blueprints::epoch_manager::ValidatorSetSubstate;
 use crate::blueprints::epoch_manager::ValidatorSubstate;
@@ -36,7 +36,7 @@ pub enum PersistedSubstate {
     EpochManager(EpochManagerSubstate),
     ValidatorSet(ValidatorSetSubstate),
     Validator(ValidatorSubstate),
-    CurrentTimeRoundedToMinutes(CurrentTimeRoundedToMinutesSubstate),
+    CurrentTimeRoundedToMinutes(ClockSubstate),
     ResourceManager(ResourceManagerSubstate),
     ComponentState(ComponentStateSubstate),
     PackageInfo(PackageInfoSubstate),
@@ -249,7 +249,7 @@ pub enum RuntimeSubstate {
     EpochManager(EpochManagerSubstate),
     ValidatorSet(ValidatorSetSubstate),
     Validator(ValidatorSubstate),
-    CurrentTimeRoundedToMinutes(CurrentTimeRoundedToMinutesSubstate),
+    CurrentTimeRoundedToMinutes(ClockSubstate),
     ResourceManager(ResourceManagerSubstate),
     ComponentState(ComponentStateSubstate),
     PackageCode(PackageCodeSubstate),
@@ -704,7 +704,7 @@ impl Into<RuntimeSubstate> for ValidatorSubstate {
     }
 }
 
-impl Into<RuntimeSubstate> for CurrentTimeRoundedToMinutesSubstate {
+impl Into<RuntimeSubstate> for ClockSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::CurrentTimeRoundedToMinutes(self)
     }
@@ -1093,7 +1093,7 @@ pub enum SubstateRef<'a> {
     EpochManager(&'a EpochManagerSubstate),
     ValidatorSet(&'a ValidatorSetSubstate),
     Validator(&'a ValidatorSubstate),
-    CurrentTimeRoundedToMinutes(&'a CurrentTimeRoundedToMinutesSubstate),
+    CurrentTimeRoundedToMinutes(&'a ClockSubstate),
     MethodAccessRules(&'a MethodAccessRulesSubstate),
     PackageAccessRules(&'a FunctionAccessRulesSubstate),
     TransactionRuntime(&'a TransactionRuntimeSubstate),
@@ -1349,7 +1349,7 @@ impl<'a> From<SubstateRef<'a>> for &'a TransactionRuntimeSubstate {
     }
 }
 
-impl<'a> From<SubstateRef<'a>> for &'a CurrentTimeRoundedToMinutesSubstate {
+impl<'a> From<SubstateRef<'a>> for &'a ClockSubstate {
     fn from(value: SubstateRef<'a>) -> Self {
         match value {
             SubstateRef::CurrentTimeRoundedToMinutes(value) => value,
@@ -1504,7 +1504,9 @@ impl<'a> SubstateRef<'a> {
             }
             SubstateRef::PackageRoyaltyAccumulator(substate) => {
                 let mut owned_nodes = Vec::new();
-                owned_nodes.push(RENodeId::Object(substate.royalty.vault_id()));
+                if let Some(vault) = substate.royalty_vault {
+                    owned_nodes.push(RENodeId::Object(vault.vault_id()));
+                }
                 (HashSet::new(), owned_nodes)
             }
             SubstateRef::ComponentState(substate) => {
@@ -1515,7 +1517,7 @@ impl<'a> SubstateRef<'a> {
             }
             SubstateRef::ComponentRoyaltyAccumulator(substate) => {
                 let mut owned_nodes = Vec::new();
-                owned_nodes.push(RENodeId::Object(substate.royalty.vault_id()));
+                owned_nodes.push(RENodeId::Object(substate.royalty_vault.vault_id()));
                 (HashSet::new(), owned_nodes)
             }
             SubstateRef::KeyValueStoreEntry(substate) => {
@@ -1579,7 +1581,7 @@ pub enum SubstateRefMut<'a> {
     EpochManager(&'a mut EpochManagerSubstate),
     ValidatorSet(&'a mut ValidatorSetSubstate),
     Validator(&'a mut ValidatorSubstate),
-    CurrentTimeRoundedToMinutes(&'a mut CurrentTimeRoundedToMinutesSubstate),
+    CurrentTimeRoundedToMinutes(&'a mut ClockSubstate),
     MethodAccessRules(&'a mut MethodAccessRulesSubstate),
     ProofInfo(&'a mut ProofInfoSubstate),
     FungibleProof(&'a mut FungibleProof),
@@ -1710,7 +1712,7 @@ impl<'a> From<SubstateRefMut<'a>> for &'a mut ValidatorSetSubstate {
     }
 }
 
-impl<'a> From<SubstateRefMut<'a>> for &'a mut CurrentTimeRoundedToMinutesSubstate {
+impl<'a> From<SubstateRefMut<'a>> for &'a mut ClockSubstate {
     fn from(value: SubstateRefMut<'a>) -> Self {
         match value {
             SubstateRefMut::CurrentTimeRoundedToMinutes(value) => value,
