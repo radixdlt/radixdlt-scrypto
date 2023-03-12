@@ -1,3 +1,4 @@
+use radix_engine_common::data::scrypto::ScryptoValue;
 use crate::blueprints::resource::*;
 use crate::data::scrypto::model::*;
 use crate::math::*;
@@ -60,7 +61,7 @@ pub struct ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput {
 
 pub type ResourceManagerCreateFungibleWithInitialSupplyAndAddressOutput = (ResourceAddress, Bucket);
 
-pub const RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT: &str = "create_non_fungible";
+pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT: &str = "create_non_fungible";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct ResourceManagerCreateNonFungibleInput {
@@ -72,7 +73,7 @@ pub struct ResourceManagerCreateNonFungibleInput {
 
 pub type ResourceManagerCreateNonFungibleOutput = ResourceAddress;
 
-pub const RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT: &str =
+pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT: &str =
     "create_non_fungible_with_initial_supply";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
@@ -86,7 +87,7 @@ pub struct ResourceManagerCreateNonFungibleWithInitialSupplyInput {
 
 pub type ResourceManagerCreateNonFungibleWithInitialSupplyOutput = (ResourceAddress, Bucket);
 
-pub const RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT: &str =
+pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT: &str =
     "create_non_fungible_with_address";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
@@ -100,7 +101,7 @@ pub struct ResourceManagerCreateNonFungibleWithAddressInput {
 
 pub type ResourceManagerCreateNonFungibleWithAddressOutput = ResourceAddress;
 
-pub const RESOURCE_MANAGER_CREATE_UUID_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT: &str =
+pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT: &str =
     "create_uuid_non_fungible_with_initial_supply";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
@@ -179,7 +180,7 @@ pub struct ResourceManagerGetNonFungibleInput {
     pub id: NonFungibleLocalId,
 }
 
-pub type ResourceManagerGetNonFungibleOutput = [Vec<u8>; 2];
+pub type ResourceManagerGetNonFungibleOutput = ScryptoValue;
 
 pub const RESOURCE_MANAGER_MINT_NON_FUNGIBLE_IDENT: &str = "mint_non_fungible";
 

@@ -416,8 +416,8 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
             } => ScryptoEnv
                 .call_function(
                     RESOURCE_MANAGER_PACKAGE,
-                    RESOURCE_MANAGER_BLUEPRINT,
-                    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT,
+                    NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
                     scrypto_encode(&ResourceManagerCreateNonFungibleInput {
                         id_type,
                         non_fungible_schema: NonFungibleSchema::new(),
@@ -522,8 +522,8 @@ impl<A: ConfiguredAuth>
         ScryptoEnv
             .call_function(
                 RESOURCE_MANAGER_PACKAGE,
-                RESOURCE_MANAGER_BLUEPRINT,
-                RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
+                NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
                     id_type: StringNonFungibleLocalId::id_type(),
                     non_fungible_schema: NonFungibleSchema::new_schema::<V>(),
@@ -572,8 +572,8 @@ impl<A: ConfiguredAuth>
         ScryptoEnv
             .call_function(
                 RESOURCE_MANAGER_PACKAGE,
-                RESOURCE_MANAGER_BLUEPRINT,
-                RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
+                NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
                     id_type: IntegerNonFungibleLocalId::id_type(),
                     non_fungible_schema: NonFungibleSchema::new(),
@@ -622,8 +622,8 @@ impl<A: ConfiguredAuth>
         ScryptoEnv
             .call_function(
                 RESOURCE_MANAGER_PACKAGE,
-                RESOURCE_MANAGER_BLUEPRINT,
-                RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
+                NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
                     id_type: BytesNonFungibleLocalId::id_type(),
                     non_fungible_schema: NonFungibleSchema::new(),
@@ -675,8 +675,8 @@ impl<A: ConfiguredAuth>
         ScryptoEnv
             .call_function(
                 RESOURCE_MANAGER_PACKAGE,
-                RESOURCE_MANAGER_BLUEPRINT,
-                RESOURCE_MANAGER_CREATE_UUID_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
+                NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(
                     &ResourceManagerCreateUuidNonFungibleWithInitialSupplyInput {
                         non_fungible_schema: NonFungibleSchema::new(),

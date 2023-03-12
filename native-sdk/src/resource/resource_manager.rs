@@ -85,8 +85,8 @@ impl ResourceManager {
         let non_fungible_schema = NonFungibleSchema::new();
         let result = api.call_function(
             RESOURCE_MANAGER_PACKAGE,
-            RESOURCE_MANAGER_BLUEPRINT,
-            RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT,
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
             scrypto_encode(&ResourceManagerCreateNonFungibleInput {
                 id_type,
                 non_fungible_schema,

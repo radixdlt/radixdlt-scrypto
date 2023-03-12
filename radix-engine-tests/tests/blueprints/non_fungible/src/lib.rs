@@ -302,8 +302,8 @@ mod non_fungible_test {
             let rtn = ScryptoEnv
                 .call_function(
                     RESOURCE_MANAGER_PACKAGE,
-                    RESOURCE_MANAGER_BLUEPRINT,
-                    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
+                    NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                     scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
                         id_type: NonFungibleIdType::UUID,
                         metadata: BTreeMap::new(),
