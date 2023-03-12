@@ -40,7 +40,7 @@ pub fn build_access_rules(
     resman_access_rules.set_group_and_mutability(
         MethodKey::new(
             NodeModuleId::SELF,
-            NON_FUNGIBLE_MINT_RESOURCE_MANAGER_MINT_IDENT.to_string(),
+            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
         ),
         "mint".to_string(),
         DenyAll,

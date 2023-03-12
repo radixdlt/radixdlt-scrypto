@@ -13,6 +13,38 @@ use radix_engine_interface::schema::FunctionSchema;
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::schema::Receiver;
 
+const FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME: &str = "create_FungibleResourceManager";
+const FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME: &str =
+    "create_with_initial_supply_and_address_FungibleResourceManager";
+const FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_EXPORT_NAME: &str =
+    "create_with_initial_supply_FungibleResourceManager";
+const FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME: &str = "burn_FungibleResourceManager";
+const FUNGIBLE_RESOURCE_MANAGER_MINT_EXPORT_NAME: &str = "mint_FungibleResourceManager";
+const FUNGIBLE_RESOURCE_MANAGER_CREATE_VAULT_EXPORT_NAME: &str =
+    "create_vault_FungibleResourceManager";
+const FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_EXPORT_NAME: &str =
+    "create_bucket_FungibleResourceManager";
+const FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME: &str =
+    "get_resource_type_FungibleResourceManager";
+const FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME: &str =
+    "get_total_supply_FungibleResourceManager";
+
+const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME: &str = "create_NonFungibleResourceManager";
+const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME: &str =
+    "create_with_initial_supply_NonFungibleResourceManager";
+const NON_FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME: &str = "burn_NonFungibleResourceManager";
+const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_EXPORT_NAME: &str = "mint_NonFungibleResourceManager";
+const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_EXPORT_NAME: &str =
+    "mint_uuid_NonFungibleResourceManager";
+const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_VAULT_EXPORT_NAME: &str =
+    "create_vault_NonFungibleResourceManager";
+const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_EXPORT_NAME: &str =
+    "create_bucket_NonFungibleResourceManager";
+const NON_FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME: &str =
+    "get_resource_type_NonFungibleResourceManager";
+const NON_FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME: &str =
+    "get_total_supply_NonFungibleResourceManager";
+
 pub struct ResourceManagerNativePackage;
 
 impl ResourceManagerNativePackage {
@@ -34,7 +66,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<FungibleResourceManagerCreateInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<FungibleResourceManagerCreateOutput>(),
-                    export_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
+                    export_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -45,7 +77,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<FungibleResourceManagerCreateWithInitialSupplyInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<FungibleResourceManagerCreateWithInitialSupplyOutput>(),
-                    export_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string(),
+                    export_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -56,7 +88,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<FungibleResourceManagerCreateWithInitialSupplyAndAddressInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<FungibleResourceManagerCreateWithInitialSupplyAndAddressOutput>(),
-                    export_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT.to_string(),
+                    export_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -68,7 +100,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<FungibleResourceManagerMintInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<FungibleResourceManagerMintOutput>(),
-                    export_name: FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
+                    export_name: FUNGIBLE_RESOURCE_MANAGER_MINT_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -153,7 +185,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleResourceManagerCreateInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerCreateOutput>(),
-                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
+                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -175,7 +207,7 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<NonFungibleResourceManagerCreateWithInitialSupplyInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerCreateWithInitialSupplyOutput>(),
-                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string(),
+                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -191,14 +223,14 @@ impl ResourceManagerNativePackage {
             );
 
             functions.insert(
-                NON_FUNGIBLE_MINT_RESOURCE_MANAGER_MINT_IDENT.to_string(),
+                NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRefMut),
                     input: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerMintInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerMintOutput>(),
-                    export_name: NON_FUNGIBLE_MINT_RESOURCE_MANAGER_MINT_IDENT.to_string(),
+                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -247,7 +279,7 @@ impl ResourceManagerNativePackage {
                     output: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerMintUuidOutput>(
                         ),
-                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string(),
+                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -808,7 +840,7 @@ impl ResourceManagerNativePackage {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         match export_name {
-            FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT => {
+            FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
@@ -827,7 +859,7 @@ impl ResourceManagerNativePackage {
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT => {
+            FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
@@ -848,7 +880,7 @@ impl ResourceManagerNativePackage {
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT => {
+            FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
@@ -870,7 +902,7 @@ impl ResourceManagerNativePackage {
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT => {
+            FUNGIBLE_RESOURCE_MANAGER_MINT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
@@ -945,7 +977,7 @@ impl ResourceManagerNativePackage {
                 let rtn = FungibleResourceManagerBlueprint::get_total_supply(receiver, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT => {
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
@@ -988,7 +1020,7 @@ impl ResourceManagerNativePackage {
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT => {
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
@@ -1034,7 +1066,7 @@ impl ResourceManagerNativePackage {
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            NON_FUNGIBLE_MINT_RESOURCE_MANAGER_MINT_IDENT => {
+            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
@@ -1050,7 +1082,7 @@ impl ResourceManagerNativePackage {
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT => {
+            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
@@ -1166,9 +1198,10 @@ impl ResourceManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                let input: NonFungibleResourceManagerGetNonFungibleInput = input.as_typed().map_err(|e| {
-                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-                })?;
+                let input: NonFungibleResourceManagerGetNonFungibleInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                    })?;
                 let rtn =
                     NonFungibleResourceManagerBlueprint::get_non_fungible(receiver, input.id, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))

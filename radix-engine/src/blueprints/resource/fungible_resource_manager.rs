@@ -1,7 +1,7 @@
 use crate::blueprints::resource::vault::VaultInfoSubstate;
 use crate::blueprints::resource::*;
-use crate::errors::RuntimeError;
 use crate::errors::ApplicationError;
+use crate::errors::RuntimeError;
 use crate::kernel::heap::DroppedBucket;
 use crate::kernel::heap::DroppedBucketResource;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};

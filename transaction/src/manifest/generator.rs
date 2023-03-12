@@ -20,10 +20,11 @@ use radix_engine_interface::blueprints::identity::{
 use radix_engine_interface::blueprints::resource::{
     AccessRule, FungibleResourceManagerCreateInput,
     FungibleResourceManagerCreateWithInitialSupplyInput, NonFungibleResourceManagerCreateInput,
-    NonFungibleResourceManagerCreateWithInitialSupplyInput, FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+    NonFungibleResourceManagerCreateWithInitialSupplyInput, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+    FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
     FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
-    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
 };
 use radix_engine_interface::blueprints::resource::{
     NonFungibleGlobalId, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,

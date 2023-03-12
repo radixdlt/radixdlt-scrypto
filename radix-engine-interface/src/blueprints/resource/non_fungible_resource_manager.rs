@@ -9,7 +9,7 @@ use scrypto_schema::NonFungibleSchema;
 
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT: &str = "NonFungibleResourceManager";
 
-pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT: &str = "create_non_fungible";
+pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT: &str = "create";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct NonFungibleResourceManagerCreateInput {
@@ -21,9 +21,8 @@ pub struct NonFungibleResourceManagerCreateInput {
 
 pub type NonFungibleResourceManagerCreateOutput = ResourceAddress;
 
-
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT: &str =
-    "create_non_fungible_with_initial_supply";
+    "create_with_initial_supply";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct NonFungibleResourceManagerCreateWithInitialSupplyInput {
@@ -35,7 +34,6 @@ pub struct NonFungibleResourceManagerCreateWithInitialSupplyInput {
 }
 
 pub type NonFungibleResourceManagerCreateWithInitialSupplyOutput = (ResourceAddress, Bucket);
-
 
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT: &str =
     "create_non_fungible_with_address";
@@ -50,7 +48,6 @@ pub struct NonFungibleResourceManagerCreateWithAddressInput {
 }
 
 pub type NonFungibleResourceManagerCreateWithAddressOutput = ResourceAddress;
-
 
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT: &str =
     "create_uuid_non_fungible_with_initial_supply";
@@ -75,7 +72,6 @@ pub struct NonFungibleResourceManagerUpdateDataInput {
 
 pub type NonFungibleResourceManagerUpdateDataOutput = ();
 
-
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT: &str = "non_fungible_exists";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
@@ -84,7 +80,6 @@ pub struct NonFungibleResourceManagerExistsInput {
 }
 
 pub type NonFungibleResourceManagerExistsOutput = bool;
-
 
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT: &str = "get_non_fungible";
 
@@ -95,8 +90,7 @@ pub struct NonFungibleResourceManagerGetNonFungibleInput {
 
 pub type NonFungibleResourceManagerGetNonFungibleOutput = ScryptoValue;
 
-
-pub const NON_FUNGIBLE_MINT_RESOURCE_MANAGER_MINT_IDENT: &str = "mint_non_fungible";
+pub const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT: &str = "mint";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerMintInput {
@@ -105,8 +99,7 @@ pub struct NonFungibleResourceManagerMintInput {
 
 pub type NonFungibleResourceManagerMintOutput = Bucket;
 
-
-pub const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT: &str = "mint_uuid_non_fungible";
+pub const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT: &str = "mint_uuid";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerMintUuidInput {
