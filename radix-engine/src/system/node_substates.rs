@@ -1482,7 +1482,7 @@ impl<'a> SubstateRef<'a> {
                 (references, owned_nodes)
             }
             SubstateRef::MethodAccessRules(substate) => {
-                let (_, _, owns, refs) = IndexedScryptoValue::from_typed(&substate).unpack();
+                let (_, owns, refs) = IndexedScryptoValue::from_typed(&substate).unpack();
                 (refs, owns)
             }
             SubstateRef::AccessController(substate) => {
@@ -1496,7 +1496,7 @@ impl<'a> SubstateRef<'a> {
                 (HashSet::new(), owned_nodes)
             }
             SubstateRef::ComponentState(substate) => {
-                let (_, _, owns, refs) = IndexedScryptoValue::from_slice(&substate.raw)
+                let (_, owns, refs) = IndexedScryptoValue::from_slice(&substate.raw)
                     .unwrap()
                     .unpack();
                 (refs, owns)
@@ -1508,8 +1508,8 @@ impl<'a> SubstateRef<'a> {
             }
             SubstateRef::KeyValueStoreEntry(substate) => {
                 if let Some(substate) = substate {
-                    let (_, _, own, refs) =
-                        IndexedScryptoValue::from_value(substate.clone()).unpack();
+                    let (_, own, refs) =
+                        IndexedScryptoValue::from_scrypto_value(substate.clone()).unpack();
                     (refs, own)
                 } else {
                     (HashSet::new(), Vec::new())

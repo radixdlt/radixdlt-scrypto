@@ -1,11 +1,12 @@
 use super::actor::{Actor, ExecutionMode};
 use super::call_frame::{CallFrame, RENodeVisibilityOrigin};
+use super::executor::{ExecutableInvocation, Executor, ResolvedInvocation};
 use super::heap::{Heap, HeapRENode};
 use super::id_allocator::IdAllocator;
 use super::interpreters::ScryptoInterpreter;
 use super::kernel_api::{
-    ExecutableInvocation, Executor, Invokable, KernelApi, KernelInternalApi, KernelModuleApi,
-    KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockInfo,
+    KernelApi, KernelInternalApi, KernelInvokeApi, KernelModuleApi, KernelNodeApi,
+    KernelSubstateApi, KernelWasmApi, LockInfo,
 };
 use super::module::KernelModule;
 use super::module_mixer::KernelModuleMixer;
@@ -15,7 +16,6 @@ use crate::blueprints::identity::Identity;
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::*;
-use crate::kernel::kernel_api::TemporaryResolvedInvocation;
 use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
@@ -338,7 +338,7 @@ where
 
     fn run<X: Executor>(
         &mut self,
-        resolved: TemporaryResolvedInvocation<X>,
+        resolved: ResolvedInvocation<X>,
     ) -> Result<X::Output, RuntimeError> {
         let executor = resolved.executor;
         let actor = resolved.resolved_actor;
@@ -439,7 +439,7 @@ where
 
     fn invoke_internal<X: Executor>(
         &mut self,
-        resolved: TemporaryResolvedInvocation<X>,
+        resolved: ResolvedInvocation<X>,
     ) -> Result<X::Output, RuntimeError> {
         let depth = self.current_frame.depth;
         // TODO: Move to higher layer
@@ -1063,7 +1063,7 @@ where
     }
 }
 
-impl<'g, 's, W, N> Invokable<N, RuntimeError> for Kernel<'g, 's, W>
+impl<'g, 's, W, N> KernelInvokeApi<N, RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
     N: ExecutableInvocation,

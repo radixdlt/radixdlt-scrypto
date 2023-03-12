@@ -9,7 +9,7 @@
 
 # Locking 10 XRD in fees from the account component. 
 CALL_METHOD 
-    ComponentAddress("${account_component_address}") 
+    Address("${account_component_address}") 
     "lock_fee"
     Decimal("10");
 
@@ -57,6 +57,6 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
 # Depositing the entirety of the initial supply of the newly created resource into our account 
 # component.
 CALL_METHOD
-    ComponentAddress("${account_component_address}") 
+    Address("${account_component_address}") 
     "deposit_batch"
     Expression("ENTIRE_WORKTOP");

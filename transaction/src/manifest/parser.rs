@@ -299,10 +299,7 @@ impl Parser {
             | TokenKind::Ok
             | TokenKind::Err
             | TokenKind::Bytes
-            | TokenKind::NonFungibleGlobalId
-            | TokenKind::PackageAddress
-            | TokenKind::ComponentAddress
-            | TokenKind::ResourceAddress => self.parse_alias(),
+            | TokenKind::NonFungibleGlobalId => self.parse_alias(),
 
             // ==============
             // Custom Types
@@ -374,13 +371,6 @@ impl Parser {
             TokenKind::NonFungibleGlobalId => Ok(Value::NonFungibleGlobalId(Box::new(
                 self.parse_values_one()?,
             ))),
-            TokenKind::PackageAddress => Ok(Value::PackageAddress(self.parse_values_one()?.into())),
-            TokenKind::ComponentAddress => {
-                Ok(Value::ComponentAddress(self.parse_values_one()?.into()))
-            }
-            TokenKind::ResourceAddress => {
-                Ok(Value::ResourceAddress(self.parse_values_one()?.into()))
-            }
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }
@@ -477,9 +467,6 @@ impl Parser {
             // Alias
             TokenKind::Bytes => Ok(Type::Bytes),
             TokenKind::NonFungibleGlobalId => Ok(Type::NonFungibleGlobalId),
-            TokenKind::PackageAddress => Ok(Type::PackageAddress),
-            TokenKind::ComponentAddress => Ok(Type::ComponentAddress),
-            TokenKind::ResourceAddress => Ok(Type::ResourceAddress),
 
             // Custom types
             TokenKind::Address => Ok(Type::Address),
@@ -607,7 +594,7 @@ mod tests {
             })
         );
         parse_value_error!(
-            r#"PackageAddress("abc", "def")"#,
+            r#"Address("abc", "def")"#,
             ParserError::InvalidNumberOfValues {
                 actual: 2,
                 expected: 1

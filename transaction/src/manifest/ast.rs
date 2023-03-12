@@ -334,9 +334,6 @@ pub enum Value {
     Err(Box<Value>),
     Bytes(Box<Value>),
     NonFungibleGlobalId(Box<Value>),
-    PackageAddress(Box<Value>),
-    ComponentAddress(Box<Value>),
-    ResourceAddress(Box<Value>),
 
     // ==============
     // Custom Types
@@ -383,13 +380,6 @@ impl Value {
             Value::Err(_) => ManifestValueKind::Enum,
             Value::Bytes(_) => ManifestValueKind::Array,
             Value::NonFungibleGlobalId(_) => ManifestValueKind::Tuple,
-            Value::PackageAddress(_) => ManifestValueKind::Custom(ManifestCustomValueKind::Address),
-            Value::ComponentAddress(_) => {
-                ManifestValueKind::Custom(ManifestCustomValueKind::Address)
-            }
-            Value::ResourceAddress(_) => {
-                ManifestValueKind::Custom(ManifestCustomValueKind::Address)
-            }
 
             // ==============
             // Custom Types

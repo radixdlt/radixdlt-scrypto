@@ -177,17 +177,22 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
         start_offset: usize,
         container_header: ContainerHeader<T>,
     ) -> LocatedTraversalEvent<'t, 'de, T> {
-        let child_depth = self.child_value_depth_for_next_value();
-        if container_header.get_child_count() > 0 && child_depth > self.max_depth {
-            // We're already at the max depth, we can't add any more containers to the stack
-            return self.map_error(start_offset, DecodeError::MaxDepthExceeded(self.max_depth));
-        }
+        let child_count = container_header.get_child_count();
+
         self.container_stack.push(ContainerState {
             container_header,
             container_start_offset: start_offset,
-            container_child_count: container_header.get_child_count(),
+            container_child_count: child_count,
             next_child_index: 0,
         });
+
+        // Check depth: either container stack overflows or children of this container will overflow.
+        if self.container_stack.len() > self.max_depth
+            || self.container_stack.len() == self.max_depth && child_count > 0
+        {
+            return self.map_error(start_offset, DecodeError::MaxDepthExceeded(self.max_depth));
+        }
+
         LocatedTraversalEvent {
             event: TraversalEvent::ContainerStart(container_header),
             location: Location {
@@ -307,11 +312,6 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
                 ancestor_path: &self.container_stack,
             },
         }
-    }
-
-    #[inline]
-    fn child_value_depth_for_next_value(&self) -> usize {
-        self.container_stack.len() + 1
     }
 
     #[inline]
@@ -690,7 +690,7 @@ mod tests {
         expected_end_offset: usize,
     ) {
         let event = traverser.next_event();
-        let sbor_depth = event.location.child_value_depth();
+        let sbor_depth = event.location.ancestor_path.len() + 1;
         let LocatedTraversalEvent {
             event: TraversalEvent::ContainerStart(header),
             location: Location {
@@ -715,7 +715,7 @@ mod tests {
         expected_end_offset: usize,
     ) {
         let event = traverser.next_event();
-        let sbor_depth = event.location.child_value_depth();
+        let sbor_depth = event.location.ancestor_path.len() + 1;
         let LocatedTraversalEvent {
             event: TraversalEvent::ContainerEnd(header),
             location: Location {
@@ -740,7 +740,7 @@ mod tests {
         expected_end_offset: usize,
     ) {
         let event = traverser.next_event();
-        let sbor_depth = event.location.child_value_depth();
+        let sbor_depth = event.location.ancestor_path.len() + 1;
         let LocatedTraversalEvent {
             event: TraversalEvent::TerminalValue(value),
             location: Location {
@@ -765,7 +765,7 @@ mod tests {
         expected_end_offset: usize,
     ) {
         let event = traverser.next_event();
-        let sbor_depth = event.location.child_value_depth();
+        let sbor_depth = event.location.ancestor_path.len() + 1;
         let LocatedTraversalEvent {
             event: TraversalEvent::TerminalValueBatch(value_batch),
             location: Location {

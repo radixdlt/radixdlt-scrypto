@@ -8,8 +8,8 @@ use crate::errors::{KernelError, SystemError};
 use crate::kernel::actor::{Actor, ActorIdentifier};
 use crate::kernel::kernel::Kernel;
 use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::kernel::kernel_api::{Invokable, KernelInternalApi};
-use crate::kernel::kernel_api::{KernelNodeApi, LockInfo};
+use crate::kernel::kernel_api::{KernelInternalApi};
+use crate::kernel::kernel_api::{KernelNodeApi, LockInfo, KernelInvokeApi};
 use crate::kernel::module::KernelModule;
 use crate::kernel::module_mixer::KernelModuleMixer;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
@@ -198,8 +198,7 @@ where
             args,
         };
 
-        self.kernel_invoke(invocation)
-            .map(|v| scrypto_encode(&v).expect("Failed to encode scrypto fn return"))
+        self.kernel_invoke(invocation).map(|v| v.into())
     }
 }
 
@@ -730,8 +729,7 @@ where
             args,
         };
 
-        self.kernel_invoke(invocation)
-            .map(|v| scrypto_encode(&v).expect("Failed to encode scrypto fn return"))
+        self.kernel_invoke(invocation).map(|v| v.into())
     }
 
     fn get_object_type_info(

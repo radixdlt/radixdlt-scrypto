@@ -15,7 +15,7 @@ impl ResourceManagerNativePackage {
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<RENodeId>,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -31,11 +31,9 @@ impl ResourceManagerNativePackage {
                     ));
                 }
 
-                // TODO: Remove decode/encode mess
-                let input: ResourceManagerCreateNonFungibleInput =
-                    scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
-                        RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-                    })?;
+                let input: ResourceManagerCreateNonFungibleInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
 
                 let rtn = ResourceManagerBlueprint::create_non_fungible(
                     input.id_type,
@@ -55,9 +53,9 @@ impl ResourceManagerNativePackage {
                         InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
-                // TODO: Remove decode/encode mess
+
                 let input: ResourceManagerCreateNonFungibleWithAddressInput =
-                    scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                    input.as_typed().map_err(|e| {
                         RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                     })?;
 
@@ -80,9 +78,9 @@ impl ResourceManagerNativePackage {
                         InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
-                // TODO: Remove decode/encode mess
+
                 let input: ResourceManagerCreateNonFungibleWithInitialSupplyInput =
-                    scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                    input.as_typed().map_err(|e| {
                         RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                     })?;
 
@@ -105,9 +103,9 @@ impl ResourceManagerNativePackage {
                         InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
-                // TODO: Remove decode/encode mess
+
                 let input: ResourceManagerCreateUuidNonFungibleWithInitialSupplyInput =
-                    scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
+                    input.as_typed().map_err(|e| {
                         RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                     })?;
 
@@ -388,13 +386,7 @@ impl ResourceManagerNativePackage {
                     ));
                 }
 
-                // TODO: Remove decode/encode mess
-                let input: ProofDropInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-                    .map_err(|e| {
-                        RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-                    })?;
-
-                ProofBlueprint::drop(input.proof, api)
+                ProofBlueprint::drop(input, api)
             }
             PROOF_CLONE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;

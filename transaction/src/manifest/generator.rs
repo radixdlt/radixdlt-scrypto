@@ -722,12 +722,6 @@ fn generate_package_address(
     bech32_decoder: &Bech32Decoder,
 ) -> Result<PackageAddress, GeneratorError> {
     match value {
-        ast::Value::PackageAddress(inner) => match &**inner {
-            ast::Value::String(s) => bech32_decoder
-                .validate_and_decode_package_address(s)
-                .map_err(|_| GeneratorError::InvalidPackageAddress(s.into())),
-            v => invalid_type!(v, ast::Type::String),
-        },
         ast::Value::Address(inner) => match &**inner {
             ast::Value::String(s) => bech32_decoder
                 .validate_and_decode_package_address(s)
@@ -743,12 +737,6 @@ fn generate_component_address(
     bech32_decoder: &Bech32Decoder,
 ) -> Result<ComponentAddress, GeneratorError> {
     match value {
-        ast::Value::ComponentAddress(inner) => match &**inner {
-            ast::Value::String(s) => bech32_decoder
-                .validate_and_decode_component_address(s)
-                .map_err(|_| GeneratorError::InvalidComponentAddress(s.into())),
-            v => invalid_type!(v, ast::Type::String),
-        },
         ast::Value::Address(inner) => match &**inner {
             ast::Value::String(s) => bech32_decoder
                 .validate_and_decode_component_address(s)
@@ -764,12 +752,6 @@ fn generate_resource_address(
     bech32_decoder: &Bech32Decoder,
 ) -> Result<ResourceAddress, GeneratorError> {
     match value {
-        ast::Value::ResourceAddress(inner) => match inner.borrow() {
-            ast::Value::String(s) => bech32_decoder
-                .validate_and_decode_resource_address(s)
-                .map_err(|_| GeneratorError::InvalidResourceAddress(s.into())),
-            v => invalid_type!(v, ast::Type::String),
-        },
         ast::Value::Address(inner) => match inner.borrow() {
             ast::Value::String(s) => bech32_decoder
                 .validate_and_decode_resource_address(s)
@@ -795,30 +777,6 @@ fn generate_address(
                 .or(bech32_decoder
                     .validate_and_decode_resource_address(s)
                     .map(|a| Address::Resource(a)))
-                .map_err(|_| GeneratorError::InvalidAddress(s.into()))
-                .map(from_address),
-            v => return invalid_type!(v, ast::Type::String),
-        },
-        ast::Value::PackageAddress(value) => match value.borrow() {
-            ast::Value::String(s) => bech32_decoder
-                .validate_and_decode_package_address(s)
-                .map(|a| Address::Package(a))
-                .map_err(|_| GeneratorError::InvalidAddress(s.into()))
-                .map(from_address),
-            v => return invalid_type!(v, ast::Type::String),
-        },
-        ast::Value::ComponentAddress(value) => match value.borrow() {
-            ast::Value::String(s) => bech32_decoder
-                .validate_and_decode_component_address(s)
-                .map(|a| Address::Component(a))
-                .map_err(|_| GeneratorError::InvalidAddress(s.into()))
-                .map(from_address),
-            v => return invalid_type!(v, ast::Type::String),
-        },
-        ast::Value::ResourceAddress(value) => match value.borrow() {
-            ast::Value::String(s) => bech32_decoder
-                .validate_and_decode_resource_address(s)
-                .map(|a| Address::Resource(a))
                 .map_err(|_| GeneratorError::InvalidAddress(s.into()))
                 .map(from_address),
             v => return invalid_type!(v, ast::Type::String),
@@ -1201,21 +1159,6 @@ pub fn generate_value(
                 ],
             })
         }
-        ast::Value::PackageAddress(_) => {
-            generate_package_address(value, bech32_decoder).map(|v| Value::Custom {
-                value: ManifestCustomValue::Address(from_address(Address::Package(v))),
-            })
-        }
-        ast::Value::ComponentAddress(_) => {
-            generate_component_address(value, bech32_decoder).map(|v| Value::Custom {
-                value: ManifestCustomValue::Address(from_address(Address::Component(v))),
-            })
-        }
-        ast::Value::ResourceAddress(_) => {
-            generate_resource_address(value, bech32_decoder).map(|v| Value::Custom {
-                value: ManifestCustomValue::Address(from_address(Address::Resource(v))),
-            })
-        }
         // ==============
         // Custom Types
         // ==============
@@ -1450,15 +1393,15 @@ mod tests {
     #[test]
     fn test_failures() {
         generate_value_error!(
-            r#"ComponentAddress(100u32)"#,
+            r#"Address(100u32)"#,
             GeneratorError::InvalidAstValue {
                 expected_type: vec![ast::Type::String],
                 actual: ast::Value::U32(100),
             }
         );
         generate_value_error!(
-            r#"PackageAddress("invalid_package_address")"#,
-            GeneratorError::InvalidPackageAddress("invalid_package_address".into())
+            r#"Address("invalid_package_address")"#,
+            GeneratorError::InvalidAddress("invalid_package_address".into())
         );
         generate_value_error!(
             r#"Decimal("invalid_decimal")"#,
@@ -1481,27 +1424,27 @@ mod tests {
             .unwrap();
 
         generate_instruction_ok!(
-            r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Bucket("xrd_bucket");"#,
+            r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1")  Address("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Bucket("xrd_bucket");"#,
             Instruction::TakeFromWorktopByAmount {
                 amount: Decimal::from(1),
                 resource_address: resource,
             },
         );
         generate_instruction_ok!(
-            r#"TAKE_FROM_WORKTOP  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Bucket("xrd_bucket");"#,
+            r#"TAKE_FROM_WORKTOP  Address("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Bucket("xrd_bucket");"#,
             Instruction::TakeFromWorktop {
                 resource_address: resource
             },
         );
         generate_instruction_ok!(
-            r#"ASSERT_WORKTOP_CONTAINS_BY_AMOUNT  Decimal("1")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak");"#,
+            r#"ASSERT_WORKTOP_CONTAINS_BY_AMOUNT  Decimal("1")  Address("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak");"#,
             Instruction::AssertWorktopContainsByAmount {
                 amount: Decimal::from(1),
                 resource_address: resource,
             },
         );
         generate_instruction_ok!(
-            r#"CALL_FUNCTION  PackageAddress("package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7")  "Airdrop"  "new"  500u32  PreciseDecimal("120");"#,
+            r#"CALL_FUNCTION  Address("package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7")  "Airdrop"  "new"  500u32  PreciseDecimal("120");"#,
             Instruction::CallFunction {
                 package_address: Bech32Decoder::for_simulator()
                     .validate_and_decode_package_address(
@@ -1514,7 +1457,7 @@ mod tests {
             },
         );
         generate_instruction_ok!(
-            r#"CALL_METHOD  ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum")  "refill";"#,
+            r#"CALL_METHOD  Address("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum")  "refill";"#,
             Instruction::CallMethod {
                 component_address: component,
                 method_name: "refill".to_string(),
@@ -1522,7 +1465,7 @@ mod tests {
             },
         );
         generate_instruction_ok!(
-            r#"MINT_FUNGIBLE ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak") Decimal("100");"#,
+            r#"MINT_FUNGIBLE Address("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak") Decimal("100");"#,
             Instruction::MintFungible {
                 resource_address: resource,
                 amount: dec!("100")
@@ -1683,7 +1626,7 @@ mod tests {
             .unwrap();
 
         generate_instruction_ok!(
-            r##"MINT_NON_FUNGIBLE ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak") Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple("Hello World", Decimal("12")));"##,
+            r##"MINT_NON_FUNGIBLE Address("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak") Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple("Hello World", Decimal("12")));"##,
             Instruction::MintNonFungible {
                 resource_address: resource,
                 entries: BTreeMap::from([(
@@ -1705,7 +1648,7 @@ mod tests {
         generate_instruction_ok!(
             r#"
             MINT_UUID_NON_FUNGIBLE
-                ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")
+                Address("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")
                 Array<Tuple>(
                     Tuple("Hello World", Decimal("12"))
                 );

@@ -330,7 +330,7 @@ impl KernelModule for ExecutionTraceModule {
         api: &mut Y,
         callee: &Option<Actor>,
         update: &mut CallFrameUpdate,
-        _args: &ScryptoValue,
+        _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         let current_actor = api.kernel_get_current_actor();
         let resource_summary = ResourceSummary::from_call_frame_update(api, update);

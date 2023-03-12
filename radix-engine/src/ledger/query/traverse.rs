@@ -86,8 +86,8 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                     );
                     if let PersistedSubstate::KeyValueStoreEntry(entry) = substate {
                         if let Some(value) = entry {
-                            let (_, _, own, _) =
-                                IndexedScryptoValue::from_value(value.clone()).unpack();
+                            let (_, own, _) =
+                                IndexedScryptoValue::from_scrypto_value(value.clone()).unpack();
                             for child_node_id in own {
                                 self.traverse_recursive(
                                     Some(&substate_id),

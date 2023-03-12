@@ -1,4 +1,4 @@
 SET_METHOD_ACCESS_RULE
-    ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum")
+    Address("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum")
     Tuple(Enum("NodeModuleId::SELF"), "test")
     Enum("AccessRule::AllowAll");
