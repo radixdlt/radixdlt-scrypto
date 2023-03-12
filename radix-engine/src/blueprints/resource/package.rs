@@ -209,37 +209,37 @@ impl ResourceManagerNativePackage {
 
 
             functions.insert(
-                RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT.to_string(),
+                NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT.to_string(),
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRef),
                     input: aggregator
                         .add_child_type_and_descendents::<ResourceManagerGetNonFungibleInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerGetNonFungibleOutput>(),
-                    export_name: RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT.to_string(),
+                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT.to_string(),
                 },
             );
 
             functions.insert(
-                RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT.to_string(),
+                NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT.to_string(),
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRefMut),
                     input: aggregator
                         .add_child_type_and_descendents::<ResourceManagerUpdateNonFungibleDataInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerUpdateNonFungibleDataOutput>(),
-                    export_name: RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT.to_string(),
+                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT.to_string(),
                 },
             );
             functions.insert(
-                RESOURCE_MANAGER_NON_FUNGIBLE_EXISTS_IDENT.to_string(),
+                NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT.to_string(),
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRefMut),
                     input: aggregator
                         .add_child_type_and_descendents::<ResourceManagerNonFungibleExistsInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerNonFungibleExistsOutput>(),
-                    export_name: RESOURCE_MANAGER_NON_FUNGIBLE_EXISTS_IDENT.to_string(),
+                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT.to_string(),
                 },
             );
 
@@ -1038,21 +1038,29 @@ impl ResourceManagerNativePackage {
                 let rtn = NonFungibleResourceManagerBlueprint::create_vault(receiver, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT => {
+            NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                ResourceManagerBlueprint::update_non_fungible_data(receiver, input, api)
+                let input: ResourceManagerUpdateNonFungibleDataInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = NonFungibleResourceManagerBlueprint::update_non_fungible_data(receiver, input.id, input.data, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            RESOURCE_MANAGER_NON_FUNGIBLE_EXISTS_IDENT => {
+            NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                ResourceManagerBlueprint::non_fungible_exists(receiver, input, api)
+                let input: ResourceManagerNonFungibleExistsInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = NonFungibleResourceManagerBlueprint::non_fungible_exists(receiver, input.id, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -1102,13 +1110,17 @@ impl ResourceManagerNativePackage {
                 let rtn = NonFungibleResourceManagerBlueprint::get_total_supply(receiver, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT => {
+            NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                ResourceManagerBlueprint::get_non_fungible(receiver, input, api)
+                let input: ResourceManagerGetNonFungibleInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = NonFungibleResourceManagerBlueprint::get_non_fungible(receiver, input.id, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VAULT_LOCK_FEE_IDENT => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;

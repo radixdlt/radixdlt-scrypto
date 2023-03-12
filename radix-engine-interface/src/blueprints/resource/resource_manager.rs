@@ -160,7 +160,7 @@ pub struct ResourceManagerCreateBucketInput {}
 
 pub type ResourceManagerCreateBucketOutput = Bucket;
 
-pub const RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT: &str = "update_non_fungible_data";
+pub const NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT: &str = "update_non_fungible_data";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct ResourceManagerUpdateNonFungibleDataInput {
@@ -170,7 +170,7 @@ pub struct ResourceManagerUpdateNonFungibleDataInput {
 
 pub type ResourceManagerUpdateNonFungibleDataOutput = ();
 
-pub const RESOURCE_MANAGER_NON_FUNGIBLE_EXISTS_IDENT: &str = "non_fungible_exists";
+pub const NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT: &str = "non_fungible_exists";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct ResourceManagerNonFungibleExistsInput {
@@ -179,7 +179,7 @@ pub struct ResourceManagerNonFungibleExistsInput {
 
 pub type ResourceManagerNonFungibleExistsOutput = bool;
 
-pub const RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT: &str = "get_non_fungible";
+pub const NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT: &str = "get_non_fungible";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct ResourceManagerGetNonFungibleInput {

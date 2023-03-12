@@ -130,7 +130,7 @@ impl ResourceManager {
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
                     key: MethodKey::new(
                         NodeModuleId::SELF,
-                        RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT.to_string(),
+                        NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT.to_string(),
                     ),
                     rule: AccessRuleEntry::AccessRule(access_rule),
                 })
@@ -196,7 +196,7 @@ impl ResourceManager {
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
                     key: MethodKey::new(
                         NodeModuleId::SELF,
-                        RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT.to_string(),
+                        NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT.to_string(),
                     ),
                     mutability: AccessRule::DenyAll,
                 })
@@ -274,7 +274,7 @@ impl ResourceManager {
         let rtn = env
             .call_method(
                 RENodeId::GlobalObject(self.0.into()),
-                RESOURCE_MANAGER_NON_FUNGIBLE_EXISTS_IDENT,
+                NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT,
                 scrypto_encode(&ResourceManagerNonFungibleExistsInput { id: id.clone() }).unwrap(),
             )
             .unwrap();
@@ -361,7 +361,7 @@ impl ResourceManager {
         let rtn = env
             .call_method(
                 RENodeId::GlobalObject(self.0.into()),
-                RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT,
+                NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT,
                 scrypto_encode(&ResourceManagerGetNonFungibleInput { id: id.clone() }).unwrap(),
             )
             .unwrap();
@@ -381,7 +381,7 @@ impl ResourceManager {
         let _rtn = env
             .call_method(
                 RENodeId::GlobalObject(self.0.into()),
-                RESOURCE_MANAGER_UPDATE_NON_FUNGIBLE_DATA_IDENT,
+                NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT,
                 scrypto_encode(&ResourceManagerUpdateNonFungibleDataInput {
                     id: id.clone(),
                     data: scrypto_encode(&new_data).unwrap(),
