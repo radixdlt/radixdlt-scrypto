@@ -24,7 +24,7 @@ impl TransactionRuntimeNativePackage {
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<RENodeId>,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -57,16 +57,15 @@ impl TransactionRuntimeNativePackage {
 
     pub(crate) fn get_hash<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let _input: TransactionRuntimeGetHashInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let _input: TransactionRuntimeGetHashInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let handle = api.sys_lock_substate(
             receiver,
@@ -82,16 +81,15 @@ impl TransactionRuntimeNativePackage {
 
     pub(crate) fn generate_uuid<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let _input: TransactionRuntimeGenerateUuid =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let _input: TransactionRuntimeGenerateUuid = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let handle = api.sys_lock_substate(
             receiver,

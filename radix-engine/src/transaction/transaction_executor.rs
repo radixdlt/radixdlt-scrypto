@@ -3,7 +3,7 @@ use crate::errors::*;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::interpreters::ScryptoInterpreter;
 use crate::kernel::kernel::Kernel;
-use crate::kernel::kernel_api::Invokable;
+use crate::kernel::kernel_api::KernelInvokeApi;
 use crate::kernel::module_mixer::KernelModuleMixer;
 use crate::kernel::track::{PreExecutionError, Track};
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};

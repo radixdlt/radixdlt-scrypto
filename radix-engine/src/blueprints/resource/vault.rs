@@ -543,7 +543,7 @@ pub struct VaultBlueprint;
 impl VaultBlueprint {
     pub fn take<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -552,10 +552,9 @@ impl VaultBlueprint {
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>,
     {
-        let input: VaultTakeInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: VaultTakeInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         // Check amount
         let info = VaultInfoSubstate::of(receiver, api)?;
@@ -609,7 +608,7 @@ impl VaultBlueprint {
 
     pub fn take_non_fungibles<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -618,10 +617,9 @@ impl VaultBlueprint {
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>,
     {
-        let input: VaultTakeNonFungiblesInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: VaultTakeNonFungiblesInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let info = VaultInfoSubstate::of(receiver, api)?;
 
@@ -653,7 +651,7 @@ impl VaultBlueprint {
 
     pub fn put<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -662,10 +660,9 @@ impl VaultBlueprint {
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>,
     {
-        let input: VaultPutInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: VaultPutInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         // Drop other bucket
         let other_bucket: DroppedBucket = api
@@ -694,7 +691,7 @@ impl VaultBlueprint {
 
     pub fn get_amount<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -703,10 +700,9 @@ impl VaultBlueprint {
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>,
     {
-        let _input: VaultGetAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let _input: VaultGetAmountInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let info = VaultInfoSubstate::of(receiver, api)?;
         let amount = if info.resource_type.is_fungible() {
@@ -722,7 +718,7 @@ impl VaultBlueprint {
 
     pub fn get_resource_address<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -731,10 +727,9 @@ impl VaultBlueprint {
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>,
     {
-        let _input: VaultGetResourceAddressInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let _input: VaultGetResourceAddressInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let info = VaultInfoSubstate::of(receiver, api)?;
 
@@ -743,7 +738,7 @@ impl VaultBlueprint {
 
     pub fn get_non_fungible_local_ids<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -752,10 +747,9 @@ impl VaultBlueprint {
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>,
     {
-        let _input: VaultGetNonFungibleLocalIdsInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let _input: VaultGetNonFungibleLocalIdsInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let info = VaultInfoSubstate::of(receiver, api)?;
         if info.resource_type.is_fungible() {
@@ -773,7 +767,7 @@ impl VaultBlueprint {
 
     pub fn lock_fee<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -782,10 +776,9 @@ impl VaultBlueprint {
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>,
     {
-        let input: VaultLockFeeInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: VaultLockFeeInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         // Check resource address
         let info = VaultInfoSubstate::of(receiver, api)?;
@@ -843,7 +836,7 @@ impl VaultBlueprint {
 
     pub fn recall<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -852,10 +845,9 @@ impl VaultBlueprint {
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>,
     {
-        let input: VaultRecallInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: VaultRecallInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let info = VaultInfoSubstate::of(receiver, api)?;
         if !info.resource_type.check_amount(input.amount) {
@@ -904,7 +896,7 @@ impl VaultBlueprint {
 
     pub fn recall_non_fungibles<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -913,10 +905,9 @@ impl VaultBlueprint {
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>,
     {
-        let input: VaultRecallNonFungiblesInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: VaultRecallNonFungiblesInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let info = VaultInfoSubstate::of(receiver, api)?;
         if info.resource_type.is_fungible() {
@@ -947,7 +938,7 @@ impl VaultBlueprint {
 
     pub fn create_proof<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -956,10 +947,9 @@ impl VaultBlueprint {
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>,
     {
-        let _input: VaultCreateProofInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let _input: VaultCreateProofInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let info = VaultInfoSubstate::of(receiver, api)?;
         let node_id = if info.resource_type.is_fungible() {
@@ -1010,7 +1000,7 @@ impl VaultBlueprint {
 
     pub fn create_proof_by_amount<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -1019,10 +1009,9 @@ impl VaultBlueprint {
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>,
     {
-        let input: VaultCreateProofByAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: VaultCreateProofByAmountInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let info = VaultInfoSubstate::of(receiver, api)?;
         if !info.resource_type.check_amount(input.amount) {
@@ -1071,7 +1060,7 @@ impl VaultBlueprint {
 
     pub fn create_proof_by_ids<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -1080,10 +1069,9 @@ impl VaultBlueprint {
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>,
     {
-        let input: VaultCreateProofByIdsInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: VaultCreateProofByIdsInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let info = VaultInfoSubstate::of(receiver, api)?;
 
@@ -1117,7 +1105,7 @@ impl VaultBlueprint {
 
     pub fn lock_amount<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -1126,10 +1114,9 @@ impl VaultBlueprint {
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>,
     {
-        let input: VaultLockAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: VaultLockAmountInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         FungibleVault::lock_amount(receiver, input.amount, api)?;
 
@@ -1138,7 +1125,7 @@ impl VaultBlueprint {
 
     pub fn lock_non_fungibles<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -1147,10 +1134,9 @@ impl VaultBlueprint {
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>,
     {
-        let input: VaultLockNonFungiblesInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: VaultLockNonFungiblesInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         NonFungibleVault::lock_non_fungibles(receiver, input.local_ids, api)?;
 
@@ -1159,7 +1145,7 @@ impl VaultBlueprint {
 
     pub fn unlock_amount<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -1168,10 +1154,9 @@ impl VaultBlueprint {
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>,
     {
-        let input: VaultUnlockAmountInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: VaultUnlockAmountInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         FungibleVault::unlock_amount(receiver, input.amount, api)?;
 
@@ -1180,7 +1165,7 @@ impl VaultBlueprint {
 
     pub fn unlock_non_fungibles<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -1189,10 +1174,9 @@ impl VaultBlueprint {
             + ClientSubstateApi<RuntimeError>
             + ClientApi<RuntimeError>,
     {
-        let input: VaultUnlockNonFungiblesInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: VaultUnlockNonFungiblesInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         NonFungibleVault::unlock_non_fungibles(receiver, input.local_ids, api)?;
 

@@ -9,7 +9,7 @@
 
 # Locking 10 XRD in fees from the account component. 
 CALL_METHOD 
-    ComponentAddress("${account_component_address}") 
+    Address("${account_component_address}") 
     "lock_fee"
     Decimal("10");
 

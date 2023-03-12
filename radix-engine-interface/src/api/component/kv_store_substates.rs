@@ -3,8 +3,6 @@ use crate::data::scrypto::ScryptoValue;
 use crate::*;
 use sbor::rust::prelude::*;
 
-// TODO: Josh is leaning towards keeping `Entry::Key` as part of the substate key.
-// We will change this implementation if that is agreed.
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub enum KeyValueStoreEntrySubstate {
     Some(ScryptoValue),
@@ -19,8 +17,9 @@ impl KeyValueStoreEntrySubstate {
     pub fn owned_node_ids(&self) -> Vec<RENodeId> {
         match self {
             KeyValueStoreEntrySubstate::Some(v) => {
-                let (_, _, own, _) = IndexedScryptoValue::from_value(v.clone()).unpack();
-                own
+                IndexedScryptoValue::from_scrypto_value(v.clone())
+                    .unpack()
+                    .1
             }
             KeyValueStoreEntrySubstate::None => Vec::new(),
         }
@@ -29,8 +28,9 @@ impl KeyValueStoreEntrySubstate {
     pub fn global_references(&self) -> HashSet<RENodeId> {
         match self {
             KeyValueStoreEntrySubstate::Some(v) => {
-                let (_, _, _, refs) = IndexedScryptoValue::from_value(v.clone()).unpack();
-                refs
+                IndexedScryptoValue::from_scrypto_value(v.clone())
+                    .unpack()
+                    .2
             }
             KeyValueStoreEntrySubstate::None => HashSet::new(),
         }
