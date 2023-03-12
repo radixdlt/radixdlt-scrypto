@@ -9,15 +9,12 @@ use crate::types::*;
 use native_sdk::access_rules::AccessRulesObject;
 use native_sdk::metadata::Metadata;
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{RENodeId, ResourceManagerOffset, SubstateOffset};
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;
-
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -54,17 +51,18 @@ where
         let resource_type = ResourceType::Fungible { divisibility };
         if !resource_type.check_amount(initial_supply) {
             return Err(RuntimeError::ApplicationError(
-                ApplicationError::ResourceManagerError(FungibleResourceManagerError::InvalidAmount(
-                    initial_supply,
-                    divisibility,
-                )),
+                ApplicationError::ResourceManagerError(
+                    FungibleResourceManagerError::InvalidAmount(initial_supply, divisibility),
+                ),
             ));
         }
 
         // TODO: refactor this into mint function
         if initial_supply > dec!("1000000000000000000") {
             return Err(RuntimeError::ApplicationError(
-                ApplicationError::ResourceManagerError(FungibleResourceManagerError::MaxMintAmountExceeded),
+                ApplicationError::ResourceManagerError(
+                    FungibleResourceManagerError::MaxMintAmountExceeded,
+                ),
             ));
         }
         resource_manager.total_supply = initial_supply;
@@ -91,243 +89,46 @@ where
     Ok((resource_manager, bucket))
 }
 
-pub fn build_access_rules(
-    mut access_rules_map: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-) -> (AccessRulesConfig, AccessRulesConfig) {
-    let (mint_access_rule, mint_mutability) = access_rules_map
-        .remove(&Mint)
-        .unwrap_or((DenyAll, rule!(deny_all)));
-    let (burn_access_rule, burn_mutability) = access_rules_map
-        .remove(&Burn)
-        .unwrap_or((DenyAll, rule!(deny_all)));
-    let (update_non_fungible_data_access_rule, update_non_fungible_data_mutability) =
-        access_rules_map
-            .remove(&UpdateNonFungibleData)
-            .unwrap_or((AllowAll, rule!(deny_all)));
-    let (update_metadata_access_rule, update_metadata_mutability) = access_rules_map
-        .remove(&UpdateMetadata)
-        .unwrap_or((DenyAll, rule!(deny_all)));
+fn create_fungible_resource_manager<Y>(
+    global_node_id: RENodeId,
+    divisibility: u8,
+    metadata: BTreeMap<String, String>,
+    access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    api: &mut Y,
+) -> Result<ResourceAddress, RuntimeError>
+where
+    Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+{
+    let resource_address: ResourceAddress = global_node_id.into();
 
-    let mut resman_access_rules = AccessRulesConfig::new();
-    resman_access_rules.set_access_rule_and_mutability(
-        MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
-        update_metadata_access_rule,
-        update_metadata_mutability,
-    );
-    resman_access_rules.set_access_rule_and_mutability(
-        MethodKey::new(NodeModuleId::Metadata, METADATA_GET_IDENT.to_string()),
-        AllowAll,
-        DenyAll,
-    );
-    resman_access_rules.set_group_access_rule_and_mutability(
-        "mint".to_string(),
-        mint_access_rule,
-        mint_mutability,
-    );
-    resman_access_rules.set_group_and_mutability(
-        MethodKey::new(
-            NodeModuleId::SELF,
-            NON_FUNGIBLE_MINT_RESOURCE_MANAGER_MINT_IDENT.to_string(),
-        ),
-        "mint".to_string(),
-        DenyAll,
-    );
-    resman_access_rules.set_group_and_mutability(
-        MethodKey::new(
-            NodeModuleId::SELF,
-            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string(),
-        ),
-        "mint".to_string(),
-        DenyAll,
-    );
-    resman_access_rules.set_group_and_mutability(
-        MethodKey::new(
-            NodeModuleId::SELF,
-            FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
-        ),
-        "mint".to_string(),
-        DenyAll,
-    );
+    let resource_manager_substate = FungibleResourceManagerSubstate {
+        divisibility,
+        resource_address,
+        total_supply: 0.into(),
+    };
 
-    resman_access_rules.set_access_rule_and_mutability(
-        MethodKey::new(NodeModuleId::SELF, RESOURCE_MANAGER_BURN_IDENT.to_string()),
-        burn_access_rule,
-        burn_mutability,
-    );
-    resman_access_rules.set_access_rule_and_mutability(
-        MethodKey::new(
-            NodeModuleId::SELF,
-            NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT.to_string(),
-        ),
-        update_non_fungible_data_access_rule,
-        update_non_fungible_data_mutability,
-    );
-    resman_access_rules.set_access_rule_and_mutability(
-        MethodKey::new(
-            NodeModuleId::SELF,
-            RESOURCE_MANAGER_CREATE_BUCKET_IDENT.to_string(),
-        ),
-        AllowAll,
-        DenyAll,
-    );
-    resman_access_rules.set_access_rule_and_mutability(
-        MethodKey::new(
-            NodeModuleId::SELF,
-            RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT.to_string(),
-        ),
-        AllowAll,
-        DenyAll,
-    );
-    resman_access_rules.set_access_rule_and_mutability(
-        MethodKey::new(
-            NodeModuleId::SELF,
-            RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT.to_string(),
-        ),
-        AllowAll,
-        DenyAll,
-    );
-    resman_access_rules.set_access_rule_and_mutability(
-        MethodKey::new(
-            NodeModuleId::SELF,
-            RESOURCE_MANAGER_CREATE_VAULT_IDENT.to_string(),
-        ),
-        AllowAll,
-        DenyAll,
-    );
-    resman_access_rules.set_access_rule_and_mutability(
-        MethodKey::new(
-            NodeModuleId::SELF,
-            NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT.to_string(),
-        ),
-        AllowAll,
-        DenyAll,
-    );
-    resman_access_rules.set_access_rule_and_mutability(
-        MethodKey::new(
-            NodeModuleId::SELF,
-            NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT.to_string(),
-        ),
-        AllowAll,
-        DenyAll,
-    );
+    let object_id = api.new_object(
+        RESOURCE_MANAGER_BLUEPRINT,
+        vec![scrypto_encode(&resource_manager_substate).unwrap()],
+    )?;
 
-    let (deposit_access_rule, deposit_mutability) = access_rules_map
-        .remove(&ResourceMethodAuthKey::Deposit)
-        .unwrap_or((AllowAll, rule!(deny_all)));
-    let (withdraw_access_rule, withdraw_mutability) = access_rules_map
-        .remove(&ResourceMethodAuthKey::Withdraw)
-        .unwrap_or((AllowAll, rule!(deny_all)));
-    let (recall_access_rule, recall_mutability) = access_rules_map
-        .remove(&ResourceMethodAuthKey::Recall)
-        .unwrap_or((DenyAll, rule!(deny_all)));
+    let (resman_access_rules, vault_access_rules) = build_access_rules(access_rules);
+    let resman_access_rules = AccessRulesObject::sys_new(resman_access_rules, api)?;
+    let vault_access_rules = AccessRulesObject::sys_new(vault_access_rules, api)?;
+    let metadata = Metadata::sys_create_with_data(metadata, api)?;
 
-    let mut vault_access_rules = AccessRulesConfig::new();
-    vault_access_rules.set_group_access_rule_and_mutability(
-        "withdraw".to_string(),
-        withdraw_access_rule,
-        withdraw_mutability,
-    );
-    vault_access_rules.set_group_access_rule_and_mutability(
-        "recall".to_string(),
-        recall_access_rule,
-        recall_mutability,
-    );
-    vault_access_rules.set_group_and_mutability(
-        MethodKey::new(NodeModuleId::SELF, VAULT_TAKE_IDENT.to_string()),
-        "withdraw".to_string(),
-        DenyAll,
-    );
-    vault_access_rules.set_group_and_mutability(
-        MethodKey::new(
-            NodeModuleId::SELF,
-            VAULT_TAKE_NON_FUNGIBLES_IDENT.to_string(),
+    api.globalize_with_address(
+        RENodeId::Object(object_id),
+        btreemap!(
+            NodeModuleId::AccessRules => resman_access_rules.id(),
+            NodeModuleId::AccessRules1 => vault_access_rules.id(),
+            NodeModuleId::Metadata => metadata.id(),
         ),
-        "withdraw".to_string(),
-        DenyAll,
-    );
-    vault_access_rules.set_group_and_mutability(
-        MethodKey::new(NodeModuleId::SELF, VAULT_LOCK_FEE_IDENT.to_string()),
-        "withdraw".to_string(),
-        DenyAll,
-    );
+        resource_address.into(),
+    )?;
 
-    vault_access_rules.set_access_rule_and_mutability(
-        MethodKey::new(NodeModuleId::SELF, VAULT_PUT_IDENT.to_string()),
-        deposit_access_rule,
-        deposit_mutability,
-    );
-    vault_access_rules.set_access_rule_and_mutability(
-        MethodKey::new(NodeModuleId::SELF, VAULT_GET_AMOUNT_IDENT.to_string()),
-        AllowAll,
-        DenyAll,
-    );
-    vault_access_rules.set_access_rule_and_mutability(
-        MethodKey::new(
-            NodeModuleId::SELF,
-            VAULT_GET_RESOURCE_ADDRESS_IDENT.to_string(),
-        ),
-        AllowAll,
-        DenyAll,
-    );
-    vault_access_rules.set_access_rule_and_mutability(
-        MethodKey::new(
-            NodeModuleId::SELF,
-            VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
-        ),
-        AllowAll,
-        DenyAll,
-    );
-    vault_access_rules.set_access_rule_and_mutability(
-        MethodKey::new(NodeModuleId::SELF, VAULT_CREATE_PROOF_IDENT.to_string()),
-        AllowAll,
-        DenyAll,
-    );
-    vault_access_rules.set_access_rule_and_mutability(
-        MethodKey::new(
-            NodeModuleId::SELF,
-            VAULT_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
-        ),
-        AllowAll,
-        DenyAll,
-    );
-    vault_access_rules.set_access_rule_and_mutability(
-        MethodKey::new(
-            NodeModuleId::SELF,
-            VAULT_CREATE_PROOF_BY_IDS_IDENT.to_string(),
-        ),
-        AllowAll,
-        DenyAll,
-    );
-    vault_access_rules.set_access_rule_and_mutability(
-        MethodKey::new(NodeModuleId::SELF, VAULT_LOCK_AMOUNT_IDENT.to_string()),
-        AllowAll,
-        DenyAll,
-    );
-    vault_access_rules.set_access_rule_and_mutability(
-        MethodKey::new(
-            NodeModuleId::SELF,
-            VAULT_LOCK_NON_FUNGIBLES_IDENT.to_string(),
-        ),
-        AllowAll,
-        DenyAll,
-    );
-    vault_access_rules.set_access_rule_and_mutability(
-        MethodKey::new(NodeModuleId::SELF, VAULT_UNLOCK_AMOUNT_IDENT.to_string()),
-        AllowAll,
-        DenyAll,
-    );
-    vault_access_rules.set_access_rule_and_mutability(
-        MethodKey::new(
-            NodeModuleId::SELF,
-            VAULT_UNLOCK_NON_FUNGIBLES_IDENT.to_string(),
-        ),
-        AllowAll,
-        DenyAll,
-    );
-
-    (resman_access_rules, vault_access_rules)
+    Ok(resource_address)
 }
-
 
 pub struct FungibleResourceManagerBlueprint;
 
@@ -447,7 +248,6 @@ impl FungibleResourceManagerBlueprint {
         Ok(IndexedScryptoValue::from_typed(&(resource_address, bucket)))
     }
 
-
     pub(crate) fn mint<Y>(
         receiver: RENodeId,
         input: IndexedScryptoValue,
@@ -475,10 +275,9 @@ impl FungibleResourceManagerBlueprint {
             // check amount
             if !resource_type.check_amount(input.amount) {
                 return Err(RuntimeError::ApplicationError(
-                    ApplicationError::ResourceManagerError(FungibleResourceManagerError::InvalidAmount(
-                        input.amount,
-                        divisibility,
-                    )),
+                    ApplicationError::ResourceManagerError(
+                        FungibleResourceManagerError::InvalidAmount(input.amount, divisibility),
+                    ),
                 ));
             }
 
@@ -691,46 +490,4 @@ impl FungibleResourceManagerBlueprint {
         let total_supply = resource_manager.total_supply;
         Ok(total_supply)
     }
-}
-
-fn create_fungible_resource_manager<Y>(
-    global_node_id: RENodeId,
-    divisibility: u8,
-    metadata: BTreeMap<String, String>,
-    access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    api: &mut Y,
-) -> Result<ResourceAddress, RuntimeError>
-where
-    Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
-{
-    let resource_address: ResourceAddress = global_node_id.into();
-
-    let resource_manager_substate =
-        FungibleResourceManagerSubstate {
-            divisibility,
-            resource_address,
-            total_supply: 0.into(),
-        };
-
-    let object_id = api.new_object(
-        RESOURCE_MANAGER_BLUEPRINT,
-        vec![scrypto_encode(&resource_manager_substate).unwrap()],
-    )?;
-
-    let (resman_access_rules, vault_access_rules) = build_access_rules(access_rules);
-    let resman_access_rules = AccessRulesObject::sys_new(resman_access_rules, api)?;
-    let vault_access_rules = AccessRulesObject::sys_new(vault_access_rules, api)?;
-    let metadata = Metadata::sys_create_with_data(metadata, api)?;
-
-    api.globalize_with_address(
-        RENodeId::Object(object_id),
-        btreemap!(
-            NodeModuleId::AccessRules => resman_access_rules.id(),
-            NodeModuleId::AccessRules1 => vault_access_rules.id(),
-            NodeModuleId::Metadata => metadata.id(),
-        ),
-        resource_address.into(),
-    )?;
-
-    Ok(resource_address)
 }

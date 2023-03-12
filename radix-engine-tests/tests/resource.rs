@@ -100,7 +100,7 @@ fn mint_with_bad_granularity_should_fail() {
     // Assert
     receipt.expect_specific_failure(|e| {
         if let RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(
-                                                  FungibleResourceManagerError::InvalidAmount(amount, granularity),
+            FungibleResourceManagerError::InvalidAmount(amount, granularity),
         )) = e
         {
             amount.eq(&dec!("0.1")) && *granularity == 0

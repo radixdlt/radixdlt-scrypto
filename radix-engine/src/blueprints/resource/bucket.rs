@@ -492,12 +492,9 @@ impl NonFungibleBucket {
 pub struct BucketBlueprint;
 
 impl BucketBlueprint {
-    pub(crate) fn burn<Y>(
-        bucket: Bucket,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-        where
-            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    pub(crate) fn burn<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         if bucket.sys_amount(api)?.is_zero() {
             api.kernel_drop_node(RENodeId::Object(bucket.0))?;

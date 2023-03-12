@@ -499,10 +499,8 @@ impl ResourceManagerNativePackage {
             BUCKET_BURN_IDENT.to_string(),
             FunctionSchema {
                 receiver: None,
-                input: aggregator
-                    .add_child_type_and_descendents::<BucketBurnInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<BucketBurnOutput>(),
+                input: aggregator.add_child_type_and_descendents::<BucketBurnInput>(),
+                output: aggregator.add_child_type_and_descendents::<BucketBurnOutput>(),
                 export_name: BUCKET_BURN_IDENT.to_string(),
             },
         );
