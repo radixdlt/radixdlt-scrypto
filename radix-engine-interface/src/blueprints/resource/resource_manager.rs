@@ -132,6 +132,8 @@ impl Clone for ResourceManagerBurnBucketInput {
 }
 
 pub const RESOURCE_MANAGER_BURN_IDENT: &str = "burn";
+pub const FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME: &str = "burn_FungibleResourceManager";
+pub const NON_FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME: &str = "burn_NonFungibleResourceManager";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct ResourceManagerBurnInput {
@@ -145,10 +147,10 @@ pub const RESOURCE_MANAGER_CREATE_VAULT_IDENT: &str = "create_vault";
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct ResourceManagerCreateVaultInput {}
 
-pub type ResourceManagerCreateVaultOutput = crate::blueprints::resource::Vault;
+pub type ResourceManagerCreateVaultOutput = Vault;
 
 pub const RESOURCE_MANAGER_CREATE_BUCKET_IDENT: &str = "create_bucket";
-
+pub const FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_EXPORT_NAME: &str = "create_bucket_FungibleResourceManager";
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_EXPORT_NAME: &str = "create_bucket_NonFungibleResourceManager";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]

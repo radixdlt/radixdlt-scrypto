@@ -543,7 +543,87 @@ impl NonFungibleResourceManagerBlueprint {
 
         Ok(Bucket(bucket_id))
 
-    }}
+    }
+
+    pub(crate) fn burn<Y>(
+        receiver: RENodeId,
+        bucket: Bucket,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let resman_handle = api.sys_lock_substate(
+            receiver,
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            LockFlags::MUTABLE,
+        )?;
+
+        // FIXME: check if the bucket is locked!!!
+        let dropped_bucket: DroppedBucket = api
+            .kernel_drop_node(RENodeId::Object(bucket.0))?
+            .into();
+
+        // Construct the event and only emit it once all of the operations are done.
+        match dropped_bucket.resource {
+            DroppedBucketResource::Fungible(..) => {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::ResourceManagerError(
+                        ResourceManagerError::MismatchingBucketResource,
+                    ),
+                ));
+            }
+            DroppedBucketResource::NonFungible(resource) => {
+                Runtime::emit_event(
+                    api,
+                    BurnNonFungibleResourceEvent {
+                        ids: resource.ids().clone(),
+                    },
+                )?;
+
+                // Check if resource matches
+                // TODO: Move this check into actor check
+                {
+                    let resource_manager: &mut NonFungibleResourceManagerSubstate =
+                        api.kernel_get_substate_ref_mut(resman_handle)?;
+                    if dropped_bucket.info.resource_address != resource_manager.resource_address {
+                        return Err(RuntimeError::ApplicationError(
+                            ApplicationError::ResourceManagerError(
+                                ResourceManagerError::MismatchingBucketResource,
+                            ),
+                        ));
+                    }
+
+                    // Update total supply
+                    // TODO: there might be better for maintaining total supply, especially for non-fungibles
+                    // Update total supply
+                    resource_manager.total_supply -= resource.amount();
+
+                    // Burn non-fungible
+                    let node_id = RENodeId::KeyValueStore(resource_manager.non_fungible_table);
+
+                    for id in resource.into_ids() {
+                        let non_fungible_handle = api.sys_lock_substate(
+                            node_id,
+                            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                                scrypto_encode(&id).unwrap(),
+                            )),
+                            LockFlags::MUTABLE,
+                        )?;
+
+                        let non_fungible_mut: &mut Option<ScryptoValue> =
+                            api.kernel_get_substate_ref_mut(non_fungible_handle)?;
+                        *non_fungible_mut = Option::None;
+                        api.sys_drop_lock(non_fungible_handle)?;
+                    }
+                }
+            }
+        }
+
+        Ok(())
+
+    }
+}
 
 pub struct ResourceManagerBlueprint;
 
@@ -1124,16 +1204,12 @@ impl ResourceManagerBlueprint {
 
     pub(crate) fn burn<Y>(
         receiver: RENodeId,
-        input: IndexedScryptoValue,
+        bucket: Bucket,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: ResourceManagerBurnInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-
         let resman_handle = api.sys_lock_substate(
             receiver,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
@@ -1142,7 +1218,7 @@ impl ResourceManagerBlueprint {
 
         // FIXME: check if the bucket is locked!!!
         let dropped_bucket: DroppedBucket = api
-            .kernel_drop_node(RENodeId::Object(input.bucket.0))?
+            .kernel_drop_node(RENodeId::Object(bucket.0))?
             .into();
 
         // Construct the event and only emit it once all of the operations are done.
@@ -1175,53 +1251,15 @@ impl ResourceManagerBlueprint {
                 }
             }
             DroppedBucketResource::NonFungible(resource) => {
-                Runtime::emit_event(
-                    api,
-                    BurnNonFungibleResourceEvent {
-                        ids: resource.ids().clone(),
-                    },
-                )?;
-
-                // Check if resource matches
-                // TODO: Move this check into actor check
-                {
-                    let resource_manager: &mut NonFungibleResourceManagerSubstate =
-                        api.kernel_get_substate_ref_mut(resman_handle)?;
-                    if dropped_bucket.info.resource_address != resource_manager.resource_address {
-                        return Err(RuntimeError::ApplicationError(
-                            ApplicationError::ResourceManagerError(
-                                ResourceManagerError::MismatchingBucketResource,
-                            ),
-                        ));
-                    }
-
-                    // Update total supply
-                    // TODO: there might be better for maintaining total supply, especially for non-fungibles
-                    // Update total supply
-                    resource_manager.total_supply -= resource.amount();
-
-                    // Burn non-fungible
-                    let node_id = RENodeId::KeyValueStore(resource_manager.non_fungible_table);
-
-                    for id in resource.into_ids() {
-                        let non_fungible_handle = api.sys_lock_substate(
-                            node_id,
-                            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
-                                scrypto_encode(&id).unwrap(),
-                            )),
-                            LockFlags::MUTABLE,
-                        )?;
-
-                        let non_fungible_mut: &mut Option<ScryptoValue> =
-                            api.kernel_get_substate_ref_mut(non_fungible_handle)?;
-                        *non_fungible_mut = Option::None;
-                        api.sys_drop_lock(non_fungible_handle)?;
-                    }
-                }
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::ResourceManagerError(
+                        ResourceManagerError::MismatchingBucketResource,
+                    ),
+                ));
             }
         }
 
-        Ok(IndexedScryptoValue::from_typed(&()))
+        Ok(())
     }
 
     pub(crate) fn create_bucket<Y>(
