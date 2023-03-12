@@ -225,6 +225,8 @@ pub struct ResourceManagerGetResourceTypeInput {}
 pub type ResourceManagerGetResourceTypeOutput = ResourceType;
 
 pub const RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT: &str = "get_total_supply";
+pub const NON_FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME: &str = "get_total_supply_NonFungibleResourceManager";
+pub const FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME: &str = "get_total_supply_FungibleResourceManager";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct ResourceManagerGetTotalSupplyInput {}

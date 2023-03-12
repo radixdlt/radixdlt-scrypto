@@ -686,6 +686,24 @@ impl NonFungibleResourceManagerBlueprint {
 
         Ok(resource_type)
     }
+
+    pub(crate) fn get_total_supply<Y>(
+        receiver: RENodeId,
+        api: &mut Y,
+    ) -> Result<Decimal, RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let resman_handle = api.sys_lock_substate(
+            receiver,
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            LockFlags::read_only(),
+        )?;
+        let resource_manager: &NonFungibleResourceManagerSubstate =
+            api.kernel_get_substate_ref(resman_handle)?;
+        let total_supply = resource_manager.total_supply;
+        Ok(total_supply)
+    }
 }
 
 pub struct ResourceManagerBlueprint;
@@ -1511,15 +1529,11 @@ impl ResourceManagerBlueprint {
 
     pub(crate) fn get_total_supply<Y>(
         receiver: RENodeId,
-        input: IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<Decimal, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let _input: ResourceManagerGetTotalSupplyInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
         let resman_handle = api.sys_lock_substate(
             receiver,
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
@@ -1528,7 +1542,7 @@ impl ResourceManagerBlueprint {
         let resource_manager: &FungibleResourceManagerSubstate =
             api.kernel_get_substate_ref(resman_handle)?;
         let total_supply = resource_manager.total_supply;
-        Ok(IndexedScryptoValue::from_typed(&total_supply))
+        Ok(total_supply)
     }
 
     pub(crate) fn get_non_fungible<Y>(
