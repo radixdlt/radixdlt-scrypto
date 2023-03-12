@@ -303,7 +303,7 @@ fn build_access_rules(
     resman_access_rules.set_group_and_mutability(
         MethodKey::new(
             NodeModuleId::SELF,
-            RESOURCE_MANAGER_MINT_NON_FUNGIBLE_IDENT.to_string(),
+            NON_FUNGIBLE_MINT_RESOURCE_MANAGER_MINT_IDENT.to_string(),
         ),
         "mint".to_string(),
         DenyAll,
@@ -311,7 +311,7 @@ fn build_access_rules(
     resman_access_rules.set_group_and_mutability(
         MethodKey::new(
             NodeModuleId::SELF,
-            RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE_IDENT.to_string(),
+            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string(),
         ),
         "mint".to_string(),
         DenyAll,
@@ -508,6 +508,361 @@ fn build_access_rules(
 pub struct NonFungibleResourceManagerBlueprint;
 
 impl NonFungibleResourceManagerBlueprint {
+    pub(crate) fn create<Y>(
+        id_type: NonFungibleIdType,
+        non_fungible_schema: NonFungibleSchema,
+        metadata: BTreeMap<String, String>,
+        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+        api: &mut Y,
+    ) -> Result<ResourceAddress, RuntimeError>
+        where
+            Y: KernelNodeApi + ClientApi<RuntimeError>,
+    {
+        let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalResourceManager)?;
+        let resource_address: ResourceAddress = global_node_id.into();
+        Self::create_with_address(
+            id_type,
+            non_fungible_schema,
+            metadata,
+            access_rules,
+            resource_address.to_array_without_entity_id(),
+            api,
+        )
+    }
+
+    pub(crate) fn create_with_address<Y>(
+        id_type: NonFungibleIdType,
+        non_fungible_schema: NonFungibleSchema,
+        metadata: BTreeMap<String, String>,
+        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+        resource_address: [u8; 26], // TODO: Clean this up
+        api: &mut Y,
+    ) -> Result<ResourceAddress, RuntimeError>
+        where
+            Y: ClientApi<RuntimeError>,
+    {
+        let resource_address = ResourceAddress::Normal(resource_address);
+
+        // If address isn't user frame allocated or pre_allocated then
+        // using this node_id will fail on create_node below
+        let (resource_manager_substate, _) = build_non_fungible_resource_manager_substate(
+            resource_address,
+            id_type,
+            0,
+            BTreeSet::new(),
+            non_fungible_schema,
+            api,
+        )?;
+
+        globalize_non_fungible_resource_manager(
+            resource_address,
+            resource_manager_substate,
+            access_rules,
+            metadata,
+            api,
+        )?;
+
+        Ok(resource_address)
+    }
+
+    pub(crate) fn create_with_initial_supply<Y>(
+        id_type: NonFungibleIdType,
+        non_fungible_schema: NonFungibleSchema,
+        metadata: BTreeMap<String, String>,
+        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+        entries: BTreeMap<NonFungibleLocalId, Vec<u8>>,
+        api: &mut Y,
+    ) -> Result<(ResourceAddress, Bucket), RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalResourceManager)?;
+        let resource_address: ResourceAddress = global_node_id.into();
+
+        // TODO: Do this check in a better way (e.g. via type check)
+        if id_type == NonFungibleIdType::UUID {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::ResourceManagerError(
+                    ResourceManagerError::InvalidNonFungibleIdType,
+                ),
+            ));
+        }
+
+        let (resource_manager, nf_store_id) = build_non_fungible_resource_manager_substate(
+            resource_address,
+            id_type,
+            entries.len(),
+            BTreeSet::new(),
+            non_fungible_schema,
+            api,
+        )?;
+
+        let bucket =
+            build_non_fungible_bucket(resource_address, id_type, nf_store_id, entries, api)?;
+
+        globalize_non_fungible_resource_manager(
+            resource_address,
+            resource_manager,
+            access_rules,
+            metadata,
+            api,
+        )?;
+
+        Ok((resource_address, bucket))
+    }
+
+    pub(crate) fn create_uuid_with_initial_supply<Y>(
+        non_fungible_schema: NonFungibleSchema,
+        metadata: BTreeMap<String, String>,
+        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+        entries: Vec<Vec<u8>>,
+        api: &mut Y,
+    ) -> Result<(ResourceAddress, Bucket), RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalResourceManager)?;
+        let resource_address: ResourceAddress = global_node_id.into();
+
+        let mut non_fungible_entries = BTreeMap::new();
+        for entry in entries {
+            let uuid = Runtime::generate_uuid(api)?;
+            let id = NonFungibleLocalId::uuid(uuid).unwrap();
+            non_fungible_entries.insert(id, entry);
+        }
+
+        let (resource_manager, nf_store_id) = build_non_fungible_resource_manager_substate(
+            resource_address,
+            NonFungibleIdType::UUID,
+            non_fungible_entries.len(),
+            BTreeSet::new(),
+            non_fungible_schema,
+            api,
+        )?;
+
+        let bucket = build_non_fungible_bucket(
+            resource_address,
+            NonFungibleIdType::UUID,
+            nf_store_id,
+            non_fungible_entries,
+            api,
+        )?;
+
+        globalize_non_fungible_resource_manager(
+            resource_address,
+            resource_manager,
+            access_rules,
+            metadata,
+            api,
+        )?;
+
+        Ok((resource_address, bucket))
+    }
+
+    pub(crate) fn mint_non_fungible<Y>(
+        receiver: RENodeId,
+        entries: BTreeMap<NonFungibleLocalId, Vec<u8>>,
+        api: &mut Y,
+    ) -> Result<Bucket, RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let resman_handle = api.sys_lock_substate(
+            receiver,
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            LockFlags::MUTABLE,
+        )?;
+
+        let (bucket_id, non_fungibles) = {
+            let resource_manager: &mut NonFungibleResourceManagerSubstate =
+                api.kernel_get_substate_ref_mut(resman_handle)?;
+            let resource_address = resource_manager.resource_address;
+            if resource_manager.id_type == NonFungibleIdType::UUID {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::ResourceManagerError(
+                        ResourceManagerError::InvalidNonFungibleIdType,
+                    ),
+                ));
+            }
+
+            let amount: Decimal = entries.len().into();
+            resource_manager.total_supply += amount;
+            // Allocate non-fungibles
+            let mut ids = BTreeSet::new();
+            let mut non_fungibles = BTreeMap::new();
+            for (id, data) in entries.clone().into_iter() {
+                if id.id_type() != resource_manager.id_type {
+                    return Err(RuntimeError::ApplicationError(
+                        ApplicationError::ResourceManagerError(
+                            ResourceManagerError::NonFungibleIdTypeDoesNotMatch(
+                                id.id_type(),
+                                resource_manager.id_type,
+                            ),
+                        ),
+                    ));
+                }
+
+                //let non_fungible = NonFungible::new(data.0, data.1);
+                let non_fungible: ScryptoValue = scrypto_decode(&data).unwrap();
+                ids.insert(id.clone());
+                non_fungibles.insert(id, non_fungible);
+            }
+
+            let info = BucketInfoSubstate {
+                resource_address,
+                resource_type: ResourceType::NonFungible {
+                    id_type: resource_manager.id_type,
+                },
+            };
+            let bucket_id = api.new_object(
+                BUCKET_BLUEPRINT,
+                vec![
+                    scrypto_encode(&info).unwrap(),
+                    scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
+                    scrypto_encode(&LockedFungibleResource::default()).unwrap(),
+                    scrypto_encode(&LiquidNonFungibleResource::new(ids)).unwrap(),
+                    scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
+                ],
+            )?;
+
+            (bucket_id, non_fungibles)
+        };
+
+        let (nf_store_id, resource_address) = {
+            let resource_manager: &NonFungibleResourceManagerSubstate =
+                api.kernel_get_substate_ref(resman_handle)?;
+            (
+                resource_manager.non_fungible_table,
+                resource_manager.resource_address,
+            )
+        };
+
+        for (id, non_fungible) in non_fungibles {
+            let non_fungible_handle = api.sys_lock_substate(
+                RENodeId::KeyValueStore(nf_store_id),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                    scrypto_encode(&id).unwrap(),
+                )),
+                LockFlags::MUTABLE,
+            )?;
+
+            {
+                let non_fungible_mut: &mut Option<ScryptoValue> =
+                    api.kernel_get_substate_ref_mut(non_fungible_handle)?;
+
+                if let Option::Some(..) = non_fungible_mut {
+                    return Err(RuntimeError::ApplicationError(
+                        ApplicationError::ResourceManagerError(
+                            ResourceManagerError::NonFungibleAlreadyExists(
+                                NonFungibleGlobalId::new(resource_address, id),
+                            ),
+                        ),
+                    ));
+                }
+
+                // FIXME: verify data
+                //let value: ScryptoValue =
+                //scrypto_decode(&scrypto_encode(&non_fungible).unwrap()).unwrap();
+                *non_fungible_mut = Option::Some(non_fungible);
+            }
+
+            api.sys_drop_lock(non_fungible_handle)?;
+        }
+
+        Runtime::emit_event(
+            api,
+            MintNonFungibleResourceEvent {
+                ids: entries.into_iter().map(|(k, _)| k).collect(),
+            },
+        )?;
+
+        Ok(Bucket(bucket_id))
+    }
+
+    pub(crate) fn mint_uuid_non_fungible<Y>(
+        receiver: RENodeId,
+        entries: Vec<Vec<u8>>,
+        api: &mut Y,
+    ) -> Result<Bucket, RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let resman_handle = api.sys_lock_substate(
+            receiver,
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            LockFlags::MUTABLE,
+        )?;
+
+        let (bucket_id, ids) = {
+            let resource_manager: &mut NonFungibleResourceManagerSubstate =
+                api.kernel_get_substate_ref_mut(resman_handle)?;
+            let resource_address = resource_manager.resource_address;
+            let nf_store_id = resource_manager.non_fungible_table;
+            let id_type = resource_manager.id_type;
+
+            if id_type != NonFungibleIdType::UUID {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::ResourceManagerError(
+                        ResourceManagerError::InvalidNonFungibleIdType,
+                    ),
+                ));
+            }
+
+            let amount: Decimal = entries.len().into();
+            resource_manager.total_supply += amount;
+            // Allocate non-fungibles
+            let mut ids = BTreeSet::new();
+            for data in entries {
+                // TODO: Is this enough bits to prevent hash collisions?
+                // TODO: Possibly use an always incrementing timestamp
+                let uuid = Runtime::generate_uuid(api)?;
+                let id = NonFungibleLocalId::uuid(uuid).unwrap();
+                ids.insert(id.clone());
+
+                {
+                    let non_fungible_handle = api.sys_lock_substate(
+                        RENodeId::KeyValueStore(nf_store_id),
+                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                            scrypto_encode(&id).unwrap(),
+                        )),
+                        LockFlags::MUTABLE,
+                    )?;
+                    let non_fungible_mut: &mut Option<ScryptoValue> =
+                        api.kernel_get_substate_ref_mut(non_fungible_handle)?;
+
+                    // FIXME: verify data
+                    //let non_fungible = NonFungible::new(data.0, data.1);
+                    let value: ScryptoValue = scrypto_decode(&data).unwrap();
+                    //scrypto_decode(&scrypto_encode(&non_fungible).unwrap()).unwrap();
+                    *non_fungible_mut = Option::Some(value);
+
+                    api.sys_drop_lock(non_fungible_handle)?;
+                }
+            }
+
+            let info = BucketInfoSubstate {
+                resource_address,
+                resource_type: ResourceType::NonFungible { id_type },
+            };
+            let bucket_id = api.new_object(
+                BUCKET_BLUEPRINT,
+                vec![
+                    scrypto_encode(&info).unwrap(),
+                    scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
+                    scrypto_encode(&LockedFungibleResource::default()).unwrap(),
+                    scrypto_encode(&LiquidNonFungibleResource::new(ids.clone())).unwrap(),
+                    scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
+                ],
+            )?;
+
+            (bucket_id, ids)
+        };
+
+        Runtime::emit_event(api, MintNonFungibleResourceEvent { ids })?;
+
+        Ok(Bucket(bucket_id))
+    }
 
     pub(crate) fn create_bucket<Y>(
         receiver: RENodeId,
@@ -709,156 +1064,6 @@ impl NonFungibleResourceManagerBlueprint {
 pub struct ResourceManagerBlueprint;
 
 impl ResourceManagerBlueprint {
-    pub(crate) fn create_non_fungible<Y>(
-        id_type: NonFungibleIdType,
-        non_fungible_schema: NonFungibleSchema,
-        metadata: BTreeMap<String, String>,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-        api: &mut Y,
-    ) -> Result<ResourceAddress, RuntimeError>
-    where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
-    {
-        let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalResourceManager)?;
-        let resource_address: ResourceAddress = global_node_id.into();
-        Self::create_non_fungible_with_address(
-            id_type,
-            non_fungible_schema,
-            metadata,
-            access_rules,
-            resource_address.to_array_without_entity_id(),
-            api,
-        )
-    }
-
-    pub(crate) fn create_non_fungible_with_address<Y>(
-        id_type: NonFungibleIdType,
-        non_fungible_schema: NonFungibleSchema,
-        metadata: BTreeMap<String, String>,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-        resource_address: [u8; 26], // TODO: Clean this up
-        api: &mut Y,
-    ) -> Result<ResourceAddress, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        let resource_address = ResourceAddress::Normal(resource_address);
-
-        // If address isn't user frame allocated or pre_allocated then
-        // using this node_id will fail on create_node below
-        let (resource_manager_substate, _) = build_non_fungible_resource_manager_substate(
-            resource_address,
-            id_type,
-            0,
-            BTreeSet::new(),
-            non_fungible_schema,
-            api,
-        )?;
-
-        globalize_non_fungible_resource_manager(
-            resource_address,
-            resource_manager_substate,
-            access_rules,
-            metadata,
-            api,
-        )?;
-
-        Ok(resource_address)
-    }
-
-    pub(crate) fn create_non_fungible_with_initial_supply<Y>(
-        id_type: NonFungibleIdType,
-        non_fungible_schema: NonFungibleSchema,
-        metadata: BTreeMap<String, String>,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-        entries: BTreeMap<NonFungibleLocalId, Vec<u8>>,
-        api: &mut Y,
-    ) -> Result<(ResourceAddress, Bucket), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
-    {
-        let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalResourceManager)?;
-        let resource_address: ResourceAddress = global_node_id.into();
-
-        // TODO: Do this check in a better way (e.g. via type check)
-        if id_type == NonFungibleIdType::UUID {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::ResourceManagerError(
-                    ResourceManagerError::InvalidNonFungibleIdType,
-                ),
-            ));
-        }
-
-        let (resource_manager, nf_store_id) = build_non_fungible_resource_manager_substate(
-            resource_address,
-            id_type,
-            entries.len(),
-            BTreeSet::new(),
-            non_fungible_schema,
-            api,
-        )?;
-
-        let bucket =
-            build_non_fungible_bucket(resource_address, id_type, nf_store_id, entries, api)?;
-
-        globalize_non_fungible_resource_manager(
-            resource_address,
-            resource_manager,
-            access_rules,
-            metadata,
-            api,
-        )?;
-
-        Ok((resource_address, bucket))
-    }
-
-    pub(crate) fn create_uuid_non_fungible_with_initial_supply<Y>(
-        non_fungible_schema: NonFungibleSchema,
-        metadata: BTreeMap<String, String>,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-        entries: Vec<Vec<u8>>,
-        api: &mut Y,
-    ) -> Result<(ResourceAddress, Bucket), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
-    {
-        let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalResourceManager)?;
-        let resource_address: ResourceAddress = global_node_id.into();
-
-        let mut non_fungible_entries = BTreeMap::new();
-        for entry in entries {
-            let uuid = Runtime::generate_uuid(api)?;
-            let id = NonFungibleLocalId::uuid(uuid).unwrap();
-            non_fungible_entries.insert(id, entry);
-        }
-
-        let (resource_manager, nf_store_id) = build_non_fungible_resource_manager_substate(
-            resource_address,
-            NonFungibleIdType::UUID,
-            non_fungible_entries.len(),
-            BTreeSet::new(),
-            non_fungible_schema,
-            api,
-        )?;
-
-        let bucket = build_non_fungible_bucket(
-            resource_address,
-            NonFungibleIdType::UUID,
-            nf_store_id,
-            non_fungible_entries,
-            api,
-        )?;
-
-        globalize_non_fungible_resource_manager(
-            resource_address,
-            resource_manager,
-            access_rules,
-            metadata,
-            api,
-        )?;
-
-        Ok((resource_address, bucket))
-    }
 
     pub(crate) fn create_fungible<Y>(
         input: IndexedScryptoValue,
@@ -996,218 +1201,7 @@ impl ResourceManagerBlueprint {
         Ok(IndexedScryptoValue::from_typed(&()))
     }
 
-    pub(crate) fn mint_non_fungible<Y>(
-        receiver: RENodeId,
-        input: IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
-    {
-        let input: ResourceManagerMintNonFungibleInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
 
-        let resman_handle = api.sys_lock_substate(
-            receiver,
-            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
-            LockFlags::MUTABLE,
-        )?;
-
-        let (bucket_id, non_fungibles) = {
-            let resource_manager: &mut NonFungibleResourceManagerSubstate =
-                api.kernel_get_substate_ref_mut(resman_handle)?;
-            let resource_address = resource_manager.resource_address;
-            if resource_manager.id_type == NonFungibleIdType::UUID {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::ResourceManagerError(
-                        ResourceManagerError::InvalidNonFungibleIdType,
-                    ),
-                ));
-            }
-
-            let amount: Decimal = input.entries.len().into();
-            resource_manager.total_supply += amount;
-            // Allocate non-fungibles
-            let mut ids = BTreeSet::new();
-            let mut non_fungibles = BTreeMap::new();
-            for (id, data) in input.entries.clone().into_iter() {
-                if id.id_type() != resource_manager.id_type {
-                    return Err(RuntimeError::ApplicationError(
-                        ApplicationError::ResourceManagerError(
-                            ResourceManagerError::NonFungibleIdTypeDoesNotMatch(
-                                id.id_type(),
-                                resource_manager.id_type,
-                            ),
-                        ),
-                    ));
-                }
-
-                //let non_fungible = NonFungible::new(data.0, data.1);
-                let non_fungible: ScryptoValue = scrypto_decode(&data).unwrap();
-                ids.insert(id.clone());
-                non_fungibles.insert(id, non_fungible);
-            }
-
-            let info = BucketInfoSubstate {
-                resource_address,
-                resource_type: ResourceType::NonFungible {
-                    id_type: resource_manager.id_type,
-                },
-            };
-            let bucket_id = api.new_object(
-                BUCKET_BLUEPRINT,
-                vec![
-                    scrypto_encode(&info).unwrap(),
-                    scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
-                    scrypto_encode(&LockedFungibleResource::default()).unwrap(),
-                    scrypto_encode(&LiquidNonFungibleResource::new(ids)).unwrap(),
-                    scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
-                ],
-            )?;
-
-            (bucket_id, non_fungibles)
-        };
-
-        let (nf_store_id, resource_address) = {
-            let resource_manager: &NonFungibleResourceManagerSubstate =
-                api.kernel_get_substate_ref(resman_handle)?;
-            (
-                resource_manager.non_fungible_table,
-                resource_manager.resource_address,
-            )
-        };
-
-        for (id, non_fungible) in non_fungibles {
-            let non_fungible_handle = api.sys_lock_substate(
-                RENodeId::KeyValueStore(nf_store_id),
-                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
-                    scrypto_encode(&id).unwrap(),
-                )),
-                LockFlags::MUTABLE,
-            )?;
-
-            {
-                let non_fungible_mut: &mut Option<ScryptoValue> =
-                    api.kernel_get_substate_ref_mut(non_fungible_handle)?;
-
-                if let Option::Some(..) = non_fungible_mut {
-                    return Err(RuntimeError::ApplicationError(
-                        ApplicationError::ResourceManagerError(
-                            ResourceManagerError::NonFungibleAlreadyExists(
-                                NonFungibleGlobalId::new(resource_address, id),
-                            ),
-                        ),
-                    ));
-                }
-
-                // FIXME: verify data
-                //let value: ScryptoValue =
-                //scrypto_decode(&scrypto_encode(&non_fungible).unwrap()).unwrap();
-                *non_fungible_mut = Option::Some(non_fungible);
-            }
-
-            api.sys_drop_lock(non_fungible_handle)?;
-        }
-
-        Runtime::emit_event(
-            api,
-            MintNonFungibleResourceEvent {
-                ids: input.entries.into_iter().map(|(k, _)| k).collect(),
-            },
-        )?;
-
-        Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
-    }
-
-    pub(crate) fn mint_uuid_non_fungible<Y>(
-        receiver: RENodeId,
-        input: IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
-    {
-        let input: ResourceManagerMintUuidNonFungibleInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-
-        let resman_handle = api.sys_lock_substate(
-            receiver,
-            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
-            LockFlags::MUTABLE,
-        )?;
-
-        let (bucket_id, ids) = {
-            let resource_manager: &mut NonFungibleResourceManagerSubstate =
-                api.kernel_get_substate_ref_mut(resman_handle)?;
-            let resource_address = resource_manager.resource_address;
-            let nf_store_id = resource_manager.non_fungible_table;
-            let id_type = resource_manager.id_type;
-
-            if id_type != NonFungibleIdType::UUID {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::ResourceManagerError(
-                        ResourceManagerError::InvalidNonFungibleIdType,
-                    ),
-                ));
-            }
-
-            let amount: Decimal = input.entries.len().into();
-            resource_manager.total_supply += amount;
-            // Allocate non-fungibles
-            let mut ids = BTreeSet::new();
-            for data in input.entries {
-                // TODO: Is this enough bits to prevent hash collisions?
-                // TODO: Possibly use an always incrementing timestamp
-                let uuid = Runtime::generate_uuid(api)?;
-                let id = NonFungibleLocalId::uuid(uuid).unwrap();
-                ids.insert(id.clone());
-
-                {
-                    let non_fungible_handle = api.sys_lock_substate(
-                        RENodeId::KeyValueStore(nf_store_id),
-                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
-                            scrypto_encode(&id).unwrap(),
-                        )),
-                        LockFlags::MUTABLE,
-                    )?;
-                    let non_fungible_mut: &mut Option<ScryptoValue> =
-                        api.kernel_get_substate_ref_mut(non_fungible_handle)?;
-
-                    // FIXME: verify data
-                    //let non_fungible = NonFungible::new(data.0, data.1);
-                    let value: ScryptoValue = scrypto_decode(&data).unwrap();
-                    //scrypto_decode(&scrypto_encode(&non_fungible).unwrap()).unwrap();
-                    *non_fungible_mut = Option::Some(value);
-
-                    api.sys_drop_lock(non_fungible_handle)?;
-                }
-            }
-
-            let info = BucketInfoSubstate {
-                resource_address,
-                resource_type: ResourceType::NonFungible { id_type },
-            };
-            let bucket_id = api.new_object(
-                BUCKET_BLUEPRINT,
-                vec![
-                    scrypto_encode(&info).unwrap(),
-                    scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
-                    scrypto_encode(&LockedFungibleResource::default()).unwrap(),
-                    scrypto_encode(&LiquidNonFungibleResource::new(ids.clone())).unwrap(),
-                    scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
-                ],
-            )?;
-
-            (bucket_id, ids)
-        };
-
-        Runtime::emit_event(api, MintNonFungibleResourceEvent { ids })?;
-
-        Ok(IndexedScryptoValue::from_typed(&Bucket(bucket_id)))
-    }
 
     pub(crate) fn mint_fungible<Y>(
         receiver: RENodeId,

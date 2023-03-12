@@ -113,7 +113,7 @@ impl ResourceManager {
 
         let rtn = api.call_method(
             RENodeId::GlobalObject(self.0.into()),
-            RESOURCE_MANAGER_MINT_NON_FUNGIBLE_IDENT,
+            NON_FUNGIBLE_MINT_RESOURCE_MANAGER_MINT_IDENT,
             scrypto_encode(&ResourceManagerMintNonFungibleInput { entries }).unwrap(),
         )?;
 
@@ -135,7 +135,7 @@ impl ResourceManager {
 
         let rtn = api.call_method(
             RENodeId::GlobalObject(self.0.into()),
-            RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE_IDENT,
+            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
             scrypto_encode(&ResourceManagerMintUuidNonFungibleInput { entries }).unwrap(),
         )?;
 

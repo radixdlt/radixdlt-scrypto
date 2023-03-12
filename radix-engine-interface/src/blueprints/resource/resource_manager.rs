@@ -188,7 +188,7 @@ pub struct ResourceManagerGetNonFungibleInput {
 
 pub type ResourceManagerGetNonFungibleOutput = ScryptoValue;
 
-pub const RESOURCE_MANAGER_MINT_NON_FUNGIBLE_IDENT: &str = "mint_non_fungible";
+pub const NON_FUNGIBLE_MINT_RESOURCE_MANAGER_MINT_IDENT: &str = "mint_non_fungible";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct ResourceManagerMintNonFungibleInput {
@@ -197,7 +197,7 @@ pub struct ResourceManagerMintNonFungibleInput {
 
 pub type ResourceManagerMintNonFungibleOutput = Bucket;
 
-pub const RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE_IDENT: &str = "mint_uuid_non_fungible";
+pub const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT: &str = "mint_uuid_non_fungible";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct ResourceManagerMintUuidNonFungibleInput {
