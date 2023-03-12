@@ -45,11 +45,8 @@ impl AccountNativePackage {
     pub fn schema() -> PackageSchema {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-        let mut substates = BTreeMap::new();
-        substates.insert(
-            0,
-            aggregator.add_child_type_and_descendents::<AccountSubstate>(),
-        );
+        let mut substates = Vec::new();
+        substates.push(aggregator.add_child_type_and_descendents::<AccountSubstate>());
 
         let mut functions = BTreeMap::new();
         functions.insert(
@@ -76,8 +73,8 @@ impl AccountNativePackage {
             ACCOUNT_LOCK_FEE_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(Receiver::SelfRef),
-                input: aggregator.add_child_type_and_descendents::<AccountCreateGlobalInput>(),
-                output: aggregator.add_child_type_and_descendents::<AccountCreateGlobalOutput>(),
+                input: aggregator.add_child_type_and_descendents::<AccountLockFeeInput>(),
+                output: aggregator.add_child_type_and_descendents::<AccountLockFeeOutput>(),
                 export_name: ACCOUNT_LOCK_FEE_IDENT.to_string(),
             },
         );
@@ -176,7 +173,8 @@ impl AccountNativePackage {
                 receiver: Some(Receiver::SelfRef),
                 input: aggregator
                     .add_child_type_and_descendents::<AccountCreateProofByAmountInput>(),
-                output: aggregator.add_child_type_and_descendents::<AccountCreateGlobalOutput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccountCreateProofByAmountOutput>(),
                 export_name: ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
             },
         );

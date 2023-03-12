@@ -52,5 +52,9 @@ pub struct PackageRoyaltyConfigSubstate {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct PackageRoyaltyAccumulatorSubstate {
-    pub royalty: Own,
+    /// The vault for collecting package royalties.
+    ///
+    /// It's optional to break circular dependency - creating package royalty vaults
+    /// requires the `resource` package existing in the first place.
+    pub royalty_vault: Option<Own>,
 }

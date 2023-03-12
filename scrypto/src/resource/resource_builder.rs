@@ -676,7 +676,7 @@ impl<A: ConfiguredAuth>
             .call_function(
                 RESOURCE_MANAGER_PACKAGE,
                 RESOURCE_MANAGER_BLUEPRINT,
-                RESOURCE_MANAGER_CREATE_UUID_NON_FUNGIBLE_WITH_INITIAL_SUPPLY,
+                RESOURCE_MANAGER_CREATE_UUID_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(
                     &ResourceManagerCreateUuidNonFungibleWithInitialSupplyInput {
                         non_fungible_schema: NonFungibleSchema::new(),

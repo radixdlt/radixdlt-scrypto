@@ -1,7 +1,6 @@
 #![allow(unused_must_use)]
 use colored::*;
-use radix_engine::blueprints::resource::ResourceManagerSubstate;
-use radix_engine::blueprints::resource::VaultInfoSubstate;
+use radix_engine::blueprints::resource::*;
 use radix_engine::ledger::*;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::types::*;
@@ -356,7 +355,7 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
             );
 
             if let Some(substate) = substate.kv_store_entry() {
-                let (_, _, own, _) = IndexedScryptoValue::from_value(substate.clone()).unpack();
+                let (_, own, _) = IndexedScryptoValue::from_scrypto_value(substate.clone()).unpack();
                 for owned_node in own {
                     match owned_node {
                         RENodeId::Object(vault_id) => {
@@ -396,15 +395,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
 
         // READ resource manager
         let resource_address = vault_info.resource_address;
-        let resource_manager: Option<ResourceManagerSubstate> = substate_store
-            .get_substate(&SubstateId(
-                RENodeId::GlobalObject(resource_address.into()),
-                NodeModuleId::SELF,
-                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
-            ))
-            .map(|s| s.substate)
-            .map(|s| s.to_runtime().into());
-        let resource_manager = resource_manager.ok_or(DisplayError::ResourceManagerNotFound)?;
+
         let name_metadata: Option<Option<ScryptoValue>> = substate_store
             .get_substate(&SubstateId(
                 RENodeId::GlobalObject(resource_address.into()),
@@ -489,6 +480,16 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
 
         // DUMP non-fungibles
         if !vault_info.resource_type.is_fungible() {
+            let resource_manager: Option<NonFungibleResourceManagerSubstate> = substate_store
+                .get_substate(&SubstateId(
+                    RENodeId::GlobalObject(resource_address.into()),
+                    NodeModuleId::SELF,
+                    SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+                ))
+                .map(|s| s.substate)
+                .map(|s| s.to_runtime().into());
+            let resource_manager = resource_manager.ok_or(DisplayError::ResourceManagerNotFound)?;
+
             let vault: LiquidNonFungibleResource = substate_store
                 .get_substate(&SubstateId(
                     RENodeId::Object(*vault_id),
@@ -500,7 +501,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                 .unwrap();
 
             let ids = vault.ids();
-            let non_fungible_id = resource_manager.non_fungible_data.unwrap().0;
+            let non_fungible_id = resource_manager.non_fungible_table;
             for (inner_last, id) in ids.iter().identify_last() {
                 let non_fungible: Option<ScryptoValue> = substate_store
                     .get_substate(&SubstateId(
@@ -538,7 +539,7 @@ pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
     substate_store: &T,
     output: &mut O,
 ) -> Result<(), DisplayError> {
-    let resource_manager: Option<ResourceManagerSubstate> = substate_store
+    let resource_manager: Option<FungibleResourceManagerSubstate> = substate_store
         .get_substate(&SubstateId(
             RENodeId::GlobalObject(resource_address.into()),
             NodeModuleId::SELF,
@@ -548,12 +549,25 @@ pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
         .map(|s| s.to_runtime().into());
     let resource_manager = resource_manager.ok_or(DisplayError::ResourceManagerNotFound)?;
 
+    /*
+
+    let type_info: Option<TypeInfoSubstate> = substate_store
+        .get_substate(&SubstateId(
+            RENodeId::GlobalObject(resource_address.into()),
+            NodeModuleId::TypeInfo,
+            SubstateOffset::TypeInfo(TypeInfoSubstate::TypeInfo),
+        ))
+        .map(|s| s.substate)
+        .map(|s| s.to_runtime().into());
+    let type_info = type_info.ok_or(DisplayError::ResourceManagerNotFound)?;
+
     writeln!(
         output,
         "{}: {:?}",
         "Resource Type".green().bold(),
         resource_manager.resource_type
     );
+     */
     writeln!(
         output,
         "{}: {}",

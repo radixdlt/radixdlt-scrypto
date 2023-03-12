@@ -56,11 +56,11 @@ impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>> Describe<C> for Option<T> 
     fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
         #[allow(unused_imports)]
         use crate::rust::borrow::ToOwned;
-        Some(TypeData::named_enum(
+        Some(TypeData::enum_variants(
             "Option",
             crate::rust::collections::btree_map::btreemap![
-                OPTION_VARIANT_NONE => TypeData::named_unit("None"),
-                OPTION_VARIANT_SOME => TypeData::named_tuple("Some", crate::rust::vec![T::TYPE_ID]),
+                OPTION_VARIANT_NONE => TypeData::no_child_names(TypeKind::Tuple {field_types: crate::rust::vec![]}, "None"),
+                OPTION_VARIANT_SOME => TypeData::no_child_names(TypeKind::Tuple {field_types: crate::rust::vec![T::TYPE_ID]}, "Some"),
             ],
         ))
     }

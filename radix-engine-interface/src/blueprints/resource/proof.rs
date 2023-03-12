@@ -21,25 +21,35 @@ pub struct ProofDropInput {
     pub proof: Proof,
 }
 
+pub type ProofDropOutput = ();
+
 pub const PROOF_GET_AMOUNT_IDENT: &str = "Proof_get_amount";
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct ProofGetAmountInput {}
+
+pub type ProofGetAmountOutput = Decimal;
 
 pub const PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT: &str = "Proof_get_non_fungible_local_ids";
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct ProofGetNonFungibleLocalIdsInput {}
 
+pub type ProofGetNonFungibleLocalIdsOutput = BTreeSet<NonFungibleLocalId>;
+
 pub const PROOF_GET_RESOURCE_ADDRESS_IDENT: &str = "Proof_get_resource_address";
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct ProofGetResourceAddressInput {}
 
+pub type ProofGetResourceAddressOutput = ResourceAddress;
+
 pub const PROOF_CLONE_IDENT: &str = "clone";
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct ProofCloneInput {}
+
+pub type ProofCloneOutput = Proof;
 
 // TODO: Evaluate if we should have a ProofValidationModeBuilder to construct more complex validation modes.
 /// Specifies the validation mode that should be used for validating a `Proof`.

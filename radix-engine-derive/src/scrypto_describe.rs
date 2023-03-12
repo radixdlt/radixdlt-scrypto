@@ -36,7 +36,7 @@ mod tests {
                         &#code_hash
                     );
                     fn type_data() -> Option<::sbor::TypeData<radix_engine_common::data::scrypto::ScryptoCustomTypeKind<::sbor::GlobalTypeId>, ::sbor::GlobalTypeId>> {
-                        Some(::sbor::TypeData::named_fields_tuple(
+                        Some(::sbor::TypeData::struct_with_named_fields(
                             stringify!(MyStruct),
                             ::sbor::rust::vec![],
                         ))
@@ -74,7 +74,7 @@ mod tests {
                         &#code_hash
                     );
                     fn type_data() -> Option<::sbor::TypeData<radix_engine_common::data::scrypto::ScryptoCustomTypeKind<::sbor::GlobalTypeId>, ::sbor::GlobalTypeId>> {
-                        Some(::sbor::TypeData::named_fields_tuple(
+                        Some(::sbor::TypeData::struct_with_named_fields(
                             stringify!(Thing),
                             ::sbor::rust::vec![
                                 ("field", <T as ::sbor::Describe<radix_engine_common::data::scrypto::ScryptoCustomTypeKind<::sbor::GlobalTypeId> >>::TYPE_ID),
@@ -115,12 +115,12 @@ mod tests {
                     );
                     fn type_data() -> Option<::sbor::TypeData<radix_engine_common::data::scrypto::ScryptoCustomTypeKind<::sbor::GlobalTypeId>, ::sbor::GlobalTypeId>> {
                         use ::sbor::rust::borrow::ToOwned;
-                        Some(::sbor::TypeData::named_enum(
+                        Some(::sbor::TypeData::enum_variants(
                             stringify!(MyEnum),
                             :: sbor :: rust :: collections :: btree_map :: btreemap ! [
-                                0u8 => :: sbor :: TypeData :: named_fields_tuple ("A", :: sbor :: rust :: vec ! [("named", < T as :: sbor :: Describe < radix_engine_common::data::scrypto::ScryptoCustomTypeKind<::sbor::GlobalTypeId> >> :: TYPE_ID) ,] ,) ,
-                                1u8 => :: sbor :: TypeData :: named_tuple ("B", :: sbor :: rust :: vec ! [< String as :: sbor :: Describe < radix_engine_common::data::scrypto::ScryptoCustomTypeKind<::sbor::GlobalTypeId> >> :: TYPE_ID ,] ,) ,
-                                2u8 => :: sbor :: TypeData :: named_unit ("C") ,
+                                0u8 => :: sbor :: TypeData :: struct_with_named_fields ("A", :: sbor :: rust :: vec ! [("named", < T as :: sbor :: Describe < radix_engine_common::data::scrypto::ScryptoCustomTypeKind<::sbor::GlobalTypeId> >> :: TYPE_ID) ,] ,) ,
+                                1u8 => :: sbor :: TypeData :: struct_with_unnamed_fields ("B", :: sbor :: rust :: vec ! [< String as :: sbor :: Describe < radix_engine_common::data::scrypto::ScryptoCustomTypeKind<::sbor::GlobalTypeId> >> :: TYPE_ID ,] ,) ,
+                                2u8 => :: sbor :: TypeData :: struct_with_unit_fields ("C") ,
                             ],
                         ))
                     }

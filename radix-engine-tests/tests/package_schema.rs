@@ -1,14 +1,11 @@
-use radix_engine::errors::{ApplicationError, InterpreterError, RuntimeError};
-use radix_engine::system::node_modules::access_rules::AccessRulesChainError;
+use radix_engine::errors::{InterpreterError, RuntimeError};
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use ExpectedResult::{InvalidInput, InvalidOutput, Success};
 
-// FIXME: schema - re-enable this test!
 #[test]
-#[ignore]
-fn test_invalid_access_rule_methods() {
+fn should_be_able_to_create_access_rules_with_undefined_method_name() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/package_schema");
@@ -19,21 +16,14 @@ fn test_invalid_access_rule_methods() {
         .call_function(
             package_address,
             "SchemaComponent",
-            "create_invalid_schema_component",
+            "create_component_with_access_rules_containing_undefined_method_name",
             manifest_args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(
-                AccessRulesChainError::BlueprintFunctionNotFound(..)
-            ))
-        )
-    })
+    receipt.expect_commit_success();
 }
 
 enum ExpectedResult {

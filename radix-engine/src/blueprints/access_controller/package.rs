@@ -14,6 +14,10 @@ use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{ACCESS_CONTROLLER_PACKAGE, PACKAGE_TOKEN};
+use radix_engine_interface::schema::BlueprintSchema;
+use radix_engine_interface::schema::FunctionSchema;
+use radix_engine_interface::schema::PackageSchema;
+use radix_engine_interface::schema::Receiver;
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::*;
 use radix_engine_interface::{api::*, rule};
@@ -116,6 +120,158 @@ impl From<AccessControllerError> for RuntimeError {
 pub struct AccessControllerNativePackage;
 
 impl AccessControllerNativePackage {
+    pub fn schema() -> PackageSchema {
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+
+        let mut substates = Vec::new();
+        substates.push(aggregator.add_child_type_and_descendents::<AccessControllerSubstate>());
+
+        let mut functions = BTreeMap::new();
+        functions.insert(
+            ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator
+                    .add_child_type_and_descendents::<AccessControllerCreateGlobalInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccessControllerCreateGlobalOutput>(),
+                export_name: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            ACCESS_CONTROLLER_CREATE_PROOF_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccessControllerCreateProofInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccessControllerCreateProofOutput>(),
+                export_name: ACCESS_CONTROLLER_CREATE_PROOF_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccessControllerInitiateRecoveryAsPrimaryInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccessControllerInitiateRecoveryAsPrimaryOutput>(),
+                export_name: ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccessControllerInitiateRecoveryAsRecoveryInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccessControllerInitiateRecoveryAsRecoveryOutput>(),
+                export_name: ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleRecoveryProposalOutput>(),
+                export_name: ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleRecoveryProposalOutput>(),
+                export_name: ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccessControllerTimedConfirmRecoveryInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccessControllerTimedConfirmRecoveryOutput>(),
+                export_name: ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccessControllerCancelPrimaryRoleRecoveryProposalInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccessControllerCancelPrimaryRoleRecoveryProposalOutput>(),
+                export_name: ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccessControllerCancelRecoveryRoleRecoveryProposalInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccessControllerCancelRecoveryRoleRecoveryProposalOutput>(),
+                export_name: ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccessControllerLockPrimaryRoleInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccessControllerLockPrimaryRoleOutput>(),
+                export_name: ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccessControllerUnlockPrimaryRoleInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccessControllerUnlockPrimaryRoleOutput>(),
+                export_name: ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccessControllerStopTimedRecoveryInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccessControllerStopTimedRecoveryOutput>(),
+                export_name: ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT.to_string(),
+            },
+        );
+
+        let schema = generate_full_schema(aggregator);
+        PackageSchema {
+            blueprints: btreemap!(
+                ACCESS_CONTROLLER_BLUEPRINT.to_string() => BlueprintSchema {
+                    schema,
+                    substates,
+                    functions
+                }
+            ),
+        }
+    }
+
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<RENodeId>,
@@ -200,7 +356,7 @@ impl AccessControllerNativePackage {
                 ))?;
                 Self::cancel_recovery_role_recovery_proposal(receiver, input, api)
             }
-            ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE => {
+            ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
@@ -208,7 +364,7 @@ impl AccessControllerNativePackage {
                 ))?;
                 Self::lock_primary_role(receiver, input, api)
             }
-            ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE => {
+            ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
@@ -216,7 +372,7 @@ impl AccessControllerNativePackage {
                 ))?;
                 Self::unlock_primary_role(receiver, input, api)
             }
-            ACCESS_CONTROLLER_STOP_TIMED_RECOVERY => {
+            ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
@@ -691,14 +847,14 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
             NodeModuleId::SELF,
-            ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE.to_string(),
+            ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT.to_string(),
         ),
         recovery_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
             NodeModuleId::SELF,
-            ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE.to_string(),
+            ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT.to_string(),
         ),
         recovery_group.into(),
     );
@@ -714,7 +870,7 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
     access_rules.set_method_access_rule(
         MethodKey::new(
             NodeModuleId::SELF,
-            ACCESS_CONTROLLER_STOP_TIMED_RECOVERY.to_string(),
+            ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT.to_string(),
         ),
         access_rule_or(
             [

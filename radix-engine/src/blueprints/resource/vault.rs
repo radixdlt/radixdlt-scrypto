@@ -13,8 +13,6 @@ use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum VaultError {
-    InvalidRequestData(DecodeError),
-
     ResourceError(ResourceError),
     ProofError(ProofError),
     NonFungibleOperationNotSupported,
@@ -578,6 +576,9 @@ impl VaultBlueprint {
                     })
                     .unwrap(),
                     scrypto_encode(&taken).unwrap(),
+                    scrypto_encode(&LockedFungibleResource::default()).unwrap(),
+                    scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
+                    scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
                 ],
             )?;
 
@@ -595,7 +596,10 @@ impl VaultBlueprint {
                         resource_type: info.resource_type,
                     })
                     .unwrap(),
+                    scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
+                    scrypto_encode(&LockedFungibleResource::default()).unwrap(),
                     scrypto_encode(&taken).unwrap(),
+                    scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
                 ],
             )?;
 
@@ -641,7 +645,10 @@ impl VaultBlueprint {
                         resource_type: info.resource_type,
                     })
                     .unwrap(),
+                    scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
+                    scrypto_encode(&LockedFungibleResource::default()).unwrap(),
                     scrypto_encode(&taken).unwrap(),
+                    scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
                 ],
             )?;
 
@@ -867,6 +874,9 @@ impl VaultBlueprint {
                     })
                     .unwrap(),
                     scrypto_encode(&taken).unwrap(),
+                    scrypto_encode(&LockedFungibleResource::default()).unwrap(),
+                    scrypto_encode(&LiquidNonFungibleResource::default()).unwrap(),
+                    scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
                 ],
             )?;
 
@@ -881,7 +891,10 @@ impl VaultBlueprint {
                         resource_type: info.resource_type,
                     })
                     .unwrap(),
+                    scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
+                    scrypto_encode(&LockedFungibleResource::default()).unwrap(),
                     scrypto_encode(&taken).unwrap(),
+                    scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
                 ],
             )?;
 
@@ -926,7 +939,10 @@ impl VaultBlueprint {
                         resource_type: info.resource_type,
                     })
                     .unwrap(),
+                    scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
+                    scrypto_encode(&LockedFungibleResource::default()).unwrap(),
                     scrypto_encode(&taken).unwrap(),
+                    scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
                 ],
             )?;
 
@@ -968,6 +984,7 @@ impl VaultBlueprint {
                 vec![
                     scrypto_encode(&proof_info).unwrap(),
                     scrypto_encode(&proof).unwrap(),
+                    scrypto_encode(&NonFungibleProof::default()).unwrap(),
                 ],
             )?;
 
@@ -987,6 +1004,7 @@ impl VaultBlueprint {
                 PROOF_BLUEPRINT,
                 vec![
                     scrypto_encode(&proof_info).unwrap(),
+                    scrypto_encode(&FungibleProof::default()).unwrap(),
                     scrypto_encode(&proof).unwrap(),
                 ],
             )?;
@@ -1032,6 +1050,7 @@ impl VaultBlueprint {
                 vec![
                     scrypto_encode(&proof_info).unwrap(),
                     scrypto_encode(&proof).unwrap(),
+                    scrypto_encode(&NonFungibleProof::default()).unwrap(),
                 ],
             )?;
 
@@ -1047,6 +1066,7 @@ impl VaultBlueprint {
                 PROOF_BLUEPRINT,
                 vec![
                     scrypto_encode(&proof_info).unwrap(),
+                    scrypto_encode(&FungibleProof::default()).unwrap(),
                     scrypto_encode(&proof).unwrap(),
                 ],
             )?;
@@ -1090,6 +1110,7 @@ impl VaultBlueprint {
                 PROOF_BLUEPRINT,
                 vec![
                     scrypto_encode(&proof_info).unwrap(),
+                    scrypto_encode(&FungibleProof::default()).unwrap(),
                     scrypto_encode(&proof).unwrap(),
                 ],
             )?;

@@ -4,6 +4,7 @@ use crate::system::kernel_modules::costing::*;
 use crate::types::*;
 use crate::wasm::*;
 use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::api::types::Level;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientEventApi;
 use radix_engine_interface::api::ClientLoggerApi;
@@ -11,7 +12,6 @@ use radix_engine_interface::api::{
     ClientActorApi, ClientNodeApi, ClientObjectApi, ClientPackageApi, ClientSubstateApi,
     ClientUnsafeApi,
 };
-use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::blueprints::resource::AccessRulesConfig;
 use radix_engine_interface::schema::{KeyValueStoreSchema, PackageSchema};
 use sbor::rust::vec::Vec;

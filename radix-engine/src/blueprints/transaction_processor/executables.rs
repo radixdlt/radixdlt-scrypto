@@ -5,10 +5,10 @@ use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::executor::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::node::{RENodeInit, RENodeModuleInit};
+use crate::system::node::RENodeInit;
+use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::RuntimeSubstate;
-use crate::system::package::PackageError;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
@@ -60,6 +60,7 @@ pub enum TransactionProcessorError {
     BlobNotFound(Hash),
     IdAllocationError(ManifestIdAllocationError),
     InvalidCallData(DecodeError),
+    InvalidPackageSchema(DecodeError),
 }
 
 pub trait NativeOutput: ScryptoEncode + Debug + Send + Sync {}
@@ -513,8 +514,8 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let code = processor.get_blob(&code)?;
                     let schema = processor.get_blob(&schema)?;
                     let schema = scrypto_decode(schema).map_err(|e| {
-                        RuntimeError::ApplicationError(ApplicationError::PackageError(
-                            PackageError::InvalidSchema(e),
+                        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                            TransactionProcessorError::InvalidPackageSchema(e),
                         ))
                     })?;
 
@@ -565,7 +566,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 } => {
                     let rtn = api.call_method(
                         RENodeId::GlobalObject(resource_address.into()),
-                        RESOURCE_MANAGER_MINT_FUNGIBLE,
+                        RESOURCE_MANAGER_MINT_FUNGIBLE_IDENT,
                         scrypto_encode(&ResourceManagerMintFungibleInput { amount }).unwrap(),
                     )?;
 
@@ -599,7 +600,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
                     let rtn = api.call_method(
                         RENodeId::GlobalObject(resource_address.into()),
-                        RESOURCE_MANAGER_MINT_NON_FUNGIBLE,
+                        RESOURCE_MANAGER_MINT_NON_FUNGIBLE_IDENT,
                         scrypto_encode(&ResourceManagerMintNonFungibleInput { entries }).unwrap(),
                     )?;
                     let result = IndexedScryptoValue::from_vec(rtn).unwrap();
@@ -614,7 +615,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 } => {
                     let rtn = api.call_method(
                         RENodeId::GlobalObject(resource_address.into()),
-                        RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE,
+                        RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE_IDENT,
                         scrypto_encode(&ResourceManagerMintUuidNonFungibleInput {
                             entries: entries,
                         })

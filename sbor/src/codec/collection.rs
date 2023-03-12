@@ -332,10 +332,10 @@ mod schema {
 
         fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
             Some(TypeData::new(
-                TypeMetadata::no_child_names("Set"),
                 TypeKind::Array {
                     element_type: T::TYPE_ID,
                 },
+                TypeMetadata::no_child_names("Set"),
             ))
         }
 
@@ -354,11 +354,11 @@ mod schema {
 
         fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
             Some(TypeData::new(
-                TypeMetadata::no_child_names("Map"),
                 TypeKind::Map {
                     key_type: K::TYPE_ID,
                     value_type: V::TYPE_ID,
                 },
+                TypeMetadata::no_child_names("Map"),
             ))
         }
 

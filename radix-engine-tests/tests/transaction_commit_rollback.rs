@@ -7,7 +7,6 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
-#[ignore]
 fn test_state_track_success() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
@@ -32,6 +31,7 @@ fn test_state_track_success() {
     // Assert
     receipt.expect_commit_success();
     let state_updates = &receipt.expect_commit().state_updates;
+    println!("");
     for (o, n) in state_updates.down_substate_offsets() {
         println!("DOWN: {:?}, {}", o, n);
     }
@@ -40,21 +40,29 @@ fn test_state_track_success() {
     }
     assert_eq!(
         state_updates.down_substate_ids().len(),
-        3 /* Global(Global) */
-        + 2 /* AccessRulesChain(AccessRulesChain) */
-        + 1 /* VaultAccessRulesChain(AccessRulesChain) */
-        + 2 /* KeyValueStore(Entry([92, 130, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])) */
-        + 2 /* Vault(Vault) */
+        2 /* Package(Info) */
+        + 2 /* Package(CodeType) */
+        + 2 /* Package(Code) */
+        + 2 /* KeyValueStore(Entry([92, 128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])) */
+        + 2 /* Vault(Info) */
+        + 2 /* Vault(LiquidFungible) */
         + 2 /* Account(Account) */
+        + 4 /* TypeInfo(TypeInfo) */
+        + 3 /* AccessRules(AccessRules) */
+        + 1 /* PackageAccessRules */
     );
     assert_eq!(
         state_updates.up_substate_ids().len(),
-        3 /* Global(Global) */
-        + 2 /* AccessRulesChain(AccessRulesChain) */
-        + 1 /* VaultAccessRulesChain(AccessRulesChain) */
-        + 2 /* KeyValueStore(Entry([92, 130, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])) */
-        + 2 /* Vault(Vault) */
+        2 /* Package(Info) */
+        + 2 /* Package(CodeType) */
+        + 2 /* Package(Code) */
+        + 2 /* KeyValueStore(Entry([92, 128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])) */
+        + 2 /* Vault(Info) */
+        + 2 /* Vault(LiquidFungible) */
         + 2 /* Account(Account) */
+        + 4 /* TypeInfo(TypeInfo) */
+        + 3 /* AccessRules(AccessRules) */
+        + 1 /* PackageAccessRules */
     );
 }
 

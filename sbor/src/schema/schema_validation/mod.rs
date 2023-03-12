@@ -9,7 +9,7 @@ pub use type_kind_validation::*;
 pub use type_metadata_validation::*;
 pub use type_validation_validation::*;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum SchemaValidationError {
     MetadataLengthMismatch,
     ValidationsLengthMismatch,
@@ -18,8 +18,10 @@ pub enum SchemaValidationError {
     TypeKindInvalidSchemaLocalIndex,
     TypeKindInvalidWellKnownIndex,
     TypeMetadataContainedUnexpectedChildNames,
-    TypeMetadataContainedWrongNumberOfChildren,
-    TypeMetadataForFieldsContainedEnumVariantChildNames,
+    TypeMetadataFieldNameCountDoesNotMatchFieldCount,
+    TypeMetadataContainedUnexpectedEnumVariants,
+    TypeMetadataContainedUnexpectedNamedFields,
+    TypeMetadataContainedWrongNumberOfVariants,
     TypeMetadataForEnumIsNotEnumVariantChildNames,
     TypeMetadataHasMismatchingEnumDiscriminator,
     InvalidIdentName { message: String },

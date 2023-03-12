@@ -77,11 +77,10 @@ impl SchemaPath {
                 ) {
                     (
                         Some(TypeKind::Tuple { field_types }),
-                        Some(TypeMetadata { children, .. }),
-                    ) => match children {
-                        Children::NamedFields(fields) => {
-                            if let Some(index) = fields.iter().position(|f| f.field_name.eq(field))
-                            {
+                        Some(TypeMetadata { child_names, .. }),
+                    ) => match child_names.as_ref() {
+                        Some(ChildNames::NamedFields(fields)) => {
+                            if let Some(index) = fields.iter().position(|f| f.eq(field)) {
                                 cur_type = field_types
                                     .get(index)
                                     .cloned()

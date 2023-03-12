@@ -169,8 +169,6 @@ pub enum Instruction {
         access_rule: AccessRule,
     },
 
-    ///
-    /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallFunction {
         package_address: PackageAddress,
         blueprint_name: String,
@@ -178,9 +176,6 @@ pub enum Instruction {
         args: Vec<u8>,
     },
 
-    /// Calls a method.
-    ///
-    /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallMethod {
         component_address: ComponentAddress,
         method_name: String,
