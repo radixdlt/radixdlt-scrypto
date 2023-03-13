@@ -646,7 +646,7 @@ where
 {
     fn emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), RuntimeError> {
         // Costing event emission.
-        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         // Construct the event type identifier based on the current actor
         let (event_type_id, package_address, blueprint_name) = match self.kernel_get_current_actor()
@@ -754,7 +754,7 @@ where
     W: WasmEngine,
 {
     fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
-        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         self.kernel_get_module_state()
             .logger
@@ -768,7 +768,7 @@ where
     W: WasmEngine,
 {
     fn get_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
-        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         Ok(self
             .kernel_get_module_state()
@@ -777,7 +777,7 @@ where
     }
 
     fn generate_uuid(&mut self) -> Result<u128, RuntimeError> {
-        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         Ok(self
             .kernel_get_module_state()

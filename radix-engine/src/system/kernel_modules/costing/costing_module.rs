@@ -310,6 +310,7 @@ impl KernelModule for CostingModule {
             match reason {
                 ClientCostingReason::RunWasm => CostingReason::RunWasm,
                 ClientCostingReason::RunNative => CostingReason::RunNative,
+                ClientCostingReason::RunSystem => CostingReason::RunSystem,
             },
             |_| units,
             5,

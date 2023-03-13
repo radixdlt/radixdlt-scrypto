@@ -5,6 +5,7 @@ use crate::blueprints::resource::LiquidFungibleResource;
 pub enum ClientCostingReason {
     RunWasm,
     RunNative,
+    RunSystem,
 }
 
 /// Unsafe APIs for interacting with kernel modules.
