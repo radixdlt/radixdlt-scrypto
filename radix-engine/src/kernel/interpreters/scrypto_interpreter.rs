@@ -19,9 +19,7 @@ use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::node_modules::type_info::TypeInfoBlueprint;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
-use radix_engine_interface::api::node_modules::auth::{
-    ACCESS_RULES_BLUEPRINT, FUNCTION_ACCESS_RULES_BLUEPRINT,
-};
+use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
 use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
 use radix_engine_interface::api::substate_api::LockFlags;
@@ -120,13 +118,6 @@ impl ExecutableInvocation for MethodInvocation {
             NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {
                 // TODO: Check if type has access rules
                 (ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT.to_string())
-            }
-            NodeModuleId::FunctionAccessRules => {
-                // TODO: Check if type has function access rules
-                (
-                    ACCESS_RULES_PACKAGE,
-                    FUNCTION_ACCESS_RULES_BLUEPRINT.to_string(),
-                )
             }
             _ => todo!(),
         };

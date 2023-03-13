@@ -2,7 +2,6 @@ use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
-use crate::system::node_modules::event_schema::PackageEventSchemaSubstate;
 use crate::types::*;
 use radix_engine_interface::api::types::*;
 
@@ -25,15 +24,12 @@ impl KernelModule for EventsModule {
     fn before_create_node<Y: KernelModuleApi<RuntimeError>>(
         _api: &mut Y,
         _node_id: &RENodeId,
-        _node_init: &RENodeInit,
-        node_module_init: &BTreeMap<NodeModuleId, RENodeModuleInit>,
+        node_init: &RENodeInit,
+        _node_module_init: &BTreeMap<NodeModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError> {
         // Validating the schema before the node is created.
-        if let Some(RENodeModuleInit::PackageEventSchema(PackageEventSchemaSubstate(
-            package_event_schema,
-        ))) = node_module_init.get(&NodeModuleId::PackageEventSchema)
-        {
-            for (_, blueprint_event_schemas) in package_event_schema {
+        if let RENodeInit::PackageObject(_, _, _, _, _, package_event_schema) = node_init {
+            for (_, blueprint_event_schemas) in &package_event_schema.0 {
                 // TODO: Should we check that the blueprint name is valid for that given package?
 
                 for (_, (local_type_index, schema)) in blueprint_event_schemas {
