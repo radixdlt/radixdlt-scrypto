@@ -754,10 +754,35 @@ where
     W: WasmEngine,
 {
     fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
+        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
         self.kernel_get_module_state()
             .logger
             .add_log(level, message);
         Ok(())
+    }
+}
+
+impl<'g, 's, W> ClientTransactionRuntimeApi<RuntimeError> for Kernel<'g, 's, W>
+where
+    W: WasmEngine,
+{
+    fn get_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
+        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+        Ok(self
+            .kernel_get_module_state()
+            .transaction_runtime
+            .transaction_hash())
+    }
+
+    fn generate_uuid(&mut self) -> Result<u128, RuntimeError> {
+        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+        Ok(self
+            .kernel_get_module_state()
+            .transaction_runtime
+            .generate_uuid())
     }
 }
 

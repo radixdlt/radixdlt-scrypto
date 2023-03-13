@@ -9,7 +9,7 @@ pub struct TransactionRuntimeModule {
 }
 
 impl TransactionRuntimeModule {
-    pub fn get_hash(&self) -> Hash {
+    pub fn  transaction_hash(&self) -> Hash {
         self.tx_hash
     }
 
