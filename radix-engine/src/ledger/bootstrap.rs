@@ -36,7 +36,6 @@ use radix_engine_interface::blueprints::clock::{
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
-use radix_engine_interface::schema::NonFungibleSchema;
 use transaction::model::{Instruction, SystemTransaction};
 use transaction::validation::ManifestIdAllocator;
 
@@ -284,7 +283,7 @@ pub fn create_genesis(
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: manifest_encode(&NonFungibleResourceManagerCreateWithAddressInput {
                 id_type: NonFungibleIdType::Bytes,
-                non_fungible_schema: NonFungibleSchema::new(),
+                non_fungible_schema: NonFungibleSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
                 resource_address,
@@ -548,7 +547,7 @@ pub fn create_genesis(
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: manifest_encode(&NonFungibleResourceManagerCreateWithAddressInput {
                 id_type: NonFungibleIdType::Bytes,
-                non_fungible_schema: NonFungibleSchema::new(),
+                non_fungible_schema: NonFungibleSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
                 resource_address,
@@ -570,7 +569,7 @@ pub fn create_genesis(
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: manifest_encode(&NonFungibleResourceManagerCreateWithAddressInput {
                 id_type: NonFungibleIdType::Bytes,
-                non_fungible_schema: NonFungibleSchema::new(),
+                non_fungible_schema: NonFungibleSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
                 resource_address,
@@ -592,7 +591,7 @@ pub fn create_genesis(
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: manifest_encode(&NonFungibleResourceManagerCreateWithAddressInput {
                 id_type: NonFungibleIdType::Bytes,
-                non_fungible_schema: NonFungibleSchema::new(),
+                non_fungible_schema: NonFungibleSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
                 resource_address,

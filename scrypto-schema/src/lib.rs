@@ -5,39 +5,9 @@ compile_error!("Either feature `std` or `alloc` must be enabled for this crate."
 #[cfg(all(feature = "std", feature = "alloc"))]
 compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
-use radix_engine_common::data::scrypto::{
-    ScryptoCustomTypeKind, ScryptoDescribe, ScryptoSchema, ScryptoValue,
-};
+use radix_engine_common::data::scrypto::{ScryptoCustomTypeKind, ScryptoDescribe, ScryptoSchema};
 use sbor::rust::prelude::*;
 use sbor::*;
-
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-pub struct NonFungibleSchema {
-    pub schema: ScryptoSchema,
-    pub non_fungible: LocalTypeIndex,
-}
-
-impl NonFungibleSchema {
-    pub fn new() -> Self {
-        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-        let non_fungible_type = aggregator.add_child_type_and_descendents::<ScryptoValue>();
-        let schema = generate_full_schema(aggregator);
-        Self {
-            schema,
-            non_fungible: non_fungible_type,
-        }
-    }
-
-    pub fn new_schema<N: ScryptoDescribe>() -> Self {
-        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-        let non_fungible_type = aggregator.add_child_type_and_descendents::<N>();
-        let schema = generate_full_schema(aggregator);
-        Self {
-            schema,
-            non_fungible: non_fungible_type,
-        }
-    }
-}
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub struct KeyValueStoreSchema {

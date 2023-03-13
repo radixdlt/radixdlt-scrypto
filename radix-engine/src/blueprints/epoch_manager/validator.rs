@@ -568,7 +568,7 @@ impl ValidatorCreator {
         unstake_token_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         unstake_token_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
 
-        let unstake_resource_manager = ResourceManager::new_non_fungible(
+        let unstake_resource_manager = ResourceManager::new_non_fungible::<(), Y, RuntimeError>(
             NonFungibleIdType::UUID,
             BTreeMap::new(),
             unstake_token_auth,

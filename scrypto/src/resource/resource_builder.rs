@@ -11,7 +11,6 @@ use sbor::rust::collections::*;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use scrypto_schema::NonFungibleSchema;
 
 /// Not divisible.
 pub const DIVISIBILITY_NONE: u8 = 0;

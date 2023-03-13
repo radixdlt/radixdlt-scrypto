@@ -1,4 +1,4 @@
-use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::api::types::{NonFungibleData, RENodeId};
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
@@ -7,7 +7,6 @@ use radix_engine_interface::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode,
 };
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::schema::NonFungibleSchema;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
@@ -73,7 +72,7 @@ impl ResourceManager {
         Ok((ResourceManager(resource_address), bucket))
     }
 
-    pub fn new_non_fungible<Y, E: Debug + ScryptoDecode>(
+    pub fn new_non_fungible<N: NonFungibleData, Y, E: Debug + ScryptoDecode>(
         id_type: NonFungibleIdType,
         metadata: BTreeMap<String, String>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -82,7 +81,7 @@ impl ResourceManager {
     where
         Y: ClientApi<E>,
     {
-        let non_fungible_schema = NonFungibleSchema::new();
+        let non_fungible_schema = NonFungibleSchema::new_schema::<N>();
         let result = api.call_function(
             RESOURCE_MANAGER_PACKAGE,
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,

@@ -185,6 +185,7 @@ pub enum Instruction {
 
     CreateNonFungibleResourceWithInitialSupply {
         id_type: Value,
+        schema: Value,
         metadata: Value,
         access_rules: Value,
         initial_supply: Value,

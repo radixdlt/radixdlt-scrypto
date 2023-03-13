@@ -22,7 +22,7 @@ use radix_engine_interface::crypto::{hash, EcdsaSecp256k1PublicKey, Hash};
 use radix_engine_interface::data::manifest::{manifest_encode, model::*};
 use radix_engine_interface::data::scrypto::{model::*, scrypto_encode};
 use radix_engine_interface::math::*;
-use radix_engine_interface::schema::{NonFungibleSchema, PackageSchema};
+use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;

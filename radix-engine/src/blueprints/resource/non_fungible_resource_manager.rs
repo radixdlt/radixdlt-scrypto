@@ -12,7 +12,7 @@ use radix_engine_interface::api::types::{RENodeId, ResourceManagerOffset, Substa
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::schema::{KeyValueStoreSchema, NonFungibleSchema};
+use radix_engine_interface::schema::KeyValueStoreSchema;
 use radix_engine_interface::*;
 use std::borrow::Cow;
 
@@ -32,7 +32,7 @@ pub struct NonFungibleResourceManagerSubstate {
     pub total_supply: Decimal,
     pub id_type: NonFungibleIdType,
     pub non_fungible_table: KeyValueStoreId,
-    pub mutable_fields: BTreeSet<String>,
+    pub mutable_fields: BTreeSet<String>, // TODO: Integrate with KeyValueStore schema check?
 }
 
 fn build_non_fungible_resource_manager_substate<Y>(
@@ -537,6 +537,7 @@ impl NonFungibleResourceManagerBlueprint {
         )?;
         let non_fungible_mut: &mut Option<ScryptoValue> =
             api.kernel_get_substate_ref_mut(non_fungible_handle)?;
+
         if let Some(ref mut non_fungible_substate) = non_fungible_mut {
             *non_fungible_substate = scrypto_decode(&data).unwrap();
         } else {

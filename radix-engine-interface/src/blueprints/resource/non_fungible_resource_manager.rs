@@ -1,11 +1,13 @@
 use crate::blueprints::resource::*;
 use crate::data::scrypto::model::*;
 use crate::*;
-use radix_engine_common::data::scrypto::ScryptoValue;
-use sbor::rust::collections::BTreeMap;
+use radix_engine_common::data::scrypto::{ScryptoCustomTypeKind, ScryptoSchema, ScryptoValue};
+use radix_engine_interface::api::types::NonFungibleData;
+use sbor::rust::collections::{BTreeMap, BTreeSet};
 use sbor::rust::string::String;
+use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
-use scrypto_schema::NonFungibleSchema;
+use sbor::{generate_full_schema, LocalTypeIndex, TypeAggregator};
 
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT: &str = "NonFungibleResourceManager";
 
@@ -107,3 +109,31 @@ pub struct NonFungibleResourceManagerMintUuidInput {
 }
 
 pub type NonFungibleResourceManagerMintUuidOutput = Bucket;
+
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+pub struct NonFungibleSchema {
+    pub schema: ScryptoSchema,
+    pub non_fungible: LocalTypeIndex,
+    pub mutable_fields: BTreeSet<String>,
+}
+
+impl NonFungibleData for () {
+    const MUTABLE_FIELDS: &'static [&'static str] = &[];
+}
+
+impl NonFungibleSchema {
+    pub fn new() -> Self {
+        Self::new_schema::<()>()
+    }
+
+    pub fn new_schema<N: NonFungibleData>() -> Self {
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+        let non_fungible_type = aggregator.add_child_type_and_descendents::<N>();
+        let schema = generate_full_schema(aggregator);
+        Self {
+            schema,
+            non_fungible: non_fungible_type,
+            mutable_fields: N::MUTABLE_FIELDS.iter().map(|s| s.to_string()).collect(),
+        }
+    }
+}
