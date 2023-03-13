@@ -338,23 +338,13 @@ where
             NodeModuleId::AccessRules
         );
         // TODO: remove
-        let package_object = btreeset!(
-            NodeModuleId::Metadata,
-            NodeModuleId::ComponentRoyalty,
-            NodeModuleId::AccessRules,
-            NodeModuleId::FunctionAccessRules,
-        );
-        // TODO: remove
         let resource_manager_object = btreeset!(
             NodeModuleId::Metadata,
             NodeModuleId::ComponentRoyalty,
             NodeModuleId::AccessRules,
             NodeModuleId::AccessRules1
         );
-        if module_ids != standard_object
-            && module_ids != package_object
-            && module_ids != resource_manager_object
-        {
+        if module_ids != standard_object && module_ids != resource_manager_object {
             return Err(RuntimeError::SystemError(SystemError::InvalidModuleSet(
                 node_id, module_ids,
             )));
@@ -390,10 +380,7 @@ where
 
         for (module_id, object_id) in modules {
             match module_id {
-                NodeModuleId::SELF
-                | NodeModuleId::TypeInfo
-                | NodeModuleId::FunctionAccessRules
-                | NodeModuleId::PackageEventSchema => {
+                NodeModuleId::SELF | NodeModuleId::TypeInfo => {
                     return Err(RuntimeError::SystemError(SystemError::InvalidModule))
                 }
                 NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {
@@ -659,16 +646,11 @@ where
                     NodeModuleId::ComponentRoyalty => {
                         Ok((ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT.into()))
                     }
-                    NodeModuleId::FunctionAccessRules => {
-                        Ok((ACCESS_RULES_PACKAGE, FUNCTION_ACCESS_RULES_BLUEPRINT.into()))
-                    }
                     NodeModuleId::Metadata => Ok((METADATA_PACKAGE, METADATA_BLUEPRINT.into())),
                     NodeModuleId::SELF => self.get_object_type_info(node_id),
-                    NodeModuleId::TypeInfo | NodeModuleId::PackageEventSchema => {
-                        Err(RuntimeError::ApplicationError(
-                            ApplicationError::EventError(EventError::NoAssociatedPackage),
-                        ))
-                    }
+                    NodeModuleId::TypeInfo => Err(RuntimeError::ApplicationError(
+                        ApplicationError::EventError(EventError::NoAssociatedPackage),
+                    )),
                 }?;
 
                 Ok((event_type_id, package_address, blueprint_name.to_owned()))
@@ -702,8 +684,8 @@ where
         let (local_type_index, schema) = {
             let handle = self.kernel_lock_substate(
                 RENodeId::GlobalObject(Address::Package(package_address)),
-                NodeModuleId::PackageEventSchema,
-                SubstateOffset::PackageEventSchema(PackageEventSchemaOffset::PackageEventSchema),
+                NodeModuleId::SELF,
+                SubstateOffset::Package(PackageOffset::EventSchema),
                 LockFlags::read_only(),
             )?;
             let package_schema =

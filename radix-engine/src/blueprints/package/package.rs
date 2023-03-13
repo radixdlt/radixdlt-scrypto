@@ -44,11 +44,6 @@ fn validate_package_schema(schema: &PackageSchema) -> Result<(), PackageError> {
 fn build_package_node_modules(
     metadata: BTreeMap<String, String>,
     access_rules: AccessRulesConfig,
-    function_access_rules: FunctionAccessRulesSubstate,
-    event_schema: BTreeMap<
-        String,
-        BTreeMap<String, (LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>,
-    >,
 ) -> BTreeMap<NodeModuleId, RENodeModuleInit> {
     let mut metadata_substates = BTreeMap::new();
     for (key, value) in metadata {
@@ -80,14 +75,6 @@ fn build_package_node_modules(
         RENodeModuleInit::MethodAccessRules(MethodAccessRulesSubstate {
             access_rules: access_rules,
         }),
-    );
-    node_modules.insert(
-        NodeModuleId::FunctionAccessRules,
-        RENodeModuleInit::FunctionAccessRules(function_access_rules),
-    );
-    node_modules.insert(
-        NodeModuleId::PackageEventSchema,
-        RENodeModuleInit::PackageEventSchema(PackageEventSchemaSubstate(event_schema)),
     );
 
     node_modules
@@ -257,20 +244,25 @@ impl PackageNativePackage {
             royalty_vault: None,
             blueprint_royalty_configs: BTreeMap::new(),
         };
-        let node_init = RENodeInit::PackageObject(info, code_type, code, royalty);
+        let function_access_rules = FunctionAccessRulesSubstate {
+            access_rules: input.package_access_rules,
+            default_auth: input.default_package_access_rule,
+        };
+        let event_schemas =
+            PackageEventSchemaSubstate(convert_event_schema(input.event_schema).map_err(
+                |error| RuntimeError::ApplicationError(ApplicationError::EventError(error)),
+            )?);
+        let node_init = RENodeInit::PackageObject(
+            info,
+            code_type,
+            code,
+            royalty,
+            function_access_rules,
+            event_schemas,
+        );
 
         // Build node module init
-        let node_modules = build_package_node_modules(
-            input.metadata,
-            input.access_rules,
-            FunctionAccessRulesSubstate {
-                access_rules: input.package_access_rules,
-                default_auth: input.default_package_access_rule,
-            },
-            convert_event_schema(input.event_schema).map_err(|error| {
-                RuntimeError::ApplicationError(ApplicationError::EventError(error))
-            })?,
-        );
+        let node_modules = build_package_node_modules(input.metadata, input.access_rules);
 
         // Create package node
         let node_id = if let Some(address) = input.package_address {
@@ -321,18 +313,22 @@ impl PackageNativePackage {
             royalty_vault: None,
             blueprint_royalty_configs: input.royalty_config,
         };
-        let node_init = RENodeInit::PackageObject(info, code_type, code, royalty);
+        let function_access_rules = FunctionAccessRulesSubstate {
+            access_rules: BTreeMap::new(),
+            default_auth: AccessRule::AllowAll,
+        };
+        let event_schemas = PackageEventSchemaSubstate(BTreeMap::new()); // TODO: To rework in Pt3
+        let node_init = RENodeInit::PackageObject(
+            info,
+            code_type,
+            code,
+            royalty,
+            function_access_rules,
+            event_schemas,
+        );
 
         // Build node module init
-        let node_modules = build_package_node_modules(
-            input.metadata,
-            input.access_rules,
-            FunctionAccessRulesSubstate {
-                access_rules: BTreeMap::new(),
-                default_auth: AccessRule::AllowAll,
-            },
-            BTreeMap::new(), // TODO: To rework in Pt3
-        );
+        let node_modules = build_package_node_modules(input.metadata, input.access_rules);
 
         // Create package node
         let node_id = if let Some(address) = input.package_address {

@@ -19,16 +19,12 @@ pub enum RENodeModuleInit {
 
     /* Access rules */
     MethodAccessRules(MethodAccessRulesSubstate),
-    FunctionAccessRules(FunctionAccessRulesSubstate), // TODO: remove
 
     /* Royalty */
     ComponentRoyalty(
         ComponentRoyaltyConfigSubstate,
         ComponentRoyaltyAccumulatorSubstate,
     ),
-
-    /* Events */
-    PackageEventSchema(PackageEventSchemaSubstate),
 }
 
 impl RENodeModuleInit {
@@ -44,9 +40,6 @@ impl RENodeModuleInit {
                     access_rules.into(),
                 );
             }
-            RENodeModuleInit::FunctionAccessRules(access_rules) => {
-                substates.insert(SubstateOffset::PackageAccessRules, access_rules.into());
-            }
             RENodeModuleInit::TypeInfo(type_info) => {
                 substates.insert(
                     SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
@@ -61,14 +54,6 @@ impl RENodeModuleInit {
                 substates.insert(
                     SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                     accumulator.into(),
-                );
-            }
-            RENodeModuleInit::PackageEventSchema(event_schema) => {
-                substates.insert(
-                    SubstateOffset::PackageEventSchema(
-                        PackageEventSchemaOffset::PackageEventSchema,
-                    ),
-                    event_schema.into(),
                 );
             }
         }
@@ -87,7 +72,7 @@ pub enum RENodeInit {
         PackageCodeSubstate,
         PackageRoyaltySubstate,
         FunctionAccessRulesSubstate,
-        PackageEventSchemaSubstate
+        PackageEventSchemaSubstate,
     ),
     AuthZoneStack(AuthZoneStackSubstate),
     KeyValueStore,
@@ -108,7 +93,14 @@ impl RENodeInit {
                 substates.extend(object_substates);
             }
             RENodeInit::KeyValueStore | RENodeInit::NonFungibleStore => {}
-            RENodeInit::PackageObject(package_info, code_type, code, royalty) => {
+            RENodeInit::PackageObject(
+                package_info,
+                code_type,
+                code,
+                royalty,
+                function_access_rules,
+                event_schema,
+            ) => {
                 substates.insert(
                     SubstateOffset::Package(PackageOffset::Info),
                     package_info.into(),
@@ -121,6 +113,14 @@ impl RENodeInit {
                 substates.insert(
                     SubstateOffset::Package(PackageOffset::Royalty),
                     royalty.into(),
+                );
+                substates.insert(
+                    SubstateOffset::Package(PackageOffset::FunctionAccessRules),
+                    function_access_rules.into(),
+                );
+                substates.insert(
+                    SubstateOffset::Package(PackageOffset::EventSchema),
+                    event_schema.into(),
                 );
             }
         };
