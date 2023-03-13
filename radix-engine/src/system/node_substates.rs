@@ -42,6 +42,8 @@ pub enum PersistedSubstate {
     PackageCodeType(PackageCodeTypeSubstate),
     PackageCode(PackageCodeSubstate),
     PackageRoyalty(PackageRoyaltySubstate),
+    FunctionAccessRules(FunctionAccessRulesSubstate),
+    PackageEventSchema(PackageEventSchemaSubstate),
     Account(AccountSubstate),
     AccessController(AccessControllerSubstate),
     VaultInfo(VaultInfoSubstate),
@@ -55,7 +57,6 @@ pub enum PersistedSubstate {
 
     /* Access rules */
     MethodAccessRules(MethodAccessRulesSubstate),
-    FunctionAccessRules(FunctionAccessRulesSubstate),
 
     /* Royalty */
     ComponentRoyaltyConfig(ComponentRoyaltyConfigSubstate),
@@ -64,9 +65,6 @@ pub enum PersistedSubstate {
     /* KVStore entry */
     NonFungible(NonFungibleSubstate),
     KeyValueStoreEntry(KeyValueStoreEntrySubstate),
-
-    /* Event Schema */
-    PackageEventSchema(PackageEventSchemaSubstate),
 }
 
 impl PersistedSubstate {
@@ -196,6 +194,12 @@ impl PersistedSubstate {
             PersistedSubstate::PackageCodeType(value) => RuntimeSubstate::PackageCodeType(value),
             PersistedSubstate::PackageCode(value) => RuntimeSubstate::PackageCode(value),
             PersistedSubstate::PackageRoyalty(value) => RuntimeSubstate::PackageRoyalty(value),
+            PersistedSubstate::FunctionAccessRules(value) => {
+                RuntimeSubstate::FunctionAccessRules(value)
+            }
+            PersistedSubstate::PackageEventSchema(value) => {
+                RuntimeSubstate::PackageEventSchema(value)
+            }
             PersistedSubstate::VaultInfo(value) => RuntimeSubstate::VaultInfo(value),
             PersistedSubstate::VaultLiquidFungible(value) => {
                 RuntimeSubstate::VaultLiquidFungible(value)
@@ -221,17 +225,11 @@ impl PersistedSubstate {
             PersistedSubstate::MethodAccessRules(value) => {
                 RuntimeSubstate::MethodAccessRules(value)
             }
-            PersistedSubstate::FunctionAccessRules(value) => {
-                RuntimeSubstate::FunctionAccessRules(value)
-            }
             PersistedSubstate::ComponentRoyaltyConfig(value) => {
                 RuntimeSubstate::ComponentRoyaltyConfig(value)
             }
             PersistedSubstate::ComponentRoyaltyAccumulator(value) => {
                 RuntimeSubstate::ComponentRoyaltyAccumulator(value)
-            }
-            PersistedSubstate::PackageEventSchema(value) => {
-                RuntimeSubstate::PackageEventSchema(value)
             }
         }
     }
@@ -249,6 +247,8 @@ pub enum RuntimeSubstate {
     PackageInfo(PackageInfoSubstate),
     PackageCodeType(PackageCodeTypeSubstate),
     PackageRoyalty(PackageRoyaltySubstate),
+    FunctionAccessRules(FunctionAccessRulesSubstate),
+    PackageEventSchema(PackageEventSchemaSubstate),
     AuthZoneStack(AuthZoneStackSubstate),
     Worktop(WorktopSubstate),
     Account(AccountSubstate),
@@ -277,7 +277,6 @@ pub enum RuntimeSubstate {
 
     /* Access rules */
     MethodAccessRules(MethodAccessRulesSubstate),
-    FunctionAccessRules(FunctionAccessRulesSubstate),
 
     /* Royalty */
     ComponentRoyaltyConfig(ComponentRoyaltyConfigSubstate),
@@ -286,9 +285,6 @@ pub enum RuntimeSubstate {
     /* KVStore entry */
     NonFungible(NonFungibleSubstate),
     KeyValueStoreEntry(KeyValueStoreEntrySubstate),
-
-    /* Event Schema */
-    PackageEventSchema(PackageEventSchemaSubstate),
 }
 
 impl RuntimeSubstate {
@@ -314,6 +310,12 @@ impl RuntimeSubstate {
             RuntimeSubstate::PackageRoyalty(value) => {
                 PersistedSubstate::PackageRoyalty(value.clone())
             }
+            RuntimeSubstate::FunctionAccessRules(value) => {
+                PersistedSubstate::FunctionAccessRules(value.clone())
+            }
+            RuntimeSubstate::PackageEventSchema(value) => {
+                PersistedSubstate::PackageEventSchema(value.clone())
+            }
             RuntimeSubstate::NonFungible(value) => PersistedSubstate::NonFungible(value.clone()),
             RuntimeSubstate::KeyValueStoreEntry(value) => {
                 PersistedSubstate::KeyValueStoreEntry(value.clone())
@@ -335,17 +337,11 @@ impl RuntimeSubstate {
             RuntimeSubstate::MethodAccessRules(value) => {
                 PersistedSubstate::MethodAccessRules(value.clone())
             }
-            RuntimeSubstate::FunctionAccessRules(value) => {
-                PersistedSubstate::FunctionAccessRules(value.clone())
-            }
             RuntimeSubstate::ComponentRoyaltyConfig(value) => {
                 PersistedSubstate::ComponentRoyaltyConfig(value.clone())
             }
             RuntimeSubstate::ComponentRoyaltyAccumulator(value) => {
                 PersistedSubstate::ComponentRoyaltyAccumulator(value.clone())
-            }
-            RuntimeSubstate::PackageEventSchema(value) => {
-                PersistedSubstate::PackageEventSchema(value.clone())
             }
             /* Node module ends */
             RuntimeSubstate::AuthZoneStack(..)
@@ -379,6 +375,12 @@ impl RuntimeSubstate {
             RuntimeSubstate::PackageCodeType(value) => PersistedSubstate::PackageCodeType(value),
             RuntimeSubstate::PackageCode(value) => PersistedSubstate::PackageCode(value),
             RuntimeSubstate::PackageRoyalty(value) => PersistedSubstate::PackageRoyalty(value),
+            RuntimeSubstate::FunctionAccessRules(value) => {
+                PersistedSubstate::FunctionAccessRules(value)
+            }
+            RuntimeSubstate::PackageEventSchema(value) => {
+                PersistedSubstate::PackageEventSchema(value)
+            }
             RuntimeSubstate::NonFungible(value) => PersistedSubstate::NonFungible(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => {
                 PersistedSubstate::KeyValueStoreEntry(value)
@@ -404,17 +406,11 @@ impl RuntimeSubstate {
             RuntimeSubstate::MethodAccessRules(value) => {
                 PersistedSubstate::MethodAccessRules(value)
             }
-            RuntimeSubstate::FunctionAccessRules(value) => {
-                PersistedSubstate::FunctionAccessRules(value)
-            }
             RuntimeSubstate::ComponentRoyaltyConfig(value) => {
                 PersistedSubstate::ComponentRoyaltyConfig(value)
             }
             RuntimeSubstate::ComponentRoyaltyAccumulator(value) => {
                 PersistedSubstate::ComponentRoyaltyAccumulator(value)
-            }
-            RuntimeSubstate::PackageEventSchema(value) => {
-                PersistedSubstate::PackageEventSchema(value)
             }
             /* Node module ends */
             RuntimeSubstate::AuthZoneStack(..)

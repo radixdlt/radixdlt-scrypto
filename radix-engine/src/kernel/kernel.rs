@@ -676,7 +676,7 @@ where
         match (node_id, &init) {
             (RENodeId::GlobalObject(Address::Component(..)), RENodeInit::GlobalObject(..)) => {}
             (RENodeId::GlobalObject(Address::Resource(..)), RENodeInit::GlobalObject(..)) => {}
-            (RENodeId::GlobalObject(Address::Package(..)), RENodeInit::GlobalPackage(..)) => {}
+            (RENodeId::GlobalObject(Address::Package(..)), RENodeInit::PackageObject(..)) => {}
             (RENodeId::Object(..), RENodeInit::Object(..)) => {}
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
             (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore) => {}
@@ -685,7 +685,7 @@ where
         }
 
         let push_to_store = match init {
-            RENodeInit::GlobalObject(..) | RENodeInit::GlobalPackage(..) => true,
+            RENodeInit::GlobalObject(..) | RENodeInit::PackageObject(..) => true,
             _ => false,
         };
 

@@ -257,7 +257,7 @@ impl PackageNativePackage {
             royalty_vault: None,
             blueprint_royalty_configs: BTreeMap::new(),
         };
-        let node_init = RENodeInit::GlobalPackage(info, code_type, code, royalty);
+        let node_init = RENodeInit::PackageObject(info, code_type, code, royalty);
 
         // Build node module init
         let node_modules = build_package_node_modules(
@@ -321,7 +321,7 @@ impl PackageNativePackage {
             royalty_vault: None,
             blueprint_royalty_configs: input.royalty_config,
         };
-        let node_init = RENodeInit::GlobalPackage(info, code_type, code, royalty);
+        let node_init = RENodeInit::PackageObject(info, code_type, code, royalty);
 
         // Build node module init
         let node_modules = build_package_node_modules(
