@@ -46,3 +46,9 @@ pub fn to_manifest_value<T: ManifestEncode + ?Sized>(
 ) -> Result<ManifestValue, DecodeError> {
     manifest_decode(&manifest_encode(value).unwrap())
 }
+
+pub fn from_manifest_value<T: ManifestDecode>(
+    manifest_value: &ManifestValue,
+) -> Result<T, DecodeError> {
+    manifest_decode(&manifest_encode(manifest_value).unwrap())
+}

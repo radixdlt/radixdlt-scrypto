@@ -183,3 +183,28 @@ fn test_input_arg_hash_set_succeeds() {
 fn test_invalid_input_arg_hash_set_fails() {
     test_arg("hash_set", to_manifest_value(&0u8).unwrap(), InvalidInput);
 }
+
+macro_rules! to_and_from_manifest_value {
+    ($v:ident) => {{
+        let m: ManifestValue = to_manifest_value(&$v).unwrap();
+        from_manifest_value(&m).unwrap()
+    }};
+}
+
+#[test]
+fn test_to_from_manifest_value() {
+    let v = 0u8;
+
+    let from: u8 = to_and_from_manifest_value!(v);
+    assert_eq!(v, from);
+
+    let mut hash_set = HashSet::new();
+    hash_set.insert(vec![0u8, 3u8]);
+    let from: HashSet<Vec<u8>> = to_and_from_manifest_value!(hash_set);
+    assert_eq!(hash_set, from);
+
+    let mut tree_map = BTreeMap::new();
+    tree_map.insert(-1i8, vec![1u8]);
+    let from: BTreeMap<i8, Vec<u8>> = to_and_from_manifest_value!(tree_map);
+    assert_eq!(tree_map, from);
+}
