@@ -681,7 +681,6 @@ where
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
             (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore) => {}
             (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {}
-            (RENodeId::TransactionRuntime, RENodeInit::TransactionRuntime(..)) => {}
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id))),
         }
 

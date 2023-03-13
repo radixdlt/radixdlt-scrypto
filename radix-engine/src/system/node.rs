@@ -1,5 +1,4 @@
 use crate::blueprints::package::PackageCodeTypeSubstate;
-use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::system::node_modules::access_rules::*;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::*;
@@ -91,7 +90,6 @@ pub enum RENodeInit {
     AuthZoneStack(AuthZoneStackSubstate),
     KeyValueStore,
     NonFungibleStore,
-    TransactionRuntime(TransactionRuntimeSubstate),
 }
 
 impl RENodeInit {
@@ -121,14 +119,6 @@ impl RENodeInit {
                 substates.insert(
                     SubstateOffset::Package(PackageOffset::Royalty),
                     royalty.into(),
-                );
-            }
-            RENodeInit::TransactionRuntime(transaction_hash) => {
-                substates.insert(
-                    SubstateOffset::TransactionRuntime(
-                        TransactionRuntimeOffset::TransactionRuntime,
-                    ),
-                    transaction_hash.into(),
                 );
             }
         };

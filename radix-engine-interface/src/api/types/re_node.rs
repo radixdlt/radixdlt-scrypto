@@ -255,11 +255,6 @@ pub enum ClockOffset {
 }
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum TransactionRuntimeOffset {
-    TransactionRuntime,
-}
-
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum AccountOffset {
     Account,
 }
@@ -286,7 +281,6 @@ pub enum SubstateOffset {
     Proof(ProofOffset),
     Worktop(WorktopOffset),
     Clock(ClockOffset),
-    TransactionRuntime(TransactionRuntimeOffset),
     Account(AccountOffset),
     AccessController(AccessControllerOffset),
 

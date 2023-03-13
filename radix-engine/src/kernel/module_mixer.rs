@@ -101,7 +101,10 @@ impl KernelModuleMixer {
                 params: auth_zone_params.clone(),
             },
             logger: LoggerModule::default(),
-            transaction_runtime: TransactionRuntimeModule { tx_hash },
+            transaction_runtime: TransactionRuntimeModule {
+                tx_hash,
+                next_id: 0,
+            },
             transaction_limits: TransactionLimitsModule::new(TransactionLimitsConfig {
                 max_wasm_memory: execution_config.max_wasm_mem_per_transaction,
                 max_wasm_memory_per_call_frame: execution_config.max_wasm_mem_per_call_frame,

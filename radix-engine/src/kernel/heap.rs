@@ -1,6 +1,5 @@
 use super::track::Track;
 use crate::blueprints::resource::{BucketInfoSubstate, NonFungibleSubstate, ProofInfoSubstate};
-use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::errors::CallFrameError;
 use crate::system::node_modules::access_rules::AuthZoneStackSubstate;
 use crate::system::node_substates::{RuntimeSubstate, SubstateRef, SubstateRefMut};
@@ -8,7 +7,7 @@ use crate::types::HashMap;
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, BucketOffset, NodeModuleId, ProofOffset, RENodeId, SubstateId,
-    SubstateOffset, TransactionRuntimeOffset,
+    SubstateOffset,
 };
 use radix_engine_interface::blueprints::resource::{
     LiquidFungibleResource, LiquidNonFungibleResource, ResourceType,
@@ -220,18 +219,6 @@ impl Into<AuthZoneStackSubstate> for HeapRENode {
             .remove(&(
                 NodeModuleId::SELF,
                 SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
-            ))
-            .unwrap()
-            .into()
-    }
-}
-
-impl Into<TransactionRuntimeSubstate> for HeapRENode {
-    fn into(mut self) -> TransactionRuntimeSubstate {
-        self.substates
-            .remove(&(
-                NodeModuleId::SELF,
-                SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime),
             ))
             .unwrap()
             .into()
