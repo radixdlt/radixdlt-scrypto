@@ -104,13 +104,6 @@ extern "C" {
         args_len: usize,
     ) -> Buffer;
 
-    //===============
-    // Node API
-    //===============
-
-    /// Creates a node with the given initial data.
-    pub fn create_node(node_ptr: *const u8, node_len: usize) -> Buffer;
-
     /// Destroys a node.
     pub fn drop_object(node_id_ptr: *const u8, node_id_len: usize);
 

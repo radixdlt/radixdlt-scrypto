@@ -1,8 +1,6 @@
 use crate::engine::wasm_api::*;
 use radix_engine_interface::api::{types::*, ClientTransactionRuntimeApi};
-use radix_engine_interface::api::{
-    ClientActorApi, ClientNodeApi, ClientObjectApi, ClientSubstateApi,
-};
+use radix_engine_interface::api::{ClientActorApi, ClientObjectApi, ClientSubstateApi};
 use radix_engine_interface::api::{ClientEventApi, ClientLoggerApi, LockFlags};
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::model::{Address, PackageAddress};
@@ -152,10 +150,8 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
 
         Ok(return_data)
     }
-}
 
-impl ClientNodeApi<ClientApiError> for ScryptoEnv {
-    fn sys_drop_node(&mut self, node_id: RENodeId) -> Result<(), ClientApiError> {
+    fn drop_object(&mut self, node_id: RENodeId) -> Result<(), ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
 
         unsafe { drop_object(node_id.as_ptr(), node_id.len()) };

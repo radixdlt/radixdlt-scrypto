@@ -151,7 +151,7 @@ where
         let node_id =
             scrypto_decode::<RENodeId>(&node_id).map_err(WasmRuntimeError::InvalidNodeId)?;
 
-        self.api.sys_drop_node(node_id)?;
+        self.api.drop_object(node_id)?;
 
         Ok(())
     }

@@ -24,7 +24,7 @@ pub(super) trait Transition<I> {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientApi<RuntimeError>
-            + ClientNodeApi<RuntimeError>
+            + ClientObjectApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>;
 }
 
@@ -38,7 +38,7 @@ pub(super) trait TransitionMut<I> {
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientApi<RuntimeError>
-            + ClientNodeApi<RuntimeError>
+            + ClientObjectApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>;
 }
 
@@ -95,7 +95,7 @@ impl TransitionMut<AccessControllerInitiateRecoveryAsPrimaryStateMachineInput>
     where
         Y: KernelNodeApi
             + KernelSubstateApi
-            + ClientNodeApi<RuntimeError>
+            + ClientObjectApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>,
     {
         match self.state {
@@ -133,7 +133,7 @@ impl TransitionMut<AccessControllerInitiateRecoveryAsRecoveryStateMachineInput>
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientApi<RuntimeError>
-            + ClientNodeApi<RuntimeError>
+            + ClientObjectApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>,
     {
         match self.state {
@@ -190,7 +190,7 @@ impl TransitionMut<AccessControllerQuickConfirmPrimaryRoleRecoveryProposalStateM
     where
         Y: KernelNodeApi
             + KernelSubstateApi
-            + ClientNodeApi<RuntimeError>
+            + ClientObjectApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>,
     {
         match self.state {
@@ -232,7 +232,7 @@ impl TransitionMut<AccessControllerQuickConfirmRecoveryRoleRecoveryProposalState
     where
         Y: KernelNodeApi
             + KernelSubstateApi
-            + ClientNodeApi<RuntimeError>
+            + ClientObjectApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>,
     {
         match self.state {
@@ -282,7 +282,7 @@ impl TransitionMut<AccessControllerTimedConfirmRecoveryStateMachineInput>
         Y: KernelNodeApi
             + KernelSubstateApi
             + ClientApi<RuntimeError>
-            + ClientNodeApi<RuntimeError>
+            + ClientObjectApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>,
     {
         // Timed confirm recovery can only be performed by the recovery role (this is checked
@@ -339,7 +339,7 @@ impl TransitionMut<AccessControllerCancelPrimaryRoleRecoveryProposalStateMachine
     where
         Y: KernelNodeApi
             + KernelSubstateApi
-            + ClientNodeApi<RuntimeError>
+            + ClientObjectApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>,
     {
         // A recovery attempt can only be canceled when we're in recovery mode regardless of whether
@@ -376,7 +376,7 @@ impl TransitionMut<AccessControllerCancelRecoveryRoleRecoveryProposalStateMachin
     where
         Y: KernelNodeApi
             + KernelSubstateApi
-            + ClientNodeApi<RuntimeError>
+            + ClientObjectApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>,
     {
         // A recovery attempt can only be canceled when we're in recovery mode regardless of whether
@@ -411,7 +411,7 @@ impl TransitionMut<AccessControllerLockPrimaryRoleStateMachineInput> for AccessC
     where
         Y: KernelNodeApi
             + KernelSubstateApi
-            + ClientNodeApi<RuntimeError>
+            + ClientObjectApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>,
     {
         // Primary can only be locked when it's unlocked
@@ -440,7 +440,7 @@ impl TransitionMut<AccessControllerUnlockPrimaryRoleStateMachineInput>
     where
         Y: KernelNodeApi
             + KernelSubstateApi
-            + ClientNodeApi<RuntimeError>
+            + ClientObjectApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>,
     {
         // Primary can only be unlocked when it's locked
@@ -471,7 +471,7 @@ impl TransitionMut<AccessControllerStopTimedRecoveryStateMachineInput>
     where
         Y: KernelNodeApi
             + KernelSubstateApi
-            + ClientNodeApi<RuntimeError>
+            + ClientObjectApi<RuntimeError>
             + ClientSubstateApi<RuntimeError>,
     {
         // We can only stop the timed recovery timer if we're in recovery mode. It doesn't matter

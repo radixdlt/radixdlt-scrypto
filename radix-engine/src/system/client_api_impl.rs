@@ -39,16 +39,6 @@ use sbor::rust::vec::Vec;
 use super::kernel_modules::costing::CostingReason;
 use super::node_modules::event_schema::PackageEventSchemaSubstate;
 
-impl<'g, 's, W> ClientNodeApi<RuntimeError> for Kernel<'g, 's, W>
-where
-    W: WasmEngine,
-{
-    fn sys_drop_node(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
-        self.kernel_drop_node(node_id)?;
-        Ok(())
-    }
-}
-
 impl<'g, 's, W> ClientSubstateApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
@@ -571,6 +561,11 @@ where
         self.kernel_create_node(node_id, RENodeInit::KeyValueStore, btreemap!())?;
 
         Ok(node_id.into())
+    }
+
+    fn drop_object(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
+        self.kernel_drop_node(node_id)?;
+        Ok(())
     }
 }
 

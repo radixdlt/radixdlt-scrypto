@@ -51,4 +51,6 @@ pub trait ClientObjectApi<E> {
         function_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, E>;
+
+    fn drop_object(&mut self, node_id: RENodeId) -> Result<(), E>;
 }
