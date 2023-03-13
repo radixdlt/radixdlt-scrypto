@@ -5,12 +5,12 @@ pub const CONSUME_BUFFER_FUNCTION_NAME: &str = "consume_buffer";
 pub const CONSUME_COST_UNITS_FUNCTION_ID: usize = 0x11;
 pub const CONSUME_COST_UNITS_FUNCTION_NAME: &str = "gas";
 
-pub const NEW_COMPONENT_FUNCTION_ID: usize = 0x30;
-pub const NEW_COMPONENT_FUNCTION_NAME: &str = "new_component";
+pub const NEW_OBJECT_FUNCTION_ID: usize = 0x30;
+pub const NEW_OBJECT_FUNCTION_NAME: &str = "new_object";
 pub const NEW_KEY_VALUE_STORE_FUNCTION_ID: usize = 0x31;
 pub const NEW_KEY_VALUE_STORE_FUNCTION_NAME: &str = "new_key_value_store";
-pub const GLOBALIZE_COMPONENT_FUNCTION_ID: usize = 0x32;
-pub const GLOBALIZE_COMPONENT_FUNCTION_NAME: &str = "globalize_component";
+pub const GLOBALIZE_OBJECT_FUNCTION_ID: usize = 0x32;
+pub const GLOBALIZE_OBJECT_FUNCTION_NAME: &str = "globalize_object";
 pub const CALL_METHOD_FUNCTION_ID: usize = 0x33;
 pub const CALL_METHOD_FUNCTION_NAME: &str = "call_method";
 pub const CALL_FUNCTION_FUNCTION_ID: usize = 0x34;

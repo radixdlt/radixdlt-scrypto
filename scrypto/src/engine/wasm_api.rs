@@ -35,7 +35,7 @@ extern "C" {
     /// Consumes a buffer by copying the contents into the specified destination.
     pub fn consume_buffer(buffer_id: BufferId, destination_ptr: *mut u8);
 
-    pub fn new_component(
+    pub fn new_object(
         blueprint_ident_ptr: *const u8,
         blueprint_ident: usize,
         app_states_ptr: *const u8,
@@ -44,7 +44,7 @@ extern "C" {
 
     pub fn new_key_value_store() -> Buffer;
 
-    pub fn globalize_component(
+    pub fn globalize_object(
         component_id_ptr: *const u8,
         component_id_len: usize,
         modules_ptr: *const u8,
@@ -176,7 +176,7 @@ pub unsafe fn consume_buffer(_buffer_id: BufferId, _destination_ptr: *mut u8) {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn new_component(
+pub unsafe fn new_object(
     _blueprint_ident_ptr: *const u8,
     _blueprint_ident: usize,
     _app_states_ptr: *const u8,
@@ -191,7 +191,7 @@ pub unsafe fn new_key_value_store() -> Buffer {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn globalize_component(
+pub unsafe fn globalize_object(
     _node_id_ptr: *const u8,
     _node_id_len: usize,
     _modules_ptr: *const u8,

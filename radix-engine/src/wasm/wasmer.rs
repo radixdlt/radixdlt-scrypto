@@ -235,7 +235,7 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
-        pub fn new_component(
+        pub fn new_object(
             env: &WasmerInstanceEnv,
             blueprint_ident_ptr: u32,
             blueprint_ident_len: u32,
@@ -245,7 +245,7 @@ impl WasmerModule {
             let (instance, runtime) = grab_runtime!(env);
 
             let buffer = runtime
-                .new_component(
+                .new_object(
                     read_memory(&instance, blueprint_ident_ptr, blueprint_ident_len)?,
                     read_memory(&instance, app_states_ptr, app_states_len)?,
                 )
@@ -254,7 +254,7 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
-        pub fn globalize_component(
+        pub fn globalize_object(
             env: &WasmerInstanceEnv,
             component_id_ptr: u32,
             component_id_len: u32,
@@ -264,7 +264,7 @@ impl WasmerModule {
             let (instance, runtime) = grab_runtime!(env);
 
             let buffer = runtime
-                .globalize_component(
+                .globalize_object(
                     read_memory(&instance, component_id_ptr, component_id_len)?,
                     read_memory(&instance, access_rules_id_ptr, access_rules_id_len)?,
                 )
@@ -451,9 +451,9 @@ impl WasmerModule {
                 CONSUME_BUFFER_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), consume_buffer),
                 CALL_METHOD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), call_method),
                 CALL_FUNCTION_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), call_function),
-                NEW_COMPONENT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), new_component),
+                NEW_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), new_component),
                 NEW_KEY_VALUE_STORE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), new_key_value_store),
-                GLOBALIZE_COMPONENT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), globalize_component),
+                GLOBALIZE_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), globalize_object),
                 GET_TYPE_INFO_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_type_info),
                 DROP_NODE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), drop_node),
                 LOCK_SUBSTATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), lock_substate),

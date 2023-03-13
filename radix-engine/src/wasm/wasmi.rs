@@ -177,7 +177,7 @@ fn call_function(
         .map(|buffer| buffer.0)
 }
 
-fn new_component(
+fn new_object(
     mut caller: Caller<'_, HostState>,
     blueprint_ident_ptr: u32,
     blueprint_ident_len: u32,
@@ -187,7 +187,7 @@ fn new_component(
     let (memory, runtime) = grab_runtime!(caller);
 
     runtime
-        .new_component(
+        .new_object(
             read_memory(
                 caller.as_context_mut(),
                 memory,
@@ -212,7 +212,7 @@ fn new_key_value_store(
     runtime.new_key_value_store().map(|buffer| buffer.0)
 }
 
-fn globalize_component(
+fn globalize_object(
     mut caller: Caller<'_, HostState>,
     component_id_ptr: u32,
     component_id_len: u32,
@@ -222,7 +222,7 @@ fn globalize_component(
     let (memory, runtime) = grab_runtime!(caller);
 
     runtime
-        .globalize_component(
+        .globalize_object(
             read_memory(
                 caller.as_context_mut(),
                 memory,
@@ -484,7 +484,7 @@ impl WasmiModule {
              app_states_ptr: u32,
              app_states_len: u32|
              -> Result<u64, Trap> {
-                new_component(
+                new_object(
                     caller,
                     blueprint_ident_ptr,
                     blueprint_ident_len,
@@ -502,7 +502,7 @@ impl WasmiModule {
             },
         );
 
-        let host_globalize_component = Func::wrap(
+        let host_globalize_object = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
              component_id_ptr: u32,
@@ -510,7 +510,7 @@ impl WasmiModule {
              access_rules_ptr: u32,
              access_rules_len: u32|
              -> Result<u64, Trap> {
-                globalize_component(
+                globalize_object(
                     caller,
                     component_id_ptr,
                     component_id_len,
@@ -651,7 +651,7 @@ impl WasmiModule {
         linker_define!(linker, CONSUME_BUFFER_FUNCTION_NAME, host_consume_buffer);
         linker_define!(linker, CALL_METHOD_FUNCTION_NAME, host_call_method);
         linker_define!(linker, CALL_FUNCTION_FUNCTION_NAME, host_call_function);
-        linker_define!(linker, NEW_COMPONENT_FUNCTION_NAME, host_new_component);
+        linker_define!(linker, NEW_OBJECT_FUNCTION_NAME, host_new_component);
         linker_define!(
             linker,
             NEW_KEY_VALUE_STORE_FUNCTION_NAME,
@@ -659,8 +659,8 @@ impl WasmiModule {
         );
         linker_define!(
             linker,
-            GLOBALIZE_COMPONENT_FUNCTION_NAME,
-            host_globalize_component
+            GLOBALIZE_OBJECT_FUNCTION_NAME,
+            host_globalize_object
         );
         linker_define!(linker, GET_TYPE_INFO_FUNCTION_NAME, host_get_type_info);
         linker_define!(linker, DROP_NODE_FUNCTION_NAME, host_drop_node);

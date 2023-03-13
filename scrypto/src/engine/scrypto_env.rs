@@ -27,7 +27,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         let app_states = scrypto_encode(&app_states).unwrap();
 
         let bytes = copy_buffer(unsafe {
-            new_component(
+            new_object(
                 blueprint_ident.as_ptr(),
                 blueprint_ident.len(),
                 app_states.as_ptr(),
@@ -46,7 +46,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         let modules = scrypto_encode(&modules).unwrap();
 
         let bytes = copy_buffer(unsafe {
-            globalize_component(
+            globalize_object(
                 node_id.as_ptr(),
                 node_id.len(),
                 modules.as_ptr(),

@@ -105,7 +105,7 @@ where
         self.allocate_buffer(return_data)
     }
 
-    fn new_component(
+    fn new_object(
         &mut self,
         blueprint_ident: Vec<u8>,
         app_states: Vec<u8>,
@@ -122,7 +122,7 @@ where
         self.allocate_buffer(component_id_encoded)
     }
 
-    fn globalize_component(
+    fn globalize_object(
         &mut self,
         component_id: Vec<u8>,
         modules: Vec<u8>,
@@ -313,7 +313,7 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn new_component(
+    fn new_object(
         &mut self,
         blueprint_ident: Vec<u8>,
         app_states: Vec<u8>,
@@ -321,7 +321,7 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn globalize_component(
+    fn globalize_object(
         &mut self,
         component_id: Vec<u8>,
         access_rules: Vec<u8>,

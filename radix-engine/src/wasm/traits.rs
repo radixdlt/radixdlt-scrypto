@@ -31,13 +31,13 @@ pub trait WasmRuntime {
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn new_component(
+    fn new_object(
         &mut self,
         blueprint_ident: Vec<u8>,
         app_states: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn globalize_component(
+    fn globalize_object(
         &mut self,
         component_id: Vec<u8>,
         access_rules: Vec<u8>,
