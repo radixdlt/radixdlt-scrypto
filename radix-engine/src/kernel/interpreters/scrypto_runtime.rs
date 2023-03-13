@@ -72,9 +72,9 @@ where
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let receiver =
-            scrypto_decode::<RENodeId>(&receiver).map_err(WasmRuntimeError::InvalidReceiver)?;
+            scrypto_decode::<RENodeId>(&receiver).map_err(WasmRuntimeError::InvalidNodeId)?;
 
-        let ident = String::from_utf8(ident).map_err(|_| WasmRuntimeError::InvalidIdent)?;
+        let ident = String::from_utf8(ident).map_err(|_| WasmRuntimeError::InvalidString)?;
 
         let node_module_id = NodeModuleId::from_u32(module_id)
             .ok_or(WasmRuntimeError::InvalidModuleId(module_id))?;
@@ -96,9 +96,9 @@ where
         let package_address = scrypto_decode::<PackageAddress>(&package_address)
             .map_err(WasmRuntimeError::InvalidPackageAddress)?;
         let blueprint_ident =
-            String::from_utf8(blueprint_ident).map_err(|_| WasmRuntimeError::InvalidIdent)?;
+            String::from_utf8(blueprint_ident).map_err(|_| WasmRuntimeError::InvalidString)?;
         let function_ident =
-            String::from_utf8(function_ident).map_err(|_| WasmRuntimeError::InvalidIdent)?;
+            String::from_utf8(function_ident).map_err(|_| WasmRuntimeError::InvalidString)?;
 
         let return_data =
             self.api
@@ -119,7 +119,7 @@ where
         let schema =
             scrypto_decode::<PackageSchema>(&abi).map_err(WasmRuntimeError::InvalidSchema)?;
         let access_rules = scrypto_decode::<AccessRulesConfig>(&access_rules)
-            .map_err(WasmRuntimeError::InvalidAccessRulesChain)?;
+            .map_err(WasmRuntimeError::InvalidAccessRules)?;
         let royalty_config = scrypto_decode::<BTreeMap<String, RoyaltyConfig>>(&royalty_config)
             .map_err(WasmRuntimeError::InvalidRoyaltyConfig)?;
         let metadata = scrypto_decode::<BTreeMap<String, String>>(&metadata)
@@ -149,7 +149,7 @@ where
         app_states: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let blueprint_ident =
-            String::from_utf8(blueprint_ident).map_err(|_| WasmRuntimeError::InvalidIdent)?;
+            String::from_utf8(blueprint_ident).map_err(|_| WasmRuntimeError::InvalidString)?;
         let app_states = scrypto_decode::<Vec<Vec<u8>>>(&app_states)
             .map_err(WasmRuntimeError::InvalidAppStates)?;
 
@@ -165,10 +165,10 @@ where
         component_id: Vec<u8>,
         modules: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let component_id = scrypto_decode::<RENodeId>(&component_id)
-            .map_err(WasmRuntimeError::InvalidComponentId)?;
+        let component_id =
+            scrypto_decode::<RENodeId>(&component_id).map_err(WasmRuntimeError::InvalidNodeId)?;
         let modules = scrypto_decode::<BTreeMap<NodeModuleId, ObjectId>>(&modules)
-            .map_err(WasmRuntimeError::InvalidValue)?;
+            .map_err(WasmRuntimeError::InvalidModules)?;
 
         let component_address = self.api.globalize(component_id, modules)?;
         let component_address_encoded =
@@ -276,7 +276,7 @@ where
         event: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
         self.api.emit_event(
-            scrypto_decode(&event_name).expect("Failed to decode level"),
+            String::from_utf8(event_name).map_err(|_| WasmRuntimeError::InvalidString)?,
             event,
         )?;
         Ok(())
@@ -288,10 +288,22 @@ where
         message: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
         self.api.log_message(
-            scrypto_decode::<Level>(&level).expect("Failed to decode level"),
-            scrypto_decode::<String>(&message).expect("Failed to decode message"),
+            scrypto_decode::<Level>(&level).map_err(WasmRuntimeError::InvalidLogLevel)?,
+            String::from_utf8(message).map_err(|_| WasmRuntimeError::InvalidString)?,
         )?;
         Ok(())
+    }
+
+    fn get_transaction_hash(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let hash = self.api.get_transaction_hash()?;
+
+        self.allocate_buffer(scrypto_encode(&hash).expect("Failed to encode transaction hash"))
+    }
+
+    fn generate_uuid(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let uuid = self.api.generate_uuid()?;
+
+        self.allocate_buffer(scrypto_encode(&uuid).expect("Failed to encode UUID"))
     }
 }
 
@@ -440,6 +452,14 @@ impl WasmRuntime for NopWasmRuntime {
         level: Vec<u8>,
         message: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn get_transaction_hash(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn generate_uuid(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 }

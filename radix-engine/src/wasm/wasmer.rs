@@ -451,6 +451,27 @@ impl WasmerModule {
 
             runtime.log_message(level, message)
         }
+
+        pub fn get_transaction_hash(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
+            let (_instance, runtime) = grab_runtime!(env);
+
+            let buffer = runtime
+                .get_transaction_hash()
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer.0)
+        }
+
+        pub fn generate_uuid(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
+            let (_instance, runtime) = grab_runtime!(env);
+
+            let buffer = runtime
+                .generate_uuid()
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer.0)
+        }
+
         // native functions ends
 
         // env
@@ -479,6 +500,8 @@ impl WasmerModule {
                 CONSUME_COST_UNITS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), consume_cost_units),
                 EMIT_EVENT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), emit_event),
                 LOG_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), log_message),
+                GET_TRANSACTION_HASH_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_transaction_hash),
+                GENERATE_UUID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), generate_uuid),
             }
         };
 

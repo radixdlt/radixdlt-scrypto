@@ -262,7 +262,6 @@ impl ClientEventApi<ClientApiError> for ScryptoEnv {
         event_name: String,
         event_data: Vec<u8>,
     ) -> Result<(), ClientApiError> {
-        let event_name = scrypto_encode(&event_name).unwrap();
         unsafe {
             emit_event(
                 event_name.as_ptr(),

@@ -398,6 +398,20 @@ fn emit_event(
     runtime.emit_event(event_name, event_data)
 }
 
+fn get_transaction_hash(
+    caller: Caller<'_, HostState>,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (_, runtime) = grab_runtime!(caller);
+
+    runtime.get_transaction_hash().map(|buffer| buffer.0)
+}
+
+fn generate_uuid(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (_, runtime) = grab_runtime!(caller);
+
+    runtime.generate_uuid().map(|buffer| buffer.0)
+}
+
 fn log_message(
     mut caller: Caller<'_, HostState>,
     level_ptr: u32,
@@ -699,6 +713,20 @@ impl WasmiModule {
             },
         );
 
+        let host_get_transaction_hash = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
+                get_transaction_hash(caller).map_err(|e| e.into())
+            },
+        );
+
+        let host_generate_uuid = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
+                generate_uuid(caller).map_err(|e| e.into())
+            },
+        );
+
         let mut linker = <Linker<HostState>>::new();
         linker_define!(linker, CONSUME_BUFFER_FUNCTION_NAME, host_consume_buffer);
         linker_define!(linker, CALL_METHOD_FUNCTION_NAME, host_call_method);
@@ -733,6 +761,12 @@ impl WasmiModule {
         );
         linker_define!(linker, EMIT_EVENT_FUNCTION_NAME, host_emit_event);
         linker_define!(linker, LOG_FUNCTION_NAME, host_log);
+        linker_define!(
+            linker,
+            GET_TRANSACTION_HASH_FUNCTION_NAME,
+            host_get_transaction_hash
+        );
+        linker_define!(linker, GENERATE_UUID_FUNCTION_NAME, host_generate_uuid);
 
         linker.instantiate(store.as_context_mut(), &module)
     }
