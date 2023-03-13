@@ -66,13 +66,14 @@ fn test_basic_transfer() {
     // Or you can run just this test with the below:
     // (cd radix-engine && cargo test --test metering -- test_basic_transfer)
     assert_eq!(
-        10000 /* CreateNode */
+        7500 /* CreateNode */
         + 88000 /* DropLock */
-        + 10000 /* DropNode */
+        + 7500 /* DropNode */
         + 11160 /* Invoke */
         + 89500 /* LockSubstate */
         + 61500 /* ReadSubstate */
-        + 70000 /* RunNative */
+        + 62500 /* RunNative */
+        + 7500 /* RunSystem */
         + 0 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1320 /* TxPayloadCost */
@@ -199,14 +200,15 @@ fn test_radiswap() {
     // Or you can run just this test with the below:
     // (cd radix-engine && cargo test --test metering -- test_radiswap)
     assert_eq!(
-        15000 /* CreateNode */
+        12500 /* CreateNode */
         + 228500 /* DropLock */
-        + 12500 /* DropNode */
+        + 10000 /* DropNode */
         + 25340 /* Invoke */
         + 231000 /* LockSubstate */
-        + 2636900 /* ReadSubstate */
-        + 152500 /* RunNative */
-        + 1520730 /* RunWasm */
+        + 2635380 /* ReadSubstate */
+        + 137500 /* RunNative */
+        + 15000 /* RunSystem */
+        + 1520645 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1705 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
@@ -307,18 +309,19 @@ fn test_flash_loan() {
     // Or you can run just this test with the below:
     // (cd radix-engine && cargo test --test metering -- test_flash_loan)
     assert_eq!(
-        22500 /* CreateNode */
-        + 351000 /* DropLock */
-        + 22500 /* DropNode */
-        + 45770 /* Invoke */
-        + 359500 /* LockSubstate */
-        + 5266960 /* ReadSubstate */
-        + 245000 /* RunNative */
-        + 1172150 /* RunWasm */
+        20000 /* CreateNode */
+        + 346000 /* DropLock */
+        + 20000 /* DropNode */
+        + 45110 /* Invoke */
+        + 354000 /* LockSubstate */
+        + 5260920 /* ReadSubstate */
+        + 215000 /* RunNative */
+        + 30000 /* RunSystem */
+        + 1172035 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2475 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 92500, /* WriteSubstate */
+        + 90500, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
 }

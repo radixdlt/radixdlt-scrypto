@@ -132,12 +132,8 @@ pub enum WasmRuntimeError {
     InvalidEventSchema(DecodeError),
     /// Invalid component address
     InvalidLockFlags,
-
-    InvalidEventName(DecodeError),
-
+    /// Invalid log level
     InvalidLogLevel(DecodeError),
-
-    InvalidLogMessage(DecodeError),
 
     //=============
     // No-op Runtime
