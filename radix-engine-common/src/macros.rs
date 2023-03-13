@@ -229,7 +229,7 @@ macro_rules! scrypto_args {
 }
 
 #[macro_export]
-macro_rules! manifest_vec {
+macro_rules! manifest_args {
     ($($args: expr),*) => {{
         use ::sbor::Encoder;
         let mut buf = ::sbor::rust::vec::Vec::new();
@@ -242,17 +242,17 @@ macro_rules! manifest_vec {
             let arg = $args;
             encoder.encode(&arg).unwrap();
         )*
-        buf
+        $crate::data::manifest::manifest_decode(&buf).unwrap()
     }};
 }
-
+/*
 #[macro_export]
 macro_rules! manifest_args {
     ($($args: tt)*) => {{
         $crate::data::manifest::manifest_decode(&manifest_vec!($($args)*)).unwrap()
     }};
 }
-
+*/
 /// Constructs an address.
 #[macro_export]
 macro_rules! construct_address {

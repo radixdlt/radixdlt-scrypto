@@ -35,8 +35,8 @@ use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::manifest::model::*;
 use radix_engine_interface::data::manifest::*;
 use radix_engine_interface::data::scrypto::model::*;
+use radix_engine_interface::manifest_args;
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
-use radix_engine_interface::{manifest_args, manifest_vec};
 use sbor::rust::borrow::Borrow;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
@@ -1579,8 +1579,8 @@ mod tests {
                 entries: BTreeMap::from([(
                     NonFungibleLocalId::integer(1),
                     (
-                        manifest_vec!(String::from("Hello World"), dec!("12")),
-                        manifest_vec!(12u8, 19u128)
+                        manifest_encode(&(String::from("Hello World"), dec!("12"))).unwrap(),
+                        manifest_encode(&(12u8, 19u128)).unwrap()
                     )
                 )])
             },
@@ -1665,8 +1665,8 @@ mod tests {
                     entries: BTreeMap::from([(
                         NonFungibleLocalId::integer(1),
                         (
-                            manifest_vec!(String::from("Hello World"), dec!("12")),
-                            manifest_vec!(12u8, 19u128)
+                            manifest_encode(&(String::from("Hello World"), dec!("12"))).unwrap(),
+                            manifest_encode(&(12u8, 19u128)).unwrap()
                         )
                     )]),
                 })
@@ -1739,6 +1739,7 @@ mod tests {
                 "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak",
             )
             .unwrap();
+
         generate_instruction_ok!(
             r#"
             MINT_UUID_NON_FUNGIBLE
@@ -1753,8 +1754,8 @@ mod tests {
             Instruction::MintUuidNonFungible {
                 resource_address: resource,
                 entries: Vec::from([(
-                    manifest_vec!(String::from("Hello World"), dec!("12")),
-                    manifest_vec!(12u8, 19u128)
+                    manifest_encode(&(String::from("Hello World"), dec!("12"))).unwrap(),
+                    manifest_encode(&(12u8, 19u128)).unwrap()
                 )])
             },
         );
