@@ -18,6 +18,7 @@ use radix_engine_interface::api::component::{
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::PackageRoyaltySubstate;
+use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::{api::types::RENodeId, *};
 use sbor::rust::collections::BTreeMap;
 
@@ -47,25 +48,40 @@ impl CostingModule {
     pub fn take_fee_reserve(self) -> SystemLoanFeeReserve {
         self.fee_reserve
     }
-}
 
-fn apply_execution_cost<Y: KernelModuleApi<RuntimeError>, F>(
-    api: &mut Y,
-    reason: CostingReason,
-    base_price: F,
-    multiplier: usize,
-) -> Result<(), RuntimeError>
-where
-    F: Fn(&FeeTable) -> u32,
-{
-    let cost_units = base_price(&api.kernel_get_module_state().costing.fee_table);
-    api.kernel_get_module_state()
-        .costing
-        .fee_reserve
-        .consume_multiplied_execution(cost_units, multiplier, reason)
-        .map_err(|e| {
-            RuntimeError::ModuleError(ModuleError::CostingError(CostingError::FeeReserveError(e)))
-        })
+    pub fn apply_execution_cost<F>(
+        &mut self,
+        reason: CostingReason,
+        base_price: F,
+        multiplier: usize,
+    ) -> Result<(), RuntimeError>
+    where
+        F: Fn(&FeeTable) -> u32,
+    {
+        let cost_units = base_price(&self.fee_table);
+        self.fee_reserve
+            .consume_multiplied_execution(cost_units, multiplier, reason)
+            .map_err(|e| {
+                RuntimeError::ModuleError(ModuleError::CostingError(CostingError::FeeReserveError(
+                    e,
+                )))
+            })
+    }
+
+    pub fn credit_cost_units(
+        &mut self,
+        vault_id: ObjectId,
+        locked_fee: LiquidFungibleResource,
+        contingent: bool,
+    ) -> Result<LiquidFungibleResource, RuntimeError> {
+        self.fee_reserve
+            .lock_fee(vault_id, locked_fee, contingent)
+            .map_err(|e| {
+                RuntimeError::ModuleError(ModuleError::CostingError(CostingError::FeeReserveError(
+                    e,
+                )))
+            })
+    }
 }
 
 fn apply_royalty_cost<Y: KernelModuleApi<RuntimeError>>(
@@ -96,8 +112,7 @@ impl KernelModule for CostingModule {
         }
 
         if current_depth > 0 {
-            apply_execution_cost(
-                api,
+            api.kernel_get_module_state().costing.apply_execution_cost(
                 CostingReason::Invoke,
                 |fee_table| {
                     fee_table.kernel_api_cost(CostingEntry::Invoke {
@@ -216,8 +231,7 @@ impl KernelModule for CostingModule {
         _node_module_init: &BTreeMap<NodeModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError> {
         // TODO: calculate size
-        apply_execution_cost(
-            api,
+        api.kernel_get_module_state().costing.apply_execution_cost(
             CostingReason::CreateNode,
             |fee_table| fee_table.kernel_api_cost(CostingEntry::CreateNode { size: 0 }),
             1,
@@ -227,8 +241,7 @@ impl KernelModule for CostingModule {
 
     fn after_drop_node<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
         // TODO: calculate size
-        apply_execution_cost(
-            api,
+        api.kernel_get_module_state().costing.apply_execution_cost(
             CostingReason::DropNode,
             |fee_table| fee_table.kernel_api_cost(CostingEntry::DropNode { size: 0 }),
             1,
@@ -244,8 +257,7 @@ impl KernelModule for CostingModule {
         _offset: &SubstateOffset,
         _flags: &LockFlags,
     ) -> Result<(), RuntimeError> {
-        apply_execution_cost(
-            api,
+        api.kernel_get_module_state().costing.apply_execution_cost(
             CostingReason::LockSubstate,
             |fee_table| fee_table.kernel_api_cost(CostingEntry::LockSubstate),
             1,
@@ -258,8 +270,7 @@ impl KernelModule for CostingModule {
         _lock_handle: LockHandle,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        apply_execution_cost(
-            api,
+        api.kernel_get_module_state().costing.apply_execution_cost(
             CostingReason::ReadSubstate,
             |fee_table| fee_table.kernel_api_cost(CostingEntry::ReadSubstate { size: size as u32 }),
             1,
@@ -272,8 +283,7 @@ impl KernelModule for CostingModule {
         _lock_handle: LockHandle,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        apply_execution_cost(
-            api,
+        api.kernel_get_module_state().costing.apply_execution_cost(
             CostingReason::WriteSubstate,
             |fee_table| {
                 fee_table.kernel_api_cost(CostingEntry::WriteSubstate { size: size as u32 })
@@ -287,8 +297,7 @@ impl KernelModule for CostingModule {
         api: &mut Y,
         _lock_handle: LockHandle,
     ) -> Result<(), RuntimeError> {
-        apply_execution_cost(
-            api,
+        api.kernel_get_module_state().costing.apply_execution_cost(
             CostingReason::DropLock,
             |fee_table| fee_table.kernel_api_cost(CostingEntry::DropLock),
             1,

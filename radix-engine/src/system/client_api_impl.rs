@@ -37,6 +37,7 @@ use radix_engine_interface::schema::PackageSchema;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
+use super::kernel_modules::costing::CostingReason;
 use super::node_modules::event_schema::PackageEventSchemaSubstate;
 
 impl<'g, 's, W> ClientNodeApi<RuntimeError> for Kernel<'g, 's, W>
@@ -617,7 +618,17 @@ where
         units: u32,
         reason: ClientCostingReason,
     ) -> Result<(), RuntimeError> {
-        todo!()
+        // No costing applied
+
+        self.kernel_get_module_state().costing.apply_execution_cost(
+            match reason {
+                ClientCostingReason::RunWasm => CostingReason::RunWasm,
+                ClientCostingReason::RunNative => CostingReason::RunNative,
+                ClientCostingReason::RunSystem => CostingReason::RunSystem,
+            },
+            |_| units,
+            5,
+        )
     }
 
     fn credit_cost_units(
@@ -626,7 +637,39 @@ where
         locked_fee: LiquidFungibleResource,
         contingent: bool,
     ) -> Result<LiquidFungibleResource, RuntimeError> {
-        todo!()
+        // No costing applied
+
+        self.kernel_get_module_state()
+            .costing
+            .credit_cost_units(vault_id, locked_fee, contingent)
+    }
+}
+
+impl<'g, 's, W> ClientTransactionLimitsApi<RuntimeError> for Kernel<'g, 's, W>
+where
+    W: WasmEngine,
+{
+    fn update_wasm_memory_usage(&mut self, consumed_memory: usize) -> Result<(), RuntimeError> {
+        // No costing applied
+
+        let current_depth = self.kernel_get_current_depth();
+        self.kernel_get_module_state()
+            .transaction_limits
+            .update_wasm_memory_usage(current_depth, consumed_memory)
+    }
+}
+
+impl<'g, 's, W> ClientExecutionTraceApi<RuntimeError> for Kernel<'g, 's, W>
+where
+    W: WasmEngine,
+{
+    fn update_instruction_index(&mut self, new_index: usize) -> Result<(), RuntimeError> {
+        // No costing applied
+
+        self.kernel_get_module_state()
+            .execution_trace
+            .update_instruction_index(new_index);
+        Ok(())
     }
 }
 
@@ -773,24 +816,6 @@ where
             .kernel_get_module_state()
             .transaction_runtime
             .generate_uuid())
-    }
-}
-
-impl<'g, 's, W> ClientTransactionLimitsApi<RuntimeError> for Kernel<'g, 's, W>
-where
-    W: WasmEngine,
-{
-    fn update_wasm_memory_usage(&mut self, size: usize) -> Result<(), RuntimeError> {
-        todo!()
-    }
-}
-
-impl<'g, 's, W> ClientExecutionTraceApi<RuntimeError> for Kernel<'g, 's, W>
-where
-    W: WasmEngine,
-{
-    fn update_instruction_index(&mut self, new_index: usize) -> Result<(), RuntimeError> {
-        todo!()
     }
 }
 

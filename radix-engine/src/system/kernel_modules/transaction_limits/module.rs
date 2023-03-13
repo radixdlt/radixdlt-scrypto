@@ -158,6 +158,29 @@ impl TransactionLimitsModule {
             Ok(())
         }
     }
+
+    // This event handler is called from two places:
+    //  1. Before wasm nested function call
+    //  2. After wasm invocation
+    pub fn update_wasm_memory_usage(
+        &mut self,
+        depth: usize,
+        consumed_memory: usize,
+    ) -> Result<(), RuntimeError> {
+        // update current frame consumed memory
+        if let Some(val) = self.call_frames_stack.get_mut(depth) {
+            val.wasm_memory_usage = consumed_memory;
+        } else {
+            // When kernel pops the call frame there are some nested calls which
+            // are not aligned with before_push_frame() which requires pushing
+            // new value on a stack instead of updating it.
+            self.call_frames_stack.push(CallFrameLimitInfo {
+                wasm_memory_usage: consumed_memory,
+            })
+        }
+
+        self.validate_wasm_memory()
+    }
 }
 
 impl KernelModule for TransactionLimitsModule {

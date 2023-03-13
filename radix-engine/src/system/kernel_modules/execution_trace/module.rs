@@ -38,6 +38,12 @@ pub struct ExecutionTraceModule {
     vault_ops: Vec<(TraceActor, ObjectId, VaultOp, usize)>,
 }
 
+impl ExecutionTraceModule {
+    pub fn update_instruction_index(&mut self, new_index: usize) {
+        self.current_instruction_index = new_index;
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ResourceChange {
     pub resource_address: ResourceAddress,
