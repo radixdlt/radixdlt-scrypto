@@ -60,7 +60,7 @@ extern "C" {
         _address_len: usize,
     ) -> Buffer;
 
-    pub fn get_component_type_info(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
+    pub fn get_type_info(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
 
     /// Invokes a method on a component.
     pub fn call_method(
@@ -213,10 +213,7 @@ pub unsafe fn globalize_with_address(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn get_component_type_info(
-    _component_id_ptr: *const u8,
-    _component_id_len: usize,
-) -> Buffer {
+pub unsafe fn get_type_info(_component_id_ptr: *const u8, _component_id_len: usize) -> Buffer {
     unreachable!()
 }
 

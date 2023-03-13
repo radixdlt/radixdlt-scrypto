@@ -422,7 +422,7 @@ impl WasmModule {
                                 ));
                             }
                         }
-                        GET_COMPONENT_TYPE_INFO_FUNCTION_NAME => {
+                        GET_TYPE_INFO_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -434,7 +434,7 @@ impl WasmModule {
                                 }
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        GET_COMPONENT_TYPE_INFO_FUNCTION_NAME.to_string(),
+                                        GET_TYPE_INFO_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }

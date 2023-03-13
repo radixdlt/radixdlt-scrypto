@@ -239,7 +239,7 @@ fn globalize_component(
         .map(|buffer| buffer.0)
 }
 
-fn get_component_type_info(
+fn get_type_info(
     mut caller: Caller<'_, HostState>,
     component_id_ptr: u32,
     component_id_len: u32,
@@ -247,7 +247,7 @@ fn get_component_type_info(
     let (memory, runtime) = grab_runtime!(caller);
 
     runtime
-        .get_component_type_info(read_memory(
+        .get_type_info(read_memory(
             caller.as_context_mut(),
             memory,
             component_id_ptr,
@@ -521,14 +521,13 @@ impl WasmiModule {
             },
         );
 
-        let host_get_component_type_info = Func::wrap(
+        let host_get_type_info = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
              component_id_ptr: u32,
              component_id_len: u32|
              -> Result<u64, Trap> {
-                get_component_type_info(caller, component_id_ptr, component_id_len)
-                    .map_err(|e| e.into())
+                get_type_info(caller, component_id_ptr, component_id_len).map_err(|e| e.into())
             },
         );
 
@@ -663,11 +662,7 @@ impl WasmiModule {
             GLOBALIZE_COMPONENT_FUNCTION_NAME,
             host_globalize_component
         );
-        linker_define!(
-            linker,
-            GET_COMPONENT_TYPE_INFO_FUNCTION_NAME,
-            host_get_component_type_info
-        );
+        linker_define!(linker, GET_TYPE_INFO_FUNCTION_NAME, host_get_type_info);
         linker_define!(linker, DROP_NODE_FUNCTION_NAME, host_drop_node);
         linker_define!(linker, LOCK_SUBSTATE_FUNCTION_NAME, host_lock_substate);
         linker_define!(linker, READ_SUBSTATE_FUNCTION_NAME, host_read_substate);

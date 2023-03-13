@@ -15,8 +15,8 @@ pub const CALL_METHOD_FUNCTION_ID: usize = 0x33;
 pub const CALL_METHOD_FUNCTION_NAME: &str = "call_method";
 pub const CALL_FUNCTION_FUNCTION_ID: usize = 0x34;
 pub const CALL_FUNCTION_FUNCTION_NAME: &str = "call_function";
-pub const GET_COMPONENT_TYPE_INFO_FUNCTION_ID: usize = 0x35;
-pub const GET_COMPONENT_TYPE_INFO_FUNCTION_NAME: &str = "get_component_type_info";
+pub const GET_TYPE_INFO_FUNCTION_ID: usize = 0x35;
+pub const GET_TYPE_INFO_FUNCTION_NAME: &str = "get_type_info";
 
 pub const LOCK_SUBSTATE_FUNCTION_ID: usize = 0x40;
 pub const LOCK_SUBSTATE_FUNCTION_NAME: &str = "lock_substate";

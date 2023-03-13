@@ -118,8 +118,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     ) -> Result<(PackageAddress, String), ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
 
-        let bytes =
-            copy_buffer(unsafe { get_component_type_info(node_id.as_ptr(), node_id.len()) });
+        let bytes = copy_buffer(unsafe { get_type_info(node_id.as_ptr(), node_id.len()) });
 
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
