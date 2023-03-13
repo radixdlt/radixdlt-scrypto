@@ -17,7 +17,7 @@ use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSch
 
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use native_sdk::resource::{SysBucket, Vault};
-use radix_engine_interface::api::unsafe_api::ClientCostingReason;
+use radix_engine_interface::api::types::ClientCostingReason;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct AccountSubstate {

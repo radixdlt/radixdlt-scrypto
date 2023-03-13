@@ -6,8 +6,6 @@ use crate::kernel::kernel::Kernel;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::{KernelInternalApi, KernelInvokeApi};
-use crate::kernel::module::KernelModule;
-use crate::kernel::module_mixer::KernelModuleMixer;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::system::kernel_modules::events::EventError;
 use crate::system::node::RENodeInit;
@@ -25,9 +23,9 @@ use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::types::Level;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
@@ -619,7 +617,7 @@ where
         units: u32,
         reason: ClientCostingReason,
     ) -> Result<(), RuntimeError> {
-        KernelModuleMixer::on_consume_cost_units(self, units, reason)
+        todo!()
     }
 
     fn credit_cost_units(
@@ -628,15 +626,7 @@ where
         locked_fee: LiquidFungibleResource,
         contingent: bool,
     ) -> Result<LiquidFungibleResource, RuntimeError> {
-        KernelModuleMixer::on_credit_cost_units(self, vault_id, locked_fee, contingent)
-    }
-
-    fn update_instruction_index(&mut self, new_index: usize) -> Result<(), RuntimeError> {
-        KernelModuleMixer::on_update_instruction_index(self, new_index)
-    }
-
-    fn update_wasm_memory_usage(&mut self, size: usize) -> Result<(), RuntimeError> {
-        KernelModuleMixer::on_update_wasm_memory_usage(self, size)
+        todo!()
     }
 }
 
@@ -783,6 +773,24 @@ where
             .kernel_get_module_state()
             .transaction_runtime
             .generate_uuid())
+    }
+}
+
+impl<'g, 's, W> ClientTransactionLimitsApi<RuntimeError> for Kernel<'g, 's, W>
+where
+    W: WasmEngine,
+{
+    fn update_wasm_memory_usage(&mut self, size: usize) -> Result<(), RuntimeError> {
+        todo!()
+    }
+}
+
+impl<'g, 's, W> ClientExecutionTraceApi<RuntimeError> for Kernel<'g, 's, W>
+where
+    W: WasmEngine,
+{
+    fn update_instruction_index(&mut self, new_index: usize) -> Result<(), RuntimeError> {
+        todo!()
     }
 }
 

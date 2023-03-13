@@ -16,7 +16,7 @@ use crate::wasm::{PrepareError, WasmValidator};
 use core::fmt::Debug;
 use native_sdk::resource::{ResourceManager, Vault};
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
-use radix_engine_interface::api::unsafe_api::ClientCostingReason;
+use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, AccessRulesConfig, FnKey};

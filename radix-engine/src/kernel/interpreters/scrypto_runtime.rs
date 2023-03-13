@@ -4,14 +4,9 @@ use crate::system::kernel_modules::costing::*;
 use crate::types::*;
 use crate::wasm::*;
 use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::types::Level;
-use radix_engine_interface::api::unsafe_api::ClientCostingReason;
-use radix_engine_interface::api::ClientEventApi;
-use radix_engine_interface::api::ClientLoggerApi;
-use radix_engine_interface::api::{
-    ClientActorApi, ClientCostingApi, ClientNodeApi, ClientObjectApi, ClientPackageApi,
-    ClientSubstateApi,
-};
+use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::AccessRulesConfig;
 use radix_engine_interface::schema::PackageSchema;
 use sbor::rust::vec::Vec;
@@ -19,13 +14,7 @@ use sbor::rust::vec::Vec;
 /// A shim between ClientApi and WASM, with buffer capability.
 pub struct ScryptoRuntime<'y, Y>
 where
-    Y: ClientCostingApi<RuntimeError>
-        + ClientNodeApi<RuntimeError>
-        + ClientSubstateApi<RuntimeError>
-        + ClientPackageApi<RuntimeError>
-        + ClientObjectApi<RuntimeError>
-        + ClientActorApi<RuntimeError>
-        + ClientEventApi<RuntimeError>,
+    Y: ClientApi<RuntimeError>,
 {
     api: &'y mut Y,
     buffers: BTreeMap<BufferId, Vec<u8>>,
@@ -34,13 +23,7 @@ where
 
 impl<'y, Y> ScryptoRuntime<'y, Y>
 where
-    Y: ClientCostingApi<RuntimeError>
-        + ClientNodeApi<RuntimeError>
-        + ClientSubstateApi<RuntimeError>
-        + ClientPackageApi<RuntimeError>
-        + ClientObjectApi<RuntimeError>
-        + ClientActorApi<RuntimeError>
-        + ClientEventApi<RuntimeError>,
+    Y: ClientApi<RuntimeError>,
 {
     pub fn new(api: &'y mut Y) -> Self {
         ScryptoRuntime {
@@ -53,14 +36,7 @@ where
 
 impl<'y, Y> WasmRuntime for ScryptoRuntime<'y, Y>
 where
-    Y: ClientCostingApi<RuntimeError>
-        + ClientNodeApi<RuntimeError>
-        + ClientSubstateApi<RuntimeError>
-        + ClientPackageApi<RuntimeError>
-        + ClientObjectApi<RuntimeError>
-        + ClientActorApi<RuntimeError>
-        + ClientEventApi<RuntimeError>
-        + ClientLoggerApi<RuntimeError>,
+    Y: ClientApi<RuntimeError>,
 {
     fn allocate_buffer(
         &mut self,
