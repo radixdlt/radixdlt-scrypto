@@ -105,7 +105,7 @@ CALL_METHOD
             vec![],
             r##"
 RECALL_RESOURCE
-    Bytes("49cd9235ba62b2c217e32e5b4754c08219ef16389761356eaccbf6f6bdbfa44d00000000")
+    Bytes("62b2c217e32e5b4754c08219ef16389761356eaccbf6f6bdbfa44d00000000")
     Decimal("1.2");
 "##,
         );

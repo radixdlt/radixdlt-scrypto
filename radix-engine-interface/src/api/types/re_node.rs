@@ -4,6 +4,10 @@ use crate::*;
 use sbor::rust::fmt;
 use sbor::rust::prelude::*;
 
+pub const INTERNAL_OBJECT_NORMAL_COMPONENT_ID: u8 = 0x0d;
+pub const INTERNAL_OBJECT_VAULT_ID: u8 = 0x0e;
+pub const INTERNAL_KV_STORE_ID: u8 = 0x0f;
+
 // TODO: Remove when better type system implemented
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor)]
 pub enum RENodeType {
@@ -19,6 +23,7 @@ pub enum RENodeType {
     KeyValueStore,
     NonFungibleStore,
     Object,
+    Vault,
     TransactionRuntime,
 }
 
@@ -51,14 +56,14 @@ impl fmt::Debug for RENodeId {
     }
 }
 
-impl Into<[u8; 36]> for RENodeId {
-    fn into(self) -> [u8; 36] {
+impl Into<[u8; OBJECT_ID_LENGTH]> for RENodeId {
+    fn into(self) -> [u8; OBJECT_ID_LENGTH] {
         match self {
             RENodeId::KeyValueStore(id) => id,
             RENodeId::NonFungibleStore(id) => id,
             RENodeId::Object(id) => id,
-            RENodeId::TransactionRuntime => [4u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
-            RENodeId::AuthZoneStack => [5u8; 36], // TODO: Remove, this is here to preserve receiver in invocation for now
+            RENodeId::TransactionRuntime => [4u8; OBJECT_ID_LENGTH], // TODO: Remove, this is here to preserve receiver in invocation for now
+            RENodeId::AuthZoneStack => [5u8; OBJECT_ID_LENGTH], // TODO: Remove, this is here to preserve receiver in invocation for now
             _ => panic!("Not a stored id: {:?}", self),
         }
     }
@@ -116,6 +121,7 @@ pub enum NodeModuleId {
     ComponentRoyalty,
     PackageRoyalty,
     FunctionAccessRules,
+    PackageEventSchema,
 }
 
 impl NodeModuleId {
@@ -129,6 +135,7 @@ impl NodeModuleId {
             5u32 => Some(NodeModuleId::ComponentRoyalty),
             6u32 => Some(NodeModuleId::PackageRoyalty),
             7u32 => Some(NodeModuleId::FunctionAccessRules),
+            8u32 => Some(NodeModuleId::PackageEventSchema),
             _ => None,
         }
     }
@@ -143,6 +150,7 @@ impl NodeModuleId {
             NodeModuleId::ComponentRoyalty => 5u32,
             NodeModuleId::PackageRoyalty => 6u32,
             NodeModuleId::FunctionAccessRules => 7u32,
+            NodeModuleId::PackageEventSchema => 8u32,
         }
     }
 }
@@ -166,6 +174,11 @@ pub enum TypeInfoOffset {
 pub enum RoyaltyOffset {
     RoyaltyConfig,
     RoyaltyAccumulator,
+}
+
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum PackageEventSchemaOffset {
+    PackageEventSchema,
 }
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -284,6 +297,7 @@ pub enum SubstateOffset {
     AccessRules(AccessRulesOffset),
     PackageAccessRules,
     Royalty(RoyaltyOffset),
+    PackageEventSchema(PackageEventSchemaOffset),
 }
 
 /// TODO: separate space addresses?

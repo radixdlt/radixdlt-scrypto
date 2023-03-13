@@ -560,7 +560,7 @@ struct FinalizingTrack<'s> {
 
 impl<'s> FinalizingTrack<'s> {
     fn calculate_commit_result(
-        self,
+        mut self,
         invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
         fee_summary: &mut FeeSummary,
         vault_ops: Vec<(TraceActor, ObjectId, VaultOp, usize)>,
@@ -572,19 +572,35 @@ impl<'s> FinalizingTrack<'s> {
         // Commit/rollback application state changes
         let mut to_persist = HashMap::new();
         let next_epoch = {
-            // FIXME: schema - update
-            let expected_schema_hash = hash("EpochChangeEvent");
+            // TODO: Simplify once ScryptoEvent trait is implemented
+            let expected_event_name = {
+                let (local_type_index, schema) = generate_full_schema_from_single_type::<
+                    EpochChangeEvent,
+                    ScryptoCustomTypeExtension,
+                >();
+                (*schema
+                    .resolve_type_metadata(local_type_index)
+                    .expect("Cant fail")
+                    .type_name)
+                    .to_owned()
+            };
             application_events
                 .iter()
                 .find(|(identifier, _)| match identifier {
                     EventTypeIdentifier(
-                        RENodeId::GlobalObject(
-                            Address::Package(EPOCH_MANAGER_PACKAGE)
-                            | Address::Component(ComponentAddress::EpochManager(..)),
+                        Emitter::Function(
+                            RENodeId::GlobalObject(Address::Package(EPOCH_MANAGER_PACKAGE)),
+                            NodeModuleId::SELF,
+                            ..,
+                        )
+                        | Emitter::Method(
+                            RENodeId::GlobalObject(Address::Component(
+                                ComponentAddress::EpochManager(..),
+                            )),
+                            NodeModuleId::SELF,
                         ),
-                        NodeModuleId::SELF,
-                        schema_hash,
-                    ) if *schema_hash == expected_schema_hash => true,
+                        event_name,
+                    ) if *event_name == expected_event_name => true,
                     _ => false,
                 })
                 .map(|(_, data)| {
@@ -599,6 +615,12 @@ impl<'s> FinalizingTrack<'s> {
                     SubstateMetaState::Existing { old_version, .. } => Some(*old_version),
                 };
                 to_persist.insert(id, (loaded.substate.to_persisted(), old_version));
+            }
+
+            // TODO: Is there a better way to include this?
+            if matches!(next_epoch, Some((_, 1))) {
+                self.new_global_addresses
+                    .insert(0, Address::Package(PACKAGE_PACKAGE));
             }
 
             self.new_global_addresses

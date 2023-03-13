@@ -1,2 +1,5 @@
-pub mod resource_manager;
-pub mod vault;
+mod resource_manager;
+mod vault;
+
+pub use resource_manager::*;
+pub use vault::*;

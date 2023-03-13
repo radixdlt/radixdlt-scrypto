@@ -290,13 +290,14 @@ impl TransactionProcessorBlueprint {
                         PACKAGE_PACKAGE,
                         PACKAGE_BLUEPRINT,
                         PACKAGE_PUBLISH_WASM_IDENT,
-                        scrypto_encode(&PackageLoaderPublishWasmInput {
+                        scrypto_encode(&PackagePublishWasmInput {
                             package_address: None,
                             code: code.clone(),
                             schema,
                             access_rules: access_rules.clone(),
                             royalty_config: royalty_config.clone(),
                             metadata: metadata.clone(),
+                            event_schema: BTreeMap::new(), // TODO: Fix in Part3 of application events
                         })
                         .unwrap(),
                     )?;

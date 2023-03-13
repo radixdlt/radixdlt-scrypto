@@ -141,11 +141,11 @@ mod tests {
     #[test]
     fn test_custom_types_group2() {
         let values = (
-            Own::Bucket([1u8; 36]),
-            Own::Proof([2u8; 36]),
-            Own::Vault([3u8; 36]),
-            Own::Object([4u8; 36]),
-            Own::KeyValueStore([5u8; 36]),
+            Own::Bucket([1u8; OBJECT_ID_LENGTH]),
+            Own::Proof([2u8; OBJECT_ID_LENGTH]),
+            Own::Vault([3u8; OBJECT_ID_LENGTH]),
+            Own::Object([4u8; OBJECT_ID_LENGTH]),
+            Own::KeyValueStore([5u8; OBJECT_ID_LENGTH]),
         );
         let bytes = scrypto_encode(&values).unwrap();
         assert_eq!(
@@ -155,15 +155,15 @@ mod tests {
                 33, // tuple
                 5,  // length
                 144, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // own
+                1, 1, 1, 1, 1, 1, // own
                 144, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-                2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, // own
+                2, 2, 2, 2, 2, 2, // own
                 144, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-                3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // own
+                3, 3, 3, 3, 3, 3, // own
                 144, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-                4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, // own
+                4, 4, 4, 4, 4, 4, // own
                 144, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
-                5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5 // own
+                5, 5, 5, 5, 5, 5 // own
             ]
         );
         assert_eq!(
@@ -171,19 +171,19 @@ mod tests {
             ScryptoValue::Tuple {
                 fields: vec![
                     ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Own(Own::Bucket([1u8; 36])),
+                        value: ScryptoCustomValue::Own(Own::Bucket([1u8; OBJECT_ID_LENGTH])),
                     },
                     ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Own(Own::Proof([2u8; 36])),
+                        value: ScryptoCustomValue::Own(Own::Proof([2u8; OBJECT_ID_LENGTH])),
                     },
                     ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Own(Own::Vault([3u8; 36])),
+                        value: ScryptoCustomValue::Own(Own::Vault([3u8; OBJECT_ID_LENGTH])),
                     },
                     ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Own(Own::Object([4u8; 36])),
+                        value: ScryptoCustomValue::Own(Own::Object([4u8; OBJECT_ID_LENGTH])),
                     },
                     ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Own(Own::KeyValueStore([5u8; 36])),
+                        value: ScryptoCustomValue::Own(Own::KeyValueStore([5u8; OBJECT_ID_LENGTH])),
                     },
                 ]
             }
