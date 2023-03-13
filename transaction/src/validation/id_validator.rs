@@ -4,7 +4,7 @@ use crate::errors::*;
 use crate::validation::*;
 use radix_engine_interface::data::manifest::model::*;
 use radix_engine_interface::data::manifest::*;
-use radix_engine_interface::data::scrypto::model::Own;
+use radix_engine_interface::data::scrypto::model::{Own, OBJECT_ID_LENGTH};
 use radix_engine_interface::*;
 use sbor::rust::collections::*;
 
@@ -138,12 +138,12 @@ impl ManifestValidator {
 impl TransformHandler<ManifestIdValidationError> for ManifestValidator {
     fn replace_bucket(&mut self, b: ManifestBucket) -> Result<Own, ManifestIdValidationError> {
         self.drop_bucket(&b)?;
-        Ok(Own::Bucket([0u8; 36]))
+        Ok(Own::Bucket([0u8; OBJECT_ID_LENGTH]))
     }
 
     fn replace_proof(&mut self, p: ManifestProof) -> Result<Own, ManifestIdValidationError> {
         self.drop_proof(&p)?;
-        Ok(Own::Proof([0u8; 36]))
+        Ok(Own::Proof([0u8; OBJECT_ID_LENGTH]))
     }
 
     // TODO: validate expression and blob as well

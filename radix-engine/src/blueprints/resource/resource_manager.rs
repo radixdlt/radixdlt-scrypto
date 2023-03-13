@@ -23,10 +23,6 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;
 
-use super::events::resource_manager::BurnResourceEvent;
-use super::events::resource_manager::MintResourceEvent;
-use super::events::resource_manager::VaultCreationEvent;
-
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ResourceManagerSubstate {
     pub resource_address: ResourceAddress, // TODO: Figure out a way to remove?

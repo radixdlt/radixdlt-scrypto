@@ -22,8 +22,11 @@ use radix_engine::types::*;
 use radix_engine::utils::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
-use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::api::node_modules::metadata::MetadataEntry;
+use radix_engine_interface::api::node_modules::auth::{
+    AuthAddresses, ACCESS_RULES_BLUEPRINT, FUNCTION_ACCESS_RULES_BLUEPRINT,
+};
+use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, METADATA_BLUEPRINT};
+use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
 use radix_engine_interface::api::types::{RENodeId, VaultOffset};
 use radix_engine_interface::api::ClientPackageApi;
 use radix_engine_interface::blueprints::clock::{
@@ -1111,6 +1114,92 @@ impl TestRunner {
             function_name,
             scrypto_args!(args),
         )
+    }
+
+    pub fn event_schema(
+        &mut self,
+        event_type_identifier: &EventTypeIdentifier,
+    ) -> (LocalTypeIndex, ScryptoSchema) {
+        let (package_address, blueprint_name, event_name) = match event_type_identifier {
+            EventTypeIdentifier(Emitter::Method(node_id, node_module), event_name) => {
+                match node_module {
+                    NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => (
+                        ACCESS_RULES_PACKAGE,
+                        ACCESS_RULES_BLUEPRINT.into(),
+                        event_name.clone(),
+                    ),
+                    NodeModuleId::ComponentRoyalty => (
+                        ROYALTY_PACKAGE,
+                        COMPONENT_ROYALTY_BLUEPRINT.into(),
+                        event_name.clone(),
+                    ),
+                    NodeModuleId::FunctionAccessRules => (
+                        ACCESS_RULES_PACKAGE,
+                        FUNCTION_ACCESS_RULES_BLUEPRINT.into(),
+                        event_name.clone(),
+                    ),
+                    NodeModuleId::Metadata => (
+                        METADATA_PACKAGE,
+                        METADATA_BLUEPRINT.into(),
+                        event_name.clone(),
+                    ),
+                    NodeModuleId::SELF => {
+                        let type_info = self
+                            .substate_store()
+                            .get_substate(&SubstateId(
+                                *node_id,
+                                NodeModuleId::TypeInfo,
+                                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+                            ))
+                            .unwrap()
+                            .substate
+                            .type_info()
+                            .clone();
+
+                        (
+                            type_info.package_address,
+                            type_info.blueprint_name,
+                            event_name.clone(),
+                        )
+                    }
+                    NodeModuleId::TypeInfo | NodeModuleId::PackageEventSchema => {
+                        panic!("No event schema.")
+                    }
+                }
+            }
+            EventTypeIdentifier(Emitter::Function(node_id, _, blueprint_name), event_name) => {
+                let RENodeId::GlobalObject(Address::Package(package_address)) = node_id else {
+                    panic!("must be a package address")
+                };
+                (
+                    *package_address,
+                    blueprint_name.to_owned(),
+                    event_name.clone(),
+                )
+            }
+        };
+
+        let substate_id = SubstateId(
+            RENodeId::GlobalObject(Address::Package(package_address)),
+            NodeModuleId::PackageEventSchema,
+            SubstateOffset::PackageEventSchema(PackageEventSchemaOffset::PackageEventSchema),
+        );
+        self.substate_store()
+            .get_substate(&substate_id)
+            .unwrap()
+            .substate
+            .event_schema()
+            .clone()
+            .0
+            .get(&blueprint_name)
+            .unwrap()
+            .get(&event_name)
+            .unwrap()
+            .clone()
+    }
+
+    pub fn event_name(&mut self, event_type_identifier: &EventTypeIdentifier) -> String {
+        event_type_identifier.1.clone()
     }
 }
 

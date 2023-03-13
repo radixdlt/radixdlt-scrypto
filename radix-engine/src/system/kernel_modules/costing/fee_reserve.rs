@@ -427,7 +427,7 @@ impl Default for SystemLoanFeeReserve {
 mod tests {
     use super::*;
 
-    const TEST_VAULT_ID: ObjectId = [0u8; 36];
+    const TEST_VAULT_ID: ObjectId = [0u8; OBJECT_ID_LENGTH];
 
     fn xrd<T: Into<Decimal>>(amount: T) -> LiquidFungibleResource {
         LiquidFungibleResource::new(amount.into())

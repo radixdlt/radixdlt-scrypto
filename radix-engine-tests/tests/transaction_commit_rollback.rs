@@ -51,7 +51,8 @@ fn test_state_track_success() {
         + 2 /* Account(Account) */
         + 4 /* TypeInfo(TypeInfo) */
         + 3 /* AccessRules(AccessRules) */
-        + 2 /* Royalty(RoyaltyConfig) */
+        + 2 /* PackageAccessRules */
+        + 1 /* PackageEventSchema */
     );
     assert_eq!(
         state_updates.up_substate_ids().len(),
@@ -66,7 +67,8 @@ fn test_state_track_success() {
         + 2 /* Account(Account) */
         + 4 /* TypeInfo(TypeInfo) */
         + 3 /* AccessRules(AccessRules) */
-        + 2 /* Royalty(RoyaltyConfig) */
+        + 2 /* PackageAccessRules */
+        + 1 /* PackageEventSchema */
     );
 }
 
