@@ -77,8 +77,7 @@ impl NodeMoveModule {
                 Ok(())
             }
 
-            RENodeId::TransactionRuntime
-            | RENodeId::AuthZoneStack
+            RENodeId::AuthZoneStack
             | RENodeId::KeyValueStore(..)
             | RENodeId::NonFungibleStore(..)
             | RENodeId::GlobalObject(..) => Err(RuntimeError::ModuleError(
@@ -94,8 +93,7 @@ impl NodeMoveModule {
         match node_id {
             RENodeId::Object(..) => Ok(()),
 
-            RENodeId::TransactionRuntime
-            | RENodeId::AuthZoneStack
+            RENodeId::AuthZoneStack
             | RENodeId::KeyValueStore(..)
             | RENodeId::NonFungibleStore(..)
             | RENodeId::GlobalObject(..) => Err(RuntimeError::ModuleError(

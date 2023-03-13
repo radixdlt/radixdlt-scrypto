@@ -1,10 +1,11 @@
 use crate::engine::wasm_api::*;
-use radix_engine_interface::api::types::*;
+use radix_engine_interface::api::{types::*, ClientTransactionRuntimeApi};
 use radix_engine_interface::api::{
     ClientActorApi, ClientNodeApi, ClientObjectApi, ClientPackageApi, ClientSubstateApi,
 };
 use radix_engine_interface::api::{ClientEventApi, ClientLoggerApi, LockFlags};
 use radix_engine_interface::blueprints::resource::AccessRulesConfig;
+use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::model::{Address, PackageAddress};
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::*;
@@ -281,6 +282,20 @@ impl ClientLoggerApi<ClientApiError> for ScryptoEnv {
 
         unsafe { log_message(level.as_ptr(), level.len(), message.as_ptr(), message.len()) }
         Ok(())
+    }
+}
+
+impl ClientTransactionRuntimeApi<ClientApiError> for ScryptoEnv {
+    fn get_transaction_hash(&mut self) -> Result<Hash, ClientApiError> {
+        let actor = copy_buffer(unsafe { get_transaction_hash() });
+
+        scrypto_decode(&actor).map_err(ClientApiError::DecodeError)
+    }
+
+    fn generate_uuid(&mut self) -> Result<u128, ClientApiError> {
+        let actor = copy_buffer(unsafe { generate_uuid() });
+
+        scrypto_decode(&actor).map_err(ClientApiError::DecodeError)
     }
 }
 
