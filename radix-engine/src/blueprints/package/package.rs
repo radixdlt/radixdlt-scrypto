@@ -2,11 +2,13 @@ use super::PackageCodeTypeSubstate;
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_MEDIUM_FEE};
+use crate::system::kernel_modules::events::EventError;
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::{
     FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
+use crate::system::node_modules::event_schema::PackageEventSchemaSubstate;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
@@ -43,6 +45,10 @@ fn build_package_node_modules(
     metadata: BTreeMap<String, String>,
     access_rules: AccessRulesConfig,
     function_access_rules: FunctionAccessRulesSubstate,
+    event_schema: BTreeMap<
+        String,
+        BTreeMap<String, (LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>,
+    >,
 ) -> BTreeMap<NodeModuleId, RENodeModuleInit> {
     let mut metadata_substates = BTreeMap::new();
     for (key, value) in metadata {
@@ -78,6 +84,10 @@ fn build_package_node_modules(
     node_modules.insert(
         NodeModuleId::FunctionAccessRules,
         RENodeModuleInit::FunctionAccessRules(function_access_rules),
+    );
+    node_modules.insert(
+        NodeModuleId::PackageEventSchema,
+        RENodeModuleInit::PackageEventSchema(PackageEventSchemaSubstate(event_schema)),
     );
 
     node_modules
@@ -257,6 +267,9 @@ impl PackageNativePackage {
                 access_rules: input.package_access_rules,
                 default_auth: input.default_package_access_rule,
             },
+            convert_event_schema(input.event_schema).map_err(|error| {
+                RuntimeError::ApplicationError(ApplicationError::EventError(error))
+            })?,
         );
 
         // Create package node
@@ -318,6 +331,7 @@ impl PackageNativePackage {
                 access_rules: BTreeMap::new(),
                 default_auth: AccessRule::AllowAll,
             },
+            BTreeMap::new(), // TODO: To rework in Pt3
         );
 
         // Create package node
@@ -384,4 +398,35 @@ impl PackageNativePackage {
         };
         Ok(IndexedScryptoValue::from_typed(&bucket))
     }
+}
+
+fn convert_event_schema(
+    event_schema: BTreeMap<String, Vec<(LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>>,
+) -> Result<
+    BTreeMap<String, BTreeMap<String, (LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>>,
+    EventError,
+> {
+    let mut package_event_schema = BTreeMap::<
+        String,
+        BTreeMap<String, (LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>,
+    >::new();
+    for (blueprint_name, event_schemas) in event_schema {
+        let blueprint_schema = package_event_schema.entry(blueprint_name).or_default();
+        for (local_type_index, schema) in event_schemas {
+            let event_name = {
+                (*schema
+                    .resolve_type_metadata(local_type_index)
+                    .map_or(Err(EventError::InvalidEventSchema), Ok)?
+                    .type_name)
+                    .to_owned()
+            };
+            // TODO: Add a test once Scrypto events are implemented.
+            if let None = blueprint_schema.insert(event_name, (local_type_index, schema)) {
+                Ok(())
+            } else {
+                Err(EventError::DuplicateEventNamesFound)
+            }?
+        }
+    }
+    Ok(package_event_schema)
 }

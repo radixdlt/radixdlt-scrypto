@@ -301,6 +301,7 @@ impl TransactionProcessorBlueprint {
                             access_rules: access_rules.clone(),
                             royalty_config: royalty_config.clone(),
                             metadata: metadata.clone(),
+                            event_schema: BTreeMap::new(), // TODO: Fix in Part3 of application events
                         })
                         .unwrap(),
                     )?;

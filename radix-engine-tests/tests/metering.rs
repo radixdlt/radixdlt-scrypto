@@ -67,11 +67,11 @@ fn test_basic_transfer() {
     // (cd radix-engine && cargo test --test metering -- test_basic_transfer)
     assert_eq!(
         10000 /* CreateNode */
-        + 85000 /* DropLock */
+        + 88000 /* DropLock */
         + 10000 /* DropNode */
-        + 11360 /* Invoke */
-        + 86500 /* LockSubstate */
-        + 58500 /* ReadSubstate */
+        + 11160 /* Invoke */
+        + 89500 /* LockSubstate */
+        + 61500 /* ReadSubstate */
         + 70000 /* RunNative */
         + 0 /* RunWasm */
         + 50000 /* TxBaseCost */
@@ -200,13 +200,13 @@ fn test_radiswap() {
     // (cd radix-engine && cargo test --test metering -- test_radiswap)
     assert_eq!(
         15000 /* CreateNode */
-        + 222500 /* DropLock */
+        + 228500 /* DropLock */
         + 12500 /* DropNode */
-        + 25690 /* Invoke */
-        + 225000 /* LockSubstate */
-        + 2580740 /* ReadSubstate */
+        + 25340 /* Invoke */
+        + 231000 /* LockSubstate */
+        + 2636900 /* ReadSubstate */
         + 152500 /* RunNative */
-        + 1617950 /* RunWasm */
+        + 1520730 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1705 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
@@ -308,13 +308,13 @@ fn test_flash_loan() {
     // (cd radix-engine && cargo test --test metering -- test_flash_loan)
     assert_eq!(
         22500 /* CreateNode */
-        + 340000 /* DropLock */
+        + 351000 /* DropLock */
         + 22500 /* DropNode */
-        + 46570 /* Invoke */
-        + 348500 /* LockSubstate */
-        + 5165960 /* ReadSubstate */
+        + 45770 /* Invoke */
+        + 359500 /* LockSubstate */
+        + 5266960 /* ReadSubstate */
         + 245000 /* RunNative */
-        + 1379330 /* RunWasm */
+        + 1172150 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2475 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
@@ -337,7 +337,7 @@ fn test_publish_large_package() {
                 (export "memory" (memory $0))
             )
         "#,
-        "i".repeat(DEFAULT_MAX_INVOKE_INPUT_SIZE - 1024) // ensure we fit within limit
+        "i".repeat(DEFAULT_MAX_INVOKE_INPUT_SIZE - 1024)
     ));
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 100.into())
