@@ -31,16 +31,6 @@ pub trait WasmRuntime {
         args: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn new_package(
-        &mut self,
-        code: Vec<u8>,
-        schema: Vec<u8>,
-        access_rules_chain: Vec<u8>,
-        royalty_config: Vec<u8>,
-        metadata: Vec<u8>,
-        event_schema: Vec<u8>,
-    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
-
     fn new_component(
         &mut self,
         blueprint_ident: Vec<u8>,

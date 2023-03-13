@@ -5,8 +5,6 @@ pub const CONSUME_BUFFER_FUNCTION_NAME: &str = "consume_buffer";
 pub const CONSUME_COST_UNITS_FUNCTION_ID: usize = 0x11;
 pub const CONSUME_COST_UNITS_FUNCTION_NAME: &str = "gas";
 
-pub const NEW_PACKAGE_FUNCTION_ID: usize = 0x20;
-pub const NEW_PACKAGE_FUNCTION_NAME: &str = "new_package";
 pub const CALL_FUNCTION_FUNCTION_ID: usize = 0x21;
 pub const CALL_FUNCTION_FUNCTION_NAME: &str = "call_function";
 

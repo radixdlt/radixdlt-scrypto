@@ -177,50 +177,6 @@ fn call_function(
         .map(|buffer| buffer.0)
 }
 
-fn new_package(
-    mut caller: Caller<'_, HostState>,
-    code_ptr: u32,
-    code_len: u32,
-    schema_ptr: u32,
-    schema_len: u32,
-    access_rules_ptr: u32,
-    access_rules_len: u32,
-    royalty_config_ptr: u32,
-    royalty_config_len: u32,
-    metadata_ptr: u32,
-    metadata_len: u32,
-    event_schema_ptr: u32,
-    event_schema_len: u32,
-) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
-
-    runtime
-        .new_package(
-            read_memory(caller.as_context_mut(), memory, code_ptr, code_len)?,
-            read_memory(caller.as_context_mut(), memory, schema_ptr, schema_len)?,
-            read_memory(
-                caller.as_context_mut(),
-                memory,
-                access_rules_ptr,
-                access_rules_len,
-            )?,
-            read_memory(
-                caller.as_context_mut(),
-                memory,
-                royalty_config_ptr,
-                royalty_config_len,
-            )?,
-            read_memory(caller.as_context_mut(), memory, metadata_ptr, metadata_len)?,
-            read_memory(
-                caller.as_context_mut(),
-                memory,
-                event_schema_ptr,
-                event_schema_len,
-            )?,
-        )
-        .map(|buffer| buffer.0)
-}
-
 fn new_component(
     mut caller: Caller<'_, HostState>,
     blueprint_ident_ptr: u32,
@@ -520,41 +476,6 @@ impl WasmiModule {
             },
         );
 
-        let host_new_package = Func::wrap(
-            store.as_context_mut(),
-            |caller: Caller<'_, HostState>,
-             code_ptr: u32,
-             code_len: u32,
-             schema_ptr: u32,
-             schema_len: u32,
-             access_rules_ptr: u32,
-             access_rules_len: u32,
-             royalty_config_ptr: u32,
-             royalty_config_len: u32,
-             metadata_ptr: u32,
-             metadata_len: u32,
-             event_schema_ptr: u32,
-             event_schema_len: u32|
-             -> Result<u64, Trap> {
-                new_package(
-                    caller,
-                    code_ptr,
-                    code_len,
-                    schema_ptr,
-                    schema_len,
-                    access_rules_ptr,
-                    access_rules_len,
-                    royalty_config_ptr,
-                    royalty_config_len,
-                    metadata_ptr,
-                    metadata_len,
-                    event_schema_ptr,
-                    event_schema_len,
-                )
-                .map_err(|e| e.into())
-            },
-        );
-
         let host_new_component = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
@@ -731,7 +652,6 @@ impl WasmiModule {
         linker_define!(linker, CONSUME_BUFFER_FUNCTION_NAME, host_consume_buffer);
         linker_define!(linker, CALL_METHOD_FUNCTION_NAME, host_call_method);
         linker_define!(linker, CALL_FUNCTION_FUNCTION_NAME, host_call_function);
-        linker_define!(linker, NEW_PACKAGE_FUNCTION_NAME, host_new_package);
         linker_define!(linker, NEW_COMPONENT_FUNCTION_NAME, host_new_component);
         linker_define!(
             linker,

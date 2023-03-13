@@ -7,8 +7,6 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::types::Level;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::resource::AccessRulesConfig;
-use radix_engine_interface::schema::PackageSchema;
 use sbor::rust::vec::Vec;
 
 /// A shim between ClientApi and WASM, with buffer capability.
@@ -105,42 +103,6 @@ where
                 .call_function(package_address, &blueprint_ident, &function_ident, args)?;
 
         self.allocate_buffer(return_data)
-    }
-
-    fn new_package(
-        &mut self,
-        code: Vec<u8>,
-        abi: Vec<u8>,
-        access_rules: Vec<u8>,
-        royalty_config: Vec<u8>,
-        metadata: Vec<u8>,
-        event_schema: Vec<u8>,
-    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let schema =
-            scrypto_decode::<PackageSchema>(&abi).map_err(WasmRuntimeError::InvalidSchema)?;
-        let access_rules = scrypto_decode::<AccessRulesConfig>(&access_rules)
-            .map_err(WasmRuntimeError::InvalidAccessRules)?;
-        let royalty_config = scrypto_decode::<BTreeMap<String, RoyaltyConfig>>(&royalty_config)
-            .map_err(WasmRuntimeError::InvalidRoyaltyConfig)?;
-        let metadata = scrypto_decode::<BTreeMap<String, String>>(&metadata)
-            .map_err(WasmRuntimeError::InvalidMetadata)?;
-        let event_schema = scrypto_decode::<
-            BTreeMap<String, Vec<(LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>>,
-        >(&event_schema)
-        .map_err(WasmRuntimeError::InvalidEventSchema)?;
-
-        let package_address = self.api.new_package(
-            code,
-            schema,
-            access_rules,
-            royalty_config,
-            metadata,
-            event_schema,
-        )?;
-        let package_address_encoded =
-            scrypto_encode(&package_address).expect("Failed to encode package address");
-
-        self.allocate_buffer(package_address_encoded)
     }
 
     fn new_component(
@@ -350,18 +312,6 @@ impl WasmRuntime for NopWasmRuntime {
         blueprint_ident: Vec<u8>,
         ident: Vec<u8>,
         args: Vec<u8>,
-    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
-    }
-
-    fn new_package(
-        &mut self,
-        code: Vec<u8>,
-        abi: Vec<u8>,
-        access_rules_chain: Vec<u8>,
-        royalty_config: Vec<u8>,
-        metadata: Vec<u8>,
-        event_schema: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
