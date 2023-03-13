@@ -37,9 +37,7 @@ pub const GET_TRANSACTION_HASH_FUNCTION_ID: usize = 0x52;
 pub const GET_TRANSACTION_HASH_FUNCTION_NAME: &str = "get_transaction_hash";
 pub const GENERATE_UUID_FUNCTION_ID: usize = 0x53;
 pub const GENERATE_UUID_FUNCTION_NAME: &str = "generate_uuid";
-
-// Under active refactoring
-pub const GET_ACTOR_FUNCTION_ID: usize = 0xf0;
+pub const GET_ACTOR_FUNCTION_ID: usize = 0x54;
 pub const GET_ACTOR_FUNCTION_NAME: &str = "get_actor";
 
 pub const MODULE_ENV_NAME: &str = "env";
