@@ -297,42 +297,4 @@ impl KernelModule for CostingModule {
         )?;
         Ok(())
     }
-
-    fn on_consume_cost_units<Y: KernelModuleApi<RuntimeError>>(
-        api: &mut Y,
-        units: u32,
-        reason: ClientCostingReason,
-    ) -> Result<(), RuntimeError> {
-        // We multiply by a large enough factor to ensure spin loops end within a fraction of a second.
-        // These values will be tweaked, alongside the whole fee table.
-        apply_execution_cost(
-            api,
-            match reason {
-                ClientCostingReason::RunWasm => CostingReason::RunWasm,
-                ClientCostingReason::RunNative => CostingReason::RunNative,
-                ClientCostingReason::RunSystem => CostingReason::RunSystem,
-            },
-            |_| units,
-            5,
-        )
-    }
-
-    fn on_credit_cost_units<Y: KernelModuleApi<RuntimeError>>(
-        api: &mut Y,
-        vault_id: ObjectId,
-        fee: LiquidFungibleResource,
-        contingent: bool,
-    ) -> Result<LiquidFungibleResource, RuntimeError> {
-        let changes = api
-            .kernel_get_module_state()
-            .costing
-            .fee_reserve
-            .lock_fee(vault_id, fee, contingent)
-            .map_err(|e| {
-                RuntimeError::ModuleError(ModuleError::CostingError(CostingError::FeeReserveError(
-                    e,
-                )))
-            })?;
-        Ok(changes)
-    }
 }

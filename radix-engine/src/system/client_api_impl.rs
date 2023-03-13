@@ -610,7 +610,7 @@ where
     }
 }
 
-impl<'g, 's, W> ClientUnsafeApi<RuntimeError> for Kernel<'g, 's, W>
+impl<'g, 's, W> ClientCostingApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {

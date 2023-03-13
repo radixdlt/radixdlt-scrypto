@@ -347,16 +347,6 @@ impl KernelModule for ExecutionTraceModule {
             .handle_on_execution_finish(current_actor, current_depth, caller, resource_summary);
         Ok(())
     }
-
-    fn on_update_instruction_index<Y: KernelModuleApi<RuntimeError>>(
-        api: &mut Y,
-        new_index: usize,
-    ) -> Result<(), RuntimeError> {
-        api.kernel_get_module_state()
-            .execution_trace
-            .current_instruction_index = new_index;
-        Ok(())
-    }
 }
 
 impl ExecutionTraceModule {

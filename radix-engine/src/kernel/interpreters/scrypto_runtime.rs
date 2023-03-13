@@ -9,8 +9,8 @@ use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientEventApi;
 use radix_engine_interface::api::ClientLoggerApi;
 use radix_engine_interface::api::{
-    ClientActorApi, ClientNodeApi, ClientObjectApi, ClientPackageApi, ClientSubstateApi,
-    ClientUnsafeApi,
+    ClientActorApi, ClientCostingApi, ClientNodeApi, ClientObjectApi, ClientPackageApi,
+    ClientSubstateApi,
 };
 use radix_engine_interface::blueprints::resource::AccessRulesConfig;
 use radix_engine_interface::schema::PackageSchema;
@@ -19,7 +19,7 @@ use sbor::rust::vec::Vec;
 /// A shim between ClientApi and WASM, with buffer capability.
 pub struct ScryptoRuntime<'y, Y>
 where
-    Y: ClientUnsafeApi<RuntimeError>
+    Y: ClientCostingApi<RuntimeError>
         + ClientNodeApi<RuntimeError>
         + ClientSubstateApi<RuntimeError>
         + ClientPackageApi<RuntimeError>
@@ -34,7 +34,7 @@ where
 
 impl<'y, Y> ScryptoRuntime<'y, Y>
 where
-    Y: ClientUnsafeApi<RuntimeError>
+    Y: ClientCostingApi<RuntimeError>
         + ClientNodeApi<RuntimeError>
         + ClientSubstateApi<RuntimeError>
         + ClientPackageApi<RuntimeError>
@@ -53,7 +53,7 @@ where
 
 impl<'y, Y> WasmRuntime for ScryptoRuntime<'y, Y>
 where
-    Y: ClientUnsafeApi<RuntimeError>
+    Y: ClientCostingApi<RuntimeError>
         + ClientNodeApi<RuntimeError>
         + ClientSubstateApi<RuntimeError>
         + ClientPackageApi<RuntimeError>

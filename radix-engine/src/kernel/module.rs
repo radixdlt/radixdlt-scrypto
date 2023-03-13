@@ -176,43 +176,4 @@ pub trait KernelModule {
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
-
-    //======================
-    // Other events
-    //======================
-
-    #[inline(always)]
-    fn on_consume_cost_units<Y: KernelModuleApi<RuntimeError>>(
-        _api: &mut Y,
-        _units: u32,
-        _reason: ClientCostingReason,
-    ) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    #[inline(always)]
-    fn on_credit_cost_units<Y: KernelModuleApi<RuntimeError>>(
-        _api: &mut Y,
-        _vault_id: ObjectId,
-        locked_fee: LiquidFungibleResource,
-        _contingent: bool,
-    ) -> Result<LiquidFungibleResource, RuntimeError> {
-        Ok(locked_fee)
-    }
-
-    #[inline(always)]
-    fn on_update_instruction_index<Y: KernelModuleApi<RuntimeError>>(
-        _api: &mut Y,
-        _new_index: usize,
-    ) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    #[inline(always)]
-    fn on_update_wasm_memory_usage<Y: KernelModuleApi<RuntimeError>>(
-        _api: &mut Y,
-        _consumed_memory: usize,
-    ) -> Result<(), RuntimeError> {
-        Ok(())
-    }
 }
