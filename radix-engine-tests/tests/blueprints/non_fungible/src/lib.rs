@@ -136,6 +136,17 @@ mod non_fungible_test {
             (mint_badge, bucket)
         }
 
+        pub fn get_total_supply() {
+            let resource_address = ResourceBuilder::new_integer_non_fungible()
+                .metadata("name", "Katz's Sandwiches")
+                .create_with_no_initial_supply();
+
+            assert_eq!(
+                borrow_resource_manager!(resource_address).total_supply(),
+                Decimal::zero(),
+            );
+        }
+
         pub fn non_fungible_exists() -> (Bucket, Bucket) {
             let (mint_badge, resource_address, bucket) = Self::create_non_fungible_mutable();
             assert_eq!(

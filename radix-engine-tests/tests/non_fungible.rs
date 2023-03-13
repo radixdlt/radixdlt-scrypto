@@ -439,6 +439,32 @@ fn create_uuid_non_fungible() {
 }
 
 #[test]
+fn can_get_total_supply() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(
+            package,
+            "NonFungibleTest",
+            "get_total_supply",
+            manifest_args!(),
+        )
+        .build();
+
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
 fn can_mint_uuid_non_fungible_in_scrypto() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
