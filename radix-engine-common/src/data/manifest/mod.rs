@@ -41,8 +41,8 @@ pub fn manifest_decode<T: ManifestDecode>(buf: &[u8]) -> Result<T, DecodeError> 
         .decode_payload(MANIFEST_SBOR_V1_PAYLOAD_PREFIX)
 }
 
-pub fn manifest_transcode<T: ManifestEncode + ?Sized, P: ManifestDecode>(
+pub fn to_manifest_value<T: ManifestEncode + ?Sized>(
     value: &T,
-) -> Result<P, DecodeError> {
+) -> Result<ManifestValue, DecodeError> {
     manifest_decode(&manifest_encode(value).unwrap())
 }

@@ -80,7 +80,7 @@ pub fn create_genesis(
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
             function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
-            args: manifest_transcode(&PackageLoaderPublishNativeInput {
+            args: to_manifest_value(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: METADATA_CODE_ID,
                 schema: PackageSchema::default(),
@@ -112,7 +112,7 @@ pub fn create_genesis(
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
             function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
-            args: manifest_transcode(&PackageLoaderPublishNativeInput {
+            args: to_manifest_value(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: ROYALTY_CODE_ID,
                 schema: PackageSchema::default(),
@@ -136,7 +136,7 @@ pub fn create_genesis(
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
             function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
-            args: manifest_transcode(&PackageLoaderPublishNativeInput {
+            args: to_manifest_value(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: ACCESS_RULES_CODE_ID,
                 schema: PackageSchema::default(),
@@ -173,7 +173,7 @@ pub fn create_genesis(
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
             function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
-            args: manifest_transcode(&PackageLoaderPublishNativeInput {
+            args: to_manifest_value(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: RESOURCE_MANAGER_PACKAGE_CODE_ID,
                 schema: PackageSchema::default(),
@@ -248,7 +248,7 @@ pub fn create_genesis(
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT
                 .to_string(),
-            args: manifest_transcode(
+            args: to_manifest_value(
                 &ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput {
                     divisibility: 18,
                     metadata,
@@ -272,7 +272,7 @@ pub fn create_genesis(
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT.to_string(),
-            args: manifest_transcode(&ResourceManagerCreateNonFungibleWithAddressInput {
+            args: to_manifest_value(&ResourceManagerCreateNonFungibleWithAddressInput {
                 id_type: NonFungibleIdType::Bytes,
                 metadata,
                 access_rules,
@@ -290,7 +290,7 @@ pub fn create_genesis(
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
             function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
-            args: manifest_transcode(&PackageLoaderPublishNativeInput {
+            args: to_manifest_value(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: PackageSchema::default(),
                 dependent_resources: vec![],
@@ -314,7 +314,7 @@ pub fn create_genesis(
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
             function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
-            args: manifest_transcode(&PackageLoaderPublishNativeInput {
+            args: to_manifest_value(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: PackageSchema::default(),
                 native_package_code_id: EPOCH_MANAGER_PACKAGE_CODE_ID,
@@ -383,7 +383,7 @@ pub fn create_genesis(
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
             function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
-            args: manifest_transcode(&PackageLoaderPublishNativeInput {
+            args: to_manifest_value(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: PackageSchema::default(),
                 native_package_code_id: CLOCK_PACKAGE_CODE_ID,
@@ -407,7 +407,7 @@ pub fn create_genesis(
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
             function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
-            args: manifest_transcode(&PackageLoaderPublishNativeInput {
+            args: to_manifest_value(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: AccountNativePackage::schema(),
                 native_package_code_id: ACCOUNT_PACKAGE_CODE_ID,
@@ -431,7 +431,7 @@ pub fn create_genesis(
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
             function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
-            args: manifest_transcode(&PackageLoaderPublishNativeInput {
+            args: to_manifest_value(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: PackageSchema::default(),
                 metadata: BTreeMap::new(),
@@ -484,7 +484,7 @@ pub fn create_genesis(
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
             function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
-            args: manifest_transcode(&PackageLoaderPublishNativeInput {
+            args: to_manifest_value(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: PackageSchema::default(),
                 metadata: BTreeMap::new(),
@@ -508,7 +508,7 @@ pub fn create_genesis(
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
             function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
-            args: manifest_transcode(&PackageLoaderPublishNativeInput {
+            args: to_manifest_value(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: PackageSchema::default(),
                 metadata: BTreeMap::new(),
@@ -535,7 +535,7 @@ pub fn create_genesis(
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT.to_string(),
-            args: manifest_transcode(&ResourceManagerCreateNonFungibleWithAddressInput {
+            args: to_manifest_value(&ResourceManagerCreateNonFungibleWithAddressInput {
                 id_type: NonFungibleIdType::Bytes,
                 metadata,
                 access_rules,
@@ -557,7 +557,7 @@ pub fn create_genesis(
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT.to_string(),
-            args: manifest_transcode(&ResourceManagerCreateNonFungibleWithAddressInput {
+            args: to_manifest_value(&ResourceManagerCreateNonFungibleWithAddressInput {
                 id_type: NonFungibleIdType::Bytes,
                 metadata,
                 access_rules,
@@ -579,7 +579,7 @@ pub fn create_genesis(
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT.to_string(),
-            args: manifest_transcode(&ResourceManagerCreateNonFungibleWithAddressInput {
+            args: to_manifest_value(&ResourceManagerCreateNonFungibleWithAddressInput {
                 id_type: NonFungibleIdType::Bytes,
                 metadata,
                 access_rules,
@@ -598,7 +598,7 @@ pub fn create_genesis(
             package_address: PACKAGE_LOADER,
             blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
             function_name: PACKAGE_LOADER_PUBLISH_WASM_IDENT.to_string(),
-            args: manifest_transcode(&PackageLoaderPublishWasmInput {
+            args: to_manifest_value(&PackageLoaderPublishWasmInput {
                 package_address: Some(package_address),
                 code: faucet_code, // TODO: Use blob here instead?
                 schema: scrypto_decode(&faucet_abi).unwrap(),
@@ -620,7 +620,7 @@ pub fn create_genesis(
             package_address: CLOCK_PACKAGE,
             blueprint_name: CLOCK_BLUEPRINT.to_string(),
             function_name: CLOCK_CREATE_IDENT.to_string(),
-            args: manifest_transcode(&ClockCreateInput { component_address }).unwrap(),
+            args: to_manifest_value(&ClockCreateInput { component_address }).unwrap(),
         });
     }
 

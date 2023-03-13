@@ -83,7 +83,7 @@ fn next_round_with_validator_auth_succeeds() {
     let instructions = vec![Instruction::CallMethod {
         component_address: EPOCH_MANAGER,
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: manifest_transcode(&EpochManagerNextRoundInput {
+        args: to_manifest_value(&EpochManagerNextRoundInput {
             round: rounds_per_epoch - 1,
         })
         .unwrap(),
@@ -123,7 +123,7 @@ fn next_epoch_with_validator_auth_succeeds() {
     let instructions = vec![Instruction::CallMethod {
         component_address: EPOCH_MANAGER,
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: manifest_transcode(&EpochManagerNextRoundInput {
+        args: to_manifest_value(&EpochManagerNextRoundInput {
             round: rounds_per_epoch,
         })
         .unwrap(),
@@ -414,7 +414,7 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_on_epoch
     let instructions = vec![Instruction::CallMethod {
         component_address: EPOCH_MANAGER,
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: manifest_transcode(&EpochManagerNextRoundInput {
+        args: to_manifest_value(&EpochManagerNextRoundInput {
             round: rounds_per_epoch,
         })
         .unwrap(),
@@ -476,7 +476,7 @@ fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change
     let instructions = vec![Instruction::CallMethod {
         component_address: EPOCH_MANAGER,
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: manifest_transcode(&EpochManagerNextRoundInput {
+        args: to_manifest_value(&EpochManagerNextRoundInput {
             round: rounds_per_epoch,
         })
         .unwrap(),
@@ -545,7 +545,7 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     let instructions = vec![Instruction::CallMethod {
         component_address: EPOCH_MANAGER,
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: manifest_transcode(&EpochManagerNextRoundInput {
+        args: to_manifest_value(&EpochManagerNextRoundInput {
             round: rounds_per_epoch,
         })
         .unwrap(),
@@ -615,7 +615,7 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
     let instructions = vec![Instruction::CallMethod {
         component_address: EPOCH_MANAGER,
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: manifest_transcode(&EpochManagerNextRoundInput {
+        args: to_manifest_value(&EpochManagerNextRoundInput {
             round: rounds_per_epoch,
         })
         .unwrap(),
@@ -823,7 +823,7 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
     let instructions = vec![Instruction::CallMethod {
         component_address: EPOCH_MANAGER,
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: manifest_transcode(&EpochManagerNextRoundInput {
+        args: to_manifest_value(&EpochManagerNextRoundInput {
             round: rounds_per_epoch,
         })
         .unwrap(),

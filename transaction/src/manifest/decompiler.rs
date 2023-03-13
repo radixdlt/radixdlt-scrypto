@@ -561,7 +561,7 @@ pub fn format_typed_value<F: fmt::Write, T: ManifestEncode>(
     value: &T,
 ) -> Result<(), DecompileError> {
     f.write_str("\n    ")?;
-    let value: ManifestValue = manifest_transcode(value).unwrap();
+    let value: ManifestValue = to_manifest_value(value).unwrap();
 
     format_manifest_value(f, &value, &context.for_value_display())?;
     Ok(())
