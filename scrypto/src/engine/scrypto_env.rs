@@ -158,7 +158,7 @@ impl ClientNodeApi<ClientApiError> for ScryptoEnv {
     fn sys_drop_node(&mut self, node_id: RENodeId) -> Result<(), ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
 
-        unsafe { drop_node(node_id.as_ptr(), node_id.len()) };
+        unsafe { drop_object(node_id.as_ptr(), node_id.len()) };
 
         Ok(())
     }

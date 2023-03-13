@@ -17,6 +17,8 @@ pub const CALL_FUNCTION_FUNCTION_ID: usize = 0x34;
 pub const CALL_FUNCTION_FUNCTION_NAME: &str = "call_function";
 pub const GET_TYPE_INFO_FUNCTION_ID: usize = 0x35;
 pub const GET_TYPE_INFO_FUNCTION_NAME: &str = "get_type_info";
+pub const DROP_OBJECT_FUNCTION_ID: usize = 0x36;
+pub const DROP_OBJECT_FUNCTION_NAME: &str = "drop_object";
 
 pub const LOCK_SUBSTATE_FUNCTION_ID: usize = 0x40;
 pub const LOCK_SUBSTATE_FUNCTION_NAME: &str = "lock_substate";
@@ -39,8 +41,6 @@ pub const GENERATE_UUID_FUNCTION_NAME: &str = "generate_uuid";
 // Under active refactoring
 pub const GET_ACTOR_FUNCTION_ID: usize = 0xf0;
 pub const GET_ACTOR_FUNCTION_NAME: &str = "get_actor";
-pub const DROP_NODE_FUNCTION_ID: usize = 0xf1;
-pub const DROP_NODE_FUNCTION_NAME: &str = "drop_node";
 
 pub const MODULE_ENV_NAME: &str = "env";
 pub const EXPORT_MEMORY: &str = "memory";

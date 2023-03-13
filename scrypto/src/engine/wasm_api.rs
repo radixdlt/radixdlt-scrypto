@@ -112,7 +112,7 @@ extern "C" {
     pub fn create_node(node_ptr: *const u8, node_len: usize) -> Buffer;
 
     /// Destroys a node.
-    pub fn drop_node(node_id_ptr: *const u8, node_id_len: usize);
+    pub fn drop_object(node_id_ptr: *const u8, node_id_len: usize);
 
     //===============
     // Substate API
@@ -263,7 +263,7 @@ pub unsafe fn call_function(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn drop_node(_node_id_ptr: *const u8, _node_id_len: usize) {
+pub unsafe fn drop_object(_node_id_ptr: *const u8, _node_id_len: usize) {
     unreachable!()
 }
 

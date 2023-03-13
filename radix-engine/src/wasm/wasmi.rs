@@ -256,7 +256,7 @@ fn get_type_info(
         .map(|buffer| buffer.0)
 }
 
-fn drop_node(
+fn drop_object(
     mut caller: Caller<'_, HostState>,
     node_id_ptr: u32,
     node_id_len: u32,
@@ -265,7 +265,7 @@ fn drop_node(
 
     let node_id = read_memory(caller.as_context_mut(), memory, node_id_ptr, node_id_len)?;
 
-    runtime.drop_node(node_id)
+    runtime.drop_object(node_id)
 }
 
 fn lock_substate(
@@ -537,7 +537,7 @@ impl WasmiModule {
              node_id_ptr: u32,
              node_id_len: u32|
              -> Result<(), Trap> {
-                drop_node(caller, node_id_ptr, node_id_len).map_err(|e| e.into())
+                drop_object(caller, node_id_ptr, node_id_len).map_err(|e| e.into())
             },
         );
 
@@ -663,7 +663,7 @@ impl WasmiModule {
             host_globalize_object
         );
         linker_define!(linker, GET_TYPE_INFO_FUNCTION_NAME, host_get_type_info);
-        linker_define!(linker, DROP_NODE_FUNCTION_NAME, host_drop_node);
+        linker_define!(linker, DROP_OBJECT_FUNCTION_NAME, host_drop_node);
         linker_define!(linker, LOCK_SUBSTATE_FUNCTION_NAME, host_lock_substate);
         linker_define!(linker, READ_SUBSTATE_FUNCTION_NAME, host_read_substate);
         linker_define!(linker, WRITE_SUBSTATE_FUNCTION_NAME, host_write_substate);

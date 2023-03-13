@@ -297,7 +297,7 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
-        pub fn drop_node(
+        pub fn drop_object(
             env: &WasmerInstanceEnv,
             node_id_ptr: u32,
             node_id_len: u32,
@@ -307,7 +307,7 @@ impl WasmerModule {
             let node_id = read_memory(&instance, node_id_ptr, node_id_len)?;
 
             runtime
-                .drop_node(node_id)
+                .drop_object(node_id)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(())
@@ -455,7 +455,7 @@ impl WasmerModule {
                 NEW_KEY_VALUE_STORE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), new_key_value_store),
                 GLOBALIZE_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), globalize_object),
                 GET_TYPE_INFO_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_type_info),
-                DROP_NODE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), drop_node),
+                DROP_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), drop_node),
                 LOCK_SUBSTATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), lock_substate),
                 READ_SUBSTATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), read_substate),
                 WRITE_SUBSTATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), write_substate),

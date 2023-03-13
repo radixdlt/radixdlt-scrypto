@@ -246,7 +246,7 @@ impl WasmModule {
                                 ));
                             }
                         }
-                        DROP_NODE_FUNCTION_NAME => {
+                        DROP_OBJECT_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -259,7 +259,7 @@ impl WasmModule {
 
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        DROP_NODE_FUNCTION_NAME.to_string(),
+                                        DROP_OBJECT_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }
