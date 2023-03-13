@@ -1,5 +1,5 @@
 use radix_engine_interface::api::types::FnIdentifier;
-use radix_engine_interface::api::{types::*, ClientEventApi, ClientObjectApi, ClientPackageApi};
+use radix_engine_interface::api::{types::*, ClientEventApi, ClientObjectApi};
 use radix_engine_interface::api::{ClientActorApi, ClientTransactionRuntimeApi};
 use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerGetCurrentEpochInput, EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,

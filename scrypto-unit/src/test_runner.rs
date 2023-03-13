@@ -28,7 +28,7 @@ use radix_engine_interface::api::node_modules::auth::{
 use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, METADATA_BLUEPRINT};
 use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
 use radix_engine_interface::api::types::{RENodeId, VaultOffset};
-use radix_engine_interface::api::ClientPackageApi;
+use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::clock::{
     ClockGetCurrentTimeInput, ClockSetCurrentTimeInput, TimePrecision,
     CLOCK_GET_CURRENT_TIME_IDENT, CLOCK_SET_CURRENT_TIME_IDENT,

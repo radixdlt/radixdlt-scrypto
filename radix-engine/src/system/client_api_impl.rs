@@ -33,7 +33,6 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::PackageSchema;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
@@ -133,59 +132,6 @@ where
 {
     fn get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
         Ok(self.kernel_get_current_actor().unwrap().fn_identifier)
-    }
-}
-
-impl<'g, 's, W> ClientPackageApi<RuntimeError> for Kernel<'g, 's, W>
-where
-    W: WasmEngine,
-{
-    fn new_package(
-        &mut self,
-        code: Vec<u8>,
-        schema: PackageSchema,
-        access_rules: AccessRulesConfig,
-        royalty_config: BTreeMap<String, RoyaltyConfig>,
-        metadata: BTreeMap<String, String>,
-        event_schema: BTreeMap<String, Vec<(LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>>,
-    ) -> Result<PackageAddress, RuntimeError> {
-        let result = self.call_function(
-            PACKAGE_PACKAGE,
-            PACKAGE_BLUEPRINT,
-            PACKAGE_PUBLISH_WASM_IDENT,
-            scrypto_encode(&PackagePublishWasmInput {
-                package_address: None,
-                code,
-                schema,
-                access_rules,
-                royalty_config,
-                metadata,
-                event_schema,
-            })
-            .unwrap(),
-        )?;
-
-        let package_address: PackageAddress = scrypto_decode(&result).unwrap();
-        Ok(package_address)
-    }
-
-    fn call_function(
-        &mut self,
-        package_address: PackageAddress,
-        blueprint_name: &str,
-        function_name: &str,
-        args: Vec<u8>,
-    ) -> Result<Vec<u8>, RuntimeError> {
-        let invocation = FunctionInvocation {
-            fn_identifier: FnIdentifier::new(
-                package_address,
-                blueprint_name.to_string(),
-                function_name.to_string(),
-            ),
-            args,
-        };
-
-        self.kernel_invoke(invocation).map(|v| v.into())
     }
 }
 
@@ -587,6 +533,25 @@ where
     ) -> Result<Vec<u8>, RuntimeError> {
         let invocation = MethodInvocation {
             identifier: MethodIdentifier(receiver, node_module_id, method_name.to_string()),
+            args,
+        };
+
+        self.kernel_invoke(invocation).map(|v| v.into())
+    }
+
+    fn call_function(
+        &mut self,
+        package_address: PackageAddress,
+        blueprint_name: &str,
+        function_name: &str,
+        args: Vec<u8>,
+    ) -> Result<Vec<u8>, RuntimeError> {
+        let invocation = FunctionInvocation {
+            fn_identifier: FnIdentifier::new(
+                package_address,
+                blueprint_name.to_string(),
+                function_name.to_string(),
+            ),
             args,
         };
 

@@ -1,17 +1,15 @@
 use crate::engine::wasm_api::*;
 use radix_engine_interface::api::{types::*, ClientTransactionRuntimeApi};
 use radix_engine_interface::api::{
-    ClientActorApi, ClientNodeApi, ClientObjectApi, ClientPackageApi, ClientSubstateApi,
+    ClientActorApi, ClientNodeApi, ClientObjectApi, ClientSubstateApi,
 };
 use radix_engine_interface::api::{ClientEventApi, ClientLoggerApi, LockFlags};
-use radix_engine_interface::blueprints::resource::AccessRulesConfig;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::model::{Address, PackageAddress};
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use sbor::*;
-use scrypto_schema::PackageSchema;
 
 #[derive(Debug, Sbor)]
 pub enum ClientApiError {
@@ -128,42 +126,6 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
 
     fn new_key_value_store(&mut self) -> Result<KeyValueStoreId, ClientApiError> {
         let bytes = copy_buffer(unsafe { new_key_value_store() });
-        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
-    }
-}
-
-impl ClientPackageApi<ClientApiError> for ScryptoEnv {
-    fn new_package(
-        &mut self,
-        code: Vec<u8>,
-        schema: PackageSchema,
-        access_rules: AccessRulesConfig,
-        royalty_config: BTreeMap<String, RoyaltyConfig>,
-        metadata: BTreeMap<String, String>,
-        event_schema: BTreeMap<String, Vec<(LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>>,
-    ) -> Result<PackageAddress, ClientApiError> {
-        let schema = scrypto_encode(&schema).unwrap();
-        let access_rules = scrypto_encode(&access_rules).unwrap();
-        let royalty_config = scrypto_encode(&royalty_config).unwrap();
-        let metadata = scrypto_encode(&metadata).unwrap();
-        let event_schema = scrypto_encode(&event_schema).unwrap();
-
-        let bytes = copy_buffer(unsafe {
-            new_package(
-                code.as_ptr(),
-                code.len(),
-                schema.as_ptr(),
-                schema.len(),
-                access_rules.as_ptr(),
-                access_rules.len(),
-                royalty_config.as_ptr(),
-                royalty_config.len(),
-                metadata.as_ptr(),
-                metadata.len(),
-                event_schema.as_ptr(),
-                event_schema.len(),
-            )
-        });
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 

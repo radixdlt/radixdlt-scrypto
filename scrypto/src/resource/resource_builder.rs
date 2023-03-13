@@ -1,6 +1,6 @@
 use crate::engine::scrypto_env::ScryptoEnv;
+use crate::radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::api::types::NonFungibleData;
-use radix_engine_interface::api::ClientPackageApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;

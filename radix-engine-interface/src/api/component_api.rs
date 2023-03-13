@@ -43,4 +43,12 @@ pub trait ClientObjectApi<E> {
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, E>;
+
+    fn call_function(
+        &mut self,
+        package_address: PackageAddress,
+        blueprint_name: &str,
+        function_name: &str,
+        args: Vec<u8>,
+    ) -> Result<Vec<u8>, E>;
 }
