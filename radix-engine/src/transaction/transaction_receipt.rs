@@ -72,7 +72,7 @@ pub struct StateUpdateSummary {
     pub new_packages: Vec<PackageAddress>,
     pub new_components: Vec<ComponentAddress>,
     pub new_resources: Vec<ResourceAddress>,
-    pub balance_changes: Vec<(ComponentAddress, ResourceAddress, Decimal)>,
+    pub balance_changes: BTreeMap<Address, BTreeMap<ResourceAddress, Decimal>>,
 }
 
 impl CommitResult {

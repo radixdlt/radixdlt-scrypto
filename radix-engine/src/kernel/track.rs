@@ -21,6 +21,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::Level;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
+use radix_engine_interface::blueprints::resource::VAULT_BLUEPRINT;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::crypto::hash;
 use sbor::rust::collections::*;
@@ -576,7 +577,7 @@ impl<'s> FinalizingTrack<'s> {
                         old_version,
                         state: ExistingMetaState::Updated(Some(force_persist)),
                     } => {
-                        to_persist.insert(id, (force_persist, Option::Some(old_version)));
+                        to_persist.insert(id, (force_persist, Some(old_version)));
                     }
                     _ => {}
                 }
@@ -622,8 +623,8 @@ impl<'s> FinalizingTrack<'s> {
         // TODO: update XRD total supply or disable it
         // TODO: pay tips to the lead validator
 
-        let (state_updates, state_update_summary) =
-            Self::generate_diff(self.substate_store, to_persist);
+        let state_update_summary = Self::summarize_update(self.substate_store, &to_persist);
+        let state_updates = Self::generate_diff(self.substate_store, to_persist);
 
         CommitResult {
             state_updates,
@@ -640,10 +641,114 @@ impl<'s> FinalizingTrack<'s> {
         }
     }
 
+    pub fn summarize_update(
+        substate_store: &dyn ReadableSubstateStore,
+        to_persist: &HashMap<SubstateId, (PersistedSubstate, Option<u32>)>,
+    ) -> StateUpdateSummary {
+        let mut new_packages = Vec::new();
+        let mut new_components = Vec::new();
+        let mut new_resources = Vec::new();
+        for (k, v) in to_persist {
+            if v.1.is_none() {
+                match k.0 {
+                    RENodeId::GlobalObject(Address::Package(address)) => new_packages.push(address),
+                    RENodeId::GlobalObject(Address::Component(address)) => {
+                        new_components.push(address)
+                    }
+                    RENodeId::GlobalObject(Address::Resource(address)) => {
+                        new_resources.push(address)
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        let mut balance_changes = BTreeMap::<Address, BTreeMap<ResourceAddress, Decimal>>::new();
+        let mut state_updates = HashMap::<
+            RENodeId,
+            HashMap<NodeModuleId, HashMap<SubstateOffset, &(PersistedSubstate, Option<u32>)>>,
+        >::new();
+        let mut roots = Vec::<Address>::new();
+        for (SubstateId(node_id, module_id, offset), v) in to_persist {
+            match node_id {
+                RENodeId::GlobalObject(address) => {
+                    roots.push(*address);
+                }
+                _ => {}
+            }
+
+            state_updates
+                .entry(*node_id)
+                .or_default()
+                .entry(*module_id)
+                .or_default()
+                .insert(offset.clone(), v);
+        }
+        for root in roots {
+            Self::traverse_state_updates(
+                substate_store,
+                &state_updates,
+                &mut balance_changes,
+                &root,
+                &RENodeId::GlobalObject(root),
+            );
+        }
+
+        StateUpdateSummary {
+            new_packages,
+            new_components,
+            new_resources,
+            balance_changes,
+        }
+    }
+
+    pub fn traverse_state_updates(
+        substate_store: &dyn ReadableSubstateStore,
+        state_updates: &HashMap<
+            RENodeId,
+            HashMap<NodeModuleId, HashMap<SubstateOffset, &(PersistedSubstate, Option<u32>)>>,
+        >,
+        balance_changes: &mut BTreeMap<Address, BTreeMap<ResourceAddress, Decimal>>,
+        root: &Address,
+        current: &RENodeId,
+    ) -> () {
+        if let Some(modules) = state_updates.get(current) {
+            let type_info = modules
+                .get(&NodeModuleId::TypeInfo)
+                .expect("Invariant broken - missing type info module")
+                .get(&SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo))
+                .expect("Invariant broken - missing type info")
+                .0
+                .type_info();
+
+            if type_info.package_address == RESOURCE_MANAGER_PACKAGE
+                && type_info.blueprint_name == VAULT_BLUEPRINT
+            {
+                // Yeah, found a vault!
+            } else {
+                // Look into SELF substates to find other children
+                if let Some(offsets) = modules.get(&NodeModuleId::SELF) {
+                    for (_, update) in offsets {
+                        let substate_value = IndexedScryptoValue::from_typed(&update.0);
+                        for own in substate_value.owned_node_ids() {
+                            Self::traverse_state_updates(
+                                substate_store,
+                                state_updates,
+                                balance_changes,
+                                root,
+                                own,
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     pub fn generate_diff(
         substate_store: &dyn ReadableSubstateStore,
         to_persist: HashMap<SubstateId, (PersistedSubstate, Option<u32>)>,
-    ) -> (StateDiff, StateUpdateSummary) {
+    ) -> StateDiff {
         let mut diff = StateDiff::new();
 
         for (substate_id, (substate, ..)) in to_persist {
@@ -663,7 +768,7 @@ impl<'s> FinalizingTrack<'s> {
             diff.up_substates.insert(substate_id.clone(), output_value);
         }
 
-        (diff, StateUpdateSummary::default())
+        diff
     }
 
     fn get_substate_output_id(
