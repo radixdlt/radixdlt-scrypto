@@ -536,14 +536,8 @@ impl NonFungibleResourceManagerBlueprint {
         let resource_address = resource_manager.resource_address;
         let non_fungible_type_index = resource_manager.non_fungible_type_index;
         let non_fungible_table_id = resource_manager.non_fungible_table;
+        let mutable_fields = resource_manager.mutable_fields.clone();
 
-        if !resource_manager.mutable_fields.contains(&field_name) {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::NonFungibleResourceManagerError(
-                    NonFungibleResourceManagerError::FieldNotMutable(field_name),
-                ),
-            ));
-        }
 
         let kv_schema =
             api.get_key_value_store_info(RENodeId::KeyValueStore(non_fungible_table_id))?;
@@ -558,6 +552,14 @@ impl NonFungibleResourceManagerBlueprint {
                 ),
             ));
         };
+
+        if !mutable_fields.contains(&field_name) {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::NonFungibleResourceManagerError(
+                    NonFungibleResourceManagerError::FieldNotMutable(field_name),
+                ),
+            ));
+        }
 
         let non_fungible_handle = api.sys_lock_substate(
             RENodeId::KeyValueStore(non_fungible_table_id),

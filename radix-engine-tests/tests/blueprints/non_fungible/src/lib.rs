@@ -7,6 +7,7 @@ pub struct Sandwich {
     pub name: String,
     #[mutable]
     pub available: bool,
+    pub tastes_great: bool,
 }
 
 #[blueprint]
@@ -43,6 +44,7 @@ mod non_fungible_test {
                     Sandwich {
                         name: "Test".to_owned(),
                         available: false,
+                        tastes_great: true,
                     },
                 )
             });
@@ -71,10 +73,12 @@ mod non_fungible_test {
                     Sandwich {
                         name: "Zero".to_owned(),
                         available: true,
+                        tastes_great: true,
                     },
                     Sandwich {
                         name: "One".to_owned(),
                         available: true,
+                        tastes_great: true,
                     },
                 ])
         }
@@ -88,6 +92,7 @@ mod non_fungible_test {
                         Sandwich {
                             name: "One".to_owned(),
                             available: true,
+                            tastes_great: true,
                         },
                     ),
                     (
@@ -95,6 +100,7 @@ mod non_fungible_test {
                         Sandwich {
                             name: "Two".to_owned(),
                             available: true,
+                            tastes_great: true,
                         },
                     ),
                     (
@@ -102,6 +108,7 @@ mod non_fungible_test {
                         Sandwich {
                             name: "Three".to_owned(),
                             available: true,
+                            tastes_great: true,
                         },
                     ),
                 ])
@@ -113,6 +120,20 @@ mod non_fungible_test {
                     .non_fungible_exists(&non_fungible_global_id.local_id()),
                 false
             );
+        }
+
+        pub fn update_non_fungible(field: String, value: bool) -> (Bucket, Bucket) {
+            let (mint_badge, resource_address, bucket) = Self::create_non_fungible_mutable();
+
+            mint_badge.authorize(|| {
+                borrow_resource_manager!(resource_address).update_non_fungible_data(
+                    &NonFungibleLocalId::integer(0),
+                    &field,
+                    value,
+                );
+            });
+
+            (mint_badge, bucket)
         }
 
         pub fn update_and_get_non_fungible() -> (Bucket, Bucket) {
@@ -338,6 +359,7 @@ mod non_fungible_test {
                     Sandwich {
                         name: "One".to_owned(),
                         available: true,
+                        tastes_great: true,
                     },
                 ),
                 (
@@ -345,6 +367,7 @@ mod non_fungible_test {
                     Sandwich {
                         name: "Two".to_owned(),
                         available: true,
+                        tastes_great: true,
                     },
                 ),
             ])
@@ -357,6 +380,7 @@ mod non_fungible_test {
                     Sandwich {
                         name: "One".to_owned(),
                         available: true,
+                        tastes_great: true,
                     },
                 ),
                 (
@@ -364,6 +388,7 @@ mod non_fungible_test {
                     Sandwich {
                         name: "Two".to_owned(),
                         available: true,
+                        tastes_great: true,
                     },
                 ),
             ])
@@ -373,6 +398,7 @@ mod non_fungible_test {
             ResourceBuilder::new_uuid_non_fungible::<Sandwich>().mint_initial_supply([Sandwich {
                 name: "Zero".to_owned(),
                 available: true,
+                tastes_great: true,
             }])
         }
 
@@ -392,6 +418,7 @@ mod non_fungible_test {
             borrow_resource_manager!(resource_address).mint_uuid_non_fungible(Sandwich {
                 name: "Test".to_owned(),
                 available: false,
+                tastes_great: true,
             })
         }
     }
