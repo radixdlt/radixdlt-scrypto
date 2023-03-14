@@ -545,7 +545,17 @@ where
     fn new_key_value_store(&mut self) -> Result<KeyValueStoreId, RuntimeError> {
         let node_id = self.kernel_allocate_node_id(RENodeType::KeyValueStore)?;
 
-        self.kernel_create_node(node_id, RENodeInit::KeyValueStore, btreemap!())?;
+        self.kernel_create_node(
+            node_id,
+            RENodeInit::KeyValueStore,
+            btreemap!(
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                    package_address: KEY_VALUE_STORE_PACKAGE,
+                    blueprint_name: KEY_VALUE_STORE_BLUEPRINT.to_owned(),
+                    global: false
+                })
+            ),
+        )?;
 
         Ok(node_id.into())
     }
