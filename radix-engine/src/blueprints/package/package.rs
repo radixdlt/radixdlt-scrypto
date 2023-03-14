@@ -2,15 +2,19 @@ use super::PackageCodeTypeSubstate;
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_MEDIUM_FEE};
-use crate::system::node_modules::access_rules::FunctionAccessRulesSubstate;
+use crate::system::node::{RENodeInit, RENodeModuleInit};
+use crate::system::node_modules::access_rules::{
+    FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
+};
 use crate::system::node_modules::event_schema::PackageEventSchemaSubstate;
+use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use crate::wasm::{PrepareError, WasmValidator};
-use core::fmt::Debug;
-use native_sdk::modules::access_rules::AccessRulesObject;
-use native_sdk::modules::metadata::Metadata;
-use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::{ResourceManager, Vault};
+use radix_engine_interface::api::component::{
+    ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, KeyValueStoreEntrySubstate,
+};
 use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::package::*;
@@ -65,33 +69,88 @@ fn validate_package_event_schema(
 }
 
 fn globalize_package<Y>(
-    package_id: ObjectId,
-    address: Option<[u8; 26]>,
+    package_address: Option<[u8; 26]>,
+    info: PackageInfoSubstate,
+    code_type: PackageCodeTypeSubstate,
+    code: PackageCodeSubstate,
+    royalty: PackageRoyaltySubstate,
+    function_access_rules: FunctionAccessRulesSubstate,
+    event_schemas: PackageEventSchemaSubstate,
     metadata: BTreeMap<String, String>,
     access_rules: AccessRulesConfig,
     api: &mut Y,
-) -> Result<Address, RuntimeError>
+) -> Result<IndexedScryptoValue, RuntimeError>
 where
     Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
 {
-    let metadata = Metadata::sys_create_with_data(metadata, api)?;
-    let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
-    let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
-    let modules = btreemap!(
-        NodeModuleId::Metadata => metadata.id(),
-        NodeModuleId::AccessRules => access_rules.id(),
-        NodeModuleId::ComponentRoyalty => royalty.id(),
+    // Use kernel API to commit substates directly.
+    // Can't use the ClientApi because of chicken-and-egg issue.
+
+    // Prepare node init.
+    let node_init = RENodeInit::GlobalObject(btreemap!(
+        SubstateOffset::Package(PackageOffset::Info) => info.into(),
+        SubstateOffset::Package(PackageOffset::CodeType) => code_type.into(),
+        SubstateOffset::Package(PackageOffset::Code) => code.into(),
+        SubstateOffset::Package(PackageOffset::Royalty) => royalty.into(),
+        SubstateOffset::Package(PackageOffset::FunctionAccessRules) => function_access_rules.into(),
+        SubstateOffset::Package(PackageOffset::EventSchema) => event_schemas.into(),
+    ));
+
+    // Prepare node modules.
+    let mut node_modules = BTreeMap::new();
+    node_modules.insert(
+        NodeModuleId::TypeInfo,
+        RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+            package_address: PACKAGE_PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            global: true,
+        }),
+    );
+    node_modules.insert(
+        NodeModuleId::Metadata,
+        RENodeModuleInit::Metadata(
+            metadata
+                .into_iter()
+                .map(|(key, value)| {
+                    (
+                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                            scrypto_encode(&key).unwrap(),
+                        )),
+                        RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::Some(
+                            ScryptoValue::String { value },
+                        )),
+                    )
+                })
+                .collect(),
+        ),
+    );
+    node_modules.insert(
+        NodeModuleId::AccessRules,
+        RENodeModuleInit::MethodAccessRules(MethodAccessRulesSubstate {
+            access_rules: access_rules,
+        }),
+    );
+    node_modules.insert(
+        NodeModuleId::ComponentRoyalty,
+        RENodeModuleInit::ComponentRoyalty(
+            ComponentRoyaltyConfigSubstate {
+                royalty_config: RoyaltyConfig::default(),
+            },
+            ComponentRoyaltyAccumulatorSubstate {
+                royalty_vault: None,
+            },
+        ),
     );
 
-    if let Some(address) = address {
-        api.globalize_with_address(
-            RENodeId::Object(package_id),
-            modules,
-            Address::Package(PackageAddress::Normal(address)),
-        )
+    let node_id = if let Some(address) = package_address {
+        RENodeId::GlobalObject(PackageAddress::Normal(address).into())
     } else {
-        api.globalize(RENodeId::Object(package_id), modules)
-    }
+        api.kernel_allocate_node_id(RENodeType::GlobalPackage)?
+    };
+    api.kernel_create_node(node_id, node_init, node_modules)?;
+
+    let package_address: PackageAddress = node_id.into();
+    Ok(IndexedScryptoValue::from_typed(&package_address))
 }
 
 pub struct PackageNativePackage;
@@ -268,27 +327,19 @@ impl PackageNativePackage {
             PackageEventSchemaSubstate(convert_event_schema(input.event_schema).map_err(
                 |error| RuntimeError::ApplicationError(ApplicationError::PackageError(error)),
             )?);
-        let object_id = api.new_object(
-            PACKAGE_BLUEPRINT,
-            vec![
-                scrypto_encode(&info).unwrap(),
-                scrypto_encode(&code_type).unwrap(),
-                scrypto_encode(&code).unwrap(),
-                scrypto_encode(&royalty).unwrap(),
-                scrypto_encode(&function_access_rules).unwrap(),
-                scrypto_encode(&event_schemas).unwrap(),
-            ],
-        )?;
 
-        let package_address: PackageAddress = globalize_package(
-            object_id,
+        globalize_package(
             input.package_address,
+            info,
+            code_type,
+            code,
+            royalty,
+            function_access_rules,
+            event_schemas,
             input.metadata,
             input.access_rules,
             api,
-        )?
-        .into();
-        Ok(IndexedScryptoValue::from_typed(&package_address))
+        )
     }
 
     pub(crate) fn publish_wasm<Y>(
@@ -332,27 +383,19 @@ impl PackageNativePackage {
             default_auth: AccessRule::AllowAll,
         };
         let event_schemas = PackageEventSchemaSubstate(BTreeMap::new()); // TODO: To rework in Pt3
-        let object_id = api.new_object(
-            PACKAGE_BLUEPRINT,
-            vec![
-                scrypto_encode(&info).unwrap(),
-                scrypto_encode(&code_type).unwrap(),
-                scrypto_encode(&code).unwrap(),
-                scrypto_encode(&royalty).unwrap(),
-                scrypto_encode(&function_access_rules).unwrap(),
-                scrypto_encode(&event_schemas).unwrap(),
-            ],
-        )?;
 
-        let package_address: PackageAddress = globalize_package(
-            object_id,
+        globalize_package(
             input.package_address,
+            info,
+            code_type,
+            code,
+            royalty,
+            function_access_rules,
+            event_schemas,
             input.metadata,
             input.access_rules,
             api,
-        )?
-        .into();
-        Ok(IndexedScryptoValue::from_typed(&package_address))
+        )
     }
 
     pub(crate) fn set_royalty_config<Y>(
