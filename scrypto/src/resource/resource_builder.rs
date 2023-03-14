@@ -42,26 +42,29 @@ impl ResourceBuilder {
     }
 
     /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::String`
-    pub fn new_string_non_fungible(
-    ) -> InProgressResourceBuilder<NonFungibleResourceType<StringNonFungibleLocalId>, NoAuth> {
+    pub fn new_string_non_fungible<D: NonFungibleData>(
+    ) -> InProgressResourceBuilder<NonFungibleResourceType<StringNonFungibleLocalId, D>, NoAuth>
+    {
         InProgressResourceBuilder::default()
     }
 
     /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::Integer`
-    pub fn new_integer_non_fungible(
-    ) -> InProgressResourceBuilder<NonFungibleResourceType<IntegerNonFungibleLocalId>, NoAuth> {
+    pub fn new_integer_non_fungible<D: NonFungibleData>(
+    ) -> InProgressResourceBuilder<NonFungibleResourceType<IntegerNonFungibleLocalId, D>, NoAuth>
+    {
         InProgressResourceBuilder::default()
     }
 
     /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::Bytes`
-    pub fn new_bytes_non_fungible(
-    ) -> InProgressResourceBuilder<NonFungibleResourceType<BytesNonFungibleLocalId>, NoAuth> {
+    pub fn new_bytes_non_fungible<D: NonFungibleData>(
+    ) -> InProgressResourceBuilder<NonFungibleResourceType<BytesNonFungibleLocalId, D>, NoAuth>
+    {
         InProgressResourceBuilder::default()
     }
 
     /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::UUID`
-    pub fn new_uuid_non_fungible(
-    ) -> InProgressResourceBuilder<NonFungibleResourceType<UUIDNonFungibleLocalId>, NoAuth> {
+    pub fn new_uuid_non_fungible<D: NonFungibleData>(
+    ) -> InProgressResourceBuilder<NonFungibleResourceType<UUIDNonFungibleLocalId, D>, NoAuth> {
         InProgressResourceBuilder::default()
     }
 }
@@ -139,11 +142,17 @@ impl Default for FungibleResourceType {
     }
 }
 
-pub struct NonFungibleResourceType<T: IsNonFungibleLocalId>(PhantomData<T>);
-impl<T: IsNonFungibleLocalId> AnyResourceType for NonFungibleResourceType<T> {}
-impl<T: IsNonFungibleLocalId> Default for NonFungibleResourceType<T> {
+pub struct NonFungibleResourceType<T: IsNonFungibleLocalId, D: NonFungibleData>(
+    PhantomData<T>,
+    PhantomData<D>,
+);
+impl<T: IsNonFungibleLocalId, D: NonFungibleData> AnyResourceType
+    for NonFungibleResourceType<T, D>
+{
+}
+impl<T: IsNonFungibleLocalId, D: NonFungibleData> Default for NonFungibleResourceType<T, D> {
     fn default() -> Self {
-        Self(PhantomData)
+        Self(PhantomData, PhantomData)
     }
 }
 
@@ -152,8 +161,8 @@ pub trait IsFungibleBuilder {}
 impl<A: ConfiguredAuth> IsFungibleBuilder for InProgressResourceBuilder<FungibleResourceType, A> {}
 
 pub trait IsNonFungibleBuilder {}
-impl<A: ConfiguredAuth, Y: IsNonFungibleLocalId> IsNonFungibleBuilder
-    for InProgressResourceBuilder<NonFungibleResourceType<Y>, A>
+impl<A: ConfiguredAuth, Y: IsNonFungibleLocalId, D: NonFungibleData> IsNonFungibleBuilder
+    for InProgressResourceBuilder<NonFungibleResourceType<Y, D>, A>
 {
 }
 
@@ -355,13 +364,20 @@ pub trait UpdateNonFungibleAuthBuilder: IsNonFungibleBuilder + private::CanAddAu
     /// use scrypto::prelude::*;
     ///
     /// # let resource_address = RADIX_TOKEN;
+    ///
+    /// #[derive(ScryptoSbor, NonFungibleData)]
+    /// struct NFData {
+    ///     pub name: String,
+    ///     #[mutable]
+    ///     pub flag: bool,
+    /// }
     /// // Permits the updating of non-fungible mutable data with a proof of a specific resource, and this is locked forever.
-    /// ResourceBuilder::new_uuid_non_fungible()
+    /// ResourceBuilder::new_uuid_non_fungible::<NFData>()
     ///    .updateable_non_fungible_data(rule!(require(resource_address)), LOCKED);
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Does not currently permit the updating of non-fungible mutable data, but this is can be changed in future by the second rule.
-    /// ResourceBuilder::new_uuid_non_fungible()
+    /// ResourceBuilder::new_uuid_non_fungible::<NFData>()
     ///    .updateable_non_fungible_data(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
     /// ```
     fn updateable_non_fungible_data<R: Into<AccessRule>>(
@@ -411,6 +427,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                 .unwrap(),
             private::CreateWithNoSupply::NonFungible {
                 id_type,
+                non_fungible_schema,
                 metadata,
                 access_rules,
             } => ScryptoEnv
@@ -420,7 +437,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
                     scrypto_encode(&NonFungibleResourceManagerCreateInput {
                         id_type,
-                        non_fungible_schema: NonFungibleSchema::new(),
+                        non_fungible_schema,
                         metadata,
                         access_rules,
                     })
@@ -492,8 +509,8 @@ impl<A: ConfiguredAuth> InProgressResourceBuilder<FungibleResourceType, A> {
     }
 }
 
-impl<A: ConfiguredAuth>
-    InProgressResourceBuilder<NonFungibleResourceType<StringNonFungibleLocalId>, A>
+impl<A: ConfiguredAuth, D: NonFungibleData>
+    InProgressResourceBuilder<NonFungibleResourceType<StringNonFungibleLocalId, D>, A>
 {
     /// Creates the non-fungible resource, and mints an individual non-fungible for each key/data pair provided.
     ///
@@ -508,16 +525,15 @@ impl<A: ConfiguredAuth>
     ///     pub flag: bool,
     /// }
     ///
-    /// let bucket = ResourceBuilder::new_string_non_fungible()
+    /// let bucket = ResourceBuilder::new_string_non_fungible::<NFData>()
     ///     .mint_initial_supply([
     ///         ("One".try_into().unwrap(), NFData { name: "NF One".to_owned(), flag: true }),
     ///         ("Two".try_into().unwrap(), NFData { name: "NF Two".to_owned(), flag: true }),
     ///     ]);
     /// ```
-    pub fn mint_initial_supply<T, V>(self, entries: T) -> Bucket
+    pub fn mint_initial_supply<T>(self, entries: T) -> Bucket
     where
-        T: IntoIterator<Item = (StringNonFungibleLocalId, V)>,
-        V: NonFungibleData,
+        T: IntoIterator<Item = (StringNonFungibleLocalId, D)>,
     {
         ScryptoEnv
             .call_function(
@@ -526,7 +542,7 @@ impl<A: ConfiguredAuth>
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
                     id_type: StringNonFungibleLocalId::id_type(),
-                    non_fungible_schema: NonFungibleSchema::new_schema::<V>(),
+                    non_fungible_schema: NonFungibleSchema::new_schema::<D>(),
                     metadata: self.metadata,
                     access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
@@ -542,8 +558,8 @@ impl<A: ConfiguredAuth>
     }
 }
 
-impl<A: ConfiguredAuth>
-    InProgressResourceBuilder<NonFungibleResourceType<IntegerNonFungibleLocalId>, A>
+impl<A: ConfiguredAuth, D: NonFungibleData>
+    InProgressResourceBuilder<NonFungibleResourceType<IntegerNonFungibleLocalId, D>, A>
 {
     /// Creates the non-fungible resource, and mints an individual non-fungible for each key/data pair provided.
     ///
@@ -564,10 +580,9 @@ impl<A: ConfiguredAuth>
     ///         (2u64.into(), NFData { name: "NF Two".to_owned(), flag: true }),
     ///     ]);
     /// ```
-    pub fn mint_initial_supply<T, V>(self, entries: T) -> Bucket
+    pub fn mint_initial_supply<T>(self, entries: T) -> Bucket
     where
-        T: IntoIterator<Item = (IntegerNonFungibleLocalId, V)>,
-        V: NonFungibleData,
+        T: IntoIterator<Item = (IntegerNonFungibleLocalId, D)>,
     {
         ScryptoEnv
             .call_function(
@@ -576,7 +591,7 @@ impl<A: ConfiguredAuth>
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
                     id_type: IntegerNonFungibleLocalId::id_type(),
-                    non_fungible_schema: NonFungibleSchema::new(),
+                    non_fungible_schema: NonFungibleSchema::new_schema::<D>(),
                     metadata: self.metadata,
                     access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
@@ -592,8 +607,8 @@ impl<A: ConfiguredAuth>
     }
 }
 
-impl<A: ConfiguredAuth>
-    InProgressResourceBuilder<NonFungibleResourceType<BytesNonFungibleLocalId>, A>
+impl<A: ConfiguredAuth, D: NonFungibleData>
+    InProgressResourceBuilder<NonFungibleResourceType<BytesNonFungibleLocalId, D>, A>
 {
     /// Creates the non-fungible resource, and mints an individual non-fungible for each key/data pair provided.
     ///
@@ -608,16 +623,15 @@ impl<A: ConfiguredAuth>
     ///     pub flag: bool,
     /// }
     ///
-    /// let bucket = ResourceBuilder::new_bytes_non_fungible()
+    /// let bucket = ResourceBuilder::new_bytes_non_fungible::<NFData>()
     ///     .mint_initial_supply([
     ///         (vec![1u8].try_into().unwrap(), NFData { name: "NF One".to_owned(), flag: true }),
     ///         (vec![2u8].try_into().unwrap(), NFData { name: "NF Two".to_owned(), flag: true }),
     ///     ]);
     /// ```
-    pub fn mint_initial_supply<T, V>(self, entries: T) -> Bucket
+    pub fn mint_initial_supply<T>(self, entries: T) -> Bucket
     where
-        T: IntoIterator<Item = (BytesNonFungibleLocalId, V)>,
-        V: NonFungibleData,
+        T: IntoIterator<Item = (BytesNonFungibleLocalId, D)>,
     {
         ScryptoEnv
             .call_function(
@@ -626,7 +640,7 @@ impl<A: ConfiguredAuth>
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
                     id_type: BytesNonFungibleLocalId::id_type(),
-                    non_fungible_schema: NonFungibleSchema::new(),
+                    non_fungible_schema: NonFungibleSchema::new_schema::<D>(),
                     metadata: self.metadata,
                     access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
@@ -642,8 +656,8 @@ impl<A: ConfiguredAuth>
     }
 }
 
-impl<A: ConfiguredAuth>
-    InProgressResourceBuilder<NonFungibleResourceType<UUIDNonFungibleLocalId>, A>
+impl<A: ConfiguredAuth, D: NonFungibleData>
+    InProgressResourceBuilder<NonFungibleResourceType<UUIDNonFungibleLocalId, D>, A>
 {
     /// Creates the UUID non-fungible resource, and mints an individual non-fungible for each piece of data provided.
     ///
@@ -661,16 +675,15 @@ impl<A: ConfiguredAuth>
     ///     pub flag: bool,
     /// }
     ///
-    /// let bucket = ResourceBuilder::new_uuid_non_fungible()
+    /// let bucket = ResourceBuilder::new_uuid_non_fungible::<NFData>()
     ///     .mint_initial_supply([
     ///         (NFData { name: "NF One".to_owned(), flag: true }),
     ///         (NFData { name: "NF Two".to_owned(), flag: true }),
     ///     ]);
     /// ```
-    pub fn mint_initial_supply<T, V>(self, entries: T) -> Bucket
+    pub fn mint_initial_supply<T>(self, entries: T) -> Bucket
     where
-        T: IntoIterator<Item = V>,
-        V: NonFungibleData,
+        T: IntoIterator<Item = D>,
     {
         ScryptoEnv
             .call_function(
@@ -679,7 +692,7 @@ impl<A: ConfiguredAuth>
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(
                     &NonFungibleResourceManagerCreateUuidWithInitialSupplyInput {
-                        non_fungible_schema: NonFungibleSchema::new(),
+                        non_fungible_schema: NonFungibleSchema::new_schema::<D>(),
                         metadata: self.metadata,
                         access_rules: self.auth.into_access_rules(),
                         entries: entries
@@ -779,12 +792,13 @@ impl<A: ConfiguredAuth> private::CanCreateWithNoSupply
     }
 }
 
-impl<A: ConfiguredAuth, Y: IsNonFungibleLocalId> private::CanCreateWithNoSupply
-    for InProgressResourceBuilder<NonFungibleResourceType<Y>, A>
+impl<A: ConfiguredAuth, Y: IsNonFungibleLocalId, D: NonFungibleData> private::CanCreateWithNoSupply
+    for InProgressResourceBuilder<NonFungibleResourceType<Y, D>, A>
 {
     fn into_create_with_no_supply_invocation(self) -> private::CreateWithNoSupply {
         private::CreateWithNoSupply::NonFungible {
             id_type: Y::id_type(),
+            non_fungible_schema: NonFungibleSchema::new_schema::<D>(),
             metadata: self.metadata,
             access_rules: self.auth.into_access_rules(),
         }
@@ -844,6 +858,7 @@ mod private {
         },
         NonFungible {
             id_type: NonFungibleIdType,
+            non_fungible_schema: NonFungibleSchema,
             metadata: BTreeMap<String, String>,
             access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         },

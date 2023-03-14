@@ -24,7 +24,7 @@ mod non_fungible_test {
                 .mint_initial_supply(1);
 
             // Create non-fungible resource with mutable supply
-            let resource_address = ResourceBuilder::new_integer_non_fungible()
+            let resource_address = ResourceBuilder::new_integer_non_fungible::<Sandwich>()
                 .metadata("name", "Katz's Sandwiches")
                 .mintable(
                     rule!(require(mint_badge.resource_address())),
@@ -137,7 +137,7 @@ mod non_fungible_test {
         }
 
         pub fn get_total_supply() {
-            let resource_address = ResourceBuilder::new_integer_non_fungible()
+            let resource_address = ResourceBuilder::new_integer_non_fungible::<Sandwich>()
                 .metadata("name", "Katz's Sandwiches")
                 .create_with_no_initial_supply();
 
@@ -333,7 +333,7 @@ mod non_fungible_test {
 
         pub fn create_string_non_fungible() -> Bucket {
             // creating non-fungible id with id type set to default (UUID)
-            ResourceBuilder::new_string_non_fungible().mint_initial_supply([
+            ResourceBuilder::new_string_non_fungible::<Sandwich>().mint_initial_supply([
                 (
                     "1".try_into().unwrap(),
                     Sandwich {
@@ -352,7 +352,7 @@ mod non_fungible_test {
         }
 
         pub fn create_bytes_non_fungible() -> Bucket {
-            ResourceBuilder::new_bytes_non_fungible().mint_initial_supply([
+            ResourceBuilder::new_bytes_non_fungible::<Sandwich>().mint_initial_supply([
                 (
                     1u32.to_le_bytes().to_vec().try_into().unwrap(),
                     Sandwich {
@@ -371,21 +371,21 @@ mod non_fungible_test {
         }
 
         pub fn create_uuid_non_fungible() -> Bucket {
-            ResourceBuilder::new_uuid_non_fungible().mint_initial_supply([Sandwich {
+            ResourceBuilder::new_uuid_non_fungible::<Sandwich>().mint_initial_supply([Sandwich {
                 name: "Zero".to_owned(),
                 available: true,
             }])
         }
 
         pub fn create_mintable_uuid_non_fungible() -> ResourceAddress {
-            ResourceBuilder::new_uuid_non_fungible()
+            ResourceBuilder::new_uuid_non_fungible::<Sandwich>()
                 .mintable(rule!(allow_all), rule!(deny_all))
                 .create_with_no_initial_supply()
         }
 
         pub fn create_uuid_non_fungible_and_mint() -> Bucket {
             // creating non-fungible id with id type set to default (UUID)
-            let resource_address = ResourceBuilder::new_uuid_non_fungible()
+            let resource_address = ResourceBuilder::new_uuid_non_fungible::<Sandwich>()
                 .mintable(rule!(allow_all), rule!(deny_all))
                 .metadata("name", "Katz's Sandwiches")
                 .create_with_no_initial_supply();

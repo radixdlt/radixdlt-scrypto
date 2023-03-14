@@ -455,10 +455,7 @@ fn can_get_total_supply() {
         )
         .build();
 
-    let receipt = test_runner.execute_manifest(
-        manifest,
-        vec![],
-    );
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
