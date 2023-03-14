@@ -59,11 +59,20 @@ impl TransactionResult {
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct CommitResult {
     pub state_updates: StateDiff,
+    pub state_update_summary: StateUpdateSummary,
     pub outcome: TransactionOutcome,
     pub fee_summary: FeeSummary,
     pub fee_payments: BTreeMap<ObjectId, Decimal>,
     pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
     pub application_logs: Vec<(Level, String)>,
+}
+
+#[derive(Debug, Clone, ScryptoSbor, Default)]
+pub struct StateUpdateSummary {
+    pub new_packages: Vec<PackageAddress>,
+    pub new_components: Vec<ComponentAddress>,
+    pub new_resources: Vec<ResourceAddress>,
+    pub balance_changes: Vec<(ComponentAddress, ResourceAddress, Decimal)>,
 }
 
 impl CommitResult {
@@ -103,16 +112,16 @@ impl CommitResult {
             .map(|event| (event.validators, event.epoch))
     }
 
-    pub fn new_package_addresses(&self) -> Vec<PackageAddress> {
-        todo!()
+    pub fn new_package_addresses(&self) -> &Vec<PackageAddress> {
+        &self.state_update_summary.new_packages
     }
 
-    pub fn new_component_addresses(&self) -> Vec<ComponentAddress> {
-        todo!()
+    pub fn new_component_addresses(&self) -> &Vec<ComponentAddress> {
+        &self.state_update_summary.new_components
     }
 
     pub fn new_resource_addresses(&self) -> &Vec<ResourceAddress> {
-        todo!()
+        &self.state_update_summary.new_resources
     }
 
     pub fn output<T: ScryptoDecode>(&self, nth: usize) -> T {

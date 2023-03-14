@@ -11,6 +11,7 @@ use crate::system::node_substates::{
     PersistedSubstate, RuntimeSubstate, SubstateRef, SubstateRefMut,
 };
 use crate::transaction::RejectResult;
+use crate::transaction::StateUpdateSummary;
 use crate::transaction::TransactionOutcome;
 use crate::transaction::TransactionResult;
 use crate::transaction::{AbortReason, AbortResult, CommitResult};
@@ -621,14 +622,19 @@ impl<'s> FinalizingTrack<'s> {
         // TODO: update XRD total supply or disable it
         // TODO: pay tips to the lead validator
 
+        let (state_updates, state_update_summary) =
+            Self::generate_diff(self.substate_store, to_persist);
+
         CommitResult {
+            state_updates,
+            state_update_summary,
             outcome: match invoke_result {
                 Ok(output) => TransactionOutcome::Success(output),
                 Err(error) => TransactionOutcome::Failure(error),
             },
             fee_summary,
             fee_payments,
-            state_updates: Self::generate_diff(self.substate_store, to_persist),
+
             application_events,
             application_logs,
         }
@@ -637,7 +643,7 @@ impl<'s> FinalizingTrack<'s> {
     pub fn generate_diff(
         substate_store: &dyn ReadableSubstateStore,
         to_persist: HashMap<SubstateId, (PersistedSubstate, Option<u32>)>,
-    ) -> StateDiff {
+    ) -> (StateDiff, StateUpdateSummary) {
         let mut diff = StateDiff::new();
 
         for (substate_id, (substate, ..)) in to_persist {
@@ -657,7 +663,7 @@ impl<'s> FinalizingTrack<'s> {
             diff.up_substates.insert(substate_id.clone(), output_value);
         }
 
-        diff
+        (diff, StateUpdateSummary::default())
     }
 
     fn get_substate_output_id(
