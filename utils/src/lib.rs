@@ -14,3 +14,9 @@ pub use contextual_display::*;
 #[cfg(feature = "serde")]
 pub use contextual_serialize::*;
 pub use slice::*;
+
+
+#[cfg(target_family = "unix")]
+mod qemu_plugin_interface;
+#[cfg(target_family = "unix")]
+pub use qemu_plugin_interface::*;

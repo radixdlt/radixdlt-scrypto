@@ -40,6 +40,11 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use sbor::rust::mem;
 
+use utils::QemuPluginInterface;
+use resources_tracker_macro::trace_resources;
+resources_tracker_macro::init_trace_resources!();
+
+
 pub struct Kernel<
     'g, // Lifetime of values outliving all frames
     's, // Substate store lifetime
@@ -626,6 +631,7 @@ impl<'g, 's, W> KernelNodeApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
+    #[trace_resources]
     fn kernel_drop_node(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError> {
         KernelModuleMixer::before_drop_node(self, &node_id)?;
 
@@ -664,6 +670,7 @@ where
         Ok(node)
     }
 
+    #[trace_resources]
     fn kernel_allocate_node_id(&mut self, node_type: RENodeType) -> Result<RENodeId, RuntimeError> {
         // TODO: Add costing
         let node_id = self.id_allocator.allocate_node_id(node_type)?;
@@ -671,6 +678,7 @@ where
         Ok(node_id)
     }
 
+    #[trace_resources]
     fn kernel_create_node(
         &mut self,
         node_id: RENodeId,
@@ -850,6 +858,8 @@ impl<'g, 's, W> KernelSubstateApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
+
+    #[trace_resources]
     fn kernel_lock_substate(
         &mut self,
         node_id: RENodeId,
@@ -956,10 +966,12 @@ where
         Ok(lock_handle)
     }
 
+    #[trace_resources]
     fn kernel_get_lock_info(&mut self, lock_handle: LockHandle) -> Result<LockInfo, RuntimeError> {
         self.current_frame.get_lock_info(lock_handle)
     }
 
+    #[trace_resources]
     fn kernel_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
         KernelModuleMixer::on_drop_lock(self, lock_handle)?;
 
@@ -969,6 +981,7 @@ where
         Ok(())
     }
 
+    #[trace_resources]
     fn kernel_read_substate(
         &mut self,
         lock_handle: LockHandle,
@@ -990,6 +1003,7 @@ where
         Ok(ret)
     }
 
+    #[trace_resources]
     fn kernel_get_substate_ref<'a, 'b, S>(
         &'b mut self,
         lock_handle: LockHandle,
@@ -1011,6 +1025,7 @@ where
         Ok(substate_ref.into())
     }
 
+    #[trace_resources]
     fn kernel_get_substate_ref_mut<'a, 'b, S>(
         &'b mut self,
         lock_handle: LockHandle,
