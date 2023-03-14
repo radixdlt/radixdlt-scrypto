@@ -27,7 +27,6 @@ fn test_hello() {
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     println!("{:?}\n", receipt);
-    receipt.expect_commit_success();
     let component = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Test the `free_token` method.

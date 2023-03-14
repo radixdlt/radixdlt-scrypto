@@ -78,6 +78,7 @@ fn bench_radiswap(c: &mut Criterion) {
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
+        .expect_commit(true)
         .output::<(ComponentAddress, Own)>(5);
 
     // Transfer `10,000 BTC` from `account2` to `account3`

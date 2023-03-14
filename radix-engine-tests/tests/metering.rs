@@ -148,6 +148,7 @@ fn test_radiswap() {
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
+        .expect_commit(true)
         .output::<(ComponentAddress, Own)>(5);
 
     // Transfer `10,000 BTC` from `account2` to `account3`
@@ -265,6 +266,7 @@ fn test_flash_loan() {
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
+        .expect_commit(true)
         .output::<(ComponentAddress, ResourceAddress)>(3);
 
     // Take loan

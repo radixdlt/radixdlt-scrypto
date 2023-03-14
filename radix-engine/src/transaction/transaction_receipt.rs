@@ -114,6 +114,18 @@ impl CommitResult {
     pub fn new_resource_addresses(&self) -> &Vec<ResourceAddress> {
         todo!()
     }
+
+    pub fn output<T: ScryptoDecode>(&self, nth: usize) -> T {
+        match &self.outcome {
+            TransactionOutcome::Success(o) => match o.get(nth) {
+                Some(InstructionOutput::CallReturn(value)) => {
+                    scrypto_decode::<T>(value).expect("Output can't be converted")
+                }
+                _ => panic!("No output for [{}]", nth),
+            },
+            TransactionOutcome::Failure(_) => panic!("Transaction failed"),
+        }
+    }
 }
 
 /// Captures whether a transaction's commit outcome is Success or Failure
@@ -206,6 +218,14 @@ impl TransactionReceipt {
         }
     }
 
+    pub fn expect_commit_success(&self) -> &CommitResult {
+        self.expect_commit(true)
+    }
+
+    pub fn expect_commit_failure(&self) -> &CommitResult {
+        self.expect_commit(false)
+    }
+
     pub fn expect_rejection(&self) -> &RejectionError {
         match &self.result {
             TransactionResult::Commit(..) => panic!("Expected rejection but was commit"),
@@ -240,32 +260,6 @@ impl TransactionReceipt {
         }
     }
 
-    pub fn expect_commit_success(&self) -> &Vec<InstructionOutput> {
-        match &self.result {
-            TransactionResult::Commit(c) => match &c.outcome {
-                TransactionOutcome::Success(x) => x,
-                TransactionOutcome::Failure(err) => {
-                    panic!("Expected success but was failed:\n{:?}", err)
-                }
-            },
-            TransactionResult::Reject(err) => panic!("Transaction was rejected:\n{:?}", err),
-            TransactionResult::Abort(..) => panic!("Transaction was aborted"),
-        }
-    }
-
-    pub fn expect_commit_failure(&self) -> &RuntimeError {
-        match &self.result {
-            TransactionResult::Commit(c) => match &c.outcome {
-                TransactionOutcome::Success(_) => {
-                    panic!("Expected failure but was success")
-                }
-                TransactionOutcome::Failure(err) => err,
-            },
-            TransactionResult::Reject(_) => panic!("Transaction was rejected"),
-            TransactionResult::Abort(..) => panic!("Transaction was aborted"),
-        }
-    }
-
     pub fn expect_specific_failure<F>(&self, f: F)
     where
         F: FnOnce(&RuntimeError) -> bool,
@@ -284,15 +278,6 @@ impl TransactionReceipt {
             },
             TransactionResult::Reject(_) => panic!("Transaction was rejected"),
             TransactionResult::Abort(..) => panic!("Transaction was aborted"),
-        }
-    }
-
-    pub fn output<T: ScryptoDecode>(&self, nth: usize) -> T {
-        match &self.expect_commit_success()[nth] {
-            InstructionOutput::CallReturn(value) => {
-                scrypto_decode::<T>(value).expect("Output can't be converted")
-            }
-            InstructionOutput::None => panic!("No call return from the instruction"),
         }
     }
 }

@@ -12,7 +12,6 @@ fn stored_resource_is_invokeable() {
         .call_function(package, "StoredResource", "create", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    receipt.expect_commit_success();
     let component = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act

@@ -68,7 +68,6 @@ fn set_up_package_and_component() -> (
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-    receipt.expect_commit_success();
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     (

@@ -828,9 +828,8 @@ mod tests {
         #[cfg(not(feature = "alloc"))]
         println!("{:?}", transaction_receipt);
 
-        transaction_receipt.expect_commit_success();
-        let commit_result = transaction_receipt.expect_commit(true);
-        commit_result
+        transaction_receipt
+            .expect_commit(true)
             .next_epoch()
             .expect("There should be a new epoch.");
 
@@ -864,7 +863,6 @@ mod tests {
             &genesis_transaction.get_executable(vec![AuthAddresses::system_role()]),
         );
 
-        transaction_receipt.expect_commit_success();
         let commit_result = transaction_receipt.expect_commit(true);
         commit_result.state_updates.commit(&mut substate_store);
 

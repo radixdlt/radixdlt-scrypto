@@ -35,7 +35,7 @@ fn test_trace_resource_transfers() {
         ResourceAddress,
         ComponentAddress,
         ComponentAddress,
-    ) = receipt.output(1);
+    ) = receipt.expect_commit(true).output(1);
 
     /* There should be three resource changes: withdrawal from the source vault,
     deposit to the target vault and withdrawal for the fee */

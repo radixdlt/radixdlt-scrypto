@@ -91,7 +91,7 @@ impl ShowLedger {
         let initial_proofs = vec![];
         let receipt =
             handle_system_transaction(instructions, blobs, initial_proofs, false, false, out)?;
-        Ok(receipt.output(0))
+        Ok(receipt.expect_commit(true).output(0))
     }
 
     pub fn get_current_time<O: std::io::Write>(
@@ -107,6 +107,6 @@ impl ShowLedger {
         let initial_proofs = vec![];
         let receipt =
             handle_system_transaction(instructions, blobs, initial_proofs, false, false, out)?;
-        Ok(receipt.output(0))
+        Ok(receipt.expect_commit(true).output(0))
     }
 }

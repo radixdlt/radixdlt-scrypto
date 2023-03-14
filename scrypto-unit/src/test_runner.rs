@@ -529,7 +529,6 @@ impl TestRunner {
             .create_validator(pub_key, owner_access_rule)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
         let address = receipt.expect_commit(true).new_component_addresses()[0];
         address
     }
@@ -548,7 +547,6 @@ impl TestRunner {
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
         receipt.expect_commit(true).new_package_addresses()[0]
     }
 
@@ -564,7 +562,6 @@ impl TestRunner {
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
         receipt.expect_commit(true).new_package_addresses()[0]
     }
 
@@ -743,7 +740,6 @@ impl TestRunner {
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
         receipt.expect_commit(true).new_resource_addresses()[0]
     }
 
@@ -886,7 +882,6 @@ impl TestRunner {
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
         receipt.expect_commit(true).new_resource_addresses()[0]
     }
 
@@ -909,7 +904,6 @@ impl TestRunner {
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
         receipt.expect_commit(true).new_resource_addresses()[0]
     }
 
@@ -933,7 +927,6 @@ impl TestRunner {
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
         receipt.expect_commit(true).new_resource_addresses()[0]
     }
 
@@ -995,7 +988,7 @@ impl TestRunner {
             }
             .get_executable(vec![AuthAddresses::validator_role()]),
         );
-        receipt.output(0)
+        receipt.expect_commit(true).output(0)
     }
 
     pub fn get_state_hash(&self) -> Hash {
@@ -1023,7 +1016,7 @@ impl TestRunner {
             }
             .get_executable(vec![AuthAddresses::validator_role()]),
         );
-        receipt.output(0)
+        receipt.expect_commit(true).output(0)
     }
 
     pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {
@@ -1044,7 +1037,7 @@ impl TestRunner {
             }
             .get_executable(vec![AuthAddresses::validator_role()]),
         );
-        receipt.output(0)
+        receipt.expect_commit(true).output(0)
     }
 
     pub fn kernel_invoke_function(
