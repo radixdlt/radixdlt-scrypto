@@ -548,7 +548,7 @@ fn determine_result_type(
 /// This is just used when finalizing track into a commit
 struct FinalizingTrack<'s> {
     substate_store: &'s dyn ReadableSubstateStore,
-    loaded_substates: BTreeMap<SubstateId, LoadedSubstate>,
+    loaded_substates: IndexMap<SubstateId, LoadedSubstate>,
 }
 
 impl<'s> FinalizingTrack<'s> {
@@ -678,7 +678,6 @@ impl<'s> FinalizingTrack<'s> {
                 }
                 _ => {}
             }
-
             indexed_state_updates
                 .entry(*node_id)
                 .or_default()
@@ -727,8 +726,8 @@ impl<'s> FinalizingTrack<'s> {
                     substate_store
                         .get_substate(&SubstateId(
                             *current,
-                            NodeModuleId::SELF,
-                            SubstateOffset::Vault(VaultOffset::LiquidFungible),
+                            NodeModuleId::TypeInfo,
+                            SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
                         ))
                         .unwrap_or_else(|| {
                             panic!(
@@ -824,7 +823,7 @@ impl<'s> FinalizingTrack<'s> {
                                 .get_substate(&SubstateId(
                                     *current,
                                     NodeModuleId::SELF,
-                                    SubstateOffset::Vault(VaultOffset::LiquidFungible),
+                                    SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
                                 ))
                                 .unwrap_or_else(|| {
                                     panic!(

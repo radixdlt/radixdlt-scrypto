@@ -36,7 +36,9 @@ fn test_balance_changes_when_success() {
                 builder.call_method(component_address, "put", manifest_args!(bucket))
             })
             .build(),
-        vec![],
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     println!("{:?}", receipt);
+
+    // TODO: assert!
 }
