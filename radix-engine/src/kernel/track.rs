@@ -64,7 +64,7 @@ pub struct LoadedSubstate {
 /// Transaction-wide states and side effects
 pub struct Track<'s> {
     substate_store: &'s dyn ReadableSubstateStore,
-    loaded_substates: HashMap<SubstateId, LoadedSubstate>,
+    loaded_substates: IndexMap<SubstateId, LoadedSubstate>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -84,7 +84,7 @@ impl<'s> Track<'s> {
     pub fn new(substate_store: &'s dyn ReadableSubstateStore) -> Self {
         Self {
             substate_store,
-            loaded_substates: HashMap::new(),
+            loaded_substates: index_map_new(),
         }
     }
 
@@ -562,14 +562,14 @@ impl<'s> FinalizingTrack<'s> {
         let is_success = invoke_result.is_ok();
 
         // Calculate the substates for persistence
-        let mut to_persist = HashMap::new();
+        let mut state_updates = index_map_new();
         if is_success {
             for (id, loaded) in self.loaded_substates {
                 let old_version = match &loaded.metastate {
                     SubstateMetaState::New => None,
                     SubstateMetaState::Existing { old_version, .. } => Some(*old_version),
                 };
-                to_persist.insert(id, (loaded.substate.to_persisted(), old_version));
+                state_updates.insert(id, (loaded.substate.to_persisted(), old_version));
             }
         } else {
             for (id, loaded) in self.loaded_substates {
@@ -578,7 +578,7 @@ impl<'s> FinalizingTrack<'s> {
                         old_version,
                         state: ExistingMetaState::Updated(Some(force_persist)),
                     } => {
-                        to_persist.insert(id, (force_persist, Some(old_version)));
+                        state_updates.insert(id, (force_persist, Some(old_version)));
                     }
                     _ => {}
                 }
@@ -614,7 +614,7 @@ impl<'s> FinalizingTrack<'s> {
             );
 
             // Update substate
-            let (substate, _) = to_persist.get_mut(&substate_id).unwrap();
+            let (substate, _) = state_updates.get_mut(&substate_id).unwrap();
             substate.vault_liquid_fungible_mut().put(locked).unwrap();
 
             // Record final payments
@@ -624,8 +624,8 @@ impl<'s> FinalizingTrack<'s> {
         // TODO: update XRD total supply or disable it
         // TODO: pay tips to the lead validator
 
-        let state_update_summary = Self::summarize_update(self.substate_store, &to_persist);
-        let state_updates = Self::generate_diff(self.substate_store, to_persist);
+        let state_update_summary = Self::summarize_update(self.substate_store, &state_updates);
+        let state_updates = Self::generate_diff(self.substate_store, state_updates);
 
         CommitResult {
             state_updates,
@@ -644,12 +644,12 @@ impl<'s> FinalizingTrack<'s> {
 
     pub fn summarize_update(
         substate_store: &dyn ReadableSubstateStore,
-        to_persist: &HashMap<SubstateId, (PersistedSubstate, Option<u32>)>,
+        state_updates: &IndexMap<SubstateId, (PersistedSubstate, Option<u32>)>,
     ) -> StateUpdateSummary {
         let mut new_packages = Vec::new();
         let mut new_components = Vec::new();
         let mut new_resources = Vec::new();
-        for (k, v) in to_persist {
+        for (k, v) in state_updates {
             if v.1.is_none() {
                 match k.0 {
                     RENodeId::GlobalObject(Address::Package(address)) => new_packages.push(address),
@@ -666,12 +666,12 @@ impl<'s> FinalizingTrack<'s> {
 
         let mut balance_changes =
             BTreeMap::<Address, BTreeMap<ResourceAddress, ResourceDelta>>::new();
-        let mut state_updates = HashMap::<
+        let mut indexed_state_updates = IndexMap::<
             RENodeId,
-            HashMap<NodeModuleId, HashMap<SubstateOffset, &(PersistedSubstate, Option<u32>)>>,
+            IndexMap<NodeModuleId, IndexMap<SubstateOffset, &(PersistedSubstate, Option<u32>)>>,
         >::new();
         let mut roots = Vec::<Address>::new();
-        for (SubstateId(node_id, module_id, offset), v) in to_persist {
+        for (SubstateId(node_id, module_id, offset), v) in state_updates {
             match node_id {
                 RENodeId::GlobalObject(address) => {
                     roots.push(*address);
@@ -679,7 +679,7 @@ impl<'s> FinalizingTrack<'s> {
                 _ => {}
             }
 
-            state_updates
+            indexed_state_updates
                 .entry(*node_id)
                 .or_default()
                 .entry(*module_id)
@@ -689,7 +689,7 @@ impl<'s> FinalizingTrack<'s> {
         for root in roots {
             Self::traverse_state_updates(
                 substate_store,
-                &state_updates,
+                &indexed_state_updates,
                 &mut balance_changes,
                 &root,
                 &RENodeId::GlobalObject(root),
@@ -706,9 +706,9 @@ impl<'s> FinalizingTrack<'s> {
 
     pub fn traverse_state_updates(
         substate_store: &dyn ReadableSubstateStore,
-        state_updates: &HashMap<
+        indexed_state_updates: &IndexMap<
             RENodeId,
-            HashMap<NodeModuleId, HashMap<SubstateOffset, &(PersistedSubstate, Option<u32>)>>,
+            IndexMap<NodeModuleId, IndexMap<SubstateOffset, &(PersistedSubstate, Option<u32>)>>,
         >,
         balance_changes: &mut BTreeMap<Address, BTreeMap<ResourceAddress, ResourceDelta>>,
         root: &Address,
@@ -718,7 +718,7 @@ impl<'s> FinalizingTrack<'s> {
         // detached. If this changes, we will have to account for objects that are removed
         // from a substate.
 
-        if let Some(modules) = state_updates.get(current) {
+        if let Some(modules) = indexed_state_updates.get(current) {
             let type_info = modules
                 .get(&NodeModuleId::TypeInfo)
                 .and_then(|x| x.get(&SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo)))
@@ -862,7 +862,7 @@ impl<'s> FinalizingTrack<'s> {
                         for own in substate_value.owned_node_ids() {
                             Self::traverse_state_updates(
                                 substate_store,
-                                state_updates,
+                                indexed_state_updates,
                                 balance_changes,
                                 root,
                                 own,
@@ -876,11 +876,11 @@ impl<'s> FinalizingTrack<'s> {
 
     pub fn generate_diff(
         substate_store: &dyn ReadableSubstateStore,
-        to_persist: HashMap<SubstateId, (PersistedSubstate, Option<u32>)>,
+        state_updates: IndexMap<SubstateId, (PersistedSubstate, Option<u32>)>,
     ) -> StateDiff {
         let mut diff = StateDiff::new();
 
-        for (substate_id, (substate, ..)) in to_persist {
+        for (substate_id, (substate, ..)) in state_updates {
             let next_version = if let Some(existing_output_id) =
                 Self::get_substate_output_id(substate_store, &substate_id)
             {
