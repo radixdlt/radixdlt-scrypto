@@ -147,6 +147,7 @@ pub enum KernelError {
     // Substate Constraints
     InvalidOffset(SubstateOffset),
     InvalidOwnership(SubstateOffset, PackageAddress, String),
+    InvalidKeyValueOwnership,
     InvalidOverwrite,
     InvalidId(RENodeId),
 

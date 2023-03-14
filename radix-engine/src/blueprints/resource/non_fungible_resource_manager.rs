@@ -14,7 +14,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::schema::KeyValueStoreSchema;
 use radix_engine_interface::*;
-use std::borrow::Cow;
+use sbor::rust::borrow::Cow;
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -94,6 +94,7 @@ where
         schema: kv_schema,
         key: non_fungible_type,
         value: value_index,
+        can_own: false, // Only allow NonFungibles to store data/references
     };
 
     let nf_store_id = api.new_key_value_store(kv_schema)?;

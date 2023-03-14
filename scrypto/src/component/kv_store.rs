@@ -34,7 +34,7 @@ impl<
     pub fn new() -> Self {
         let mut env = ScryptoEnv;
 
-        let schema = KeyValueStoreSchema::new::<K, V>();
+        let schema = KeyValueStoreSchema::new::<K, V>(true);
 
         let id = env.new_key_value_store(schema).unwrap();
 

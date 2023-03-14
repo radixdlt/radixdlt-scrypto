@@ -230,6 +230,25 @@ impl CallFrame {
                 }
             }
 
+            // TODO: Move this check into system layer
+            if !new_children.is_empty() && module_id == NodeModuleId::SELF {
+                if let Ok(info) = heap.get_substate(
+                    node_id,
+                    module_id,
+                    &SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+                ) {
+                    let type_info: &TypeInfoSubstate = info.into();
+                    match type_info {
+                        TypeInfoSubstate::Object { .. } => { }
+                        TypeInfoSubstate::KeyValueStore(schema) => {
+                            if !schema.can_own {
+                                return Err(RuntimeError::KernelError(KernelError::InvalidKeyValueOwnership));
+                            }
+                        }
+                    }
+                }
+            }
+
             for child_id in &new_children {
                 self.take_node_internal(*child_id)?;
 
@@ -252,7 +271,8 @@ impl CallFrame {
                                 blueprint_name.as_str(),
                             )?;
                         }
-                        TypeInfoSubstate::KeyValueStore(..) => {}
+                        TypeInfoSubstate::KeyValueStore(..) => {
+                        }
                     }
                 }
             }
