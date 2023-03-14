@@ -76,11 +76,27 @@ impl PersistedSubstate {
         }
     }
 
+    pub fn vault_liquid_fungible(&self) -> &LiquidFungibleResource {
+        if let PersistedSubstate::VaultLiquidFungible(vault) = self {
+            vault
+        } else {
+            panic!("Not a vault liquid fungible");
+        }
+    }
+
     pub fn vault_liquid_fungible_mut(&mut self) -> &mut LiquidFungibleResource {
         if let PersistedSubstate::VaultLiquidFungible(vault) = self {
             vault
         } else {
-            panic!("Not a vault");
+            panic!("Not a vault liquid fungible");
+        }
+    }
+
+    pub fn vault_liquid_non_fungible(&self) -> &LiquidNonFungibleResource {
+        if let PersistedSubstate::VaultLiquidNonFungible(vault) = self {
+            vault
+        } else {
+            panic!("Not a vault liquid non-fungible");
         }
     }
 
@@ -88,7 +104,7 @@ impl PersistedSubstate {
         if let PersistedSubstate::VaultLiquidNonFungible(vault) = self {
             vault
         } else {
-            panic!("Not a vault");
+            panic!("Not a vault liquid non-fungible");
         }
     }
 

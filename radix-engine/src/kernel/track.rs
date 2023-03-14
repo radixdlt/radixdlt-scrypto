@@ -11,6 +11,7 @@ use crate::system::node_substates::{
     PersistedSubstate, RuntimeSubstate, SubstateRef, SubstateRefMut,
 };
 use crate::transaction::RejectResult;
+use crate::transaction::ResourceDelta;
 use crate::transaction::StateUpdateSummary;
 use crate::transaction::TransactionOutcome;
 use crate::transaction::TransactionResult;
@@ -663,7 +664,8 @@ impl<'s> FinalizingTrack<'s> {
             }
         }
 
-        let mut balance_changes = BTreeMap::<Address, BTreeMap<ResourceAddress, Decimal>>::new();
+        let mut balance_changes =
+            BTreeMap::<Address, BTreeMap<ResourceAddress, ResourceDelta>>::new();
         let mut state_updates = HashMap::<
             RENodeId,
             HashMap<NodeModuleId, HashMap<SubstateOffset, &(PersistedSubstate, Option<u32>)>>,
@@ -708,14 +710,18 @@ impl<'s> FinalizingTrack<'s> {
             RENodeId,
             HashMap<NodeModuleId, HashMap<SubstateOffset, &(PersistedSubstate, Option<u32>)>>,
         >,
-        balance_changes: &mut BTreeMap<Address, BTreeMap<ResourceAddress, Decimal>>,
+        balance_changes: &mut BTreeMap<Address, BTreeMap<ResourceAddress, ResourceDelta>>,
         root: &Address,
         current: &RENodeId,
     ) -> () {
+        // Note that the implementation below assumes that substate owned objects can not be
+        // detached. If this changes, we will have to account for objects that are removed
+        // from a substate.
+
         if let Some(modules) = state_updates.get(current) {
             let type_info = modules
                 .get(&NodeModuleId::TypeInfo)
-                .expect("Invariant broken - missing type info module")
+                .expect("Invariant broken - missing type info")
                 .get(&SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo))
                 .expect("Invariant broken - missing type info")
                 .0
@@ -725,6 +731,52 @@ impl<'s> FinalizingTrack<'s> {
                 && type_info.blueprint_name == VAULT_BLUEPRINT
             {
                 // Yeah, found a vault!
+
+                let info = modules
+                    .get(&NodeModuleId::SELF)
+                    .and_then(|v| v.get(&SubstateOffset::Vault(VaultOffset::Info)))
+                    .expect("Invariant broken - missing vault info")
+                    .0
+                    .vault_info();
+
+                if info.resource_type.is_fungible() {
+                    // If there is an update to the liquid resource
+                    if let Some(update) = modules
+                        .get(&NodeModuleId::SELF)
+                        .and_then(|v| v.get(&SubstateOffset::Vault(VaultOffset::LiquidFungible)))
+                    {
+                        let delta = balance_changes
+                            .entry(*root)
+                            .or_default()
+                            .entry(info.resource_address)
+                            .or_insert(ResourceDelta::Fungible(Decimal::ZERO));
+
+                        let old_balance = if update.1.is_none() {
+                            Decimal::ZERO
+                        } else {
+                            // TODO
+                            substate_store
+                                .get_substate(&SubstateId(
+                                    *current,
+                                    NodeModuleId::SELF,
+                                    SubstateOffset::Vault(VaultOffset::LiquidFungible),
+                                ))
+                                .expect("Invariant broken - missing vault liquid substate")
+                                .substate
+                                .vault_liquid_fungible()
+                                .amount()
+                        };
+                        let new_balance = update.0.vault_liquid_fungible().amount();
+
+                        delta.fungible().add_assign(new_balance - old_balance);
+                    }
+                } else {
+                    if let Some(update) = modules
+                        .get(&NodeModuleId::SELF)
+                        .and_then(|v| v.get(&SubstateOffset::Vault(VaultOffset::LiquidNonFungible)))
+                    {
+                    }
+                }
             } else {
                 // Look into SELF substates to find other children
                 if let Some(offsets) = modules.get(&NodeModuleId::SELF) {

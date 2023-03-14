@@ -67,12 +67,41 @@ pub struct CommitResult {
     pub application_logs: Vec<(Level, String)>,
 }
 
-#[derive(Debug, Clone, ScryptoSbor, Default)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct StateUpdateSummary {
     pub new_packages: Vec<PackageAddress>,
     pub new_components: Vec<ComponentAddress>,
     pub new_resources: Vec<ResourceAddress>,
-    pub balance_changes: BTreeMap<Address, BTreeMap<ResourceAddress, Decimal>>,
+    pub balance_changes: BTreeMap<Address, BTreeMap<ResourceAddress, ResourceDelta>>,
+}
+
+#[derive(Debug, Clone, ScryptoSbor)]
+pub enum ResourceDelta {
+    Fungible(Decimal),
+    NonFungible {
+        added: BTreeSet<NonFungibleLocalId>,
+        removed: BTreeSet<NonFungibleLocalId>,
+    },
+}
+
+impl ResourceDelta {
+    pub fn fungible(&mut self) -> &mut Decimal {
+        match self {
+            ResourceDelta::Fungible(x) => x,
+            ResourceDelta::NonFungible { .. } => panic!("Not fungible"),
+        }
+    }
+    pub fn non_fungible(
+        &mut self,
+    ) -> (
+        &mut BTreeSet<NonFungibleLocalId>,
+        &mut BTreeSet<NonFungibleLocalId>,
+    ) {
+        match self {
+            ResourceDelta::Fungible(..) => panic!("Not non fungible"),
+            ResourceDelta::NonFungible { added, removed } => (added, removed),
+        }
+    }
 }
 
 impl CommitResult {
