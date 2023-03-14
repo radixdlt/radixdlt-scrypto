@@ -1470,12 +1470,8 @@ impl AccessControllerTestRunner {
         );
         receipt.expect_commit_success();
 
-        let access_controller_component_address = receipt
-            .expect_commit(true)
-            .new_component_addresses()
-            .get(0)
-            .unwrap()
-            .clone();
+        let access_controller_component_address =
+            receipt.expect_commit(true).new_component_addresses()[0];
 
         Self {
             test_runner,

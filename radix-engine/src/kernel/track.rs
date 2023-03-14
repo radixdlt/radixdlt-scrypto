@@ -721,25 +721,54 @@ impl<'s> FinalizingTrack<'s> {
         if let Some(modules) = state_updates.get(current) {
             let type_info = modules
                 .get(&NodeModuleId::TypeInfo)
-                .expect("Invariant broken - missing type info")
-                .get(&SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo))
-                .expect("Invariant broken - missing type info")
-                .0
-                .type_info();
+                .and_then(|x| x.get(&SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo)))
+                .map(|x| x.0.type_info().clone())
+                .unwrap_or_else(|| {
+                    substate_store
+                        .get_substate(&SubstateId(
+                            *current,
+                            NodeModuleId::SELF,
+                            SubstateOffset::Vault(VaultOffset::LiquidFungible),
+                        ))
+                        .unwrap_or_else(|| {
+                            panic!(
+                                "Substate store corrupted - missing type info for {:?}",
+                                current
+                            )
+                        })
+                        .substate
+                        .type_info()
+                        .clone()
+                });
 
             if type_info.package_address == RESOURCE_MANAGER_PACKAGE
                 && type_info.blueprint_name == VAULT_BLUEPRINT
             {
                 // Yeah, found a vault!
 
-                let info = modules
+                let vault_info = modules
                     .get(&NodeModuleId::SELF)
                     .and_then(|v| v.get(&SubstateOffset::Vault(VaultOffset::Info)))
-                    .expect("Invariant broken - missing vault info")
-                    .0
-                    .vault_info();
+                    .map(|x| x.0.vault_info().clone())
+                    .unwrap_or_else(|| {
+                        substate_store
+                            .get_substate(&SubstateId(
+                                *current,
+                                NodeModuleId::SELF,
+                                SubstateOffset::Vault(VaultOffset::LiquidFungible),
+                            ))
+                            .unwrap_or_else(|| {
+                                panic!(
+                                    "Substate store corrupted - missing vault info for {:?}",
+                                    current
+                                )
+                            })
+                            .substate
+                            .vault_info()
+                            .clone()
+                    });
 
-                if info.resource_type.is_fungible() {
+                if vault_info.resource_type.is_fungible() {
                     // If there is an update to the liquid resource
                     if let Some(update) = modules
                         .get(&NodeModuleId::SELF)
@@ -748,7 +777,7 @@ impl<'s> FinalizingTrack<'s> {
                         let delta = balance_changes
                             .entry(*root)
                             .or_default()
-                            .entry(info.resource_address)
+                            .entry(vault_info.resource_address)
                             .or_insert(ResourceDelta::Fungible(Decimal::ZERO));
 
                         let old_balance = if update.1.is_none() {
@@ -760,7 +789,12 @@ impl<'s> FinalizingTrack<'s> {
                                     NodeModuleId::SELF,
                                     SubstateOffset::Vault(VaultOffset::LiquidFungible),
                                 ))
-                                .expect("Invariant broken - missing vault liquid substate")
+                                .unwrap_or_else(|| {
+                                    panic!(
+                                        "Substate store corrupted - missing vault liquid fungible substate for {:?}",
+                                        current
+                                    )
+                                })
                                 .substate
                                 .vault_liquid_fungible()
                                 .amount()
@@ -777,7 +811,7 @@ impl<'s> FinalizingTrack<'s> {
                         let delta = balance_changes
                             .entry(*root)
                             .or_default()
-                            .entry(info.resource_address)
+                            .entry(vault_info.resource_address)
                             .or_insert(ResourceDelta::NonFungible {
                                 added: BTreeSet::new(),
                                 removed: BTreeSet::new(),
@@ -792,7 +826,12 @@ impl<'s> FinalizingTrack<'s> {
                                     NodeModuleId::SELF,
                                     SubstateOffset::Vault(VaultOffset::LiquidFungible),
                                 ))
-                                .expect("Invariant broken - missing vault liquid substate")
+                                .unwrap_or_else(|| {
+                                    panic!(
+                                        "Substate store corrupted - missing vault liquid non-fungible substate for {:?}",
+                                        current
+                                    )
+                                })
                                 .substate
                                 .vault_liquid_non_fungible()
                                 .ids()

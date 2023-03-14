@@ -2,6 +2,7 @@
 members = [
     "access_rules",
     "arguments",
+    "balance_changes",
     "bucket",
     "component",
     "core",
