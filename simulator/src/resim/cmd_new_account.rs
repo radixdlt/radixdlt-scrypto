@@ -1,14 +1,9 @@
 use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::resource::{
-    require, FromPublicKey, NonFungibleResourceManagerCreateWithInitialSupplyInput,
-    ResourceMethodAuthKey, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-};
+use radix_engine_interface::blueprints::resource::{require, FromPublicKey, NonFungibleResourceManagerCreateWithInitialSupplyInput, ResourceMethodAuthKey, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT, NonFungibleSchema};
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::rule;
-use radix_engine_interface::schema::NonFungibleSchema;
 use rand::Rng;
 use utils::ContextualDisplay;
 

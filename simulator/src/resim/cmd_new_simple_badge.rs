@@ -1,14 +1,11 @@
 use clap::Parser;
 use colored::Colorize;
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::resource::{
-    NonFungibleResourceManagerCreateWithInitialSupplyInput, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-};
+use radix_engine_interface::blueprints::resource::{NonFungibleResourceManagerCreateWithInitialSupplyInput, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, NonFungibleSchema};
 use radix_engine_interface::blueprints::resource::{
     ResourceMethodAuthKey, NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
 };
 use radix_engine_interface::rule;
-use radix_engine_interface::schema::NonFungibleSchema;
 use transaction::builder::ManifestBuilder;
 use transaction::model::Instruction;
 
