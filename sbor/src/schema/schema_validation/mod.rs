@@ -24,6 +24,7 @@ pub enum SchemaValidationError {
     TypeMetadataContainedWrongNumberOfVariants,
     TypeMetadataForEnumIsNotEnumVariantChildNames,
     TypeMetadataHasMismatchingEnumDiscriminator,
+    TypeMetadataContainedDuplicateEnumVariantNames,
     InvalidIdentName { message: String },
     TypeValidationMismatch,
     TypeValidationNumericValidationInvalid,

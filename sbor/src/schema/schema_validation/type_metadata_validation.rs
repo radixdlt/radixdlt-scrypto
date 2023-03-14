@@ -26,7 +26,7 @@ pub fn validate_type_metadata_with_type_kind<'a, E: CustomTypeExtension>(
             validate_childless_metadata(type_metadata)?;
         }
         TypeKind::Tuple { field_types } => {
-            validate_fields_metadata(type_metadata, field_types.len())?;
+            validate_tuple_metadata(type_metadata, field_types.len())?;
         }
         TypeKind::Enum { variants } => {
             validate_enum_metadata(type_metadata, variants)?;
@@ -50,23 +50,22 @@ pub fn validate_childless_metadata(
     return Ok(());
 }
 
-pub fn validate_fields_metadata(
+pub fn validate_tuple_metadata(
     type_metadata: &TypeMetadata,
     field_count: usize,
 ) -> Result<(), SchemaValidationError> {
     validate_type_name(type_metadata.type_name.as_ref())?;
-    if let Some(child_names) = &type_metadata.child_names.as_ref() {
-        validate_fields_child_names(child_names, field_count)?;
-    }
+    validate_field_names(&type_metadata.child_names, field_count)?;
     Ok(())
 }
 
-pub fn validate_fields_child_names(
-    child_names: &ChildNames,
+pub fn validate_field_names(
+    child_names: &Option<ChildNames>,
     field_count: usize,
 ) -> Result<(), SchemaValidationError> {
     match child_names {
-        ChildNames::NamedFields(field_names) => {
+        None => Ok(()),
+        Some(ChildNames::NamedFields(field_names)) => {
             if field_names.len() != field_count {
                 return Err(
                     SchemaValidationError::TypeMetadataFieldNameCountDoesNotMatchFieldCount,
@@ -75,12 +74,12 @@ pub fn validate_fields_child_names(
             for field_name in field_names.iter() {
                 validate_field_name(field_name)?;
             }
+            Ok(())
         }
-        ChildNames::EnumVariants(_) => {
+        Some(ChildNames::EnumVariants(_)) => {
             return Err(SchemaValidationError::TypeMetadataContainedUnexpectedEnumVariants)
         }
     }
-    Ok(())
 }
 
 pub fn validate_enum_metadata(
@@ -94,28 +93,39 @@ pub fn validate_enum_metadata(
     validate_type_name(type_name.as_ref())?;
 
     match child_names {
-        Some(ChildNames::NamedFields(_)) => {
-            Err(SchemaValidationError::TypeMetadataContainedUnexpectedNamedFields)
+        Some(ChildNames::NamedFields(_)) | None => {
+            Err(SchemaValidationError::TypeMetadataForEnumIsNotEnumVariantChildNames)
         }
         Some(ChildNames::EnumVariants(variants_metadata)) => {
             if variants_metadata.len() != variants.len() {
                 return Err(SchemaValidationError::TypeMetadataContainedWrongNumberOfVariants);
             }
+            let mut unique_variant_names = IndexSet::new();
             for (discriminator, variant_metadata) in variants_metadata.iter() {
                 let Some(child_types) = variants.get(discriminator) else {
                     return Err(SchemaValidationError::TypeMetadataHasMismatchingEnumDiscriminator)
                 };
 
-                validate_fields_metadata(variant_metadata, child_types.len())?;
+                let variant_name = variant_metadata.type_name.as_ref();
+                validate_enum_variant_name(variant_name)?;
+                unique_variant_names.insert(variant_name);
+
+                validate_field_names(&variant_metadata.child_names, child_types.len())?;
+            }
+            if unique_variant_names.len() != variants.len() {
+                return Err(SchemaValidationError::TypeMetadataContainedDuplicateEnumVariantNames);
             }
             Ok(())
         }
-        None => Ok(()),
     }
 }
 
 fn validate_type_name(name: &str) -> Result<(), SchemaValidationError> {
     validate_ident("type name", name)
+}
+
+fn validate_enum_variant_name(name: &str) -> Result<(), SchemaValidationError> {
+    validate_ident("enum variant name", name)
 }
 
 fn validate_field_name(name: &str) -> Result<(), SchemaValidationError> {
