@@ -93,16 +93,6 @@ impl<'s> Track<'s> {
         self.substate_store.get_substate(substate_id)
     }
 
-    // TODO: to read/write a value owned by track requires three coordinated steps:
-    // 1. Attempt to acquire the lock
-    // 2. Apply the operation
-    // 3. Release lock
-    //
-    // A better idea is properly to move the lock-unlock logic into the operation themselves OR to have a
-    // representation of locked resource and apply operation on top of it.
-    //
-    // Also enables us to store state associated with the lock, like the `write_through` flag.
-
     pub fn acquire_lock(
         &mut self,
         substate_id: SubstateId,
