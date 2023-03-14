@@ -646,18 +646,20 @@ impl<'s> FinalizingTrack<'s> {
         substate_store: &dyn ReadableSubstateStore,
         state_updates: &IndexMap<SubstateId, (PersistedSubstate, Option<u32>)>,
     ) -> StateUpdateSummary {
-        let mut new_packages = Vec::new();
-        let mut new_components = Vec::new();
-        let mut new_resources = Vec::new();
+        let mut new_packages = IndexSet::new();
+        let mut new_components = IndexSet::new();
+        let mut new_resources = IndexSet::new();
         for (k, v) in state_updates {
             if v.1.is_none() {
                 match k.0 {
-                    RENodeId::GlobalObject(Address::Package(address)) => new_packages.push(address),
+                    RENodeId::GlobalObject(Address::Package(address)) => {
+                        new_packages.insert(address);
+                    }
                     RENodeId::GlobalObject(Address::Component(address)) => {
-                        new_components.push(address)
+                        new_components.insert(address);
                     }
                     RENodeId::GlobalObject(Address::Resource(address)) => {
-                        new_resources.push(address)
+                        new_resources.insert(address);
                     }
                     _ => {}
                 }
@@ -696,9 +698,9 @@ impl<'s> FinalizingTrack<'s> {
         }
 
         StateUpdateSummary {
-            new_packages,
-            new_components,
-            new_resources,
+            new_packages: new_packages.into_iter().collect(),
+            new_components: new_components.into_iter().collect(),
+            new_resources: new_resources.into_iter().collect(),
             balance_changes,
         }
     }
