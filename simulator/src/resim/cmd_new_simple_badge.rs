@@ -2,7 +2,7 @@ use clap::Parser;
 use colored::Colorize;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::{
-    NonFungibleResourceManagerCreateWithInitialSupplyInput, NonFungibleSchema,
+    NonFungibleDataSchema, NonFungibleResourceManagerCreateWithInitialSupplyInput,
     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
 };
 use radix_engine_interface::blueprints::resource::{
@@ -90,7 +90,7 @@ impl NewSimpleBadge {
                     .to_string(),
                 args: manifest_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
                     id_type: NonFungibleIdType::Integer,
-                    non_fungible_schema: NonFungibleSchema::new_schema::<()>(),
+                    non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                     metadata,
                     access_rules: btreemap!(
                         ResourceMethodAuthKey::Withdraw => (rule!(allow_all), rule!(deny_all))

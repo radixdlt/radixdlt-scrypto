@@ -42,7 +42,7 @@ fn build_non_fungible_resource_manager_substate<Y>(
     resource_address: ResourceAddress,
     id_type: NonFungibleIdType,
     supply: usize,
-    non_fungible_schema: NonFungibleSchema,
+    non_fungible_schema: NonFungibleDataSchema,
     api: &mut Y,
 ) -> Result<(NonFungibleResourceManagerSubstate, KeyValueStoreId), RuntimeError>
 where
@@ -176,7 +176,7 @@ pub struct NonFungibleResourceManagerBlueprint;
 impl NonFungibleResourceManagerBlueprint {
     pub(crate) fn create<Y>(
         id_type: NonFungibleIdType,
-        non_fungible_schema: NonFungibleSchema,
+        non_fungible_schema: NonFungibleDataSchema,
         metadata: BTreeMap<String, String>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         api: &mut Y,
@@ -198,7 +198,7 @@ impl NonFungibleResourceManagerBlueprint {
 
     pub(crate) fn create_with_address<Y>(
         id_type: NonFungibleIdType,
-        non_fungible_schema: NonFungibleSchema,
+        non_fungible_schema: NonFungibleDataSchema,
         metadata: BTreeMap<String, String>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         resource_address: [u8; 26], // TODO: Clean this up
@@ -231,7 +231,7 @@ impl NonFungibleResourceManagerBlueprint {
 
     pub(crate) fn create_with_initial_supply<Y>(
         id_type: NonFungibleIdType,
-        non_fungible_schema: NonFungibleSchema,
+        non_fungible_schema: NonFungibleDataSchema,
         metadata: BTreeMap<String, String>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         entries: BTreeMap<NonFungibleLocalId, Vec<u8>>,
@@ -274,7 +274,7 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn create_uuid_with_initial_supply<Y>(
-        non_fungible_schema: NonFungibleSchema,
+        non_fungible_schema: NonFungibleDataSchema,
         metadata: BTreeMap<String, String>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         entries: Vec<Vec<u8>>,

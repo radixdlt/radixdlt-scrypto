@@ -342,7 +342,7 @@ impl ManifestBuilder {
                     .to_string(),
                 args: manifest_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
                     id_type,
-                    non_fungible_schema: NonFungibleSchema::new_schema::<V>(),
+                    non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
                     metadata,
                     access_rules,
                     entries,
@@ -356,7 +356,7 @@ impl ManifestBuilder {
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: manifest_encode(&NonFungibleResourceManagerCreateInput {
                     id_type,
-                    non_fungible_schema: NonFungibleSchema::new_schema::<V>(),
+                    non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
                     metadata,
                     access_rules,
                 })

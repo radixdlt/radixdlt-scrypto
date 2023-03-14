@@ -541,7 +541,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
                     id_type: StringNonFungibleLocalId::id_type(),
-                    non_fungible_schema: NonFungibleSchema::new_schema::<D>(),
+                    non_fungible_schema: NonFungibleDataSchema::new_schema::<D>(),
                     metadata: self.metadata,
                     access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
@@ -590,7 +590,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
                     id_type: IntegerNonFungibleLocalId::id_type(),
-                    non_fungible_schema: NonFungibleSchema::new_schema::<D>(),
+                    non_fungible_schema: NonFungibleDataSchema::new_schema::<D>(),
                     metadata: self.metadata,
                     access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
@@ -639,7 +639,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
                     id_type: BytesNonFungibleLocalId::id_type(),
-                    non_fungible_schema: NonFungibleSchema::new_schema::<D>(),
+                    non_fungible_schema: NonFungibleDataSchema::new_schema::<D>(),
                     metadata: self.metadata,
                     access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
@@ -691,7 +691,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(
                     &NonFungibleResourceManagerCreateUuidWithInitialSupplyInput {
-                        non_fungible_schema: NonFungibleSchema::new_schema::<D>(),
+                        non_fungible_schema: NonFungibleDataSchema::new_schema::<D>(),
                         metadata: self.metadata,
                         access_rules: self.auth.into_access_rules(),
                         entries: entries
@@ -797,7 +797,7 @@ impl<A: ConfiguredAuth, Y: IsNonFungibleLocalId, D: NonFungibleData> private::Ca
     fn into_create_with_no_supply_invocation(self) -> private::CreateWithNoSupply {
         private::CreateWithNoSupply::NonFungible {
             id_type: Y::id_type(),
-            non_fungible_schema: NonFungibleSchema::new_schema::<D>(),
+            non_fungible_schema: NonFungibleDataSchema::new_schema::<D>(),
             metadata: self.metadata,
             access_rules: self.auth.into_access_rules(),
         }
@@ -857,7 +857,7 @@ mod private {
         },
         NonFungible {
             id_type: NonFungibleIdType,
-            non_fungible_schema: NonFungibleSchema,
+            non_fungible_schema: NonFungibleDataSchema,
             metadata: BTreeMap<String, String>,
             access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         },

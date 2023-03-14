@@ -81,7 +81,7 @@ impl ResourceManager {
     where
         Y: ClientApi<E>,
     {
-        let non_fungible_schema = NonFungibleSchema::new_schema::<N>();
+        let non_fungible_schema = NonFungibleDataSchema::new_schema::<N>();
         let result = api.call_function(
             RESOURCE_MANAGER_PACKAGE,
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,

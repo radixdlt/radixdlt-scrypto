@@ -88,7 +88,7 @@ impl EpochManagerBlueprint {
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT,
                 scrypto_encode(&NonFungibleResourceManagerCreateWithAddressInput {
                     id_type: NonFungibleIdType::Bytes,
-                    non_fungible_schema: NonFungibleSchema::new_schema::<()>(),
+                    non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                     metadata,
                     access_rules,
                     resource_address: input.olympia_validator_token_address,

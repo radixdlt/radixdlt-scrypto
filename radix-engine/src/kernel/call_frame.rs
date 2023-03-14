@@ -239,10 +239,12 @@ impl CallFrame {
                 ) {
                     let type_info: &TypeInfoSubstate = info.into();
                     match type_info {
-                        TypeInfoSubstate::Object { .. } => { }
+                        TypeInfoSubstate::Object { .. } => {}
                         TypeInfoSubstate::KeyValueStore(schema) => {
                             if !schema.can_own {
-                                return Err(RuntimeError::KernelError(KernelError::InvalidKeyValueOwnership));
+                                return Err(RuntimeError::KernelError(
+                                    KernelError::InvalidKeyValueOwnership,
+                                ));
                             }
                         }
                     }
@@ -271,8 +273,7 @@ impl CallFrame {
                                 blueprint_name.as_str(),
                             )?;
                         }
-                        TypeInfoSubstate::KeyValueStore(..) => {
-                        }
+                        TypeInfoSubstate::KeyValueStore(..) => {}
                     }
                 }
             }

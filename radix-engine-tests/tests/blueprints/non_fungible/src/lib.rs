@@ -318,7 +318,7 @@ mod non_fungible_test {
                         id_type: NonFungibleIdType::UUID,
                         metadata: BTreeMap::new(),
                         access_rules: BTreeMap::new(),
-                        non_fungible_schema: NonFungibleSchema::new_schema::<()>(),
+                        non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                         entries: encoded,
                     })
                     .unwrap(),

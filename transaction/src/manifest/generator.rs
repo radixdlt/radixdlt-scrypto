@@ -1254,7 +1254,7 @@ mod tests {
     use crate::manifest::parser::Parser;
     use radix_engine_interface::address::Bech32Decoder;
     use radix_engine_interface::blueprints::resource::{
-        AccessRule, AccessRulesConfig, NonFungibleSchema, ResourceMethodAuthKey,
+        AccessRule, AccessRulesConfig, NonFungibleDataSchema, ResourceMethodAuthKey,
     };
     use radix_engine_interface::network::NetworkDefinition;
     use radix_engine_interface::{dec, pdec};
@@ -1511,7 +1511,7 @@ mod tests {
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: manifest_encode(&NonFungibleResourceManagerCreateInput {
                     id_type: NonFungibleIdType::Integer,
-                    non_fungible_schema: NonFungibleSchema::new_schema::<()>(),
+                    non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                     metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
                     access_rules: BTreeMap::from([
                         (
@@ -1540,7 +1540,7 @@ mod tests {
                     .to_string(),
                 args: manifest_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
                     id_type: NonFungibleIdType::Integer,
-                    non_fungible_schema: NonFungibleSchema::new_schema::<()>(),
+                    non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                     metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
                     access_rules: BTreeMap::from([
                         (

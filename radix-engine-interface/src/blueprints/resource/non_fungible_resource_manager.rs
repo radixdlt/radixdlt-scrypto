@@ -16,7 +16,7 @@ pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT: &str = "create";
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct NonFungibleResourceManagerCreateInput {
     pub id_type: NonFungibleIdType,
-    pub non_fungible_schema: NonFungibleSchema,
+    pub non_fungible_schema: NonFungibleDataSchema,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
 }
@@ -29,7 +29,7 @@ pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT: &str =
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct NonFungibleResourceManagerCreateWithInitialSupplyInput {
     pub id_type: NonFungibleIdType,
-    pub non_fungible_schema: NonFungibleSchema,
+    pub non_fungible_schema: NonFungibleDataSchema,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub entries: BTreeMap<NonFungibleLocalId, Vec<u8>>,
@@ -43,7 +43,7 @@ pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT: &str =
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct NonFungibleResourceManagerCreateWithAddressInput {
     pub id_type: NonFungibleIdType,
-    pub non_fungible_schema: NonFungibleSchema,
+    pub non_fungible_schema: NonFungibleDataSchema,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub resource_address: [u8; 26], // TODO: Clean this up
@@ -56,7 +56,7 @@ pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT: &
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct NonFungibleResourceManagerCreateUuidWithInitialSupplyInput {
-    pub non_fungible_schema: NonFungibleSchema,
+    pub non_fungible_schema: NonFungibleDataSchema,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub entries: Vec<Vec<u8>>,
@@ -112,7 +112,7 @@ pub struct NonFungibleResourceManagerMintUuidInput {
 pub type NonFungibleResourceManagerMintUuidOutput = Bucket;
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-pub struct NonFungibleSchema {
+pub struct NonFungibleDataSchema {
     pub schema: ScryptoSchema,
     pub non_fungible: LocalTypeIndex,
     pub mutable_fields: BTreeSet<String>,
@@ -122,7 +122,7 @@ impl NonFungibleData for () {
     const MUTABLE_FIELDS: &'static [&'static str] = &[];
 }
 
-impl NonFungibleSchema {
+impl NonFungibleDataSchema {
     pub fn new_schema<N: NonFungibleData>() -> Self {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
         let non_fungible_type = aggregator.add_child_type_and_descendents::<N>();
