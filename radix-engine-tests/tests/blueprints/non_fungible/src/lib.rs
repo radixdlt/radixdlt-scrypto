@@ -122,8 +122,11 @@ mod non_fungible_test {
             assert_eq!(data.available, false);
 
             mint_badge.authorize(|| {
-                borrow_resource_manager!(resource_address)
-                    .update_non_fungible_data(&NonFungibleLocalId::integer(0), "available", true);
+                borrow_resource_manager!(resource_address).update_non_fungible_data(
+                    &NonFungibleLocalId::integer(0),
+                    "available",
+                    true,
+                );
             });
 
             let data: Sandwich = borrow_resource_manager!(resource_address)

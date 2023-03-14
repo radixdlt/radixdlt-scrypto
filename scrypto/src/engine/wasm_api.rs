@@ -62,7 +62,10 @@ extern "C" {
 
     pub fn get_component_type_info(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
 
-    pub fn get_key_value_store_info(key_value_store_id_ptr: *const u8, key_value_store_id_len: usize) -> Buffer;
+    pub fn get_key_value_store_info(
+        key_value_store_id_ptr: *const u8,
+        key_value_store_id_len: usize,
+    ) -> Buffer;
 
     /// Invokes a method on a component.
     pub fn call_method(

@@ -32,7 +32,7 @@ MINT_NON_FUNGIBLE
     Address("${mintable_resource_address}") 
     Map<NonFungibleLocalId, Tuple>(
         NonFungibleLocalId("${non_fungible_local_id}"), 
-        Tuple("Hello World", Decimal("12"))
+        Tuple()
     );
 
 # Depositing the entirety of the newly minted tokens into out account

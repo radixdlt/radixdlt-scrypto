@@ -1,7 +1,11 @@
 use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::resource::{require, FromPublicKey, NonFungibleResourceManagerCreateWithInitialSupplyInput, ResourceMethodAuthKey, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT, NonFungibleSchema};
+use radix_engine_interface::blueprints::resource::{
+    require, FromPublicKey, NonFungibleResourceManagerCreateWithInitialSupplyInput,
+    NonFungibleSchema, ResourceMethodAuthKey, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+};
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::rule;
 use rand::Rng;
@@ -70,7 +74,7 @@ impl NewAccount {
                         .to_string(),
                     args: manifest_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
                         id_type: NonFungibleIdType::Integer,
-                        non_fungible_schema: NonFungibleSchema::new(),
+                        non_fungible_schema: NonFungibleSchema::new_schema::<()>(),
                         metadata: btreemap!(
                             "name".to_owned() => "Owner Badge".to_owned()
                         ),

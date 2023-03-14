@@ -1,6 +1,8 @@
 use crate::api::types::*;
 use bitflags::bitflags;
-use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode};
+use radix_engine_common::data::scrypto::{
+    scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode,
+};
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 use sbor::*;
@@ -36,13 +38,20 @@ pub trait ClientSubstateApi<E: Debug> {
     ) -> Result<LockHandle, E>;
 
     fn sys_read_substate(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, E>;
-    fn sys_read_typed_substate<S: ScryptoDecode>(&mut self, lock_handle: LockHandle) -> Result<S, E> {
+    fn sys_read_typed_substate<S: ScryptoDecode>(
+        &mut self,
+        lock_handle: LockHandle,
+    ) -> Result<S, E> {
         let buf = self.sys_read_substate(lock_handle)?;
         let typed_substate: S = scrypto_decode(&buf).unwrap();
         Ok(typed_substate)
     }
     fn sys_write_substate(&mut self, lock_handle: LockHandle, buffer: Vec<u8>) -> Result<(), E>;
-    fn sys_write_typed_substate<S: ScryptoEncode>(&mut self, lock_handle: LockHandle, substate: S) -> Result<(), E> {
+    fn sys_write_typed_substate<S: ScryptoEncode>(
+        &mut self,
+        lock_handle: LockHandle,
+        substate: S,
+    ) -> Result<(), E> {
         let buf = scrypto_encode(&substate).unwrap();
         self.sys_write_substate(lock_handle, buf)
     }

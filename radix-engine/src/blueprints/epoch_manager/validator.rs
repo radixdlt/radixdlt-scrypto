@@ -41,6 +41,10 @@ pub struct UnstakeData {
     amount: Decimal,
 }
 
+impl NonFungibleData for UnstakeData {
+    const MUTABLE_FIELDS: &'static [&'static str] = &[];
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ValidatorError {
     InvalidClaimResource,
@@ -568,12 +572,13 @@ impl ValidatorCreator {
         unstake_token_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         unstake_token_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
 
-        let unstake_resource_manager = ResourceManager::new_non_fungible::<(), Y, RuntimeError>(
-            NonFungibleIdType::UUID,
-            BTreeMap::new(),
-            unstake_token_auth,
-            api,
-        )?;
+        let unstake_resource_manager =
+            ResourceManager::new_non_fungible::<UnstakeData, Y, RuntimeError>(
+                NonFungibleIdType::UUID,
+                BTreeMap::new(),
+                unstake_token_auth,
+                api,
+            )?;
 
         Ok(unstake_resource_manager.0)
     }

@@ -1148,7 +1148,11 @@ impl ResourceManagerNativePackage {
                         RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::update_non_fungible_data(
-                    receiver, input.id, input.field_name, input.data, api,
+                    receiver,
+                    input.id,
+                    input.field_name,
+                    input.data,
+                    api,
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }

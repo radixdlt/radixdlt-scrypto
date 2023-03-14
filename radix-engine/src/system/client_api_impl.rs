@@ -610,15 +610,16 @@ where
         Ok(blueprint)
     }
 
-    fn get_key_value_store_info(&mut self, node_id: RENodeId) -> Result<KeyValueStoreSchema, RuntimeError> {
+    fn get_key_value_store_info(
+        &mut self,
+        node_id: RENodeId,
+    ) -> Result<KeyValueStoreSchema, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(node_id, self)?;
         let schema = match type_info {
             TypeInfoSubstate::Object { .. } => {
                 return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
-            },
-            TypeInfoSubstate::KeyValueStore(schema) => {
-                schema
             }
+            TypeInfoSubstate::KeyValueStore(schema) => schema,
         };
 
         Ok(schema)

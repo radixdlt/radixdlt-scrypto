@@ -309,11 +309,11 @@ fn test_flash_loan() {
     // (cd radix-engine && cargo test --test metering -- test_flash_loan)
     assert_eq!(
         22500 /* CreateNode */
-        + 331500 /* DropLock */
+        + 332500 /* DropLock */
         + 22500 /* DropNode */
         + 45470 /* Invoke */
-        + 339500 /* LockSubstate */
-        + 6564120 /* ReadSubstate */
+        + 340500 /* LockSubstate */
+        + 6565510 /* ReadSubstate */
         + 242500 /* RunNative */
         + 1151735 /* RunWasm */
         + 50000 /* TxBaseCost */

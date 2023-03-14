@@ -123,10 +123,6 @@ impl NonFungibleData for () {
 }
 
 impl NonFungibleSchema {
-    pub fn new() -> Self {
-        Self::new_schema::<()>()
-    }
-
     pub fn new_schema<N: NonFungibleData>() -> Self {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
         let non_fungible_type = aggregator.add_child_type_and_descendents::<N>();
