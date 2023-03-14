@@ -62,6 +62,8 @@ extern "C" {
 
     pub fn get_component_type_info(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
 
+    pub fn get_key_value_store_info(key_value_store_id_ptr: *const u8, key_value_store_id_len: usize) -> Buffer;
+
     /// Invokes a method on a component.
     pub fn call_method(
         receiver_ptr: *const u8,
@@ -212,6 +214,14 @@ pub unsafe fn globalize_with_address(
 pub unsafe fn get_component_type_info(
     _component_id_ptr: *const u8,
     _component_id_len: usize,
+) -> Buffer {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn get_key_value_store_info(
+    _key_value_store_id_ptr: *const u8,
+    _key_value_store_id_len: usize,
 ) -> Buffer {
     unreachable!()
 }

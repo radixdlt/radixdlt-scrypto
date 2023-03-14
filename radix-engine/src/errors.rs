@@ -187,6 +187,7 @@ pub enum CallFrameError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemError {
     NotAnObject,
+    NotAKeyValueStore,
     InvalidLockFlags,
     CannotGlobalize,
     InvalidModule,

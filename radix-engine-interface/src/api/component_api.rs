@@ -13,7 +13,11 @@ pub trait ClientObjectApi<E> {
         app_states: Vec<Vec<u8>>,
     ) -> Result<ObjectId, E>;
 
+    fn get_object_type_info(&mut self, node_id: RENodeId) -> Result<(PackageAddress, String), E>;
+
     fn new_key_value_store(&mut self, schema: KeyValueStoreSchema) -> Result<KeyValueStoreId, E>;
+
+    fn get_key_value_store_info(&mut self, node_id: RENodeId) -> Result<KeyValueStoreSchema, E>;
 
     fn globalize(
         &mut self,
@@ -27,8 +31,6 @@ pub trait ClientObjectApi<E> {
         modules: BTreeMap<NodeModuleId, ObjectId>,
         address: Address,
     ) -> Result<Address, E>;
-
-    fn get_object_type_info(&mut self, node_id: RENodeId) -> Result<(PackageAddress, String), E>;
 
     fn call_method(
         &mut self,
