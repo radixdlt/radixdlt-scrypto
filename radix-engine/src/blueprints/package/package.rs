@@ -28,6 +28,9 @@ pub enum PackageError {
 
     InvalidBlueprintWasm(SchemaValidationError),
     TooManySubstateSchemas,
+
+    InvalidEventSchema,
+    DuplicateEventNamesFound,
 }
 
 fn validate_package_schema(schema: &PackageSchema) -> Result<(), PackageError> {
@@ -36,6 +39,31 @@ fn validate_package_schema(schema: &PackageSchema) -> Result<(), PackageError> {
 
         if blueprint.substates.len() > 0xff {
             return Err(PackageError::TooManySubstateSchemas);
+        }
+    }
+    Ok(())
+}
+
+fn validate_package_event_schema(
+    event_schema: &BTreeMap<String, Vec<(LocalTypeIndex, ScryptoSchema)>>,
+) -> Result<(), PackageError> {
+    // TODO: Should we check that the blueprint name is valid for that given package?
+
+    for (blueprint_name, blueprint_event_schema) in event_schema {
+        for (local_type_index, schema) in blueprint_event_schema {
+            // Checking that the schema is itself valid
+            schema
+                .validate()
+                .map_err(|_| PackageError::InvalidEventSchema)?;
+
+            // Ensuring that the event is either a struct or an enum
+            match schema.resolve_type_kind(*local_type_index) {
+                // Structs and Enums are allowed
+                Some(TypeKind::Enum { .. } | TypeKind::Tuple { .. }) => Ok(()),
+                _ => {
+                    return Err(PackageError::InvalidEventSchema);
+                }
+            }?
         }
     }
     Ok(())
@@ -229,6 +257,8 @@ impl PackageNativePackage {
         // Validate schema
         validate_package_schema(&input.schema)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
+        validate_package_event_schema(&input.event_schema)
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
 
         // Build node init
         let info = PackageInfoSubstate {
@@ -250,16 +280,19 @@ impl PackageNativePackage {
         };
         let event_schemas =
             PackageEventSchemaSubstate(convert_event_schema(input.event_schema).map_err(
-                |error| RuntimeError::ApplicationError(ApplicationError::EventError(error)),
+                |error| RuntimeError::ApplicationError(ApplicationError::PackageError(error)),
             )?);
-        let node_init = RENodeInit::PackageObject(
-            info,
-            code_type,
-            code,
-            royalty,
-            function_access_rules,
-            event_schemas,
-        );
+        let object_id = api.new_object(
+            PACKAGE_BLUEPRINT,
+            vec![
+                scrypto_encode(&info).unwrap(),
+                scrypto_encode(&code_type).unwrap(),
+                scrypto_encode(&code).unwrap(),
+                scrypto_encode(&royalty).unwrap(),
+                scrypto_encode(&function_access_rules).unwrap(),
+                scrypto_encode(&event_schemas).unwrap(),
+            ],
+        )?;
 
         // Build node module init
         let node_modules = build_package_node_modules(input.metadata, input.access_rules);
@@ -318,14 +351,17 @@ impl PackageNativePackage {
             default_auth: AccessRule::AllowAll,
         };
         let event_schemas = PackageEventSchemaSubstate(BTreeMap::new()); // TODO: To rework in Pt3
-        let node_init = RENodeInit::PackageObject(
-            info,
-            code_type,
-            code,
-            royalty,
-            function_access_rules,
-            event_schemas,
-        );
+        let object_id = api.new_object(
+            PACKAGE_BLUEPRINT,
+            vec![
+                scrypto_encode(&info).unwrap(),
+                scrypto_encode(&code_type).unwrap(),
+                scrypto_encode(&code).unwrap(),
+                scrypto_encode(&royalty).unwrap(),
+                scrypto_encode(&function_access_rules).unwrap(),
+                scrypto_encode(&event_schemas).unwrap(),
+            ],
+        )?;
 
         // Build node module init
         let node_modules = build_package_node_modules(input.metadata, input.access_rules);
@@ -400,7 +436,7 @@ fn convert_event_schema(
     event_schema: BTreeMap<String, Vec<(LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>>,
 ) -> Result<
     BTreeMap<String, BTreeMap<String, (LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>>,
-    EventError,
+    PackageError,
 > {
     let mut package_event_schema = BTreeMap::<
         String,
@@ -412,7 +448,7 @@ fn convert_event_schema(
             let event_name = {
                 (*schema
                     .resolve_type_metadata(local_type_index)
-                    .map_or(Err(EventError::InvalidEventSchema), Ok)?
+                    .map_or(Err(PackageError::InvalidEventSchema), Ok)?
                     .type_name)
                     .to_owned()
             };
@@ -420,7 +456,7 @@ fn convert_event_schema(
             if let None = blueprint_schema.insert(event_name, (local_type_index, schema)) {
                 Ok(())
             } else {
-                Err(EventError::DuplicateEventNamesFound)
+                Err(PackageError::DuplicateEventNamesFound)
             }?
         }
     }

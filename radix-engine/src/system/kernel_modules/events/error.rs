@@ -11,8 +11,5 @@ pub enum EventError {
     },
     InvalidEventSchema,
     NoAssociatedPackage,
-    DuplicateEventNamesFound,
-    FailedToSborEncodeEventSchema,
-    FailedToSborEncodeEvent,
     InvalidActor,
 }

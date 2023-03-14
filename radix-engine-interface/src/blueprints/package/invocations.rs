@@ -2,7 +2,7 @@ use crate::api::types::*;
 use crate::blueprints::resource::*;
 use crate::data::scrypto::model::*;
 use crate::*;
-use radix_engine_common::data::scrypto::ScryptoCustomTypeExtension;
+use radix_engine_common::data::scrypto::{ScryptoCustomTypeExtension, ScryptoSchema};
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -41,7 +41,7 @@ pub struct PackagePublishNativeInput {
     pub package_access_rules: BTreeMap<FnKey, AccessRule>,
     pub default_package_access_rule: AccessRule,
 
-    pub event_schema: BTreeMap<String, Vec<(LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>>,
+    pub event_schema: BTreeMap<String, Vec<(LocalTypeIndex, ScryptoSchema)>>,
 }
 
 pub type PackagePublishNativeOutput = PackageAddress;
