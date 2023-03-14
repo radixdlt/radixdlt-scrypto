@@ -2,20 +2,15 @@ use super::PackageCodeTypeSubstate;
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_MEDIUM_FEE};
-use crate::system::kernel_modules::events::EventError;
-use crate::system::node::RENodeInit;
-use crate::system::node::RENodeModuleInit;
-use crate::system::node_modules::access_rules::{
-    FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
-};
+use crate::system::node_modules::access_rules::FunctionAccessRulesSubstate;
 use crate::system::node_modules::event_schema::PackageEventSchemaSubstate;
-use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use crate::wasm::{PrepareError, WasmValidator};
 use core::fmt::Debug;
+use native_sdk::modules::access_rules::AccessRulesObject;
+use native_sdk::modules::metadata::Metadata;
+use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::{ResourceManager, Vault};
-use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::package::*;
@@ -49,7 +44,7 @@ fn validate_package_event_schema(
 ) -> Result<(), PackageError> {
     // TODO: Should we check that the blueprint name is valid for that given package?
 
-    for (blueprint_name, blueprint_event_schema) in event_schema {
+    for (_, blueprint_event_schema) in event_schema {
         for (local_type_index, schema) in blueprint_event_schema {
             // Checking that the schema is itself valid
             schema
@@ -69,43 +64,34 @@ fn validate_package_event_schema(
     Ok(())
 }
 
-fn build_package_node_modules(
+fn globalize_package<Y>(
+    package_id: ObjectId,
+    address: Option<[u8; 26]>,
     metadata: BTreeMap<String, String>,
     access_rules: AccessRulesConfig,
-) -> BTreeMap<NodeModuleId, RENodeModuleInit> {
-    let mut metadata_substates = BTreeMap::new();
-    for (key, value) in metadata {
-        metadata_substates.insert(
-            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
-                scrypto_encode(&key).unwrap(),
-            )),
-            RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::Some(
-                ScryptoValue::String { value },
-            )),
-        );
+    api: &mut Y,
+) -> Result<Address, RuntimeError>
+where
+    Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+{
+    let metadata = Metadata::sys_create_with_data(metadata, api)?;
+    let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
+    let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
+    let modules = btreemap!(
+        NodeModuleId::Metadata => metadata.id(),
+        NodeModuleId::AccessRules => access_rules.id(),
+        NodeModuleId::ComponentRoyalty => royalty.id(),
+    );
+
+    if let Some(address) = address {
+        api.globalize_with_address(
+            RENodeId::Object(package_id),
+            modules,
+            Address::Package(PackageAddress::Normal(address)),
+        )
+    } else {
+        api.globalize(RENodeId::Object(package_id), modules)
     }
-
-    let mut node_modules = BTreeMap::new();
-    node_modules.insert(
-        NodeModuleId::TypeInfo,
-        RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-            package_address: PACKAGE_PACKAGE,
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            global: true,
-        }),
-    );
-    node_modules.insert(
-        NodeModuleId::Metadata,
-        RENodeModuleInit::Metadata(metadata_substates),
-    );
-    node_modules.insert(
-        NodeModuleId::AccessRules,
-        RENodeModuleInit::MethodAccessRules(MethodAccessRulesSubstate {
-            access_rules: access_rules,
-        }),
-    );
-
-    node_modules
 }
 
 pub struct PackageNativePackage;
@@ -294,19 +280,14 @@ impl PackageNativePackage {
             ],
         )?;
 
-        // Build node module init
-        let node_modules = build_package_node_modules(input.metadata, input.access_rules);
-
-        // Create package node
-        let node_id = if let Some(address) = input.package_address {
-            RENodeId::GlobalObject(PackageAddress::Normal(address).into())
-        } else {
-            api.kernel_allocate_node_id(RENodeType::GlobalPackage)?
-        };
-        api.kernel_create_node(node_id, node_init, node_modules)?;
-
-        // Return
-        let package_address: PackageAddress = node_id.into();
+        let package_address: PackageAddress = globalize_package(
+            object_id,
+            input.package_address,
+            input.metadata,
+            input.access_rules,
+            api,
+        )?
+        .into();
         Ok(IndexedScryptoValue::from_typed(&package_address))
     }
 
@@ -363,19 +344,14 @@ impl PackageNativePackage {
             ],
         )?;
 
-        // Build node module init
-        let node_modules = build_package_node_modules(input.metadata, input.access_rules);
-
-        // Create package node
-        let node_id = if let Some(address) = input.package_address {
-            RENodeId::GlobalObject(PackageAddress::Normal(address).into())
-        } else {
-            api.kernel_allocate_node_id(RENodeType::GlobalPackage)?
-        };
-        api.kernel_create_node(node_id, node_init, node_modules)?;
-
-        // Return
-        let package_address: PackageAddress = node_id.into();
+        let package_address: PackageAddress = globalize_package(
+            object_id,
+            input.package_address,
+            input.metadata,
+            input.access_rules,
+            api,
+        )?
+        .into();
         Ok(IndexedScryptoValue::from_typed(&package_address))
     }
 

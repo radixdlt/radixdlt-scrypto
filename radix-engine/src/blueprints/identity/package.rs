@@ -89,7 +89,7 @@ impl IdentityNativePackage {
         let (node_id, access_rules) = IdentityBlueprint::create(input.access_rule, api)?;
         let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
         let metadata = Metadata::sys_create(api)?;
-        let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
+        let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
         let address = api.globalize(
             node_id,

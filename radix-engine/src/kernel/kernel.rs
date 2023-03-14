@@ -186,7 +186,7 @@ where
 
         let access_rules = AccessRulesObject::sys_new(access_rules, self)?;
         let metadata = Metadata::sys_create(self)?;
-        let royalty = ComponentRoyalty::sys_create(self, RoyaltyConfig::default())?;
+        let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), self)?;
 
         self.globalize_with_address(
             component_id,
@@ -221,7 +221,7 @@ where
 
         let access_rules = AccessRulesObject::sys_new(access_rules, self)?;
         let metadata = Metadata::sys_create(self)?;
-        let royalty = ComponentRoyalty::sys_create(self, RoyaltyConfig::default())?;
+        let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), self)?;
 
         self.globalize_with_address(
             local_id,

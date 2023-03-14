@@ -419,7 +419,7 @@ impl AccessControllerNativePackage {
         let access_rules =
             AccessRulesObject::sys_new(access_rules_from_rule_set(input.rule_set), api)?;
         let metadata = Metadata::sys_create(api)?;
-        let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
+        let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
         // Creating a global component address for the access controller RENode
         let address = api.globalize(

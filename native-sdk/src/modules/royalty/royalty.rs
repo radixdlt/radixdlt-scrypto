@@ -12,8 +12,8 @@ pub struct ComponentRoyalty;
 
 impl ComponentRoyalty {
     pub fn sys_create<Y, E: Debug + ScryptoDecode>(
-        api: &mut Y,
         royalty_config: RoyaltyConfig,
+        api: &mut Y,
     ) -> Result<Own, E>
     where
         Y: ClientApi<E>,
