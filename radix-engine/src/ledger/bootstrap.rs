@@ -724,7 +724,12 @@ pub fn create_genesis(
 
 pub fn genesis_result(receipt: &TransactionReceipt) -> GenesisReceipt {
     // TODO: Remove this when appropriate syscalls are implemented for Scrypto
-    let faucet_component = receipt.new_component_addresses().last().unwrap().clone();
+    let faucet_component = receipt
+        .expect_commit(true)
+        .new_component_addresses()
+        .last()
+        .unwrap()
+        .clone();
     GenesisReceipt { faucet_component }
 }
 
@@ -831,8 +836,7 @@ mod tests {
 
         assert!(transaction_receipt
             .expect_commit(true)
-            .entity_changes
-            .new_package_addresses
+            .new_package_addresses()
             .contains(&PACKAGE_PACKAGE));
         let genesis_receipt = genesis_result(&transaction_receipt);
         assert_eq!(genesis_receipt.faucet_component, FAUCET_COMPONENT);

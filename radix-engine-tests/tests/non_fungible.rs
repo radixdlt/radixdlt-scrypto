@@ -57,10 +57,7 @@ fn can_burn_non_fungible() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
-    let resource_address = receipt
-        .expect_commit(true)
-        .entity_changes
-        .new_resource_addresses[0];
+    let resource_address = receipt.expect_commit(true).new_resource_addresses()[0];
     let vault_id = test_runner.get_component_vaults(account, resource_address)[0];
     let ids = test_runner.inspect_non_fungible_vault(vault_id).unwrap();
     let first_id = ids.into_iter().next().unwrap();
@@ -267,14 +264,8 @@ fn test_mint_update_and_withdraw() {
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     receipt.expect_commit_success();
-    let badge_resource_address = receipt
-        .expect_commit(true)
-        .entity_changes
-        .new_resource_addresses[0];
-    let nft_resource_address = receipt
-        .expect_commit(true)
-        .entity_changes
-        .new_resource_addresses[1];
+    let badge_resource_address = receipt.expect_commit(true).new_resource_addresses()[0];
+    let nft_resource_address = receipt.expect_commit(true).new_resource_addresses()[1];
 
     // update data (the NFT is referenced within a Proof)
     let manifest = ManifestBuilder::new()
@@ -492,8 +483,7 @@ fn can_mint_uuid_non_fungible_in_manifest() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    receipt.expect_commit_success();
-    let resource_address = receipt.new_resource_addresses()[0];
+    let resource_address = receipt.expect_commit(true).new_resource_addresses()[0];
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -539,10 +529,7 @@ fn cant_burn_non_fungible_with_wrong_non_fungible_local_id_type() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
-    let resource_address = receipt
-        .expect_commit(true)
-        .entity_changes
-        .new_resource_addresses[0];
+    let resource_address = receipt.expect_commit(true).new_resource_addresses()[0];
     let non_fungible_global_id = NonFungibleGlobalId::new(
         resource_address,
         NonFungibleLocalId::uuid(0x4cdd7469_ac3f_4822_a817_93c904a2a556u128).unwrap(),

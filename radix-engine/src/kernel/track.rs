@@ -10,7 +10,6 @@ use crate::system::kernel_modules::costing::{FeeSummary, SystemLoanFeeReserve};
 use crate::system::node_substates::{
     PersistedSubstate, RuntimeSubstate, SubstateRef, SubstateRefMut,
 };
-use crate::transaction::EntityChanges;
 use crate::transaction::RejectResult;
 use crate::transaction::TransactionOutcome;
 use crate::transaction::TransactionResult;
@@ -63,7 +62,6 @@ pub struct LoadedSubstate {
 pub struct Track<'s> {
     substate_store: &'s dyn ReadableSubstateStore,
     loaded_substates: HashMap<SubstateId, LoadedSubstate>,
-    new_global_addresses: Vec<Address>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -84,7 +82,6 @@ impl<'s> Track<'s> {
         Self {
             substate_store,
             loaded_substates: HashMap::new(),
-            new_global_addresses: Vec::new(),
         }
     }
 
@@ -259,13 +256,6 @@ impl<'s> Track<'s> {
 
     pub fn insert_substate(&mut self, substate_id: SubstateId, substate: RuntimeSubstate) {
         assert!(!self.loaded_substates.contains_key(&substate_id));
-
-        match &substate_id {
-            SubstateId(RENodeId::GlobalObject(address), NodeModuleId::TypeInfo, ..) => {
-                self.new_global_addresses.push(*address);
-            }
-            _ => {}
-        }
 
         self.loaded_substates.insert(
             substate_id,
@@ -469,13 +459,6 @@ impl<'s> Track<'s> {
                 // Keep logs always, for better debuggability
                 let application_logs = application_logs;
 
-                // Keep/rollback entity changes
-                let entity_changes = if is_success {
-                    EntityChanges::new(self.new_global_addresses)
-                } else {
-                    EntityChanges::new(Vec::new())
-                };
-
                 let finalizing_track = FinalizingTrack {
                     substate_store: self.substate_store,
                     loaded_substates: self.loaded_substates.into_iter().collect(),
@@ -484,7 +467,6 @@ impl<'s> Track<'s> {
                     invoke_result,
                     application_events,
                     application_logs,
-                    entity_changes,
                     fee_reserve,
                 ))
             }
@@ -572,7 +554,6 @@ impl<'s> FinalizingTrack<'s> {
         invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
         application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
         application_logs: Vec<(Level, String)>,
-        entity_changes: EntityChanges,
         fee_reserve: SystemLoanFeeReserve,
     ) -> CommitResult {
         let is_success = invoke_result.is_ok();
@@ -648,7 +629,6 @@ impl<'s> FinalizingTrack<'s> {
             fee_summary,
             actual_fee_payments,
             state_updates: Self::generate_diff(self.substate_store, to_persist),
-            entity_changes,
             application_events,
             application_logs,
         }

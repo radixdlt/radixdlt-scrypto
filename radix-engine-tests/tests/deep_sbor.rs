@@ -61,15 +61,14 @@ fn setting_struct_with_deep_recursive_data_panics_inside_component() {
         .call_function(package_address, "DeepStruct", "new", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    receipt.expect_commit_success();
-    let component_address = receipt.new_component_addresses().get(0).unwrap();
+    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act 1 - Small Depth - Succeeds
     let depth = 10usize;
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_method(
-            *component_address,
+            component_address,
             "set_depth",
             manifest_args!(RADIX_TOKEN, depth),
         )
@@ -82,7 +81,7 @@ fn setting_struct_with_deep_recursive_data_panics_inside_component() {
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_method(
-            *component_address,
+            component_address,
             "set_depth",
             manifest_args!(RADIX_TOKEN, depth),
         )

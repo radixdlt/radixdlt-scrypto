@@ -44,10 +44,7 @@ fn test_dynamic_auth(
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     receipt1.expect_commit_success();
-    let component = receipt1
-        .expect_commit(true)
-        .entity_changes
-        .new_component_addresses[0];
+    let component = receipt1.expect_commit(true).new_component_addresses()[0];
 
     if let Some(next_auth) = update_auth {
         let update_manifest = ManifestBuilder::new()
@@ -117,10 +114,7 @@ fn test_dynamic_authlist(
         .build();
     let receipt0 = test_runner.execute_manifest(manifest1, vec![]);
     receipt0.expect_commit_success();
-    let component = receipt0
-        .expect_commit(true)
-        .entity_changes
-        .new_component_addresses[0];
+    let component = receipt0.expect_commit(true).new_component_addresses()[0];
 
     // Act
     let manifest2 = ManifestBuilder::new()
@@ -243,10 +237,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     receipt1.expect_commit_success();
-    let component = receipt1
-        .expect_commit(true)
-        .entity_changes
-        .new_component_addresses[0];
+    let component = receipt1.expect_commit(true).new_component_addresses()[0];
 
     // Act
     let manifest2 = ManifestBuilder::new()
@@ -278,10 +269,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     receipt1.expect_commit_success();
-    let component = receipt1
-        .expect_commit(true)
-        .entity_changes
-        .new_component_addresses[0];
+    let component = receipt1.expect_commit(true).new_component_addresses()[0];
     let manifest2 = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_method(component, "make_move", manifest_args!())

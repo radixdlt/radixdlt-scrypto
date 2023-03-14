@@ -344,7 +344,7 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
         );
         receipt.expect_commit_success();
 
-        receipt.new_component_addresses()[0]
+        receipt.expect_commit(true).new_component_addresses()[0]
     };
 
     let manifest = ManifestBuilder::new()
@@ -396,7 +396,7 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
         );
         receipt.expect_commit_success();
 
-        receipt.new_component_addresses()[0]
+        receipt.expect_commit(true).new_component_addresses()[0]
     };
 
     let manifest = ManifestBuilder::new()
@@ -448,7 +448,7 @@ impl MutableAccessRulesTestRunner {
             .build();
         let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
         receipt.expect_commit_success();
-        let component_address = receipt.new_component_addresses()[0];
+        let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
         Self {
             test_runner,

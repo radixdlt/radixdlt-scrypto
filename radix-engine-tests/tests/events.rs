@@ -195,13 +195,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
             .build();
         let receipt = test_runner.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
-        (
-            receipt
-                .expect_commit(true)
-                .entity_changes
-                .new_resource_addresses[0],
-            id,
-        )
+        (receipt.expect_commit(true).new_resource_addresses()[0], id)
     };
     let vault_id = test_runner.get_component_vaults(account, recallable_resource_address)[0];
 
@@ -357,10 +351,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
             .build();
         let receipt = test_runner.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
-        receipt
-            .expect_commit(true)
-            .entity_changes
-            .new_resource_addresses[0]
+        receipt.expect_commit(true).new_resource_addresses()[0]
     };
 
     let manifest = ManifestBuilder::new()
@@ -435,10 +426,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
             .build();
         let receipt = test_runner.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
-        receipt
-            .expect_commit(true)
-            .entity_changes
-            .new_resource_addresses[0]
+        receipt.expect_commit(true).new_resource_addresses()[0]
     };
 
     let id = NonFungibleLocalId::Integer(IntegerNonFungibleLocalId::new(1));
@@ -1300,10 +1288,7 @@ fn create_validator(
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
-    let component_address = receipt
-        .expect_commit(true)
-        .entity_changes
-        .new_component_addresses[0];
+    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     component_address
 }
@@ -1326,6 +1311,9 @@ fn create_all_allowed_resource(test_runner: &mut TestRunner) -> ResourceAddress 
         .create_fungible_resource(18, BTreeMap::new(), access_rules, None)
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
-    receipt.expect_commit_success();
-    *receipt.new_resource_addresses().get(0).unwrap()
+    *receipt
+        .expect_commit(true)
+        .new_resource_addresses()
+        .get(0)
+        .unwrap()
 }

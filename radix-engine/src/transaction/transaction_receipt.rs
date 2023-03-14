@@ -62,7 +62,6 @@ pub struct CommitResult {
     pub fee_summary: FeeSummary,
     pub actual_fee_payments: BTreeMap<ObjectId, Decimal>,
     pub state_updates: StateDiff,
-    pub entity_changes: EntityChanges,
     pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
     pub application_logs: Vec<(Level, String)>,
 }
@@ -103,6 +102,18 @@ impl CommitResult {
             .map(|(_, data)| scrypto_decode::<EpochChangeEvent>(data).expect("Impossible Case!"))
             .map(|event| (event.validators, event.epoch))
     }
+
+    pub fn new_package_addresses(&self) -> Vec<PackageAddress> {
+        todo!()
+    }
+
+    pub fn new_component_addresses(&self) -> Vec<ComponentAddress> {
+        todo!()
+    }
+
+    pub fn new_resource_addresses(&self) -> &Vec<ResourceAddress> {
+        todo!()
+    }
 }
 
 /// Captures whether a transaction's commit outcome is Success or Failure
@@ -132,39 +143,6 @@ impl TransactionOutcome {
             TransactionOutcome::Success(results) => Ok(results),
             TransactionOutcome::Failure(error) => Err(f(error)),
         }
-    }
-}
-
-#[derive(Debug, Clone, ScryptoSbor)]
-pub struct EntityChanges {
-    pub new_package_addresses: Vec<PackageAddress>,
-    pub new_component_addresses: Vec<ComponentAddress>,
-    pub new_resource_addresses: Vec<ResourceAddress>,
-}
-
-impl EntityChanges {
-    pub fn new(new_global_addresses: Vec<Address>) -> Self {
-        let mut entity_changes = Self {
-            new_package_addresses: Vec::new(),
-            new_component_addresses: Vec::new(),
-            new_resource_addresses: Vec::new(),
-        };
-
-        for new_global_address in new_global_addresses {
-            match new_global_address {
-                Address::Package(package_address) => {
-                    entity_changes.new_package_addresses.push(package_address)
-                }
-                Address::Component(component_address) => entity_changes
-                    .new_component_addresses
-                    .push(component_address),
-                Address::Resource(resource_address) => {
-                    entity_changes.new_resource_addresses.push(resource_address)
-                }
-            }
-        }
-
-        entity_changes
     }
 }
 
@@ -317,21 +295,6 @@ impl TransactionReceipt {
             InstructionOutput::None => panic!("No call return from the instruction"),
         }
     }
-
-    pub fn new_package_addresses(&self) -> &Vec<PackageAddress> {
-        let commit = self.expect_commit(true);
-        &commit.entity_changes.new_package_addresses
-    }
-
-    pub fn new_component_addresses(&self) -> &Vec<ComponentAddress> {
-        let commit = self.expect_commit(true);
-        &commit.entity_changes.new_component_addresses
-    }
-
-    pub fn new_resource_addresses(&self) -> &Vec<ResourceAddress> {
-        let commit = self.expect_commit(true);
-        &commit.entity_changes.new_resource_addresses
-    }
 }
 
 macro_rules! prefix {
@@ -455,35 +418,32 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                 f,
                 "\n{} {}",
                 "New Entities:".bold().green(),
-                c.entity_changes.new_package_addresses.len()
-                    + c.entity_changes.new_component_addresses.len()
-                    + c.entity_changes.new_resource_addresses.len()
+                c.new_package_addresses().len()
+                    + c.new_component_addresses().len()
+                    + c.new_resource_addresses().len()
             )?;
 
-            for (i, package_address) in c.entity_changes.new_package_addresses.iter().enumerate() {
+            for (i, package_address) in c.new_package_addresses().iter().enumerate() {
                 write!(
                     f,
                     "\n{} Package: {}",
-                    prefix!(i, c.entity_changes.new_package_addresses),
+                    prefix!(i, c.new_package_addresses()),
                     package_address.display(bech32_encoder)
                 )?;
             }
-            for (i, component_address) in
-                c.entity_changes.new_component_addresses.iter().enumerate()
-            {
+            for (i, component_address) in c.new_component_addresses().iter().enumerate() {
                 write!(
                     f,
                     "\n{} Component: {}",
-                    prefix!(i, c.entity_changes.new_component_addresses),
+                    prefix!(i, c.new_component_addresses()),
                     component_address.display(bech32_encoder)
                 )?;
             }
-            for (i, resource_address) in c.entity_changes.new_resource_addresses.iter().enumerate()
-            {
+            for (i, resource_address) in c.new_resource_addresses().iter().enumerate() {
                 write!(
                     f,
                     "\n{} Resource: {}",
-                    prefix!(i, c.entity_changes.new_resource_addresses),
+                    prefix!(i, c.new_resource_addresses()),
                     resource_address.display(bech32_encoder)
                 )?;
             }

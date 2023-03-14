@@ -28,10 +28,7 @@ fn test_hello() {
     );
     println!("{:?}\n", receipt);
     receipt.expect_commit_success();
-    let component = receipt
-        .expect_commit(true)
-        .entity_changes
-        .new_component_addresses[0];
+    let component = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Test the `free_token` method.
     let manifest = ManifestBuilder::new()

@@ -117,6 +117,7 @@ fn test_trace_fee_payments() {
 
     let funded_component = test_runner
         .execute_manifest(manifest_prepare, vec![])
+        .expect_commit(true)
         .new_component_addresses()
         .into_iter()
         .nth(0)
