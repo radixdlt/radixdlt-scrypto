@@ -69,6 +69,7 @@ pub const NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT: &str = "update_non_fu
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerUpdateDataInput {
     pub id: NonFungibleLocalId,
+    pub field_name: String,
     pub data: Vec<u8>,
 }
 

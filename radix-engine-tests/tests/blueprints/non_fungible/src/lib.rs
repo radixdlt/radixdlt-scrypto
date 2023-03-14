@@ -55,10 +55,8 @@ mod non_fungible_test {
             mint_badge.authorize(|| {
                 borrow_resource_manager!(proof.resource_address()).update_non_fungible_data(
                     &proof.non_fungible_local_id(),
-                    Sandwich {
-                        name: "Test".to_owned(),
-                        available: true,
-                    },
+                    "available",
+                    true,
                 )
             });
 
@@ -119,14 +117,13 @@ mod non_fungible_test {
 
         pub fn update_and_get_non_fungible() -> (Bucket, Bucket) {
             let (mint_badge, resource_address, bucket) = Self::create_non_fungible_mutable();
-            let mut data: Sandwich = borrow_resource_manager!(resource_address)
+            let data: Sandwich = borrow_resource_manager!(resource_address)
                 .get_non_fungible_data(&NonFungibleLocalId::integer(0));
             assert_eq!(data.available, false);
 
-            data.available = true;
             mint_badge.authorize(|| {
                 borrow_resource_manager!(resource_address)
-                    .update_non_fungible_data(&NonFungibleLocalId::integer(0), data);
+                    .update_non_fungible_data(&NonFungibleLocalId::integer(0), "available", true);
             });
 
             let data: Sandwich = borrow_resource_manager!(resource_address)

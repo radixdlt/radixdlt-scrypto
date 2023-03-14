@@ -21,6 +21,7 @@ use std::borrow::Cow;
 pub enum NonFungibleResourceManagerError {
     NonFungibleAlreadyExists(NonFungibleGlobalId),
     NonFungibleNotFound(NonFungibleGlobalId),
+    InvalidField(String),
     MismatchingBucketResource,
     NonFungibleIdTypeDoesNotMatch(NonFungibleIdType, NonFungibleIdType),
     InvalidNonFungibleIdType,
@@ -31,6 +32,7 @@ pub struct NonFungibleResourceManagerSubstate {
     pub resource_address: ResourceAddress, // TODO: Figure out a way to remove?
     pub total_supply: Decimal,
     pub id_type: NonFungibleIdType,
+    pub non_fungible_type_index: LocalTypeIndex,
     pub non_fungible_table: KeyValueStoreId,
     pub mutable_fields: BTreeSet<String>, // TODO: Integrate with KeyValueStore schema check?
 }
@@ -49,8 +51,13 @@ where
     let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
     let non_fungible_type = aggregator.add_child_type_and_descendents::<NonFungibleLocalId>();
     let key_schema = generate_full_schema(aggregator);
+
     let mut kv_schema = non_fungible_schema.schema;
+
+    // Key
     kv_schema.type_kinds.extend(key_schema.type_kinds);
+
+    // Optional Value
     {
         let mut variants = BTreeMap::new();
         variants.insert(OPTION_VARIANT_NONE, vec![]);
@@ -58,7 +65,11 @@ where
         let type_kind = TypeKind::Enum { variants };
         kv_schema.type_kinds.push(type_kind);
     }
+
+    // Key
     kv_schema.type_metadata.extend(key_schema.type_metadata);
+
+    // Optional value
     {
         let metadata = TypeMetadata {
             type_name: Cow::Borrowed("Option"),
@@ -69,9 +80,13 @@ where
         };
         kv_schema.type_metadata.push(metadata);
     }
+
+    // Key
     kv_schema
         .type_validations
         .extend(key_schema.type_validations);
+
+    // Optional value
     kv_schema.type_validations.push(TypeValidation::None);
     let value_index = LocalTypeIndex::SchemaLocalIndex(kv_schema.type_validations.len() - 1);
 
@@ -86,6 +101,7 @@ where
     let resource_manager = NonFungibleResourceManagerSubstate {
         resource_address,
         id_type,
+        non_fungible_type_index: non_fungible_schema.non_fungible,
         total_supply: supply.into(),
         non_fungible_table: nf_store_id,
         mutable_fields,
@@ -513,6 +529,7 @@ impl NonFungibleResourceManagerBlueprint {
     pub(crate) fn update_non_fungible_data<Y>(
         receiver: RENodeId,
         id: NonFungibleLocalId,
+        field_name: String,
         data: Vec<u8>,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -528,18 +545,37 @@ impl NonFungibleResourceManagerBlueprint {
         let resource_manager: &NonFungibleResourceManagerSubstate =
             api.kernel_get_substate_ref(resman_handle)?;
         let resource_address = resource_manager.resource_address;
+        let non_fungible_type_index = resource_manager.non_fungible_type_index;
         let non_fungible_table_id = resource_manager.non_fungible_table;
+
+        let kv_schema = api.get_key_value_store_info(RENodeId::KeyValueStore(non_fungible_table_id))?;
+
+        let schema_path = SchemaPath(vec![SchemaSubPath::Field(field_name.clone())]);
+        let sbor_path = schema_path.to_sbor_path(&kv_schema.schema, non_fungible_type_index);
+        let sbor_path = if let Some((sbor_path, ..)) = sbor_path {
+            sbor_path
+        } else {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::NonFungibleResourceManagerError(
+                    NonFungibleResourceManagerError::InvalidField(field_name),
+                ),
+            ));
+        };
 
         let non_fungible_handle = api.sys_lock_substate(
             RENodeId::KeyValueStore(non_fungible_table_id),
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&id).unwrap())),
             LockFlags::MUTABLE,
         )?;
-        let non_fungible_mut: &mut Option<ScryptoValue> =
-            api.kernel_get_substate_ref_mut(non_fungible_handle)?;
 
-        if let Some(ref mut non_fungible_substate) = non_fungible_mut {
-            *non_fungible_substate = scrypto_decode(&data).unwrap();
+        let non_fungible = api.sys_read_substate(non_fungible_handle)?;
+        let mut non_fungible_entry: Option<ScryptoValue> = scrypto_decode(&non_fungible).unwrap();
+
+        if let Some(ref mut non_fungible) = non_fungible_entry {
+            let value = sbor_path.get_from_value_mut(non_fungible).unwrap();
+            *value = scrypto_decode(&data).unwrap();
+
+            api.sys_write_substate(non_fungible_handle, scrypto_encode(&non_fungible_entry).unwrap())?;
         } else {
             let non_fungible_global_id = NonFungibleGlobalId::new(resource_address, id);
             return Err(RuntimeError::ApplicationError(

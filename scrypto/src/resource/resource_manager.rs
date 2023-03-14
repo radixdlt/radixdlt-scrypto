@@ -18,6 +18,7 @@ use sbor::rust::vec::Vec;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 
 use crate::modules::AttachedMetadata;
+use crate::prelude::ScryptoEncode;
 
 /// Represents a resource manager.
 #[derive(Debug)]
@@ -373,10 +374,11 @@ impl ResourceManager {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
-    pub fn update_non_fungible_data<T: NonFungibleData>(
+    pub fn update_non_fungible_data<D: ScryptoEncode>(
         &mut self,
         id: &NonFungibleLocalId,
-        new_data: T,
+        field_name: &str,
+        new_data: D,
     ) {
         let mut env = ScryptoEnv;
         let _rtn = env
@@ -385,6 +387,7 @@ impl ResourceManager {
                 NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT,
                 scrypto_encode(&NonFungibleResourceManagerUpdateDataInput {
                     id: id.clone(),
+                    field_name: field_name.to_string(),
                     data: scrypto_encode(&new_data).unwrap(),
                 })
                 .unwrap(),
