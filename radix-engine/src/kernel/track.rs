@@ -718,54 +718,30 @@ impl<'s> FinalizingTrack<'s> {
         // from a substate.
 
         if let Some(modules) = indexed_state_updates.get(current) {
-            let type_info = modules
-                .get(&NodeModuleId::TypeInfo)
-                .and_then(|x| x.get(&SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo)))
-                .map(|x| x.0.type_info().clone())
-                .unwrap_or_else(|| {
-                    substate_store
-                        .get_substate(&SubstateId(
-                            *current,
-                            NodeModuleId::TypeInfo,
-                            SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-                        ))
-                        .unwrap_or_else(|| {
-                            panic!(
-                                "Substate store corrupted - missing type info for {:?}",
-                                current
-                            )
-                        })
-                        .substate
-                        .type_info()
-                        .clone()
-                });
+            let type_info = Self::fetch_substates(
+                substate_store,
+                indexed_state_updates,
+                *current,
+                NodeModuleId::TypeInfo,
+                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+            )
+            .type_info()
+            .clone();
 
             if type_info.package_address == RESOURCE_MANAGER_PACKAGE
                 && type_info.blueprint_name == VAULT_BLUEPRINT
             {
                 // Yeah, found a vault!
 
-                let vault_info = modules
-                    .get(&NodeModuleId::SELF)
-                    .and_then(|v| v.get(&SubstateOffset::Vault(VaultOffset::Info)))
-                    .map(|x| x.0.vault_info().clone())
-                    .unwrap_or_else(|| {
-                        substate_store
-                            .get_substate(&SubstateId(
-                                *current,
-                                NodeModuleId::SELF,
-                                SubstateOffset::Vault(VaultOffset::LiquidFungible),
-                            ))
-                            .unwrap_or_else(|| {
-                                panic!(
-                                    "Substate store corrupted - missing vault info for {:?}",
-                                    current
-                                )
-                            })
-                            .substate
-                            .vault_info()
-                            .clone()
-                    });
+                let vault_info = Self::fetch_substates(
+                    substate_store,
+                    indexed_state_updates,
+                    *current,
+                    NodeModuleId::SELF,
+                    SubstateOffset::Vault(VaultOffset::Info),
+                )
+                .vault_info()
+                .clone();
 
                 if vault_info.resource_type.is_fungible() {
                     // If there is an update to the liquid resource
@@ -871,6 +847,34 @@ impl<'s> FinalizingTrack<'s> {
                 }
             }
         }
+    }
+
+    pub fn fetch_substates(
+        substate_store: &dyn ReadableSubstateStore,
+        indexed_state_updates: &IndexMap<
+            RENodeId,
+            IndexMap<NodeModuleId, IndexMap<SubstateOffset, &(PersistedSubstate, Option<u32>)>>,
+        >,
+        node_id: RENodeId,
+        module_id: NodeModuleId,
+        offset: SubstateOffset,
+    ) -> PersistedSubstate {
+        indexed_state_updates
+            .get(&node_id)
+            .and_then(|x| x.get(&module_id))
+            .and_then(|x| x.get(&offset))
+            .map(|x| x.0.clone())
+            .unwrap_or_else(|| {
+                substate_store
+                    .get_substate(&SubstateId(node_id, module_id, offset.clone()))
+                    .unwrap_or_else(|| {
+                        panic!(
+                            "State corrupted - missing [{:?}], [{:?}], [{:?}]",
+                            node_id, module_id, offset
+                        )
+                    })
+                    .substate
+            })
     }
 
     pub fn generate_diff(
