@@ -91,15 +91,16 @@ impl ResourceDelta {
             ResourceDelta::NonFungible { .. } => panic!("Not fungible"),
         }
     }
-    pub fn non_fungible(
-        &mut self,
-    ) -> (
-        &mut BTreeSet<NonFungibleLocalId>,
-        &mut BTreeSet<NonFungibleLocalId>,
-    ) {
+    pub fn added_non_fungibles(&mut self) -> &mut BTreeSet<NonFungibleLocalId> {
         match self {
             ResourceDelta::Fungible(..) => panic!("Not non fungible"),
-            ResourceDelta::NonFungible { added, removed } => (added, removed),
+            ResourceDelta::NonFungible { added, .. } => added,
+        }
+    }
+    pub fn removed_non_fungibles(&mut self) -> &mut BTreeSet<NonFungibleLocalId> {
+        match self {
+            ResourceDelta::Fungible(..) => panic!("Not non fungible"),
+            ResourceDelta::NonFungible { removed, .. } => removed,
         }
     }
 }

@@ -754,7 +754,6 @@ impl<'s> FinalizingTrack<'s> {
                         let old_balance = if update.1.is_none() {
                             Decimal::ZERO
                         } else {
-                            // TODO
                             substate_store
                                 .get_substate(&SubstateId(
                                     *current,
@@ -775,6 +774,45 @@ impl<'s> FinalizingTrack<'s> {
                         .get(&NodeModuleId::SELF)
                         .and_then(|v| v.get(&SubstateOffset::Vault(VaultOffset::LiquidNonFungible)))
                     {
+                        let delta = balance_changes
+                            .entry(*root)
+                            .or_default()
+                            .entry(info.resource_address)
+                            .or_insert(ResourceDelta::NonFungible {
+                                added: BTreeSet::new(),
+                                removed: BTreeSet::new(),
+                            });
+
+                        let old_balance = if update.1.is_none() {
+                            BTreeSet::new()
+                        } else {
+                            substate_store
+                                .get_substate(&SubstateId(
+                                    *current,
+                                    NodeModuleId::SELF,
+                                    SubstateOffset::Vault(VaultOffset::LiquidFungible),
+                                ))
+                                .expect("Invariant broken - missing vault liquid substate")
+                                .substate
+                                .vault_liquid_non_fungible()
+                                .ids()
+                                .clone()
+                        };
+                        let new_balance = update.0.vault_liquid_non_fungible().ids().clone();
+
+                        let intersection: HashSet<NonFungibleLocalId> =
+                            new_balance.intersection(&old_balance).cloned().collect();
+                        let added: Vec<NonFungibleLocalId> = new_balance
+                            .into_iter()
+                            .filter(|x| !intersection.contains(x))
+                            .collect();
+                        let removed: Vec<NonFungibleLocalId> = old_balance
+                            .into_iter()
+                            .filter(|x| !intersection.contains(x))
+                            .collect();
+
+                        delta.added_non_fungibles().extend(added);
+                        delta.removed_non_fungibles().extend(removed);
                     }
                 }
             } else {
