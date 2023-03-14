@@ -584,7 +584,7 @@ impl<'s> FinalizingTrack<'s> {
 
         // Finalize fee payments
         let fee_summary = fee_reserve.finalize();
-        let mut actual_fee_payments: BTreeMap<ObjectId, Decimal> = BTreeMap::new();
+        let mut fee_payments: BTreeMap<ObjectId, Decimal> = BTreeMap::new();
         let mut required = fee_summary.total_execution_cost_xrd
             + fee_summary.total_royalty_cost_xrd
             - fee_summary.total_bad_debt_xrd;
@@ -615,7 +615,7 @@ impl<'s> FinalizingTrack<'s> {
             substate.vault_liquid_fungible_mut().put(locked).unwrap();
 
             // Record final payments
-            *actual_fee_payments.entry(vault_id).or_default() += amount;
+            *fee_payments.entry(vault_id).or_default() += amount;
         }
 
         // TODO: update XRD total supply or disable it
@@ -627,7 +627,7 @@ impl<'s> FinalizingTrack<'s> {
                 Err(error) => TransactionOutcome::Failure(error),
             },
             fee_summary,
-            actual_fee_payments,
+            fee_payments,
             state_updates: Self::generate_diff(self.substate_store, to_persist),
             application_events,
             application_logs,

@@ -58,10 +58,10 @@ impl TransactionResult {
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct CommitResult {
+    pub state_updates: StateDiff,
     pub outcome: TransactionOutcome,
     pub fee_summary: FeeSummary,
-    pub actual_fee_payments: BTreeMap<ObjectId, Decimal>,
-    pub state_updates: StateDiff,
+    pub fee_payments: BTreeMap<ObjectId, Decimal>,
     pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
     pub application_logs: Vec<(Level, String)>,
 }
