@@ -71,7 +71,6 @@ pub struct TypeValidationContext {
 mod tests {
     use super::*;
     use crate::rust::prelude::*;
-    use sbor::*;
 
     fn create_schema(type_data: Vec<TypeData<NoCustomTypeKind, LocalTypeIndex>>) -> BasicSchema {
         let mut type_kinds = vec![];

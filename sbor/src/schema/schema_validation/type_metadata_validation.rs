@@ -100,7 +100,7 @@ pub fn validate_enum_metadata(
             if variants_metadata.len() != variants.len() {
                 return Err(SchemaValidationError::TypeMetadataContainedWrongNumberOfVariants);
             }
-            let mut unique_variant_names = IndexSet::new();
+            let mut unique_variant_names = index_set::new();
             for (discriminator, variant_metadata) in variants_metadata.iter() {
                 let Some(child_types) = variants.get(discriminator) else {
                     return Err(SchemaValidationError::TypeMetadataHasMismatchingEnumDiscriminator)
