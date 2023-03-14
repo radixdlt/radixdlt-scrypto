@@ -1,7 +1,8 @@
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::node::RENodeInit;
+use crate::system::node::{RENodeInit, RENodeModuleInit};
+use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRulesObject;
 use native_sdk::modules::metadata::Metadata;
@@ -344,7 +345,17 @@ impl AccountNativePackage {
         let kv_store_id = {
             let node_id = api.kernel_allocate_node_id(RENodeType::KeyValueStore)?;
             let node = RENodeInit::KeyValueStore;
-            api.kernel_create_node(node_id, node, BTreeMap::new())?;
+            api.kernel_create_node(
+                node_id,
+                node,
+                btreemap!(
+                    NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                        package_address: KEY_VALUE_STORE_PACKAGE,
+                        blueprint_name: KEY_VALUE_STORE_BLUEPRINT.to_owned(),
+                        global: false
+                    })
+                ),
+            )?;
             node_id
         };
 
@@ -392,7 +403,17 @@ impl AccountNativePackage {
         let kv_store_id = {
             let node_id = api.kernel_allocate_node_id(RENodeType::KeyValueStore)?;
             let node = RENodeInit::KeyValueStore;
-            api.kernel_create_node(node_id, node, BTreeMap::new())?;
+            api.kernel_create_node(
+                node_id,
+                node,
+                btreemap!(
+                    NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                        package_address: KEY_VALUE_STORE_PACKAGE,
+                        blueprint_name: KEY_VALUE_STORE_BLUEPRINT.to_owned(),
+                        global: false
+                    })
+                ),
+            )?;
             node_id
         };
 

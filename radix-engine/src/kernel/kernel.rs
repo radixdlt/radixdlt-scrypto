@@ -142,7 +142,17 @@ where
             let kv_store_id = {
                 let node_id = self.kernel_allocate_node_id(RENodeType::KeyValueStore)?;
                 let node = RENodeInit::KeyValueStore;
-                self.kernel_create_node(node_id, node, BTreeMap::new())?;
+                self.kernel_create_node(
+                    node_id,
+                    node,
+                    btreemap!(
+                        NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                            package_address: KEY_VALUE_STORE_PACKAGE,
+                            blueprint_name: KEY_VALUE_STORE_BLUEPRINT.to_owned(),
+                            global: false
+                        })
+                    ),
+                )?;
                 node_id
             };
 
