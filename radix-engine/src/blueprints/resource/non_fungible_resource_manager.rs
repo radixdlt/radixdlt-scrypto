@@ -22,6 +22,7 @@ pub enum NonFungibleResourceManagerError {
     NonFungibleAlreadyExists(NonFungibleGlobalId),
     NonFungibleNotFound(NonFungibleGlobalId),
     InvalidField(String),
+    FieldNotMutable(String),
     MismatchingBucketResource,
     NonFungibleIdTypeDoesNotMatch(NonFungibleIdType, NonFungibleIdType),
     InvalidNonFungibleIdType,
@@ -41,7 +42,6 @@ fn build_non_fungible_resource_manager_substate<Y>(
     resource_address: ResourceAddress,
     id_type: NonFungibleIdType,
     supply: usize,
-    mutable_fields: BTreeSet<String>,
     non_fungible_schema: NonFungibleSchema,
     api: &mut Y,
 ) -> Result<(NonFungibleResourceManagerSubstate, KeyValueStoreId), RuntimeError>
@@ -104,7 +104,7 @@ where
         non_fungible_type_index: non_fungible_schema.non_fungible,
         total_supply: supply.into(),
         non_fungible_table: nf_store_id,
-        mutable_fields,
+        mutable_fields: non_fungible_schema.mutable_fields,
     };
 
     Ok((resource_manager, nf_store_id))
@@ -214,7 +214,6 @@ impl NonFungibleResourceManagerBlueprint {
             resource_address,
             id_type,
             0,
-            BTreeSet::new(),
             non_fungible_schema,
             api,
         )?;
@@ -256,7 +255,6 @@ impl NonFungibleResourceManagerBlueprint {
             resource_address,
             id_type,
             entries.len(),
-            BTreeSet::new(),
             non_fungible_schema,
             api,
         )?;
@@ -298,7 +296,6 @@ impl NonFungibleResourceManagerBlueprint {
             resource_address,
             NonFungibleIdType::UUID,
             non_fungible_entries.len(),
-            BTreeSet::new(),
             non_fungible_schema,
             api,
         )?;
@@ -548,8 +545,15 @@ impl NonFungibleResourceManagerBlueprint {
         let non_fungible_type_index = resource_manager.non_fungible_type_index;
         let non_fungible_table_id = resource_manager.non_fungible_table;
 
-        let kv_schema = api.get_key_value_store_info(RENodeId::KeyValueStore(non_fungible_table_id))?;
+        if !resource_manager.mutable_fields.contains(&field_name) {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::NonFungibleResourceManagerError(
+                    NonFungibleResourceManagerError::FieldNotMutable(field_name),
+                ),
+            ));
+        }
 
+        let kv_schema = api.get_key_value_store_info(RENodeId::KeyValueStore(non_fungible_table_id))?;
         let schema_path = SchemaPath(vec![SchemaSubPath::Field(field_name.clone())]);
         let sbor_path = schema_path.to_sbor_path(&kv_schema.schema, non_fungible_type_index);
         let sbor_path = if let Some((sbor_path, ..)) = sbor_path {
