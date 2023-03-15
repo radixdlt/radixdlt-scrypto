@@ -34,9 +34,7 @@ pub fn extract_refs_from_instruction(
             ..
         } => {
             global_references.insert(package_address.clone().into());
-            let value: ManifestValue =
-                manifest_decode(args).expect("Invalid CALL_FUNCTION arguments");
-            extract_refs_from_value(&value, global_references, local_references);
+            extract_refs_from_value(&args, global_references, local_references);
 
             if package_address.eq(&EPOCH_MANAGER_PACKAGE) {
                 global_references.insert(PACKAGE_TOKEN.clone().into());
@@ -45,12 +43,10 @@ pub fn extract_refs_from_instruction(
         Instruction::CallMethod {
             component_address,
             args,
-            method_name,
+            ..
         } => {
             global_references.insert(component_address.clone().into());
-            let value: ManifestValue = manifest_decode(args)
-                .expect(format!("Invalid CALL_METHOD arguments to {}", method_name).as_str());
-            extract_refs_from_value(&value, global_references, local_references);
+            extract_refs_from_value(&args, global_references, local_references);
         }
 
         Instruction::PublishPackage { access_rules, .. } => {

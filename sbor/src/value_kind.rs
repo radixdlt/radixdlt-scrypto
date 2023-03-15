@@ -27,6 +27,15 @@ pub enum ValueKind<X: CustomValueKind> {
     Custom(X),
 }
 
+impl<X: CustomValueKind> crate::rust::fmt::Display for ValueKind<X> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Custom(x) => write!(f, "{:?}", x),
+            _ => write!(f, "{:?}", self),
+        }
+    }
+}
+
 impl<X: CustomValueKind> ValueKind<X> {
     pub fn as_u8(&self) -> u8 {
         match self {

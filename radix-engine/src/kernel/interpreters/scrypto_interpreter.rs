@@ -57,9 +57,10 @@ fn validate_input(
         &blueprint_schema.schema,
         function_schema.input,
     )
-    .map_err(|_| {
+    .map_err(|err| {
         RuntimeError::InterpreterError(InterpreterError::ScryptoInputSchemaNotMatch(
             fn_ident.to_string(),
+            err.error_message(&blueprint_schema.schema),
         ))
     })?;
 
@@ -85,9 +86,10 @@ fn validate_output(
         &blueprint_schema.schema,
         function_schema.output,
     )
-    .map_err(|_| {
+    .map_err(|err| {
         RuntimeError::InterpreterError(InterpreterError::ScryptoOutputSchemaNotMatch(
             fn_ident.to_string(),
+            err.error_message(&blueprint_schema.schema),
         ))
     })?;
 

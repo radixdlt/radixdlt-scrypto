@@ -561,7 +561,8 @@ pub fn format_typed_value<F: fmt::Write, T: ManifestEncode>(
     value: &T,
 ) -> Result<(), DecompileError> {
     f.write_str("\n    ")?;
-    let value: ManifestValue = manifest_decode(&(manifest_encode(value).unwrap())).unwrap();
+    let value: ManifestValue = to_manifest_value(value).unwrap();
+
     format_manifest_value(f, &value, &context.for_value_display())?;
     Ok(())
 }
@@ -569,10 +570,8 @@ pub fn format_typed_value<F: fmt::Write, T: ManifestEncode>(
 pub fn format_encoded_args<F: fmt::Write>(
     f: &mut F,
     context: &mut DecompilationContext,
-    args: &Vec<u8>,
+    value: &ManifestValue,
 ) -> Result<(), DecompileError> {
-    let value: ManifestValue =
-        manifest_decode(&args).map_err(|_| DecompileError::InvalidArguments)?;
     if let Value::Tuple { fields } = value {
         for field in fields {
             f.write_str("\n    ")?;
