@@ -323,7 +323,8 @@ impl ResourceManager {
         data: T,
     ) -> Bucket {
         let mut entries = BTreeMap::new();
-        entries.insert(id.clone(), scrypto_encode(&data).unwrap());
+        let value: ScryptoValue = scrypto_decode(&scrypto_encode(&data).unwrap()).unwrap();
+        entries.insert(id.clone(), (value,));
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(

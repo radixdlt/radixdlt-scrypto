@@ -1282,7 +1282,7 @@ fn setting_metadata_emits_correct_events() {
 // Helpers
 //=========
 
-#[derive(ScryptoSbor, NonFungibleData)]
+#[derive(ScryptoSbor, NonFungibleData, ManifestSbor)]
 struct EmptyStruct {}
 
 #[derive(ScryptoEncode, Describe)]

@@ -108,7 +108,8 @@ impl ResourceManager {
         Y: ClientApi<E>,
     {
         let mut entries = BTreeMap::new();
-        entries.insert(local_id, scrypto_encode(&()).unwrap());
+        let value: ScryptoValue = scrypto_decode(&scrypto_encode(&()).unwrap()).unwrap();
+        entries.insert(local_id, (value,));
 
         let rtn = api.call_method(
             RENodeId::GlobalObject(self.0.into()),

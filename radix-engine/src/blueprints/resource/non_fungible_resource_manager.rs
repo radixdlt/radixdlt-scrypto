@@ -321,7 +321,7 @@ impl NonFungibleResourceManagerBlueprint {
 
     pub(crate) fn mint_non_fungible<Y>(
         receiver: RENodeId,
-        entries: BTreeMap<NonFungibleLocalId, Vec<u8>>,
+        entries: BTreeMap<NonFungibleLocalId, (ScryptoValue,)>,
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
@@ -351,7 +351,7 @@ impl NonFungibleResourceManagerBlueprint {
             // Allocate non-fungibles
             let mut ids = BTreeSet::new();
             let mut non_fungibles = BTreeMap::new();
-            for (id, data) in entries.clone().into_iter() {
+            for (id, (non_fungible,)) in entries.clone().into_iter() {
                 if id.id_type() != resource_manager.id_type {
                     return Err(RuntimeError::ApplicationError(
                         ApplicationError::NonFungibleResourceManagerError(
@@ -363,7 +363,6 @@ impl NonFungibleResourceManagerBlueprint {
                     ));
                 }
 
-                let non_fungible: ScryptoValue = scrypto_decode(&data).unwrap();
                 ids.insert(id.clone());
                 non_fungibles.insert(id, non_fungible);
             }

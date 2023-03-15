@@ -209,7 +209,7 @@ impl Parser {
             },
             TokenKind::MintNonFungible => Instruction::MintNonFungible {
                 resource_address: self.parse_value()?,
-                entries: self.parse_value()?,
+                args: self.parse_value()?,
             },
             TokenKind::MintUuidNonFungible => Instruction::MintUuidNonFungible {
                 resource_address: self.parse_value()?,

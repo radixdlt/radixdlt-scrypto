@@ -2,7 +2,6 @@ use crate::data::*;
 use crate::errors::*;
 use crate::model::*;
 use crate::validation::*;
-use radix_engine_common::data::scrypto::model::NonFungibleLocalId;
 use radix_engine_interface::address::{AddressError, Bech32Encoder};
 use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
@@ -527,13 +526,12 @@ pub fn decompile_instruction<F: fmt::Write>(
         }
         Instruction::MintNonFungible {
             resource_address,
-            entries,
+            args,
         } => {
-            let entries = transform_non_fungible_mint_params(entries)?;
-
             f.write_str("MINT_NON_FUNGIBLE")?;
             format_typed_value(f, context, resource_address)?;
-            format_typed_value(f, context, &entries)?;
+            f.write_str("\n    ")?;
+            format_manifest_value(f, args, &context.for_value_display())?;
             f.write_str(";")?;
         }
         Instruction::MintUuidNonFungible {
@@ -542,7 +540,8 @@ pub fn decompile_instruction<F: fmt::Write>(
         } => {
             f.write_str("MINT_UUID_NON_FUNGIBLE")?;
             format_typed_value(f, context, resource_address)?;
-            format_encoded_args(f, context, args)?;
+            f.write_str("\n    ")?;
+            format_manifest_value(f, args, &context.for_value_display())?;
             f.write_str(";")?;
         }
         Instruction::AssertAccessRule { access_rule } => {
@@ -581,14 +580,4 @@ pub fn format_encoded_args<F: fmt::Write>(
     }
 
     Ok(())
-}
-
-fn transform_non_fungible_mint_params(
-    mint_params: &BTreeMap<NonFungibleLocalId, Vec<u8>>,
-) -> Result<BTreeMap<NonFungibleLocalId, Vec<u8>>, DecodeError> {
-    let mut mint_params_manifest_value = BTreeMap::<NonFungibleLocalId, Vec<u8>>::new();
-    for (id, data) in mint_params.into_iter() {
-        mint_params_manifest_value.insert(id.clone(), data.clone());
-    }
-    Ok(mint_params_manifest_value)
 }

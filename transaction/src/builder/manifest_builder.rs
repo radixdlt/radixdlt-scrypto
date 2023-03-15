@@ -699,15 +699,17 @@ impl ManifestBuilder {
     ) -> &mut Self
     where
         T: IntoIterator<Item = (NonFungibleLocalId, V)>,
-        V: NonFungibleData,
+        V: ManifestEncode,
     {
         let entries = entries
             .into_iter()
-            .map(|(id, e)| (id, scrypto_encode(&e).unwrap()))
+            .map(|(id, e)| (id, (to_manifest_value(&e).unwrap(),)))
             .collect();
+        let input = NonFungibleResourceManagerMintManifestInput { entries };
+
         self.add_instruction(Instruction::MintNonFungible {
             resource_address,
-            entries,
+            args: to_manifest_value(&input).unwrap(),
         });
         self
     }

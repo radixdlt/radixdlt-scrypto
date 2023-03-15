@@ -447,7 +447,7 @@ CALL_METHOD
     Decimal("1");
 MINT_NON_FUNGIBLE
     Address("resource_sim1qqgvpz8q7ypeueqcv4qthsv7ezt8h9m3depmqqw7pc4sfmucfx")
-    Map<NonFungibleLocalId, Array>(NonFungibleLocalId("#12#"), Bytes("5c2100"));
+    Tuple(Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#12#"), Tuple(Tuple())));
 CALL_METHOD
     Address("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na")
     "deposit_batch"

@@ -96,9 +96,14 @@ pub type NonFungibleResourceManagerGetNonFungibleOutput = ScryptoValue;
 
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT: &str = "mint";
 
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+pub struct NonFungibleResourceManagerMintManifestInput {
+    pub entries: BTreeMap<NonFungibleLocalId, (ManifestValue,)>,
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerMintInput {
-    pub entries: BTreeMap<NonFungibleLocalId, Vec<u8>>,
+    pub entries: BTreeMap<NonFungibleLocalId, (ScryptoValue,)>,
 }
 
 pub type NonFungibleResourceManagerMintOutput = Bucket;

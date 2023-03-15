@@ -477,10 +477,10 @@ pub fn generate_instruction(
         },
         ast::Instruction::MintNonFungible {
             resource_address,
-            entries,
+            args,
         } => Instruction::MintNonFungible {
             resource_address: generate_resource_address(resource_address, bech32_decoder)?,
-            entries: generate_non_fungible_mint_params(entries, resolver, bech32_decoder, blobs)?,
+            args: generate_value(args, None, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::MintUuidNonFungible {
             resource_address,
@@ -1226,10 +1226,7 @@ mod tests {
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::Parser;
     use radix_engine_interface::address::Bech32Decoder;
-    use radix_engine_interface::blueprints::resource::{
-        AccessRule, AccessRulesConfig, NonFungibleDataSchema,
-        NonFungibleResourceManagerMintUuidManifestInput, ResourceMethodAuthKey,
-    };
+    use radix_engine_interface::blueprints::resource::{AccessRule, AccessRulesConfig, NonFungibleDataSchema, NonFungibleResourceManagerMintManifestInput, NonFungibleResourceManagerMintUuidManifestInput, ResourceMethodAuthKey};
     use radix_engine_interface::network::NetworkDefinition;
     use radix_engine_interface::{dec, pdec};
 
@@ -1601,30 +1598,22 @@ mod tests {
             )
             .unwrap();
 
-        /*
         generate_instruction_ok!(
-            r##"MINT_NON_FUNGIBLE Address("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak") Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128)));"##,
+            r##"
+            MINT_NON_FUNGIBLE
+                Address("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")
+                Tuple(
+                    Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple(Tuple("Hello World", Decimal("12"))))
+                );
+            "##,
             Instruction::MintNonFungible {
                 resource_address: resource,
-                entries: BTreeMap::from([(
-                    NonFungibleLocalId::integer(1),
-                    (
-                        manifest_encode(&(String::from("Hello World"), dec!("12"))).unwrap(),
-                        manifest_encode(&(12u8, 19u128)).unwrap()
-                    )
-                )])
-            },
-        );
-                                         */
-
-        generate_instruction_ok!(
-            r##"MINT_NON_FUNGIBLE Address("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak") Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple("Hello World", Decimal("12")));"##,
-            Instruction::MintNonFungible {
-                resource_address: resource,
-                entries: BTreeMap::from([(
-                    NonFungibleLocalId::integer(1),
-                    scrypto_encode(&(String::from("Hello World"), dec!("12"))).unwrap(),
-                )])
+                args: to_manifest_value(&NonFungibleResourceManagerMintManifestInput {
+                    entries: BTreeMap::from([(
+                        NonFungibleLocalId::integer(1),
+                        (to_manifest_value(&(String::from("Hello World"), dec!("12"))).unwrap(),)
+                    )])
+                }).unwrap()
             },
         );
     }

@@ -155,7 +155,7 @@ pub enum Instruction {
 
     MintNonFungible {
         resource_address: Value,
-        entries: Value,
+        args: Value,
     },
 
     MintUuidNonFungible {
