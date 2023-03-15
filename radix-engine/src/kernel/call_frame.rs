@@ -215,6 +215,8 @@ impl CallFrame {
                 }
             }
 
+            // TODO: Check new references exist in frame
+
             for old_child in &substate_lock.substate_owned_nodes {
                 if !new_children.remove(old_child) {
                     // TODO: revisit logic here!
@@ -227,27 +229,6 @@ impl CallFrame {
                     // Owned nodes discarded by the substate go back to the call frame,
                     // and must be explicitly dropped.
                     self.owned_root_nodes.insert(old_child.clone(), 0);
-                }
-            }
-
-            // TODO: Move this check into system layer
-            if !new_children.is_empty() && module_id == NodeModuleId::SELF {
-                if let Ok(info) = heap.get_substate(
-                    node_id,
-                    module_id,
-                    &SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-                ) {
-                    let type_info: &TypeInfoSubstate = info.into();
-                    match type_info {
-                        TypeInfoSubstate::Object { .. } => {}
-                        TypeInfoSubstate::KeyValueStore(schema) => {
-                            if !schema.can_own {
-                                return Err(RuntimeError::KernelError(
-                                    KernelError::InvalidKeyValueOwnership,
-                                ));
-                            }
-                        }
-                    }
                 }
             }
 

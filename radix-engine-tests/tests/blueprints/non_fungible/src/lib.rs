@@ -2,12 +2,16 @@ use scrypto::api::ClientPackageApi;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 use scrypto::prelude::*;
 
-#[derive(ScryptoSbor, NonFungibleData)]
+#[derive(Debug, PartialEq, Eq, ScryptoSbor, NonFungibleData)]
 pub struct Sandwich {
     pub name: String,
     #[mutable]
     pub available: bool,
     pub tastes_great: bool,
+    #[mutable]
+    pub reference: Option<ResourceAddress>,
+    #[mutable]
+    pub own: Option<Own>,
 }
 
 #[blueprint]
@@ -45,6 +49,8 @@ mod non_fungible_test {
                         name: "Test".to_owned(),
                         available: false,
                         tastes_great: true,
+                        reference: Some(resource_address),
+                        own: None,
                     },
                 )
             });
@@ -74,11 +80,15 @@ mod non_fungible_test {
                         name: "Zero".to_owned(),
                         available: true,
                         tastes_great: true,
+                        reference: None,
+                        own: None,
                     },
                     Sandwich {
                         name: "One".to_owned(),
                         available: true,
                         tastes_great: true,
+                        reference: None,
+                        own: None,
                     },
                 ])
         }
@@ -93,6 +103,8 @@ mod non_fungible_test {
                             name: "One".to_owned(),
                             available: true,
                             tastes_great: true,
+                            reference: None,
+                            own: None,
                         },
                     ),
                     (
@@ -101,6 +113,8 @@ mod non_fungible_test {
                             name: "Two".to_owned(),
                             available: true,
                             tastes_great: true,
+                            reference: None,
+                            own: None,
                         },
                     ),
                     (
@@ -109,6 +123,8 @@ mod non_fungible_test {
                             name: "Three".to_owned(),
                             available: true,
                             tastes_great: true,
+                            reference: None,
+                            own: None,
                         },
                     ),
                 ])
@@ -122,6 +138,36 @@ mod non_fungible_test {
             );
         }
 
+        pub fn get_non_fungible_reference() -> (Bucket, Bucket) {
+            let (mint_badge, resource_address, bucket) = Self::create_non_fungible_mutable();
+
+            let data1: Sandwich = borrow_resource_manager!(resource_address)
+                .get_non_fungible_data(&NonFungibleLocalId::integer(0));
+
+            let data2: Sandwich = borrow_resource_manager!(data1.reference.unwrap())
+                .get_non_fungible_data(&NonFungibleLocalId::integer(0));
+
+            assert_eq!(data1, data2);
+
+            (mint_badge, bucket)
+        }
+
+        pub fn update_non_fungible_with_ownership() -> Bucket {
+            let (mint_badge, resource_address, bucket) = Self::create_non_fungible_mutable();
+
+            let vault = Vault::with_bucket(bucket);
+
+            mint_badge.authorize(|| {
+                borrow_resource_manager!(resource_address).update_non_fungible_data(
+                    &NonFungibleLocalId::integer(0),
+                    "own",
+                    Some(Own::Vault(vault.0)),
+                );
+            });
+
+            mint_badge
+        }
+
         pub fn update_non_fungible(field: String, value: bool) -> (Bucket, Bucket) {
             let (mint_badge, resource_address, bucket) = Self::create_non_fungible_mutable();
 
@@ -133,6 +179,23 @@ mod non_fungible_test {
                 );
             });
 
+            (mint_badge, bucket)
+        }
+
+        pub fn update_and_get_non_fungible_reference(reference: ResourceAddress) -> (Bucket, Bucket) {
+            let (mint_badge, resource_address, bucket) = Self::create_non_fungible_mutable();
+
+            mint_badge.authorize(|| {
+                borrow_resource_manager!(resource_address).update_non_fungible_data(
+                    &NonFungibleLocalId::integer(0),
+                    "reference",
+                    Some(reference),
+                );
+            });
+
+            let data: Sandwich = borrow_resource_manager!(resource_address)
+                .get_non_fungible_data(&NonFungibleLocalId::integer(0));
+            assert_eq!(data.reference, Some(reference));
             (mint_badge, bucket)
         }
 
@@ -360,6 +423,8 @@ mod non_fungible_test {
                         name: "One".to_owned(),
                         available: true,
                         tastes_great: true,
+                        reference: None,
+                        own: None,
                     },
                 ),
                 (
@@ -368,6 +433,8 @@ mod non_fungible_test {
                         name: "Two".to_owned(),
                         available: true,
                         tastes_great: true,
+                        reference: None,
+                        own: None,
                     },
                 ),
             ])
@@ -381,6 +448,8 @@ mod non_fungible_test {
                         name: "One".to_owned(),
                         available: true,
                         tastes_great: true,
+                        reference: None,
+                        own: None,
                     },
                 ),
                 (
@@ -389,6 +458,8 @@ mod non_fungible_test {
                         name: "Two".to_owned(),
                         available: true,
                         tastes_great: true,
+                        reference: None,
+                        own: None,
                     },
                 ),
             ])
@@ -399,6 +470,8 @@ mod non_fungible_test {
                 name: "Zero".to_owned(),
                 available: true,
                 tastes_great: true,
+                reference: None,
+                own: None,
             }])
         }
 
@@ -419,6 +492,8 @@ mod non_fungible_test {
                 name: "Test".to_owned(),
                 available: false,
                 tastes_great: true,
+                reference: None,
+                own: None,
             })
         }
     }

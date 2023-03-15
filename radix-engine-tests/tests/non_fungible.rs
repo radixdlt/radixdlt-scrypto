@@ -1,5 +1,5 @@
 use radix_engine::blueprints::resource::NonFungibleResourceManagerError;
-use radix_engine::errors::{ApplicationError, RuntimeError};
+use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto::NonFungibleData;
@@ -233,6 +233,58 @@ fn cannot_update_non_fungible_when_does_not_exist() {
     ));
 }
 
+#[test]
+fn can_get_non_fungible_data_reference() {
+    let mut test_runner = TestRunner::builder().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(
+            package_address,
+            "NonFungibleTest",
+            "get_non_fungible_reference",
+            manifest_args!(),
+        )
+        .call_method(
+            account,
+            "deposit_batch",
+            manifest_args!(ManifestExpression::EntireWorktop),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn cannot_have_non_fungible_data_ownership() {
+    let mut test_runner = TestRunner::builder().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(
+            package_address,
+            "NonFungibleTest",
+            "update_non_fungible_with_ownership",
+            manifest_args!(),
+        )
+        .call_method(
+            account,
+            "deposit_batch",
+            manifest_args!(ManifestExpression::EntireWorktop),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemError(SystemError::InvalidKeyValueStoreOwnership)));
+}
+
 
 #[test]
 fn can_update_and_get_non_fungible() {
@@ -246,6 +298,33 @@ fn can_update_and_get_non_fungible() {
             "NonFungibleTest",
             "update_and_get_non_fungible",
             manifest_args!(),
+        )
+        .call_method(
+            account,
+            "deposit_batch",
+            manifest_args!(ManifestExpression::EntireWorktop),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn can_update_and_get_non_fungible_reference() {
+    let mut test_runner = TestRunner::builder().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let (resource_address, ..) = test_runner.create_restricted_token(account);
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(
+            package_address,
+            "NonFungibleTest",
+            "update_and_get_non_fungible_reference",
+            manifest_args!(resource_address),
         )
         .call_method(
             account,
@@ -609,6 +688,11 @@ pub struct Sandwich {
     pub name: String,
     #[mutable]
     pub available: bool,
+    pub tastes_great: bool,
+    #[mutable]
+    pub reference: Option<ResourceAddress>,
+    #[mutable]
+    pub own: Option<Own>,
 }
 
 #[test]
@@ -638,6 +722,9 @@ fn can_mint_uuid_non_fungible_in_manifest() {
             vec![Sandwich {
                 name: "test".to_string(),
                 available: false,
+                tastes_great: true,
+                reference: None,
+                own: None,
             }],
         )
         .call_method(

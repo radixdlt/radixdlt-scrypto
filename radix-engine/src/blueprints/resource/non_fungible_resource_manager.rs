@@ -519,7 +519,7 @@ impl NonFungibleResourceManagerBlueprint {
         receiver: RENodeId,
         id: NonFungibleLocalId,
         field_name: String,
-        data: Vec<u8>,
+        data: ScryptoValue,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -572,7 +572,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         if let Some(ref mut non_fungible) = non_fungible_entry {
             let value = sbor_path.get_from_value_mut(non_fungible).unwrap();
-            *value = scrypto_decode(&data).unwrap();
+            *value = data;
 
             api.sys_write_typed_substate(non_fungible_handle, &non_fungible_entry)?;
         } else {

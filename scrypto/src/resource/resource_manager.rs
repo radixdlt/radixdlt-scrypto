@@ -388,7 +388,7 @@ impl ResourceManager {
                 scrypto_encode(&NonFungibleResourceManagerUpdateDataInput {
                     id: id.clone(),
                     field_name: field_name.to_string(),
-                    data: scrypto_encode(&new_data).unwrap(),
+                    data: scrypto_decode(&scrypto_encode(&new_data).unwrap()).unwrap(),
                 })
                 .unwrap(),
             )
