@@ -667,16 +667,16 @@ impl<'s> FinalizingTrack<'s> {
         }
 
         let mut balance_changes =
-            BTreeMap::<Address, BTreeMap<ResourceAddress, ResourceDelta>>::new();
+            IndexMap::<Address, IndexMap<ResourceAddress, ResourceDelta>>::new();
         let mut indexed_state_updates = IndexMap::<
             RENodeId,
             IndexMap<NodeModuleId, IndexMap<SubstateOffset, &(PersistedSubstate, Option<u32>)>>,
         >::new();
-        let mut roots = Vec::<Address>::new();
+        let mut roots = IndexSet::<Address>::new();
         for (SubstateId(node_id, module_id, offset), v) in state_updates {
             match node_id {
                 RENodeId::GlobalObject(address) => {
-                    roots.push(*address);
+                    roots.insert(*address);
                 }
                 _ => {}
             }
@@ -697,11 +697,18 @@ impl<'s> FinalizingTrack<'s> {
             );
         }
 
+        let mut temp = Vec::new();
+        for (address, map) in balance_changes {
+            for (resource, delta) in map {
+                temp.push((address, resource, delta));
+            }
+        }
+
         StateUpdateSummary {
             new_packages: new_packages.into_iter().collect(),
             new_components: new_components.into_iter().collect(),
             new_resources: new_resources.into_iter().collect(),
-            balance_changes,
+            balance_changes: temp,
         }
     }
 
@@ -711,7 +718,7 @@ impl<'s> FinalizingTrack<'s> {
             RENodeId,
             IndexMap<NodeModuleId, IndexMap<SubstateOffset, &(PersistedSubstate, Option<u32>)>>,
         >,
-        balance_changes: &mut BTreeMap<Address, BTreeMap<ResourceAddress, ResourceDelta>>,
+        balance_changes: &mut IndexMap<Address, IndexMap<ResourceAddress, ResourceDelta>>,
         root: &Address,
         current: &RENodeId,
     ) -> () {

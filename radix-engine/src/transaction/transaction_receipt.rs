@@ -70,7 +70,7 @@ pub struct StateUpdateSummary {
     pub new_packages: Vec<PackageAddress>,
     pub new_components: Vec<ComponentAddress>,
     pub new_resources: Vec<ResourceAddress>,
-    pub balance_changes: BTreeMap<Address, BTreeMap<ResourceAddress, ResourceDelta>>,
+    pub balance_changes: Vec<(Address, ResourceAddress, ResourceDelta)>,
 }
 
 #[derive(Debug, Clone, ScryptoSbor)]
@@ -150,6 +150,10 @@ impl CommitResult {
 
     pub fn new_resource_addresses(&self) -> &Vec<ResourceAddress> {
         &self.state_update_summary.new_resources
+    }
+
+    pub fn balance_changes(&self) -> &Vec<(Address, ResourceAddress, ResourceDelta)> {
+        &self.state_update_summary.balance_changes
     }
 
     pub fn output<T: ScryptoDecode>(&self, nth: usize) -> T {
@@ -445,6 +449,28 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                     + c.new_component_addresses().len()
                     + c.new_resource_addresses().len()
             )?;
+
+            write!(
+                f,
+                "\n{} {}",
+                "Balance Changes:".bold().green(),
+                c.application_events.len()
+            )?;
+            for (i, (address, resource, delta)) in c.balance_changes().iter().enumerate() {
+                write!(
+                    f,
+                    "\n{} Address: {}, Resource: {}, Delta: {}",
+                    prefix!(i, c.balance_changes()),
+                    address.display(bech32_encoder),
+                    resource.display(bech32_encoder),
+                    match delta {
+                        ResourceDelta::Fungible(d) => format!("{}", d),
+                        ResourceDelta::NonFungible { added, removed } => {
+                            format!("+ {:?}, - {:?}", added, removed)
+                        }
+                    }
+                )?;
+            }
 
             for (i, package_address) in c.new_package_addresses().iter().enumerate() {
                 write!(
