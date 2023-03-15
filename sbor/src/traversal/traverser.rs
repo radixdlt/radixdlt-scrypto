@@ -32,6 +32,12 @@ pub struct ContainerState<C: CustomTraversal> {
     pub next_child_index: usize,
 }
 
+impl<C: CustomTraversal> ContainerState<C> {
+    pub fn current_child_index(&self) -> usize {
+        self.next_child_index - 1
+    }
+}
+
 /// The `VecTraverser` is for streamed decoding of a payload.
 /// It turns payload decoding into a pull-based event stream.
 ///
