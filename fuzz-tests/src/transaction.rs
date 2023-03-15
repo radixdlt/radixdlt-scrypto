@@ -15,6 +15,7 @@ mod simple_fuzzer;
 
 use radix_engine::types::{ComponentAddress, EcdsaSecp256k1PublicKey, ResourceAddress};
 use radix_engine_interface::blueprints::resource::{FromPublicKey, NonFungibleGlobalId};
+use radix_engine_interface::data::manifest::manifest_decode;
 use scrypto_unit::TestRunner;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::Instruction;
@@ -141,7 +142,7 @@ impl Fuzzer {
     }
 
     fn fuzz_tx_manifest(&mut self, data: &[u8]) -> TxStatus {
-        let result = TransactionManifest::from_slice(data);
+        let result = manifest_decode::<TransactionManifest>(data);
         match result {
             Ok(mut manifest) => {
                 self.smart_mutate_manifest(&mut manifest);
