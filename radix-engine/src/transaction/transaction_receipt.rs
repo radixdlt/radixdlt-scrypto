@@ -71,6 +71,10 @@ pub struct StateUpdateSummary {
     pub new_components: Vec<ComponentAddress>,
     pub new_resources: Vec<ResourceAddress>,
     pub balance_changes: IndexMap<Address, IndexMap<ResourceAddress, BalanceChange>>,
+    /// This field accounts for two conditions:
+    /// 1. Direct vault recalls (and the owner is not loaded during the transaction);
+    /// 2. Fee payments for failed transactions.
+    pub direct_vault_updates: IndexMap<ObjectId, IndexMap<ResourceAddress, BalanceChange>>,
 }
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
@@ -154,6 +158,12 @@ impl CommitResult {
 
     pub fn balance_changes(&self) -> &IndexMap<Address, IndexMap<ResourceAddress, BalanceChange>> {
         &self.state_update_summary.balance_changes
+    }
+
+    pub fn direct_vault_updates(
+        &self,
+    ) -> &IndexMap<ObjectId, IndexMap<ResourceAddress, BalanceChange>> {
+        &self.state_update_summary.direct_vault_updates
     }
 
     pub fn output<T: ScryptoDecode>(&self, nth: usize) -> T {
@@ -458,25 +468,52 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                     + c.new_resource_addresses().len()
             )?;
 
+            let mut balance_changes = Vec::new();
+            for (address, map) in c.balance_changes() {
+                for (resource, delta) in map {
+                    balance_changes.push((address, resource, delta));
+                }
+            }
             write!(
                 f,
                 "\n{} {}",
                 "Balance Changes:".bold().green(),
-                c.application_events.len()
+                balance_changes.len()
             )?;
-
-            let mut temp = Vec::new();
-            for (address, map) in c.balance_changes() {
-                for (resource, delta) in map {
-                    temp.push((address, resource, delta));
-                }
-            }
-            for (i, (address, resource, delta)) in temp.iter().enumerate() {
+            for (i, (address, resource, delta)) in balance_changes.iter().enumerate() {
                 write!(
                     f,
                     "\n{} Address: {}, Resource: {}, Delta: {}",
-                    prefix!(i, temp),
+                    prefix!(i, balance_changes),
                     address.display(bech32_encoder),
+                    resource.display(bech32_encoder),
+                    match delta {
+                        BalanceChange::Fungible(d) => format!("{}", d),
+                        BalanceChange::NonFungible { added, removed } => {
+                            format!("+ {:?}, - {:?}", added, removed)
+                        }
+                    }
+                )?;
+            }
+
+            let mut direct_vault_updates = Vec::new();
+            for (object_id, map) in c.direct_vault_updates() {
+                for (resource, delta) in map {
+                    direct_vault_updates.push((object_id, resource, delta));
+                }
+            }
+            write!(
+                f,
+                "\n{} {}",
+                "Direct Vault Updates:".bold().green(),
+                direct_vault_updates.len()
+            )?;
+            for (i, (object_id, resource, delta)) in direct_vault_updates.iter().enumerate() {
+                write!(
+                    f,
+                    "\n{} Vault: {:?}, Resource: {}, Delta: {}",
+                    prefix!(i, direct_vault_updates),
+                    object_id,
                     resource.display(bech32_encoder),
                     match delta {
                         BalanceChange::Fungible(d) => format!("{}", d),
