@@ -4,6 +4,10 @@ const SRV_SOCKET_FN: &str = "/tmp/scrypto-qemu-plugin-server.socket";
 const CLI_SOCKET_FN: &str = "/tmp/scrypto-qemu-plugin-client.socket";
 
 
+std::thread_local! {
+    pub static QEMU_PLUGIN: std::cell::RefCell<QemuPluginInterface> = std::cell::RefCell::new(QemuPluginInterface::new(true));
+}
+
 pub struct QemuPluginInterface {
     enabled: bool,
     counters_stack: Vec<(String,u64)>,

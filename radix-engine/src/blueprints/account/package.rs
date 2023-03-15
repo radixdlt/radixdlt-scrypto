@@ -18,6 +18,11 @@ use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use native_sdk::resource::{SysBucket, Vault};
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 
+#[cfg(target_family = "unix")]
+use utils::QEMU_PLUGIN;
+use resources_tracker_macro::trace_resources;
+
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct AccountSubstate {
     /// An owned [`KeyValueStore`] which maps the [`ResourceAddress`] to an [`Own`] of the vault
@@ -203,6 +208,7 @@ impl AccountNativePackage {
         }
     }
 
+    #[trace_resources]
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<RENodeId>,
@@ -327,6 +333,7 @@ impl AccountNativePackage {
         }
     }
 
+    #[trace_resources]
     fn create_global<Y>(
         input: IndexedScryptoValue,
         api: &mut Y,

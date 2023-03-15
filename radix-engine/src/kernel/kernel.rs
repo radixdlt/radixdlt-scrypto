@@ -40,9 +40,9 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use sbor::rust::mem;
 
-use utils::QemuPluginInterface;
+#[cfg(target_family = "unix")]
+use utils::QEMU_PLUGIN;
 use resources_tracker_macro::trace_resources;
-resources_tracker_macro::init_trace_resources!();
 
 
 pub struct Kernel<
@@ -731,6 +731,7 @@ impl<'g, 's, W> KernelInternalApi for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
+    #[trace_resources]
     fn kernel_get_node_visibility_origin(
         &self,
         node_id: RENodeId,
@@ -739,18 +740,22 @@ where
         Some(visibility)
     }
 
+    #[trace_resources]
     fn kernel_get_module_state(&mut self) -> &mut KernelModuleMixer {
         &mut self.module
     }
 
+    #[trace_resources]
     fn kernel_get_current_depth(&self) -> usize {
         self.current_frame.depth
     }
 
+    #[trace_resources]
     fn kernel_get_current_actor(&self) -> Option<Actor> {
         self.current_frame.actor.clone()
     }
 
+    #[trace_resources]
     fn kernel_read_bucket(&mut self, bucket_id: ObjectId) -> Option<BucketSnapshot> {
         if let Ok(substate) = self.heap.get_substate(
             RENodeId::Object(bucket_id),
@@ -801,6 +806,7 @@ where
         }
     }
 
+    #[trace_resources]
     fn kernel_read_proof(&mut self, proof_id: ObjectId) -> Option<ProofSnapshot> {
         if let Ok(substate) = self.heap.get_substate(
             RENodeId::Object(proof_id),
@@ -1058,6 +1064,7 @@ impl<'g, 's, W> KernelWasmApi<W> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
+    #[trace_resources]
     fn kernel_create_wasm_instance(
         &mut self,
         package_address: PackageAddress,
@@ -1085,6 +1092,7 @@ where
     W: WasmEngine,
     N: ExecutableInvocation,
 {
+    #[trace_resources]
     fn kernel_invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
         KernelModuleMixer::before_invoke(
             self,

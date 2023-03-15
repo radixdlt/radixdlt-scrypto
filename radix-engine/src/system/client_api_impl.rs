@@ -41,6 +41,11 @@ use sbor::rust::vec::Vec;
 
 use super::node_modules::event_schema::PackageEventSchemaSubstate;
 
+#[cfg(target_family = "unix")]
+use utils::QEMU_PLUGIN;
+use resources_tracker_macro::trace_resources;
+
+
 impl<'g, 's, W> ClientNodeApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
@@ -584,6 +589,7 @@ impl<'g, 's, W> ClientUnsafeApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
+    #[trace_resources]
     fn consume_cost_units(
         &mut self,
         units: u32,
