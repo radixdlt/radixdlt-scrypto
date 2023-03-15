@@ -11,16 +11,6 @@ struct Sample {
 
 #[test]
 fn test_non_fungible_data() {
-    /*
-    let instance = Sample {
-        a: 1,
-        b: "Test".to_owned(),
-    };
-    let instance_decoded = Sample::decode(
-        &instance.immutable_data().unwrap(),
-        &instance.mutable_data().unwrap(),
-    )
-    .unwrap();
-    assert_eq!(instance_decoded, instance);
-     */
+    let mutable_fields = Sample::MUTABLE_FIELDS;
+    assert_eq!(mutable_fields, ["b"]);
 }

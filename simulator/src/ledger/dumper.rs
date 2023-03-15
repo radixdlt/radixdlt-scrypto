@@ -550,25 +550,6 @@ pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
         .map(|s| s.to_runtime().into());
     let resource_manager = resource_manager.ok_or(DisplayError::ResourceManagerNotFound)?;
 
-    /*
-
-    let type_info: Option<TypeInfoSubstate> = substate_store
-        .get_substate(&SubstateId(
-            RENodeId::GlobalObject(resource_address.into()),
-            NodeModuleId::TypeInfo,
-            SubstateOffset::TypeInfo(TypeInfoSubstate::TypeInfo),
-        ))
-        .map(|s| s.substate)
-        .map(|s| s.to_runtime().into());
-    let type_info = type_info.ok_or(DisplayError::ResourceManagerNotFound)?;
-
-    writeln!(
-        output,
-        "{}: {:?}",
-        "Resource Type".green().bold(),
-        resource_manager.resource_type
-    );
-     */
     writeln!(
         output,
         "{}: {}",

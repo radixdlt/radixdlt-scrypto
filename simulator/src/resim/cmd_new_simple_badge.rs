@@ -1,7 +1,10 @@
 use clap::Parser;
 use colored::Colorize;
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::resource::{NonFungibleDataSchema, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, NonFungibleResourceManagerCreateWithInitialSupplyManifestInput};
+use radix_engine_interface::blueprints::resource::{
+    NonFungibleDataSchema, NonFungibleResourceManagerCreateWithInitialSupplyManifestInput,
+    NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+};
 use radix_engine_interface::blueprints::resource::{
     ResourceMethodAuthKey, NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
 };

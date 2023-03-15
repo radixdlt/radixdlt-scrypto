@@ -117,6 +117,13 @@ fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFra
             update.add_ref(RENodeId::GlobalObject(resource_address.clone().into()));
             extract_refs_from_value(args, update);
         }
+        Instruction::MintNonFungible {
+            resource_address,
+            args,
+        } => {
+            update.add_ref(RENodeId::GlobalObject(resource_address.clone().into()));
+            extract_refs_from_value(args, update);
+        }
         Instruction::SetMetadata {
             entity_address,
             value,
@@ -186,9 +193,6 @@ fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFra
             resource_address, ..
         }
         | Instruction::MintFungible {
-            resource_address, ..
-        }
-        | Instruction::MintNonFungible {
             resource_address, ..
         } => {
             update.add_ref(RENodeId::GlobalObject(resource_address.clone().into()));

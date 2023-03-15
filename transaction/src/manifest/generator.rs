@@ -940,32 +940,6 @@ fn generate_byte_vec_from_hex(value: &ast::Value) -> Result<Vec<u8>, GeneratorEr
     Ok(bytes)
 }
 
-struct TemporaryTransformHandler;
-
-impl TransformHandler<GeneratorError> for TemporaryTransformHandler {
-    fn replace_bucket(&mut self, _: ManifestBucket) -> Result<Own, GeneratorError> {
-        Err(GeneratorError::InvalidBucket(
-            "Bucket not allowed".to_string(),
-        ))
-    }
-
-    fn replace_proof(&mut self, _: ManifestProof) -> Result<Own, GeneratorError> {
-        Err(GeneratorError::InvalidProof(
-            "Proof not allowed".to_string(),
-        ))
-    }
-
-    fn replace_expression(&mut self, _: ManifestExpression) -> Result<Vec<Own>, GeneratorError> {
-        Err(GeneratorError::InvalidExpression(
-            "Expression not allowed".to_string(),
-        ))
-    }
-
-    fn replace_blob(&mut self, _: ManifestBlobRef) -> Result<Vec<u8>, GeneratorError> {
-        Err(GeneratorError::InvalidBlobHash)
-    }
-}
-
 /// This function generates the mint parameters of a non fungible resource from an array which has
 /// the following structure:
 ///
