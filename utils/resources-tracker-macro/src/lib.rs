@@ -1,5 +1,5 @@
 use proc_macro::TokenStream;
-use quote::ToTokens;
+use quote::{ToTokens, quote};
 use syn::{
     parse::{Parse, Parser},
     parse_quote
@@ -20,39 +20,26 @@ pub fn trace_resources(attr: TokenStream, input: TokenStream) -> TokenStream {
             syn::Item::Fn(ref mut item_fn) => {
                 let original_block = &mut item_fn.block;
                 let fn_signature = item_fn.sig.ident.to_string();
-                item_fn.block = if arg.is_some() {
-                    Box::new( parse_quote! {{ 
-                        QEMU_PLUGIN.with(|v| {
-                            let stack = v.borrow().get_current_stack();
-                            let space = std::iter::repeat(' ').take(4 * stack).collect::<String>();
-                            println!("[rtrack]{}++enter: {} {} {}", space, #fn_signature, stack + 1, #arg);
-                        });
-                        QEMU_PLUGIN.with(|v| v.borrow_mut().start_counting(#fn_signature));
-                        let ret = #original_block;
-                        QEMU_PLUGIN.with(|v| {
-                            let (stack, cnt) = v.borrow_mut().stop_counting();
-                            let space = std::iter::repeat(' ').take(4 * stack).collect::<String>();
-                            println!("[rtrack]{}--exit: {} {} {}", space, #fn_signature, stack, cnt);
-                        });
-                        ret
-                    }} )
+                let code_print_arg = if arg.is_some() {
+                      quote!{ #arg }
                 } else {
-                    Box::new( parse_quote! {{ 
-                        QEMU_PLUGIN.with(|v| {
-                            let stack = v.borrow().get_current_stack();
-                            let space = std::iter::repeat(' ').take(4 * stack).collect::<String>();
-                            println!("[rtrack]{}++enter: {} {}", space, #fn_signature, stack);
-                        });
-                        QEMU_PLUGIN.with(|v| v.borrow_mut().start_counting(#fn_signature));
-                        let ret = #original_block;
-                        QEMU_PLUGIN.with(|v| {
-                            let (stack, cnt) = v.borrow_mut().stop_counting();
-                            let space = std::iter::repeat(' ').take(4 * stack).collect::<String>();
-                            println!("[rtrack]{}--exit: {} {} {}", space, #fn_signature, stack, cnt);
-                        });
-                        ret
-                    }} )
+                      quote!{ "" }
                 };
+                item_fn.block = Box::new( parse_quote! {{ 
+                    let mut space = String::new();
+                    QEMU_PLUGIN.with(|v| {
+                        let stack = v.borrow().get_current_stack();
+                        space = std::iter::repeat(' ').take(4 * stack).collect::<String>();
+                        println!("[rtrack]{}++enter: {} {} {}", space, #fn_signature, stack + 1, #code_print_arg);
+                        v.borrow_mut().start_counting(#fn_signature);
+                    });
+                    let ret = #original_block;
+                    QEMU_PLUGIN.with(|v| {
+                        let (stack, cnt) = v.borrow_mut().stop_counting();
+                        println!("[rtrack]{}--exit: {} {} {} {}", space, #fn_signature, stack, cnt, #code_print_arg);
+                    });
+                    ret
+                }} );
                 item.into_token_stream()
             }
             _ => syn::Error::new_spanned(item, "#[trace] is not supported for this item")
