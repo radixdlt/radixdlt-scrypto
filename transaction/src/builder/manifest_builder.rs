@@ -19,7 +19,7 @@ use radix_engine_interface::constants::{
     RESOURCE_MANAGER_PACKAGE,
 };
 use radix_engine_interface::crypto::{hash, EcdsaSecp256k1PublicKey, Hash};
-use radix_engine_interface::data::manifest::{manifest_encode, model::*};
+use radix_engine_interface::data::manifest::{manifest_encode, ManifestEncode, model::*};
 use radix_engine_interface::data::scrypto::{model::*, scrypto_encode};
 use radix_engine_interface::math::*;
 use radix_engine_interface::schema::PackageSchema;
@@ -717,11 +717,11 @@ impl ManifestBuilder {
     ) -> &mut Self
     where
         T: IntoIterator<Item = V>,
-        V: NonFungibleData,
+        V: ManifestEncode,
     {
         let entries = entries
             .into_iter()
-            .map(|e| scrypto_encode(&e).unwrap())
+            .map(|e| manifest_encode(&e).unwrap())
             .collect();
         self.add_instruction(Instruction::MintUuidNonFungible {
             resource_address,

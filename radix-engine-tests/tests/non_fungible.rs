@@ -696,7 +696,7 @@ fn can_mint_uuid_non_fungible_in_scrypto() {
     receipt.expect_commit_success();
 }
 
-#[derive(ScryptoSbor, NonFungibleData)]
+#[derive(ManifestSbor, ScryptoSbor, NonFungibleData)]
 pub struct Sandwich {
     pub name: String,
     #[mutable]
@@ -705,11 +705,10 @@ pub struct Sandwich {
     #[mutable]
     pub reference: Option<ResourceAddress>,
     #[mutable]
-    pub own: Option<Own>,
+    pub own: Option<()>,
 }
 
 #[test]
-#[ignore]
 fn can_mint_uuid_non_fungible_with_reference_in_manifest() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();

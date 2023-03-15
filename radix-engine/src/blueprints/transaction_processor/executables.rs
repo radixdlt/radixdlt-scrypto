@@ -114,7 +114,17 @@ fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFra
                 .expect(format!("Invalid CALL_METHOD arguments to {}", method_name).as_str());
             extract_refs_from_value(&value, update);
         }
-
+        Instruction::MintUuidNonFungible {
+            resource_address, entries
+        } => {
+            update.add_ref(RENodeId::GlobalObject(resource_address.clone().into()));
+            for entry in entries {
+                let value: ManifestValue =
+                    manifest_decode(entry).expect("Invalid CALL_FUNCTION arguments");
+                extract_refs_from_value(&value, update);
+                update.add_ref(RENodeId::GlobalObject(resource_address.clone().into()));
+            }
+        }
         Instruction::SetMetadata {
             entity_address,
             value,
@@ -187,9 +197,6 @@ fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFra
             resource_address, ..
         }
         | Instruction::MintNonFungible {
-            resource_address, ..
-        }
-        | Instruction::MintUuidNonFungible {
             resource_address, ..
         } => {
             update.add_ref(RENodeId::GlobalObject(resource_address.clone().into()));
@@ -613,11 +620,20 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     resource_address,
                     entries,
                 } => {
+                    let mut processor_with_api = TransactionProcessorWithApi {
+                        worktop,
+                        processor,
+                        api,
+                    };
+
                     let mut input_entries = Vec::new();
                     for entry in entries {
-                        let entry: ScryptoValue = scrypto_decode(&entry).unwrap();
-                        input_entries.push((entry,));
+                        let value: ManifestValue =
+                            manifest_decode(&entry).expect("Invalid CALL_METHOD arguments");
+                        let scrypto_value = transform(value, &mut processor_with_api)?;
+                        input_entries.push((scrypto_value,));
                     }
+                    processor = processor_with_api.processor;
 
                     let rtn = api.call_method(
                         RENodeId::GlobalObject(resource_address.into()),
