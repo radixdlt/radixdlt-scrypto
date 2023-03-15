@@ -206,7 +206,7 @@ impl<'s> Track<'s> {
                     .substate
                     .to_ref()
                     .references_and_owned_nodes()
-                    .1
+                    .0
                     .iter()
                     .any(|x| !matches!(x, RENodeId::GlobalObject(_)))
                 {
@@ -299,7 +299,7 @@ impl<'s> Track<'s> {
         if substate
             .to_ref()
             .references_and_owned_nodes()
-            .1
+            .0
             .iter()
             .any(|x| !matches!(x, RENodeId::GlobalObject(_)))
         {
