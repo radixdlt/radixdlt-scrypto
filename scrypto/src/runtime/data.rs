@@ -83,9 +83,9 @@ impl<V: ScryptoEncode> Drop for DataRefMut<V> {
                 ))
                 .unwrap()
             }
-            OriginalData::ComponentAppState(_) => scrypto_encode(&ComponentStateSubstate {
-                raw: scrypto_encode(&self.value).unwrap(),
-            })
+            OriginalData::ComponentAppState(_) => scrypto_encode(&ComponentStateSubstate(
+                scrypto_decode(&scrypto_encode(&self.value).unwrap()).unwrap(),
+            ))
             .unwrap(),
         };
         env.sys_write_substate(self.lock_handle, substate).unwrap();
@@ -133,7 +133,7 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
         let substate: ComponentStateSubstate = scrypto_decode(&raw_substate).unwrap();
         DataRef {
             lock_handle,
-            value: scrypto_decode(&substate.raw).unwrap(),
+            value: scrypto_decode(&scrypto_encode(&substate.0).unwrap()).unwrap(),
         }
     }
 
@@ -151,7 +151,7 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
         DataRefMut {
             lock_handle,
             original_data: OriginalData::ComponentAppState(raw_substate),
-            value: scrypto_decode(&substate.raw).unwrap(),
+            value: scrypto_decode(&scrypto_encode(&substate.0).unwrap()).unwrap(),
         }
     }
 }

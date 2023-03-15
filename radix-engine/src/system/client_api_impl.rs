@@ -277,7 +277,7 @@ where
             )),
             _ => RENodeInit::Object(btreemap!(
                 SubstateOffset::Component(ComponentOffset::State0) => RuntimeSubstate::ComponentState(
-                    ComponentStateSubstate::new(scrypto_encode(&parser.decode_next::<ScryptoValue>()).unwrap())
+                    ComponentStateSubstate (parser.decode_next::<ScryptoValue>())
                 )
             )),
         };

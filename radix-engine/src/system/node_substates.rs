@@ -1436,9 +1436,8 @@ impl<'a> SubstateRef<'a> {
                 (HashSet::new(), owned_nodes)
             }
             SubstateRef::ComponentState(substate) => {
-                let (_, owns, refs) = IndexedScryptoValue::from_slice(&substate.raw)
-                    .unwrap()
-                    .unpack();
+                let (_, owns, refs) =
+                    IndexedScryptoValue::from_scrypto_value(substate.0.clone()).unpack();
                 (refs, owns)
             }
             SubstateRef::ComponentRoyaltyAccumulator(substate) => {
