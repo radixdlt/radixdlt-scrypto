@@ -324,7 +324,7 @@ impl ManifestBuilder {
     where
         R: Into<AccessRule>,
         T: IntoIterator<Item = (NonFungibleLocalId, V)>,
-        V: NonFungibleData,
+        V: ManifestEncode + NonFungibleData,
     {
         let access_rules = access_rules
             .into_iter()
@@ -334,7 +334,7 @@ impl ManifestBuilder {
         if let Some(initial_supply) = initial_supply {
             let entries = initial_supply
                 .into_iter()
-                .map(|(id, e)| (id, scrypto_encode(&e).unwrap()))
+                .map(|(id, e)| (id, (to_manifest_value(&e).unwrap(),)))
                 .collect();
 
             self.add_instruction(Instruction::CallFunction {
@@ -342,13 +342,15 @@ impl ManifestBuilder {
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
-                args: to_manifest_value(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
-                    id_type,
-                    non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
-                    metadata,
-                    access_rules,
-                    entries,
-                })
+                args: to_manifest_value(
+                    &NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
+                        id_type,
+                        non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
+                        metadata,
+                        access_rules,
+                        entries,
+                    },
+                )
                 .unwrap(),
             });
         } else {

@@ -27,13 +27,22 @@ pub type NonFungibleResourceManagerCreateOutput = ResourceAddress;
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT: &str =
     "create_with_initial_supply";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+pub struct NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
+    pub id_type: NonFungibleIdType,
+    pub non_fungible_schema: NonFungibleDataSchema,
+    pub metadata: BTreeMap<String, String>,
+    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    pub entries: BTreeMap<NonFungibleLocalId, (ManifestValue,)>,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerCreateWithInitialSupplyInput {
     pub id_type: NonFungibleIdType,
     pub non_fungible_schema: NonFungibleDataSchema,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    pub entries: BTreeMap<NonFungibleLocalId, Vec<u8>>,
+    pub entries: BTreeMap<NonFungibleLocalId, (ScryptoValue,)>,
 }
 
 pub type NonFungibleResourceManagerCreateWithInitialSupplyOutput = (ResourceAddress, Bucket);
@@ -55,12 +64,12 @@ pub type NonFungibleResourceManagerCreateWithAddressOutput = ResourceAddress;
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT: &str =
     "create_uuid_non_fungible_with_initial_supply";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerCreateUuidWithInitialSupplyInput {
     pub non_fungible_schema: NonFungibleDataSchema,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    pub entries: Vec<Vec<u8>>,
+    pub entries: Vec<(ScryptoValue,)>,
 }
 
 pub type NonFungibleResourceManagerCreateUuidWithInitialSupplyOutput = (ResourceAddress, Bucket);

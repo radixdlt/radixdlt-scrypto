@@ -20,8 +20,8 @@ use radix_engine_interface::blueprints::identity::{
 use radix_engine_interface::blueprints::resource::{
     AccessRule, FungibleResourceManagerCreateInput,
     FungibleResourceManagerCreateWithInitialSupplyInput, NonFungibleResourceManagerCreateInput,
-    NonFungibleResourceManagerCreateWithInitialSupplyInput, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-    FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+    NonFungibleResourceManagerCreateWithInitialSupplyManifestInput,
+    FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
     FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
@@ -37,7 +37,6 @@ use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::manifest::model::*;
 use radix_engine_interface::data::manifest::*;
 use radix_engine_interface::data::scrypto::model::*;
-use radix_engine_interface::data::scrypto::scrypto_encode;
 use radix_engine_interface::manifest_args;
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
 use sbor::rust::borrow::Borrow;
@@ -567,18 +566,30 @@ pub fn generate_instruction(
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                 .to_string(),
-            args: to_manifest_value(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
-                id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
-                non_fungible_schema: generate_typed_value(schema, resolver, bech32_decoder, blobs)?,
-                metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
-                access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
-                entries: generate_non_fungible_mint_params(
-                    initial_supply,
-                    resolver,
-                    bech32_decoder,
-                    blobs,
-                )?,
-            })
+            args: to_manifest_value(
+                &NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
+                    id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
+                    non_fungible_schema: generate_typed_value(
+                        schema,
+                        resolver,
+                        bech32_decoder,
+                        blobs,
+                    )?,
+                    metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
+                    access_rules: generate_typed_value(
+                        access_rules,
+                        resolver,
+                        bech32_decoder,
+                        blobs,
+                    )?,
+                    entries: generate_non_fungible_mint_params(
+                        initial_supply,
+                        resolver,
+                        bech32_decoder,
+                        blobs,
+                    )?,
+                },
+            )
             .unwrap(),
         },
         ast::Instruction::CreateAccessController {
@@ -968,7 +979,7 @@ fn generate_non_fungible_mint_params(
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
     blobs: &BTreeMap<Hash, Vec<u8>>,
-) -> Result<BTreeMap<NonFungibleLocalId, Vec<u8>>, GeneratorError> {
+) -> Result<BTreeMap<NonFungibleLocalId, (ManifestValue,)>, GeneratorError> {
     match value {
         ast::Value::Map(key_type, _value_type, elements) => {
             if key_type != &ast::Type::NonFungibleLocalId {
@@ -986,9 +997,7 @@ fn generate_non_fungible_mint_params(
                 let non_fungible_local_id = generate_non_fungible_local_id(&elements[i * 2])?;
                 let non_fungible =
                     generate_value(&elements[i * 2 + 1], None, resolver, bech32_decoder, blobs)?;
-                let non_fungible = transform(non_fungible, &mut TemporaryTransformHandler)?;
-                let non_fungible = scrypto_encode(&non_fungible).unwrap();
-                mint_params.insert(non_fungible_local_id, non_fungible);
+                mint_params.insert(non_fungible_local_id, (non_fungible,));
             }
 
             Ok(mint_params)
@@ -1226,7 +1235,11 @@ mod tests {
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::Parser;
     use radix_engine_interface::address::Bech32Decoder;
-    use radix_engine_interface::blueprints::resource::{AccessRule, AccessRulesConfig, NonFungibleDataSchema, NonFungibleResourceManagerMintManifestInput, NonFungibleResourceManagerMintUuidManifestInput, ResourceMethodAuthKey};
+    use radix_engine_interface::blueprints::resource::{
+        AccessRule, AccessRulesConfig, NonFungibleDataSchema,
+        NonFungibleResourceManagerMintManifestInput,
+        NonFungibleResourceManagerMintUuidManifestInput, ResourceMethodAuthKey,
+    };
     use radix_engine_interface::network::NetworkDefinition;
     use radix_engine_interface::{dec, pdec};
 
@@ -1509,25 +1522,30 @@ mod tests {
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
-                args: to_manifest_value(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
-                    id_type: NonFungibleIdType::Integer,
-                    non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                    metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
-                    access_rules: BTreeMap::from([
-                        (
-                            ResourceMethodAuthKey::Withdraw,
-                            (AccessRule::AllowAll, AccessRule::DenyAll)
-                        ),
-                        (
-                            ResourceMethodAuthKey::Deposit,
-                            (AccessRule::AllowAll, AccessRule::DenyAll)
-                        ),
-                    ]),
-                    entries: BTreeMap::from([(
-                        NonFungibleLocalId::integer(1),
-                        scrypto_encode(&(String::from("Hello World"), dec!("12"))).unwrap(),
-                    )]),
-                })
+                args: to_manifest_value(
+                    &NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
+                        id_type: NonFungibleIdType::Integer,
+                        non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                        metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                        access_rules: BTreeMap::from([
+                            (
+                                ResourceMethodAuthKey::Withdraw,
+                                (AccessRule::AllowAll, AccessRule::DenyAll)
+                            ),
+                            (
+                                ResourceMethodAuthKey::Deposit,
+                                (AccessRule::AllowAll, AccessRule::DenyAll)
+                            ),
+                        ]),
+                        entries: BTreeMap::from([(
+                            NonFungibleLocalId::integer(1),
+                            (
+                                to_manifest_value(&(String::from("Hello World"), dec!("12")))
+                                    .unwrap(),
+                            ),
+                        )]),
+                    }
+                )
                 .unwrap(),
             },
         );
@@ -1613,7 +1631,8 @@ mod tests {
                         NonFungibleLocalId::integer(1),
                         (to_manifest_value(&(String::from("Hello World"), dec!("12"))).unwrap(),)
                     )])
-                }).unwrap()
+                })
+                .unwrap()
             },
         );
     }

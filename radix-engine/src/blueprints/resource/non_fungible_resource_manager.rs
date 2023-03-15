@@ -115,14 +115,15 @@ fn build_non_fungible_bucket<Y>(
     resource_address: ResourceAddress,
     id_type: NonFungibleIdType,
     nf_store_id: KeyValueStoreId,
-    entries: BTreeMap<NonFungibleLocalId, Vec<u8>>,
+    entries: BTreeMap<NonFungibleLocalId, ScryptoValue>,
     api: &mut Y,
 ) -> Result<Bucket, RuntimeError>
 where
     Y: ClientApi<RuntimeError>,
 {
     let bucket = {
-        for (non_fungible_local_id, data) in &entries {
+        let mut ids = BTreeSet::new();
+        for (non_fungible_local_id, value) in entries {
             if non_fungible_local_id.id_type() != id_type {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::NonFungibleResourceManagerError(
@@ -137,18 +138,16 @@ where
             let non_fungible_handle = api.sys_lock_substate(
                 RENodeId::KeyValueStore(nf_store_id),
                 SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
-                    scrypto_encode(non_fungible_local_id).unwrap(),
+                    scrypto_encode(&non_fungible_local_id).unwrap(),
                 )),
                 LockFlags::MUTABLE,
             )?;
 
             // TODO: Change interface so that we accept Option instead
-            let value: ScryptoValue = scrypto_decode(data).unwrap();
             api.sys_write_substate(non_fungible_handle, scrypto_encode(&Some(value)).unwrap())?;
-
             api.sys_drop_lock(non_fungible_handle)?;
+            ids.insert(non_fungible_local_id);
         }
-        let ids = entries.into_keys().collect();
 
         let info = BucketInfoSubstate {
             resource_address,
@@ -234,7 +233,7 @@ impl NonFungibleResourceManagerBlueprint {
         non_fungible_schema: NonFungibleDataSchema,
         metadata: BTreeMap<String, String>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-        entries: BTreeMap<NonFungibleLocalId, Vec<u8>>,
+        entries: BTreeMap<NonFungibleLocalId, (ScryptoValue,)>,
         api: &mut Y,
     ) -> Result<(ResourceAddress, Bucket), RuntimeError>
     where
@@ -260,6 +259,11 @@ impl NonFungibleResourceManagerBlueprint {
             api,
         )?;
 
+        let entries = entries
+            .into_iter()
+            .map(|(id, (value,))| (id, value))
+            .collect();
+
         let bucket =
             build_non_fungible_bucket(resource_address, id_type, nf_store_id, entries, api)?;
 
@@ -277,7 +281,7 @@ impl NonFungibleResourceManagerBlueprint {
         non_fungible_schema: NonFungibleDataSchema,
         metadata: BTreeMap<String, String>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-        entries: Vec<Vec<u8>>,
+        entries: Vec<(ScryptoValue,)>,
         api: &mut Y,
     ) -> Result<(ResourceAddress, Bucket), RuntimeError>
     where
@@ -287,7 +291,7 @@ impl NonFungibleResourceManagerBlueprint {
         let resource_address: ResourceAddress = global_node_id.into();
 
         let mut non_fungible_entries = BTreeMap::new();
-        for entry in entries {
+        for (entry,) in entries {
             let uuid = Runtime::generate_uuid(api)?;
             let id = NonFungibleLocalId::uuid(uuid).unwrap();
             non_fungible_entries.insert(id, entry);

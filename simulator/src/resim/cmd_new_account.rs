@@ -1,12 +1,7 @@
 use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::resource::{
-    require, FromPublicKey, NonFungibleDataSchema,
-    NonFungibleResourceManagerCreateWithInitialSupplyInput, ResourceMethodAuthKey,
-    NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-};
+use radix_engine_interface::blueprints::resource::{require, FromPublicKey, NonFungibleDataSchema, ResourceMethodAuthKey, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT, NonFungibleResourceManagerCreateWithInitialSupplyManifestInput};
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::rule;
 use rand::Rng;
@@ -31,7 +26,7 @@ pub struct NewAccount {
     trace: bool,
 }
 
-#[derive(ScryptoSbor)]
+#[derive(ScryptoSbor, ManifestSbor)]
 struct EmptyStruct;
 
 impl NewAccount {
@@ -73,7 +68,7 @@ impl NewAccount {
                     blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                     function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                         .to_string(),
-                    args: to_manifest_value(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
+                    args: to_manifest_value(&NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
                         id_type: NonFungibleIdType::Integer,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                         metadata: btreemap!(
@@ -83,7 +78,7 @@ impl NewAccount {
                             ResourceMethodAuthKey::Withdraw => (rule!(allow_all), rule!(deny_all))
                         ),
                         entries: btreemap!(
-                            NonFungibleLocalId::integer(1) => scrypto_encode(&EmptyStruct).unwrap(),
+                            NonFungibleLocalId::integer(1) => (to_manifest_value(&EmptyStruct {}).unwrap(),),
                         ),
                     })
                     .unwrap(),

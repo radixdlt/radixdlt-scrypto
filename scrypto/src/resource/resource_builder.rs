@@ -10,7 +10,7 @@ use radix_engine_interface::*;
 use sbor::rust::collections::*;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
+use scrypto::prelude::ScryptoValue;
 
 /// Not divisible.
 pub const DIVISIBILITY_NONE: u8 = 0;
@@ -696,7 +696,11 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                         access_rules: self.auth.into_access_rules(),
                         entries: entries
                             .into_iter()
-                            .map(|data| scrypto_encode(&data).unwrap())
+                            .map(|data| {
+                                let value: ScryptoValue =
+                                    scrypto_decode(&scrypto_encode(&data).unwrap()).unwrap();
+                                (value,)
+                            })
                             .collect(),
                     },
                 )
@@ -718,10 +722,13 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
 
 fn map_entries<T: IntoIterator<Item = (Y, V)>, V: NonFungibleData, Y: IsNonFungibleLocalId>(
     entries: T,
-) -> BTreeMap<NonFungibleLocalId, Vec<u8>> {
+) -> BTreeMap<NonFungibleLocalId, (ScryptoValue,)> {
     entries
         .into_iter()
-        .map(|(id, data)| (id.into(), scrypto_encode(&data).unwrap()))
+        .map(|(id, data)| {
+            let value: ScryptoValue = scrypto_decode(&scrypto_encode(&data).unwrap()).unwrap();
+            (id.into(), (value,))
+        })
         .collect()
 }
 

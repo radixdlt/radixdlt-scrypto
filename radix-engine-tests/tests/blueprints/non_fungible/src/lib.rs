@@ -391,8 +391,11 @@ mod non_fungible_test {
         }
 
         pub fn create_wrong_non_fungible_local_id_type() -> Bucket {
-            let mut encoded = BTreeMap::new();
-            encoded.insert(NonFungibleLocalId::integer(0), scrypto_encode(&()).unwrap());
+            let mut entries = BTreeMap::new();
+            entries.insert(
+                NonFungibleLocalId::integer(0),
+                (scrypto_decode(&scrypto_encode(&()).unwrap()).unwrap(),),
+            );
 
             // creating non-fungible id with id type set to default (UUID)
             let rtn = ScryptoEnv
@@ -405,7 +408,7 @@ mod non_fungible_test {
                         metadata: BTreeMap::new(),
                         access_rules: BTreeMap::new(),
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                        entries: encoded,
+                        entries,
                     })
                     .unwrap(),
                 )
