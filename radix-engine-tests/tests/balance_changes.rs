@@ -212,7 +212,6 @@ fn test_balance_changes_when_transferring_non_fungibles() {
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
-    println!("receipt {:?}", receipt);
 
     // Assert
     let result = receipt.expect_commit(true);
