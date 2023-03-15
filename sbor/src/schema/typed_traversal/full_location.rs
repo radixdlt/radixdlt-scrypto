@@ -1,4 +1,7 @@
 use super::*;
+use crate::rust::fmt::*;
+use crate::rust::format;
+use crate::rust::prelude::*;
 use crate::traversal::*;
 use crate::*;
 
@@ -17,8 +20,6 @@ impl<'s, C: CustomTraversal> FullLocation<'s, C> {
     /// As much information is extracted from the Type as possible, falling back to data from the value model
     /// if the Type is Any.
     pub fn path_to_string<E: CustomTypeExtension>(&self, schema: &Schema<E>) -> String {
-        use crate::rust::fmt::*;
-
         let mut buf = String::new();
         let mut is_first = true;
         for (container_state, container_type) in self.ancestor_path.iter() {
