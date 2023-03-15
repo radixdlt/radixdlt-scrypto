@@ -60,7 +60,7 @@ pub struct CommitResult {
     pub state_update_summary: StateUpdateSummary,
     pub outcome: TransactionOutcome,
     pub fee_summary: FeeSummary,
-    pub fee_payments: BTreeMap<ObjectId, Decimal>,
+    pub fee_payments: IndexMap<ObjectId, Decimal>,
     pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
     pub application_logs: Vec<(Level, String)>,
 }
@@ -70,11 +70,11 @@ pub struct StateUpdateSummary {
     pub new_packages: Vec<PackageAddress>,
     pub new_components: Vec<ComponentAddress>,
     pub new_resources: Vec<ResourceAddress>,
-    pub balance_changes: Vec<(Address, ResourceAddress, ResourceDelta)>,
+    pub balance_changes: IndexMap<Address, IndexMap<ResourceAddress, BalanceChange>>,
 }
 
-#[derive(Debug, Clone, ScryptoSbor)]
-pub enum ResourceDelta {
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+pub enum BalanceChange {
     Fungible(Decimal),
     NonFungible {
         added: BTreeSet<NonFungibleLocalId>,
@@ -82,23 +82,23 @@ pub enum ResourceDelta {
     },
 }
 
-impl ResourceDelta {
+impl BalanceChange {
     pub fn fungible(&mut self) -> &mut Decimal {
         match self {
-            ResourceDelta::Fungible(x) => x,
-            ResourceDelta::NonFungible { .. } => panic!("Not fungible"),
+            BalanceChange::Fungible(x) => x,
+            BalanceChange::NonFungible { .. } => panic!("Not fungible"),
         }
     }
     pub fn added_non_fungibles(&mut self) -> &mut BTreeSet<NonFungibleLocalId> {
         match self {
-            ResourceDelta::Fungible(..) => panic!("Not non fungible"),
-            ResourceDelta::NonFungible { added, .. } => added,
+            BalanceChange::Fungible(..) => panic!("Not non fungible"),
+            BalanceChange::NonFungible { added, .. } => added,
         }
     }
     pub fn removed_non_fungibles(&mut self) -> &mut BTreeSet<NonFungibleLocalId> {
         match self {
-            ResourceDelta::Fungible(..) => panic!("Not non fungible"),
-            ResourceDelta::NonFungible { removed, .. } => removed,
+            BalanceChange::Fungible(..) => panic!("Not non fungible"),
+            BalanceChange::NonFungible { removed, .. } => removed,
         }
     }
 }
@@ -152,7 +152,7 @@ impl CommitResult {
         &self.state_update_summary.new_resources
     }
 
-    pub fn balance_changes(&self) -> &Vec<(Address, ResourceAddress, ResourceDelta)> {
+    pub fn balance_changes(&self) -> &IndexMap<Address, IndexMap<ResourceAddress, BalanceChange>> {
         &self.state_update_summary.balance_changes
     }
 
@@ -250,7 +250,15 @@ impl TransactionReceipt {
         match &self.result {
             TransactionResult::Commit(c) => {
                 if c.outcome.is_success() != success {
-                    panic!("Transaction outcome (success or not) does not match")
+                    panic!(
+                        "Expected {} but was {}",
+                        if success { "success" } else { "failure" },
+                        if c.outcome.is_success() {
+                            "success"
+                        } else {
+                            "failure"
+                        }
+                    )
                 }
                 c
             }
@@ -456,16 +464,23 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                 "Balance Changes:".bold().green(),
                 c.application_events.len()
             )?;
-            for (i, (address, resource, delta)) in c.balance_changes().iter().enumerate() {
+
+            let mut temp = Vec::new();
+            for (address, map) in c.balance_changes() {
+                for (resource, delta) in map {
+                    temp.push((address, resource, delta));
+                }
+            }
+            for (i, (address, resource, delta)) in temp.iter().enumerate() {
                 write!(
                     f,
                     "\n{} Address: {}, Resource: {}, Delta: {}",
-                    prefix!(i, c.balance_changes()),
+                    prefix!(i, temp),
                     address.display(bech32_encoder),
                     resource.display(bech32_encoder),
                     match delta {
-                        ResourceDelta::Fungible(d) => format!("{}", d),
-                        ResourceDelta::NonFungible { added, removed } => {
+                        BalanceChange::Fungible(d) => format!("{}", d),
+                        BalanceChange::NonFungible { added, removed } => {
                             format!("+ {:?}, - {:?}", added, removed)
                         }
                     }

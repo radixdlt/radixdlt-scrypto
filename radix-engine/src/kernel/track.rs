@@ -10,8 +10,8 @@ use crate::system::kernel_modules::costing::{FeeSummary, SystemLoanFeeReserve};
 use crate::system::node_substates::{
     PersistedSubstate, RuntimeSubstate, SubstateRef, SubstateRefMut,
 };
+use crate::transaction::BalanceChange;
 use crate::transaction::RejectResult;
-use crate::transaction::ResourceDelta;
 use crate::transaction::StateUpdateSummary;
 use crate::transaction::TransactionOutcome;
 use crate::transaction::TransactionResult;
@@ -587,7 +587,7 @@ impl<'s> FinalizingTrack<'s> {
 
         // Finalize fee payments
         let fee_summary = fee_reserve.finalize();
-        let mut fee_payments: BTreeMap<ObjectId, Decimal> = BTreeMap::new();
+        let mut fee_payments: IndexMap<ObjectId, Decimal> = IndexMap::new();
         let mut required = fee_summary.total_execution_cost_xrd
             + fee_summary.total_royalty_cost_xrd
             - fee_summary.total_bad_debt_xrd;
@@ -667,7 +667,7 @@ impl<'s> FinalizingTrack<'s> {
         }
 
         let mut balance_changes =
-            IndexMap::<Address, IndexMap<ResourceAddress, ResourceDelta>>::new();
+            IndexMap::<Address, IndexMap<ResourceAddress, BalanceChange>>::new();
         let mut indexed_state_updates = IndexMap::<
             RENodeId,
             IndexMap<NodeModuleId, IndexMap<SubstateOffset, &(PersistedSubstate, Option<u32>)>>,
@@ -697,18 +697,11 @@ impl<'s> FinalizingTrack<'s> {
             );
         }
 
-        let mut temp = Vec::new();
-        for (address, map) in balance_changes {
-            for (resource, delta) in map {
-                temp.push((address, resource, delta));
-            }
-        }
-
         StateUpdateSummary {
             new_packages: new_packages.into_iter().collect(),
             new_components: new_components.into_iter().collect(),
             new_resources: new_resources.into_iter().collect(),
-            balance_changes: temp,
+            balance_changes,
         }
     }
 
@@ -718,7 +711,7 @@ impl<'s> FinalizingTrack<'s> {
             RENodeId,
             IndexMap<NodeModuleId, IndexMap<SubstateOffset, &(PersistedSubstate, Option<u32>)>>,
         >,
-        balance_changes: &mut IndexMap<Address, IndexMap<ResourceAddress, ResourceDelta>>,
+        balance_changes: &mut IndexMap<Address, IndexMap<ResourceAddress, BalanceChange>>,
         root: &Address,
         current: &RENodeId,
     ) -> () {
@@ -758,7 +751,7 @@ impl<'s> FinalizingTrack<'s> {
 
                 if vault_info.resource_type.is_fungible() {
                     // If there is an update to the liquid resource
-                    if let Some(update) = modules
+                    if let Some(substate) = modules
                         .get(&NodeModuleId::SELF)
                         .and_then(|v| v.get(&SubstateOffset::Vault(VaultOffset::LiquidFungible)))
                     {
@@ -766,9 +759,9 @@ impl<'s> FinalizingTrack<'s> {
                             .entry(*root)
                             .or_default()
                             .entry(vault_info.resource_address)
-                            .or_insert(ResourceDelta::Fungible(Decimal::ZERO));
+                            .or_insert(BalanceChange::Fungible(Decimal::ZERO));
 
-                        let old_balance = if update.1.is_none() {
+                        let old_balance = if substate.1.is_none() {
                             Decimal::ZERO
                         } else {
                             Self::fetch_substate_from_store(
@@ -782,12 +775,12 @@ impl<'s> FinalizingTrack<'s> {
                             .vault_liquid_fungible()
                             .amount()
                         };
-                        let new_balance = update.0.vault_liquid_fungible().amount();
+                        let new_balance = substate.0.vault_liquid_fungible().amount();
 
                         delta.fungible().add_assign(new_balance - old_balance);
                     }
                 } else {
-                    if let Some(update) = modules
+                    if let Some(substate) = modules
                         .get(&NodeModuleId::SELF)
                         .and_then(|v| v.get(&SubstateOffset::Vault(VaultOffset::LiquidNonFungible)))
                     {
@@ -795,12 +788,12 @@ impl<'s> FinalizingTrack<'s> {
                             .entry(*root)
                             .or_default()
                             .entry(vault_info.resource_address)
-                            .or_insert(ResourceDelta::NonFungible {
+                            .or_insert(BalanceChange::NonFungible {
                                 added: BTreeSet::new(),
                                 removed: BTreeSet::new(),
                             });
 
-                        let old_balance = if update.1.is_none() {
+                        let old_balance = if substate.1.is_none() {
                             BTreeSet::new()
                         } else {
                             Self::fetch_substate_from_store(
@@ -815,7 +808,7 @@ impl<'s> FinalizingTrack<'s> {
                             .ids()
                             .clone()
                         };
-                        let new_balance = update.0.vault_liquid_non_fungible().ids().clone();
+                        let new_balance = substate.0.vault_liquid_non_fungible().ids().clone();
 
                         let intersection: HashSet<NonFungibleLocalId> =
                             new_balance.intersection(&old_balance).cloned().collect();
@@ -834,8 +827,8 @@ impl<'s> FinalizingTrack<'s> {
                 }
             } else {
                 // Look into SELF substates to find other children
-                if let Some(offsets) = modules.get(&NodeModuleId::SELF) {
-                    for (_, update) in offsets {
+                for (_module_id, module_substates) in modules {
+                    for (_, update) in module_substates {
                         let substate_value = IndexedScryptoValue::from_typed(&update.0);
                         for own in substate_value.owned_node_ids() {
                             Self::traverse_state_updates(
