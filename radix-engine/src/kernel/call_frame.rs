@@ -203,7 +203,7 @@ impl CallFrame {
 
         if substate_lock.flags.contains(LockFlags::MUTABLE) {
             let substate_ref = self.get_substate(heap, track, node_id, module_id, &offset)?;
-            let (_references, owned_nodes) = substate_ref.references_and_owned_nodes();
+            let (references, owned_nodes) = substate_ref.references_and_owned_nodes();
 
             // Reserving original Vec element order with `IndexSet`
             let mut new_children: IndexSet<RENodeId> = index_set_new();
@@ -215,7 +215,10 @@ impl CallFrame {
                 }
             }
 
-            // TODO: Check new references exist in frame
+            // Check references exist
+            for reference in references {
+                self.check_node_visibility(&reference)?;
+            }
 
             for old_child in &substate_lock.substate_owned_nodes {
                 if !new_children.remove(old_child) {
