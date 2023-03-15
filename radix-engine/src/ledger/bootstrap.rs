@@ -885,7 +885,7 @@ mod tests {
             stake_account_address: ComponentAddress::AccessController([0u8; 26]),
         };
 
-        let bytes = to_manifest_value(&t).unwrap();
+        let bytes = manifest_encode(&t).unwrap();
         let decoded: ManifestValidatorInit = manifest_decode(&bytes).unwrap();
         assert_eq!(decoded, t);
     }
