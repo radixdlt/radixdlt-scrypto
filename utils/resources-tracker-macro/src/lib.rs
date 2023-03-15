@@ -10,9 +10,9 @@ use syn::{
 #[proc_macro_attribute]
 pub fn trace_resources(attr: TokenStream, input: TokenStream) -> TokenStream {
     let arg = if let Ok(attrs) = syn::Ident::parse.parse(attr) {
-        Some(attrs)
+        quote!{ #attrs }
     } else {
-        None
+        quote!{ "" }
     };
 
     let output = if let Ok(mut item) = syn::Item::parse.parse(input.clone()) {
@@ -20,23 +20,18 @@ pub fn trace_resources(attr: TokenStream, input: TokenStream) -> TokenStream {
             syn::Item::Fn(ref mut item_fn) => {
                 let original_block = &mut item_fn.block;
                 let fn_signature = item_fn.sig.ident.to_string();
-                let code_print_arg = if arg.is_some() {
-                      quote!{ #arg }
-                } else {
-                      quote!{ "" }
-                };
                 item_fn.block = Box::new( parse_quote! {{ 
-                    let mut space = String::new();
                     QEMU_PLUGIN.with(|v| {
                         let stack = v.borrow().get_current_stack();
-                        space = std::iter::repeat(' ').take(4 * stack).collect::<String>();
-                        println!("[rtrack]{}++enter: {} {} {}", space, #fn_signature, stack + 1, #code_print_arg);
+                        let space = std::iter::repeat(' ').take(4 * stack).collect::<String>();
+                        println!("[rtrack]{}++enter: {} {} {}", space, #fn_signature, stack + 1, #arg);
                         v.borrow_mut().start_counting(#fn_signature);
                     });
                     let ret = #original_block;
                     QEMU_PLUGIN.with(|v| {
                         let (stack, cnt) = v.borrow_mut().stop_counting();
-                        println!("[rtrack]{}--exit: {} {} {} {}", space, #fn_signature, stack, cnt, #code_print_arg);
+                        let space = std::iter::repeat(' ').take(4 * stack).collect::<String>();
+                        println!("[rtrack]{}--exit: {} {} {} {}", space, #fn_signature, stack, cnt, #arg);
                     });
                     ret
                 }} );
