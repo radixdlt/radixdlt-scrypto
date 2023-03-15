@@ -666,219 +666,16 @@ impl<'s> FinalizingTrack<'s> {
             }
         }
 
-        let mut balance_changes =
-            IndexMap::<Address, IndexMap<ResourceAddress, BalanceChange>>::new();
-        let mut indexed_state_updates = IndexMap::<
-            RENodeId,
-            IndexMap<NodeModuleId, IndexMap<SubstateOffset, &(PersistedSubstate, Option<u32>)>>,
-        >::new();
-        let mut roots = IndexSet::<Address>::new();
-        for (SubstateId(node_id, module_id, offset), v) in state_updates {
-            match node_id {
-                RENodeId::GlobalObject(address) => {
-                    roots.insert(*address);
-                }
-                _ => {}
-            }
-            indexed_state_updates
-                .entry(*node_id)
-                .or_default()
-                .entry(*module_id)
-                .or_default()
-                .insert(offset.clone(), v);
-        }
-        for root in roots {
-            Self::traverse_state_updates(
-                substate_store,
-                &indexed_state_updates,
-                &mut balance_changes,
-                &root,
-                &RENodeId::GlobalObject(root),
-            );
-        }
+        let (balance_changes, direct_vault_updates) =
+            BalanceChangeAccounting::new(substate_store, &state_updates).run();
 
         StateUpdateSummary {
             new_packages: new_packages.into_iter().collect(),
             new_components: new_components.into_iter().collect(),
             new_resources: new_resources.into_iter().collect(),
             balance_changes,
+            direct_vault_updates,
         }
-    }
-
-    pub fn traverse_state_updates(
-        substate_store: &dyn ReadableSubstateStore,
-        indexed_state_updates: &IndexMap<
-            RENodeId,
-            IndexMap<NodeModuleId, IndexMap<SubstateOffset, &(PersistedSubstate, Option<u32>)>>,
-        >,
-        balance_changes: &mut IndexMap<Address, IndexMap<ResourceAddress, BalanceChange>>,
-        root: &Address,
-        current: &RENodeId,
-    ) -> () {
-        // Note that the implementation below assumes that substate owned objects can not be
-        // detached. If this changes, we will have to account for objects that are removed
-        // from a substate.
-
-        if let Some(modules) = indexed_state_updates.get(current) {
-            let type_info = Self::fetch_substate(
-                substate_store,
-                indexed_state_updates,
-                &SubstateId(
-                    *current,
-                    NodeModuleId::TypeInfo,
-                    SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
-                ),
-            )
-            .type_info()
-            .clone();
-
-            if type_info.package_address == RESOURCE_MANAGER_PACKAGE
-                && type_info.blueprint_name == VAULT_BLUEPRINT
-            {
-                // Yeah, found a vault!
-
-                let vault_info = Self::fetch_substate(
-                    substate_store,
-                    indexed_state_updates,
-                    &SubstateId(
-                        *current,
-                        NodeModuleId::SELF,
-                        SubstateOffset::Vault(VaultOffset::Info),
-                    ),
-                )
-                .vault_info()
-                .clone();
-
-                if vault_info.resource_type.is_fungible() {
-                    // If there is an update to the liquid resource
-                    if let Some(substate) = modules
-                        .get(&NodeModuleId::SELF)
-                        .and_then(|v| v.get(&SubstateOffset::Vault(VaultOffset::LiquidFungible)))
-                    {
-                        let delta = balance_changes
-                            .entry(*root)
-                            .or_default()
-                            .entry(vault_info.resource_address)
-                            .or_insert(BalanceChange::Fungible(Decimal::ZERO));
-
-                        let old_balance = if substate.1.is_none() {
-                            Decimal::ZERO
-                        } else {
-                            Self::fetch_substate_from_store(
-                                substate_store,
-                                &SubstateId(
-                                    *current,
-                                    NodeModuleId::SELF,
-                                    SubstateOffset::Vault(VaultOffset::LiquidFungible),
-                                ),
-                            )
-                            .vault_liquid_fungible()
-                            .amount()
-                        };
-                        let new_balance = substate.0.vault_liquid_fungible().amount();
-
-                        delta.fungible().add_assign(new_balance - old_balance);
-                    }
-                } else {
-                    if let Some(substate) = modules
-                        .get(&NodeModuleId::SELF)
-                        .and_then(|v| v.get(&SubstateOffset::Vault(VaultOffset::LiquidNonFungible)))
-                    {
-                        let delta = balance_changes
-                            .entry(*root)
-                            .or_default()
-                            .entry(vault_info.resource_address)
-                            .or_insert(BalanceChange::NonFungible {
-                                added: BTreeSet::new(),
-                                removed: BTreeSet::new(),
-                            });
-
-                        let old_balance = if substate.1.is_none() {
-                            BTreeSet::new()
-                        } else {
-                            Self::fetch_substate_from_store(
-                                substate_store,
-                                &SubstateId(
-                                    *current,
-                                    NodeModuleId::SELF,
-                                    SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
-                                ),
-                            )
-                            .vault_liquid_non_fungible()
-                            .ids()
-                            .clone()
-                        };
-                        let new_balance = substate.0.vault_liquid_non_fungible().ids().clone();
-
-                        let intersection: HashSet<NonFungibleLocalId> =
-                            new_balance.intersection(&old_balance).cloned().collect();
-                        let added: Vec<NonFungibleLocalId> = new_balance
-                            .into_iter()
-                            .filter(|x| !intersection.contains(x))
-                            .collect();
-                        let removed: Vec<NonFungibleLocalId> = old_balance
-                            .into_iter()
-                            .filter(|x| !intersection.contains(x))
-                            .collect();
-
-                        delta.added_non_fungibles().extend(added);
-                        delta.removed_non_fungibles().extend(removed);
-                    }
-                }
-            } else {
-                // Look into SELF substates to find other children
-                for (_module_id, module_substates) in modules {
-                    for (_, update) in module_substates {
-                        let substate_value = IndexedScryptoValue::from_typed(&update.0);
-                        for own in substate_value.owned_node_ids() {
-                            Self::traverse_state_updates(
-                                substate_store,
-                                indexed_state_updates,
-                                balance_changes,
-                                root,
-                                own,
-                            );
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    pub fn fetch_substate(
-        substate_store: &dyn ReadableSubstateStore,
-        indexed_state_updates: &IndexMap<
-            RENodeId,
-            IndexMap<NodeModuleId, IndexMap<SubstateOffset, &(PersistedSubstate, Option<u32>)>>,
-        >,
-        substate_id: &SubstateId,
-    ) -> PersistedSubstate {
-        Self::fetch_substate_from_state_updates(indexed_state_updates, substate_id)
-            .unwrap_or_else(|| Self::fetch_substate_from_store(substate_store, substate_id))
-    }
-
-    pub fn fetch_substate_from_state_updates(
-        indexed_state_updates: &IndexMap<
-            RENodeId,
-            IndexMap<NodeModuleId, IndexMap<SubstateOffset, &(PersistedSubstate, Option<u32>)>>,
-        >,
-        substate_id: &SubstateId,
-    ) -> Option<PersistedSubstate> {
-        indexed_state_updates
-            .get(&substate_id.0)
-            .and_then(|x| x.get(&substate_id.1))
-            .and_then(|x| x.get(&substate_id.2))
-            .map(|x| x.0.clone())
-    }
-
-    pub fn fetch_substate_from_store(
-        substate_store: &dyn ReadableSubstateStore,
-        substate_id: &SubstateId,
-    ) -> PersistedSubstate {
-        substate_store
-            .get_substate(substate_id)
-            .unwrap_or_else(|| panic!("Substate store corrupted - missing {:?}", substate_id))
-            .substate
     }
 
     pub fn generate_diff(
@@ -918,5 +715,290 @@ impl<'s> FinalizingTrack<'s> {
             ),
             version: s.version,
         })
+    }
+}
+
+/// Note that the implementation below assumes that substate owned objects can not be
+/// detached. If this changes, we will have to account for objects that are removed
+/// from a substate.
+pub struct BalanceChangeAccounting<'a, 'b> {
+    substate_store: &'a dyn ReadableSubstateStore,
+    indexed_state_updates: IndexMap<
+        RENodeId,
+        IndexMap<NodeModuleId, IndexMap<SubstateOffset, &'b (PersistedSubstate, Option<u32>)>>,
+    >,
+}
+
+impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
+    pub fn new(
+        substate_store: &'a dyn ReadableSubstateStore,
+        state_updates: &'b IndexMap<SubstateId, (PersistedSubstate, Option<u32>)>,
+    ) -> Self {
+        let mut indexed_state_updates = IndexMap::<
+            RENodeId,
+            IndexMap<NodeModuleId, IndexMap<SubstateOffset, &(PersistedSubstate, Option<u32>)>>,
+        >::new();
+        for (SubstateId(node_id, module_id, offset), v) in state_updates {
+            indexed_state_updates
+                .entry(*node_id)
+                .or_default()
+                .entry(*module_id)
+                .or_default()
+                .insert(offset.clone(), v);
+        }
+
+        Self {
+            substate_store,
+            indexed_state_updates,
+        }
+    }
+
+    pub fn run(
+        &self,
+    ) -> (
+        IndexMap<Address, IndexMap<ResourceAddress, BalanceChange>>,
+        IndexMap<ObjectId, IndexMap<ResourceAddress, BalanceChange>>,
+    ) {
+        let mut balance_changes =
+            IndexMap::<Address, IndexMap<ResourceAddress, BalanceChange>>::new();
+        let mut direct_vault_updates =
+            IndexMap::<ObjectId, IndexMap<ResourceAddress, BalanceChange>>::new();
+        let mut accounted_vaults = IndexSet::<RENodeId>::new();
+
+        self.indexed_state_updates
+            .keys()
+            .filter_map(|x| match x {
+                RENodeId::GlobalObject(address) => Some(address),
+                _ => None,
+            })
+            .for_each(|root| {
+                self.traverse_state_updates(
+                    &mut balance_changes,
+                    &mut accounted_vaults,
+                    root,
+                    &RENodeId::GlobalObject(*root),
+                )
+            });
+
+        self.indexed_state_updates
+            .keys()
+            .filter_map(|x| {
+                if matches!(x, RENodeId::Object(_))
+                    && self.is_vault(x)
+                    && !accounted_vaults.contains(x)
+                {
+                    Some(x)
+                } else {
+                    None
+                }
+            })
+            .for_each(|vault_node_id| {
+                let vault_object_id: ObjectId = vault_node_id.clone().into();
+                if let Some((resource_address, balance_change)) =
+                    self.calculate_vault_balance_change(vault_node_id)
+                {
+                    match balance_change {
+                        BalanceChange::Fungible(delta) => {
+                            let existing = direct_vault_updates
+                                .entry(vault_object_id)
+                                .or_default()
+                                .entry(resource_address)
+                                .or_insert(BalanceChange::Fungible(Decimal::ZERO))
+                                .fungible();
+                            existing.add_assign(delta);
+                        }
+                        BalanceChange::NonFungible { added, removed } => {
+                            let existing = direct_vault_updates
+                                .entry(vault_object_id)
+                                .or_default()
+                                .entry(resource_address)
+                                .or_insert(BalanceChange::NonFungible {
+                                    added: BTreeSet::new(),
+                                    removed: BTreeSet::new(),
+                                });
+                            existing.added_non_fungibles().extend(added);
+                            existing.removed_non_fungibles().extend(removed);
+                        }
+                    }
+                }
+            });
+
+        (balance_changes, direct_vault_updates)
+    }
+
+    fn traverse_state_updates(
+        &self,
+        balance_changes: &mut IndexMap<Address, IndexMap<ResourceAddress, BalanceChange>>,
+        accounted_vaults: &mut IndexSet<RENodeId>,
+        root: &Address,
+        current_node: &RENodeId,
+    ) -> () {
+        if let Some(modules) = self.indexed_state_updates.get(current_node) {
+            if self.is_vault(current_node) {
+                accounted_vaults.insert(current_node.clone());
+
+                if let Some((resource_address, balance_change)) =
+                    self.calculate_vault_balance_change(current_node)
+                {
+                    match balance_change {
+                        BalanceChange::Fungible(delta) => {
+                            let existing = balance_changes
+                                .entry(*root)
+                                .or_default()
+                                .entry(resource_address)
+                                .or_insert(BalanceChange::Fungible(Decimal::ZERO))
+                                .fungible();
+                            existing.add_assign(delta);
+                        }
+                        BalanceChange::NonFungible { added, removed } => {
+                            let existing = balance_changes
+                                .entry(*root)
+                                .or_default()
+                                .entry(resource_address)
+                                .or_insert(BalanceChange::NonFungible {
+                                    added: BTreeSet::new(),
+                                    removed: BTreeSet::new(),
+                                });
+                            existing.added_non_fungibles().extend(added);
+                            existing.removed_non_fungibles().extend(removed);
+                        }
+                    }
+                }
+            } else {
+                // Scan loaded substates to find children
+                for (_module_id, module_substates) in modules {
+                    for (_, update) in module_substates {
+                        let substate_value = IndexedScryptoValue::from_typed(&update.0);
+                        for own in substate_value.owned_node_ids() {
+                            self.traverse_state_updates(
+                                balance_changes,
+                                accounted_vaults,
+                                root,
+                                own,
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fn is_vault(&self, node_id: &RENodeId) -> bool {
+        let type_info = self
+            .fetch_substate(&SubstateId(
+                *node_id,
+                NodeModuleId::TypeInfo,
+                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+            ))
+            .type_info()
+            .clone();
+
+        type_info.package_address == RESOURCE_MANAGER_PACKAGE
+            && type_info.blueprint_name == VAULT_BLUEPRINT
+    }
+
+    fn calculate_vault_balance_change(
+        &self,
+        node_id: &RENodeId,
+    ) -> Option<(ResourceAddress, BalanceChange)> {
+        let vault_info = self
+            .fetch_substate(&SubstateId(
+                *node_id,
+                NodeModuleId::SELF,
+                SubstateOffset::Vault(VaultOffset::Info),
+            ))
+            .vault_info()
+            .clone();
+
+        if vault_info.resource_type.is_fungible() {
+            // If there is an update to the liquid resource
+            if let Some((substate, old_version)) =
+                self.fetch_substate_from_state_updates(&SubstateId(
+                    *node_id,
+                    NodeModuleId::SELF,
+                    SubstateOffset::Vault(VaultOffset::LiquidFungible),
+                ))
+            {
+                let old_balance = if old_version.is_none() {
+                    Decimal::ZERO
+                } else {
+                    self.fetch_substate_from_store(&SubstateId(
+                        *node_id,
+                        NodeModuleId::SELF,
+                        SubstateOffset::Vault(VaultOffset::LiquidFungible),
+                    ))
+                    .vault_liquid_fungible()
+                    .amount()
+                };
+                let new_balance = substate.vault_liquid_fungible().amount();
+
+                Some(BalanceChange::Fungible(new_balance - old_balance))
+            } else {
+                None
+            }
+        } else {
+            // If there is an update to the liquid resource
+            if let Some((substate, old_version)) =
+                self.fetch_substate_from_state_updates(&SubstateId(
+                    *node_id,
+                    NodeModuleId::SELF,
+                    SubstateOffset::Vault(VaultOffset::LiquidFungible),
+                ))
+            {
+                let old_balance = if old_version.is_none() {
+                    BTreeSet::new()
+                } else {
+                    self.fetch_substate_from_store(&SubstateId(
+                        *node_id,
+                        NodeModuleId::SELF,
+                        SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
+                    ))
+                    .vault_liquid_non_fungible()
+                    .ids()
+                    .clone()
+                };
+                let new_balance = substate.vault_liquid_non_fungible().ids().clone();
+
+                let intersection: HashSet<NonFungibleLocalId> =
+                    new_balance.intersection(&old_balance).cloned().collect();
+                let added: BTreeSet<NonFungibleLocalId> = new_balance
+                    .into_iter()
+                    .filter(|x| !intersection.contains(x))
+                    .collect();
+                let removed: BTreeSet<NonFungibleLocalId> = old_balance
+                    .into_iter()
+                    .filter(|x| !intersection.contains(x))
+                    .collect();
+
+                Some(BalanceChange::NonFungible { added, removed })
+            } else {
+                None
+            }
+        }
+        .map(|x| (vault_info.resource_address, x))
+    }
+
+    fn fetch_substate(&self, substate_id: &SubstateId) -> PersistedSubstate {
+        self.fetch_substate_from_state_updates(substate_id)
+            .map(|x| x.0)
+            .unwrap_or_else(|| self.fetch_substate_from_store(substate_id))
+    }
+
+    fn fetch_substate_from_state_updates(
+        &self,
+        substate_id: &SubstateId,
+    ) -> Option<(PersistedSubstate, Option<u32>)> {
+        self.indexed_state_updates
+            .get(&substate_id.0)
+            .and_then(|x| x.get(&substate_id.1))
+            .and_then(|x| x.get(&substate_id.2))
+            .map(|x| (x.0.clone(), x.1.clone()))
+    }
+
+    fn fetch_substate_from_store(&self, substate_id: &SubstateId) -> PersistedSubstate {
+        self.substate_store
+            .get_substate(substate_id)
+            .unwrap_or_else(|| panic!("Substate store corrupted - missing {:?}", substate_id))
+            .substate
     }
 }
