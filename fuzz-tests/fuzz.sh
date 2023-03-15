@@ -5,32 +5,17 @@
 # defaults
 DFLT_FUZZER=simple
 DFLT_CMD=run
-DFLT_RUN_CMD_ARG=10
+DFLT_RUN_CMD_ARG=inf
 DFLT_TARGET=transaction
 
-# available fuzzers: libfuzzer, afl, simple
-fuzzer=${1:-$DFLT_FUZZER}
-# available commands:
-# - run, build, init
-cmd=${2:-$DFLT_CMD}
-
-
-run_args=""
-run_cmd_arg=
-# run_cmd_arg might be in seconds or 'inf', when fuzzing infinitely
-if [ $cmd = "run" ] ; then
-    run_cmd_arg=${3:-$DFLT_RUN_CMD_ARG}
-fi
-#variant="release"
-target=$DFLT_TARGET
-
 function usage() {
-    echo "$0 [FUZZER] [COMMANDS] [COMMAND-ARGS]"
-    echo "Available fuzzers:"
+    echo "$0 [FUZZER] [COMMAND] [COMMAND-ARGS]"
+    echo "Available fuzzers/commands"
     echo "  libfuzzer - 'cargo fuzz' wrapper"
     echo "  afl       - 'cargo afl' wrapper"
     echo "  simple    - simple fuzzer (default)"
-    echo "Available commands:"
+    echo "  init-data - prepare input data"
+    echo "Available subcommands:"
     echo "  init      - Take sample input ('./fuzz_input/<target>') for given test,"
     echo "              minimize the test corpus and put the result into 'corpus/<target>',"
     echo "              which is used by 'libfuzzer' as initial input."
@@ -57,8 +42,12 @@ function usage() {
     echo "    $0 simple run ./artifacts/transaction/crash-ec25d9d2a8c3d401d84da65fd2321cda289d"
 }
 
-if [ $fuzzer = "libfuzzer" ] ; then
+function fuzzer_libfuzzer() {
+    local cmd=${1:-$DFLT_CMD}
+    local run_args=""
+    local run_cmd_args=
     if [ "$cmd" = "run" ] ; then
+        run_cmd_arg=${2:-$DFLT_RUN_CMD_ARG}
         if [ "$run_cmd_arg" != "" -a -s $run_cmd_arg ] ; then
             run_args+="$run_cmd_arg "
         else
@@ -94,7 +83,16 @@ if [ $fuzzer = "libfuzzer" ] ; then
         $target \
         $run_args
 
-elif [ $fuzzer = "afl" ] ; then
+}
+
+function fuzzer_afl() {
+    local cmd=${1:-$DFLT_CMD}
+    local run_args=""
+    local run_cmd_arg=
+    # run_cmd_arg might be in seconds or 'inf', when fuzzing infinitely
+    if [ $cmd = "run" ] ; then
+        run_cmd_arg=${2:-$DFLT_RUN_CMD_ARG}
+    fi
     if [ $cmd = "build" ] ; then
         cargo afl build --release \
             --no-default-features --features std,afl \
@@ -107,9 +105,16 @@ elif [ $fuzzer = "afl" ] ; then
         set -x
         cargo afl fuzz -i fuzz_input/${target} -o afl/${target}/out $run_args target-afl/release/${target}
     fi
+}
 
-elif [ $fuzzer = "simple" ] ; then
+function fuzzer_simple() {
+    local cmd=${1:-$DFLT_CMD}
+    local run_args=""
+    local run_cmd_arg=
+
     if [ "$cmd" = "run" ] ; then
+        run_cmd_arg=${2:-$DFLT_RUN_CMD_ARG}
+
         if [ "$run_cmd_arg" != "" -a -s $run_cmd_arg ] ; then
             export RUST_BACKTRACE=full
             run_args+="$run_cmd_arg "
@@ -122,6 +127,19 @@ elif [ $fuzzer = "simple" ] ; then
         --no-default-features --features std,simple-fuzzer \
         --bin $target \
         $run_args
+}
+
+target=$DFLT_TARGET
+# available fuzzers/commands: libfuzzer, afl, simple, init-data
+fuzzer=${1:-$DFLT_FUZZER}
+shift
+
+if [ $fuzzer = "libfuzzer" ] ; then
+    fuzzer_libfuzzer $@
+elif [ $fuzzer = "afl" ] ; then
+    fuzzer_afl $@
+elif [ $fuzzer = "simple" ] ; then
+    fuzzer_simple $@
 else
     if [ $fuzzer != "help" -a $fuzzer != "h" ] ; then
         echo "invalid fuzzer '$fuzzer' specified"
