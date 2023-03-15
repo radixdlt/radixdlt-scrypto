@@ -160,7 +160,7 @@ pub enum Instruction {
 
     MintUuidNonFungible {
         resource_address: Value,
-        entries: Value,
+        args: Value,
     },
 
     CreateFungibleResource {

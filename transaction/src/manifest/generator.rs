@@ -374,7 +374,7 @@ pub fn generate_instruction(
                 package_address,
                 blueprint_name,
                 function_name,
-                args: manifest_encode(&args).unwrap(),
+                args: to_manifest_value(&args).unwrap(),
             }
         }
         ast::Instruction::CallMethod {
@@ -391,7 +391,7 @@ pub fn generate_instruction(
             Instruction::CallMethod {
                 component_address,
                 method_name,
-                args: manifest_encode(&args).unwrap(),
+                args,
             }
         }
         ast::Instruction::PublishPackage {
@@ -484,15 +484,10 @@ pub fn generate_instruction(
         },
         ast::Instruction::MintUuidNonFungible {
             resource_address,
-            entries,
+            args,
         } => Instruction::MintUuidNonFungible {
             resource_address: generate_resource_address(resource_address, bech32_decoder)?,
-            entries: generate_uuid_non_fungible_mint_params(
-                entries,
-                resolver,
-                bech32_decoder,
-                blobs,
-            )?,
+            args: generate_value(args, None, resolver, bech32_decoder, blobs)?,
         },
 
         ast::Instruction::CreateValidator {
@@ -501,7 +496,7 @@ pub fn generate_instruction(
         } => Instruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
-            args: manifest_encode(&EpochManagerCreateValidatorInput {
+            args: to_manifest_value(&EpochManagerCreateValidatorInput {
                 key: generate_typed_value(key, resolver, bech32_decoder, blobs)?,
                 owner_access_rule: generate_typed_value(
                     owner_access_rule,
@@ -520,7 +515,7 @@ pub fn generate_instruction(
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-            args: manifest_encode(&FungibleResourceManagerCreateInput {
+            args: to_manifest_value(&FungibleResourceManagerCreateInput {
                 divisibility: generate_u8(divisibility)?,
                 metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
                 access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
@@ -536,7 +531,7 @@ pub fn generate_instruction(
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string(),
-            args: manifest_encode(&FungibleResourceManagerCreateWithInitialSupplyInput {
+            args: to_manifest_value(&FungibleResourceManagerCreateWithInitialSupplyInput {
                 divisibility: generate_u8(divisibility)?,
                 metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
                 access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
@@ -553,7 +548,7 @@ pub fn generate_instruction(
             package_address: RESOURCE_MANAGER_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-            args: manifest_encode(&NonFungibleResourceManagerCreateInput {
+            args: to_manifest_value(&NonFungibleResourceManagerCreateInput {
                 id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
                 non_fungible_schema: generate_typed_value(schema, resolver, bech32_decoder, blobs)?,
                 metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
@@ -572,7 +567,7 @@ pub fn generate_instruction(
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                 .to_string(),
-            args: manifest_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
+            args: to_manifest_value(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
                 id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
                 non_fungible_schema: generate_typed_value(schema, resolver, bech32_decoder, blobs)?,
                 metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
@@ -617,7 +612,7 @@ pub fn generate_instruction(
             package_address: IDENTITY_PACKAGE,
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
             function_name: IDENTITY_CREATE_IDENT.to_string(),
-            args: manifest_encode(&IdentityCreateInput {
+            args: to_manifest_value(&IdentityCreateInput {
                 access_rule: generate_typed_value::<AccessRule>(
                     access_rule,
                     resolver,
@@ -631,7 +626,7 @@ pub fn generate_instruction(
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
             function_name: ACCOUNT_CREATE_GLOBAL_IDENT.to_string(),
-            args: manifest_encode(&AccountCreateGlobalInput {
+            args: to_manifest_value(&AccountCreateGlobalInput {
                 withdraw_rule: generate_typed_value(
                     withdraw_rule,
                     resolver,
@@ -1002,28 +997,6 @@ fn generate_non_fungible_mint_params(
     }
 }
 
-fn generate_uuid_non_fungible_mint_params(
-    value: &ast::Value,
-    resolver: &mut NameResolver,
-    bech32_decoder: &Bech32Decoder,
-    blobs: &BTreeMap<Hash, Vec<u8>>,
-) -> Result<Vec<Vec<u8>>, GeneratorError> {
-    match value {
-        ast::Value::Array(_kind, elements) => {
-            let mut mint_params = Vec::new();
-            for element in elements.into_iter() {
-                let non_fungible = generate_value(element, None, resolver, bech32_decoder, blobs)?;
-                let non_fungible = transform(non_fungible, &mut TemporaryTransformHandler)?;
-                let non_fungible = scrypto_encode(&non_fungible).unwrap();
-                mint_params.push(non_fungible);
-            }
-
-            Ok(mint_params)
-        }
-        v => invalid_type!(v, ast::Type::Array)?,
-    }
-}
-
 pub fn generate_value(
     value: &ast::Value,
     expected_type: Option<ManifestValueKind>,
@@ -1254,7 +1227,8 @@ mod tests {
     use crate::manifest::parser::Parser;
     use radix_engine_interface::address::Bech32Decoder;
     use radix_engine_interface::blueprints::resource::{
-        AccessRule, AccessRulesConfig, NonFungibleDataSchema, ResourceMethodAuthKey,
+        AccessRule, AccessRulesConfig, NonFungibleDataSchema,
+        NonFungibleResourceManagerMintUuidManifestInput, ResourceMethodAuthKey,
     };
     use radix_engine_interface::network::NetworkDefinition;
     use radix_engine_interface::{dec, pdec};
@@ -1509,7 +1483,7 @@ mod tests {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-                args: manifest_encode(&NonFungibleResourceManagerCreateInput {
+                args: to_manifest_value(&NonFungibleResourceManagerCreateInput {
                     id_type: NonFungibleIdType::Integer,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                     metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
@@ -1538,7 +1512,7 @@ mod tests {
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
-                args: manifest_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
+                args: to_manifest_value(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
                     id_type: NonFungibleIdType::Integer,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                     metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
@@ -1570,7 +1544,7 @@ mod tests {
                 package_address: RESOURCE_MANAGER_PACKAGE,
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-                args: manifest_encode(&FungibleResourceManagerCreateInput {
+                args: to_manifest_value(&FungibleResourceManagerCreateInput {
                     divisibility: 18,
                     metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
                     access_rules: BTreeMap::from([
@@ -1598,7 +1572,7 @@ mod tests {
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
-                args: manifest_encode(&FungibleResourceManagerCreateWithInitialSupplyInput {
+                args: to_manifest_value(&FungibleResourceManagerCreateWithInitialSupplyInput {
                     divisibility: 18,
                     metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
                     access_rules: BTreeMap::from([
@@ -1627,6 +1601,22 @@ mod tests {
             )
             .unwrap();
 
+        /*
+        generate_instruction_ok!(
+            r##"MINT_NON_FUNGIBLE Address("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak") Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128)));"##,
+            Instruction::MintNonFungible {
+                resource_address: resource,
+                entries: BTreeMap::from([(
+                    NonFungibleLocalId::integer(1),
+                    (
+                        manifest_encode(&(String::from("Hello World"), dec!("12"))).unwrap(),
+                        manifest_encode(&(12u8, 19u128)).unwrap()
+                    )
+                )])
+            },
+        );
+                                         */
+
         generate_instruction_ok!(
             r##"MINT_NON_FUNGIBLE Address("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak") Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple("Hello World", Decimal("12")));"##,
             Instruction::MintNonFungible {
@@ -1647,19 +1637,27 @@ mod tests {
                 "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak",
             )
             .unwrap();
+
         generate_instruction_ok!(
             r#"
             MINT_UUID_NON_FUNGIBLE
                 Address("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")
-                Array<Tuple>(
-                    Tuple("Hello World", Decimal("12"))
+                Tuple(
+                    Array<Tuple>(
+                        Tuple(Tuple("Hello World", Decimal("12")))
+                    )
                 );
             "#,
             Instruction::MintUuidNonFungible {
                 resource_address: resource,
-                entries: Vec::from([
-                    scrypto_encode(&(String::from("Hello World"), dec!("12"))).unwrap(),
-                ])
+                args: to_manifest_value(&NonFungibleResourceManagerMintUuidManifestInput {
+                    entries: Vec::from([(to_manifest_value(&(
+                        String::from("Hello World"),
+                        dec!("12")
+                    ))
+                    .unwrap(),),])
+                })
+                .unwrap(),
             },
         );
     }
@@ -1673,7 +1671,7 @@ mod tests {
             Instruction::CallMethod {
                 component_address: EPOCH_MANAGER,
                 method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
-                args: manifest_encode(&EpochManagerCreateValidatorInput {
+                args: to_manifest_value(&EpochManagerCreateValidatorInput {
                     key: EcdsaSecp256k1PrivateKey::from_u64(2u64)
                         .unwrap()
                         .public_key(),

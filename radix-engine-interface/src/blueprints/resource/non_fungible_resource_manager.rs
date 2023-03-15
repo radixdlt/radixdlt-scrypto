@@ -1,6 +1,7 @@
 use crate::blueprints::resource::*;
 use crate::data::scrypto::model::*;
 use crate::*;
+use radix_engine_common::data::manifest::ManifestValue;
 use radix_engine_common::data::scrypto::{ScryptoCustomTypeKind, ScryptoSchema, ScryptoValue};
 use radix_engine_interface::api::types::NonFungibleData;
 use sbor::rust::collections::{BTreeMap, BTreeSet};
@@ -103,6 +104,11 @@ pub struct NonFungibleResourceManagerMintInput {
 pub type NonFungibleResourceManagerMintOutput = Bucket;
 
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT: &str = "mint_uuid";
+
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+pub struct NonFungibleResourceManagerMintUuidManifestInput {
+    pub entries: Vec<(ManifestValue,)>,
+}
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerMintUuidInput {

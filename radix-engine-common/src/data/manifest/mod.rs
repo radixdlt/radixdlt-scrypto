@@ -7,7 +7,7 @@ pub use custom_value::*;
 pub use custom_value_kind::*;
 
 pub const MANIFEST_SBOR_V1_PAYLOAD_PREFIX: u8 = 77; // [M] ASCII code
-pub const MANIFEST_SBOR_V1_MAX_DEPTH: usize = 16;
+pub const MANIFEST_SBOR_V1_MAX_DEPTH: usize = 24;
 
 pub type ManifestEncoder<'a> = VecEncoder<'a, ManifestCustomValueKind>;
 pub type ManifestDecoder<'a> = VecDecoder<'a, ManifestCustomValueKind>;
@@ -39,4 +39,16 @@ pub fn manifest_encode<T: ManifestEncode + ?Sized>(value: &T) -> Result<Vec<u8>,
 pub fn manifest_decode<T: ManifestDecode>(buf: &[u8]) -> Result<T, DecodeError> {
     ManifestDecoder::new(buf, MANIFEST_SBOR_V1_MAX_DEPTH)
         .decode_payload(MANIFEST_SBOR_V1_PAYLOAD_PREFIX)
+}
+
+pub fn to_manifest_value<T: ManifestEncode + ?Sized>(
+    value: &T,
+) -> Result<ManifestValue, DecodeError> {
+    manifest_decode(&manifest_encode(value).unwrap())
+}
+
+pub fn from_manifest_value<T: ManifestDecode>(
+    manifest_value: &ManifestValue,
+) -> Result<T, DecodeError> {
+    manifest_decode(&manifest_encode(manifest_value).unwrap())
 }

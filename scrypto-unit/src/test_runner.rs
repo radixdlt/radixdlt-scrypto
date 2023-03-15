@@ -41,8 +41,8 @@ use radix_engine_interface::blueprints::epoch_manager::{
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{EPOCH_MANAGER, FAUCET_COMPONENT};
-use radix_engine_interface::data::manifest::manifest_encode;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
+use radix_engine_interface::data::manifest::to_manifest_value;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
@@ -984,7 +984,7 @@ impl TestRunner {
         let instructions = vec![Instruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_SET_EPOCH_IDENT.to_string(),
-            args: manifest_encode(&EpochManagerSetEpochInput { epoch }).unwrap(),
+            args: to_manifest_value(&EpochManagerSetEpochInput { epoch }).unwrap(),
         }];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
@@ -1005,7 +1005,7 @@ impl TestRunner {
         let instructions = vec![Instruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
-            args: manifest_encode(&EpochManagerGetCurrentEpochInput).unwrap(),
+            args: to_manifest_value(&EpochManagerGetCurrentEpochInput).unwrap(),
         }];
 
         let blobs = vec![];
@@ -1034,7 +1034,7 @@ impl TestRunner {
         let instructions = vec![Instruction::CallMethod {
             component_address: CLOCK,
             method_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
-            args: manifest_encode(&ClockSetCurrentTimeInput { current_time_ms }).unwrap(),
+            args: to_manifest_value(&ClockSetCurrentTimeInput { current_time_ms }).unwrap(),
         }];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
@@ -1055,7 +1055,7 @@ impl TestRunner {
         let instructions = vec![Instruction::CallMethod {
             component_address: CLOCK,
             method_name: CLOCK_GET_CURRENT_TIME_IDENT.to_string(),
-            args: manifest_encode(&ClockGetCurrentTimeInput { precision }).unwrap(),
+            args: to_manifest_value(&ClockGetCurrentTimeInput { precision }).unwrap(),
         }];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();

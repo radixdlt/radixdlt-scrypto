@@ -88,9 +88,7 @@ fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFra
             ..
         } => {
             update.add_ref(RENodeId::GlobalObject(package_address.clone().into()));
-            let value: ManifestValue =
-                manifest_decode(args).expect("Invalid CALL_FUNCTION arguments");
-            extract_refs_from_value(&value, update);
+            extract_refs_from_value(args, update);
 
             if package_address.eq(&EPOCH_MANAGER_PACKAGE) {
                 update.add_ref(RENodeId::GlobalObject(PACKAGE_TOKEN.into()));
@@ -107,23 +105,17 @@ fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFra
         Instruction::CallMethod {
             component_address,
             args,
-            method_name,
+            ..
         } => {
             update.add_ref(RENodeId::GlobalObject(component_address.clone().into()));
-            let value: ManifestValue = manifest_decode(args)
-                .expect(format!("Invalid CALL_METHOD arguments to {}", method_name).as_str());
-            extract_refs_from_value(&value, update);
+            extract_refs_from_value(args, update);
         }
         Instruction::MintUuidNonFungible {
-            resource_address, entries
+            resource_address,
+            args,
         } => {
             update.add_ref(RENodeId::GlobalObject(resource_address.clone().into()));
-            for entry in entries {
-                let value: ManifestValue =
-                    manifest_decode(entry).expect("Invalid CALL_FUNCTION arguments");
-                extract_refs_from_value(&value, update);
-                update.add_ref(RENodeId::GlobalObject(resource_address.clone().into()));
-            }
+            extract_refs_from_value(args, update);
         }
         Instruction::SetMetadata {
             entity_address,
@@ -462,14 +454,12 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     function_name,
                     args,
                 } => {
-                    let value: ManifestValue =
-                        manifest_decode(&args).expect("Invalid CALL_FUNCTION arguments");
                     let mut processor_with_api = TransactionProcessorWithApi {
                         worktop,
                         processor,
                         api,
                     };
-                    let scrypto_value = transform(value, &mut processor_with_api)?;
+                    let scrypto_value = transform(args, &mut processor_with_api)?;
                     processor = processor_with_api.processor;
 
                     let rtn = api.call_function(
@@ -490,14 +480,12 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     method_name,
                     args,
                 } => {
-                    let value: ManifestValue =
-                        manifest_decode(&args).expect("Invalid CALL_METHOD arguments");
                     let mut processor_with_api = TransactionProcessorWithApi {
                         worktop,
                         processor,
                         api,
                     };
-                    let scrypto_value = transform(value, &mut processor_with_api)?;
+                    let scrypto_value = transform(args, &mut processor_with_api)?;
                     processor = processor_with_api.processor;
 
                     let rtn = api.call_method(
@@ -618,30 +606,19 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 }
                 Instruction::MintUuidNonFungible {
                     resource_address,
-                    entries,
+                    args,
                 } => {
                     let mut processor_with_api = TransactionProcessorWithApi {
                         worktop,
                         processor,
                         api,
                     };
-
-                    let mut input_entries = Vec::new();
-                    for entry in entries {
-                        let value: ManifestValue =
-                            manifest_decode(&entry).expect("Invalid CALL_METHOD arguments");
-                        let scrypto_value = transform(value, &mut processor_with_api)?;
-                        input_entries.push((scrypto_value,));
-                    }
+                    let scrypto_value = transform(args, &mut processor_with_api)?;
                     processor = processor_with_api.processor;
-
                     let rtn = api.call_method(
                         RENodeId::GlobalObject(resource_address.into()),
                         NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
-                        scrypto_encode(&NonFungibleResourceManagerMintUuidInput {
-                            entries: input_entries,
-                        })
-                        .unwrap(),
+                        scrypto_encode(&scrypto_value).unwrap(),
                     )?;
 
                     let result = IndexedScryptoValue::from_vec(rtn).unwrap();

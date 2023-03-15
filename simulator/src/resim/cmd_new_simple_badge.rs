@@ -88,7 +88,7 @@ impl NewSimpleBadge {
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
-                args: manifest_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
+                args: to_manifest_value(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
                     id_type: NonFungibleIdType::Integer,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                     metadata,

@@ -538,13 +538,11 @@ pub fn decompile_instruction<F: fmt::Write>(
         }
         Instruction::MintUuidNonFungible {
             resource_address,
-            entries,
+            args,
         } => {
-            let entries = transform_uuid_non_fungible_mint_params(entries)?;
-
             f.write_str("MINT_UUID_NON_FUNGIBLE")?;
             format_typed_value(f, context, resource_address)?;
-            format_typed_value(f, context, &entries)?;
+            format_encoded_args(f, context, args)?;
             f.write_str(";")?;
         }
         Instruction::AssertAccessRule { access_rule } => {
@@ -562,7 +560,8 @@ pub fn format_typed_value<F: fmt::Write, T: ManifestEncode>(
     value: &T,
 ) -> Result<(), DecompileError> {
     f.write_str("\n    ")?;
-    let value: ManifestValue = manifest_decode(&(manifest_encode(value).unwrap())).unwrap();
+    let value: ManifestValue = to_manifest_value(value).unwrap();
+
     format_manifest_value(f, &value, &context.for_value_display())?;
     Ok(())
 }
@@ -570,10 +569,8 @@ pub fn format_typed_value<F: fmt::Write, T: ManifestEncode>(
 pub fn format_encoded_args<F: fmt::Write>(
     f: &mut F,
     context: &mut DecompilationContext,
-    args: &Vec<u8>,
+    value: &ManifestValue,
 ) -> Result<(), DecompileError> {
-    let value: ManifestValue =
-        manifest_decode(&args).map_err(|_| DecompileError::InvalidArguments)?;
     if let Value::Tuple { fields } = value {
         for field in fields {
             f.write_str("\n    ")?;
@@ -592,16 +589,6 @@ fn transform_non_fungible_mint_params(
     let mut mint_params_manifest_value = BTreeMap::<NonFungibleLocalId, Vec<u8>>::new();
     for (id, data) in mint_params.into_iter() {
         mint_params_manifest_value.insert(id.clone(), data.clone());
-    }
-    Ok(mint_params_manifest_value)
-}
-
-fn transform_uuid_non_fungible_mint_params(
-    mint_params: &Vec<Vec<u8>>,
-) -> Result<Vec<Vec<u8>>, DecodeError> {
-    let mut mint_params_manifest_value = Vec::<Vec<u8>>::new();
-    for data in mint_params.into_iter() {
-        mint_params_manifest_value.push(data.clone());
     }
     Ok(mint_params_manifest_value)
 }

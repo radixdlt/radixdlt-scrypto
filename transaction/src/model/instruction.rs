@@ -2,7 +2,7 @@ use radix_engine_common::data::scrypto::model::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataEntry;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::resource::{AccessRule, AccessRulesConfig, MethodKey};
-use radix_engine_interface::data::manifest::model::*;
+use radix_engine_interface::data::manifest::{model::*, ManifestValue};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;
 use sbor::rust::collections::BTreeMap;
@@ -162,7 +162,7 @@ pub enum Instruction {
 
     MintUuidNonFungible {
         resource_address: ResourceAddress,
-        entries: Vec<Vec<u8>>,
+        args: ManifestValue,
     },
 
     AssertAccessRule {
@@ -173,12 +173,12 @@ pub enum Instruction {
         package_address: PackageAddress,
         blueprint_name: String,
         function_name: String,
-        args: Vec<u8>,
+        args: ManifestValue,
     },
 
     CallMethod {
         component_address: ComponentAddress,
         method_name: String,
-        args: Vec<u8>,
+        args: ManifestValue,
     },
 }

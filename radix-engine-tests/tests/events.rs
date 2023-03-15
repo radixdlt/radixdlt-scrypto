@@ -523,7 +523,7 @@ fn epoch_manager_round_update_emits_correct_event() {
     let instructions = vec![Instruction::CallMethod {
         component_address: EPOCH_MANAGER,
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: manifest_encode(&EpochManagerNextRoundInput {
+        args: to_manifest_value(&EpochManagerNextRoundInput {
             round: rounds_per_epoch - 1,
         })
         .unwrap(),
@@ -572,7 +572,7 @@ fn epoch_manager_epoch_update_emits_correct_event() {
     let instructions = vec![Instruction::CallMethod {
         component_address: EPOCH_MANAGER,
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: manifest_encode(&EpochManagerNextRoundInput {
+        args: to_manifest_value(&EpochManagerNextRoundInput {
             round: rounds_per_epoch,
         })
         .unwrap(),
@@ -1165,7 +1165,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
         .call_method(
             validator_address,
             VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
-            manifest_encode(&ValidatorUpdateAcceptDelegatedStakeInput {
+            to_manifest_value(&ValidatorUpdateAcceptDelegatedStakeInput {
                 accept_delegated_stake: false,
             })
             .unwrap(),

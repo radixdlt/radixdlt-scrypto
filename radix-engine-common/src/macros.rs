@@ -242,7 +242,7 @@ macro_rules! manifest_args {
             let arg = $args;
             encoder.encode(&arg).unwrap();
         )*
-        buf
+        $crate::data::manifest::manifest_decode(&buf).unwrap()
     }};
 }
 
