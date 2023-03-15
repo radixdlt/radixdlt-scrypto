@@ -181,6 +181,7 @@ pub enum CallFrameError {
     RENodeNotVisible(RENodeId),
     RENodeNotOwned(RENodeId),
     MovingLockedRENode(RENodeId),
+    FailedToMoveSubstateToTrack(TrackError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
