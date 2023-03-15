@@ -443,7 +443,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
             }
 
             if let TransactionOutcome::Success(outputs) = &c.outcome {
-                write!(f, "\n{}", "Outputs:".bold().green())?;
+                write!(f, "\n{} {}", "Outputs:".bold().green(), outputs.len())?;
                 for (i, output) in outputs.iter().enumerate() {
                     write!(
                         f,
