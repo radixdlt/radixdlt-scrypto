@@ -589,7 +589,7 @@ impl<'g, 's, W> ClientUnsafeApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
-    #[trace_resources]
+    #[trace_resources(units)]
     fn consume_cost_units(
         &mut self,
         units: u32,
