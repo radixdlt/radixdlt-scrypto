@@ -13,6 +13,7 @@ static GThread* thr;
 static GMutex data_lock;
 static GString* addr;
 static gboolean count_instructions = true;
+static bool logging = false;
 
 
 
@@ -73,7 +74,7 @@ gpointer thr_callback(gpointer data)
 
     while(TRUE)
     {
-        g_print("waiting for data...");
+        if (logging) g_print("waiting for data...");
 
         size = g_socket_receive_from(socket, &address, buffer, sizeof buffer, NULL, &error);
 
@@ -85,13 +86,16 @@ gpointer thr_callback(gpointer data)
 
         GUnixSocketAddress *uaddr = G_UNIX_SOCKET_ADDRESS (address);
 
-        g_print ("received %" G_GSSIZE_FORMAT " bytes of data", size);
-        g_print (" from %s type %d", g_unix_socket_address_get_path(uaddr), g_unix_socket_address_get_address_type (uaddr));
-        g_print ("\n-------------------------\n%.*s\n-------------------------\n",(int)size, buffer);
+        if (logging) 
+        {
+            g_print ("received %" G_GSSIZE_FORMAT " bytes of data", size);
+            g_print (" from %s type %d", g_unix_socket_address_get_path(uaddr), g_unix_socket_address_get_address_type (uaddr));
+            g_print ("\n-------------------------\n%.*s\n-------------------------\n",(int)size, buffer);
+        }
 
         if( g_unix_socket_address_get_address_type(uaddr) != 2 )
         {
-            g_print("Only path address type is supported\n");
+            if (logging) g_print("Only path address type is supported\n");
             continue;
         }
 
@@ -104,7 +108,7 @@ gpointer thr_callback(gpointer data)
 
         size = g_socket_send_to(socket, address, (gchar*)&out_data, to_send, NULL, &error);
 
-        g_print("sending data back... %" G_GUINT64_FORMAT "\n", cnt);
+        if (logging) g_print("sending data back... %" G_GUINT64_FORMAT "\n", cnt);
 
         if(size < 0)
         {
@@ -130,23 +134,22 @@ QEMU_PLUGIN_EXPORT int qemu_plugin_install(qemu_plugin_id_t id,
 {
     addr = g_string_new(SERVER_SOCKET_ADDR);
 
-    if( argc == 1 )
+    for(gint i = 0; i < argc; ++i)
     {
         g_autofree char **tokens = g_strsplit(argv[0], "=", 2);
         if (g_strcmp0(tokens[0], "socket") == 0 && tokens[1]) 
         {
             addr = g_string_new(tokens[1]);
         }
-        else 
+        else if (g_strcmp0(tokens[0], "log") == 0 &&
+                 qemu_plugin_bool_parse(tokens[0], tokens[1], &logging)) 
+        { // ok
+        }
+        else
         {
             fprintf(stderr, "bad parameters: %s\n", argv[0]);
             return -1;
         }
-    }
-    else if (argc > 1 )
-    {
-        fprintf(stderr, "bad parameters: %s\n", argv[1]);
-        return -1;
     }
 
     g_print("Using socket path: %s\n", addr->str);
