@@ -202,6 +202,24 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                         .expect("Broken Node Store");
                 }
             }
+            RENodeId::GlobalObject(Address::Component(_)) => {
+                let substate_id = SubstateId(
+                    node_id,
+                    NodeModuleId::SELF,
+                    SubstateOffset::Component(ComponentOffset::State0),
+                );
+                let output_value = self
+                    .substate_store
+                    .get_substate(&substate_id)
+                    .expect("Broken Node Store");
+                let runtime_substate = output_value.substate.to_runtime();
+                let substate_ref = runtime_substate.to_ref();
+                let (_, owned_nodes) = substate_ref.references_and_owned_nodes();
+                for child_node_id in owned_nodes {
+                    self.traverse_recursive(Some(&substate_id), child_node_id, depth + 1)
+                        .expect("Broken Node Store");
+                }
+            }
             _ => {}
         };
 

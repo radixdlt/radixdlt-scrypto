@@ -942,7 +942,7 @@ impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
                 self.fetch_substate_from_state_updates(&SubstateId(
                     *node_id,
                     NodeModuleId::SELF,
-                    SubstateOffset::Vault(VaultOffset::LiquidFungible),
+                    SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
                 ))
             {
                 let old_balance = if old_version.is_none() {
