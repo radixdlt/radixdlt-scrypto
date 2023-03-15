@@ -167,10 +167,8 @@ fn test_balance_changes_when_recall() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    println!("receipt {:?}", receipt);
 
     // Assert
-    let vault_id = test_runner.get_component_vaults(account, recallable_token)[0];
     let result = receipt.expect_commit(true);
     assert_eq!(
         result.balance_changes(),
@@ -191,4 +189,52 @@ fn test_balance_changes_when_recall() {
             )
         )
     )
+}
+
+#[test]
+fn test_balance_changes_when_transferring_non_fungibles() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (pk, _, account) = test_runner.new_allocated_account();
+    let (_, _, other_account) = test_runner.new_allocated_account();
+
+    let resource_address = test_runner.create_non_fungible_resource(account);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .withdraw_from_account(account, resource_address, dec!("1.0"))
+        .call_method(
+            other_account,
+            "deposit_batch",
+            manifest_args!(ManifestExpression::EntireWorktop),
+        )
+        .build();
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+    println!("receipt {:?}", receipt);
+
+    // Assert
+    let result = receipt.expect_commit(true);
+    assert_eq!(
+        result.balance_changes(),
+        &indexmap!(
+            FAUCET_COMPONENT.into() => indexmap!(
+                RADIX_TOKEN => BalanceChange::Fungible(-(result.fee_summary.total_execution_cost_xrd + result.fee_summary.total_royalty_cost_xrd))
+            ),
+            account.into() => indexmap!(
+                resource_address => BalanceChange::NonFungible {
+                    added: BTreeSet::new(),
+                    removed: btreeset!(NonFungibleLocalId::integer(1))
+                }
+            ),
+            other_account.into() => indexmap!(
+                resource_address => BalanceChange::NonFungible {
+                    added: btreeset!(NonFungibleLocalId::integer(1)),
+                    removed: BTreeSet::new()
+                }
+            ),
+        )
+    );
+    assert!(result.direct_vault_updates().is_empty())
 }

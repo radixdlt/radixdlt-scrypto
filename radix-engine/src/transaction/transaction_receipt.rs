@@ -490,7 +490,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                     match delta {
                         BalanceChange::Fungible(d) => format!("{}", d),
                         BalanceChange::NonFungible { added, removed } => {
-                            format!("+ {:?}, - {:?}", added, removed)
+                            format!("+{:?}, -{:?}", added, removed)
                         }
                     }
                 )?;
@@ -518,7 +518,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                     match delta {
                         BalanceChange::Fungible(d) => format!("{}", d),
                         BalanceChange::NonFungible { added, removed } => {
-                            format!("+ {:?}, - {:?}", added, removed)
+                            format!("+{:?}, -{:?}", added, removed)
                         }
                     }
                 )?;
