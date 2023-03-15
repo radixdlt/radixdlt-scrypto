@@ -511,9 +511,9 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
             for (i, (object_id, resource, delta)) in direct_vault_updates.iter().enumerate() {
                 write!(
                     f,
-                    "\n{} Vault: {:?}, Resource: {}, Delta: {}",
+                    "\n{} Vault: {}, Resource: {}, Delta: {}",
                     prefix!(i, direct_vault_updates),
-                    object_id,
+                    hex::encode(object_id),
                     resource.display(bech32_encoder),
                     match delta {
                         BalanceChange::Fungible(d) => format!("{}", d),

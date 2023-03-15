@@ -144,3 +144,51 @@ fn test_balance_changes_when_failure() {
         )
     )
 }
+
+#[test]
+fn test_balance_changes_when_recall() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (_, _, account) = test_runner.new_allocated_account();
+    let (_, _, other_account) = test_runner.new_allocated_account();
+
+    let recallable_token = test_runner.create_recallable_token(account);
+    let vaults = test_runner.get_component_vaults(account, recallable_token);
+    let vault_id = vaults[0];
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .recall(vault_id, Decimal::one())
+        .call_method(
+            other_account,
+            "deposit_batch",
+            manifest_args!(ManifestExpression::EntireWorktop),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    println!("receipt {:?}", receipt);
+
+    // Assert
+    let vault_id = test_runner.get_component_vaults(account, recallable_token)[0];
+    let result = receipt.expect_commit(true);
+    assert_eq!(
+        result.balance_changes(),
+        &indexmap!(
+            FAUCET_COMPONENT.into() => indexmap!(
+                RADIX_TOKEN => BalanceChange::Fungible(-(result.fee_summary.total_execution_cost_xrd + result.fee_summary.total_royalty_cost_xrd))
+            ),
+            other_account.into() => indexmap!(
+                recallable_token => BalanceChange::Fungible(dec!("1"))
+            ),
+        )
+    );
+    assert_eq!(
+        result.direct_vault_updates(),
+        &indexmap!(
+            vault_id => indexmap!(
+                recallable_token => BalanceChange::Fungible(dec!("-1"))
+            )
+        )
+    )
+}
