@@ -363,7 +363,6 @@ impl NonFungibleResourceManagerBlueprint {
                     ));
                 }
 
-                //let non_fungible = NonFungible::new(data.0, data.1);
                 let non_fungible: ScryptoValue = scrypto_decode(&data).unwrap();
                 ids.insert(id.clone());
                 non_fungibles.insert(id, non_fungible);
@@ -537,7 +536,6 @@ impl NonFungibleResourceManagerBlueprint {
         let non_fungible_type_index = resource_manager.non_fungible_type_index;
         let non_fungible_table_id = resource_manager.non_fungible_table;
         let mutable_fields = resource_manager.mutable_fields.clone();
-
 
         let kv_schema =
             api.get_key_value_store_info(RENodeId::KeyValueStore(non_fungible_table_id))?;

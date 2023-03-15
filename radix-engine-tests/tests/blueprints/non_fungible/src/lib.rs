@@ -182,7 +182,9 @@ mod non_fungible_test {
             (mint_badge, bucket)
         }
 
-        pub fn update_and_get_non_fungible_reference(reference: ResourceAddress) -> (Bucket, Bucket) {
+        pub fn update_and_get_non_fungible_reference(
+            reference: ResourceAddress,
+        ) -> (Bucket, Bucket) {
             let (mint_badge, resource_address, bucket) = Self::create_non_fungible_mutable();
 
             mint_badge.authorize(|| {

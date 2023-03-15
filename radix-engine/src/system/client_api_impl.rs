@@ -97,24 +97,22 @@ where
             ..
         } = self.kernel_get_lock_info(lock_handle)?;
 
-
         if module_id.eq(&NodeModuleId::SELF) {
             let type_info = TypeInfoBlueprint::get_type(node_id, self)?;
             match type_info {
                 TypeInfoSubstate::KeyValueStore(schema) => {
                     validate_payload_against_schema(&buffer, &schema.schema, schema.value)
-                        .map_err(|_| {
-                            RuntimeError::KernelError(KernelError::InvalidOverwrite)
-                        })?;
+                        .map_err(|_| RuntimeError::KernelError(KernelError::InvalidOverwrite))?;
 
                     if !schema.can_own {
-                        let indexed = IndexedScryptoValue::from_slice(&buffer)
-                            .map_err(|_| {
-                                RuntimeError::KernelError(KernelError::InvalidOverwrite)
-                            })?;
+                        let indexed = IndexedScryptoValue::from_slice(&buffer).map_err(|_| {
+                            RuntimeError::KernelError(KernelError::InvalidOverwrite)
+                        })?;
                         let (_, own, _) = indexed.unpack();
                         if !own.is_empty() {
-                            return Err(RuntimeError::SystemError(SystemError::InvalidKeyValueStoreOwnership));
+                            return Err(RuntimeError::SystemError(
+                                SystemError::InvalidKeyValueStoreOwnership,
+                            ));
                         }
                     }
                 }

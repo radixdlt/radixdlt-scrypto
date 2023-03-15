@@ -200,9 +200,14 @@ fn cannot_update_non_fungible_when_not_mutable() {
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::ApplicationError(
-        ApplicationError::NonFungibleResourceManagerError(NonFungibleResourceManagerError::FieldNotMutable(..)))
-    ));
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
+                NonFungibleResourceManagerError::FieldNotMutable(..)
+            ))
+        )
+    });
 }
 
 #[test]
@@ -228,9 +233,14 @@ fn cannot_update_non_fungible_when_does_not_exist() {
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::ApplicationError(
-        ApplicationError::NonFungibleResourceManagerError(NonFungibleResourceManagerError::InvalidField(..)))
-    ));
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
+                NonFungibleResourceManagerError::InvalidField(..)
+            ))
+        )
+    });
 }
 
 #[test]
@@ -282,9 +292,13 @@ fn cannot_have_non_fungible_data_ownership() {
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemError(SystemError::InvalidKeyValueStoreOwnership)));
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemError(SystemError::InvalidKeyValueStoreOwnership)
+        )
+    });
 }
-
 
 #[test]
 fn can_update_and_get_non_fungible() {
@@ -338,7 +352,6 @@ fn can_update_and_get_non_fungible_reference() {
     );
     receipt.expect_commit_success();
 }
-
 
 #[test]
 fn test_non_fungible() {
