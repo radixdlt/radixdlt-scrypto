@@ -208,7 +208,7 @@ impl AccountNativePackage {
         }
     }
 
-    #[trace_resources]
+    #[trace_resources(export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<RENodeId>,
