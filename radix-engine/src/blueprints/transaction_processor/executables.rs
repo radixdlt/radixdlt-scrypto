@@ -613,11 +613,17 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     resource_address,
                     entries,
                 } => {
+                    let mut input_entries = Vec::new();
+                    for entry in entries {
+                        let entry: ScryptoValue = scrypto_decode(&entry).unwrap();
+                        input_entries.push((entry,));
+                    }
+
                     let rtn = api.call_method(
                         RENodeId::GlobalObject(resource_address.into()),
                         NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
                         scrypto_encode(&NonFungibleResourceManagerMintUuidInput {
-                            entries: entries,
+                            entries: input_entries,
                         })
                         .unwrap(),
                     )?;

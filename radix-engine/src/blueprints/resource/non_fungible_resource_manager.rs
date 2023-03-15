@@ -438,7 +438,7 @@ impl NonFungibleResourceManagerBlueprint {
 
     pub(crate) fn mint_uuid_non_fungible<Y>(
         receiver: RENodeId,
-        entries: Vec<Vec<u8>>,
+        entries: Vec<(ScryptoValue,)>,
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
@@ -469,7 +469,7 @@ impl NonFungibleResourceManagerBlueprint {
             resource_manager.total_supply += amount;
             // Allocate non-fungibles
             let mut ids = BTreeSet::new();
-            for data in entries {
+            for (value,) in entries {
                 // TODO: Is this enough bits to prevent hash collisions?
                 // TODO: Possibly use an always incrementing timestamp
                 let uuid = Runtime::generate_uuid(api)?;
@@ -484,7 +484,6 @@ impl NonFungibleResourceManagerBlueprint {
                         )),
                         LockFlags::MUTABLE,
                     )?;
-                    let value: ScryptoValue = scrypto_decode(&data).unwrap();
                     api.sys_write_typed_substate(non_fungible_handle, Some(value))?;
 
                     api.sys_drop_lock(non_fungible_handle)?;

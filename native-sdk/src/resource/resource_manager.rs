@@ -3,9 +3,7 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
-use radix_engine_interface::data::scrypto::{
-    scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode,
-};
+use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode, ScryptoValue};
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
@@ -130,7 +128,8 @@ impl ResourceManager {
     {
         // TODO: Implement UUID generation in ResourceManager
         let mut entries = Vec::new();
-        entries.push(scrypto_encode(&data).unwrap());
+        let value: ScryptoValue = scrypto_decode(&scrypto_encode(&data).unwrap()).unwrap();
+        entries.push((value,));
 
         let rtn = api.call_method(
             RENodeId::GlobalObject(self.0.into()),

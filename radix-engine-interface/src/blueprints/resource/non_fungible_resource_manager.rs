@@ -106,7 +106,7 @@ pub const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT: &str = "mint_uuid";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerMintUuidInput {
-    pub entries: Vec<Vec<u8>>,
+    pub entries: Vec<(ScryptoValue,)>,
 }
 
 pub type NonFungibleResourceManagerMintUuidOutput = Bucket;
