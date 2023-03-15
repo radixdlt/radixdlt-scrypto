@@ -10,9 +10,7 @@ use colored::*;
 use radix_engine_interface::address::{AddressDisplayContext, NO_NETWORK};
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
-use radix_engine_interface::data::scrypto::{
-    ScryptoDecode, ScryptoValue, ScryptoValueDisplayContext,
-};
+use radix_engine_interface::data::scrypto::{ScryptoDecode, ScryptoValueDisplayContext};
 use utils::ContextualDisplay;
 
 #[derive(Debug, Clone, Default, ScryptoSbor)]
@@ -411,13 +409,14 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
             for (i, (event_type_identifier, event_data)) in c.application_events.iter().enumerate()
             {
                 let event_data_value =
-                    scrypto_decode::<ScryptoValue>(&event_data).expect("Event must be decodable!");
+                    IndexedScryptoValue::from_slice(&event_data).expect("Event must be decodable!");
                 write!(
                     f,
-                    "\n{} Identifier: {:?}, Event Data: {:?}",
+                    "\n{} Emitter: {:?}, Name: {}, Data: {}",
                     prefix!(i, c.application_events),
-                    event_type_identifier,
-                    event_data_value
+                    event_type_identifier.0,
+                    event_type_identifier.1,
+                    event_data_value.display(context)
                 )?;
             }
 
