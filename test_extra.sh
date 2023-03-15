@@ -27,10 +27,7 @@ test_crates_features \
     scrypto-tests \
     radix-engine \
     radix-engine-tests" \
-    "--no-default-features --features alloc"
-
-test_crates_features \
     "scrypto" \
-    "--no-default-features --features alloc,prelude"
+    "--no-default-features --features alloc"
 
 echo "Congrats! All extra tests passed."
