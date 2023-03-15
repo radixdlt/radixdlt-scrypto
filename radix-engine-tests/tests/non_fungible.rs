@@ -696,6 +696,52 @@ pub struct Sandwich {
 }
 
 #[test]
+#[ignore]
+fn can_mint_uuid_non_fungible_with_reference_in_manifest() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (_, _, account) = test_runner.new_allocated_account();
+    let (other_address, ..) = test_runner.create_restricted_token(account);
+    let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(
+            package,
+            "NonFungibleTest",
+            "create_mintable_uuid_non_fungible",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    receipt.expect_commit_success();
+    let resource_address = receipt.new_resource_addresses()[0];
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .mint_uuid_non_fungible(
+            resource_address,
+            vec![Sandwich {
+                name: "test".to_string(),
+                available: false,
+                tastes_great: true,
+                reference: Some(other_address),
+                own: None,
+            }],
+        )
+        .call_method(
+            account,
+            "deposit_batch",
+            manifest_args!(ManifestExpression::EntireWorktop),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
 fn can_mint_uuid_non_fungible_in_manifest() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
