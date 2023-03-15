@@ -727,12 +727,14 @@ impl<'s> FinalizingTrack<'s> {
         // from a substate.
 
         if let Some(modules) = indexed_state_updates.get(current) {
-            let type_info = Self::fetch_substates(
+            let type_info = Self::fetch_substate(
                 substate_store,
                 indexed_state_updates,
-                *current,
-                NodeModuleId::TypeInfo,
-                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+                &SubstateId(
+                    *current,
+                    NodeModuleId::TypeInfo,
+                    SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+                ),
             )
             .type_info()
             .clone();
@@ -742,12 +744,14 @@ impl<'s> FinalizingTrack<'s> {
             {
                 // Yeah, found a vault!
 
-                let vault_info = Self::fetch_substates(
+                let vault_info = Self::fetch_substate(
                     substate_store,
                     indexed_state_updates,
-                    *current,
-                    NodeModuleId::SELF,
-                    SubstateOffset::Vault(VaultOffset::Info),
+                    &SubstateId(
+                        *current,
+                        NodeModuleId::SELF,
+                        SubstateOffset::Vault(VaultOffset::Info),
+                    ),
                 )
                 .vault_info()
                 .clone();
@@ -767,21 +771,16 @@ impl<'s> FinalizingTrack<'s> {
                         let old_balance = if update.1.is_none() {
                             Decimal::ZERO
                         } else {
-                            substate_store
-                                .get_substate(&SubstateId(
+                            Self::fetch_substate_from_store(
+                                substate_store,
+                                &SubstateId(
                                     *current,
                                     NodeModuleId::SELF,
                                     SubstateOffset::Vault(VaultOffset::LiquidFungible),
-                                ))
-                                .unwrap_or_else(|| {
-                                    panic!(
-                                        "Substate store corrupted - missing vault liquid fungible substate for {:?}",
-                                        current
-                                    )
-                                })
-                                .substate
-                                .vault_liquid_fungible()
-                                .amount()
+                                ),
+                            )
+                            .vault_liquid_fungible()
+                            .amount()
                         };
                         let new_balance = update.0.vault_liquid_fungible().amount();
 
@@ -804,22 +803,17 @@ impl<'s> FinalizingTrack<'s> {
                         let old_balance = if update.1.is_none() {
                             BTreeSet::new()
                         } else {
-                            substate_store
-                                .get_substate(&SubstateId(
+                            Self::fetch_substate_from_store(
+                                substate_store,
+                                &SubstateId(
                                     *current,
                                     NodeModuleId::SELF,
                                     SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
-                                ))
-                                .unwrap_or_else(|| {
-                                    panic!(
-                                        "Substate store corrupted - missing vault liquid non-fungible substate for {:?}",
-                                        current
-                                    )
-                                })
-                                .substate
-                                .vault_liquid_non_fungible()
-                                .ids()
-                                .clone()
+                                ),
+                            )
+                            .vault_liquid_non_fungible()
+                            .ids()
+                            .clone()
                         };
                         let new_balance = update.0.vault_liquid_non_fungible().ids().clone();
 
@@ -858,32 +852,40 @@ impl<'s> FinalizingTrack<'s> {
         }
     }
 
-    pub fn fetch_substates(
+    pub fn fetch_substate(
         substate_store: &dyn ReadableSubstateStore,
         indexed_state_updates: &IndexMap<
             RENodeId,
             IndexMap<NodeModuleId, IndexMap<SubstateOffset, &(PersistedSubstate, Option<u32>)>>,
         >,
-        node_id: RENodeId,
-        module_id: NodeModuleId,
-        offset: SubstateOffset,
+        substate_id: &SubstateId,
     ) -> PersistedSubstate {
+        Self::fetch_substate_from_state_updates(indexed_state_updates, substate_id)
+            .unwrap_or_else(|| Self::fetch_substate_from_store(substate_store, substate_id))
+    }
+
+    pub fn fetch_substate_from_state_updates(
+        indexed_state_updates: &IndexMap<
+            RENodeId,
+            IndexMap<NodeModuleId, IndexMap<SubstateOffset, &(PersistedSubstate, Option<u32>)>>,
+        >,
+        substate_id: &SubstateId,
+    ) -> Option<PersistedSubstate> {
         indexed_state_updates
-            .get(&node_id)
-            .and_then(|x| x.get(&module_id))
-            .and_then(|x| x.get(&offset))
+            .get(&substate_id.0)
+            .and_then(|x| x.get(&substate_id.1))
+            .and_then(|x| x.get(&substate_id.2))
             .map(|x| x.0.clone())
-            .unwrap_or_else(|| {
-                substate_store
-                    .get_substate(&SubstateId(node_id, module_id, offset.clone()))
-                    .unwrap_or_else(|| {
-                        panic!(
-                            "State corrupted - missing [{:?}], [{:?}], [{:?}]",
-                            node_id, module_id, offset
-                        )
-                    })
-                    .substate
-            })
+    }
+
+    pub fn fetch_substate_from_store(
+        substate_store: &dyn ReadableSubstateStore,
+        substate_id: &SubstateId,
+    ) -> PersistedSubstate {
+        substate_store
+            .get_substate(substate_id)
+            .unwrap_or_else(|| panic!("Substate store corrupted - missing {:?}", substate_id))
+            .substate
     }
 
     pub fn generate_diff(
