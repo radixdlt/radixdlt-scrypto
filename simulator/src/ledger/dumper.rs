@@ -109,7 +109,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 .map(|s| s.to_runtime().into())
                 .unwrap();
 
-            let raw_state = IndexedScryptoValue::from_slice(&state.raw).unwrap();
+            let raw_state = IndexedScryptoValue::from_scrypto_value(state.0.clone());
             let package_address = component_info_substate.package_address;
             let blueprint_name = component_info_substate.blueprint_name;
             let access_rules = access_rules_chain_substate.access_rules;

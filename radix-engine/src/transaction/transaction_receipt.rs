@@ -459,15 +459,6 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                 }
             }
 
-            write!(
-                f,
-                "\n{} {}",
-                "New Entities:".bold().green(),
-                c.new_package_addresses().len()
-                    + c.new_component_addresses().len()
-                    + c.new_resource_addresses().len()
-            )?;
-
             let mut balance_changes = Vec::new();
             for (address, map) in c.balance_changes() {
                 for (resource, delta) in map {
@@ -483,7 +474,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
             for (i, (address, resource, delta)) in balance_changes.iter().enumerate() {
                 write!(
                     f,
-                    "\n{} Address: {}, Resource: {}, Delta: {}",
+                    "\n{} Entity: {}, Address: {}, Delta: {}",
                     prefix!(i, balance_changes),
                     address.display(bech32_encoder),
                     resource.display(bech32_encoder),
@@ -511,7 +502,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
             for (i, (object_id, resource, delta)) in direct_vault_updates.iter().enumerate() {
                 write!(
                     f,
-                    "\n{} Vault: {}, Resource: {}, Delta: {}",
+                    "\n{} Vault: {}, Address: {}, Delta: {}",
                     prefix!(i, direct_vault_updates),
                     hex::encode(object_id),
                     resource.display(bech32_encoder),
@@ -524,6 +515,14 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                 )?;
             }
 
+            write!(
+                f,
+                "\n{} {}",
+                "New Entities:".bold().green(),
+                c.new_package_addresses().len()
+                    + c.new_component_addresses().len()
+                    + c.new_resource_addresses().len()
+            )?;
             for (i, package_address) in c.new_package_addresses().iter().enumerate() {
                 write!(
                     f,
