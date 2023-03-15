@@ -3,6 +3,7 @@ use crate::data::manifest::ManifestCustomValueKind;
 use crate::data::scrypto::*;
 use crate::well_known_scrypto_custom_type;
 use crate::*;
+use radix_engine_common::data::scrypto::model::*;
 use sbor::rust::fmt;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -11,7 +12,7 @@ use utils::{copy_u8_array, ContextualDisplay};
 /// Represents a resource address.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ResourceAddress {
-    Normal([u8; 26]), // TODO: change to fungible & non-fungible
+    Normal([u8; ADDRESS_HASH_LENGTH]), // TODO: change to fungible & non-fungible
 }
 
 impl TryFrom<&[u8]> for ResourceAddress {
@@ -19,7 +20,7 @@ impl TryFrom<&[u8]> for ResourceAddress {
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
-            27 => match EntityType::try_from(slice[0])
+            ADDRESS_LENGTH => match EntityType::try_from(slice[0])
                 .map_err(|_| AddressError::InvalidEntityTypeId(slice[0]))?
             {
                 EntityType::Resource => Ok(Self::Normal(copy_u8_array(&slice[1..]))),
@@ -31,7 +32,7 @@ impl TryFrom<&[u8]> for ResourceAddress {
 }
 
 impl ResourceAddress {
-    pub fn to_array_without_entity_id(&self) -> [u8; 26] {
+    pub fn to_array_without_entity_id(&self) -> [u8; ADDRESS_HASH_LENGTH] {
         match self {
             Self::Normal(v) => v.clone(),
         }
@@ -65,11 +66,15 @@ well_known_scrypto_custom_type!(
     ResourceAddress,
     ScryptoCustomValueKind::Address,
     Type::ResourceAddress,
-    27,
+    ADDRESS_LENGTH,
     RESOURCE_ADDRESS_ID
 );
 
-manifest_type!(ResourceAddress, ManifestCustomValueKind::Address, 27);
+manifest_type!(
+    ResourceAddress,
+    ManifestCustomValueKind::Address,
+    ADDRESS_LENGTH
+);
 
 //========
 // text

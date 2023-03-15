@@ -49,7 +49,7 @@ pub trait KernelModule {
         _api: &mut Y,
         _actor: &Option<Actor>,
         _down_movement: &mut CallFrameUpdate,
-        _args: &ScryptoValue,
+        _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }

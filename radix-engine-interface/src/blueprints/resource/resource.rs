@@ -19,7 +19,7 @@ impl LiquidFungibleResource {
         Self { amount }
     }
 
-    pub fn new_empty() -> Self {
+    pub fn default() -> Self {
         Self::new(Decimal::zero())
     }
 
@@ -67,7 +67,7 @@ impl LiquidNonFungibleResource {
         Self { ids }
     }
 
-    pub fn new_empty() -> Self {
+    pub fn default() -> Self {
         Self::new(BTreeSet::new())
     }
 
@@ -134,7 +134,7 @@ pub struct LockedFungibleResource {
 }
 
 impl LockedFungibleResource {
-    pub fn new_empty() -> Self {
+    pub fn default() -> Self {
         Self {
             amounts: BTreeMap::new(),
         }
@@ -160,7 +160,7 @@ pub struct LockedNonFungibleResource {
 }
 
 impl LockedNonFungibleResource {
-    pub fn new_empty() -> Self {
+    pub fn default() -> Self {
         Self {
             ids: BTreeMap::new(),
         }

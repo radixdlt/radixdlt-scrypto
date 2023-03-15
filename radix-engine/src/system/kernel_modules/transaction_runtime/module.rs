@@ -11,6 +11,8 @@ use crate::{
 };
 use radix_engine_interface::blueprints::transaction_runtime::TRANSACTION_RUNTIME_BLUEPRINT;
 use radix_engine_interface::crypto::Hash;
+use sbor::btreemap;
+use sbor::rust::string::ToString;
 
 #[derive(Debug, Clone)]
 pub struct TransactionRuntimeModule {
@@ -53,7 +55,7 @@ impl KernelModule for TransactionRuntimeModule {
         _api: &mut Y,
         _actor: &Option<Actor>,
         call_frame_update: &mut CallFrameUpdate,
-        _args: &ScryptoValue,
+        _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         call_frame_update
             .node_refs_to_copy

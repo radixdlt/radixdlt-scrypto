@@ -1,5 +1,3 @@
-use crate::api::types::*;
-use crate::blueprints::resource::*;
 use crate::data::scrypto::*;
 use sbor::rust::format;
 use sbor::rust::vec;
@@ -409,24 +407,6 @@ pub fn serialize_custom_value<S: Serializer>(
             ScryptoCustomValueKind::NonFungibleLocalId,
             &format!("{}", value),
         ),
-    }
-}
-
-impl<'a> ContextualSerialize<ScryptoValueSerializationContext<'a>> for NonFungibleGlobalId {
-    fn contextual_serialize<S: Serializer>(
-        &self,
-        serializer: S,
-        context: &ScryptoValueSerializationContext<'a>,
-    ) -> Result<S::Ok, S::Error> {
-        let mut tuple = serializer.serialize_tuple(2)?;
-        tuple.serialize_element(
-            &self
-                .resource_address()
-                .display(context.display_context.bech32_encoder)
-                .to_string(),
-        )?;
-        tuple.serialize_element(&self.local_id().to_string())?;
-        tuple.end()
     }
 }
 

@@ -65,7 +65,7 @@ fn create_unit_struct_schema_works_correctly() {
     assert_eq!(schema.type_kinds.len(), 1);
     assert_eq!(schema.type_metadata.len(), 1);
     assert_eq!(schema.type_metadata[0].type_name, "UnitStruct");
-    assert!(matches!(&schema.type_metadata[0].children, Children::None));
+    assert!(matches!(&schema.type_metadata[0].child_names, None));
     assert!(schema.validate().is_ok());
 }
 
@@ -90,9 +90,9 @@ fn create_basic_sample_schema_works_correctly() {
         .unwrap();
     assert_eq!(&metadata.type_name, "BasicSample");
     assert!(
-        matches!(&metadata.children, Children::NamedFields(field_names) if matches!(field_names[..], [
-            FieldMetadata { field_name: Cow::Borrowed("a") },
-            FieldMetadata { field_name: Cow::Borrowed("b") },
+        matches!(&metadata.child_names, Some(ChildNames::NamedFields(field_names)) if matches!(field_names[..], [
+            Cow::Borrowed("a") ,
+            Cow::Borrowed("b")
         ]))
     );
     assert!(
@@ -110,7 +110,7 @@ fn create_basic_sample_schema_works_correctly() {
         .resolve_type_metadata(LocalTypeIndex::SchemaLocalIndex(1))
         .unwrap();
     assert_eq!(metadata.type_name, "UnitStruct");
-    assert!(matches!(metadata.children, Children::None));
+    assert!(matches!(metadata.child_names, None));
     assert!(matches!(kind, TypeKind::Tuple { field_types } if matches!(field_types[..], [])));
     assert!(schema.validate().is_ok());
 }
@@ -134,18 +134,18 @@ fn create_advanced_sample_schema_works_correctly() {
         .unwrap();
     assert_eq!(metadata.type_name, "AdvancedSample");
     assert!(
-        matches!(&metadata.children, Children::NamedFields(field_names) if matches!(field_names[..], [
-            FieldMetadata { field_name: Cow::Borrowed("a") },
-            FieldMetadata { field_name: Cow::Borrowed("b") },
-            FieldMetadata { field_name: Cow::Borrowed("c") },
-            FieldMetadata { field_name: Cow::Borrowed("d") },
-            FieldMetadata { field_name: Cow::Borrowed("e") },
-            FieldMetadata { field_name: Cow::Borrowed("f") },
-            FieldMetadata { field_name: Cow::Borrowed("g") },
-            FieldMetadata { field_name: Cow::Borrowed("h") },
-            FieldMetadata { field_name: Cow::Borrowed("i") },
-            FieldMetadata { field_name: Cow::Borrowed("j") },
-            FieldMetadata { field_name: Cow::Borrowed("k") },
+        matches!(&metadata.child_names, Some(ChildNames::NamedFields(field_names)) if matches!(field_names[..], [
+            Cow::Borrowed("a"),
+            Cow::Borrowed("b"),
+            Cow::Borrowed("c"),
+            Cow::Borrowed("d"),
+            Cow::Borrowed("e"),
+            Cow::Borrowed("f"),
+            Cow::Borrowed("g"),
+            Cow::Borrowed("h"),
+            Cow::Borrowed("i"),
+            Cow::Borrowed("j"),
+            Cow::Borrowed("k")
         ]))
     );
     let TypeKind::Tuple { field_types } =  kind else {

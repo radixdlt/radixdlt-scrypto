@@ -229,7 +229,7 @@ impl KernelCallTrace {
 }
 
 impl ResourceSummary {
-    pub fn new_empty() -> Self {
+    pub fn default() -> Self {
         Self {
             buckets: index_map_new(),
             proofs: index_map_new(),
@@ -330,7 +330,7 @@ impl KernelModule for ExecutionTraceModule {
         api: &mut Y,
         callee: &Option<Actor>,
         update: &mut CallFrameUpdate,
-        _args: &ScryptoValue,
+        _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         let current_actor = api.kernel_get_current_actor();
         let resource_summary = ResourceSummary::from_call_frame_update(api, update);
@@ -382,7 +382,7 @@ impl ExecutionTraceModule {
             let instruction_index = self.instruction_index();
 
             let traced_input = (
-                ResourceSummary::new_empty(),
+                ResourceSummary::default(),
                 KernelCallOrigin::CreateNode,
                 instruction_index,
             );
@@ -437,7 +437,7 @@ impl ExecutionTraceModule {
             return;
         }
 
-        let traced_output = ResourceSummary::new_empty();
+        let traced_output = ResourceSummary::default();
 
         let current_actor = current_actor
             .clone()

@@ -24,7 +24,7 @@ fn transaction_limit_call_frame_memory_exceeded() {
         single_function_package_schema("Test", "f"),
         BTreeMap::new(),
         BTreeMap::new(),
-        AccessRules::new(),
+        AccessRulesConfig::new(),
     );
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
@@ -186,7 +186,7 @@ fn transaction_limit_exceeded_invoke_input_size_should_fail() {
             PackageSchema::default(),
             BTreeMap::new(),
             BTreeMap::new(),
-            AccessRules::new(),
+            AccessRulesConfig::new(),
         )
         .build();
 
@@ -196,7 +196,7 @@ fn transaction_limit_exceeded_invoke_input_size_should_fail() {
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::ModuleError(ModuleError::TransactionLimitsError(
             TransactionLimitsError::MaxInvokePayloadSizeExceeded(x),
-        )) => *x == DEFAULT_MAX_INVOKE_INPUT_SIZE + 140,
+        )) => *x == DEFAULT_MAX_INVOKE_INPUT_SIZE + 144,
         _ => false,
     })
 }

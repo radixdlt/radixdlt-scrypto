@@ -9,10 +9,8 @@ use crate::blueprints::transaction_runtime::TransactionRuntimeNativePackage;
 use crate::errors::{InterpreterError, RuntimeError};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::{
-    ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, KernelWasmApi,
-    TemporaryResolvedInvocation,
-};
+use crate::kernel::executor::*;
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, KernelWasmApi};
 use crate::system::node_modules::access_rules::{AccessRulesNativePackage, AuthZoneNativePackage};
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
@@ -37,7 +35,7 @@ fn validate_input(
     blueprint_schema: &BlueprintSchema,
     fn_ident: &str,
     with_receiver: bool,
-    input: &ScryptoValue,
+    input: &IndexedScryptoValue,
 ) -> Result<String, RuntimeError> {
     let function_schema =
         blueprint_schema
@@ -53,14 +51,16 @@ fn validate_input(
         ));
     }
 
-    let bytes = scrypto_encode(input).expect("Failed to encode ScryptoValue");
-
-    validate_payload_against_schema(&bytes, &blueprint_schema.schema, function_schema.input)
-        .map_err(|_| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputSchemaNotMatch(
-                fn_ident.to_string(),
-            ))
-        })?;
+    validate_payload_against_schema(
+        input.as_slice(),
+        &blueprint_schema.schema,
+        function_schema.input,
+    )
+    .map_err(|_| {
+        RuntimeError::InterpreterError(InterpreterError::ScryptoInputSchemaNotMatch(
+            fn_ident.to_string(),
+        ))
+    })?;
 
     Ok(function_schema.export_name.clone())
 }
@@ -99,13 +99,13 @@ impl ExecutableInvocation for MethodInvocation {
     fn resolve<D: KernelSubstateApi>(
         self,
         api: &mut D,
-    ) -> Result<TemporaryResolvedInvocation<Self::Exec>, RuntimeError> {
-        let (_, value, nodes_to_move, mut node_refs_to_copy) =
-            IndexedScryptoValue::from_slice(&self.args)
-                .map_err(|e| {
-                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-                })?
-                .unpack();
+    ) -> Result<ResolvedInvocation<Self::Exec>, RuntimeError> {
+        let value = IndexedScryptoValue::from_vec(self.args).map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
+        let nodes_to_move = value.owned_node_ids().clone();
+        let mut node_refs_to_copy = value.global_references().clone();
+
         // Pass the component ref
         node_refs_to_copy.insert(self.identifier.0);
 
@@ -182,7 +182,7 @@ impl ExecutableInvocation for MethodInvocation {
             receiver: Some(self.identifier),
         };
 
-        let resolved = TemporaryResolvedInvocation {
+        let resolved = ResolvedInvocation {
             resolved_actor: actor,
             update: CallFrameUpdate {
                 nodes_to_move,
@@ -206,13 +206,12 @@ impl ExecutableInvocation for FunctionInvocation {
     fn resolve<D: KernelSubstateApi>(
         self,
         api: &mut D,
-    ) -> Result<TemporaryResolvedInvocation<Self::Exec>, RuntimeError> {
-        let (_, value, nodes_to_move, mut node_refs_to_copy) =
-            IndexedScryptoValue::from_slice(&self.args)
-                .map_err(|e| {
-                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-                })?
-                .unpack();
+    ) -> Result<ResolvedInvocation<Self::Exec>, RuntimeError> {
+        let value = IndexedScryptoValue::from_vec(self.args).map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
+        let nodes_to_move = value.owned_node_ids().clone();
+        let mut node_refs_to_copy = value.global_references().clone();
 
         let actor = Actor::function(self.fn_identifier.clone());
 
@@ -252,7 +251,7 @@ impl ExecutableInvocation for FunctionInvocation {
             ));
         }
 
-        let resolved = TemporaryResolvedInvocation {
+        let resolved = ResolvedInvocation {
             resolved_actor: actor,
             update: CallFrameUpdate {
                 nodes_to_move,
@@ -279,13 +278,13 @@ pub struct ScryptoExecutor {
 }
 
 impl Executor for ScryptoExecutor {
-    type Output = ScryptoValue;
+    type Output = IndexedScryptoValue;
 
     fn execute<Y, W>(
         self,
-        args: ScryptoValue,
+        args: IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<(ScryptoValue, CallFrameUpdate), RuntimeError>
+    ) -> Result<(IndexedScryptoValue, CallFrameUpdate), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + ClientApi<RuntimeError>,
         W: WasmEngine,
@@ -313,6 +312,39 @@ impl Executor for ScryptoExecutor {
             )?;
             api.kernel_drop_lock(handle)?;
 
+            // Load schema
+            let schema = {
+                let handle = api.kernel_lock_substate(
+                    RENodeId::GlobalObject(self.fn_identifier.package_address.into()),
+                    NodeModuleId::SELF,
+                    SubstateOffset::Package(PackageOffset::Info),
+                    LockFlags::read_only(),
+                )?;
+                let package_info: &PackageInfoSubstate = api.kernel_get_substate_ref(handle)?;
+                let schema = package_info
+                    .schema
+                    .blueprints
+                    .get(&self.fn_identifier.blueprint_name)
+                    .ok_or(RuntimeError::InterpreterError(
+                        InterpreterError::ScryptoBlueprintNotFound(
+                            self.fn_identifier.package_address,
+                            self.fn_identifier.blueprint_name.clone(),
+                        ),
+                    ))?
+                    .clone();
+                api.kernel_drop_lock(handle)?;
+                schema
+            };
+
+            //  Validate input
+            let export_name = validate_input(
+                &schema,
+                &self.fn_identifier.ident,
+                self.receiver.is_some(),
+                &args,
+            )?;
+
+            // Interpret
             let code_type = {
                 let handle = api.kernel_lock_substate(
                     RENodeId::GlobalObject(self.fn_identifier.package_address.into()),
@@ -325,7 +357,6 @@ impl Executor for ScryptoExecutor {
                 api.kernel_drop_lock(handle)?;
                 code_type
             };
-
             let output = match code_type {
                 PackageCodeTypeSubstate::Native => {
                     let handle = api.kernel_lock_substate(
@@ -338,11 +369,6 @@ impl Executor for ScryptoExecutor {
                     let native_package_code_id = code.code[0];
                     api.kernel_drop_lock(handle)?;
 
-                    // TODO: Clean this up
-                    // Do we need to check against the abi? Probably not since we should be able to verify this
-                    // in the native package itself.
-                    let export_name = self.fn_identifier.ident.to_string();
-
                     NativeVm::invoke_native_package(
                         native_package_code_id,
                         self.receiver,
@@ -350,40 +376,10 @@ impl Executor for ScryptoExecutor {
                         args,
                         api,
                     )?
+                    .into()
                 }
                 PackageCodeTypeSubstate::Wasm => {
-                    let schema = {
-                        let handle = api.kernel_lock_substate(
-                            RENodeId::GlobalObject(self.fn_identifier.package_address.into()),
-                            NodeModuleId::SELF,
-                            SubstateOffset::Package(PackageOffset::Info),
-                            LockFlags::read_only(),
-                        )?;
-                        let package_info: &PackageInfoSubstate =
-                            api.kernel_get_substate_ref(handle)?;
-                        let schema = package_info
-                            .schema
-                            .blueprints
-                            .get(&self.fn_identifier.blueprint_name)
-                            .ok_or(RuntimeError::InterpreterError(
-                                InterpreterError::ScryptoBlueprintNotFound(
-                                    self.fn_identifier.package_address,
-                                    self.fn_identifier.blueprint_name.clone(),
-                                ),
-                            ))?
-                            .clone();
-                        api.kernel_drop_lock(handle)?;
-                        schema
-                    };
-
-                    let export_name = validate_input(
-                        &schema,
-                        &self.fn_identifier.ident,
-                        self.receiver.is_some(),
-                        &args,
-                    )?;
-
-                    let mut instance = {
+                    let mut wasm_instance = {
                         let handle = api.kernel_lock_substate(
                             RENodeId::GlobalObject(self.fn_identifier.package_address.into()),
                             NodeModuleId::SELF,
@@ -415,31 +411,29 @@ impl Executor for ScryptoExecutor {
                         }
                         input.push(
                             runtime
-                                .allocate_buffer(
-                                    scrypto_encode(&args).expect("Failed to encode args"),
-                                )
+                                .allocate_buffer(args.into())
                                 .expect("Failed to allocate buffer"),
                         );
 
-                        instance.invoke_export(&export_name, input, &mut runtime)?
+                        wasm_instance.invoke_export(&export_name, input, &mut runtime)?
                     };
 
-                    api.update_wasm_memory_usage(instance.consumed_memory()?)?;
+                    api.update_wasm_memory_usage(wasm_instance.consumed_memory()?)?;
 
-                    validate_output(&schema, &self.fn_identifier.ident, output)?
+                    output
                 }
             };
 
-            output
+            // Validate output
+            validate_output(&schema, &self.fn_identifier.ident, output)?
         };
 
-        let (_, value, nodes_to_move, refs_to_copy) = output.unpack();
         let update = CallFrameUpdate {
-            node_refs_to_copy: refs_to_copy,
-            nodes_to_move,
+            node_refs_to_copy: output.global_references().clone(),
+            nodes_to_move: output.owned_node_ids().clone(),
         };
 
-        Ok((value, update))
+        Ok((output, update))
     }
 }
 
@@ -450,7 +444,7 @@ impl NativeVm {
         native_package_code_id: u8,
         receiver: Option<MethodIdentifier>,
         export_name: &str,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where

@@ -50,12 +50,6 @@ pub struct Location<'t, C: CustomTraversal> {
     pub ancestor_path: &'t [ContainerState<C>],
 }
 
-impl<'t, C: CustomTraversal> Location<'t, C> {
-    pub fn child_value_depth(&self) -> usize {
-        self.ancestor_path.len() + 1
-    }
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ContainerHeader<C: CustomTraversal> {
     Tuple(TupleHeader),

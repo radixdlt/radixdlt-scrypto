@@ -376,6 +376,8 @@ impl WasmModule {
                                         ValueType::I32,
                                         ValueType::I32,
                                         ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
                                     ],
                                     vec![ValueType::I64],
                                 ) {
@@ -936,7 +938,7 @@ mod tests {
                     type_metadata: vec![],
                     type_validations: vec![],
                 },
-                substates: btreemap!(),
+                substates: vec![LocalTypeIndex::WellKnown(UNIT_ID)],
                 functions: btreemap!(
                     "f".to_string() => FunctionSchema {
                         receiver: Option::None,

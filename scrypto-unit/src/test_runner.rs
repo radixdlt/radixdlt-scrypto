@@ -14,7 +14,6 @@ use radix_engine::kernel::track::Track;
 use radix_engine::ledger::*;
 use radix_engine::system::kernel_modules::costing::FeeTable;
 use radix_engine::system::kernel_modules::costing::SystemLoanFeeReserve;
-use radix_engine::system::node_modules::metadata::MetadataSubstate;
 use radix_engine::system::package::*;
 use radix_engine::transaction::{
     execute_preview, execute_transaction, ExecutionConfig, FeeReserveConfig, PreviewError,
@@ -22,7 +21,14 @@ use radix_engine::transaction::{
 };
 use radix_engine::types::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
-use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
+use radix_engine_interface::api::node_modules::auth::{
+    AuthAddresses, ACCESS_RULES_BLUEPRINT, FUNCTION_ACCESS_RULES_BLUEPRINT,
+};
+use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, METADATA_BLUEPRINT};
+use radix_engine_interface::api::node_modules::royalty::{
+    COMPONENT_ROYALTY_BLUEPRINT, PACKAGE_ROYALTY_BLUEPRINT,
+};
 use radix_engine_interface::api::types::{RENodeId, VaultOffset};
 use radix_engine_interface::api::ClientPackageApi;
 use radix_engine_interface::blueprints::clock::{
@@ -44,7 +50,8 @@ use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
 use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
-use sbor::basic_well_known_types::ANY_ID;
+use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
+use scrypto::modules::Mutability::*;
 use scrypto::prelude::*;
 use transaction::builder::ManifestBuilder;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
@@ -226,19 +233,29 @@ impl TestRunner {
         )
     }
 
-    pub fn get_metadata(&mut self, address: Address) -> BTreeMap<String, String> {
-        let metadata = self
+    pub fn get_metadata(&mut self, address: Address, key: &str) -> Option<MetadataEntry> {
+        let metadata_entry = self
             .substate_store
             .get_substate(&SubstateId(
                 address.into(),
                 NodeModuleId::Metadata,
-                SubstateOffset::Metadata(MetadataOffset::Metadata),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                    scrypto_encode(key).unwrap(),
+                )),
             ))
-            .map(|s| s.substate.to_runtime())
-            .unwrap();
+            .map(|s| s.substate.to_runtime())?;
 
-        let metadata: MetadataSubstate = metadata.into();
-        metadata.metadata
+        let metadata_entry: KeyValueStoreEntrySubstate = metadata_entry.into();
+        let metadata_entry = match metadata_entry {
+            KeyValueStoreEntrySubstate::Some(value) => {
+                let value: MetadataEntry =
+                    scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap();
+                Some(value)
+            }
+            KeyValueStoreEntrySubstate::None => None,
+        };
+
+        metadata_entry
     }
 
     pub fn inspect_component_royalty(
@@ -253,7 +270,7 @@ impl TestRunner {
             let royalty_vault: Own = output
                 .substate
                 .component_royalty_accumulator()
-                .royalty
+                .royalty_vault
                 .clone();
 
             self.substate_store
@@ -277,7 +294,8 @@ impl TestRunner {
             let royalty_vault: Own = output
                 .substate
                 .package_royalty_accumulator()
-                .royalty
+                .royalty_vault
+                .expect("FIXME: cleanup royalty vault mess")
                 .clone();
 
             self.substate_store
@@ -533,7 +551,7 @@ impl TestRunner {
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
-        access_rules: AccessRules,
+        access_rules: AccessRulesConfig,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
@@ -568,7 +586,7 @@ impl TestRunner {
             schema,
             BTreeMap::new(),
             BTreeMap::new(),
-            AccessRules::new(),
+            AccessRulesConfig::new(),
         )
     }
 
@@ -1097,6 +1115,97 @@ impl TestRunner {
             scrypto_args!(args),
         )
     }
+
+    pub fn event_schema(
+        &mut self,
+        event_type_identifier: &EventTypeIdentifier,
+    ) -> (LocalTypeIndex, ScryptoSchema) {
+        let (package_address, blueprint_name, event_name) = match event_type_identifier {
+            EventTypeIdentifier(Emitter::Method(node_id, node_module), event_name) => {
+                match node_module {
+                    NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => (
+                        ACCESS_RULES_PACKAGE,
+                        ACCESS_RULES_BLUEPRINT.into(),
+                        event_name.clone(),
+                    ),
+                    NodeModuleId::ComponentRoyalty => (
+                        ROYALTY_PACKAGE,
+                        COMPONENT_ROYALTY_BLUEPRINT.into(),
+                        event_name.clone(),
+                    ),
+                    NodeModuleId::PackageRoyalty => (
+                        ROYALTY_PACKAGE,
+                        PACKAGE_ROYALTY_BLUEPRINT.into(),
+                        event_name.clone(),
+                    ),
+                    NodeModuleId::FunctionAccessRules => (
+                        ACCESS_RULES_PACKAGE,
+                        FUNCTION_ACCESS_RULES_BLUEPRINT.into(),
+                        event_name.clone(),
+                    ),
+                    NodeModuleId::Metadata => (
+                        METADATA_PACKAGE,
+                        METADATA_BLUEPRINT.into(),
+                        event_name.clone(),
+                    ),
+                    NodeModuleId::SELF => {
+                        let type_info = self
+                            .substate_store()
+                            .get_substate(&SubstateId(
+                                *node_id,
+                                NodeModuleId::TypeInfo,
+                                SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+                            ))
+                            .unwrap()
+                            .substate
+                            .type_info()
+                            .clone();
+
+                        (
+                            type_info.package_address,
+                            type_info.blueprint_name,
+                            event_name.clone(),
+                        )
+                    }
+                    NodeModuleId::TypeInfo | NodeModuleId::PackageEventSchema => {
+                        panic!("No event schema.")
+                    }
+                }
+            }
+            EventTypeIdentifier(Emitter::Function(node_id, _, blueprint_name), event_name) => {
+                let RENodeId::GlobalObject(Address::Package(package_address)) = node_id else {
+                    panic!("must be a package address")
+                };
+                (
+                    *package_address,
+                    blueprint_name.to_owned(),
+                    event_name.clone(),
+                )
+            }
+        };
+
+        let substate_id = SubstateId(
+            RENodeId::GlobalObject(Address::Package(package_address)),
+            NodeModuleId::PackageEventSchema,
+            SubstateOffset::PackageEventSchema(PackageEventSchemaOffset::PackageEventSchema),
+        );
+        self.substate_store()
+            .get_substate(&substate_id)
+            .unwrap()
+            .substate
+            .event_schema()
+            .clone()
+            .0
+            .get(&blueprint_name)
+            .unwrap()
+            .get(&event_name)
+            .unwrap()
+            .clone()
+    }
+
+    pub fn event_name(&mut self, event_type_identifier: &EventTypeIdentifier) -> String {
+        event_type_identifier.1.clone()
+    }
 }
 
 pub struct StateHashSupport {
@@ -1197,7 +1306,7 @@ pub fn single_function_package_schema(blueprint_name: &str, function_name: &str)
                 type_metadata: vec![],
                 type_validations: vec![],
             },
-            substates: btreemap!(),
+            substates: vec![LocalTypeIndex::WellKnown(UNIT_ID)],
             functions: btreemap!(
                 function_name.to_string() => FunctionSchema {
                     receiver: Option::None,

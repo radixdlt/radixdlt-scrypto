@@ -94,7 +94,7 @@ impl AuthModule {
 
     fn method_auth<Y: KernelModuleApi<RuntimeError>>(
         identifier: &MethodIdentifier,
-        args: &ScryptoValue,
+        args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<MethodAuthorization, RuntimeError> {
         let auth = match identifier {
@@ -257,11 +257,13 @@ impl AuthModule {
                 .get(&blueprint_ident)
                 .expect("Blueprint schema not found")
                 .clone();
-            let index = schema
-                .substates
-                .get(&0)
-                .expect("Substate schema [offset: 0] not found")
-                .clone();
+            let index = match schema.substates.get(0) {
+                Some(index) => index.clone(),
+                None => {
+                    return Self::method_authorization_contextless(receiver, module_id, key, api);
+                }
+            };
+
             api.kernel_drop_lock(handle)?;
             (schema, index)
         };
@@ -356,7 +358,7 @@ impl KernelModule for AuthModule {
         api: &mut Y,
         next_actor: &Option<Actor>,
         call_frame_update: &mut CallFrameUpdate,
-        args: &ScryptoValue,
+        args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         if matches!(
             next_actor,

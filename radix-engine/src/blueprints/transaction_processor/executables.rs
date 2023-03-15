@@ -3,13 +3,12 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::{
-    ExecutableInvocation, Executor, KernelNodeApi, KernelSubstateApi, TemporaryResolvedInvocation,
-};
-use crate::system::node::{RENodeInit, RENodeModuleInit};
+use crate::kernel::executor::*;
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use crate::system::node::RENodeInit;
+use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::RuntimeSubstate;
-use crate::system::package::PackageError;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
@@ -17,7 +16,9 @@ use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
 };
-use radix_engine_interface::api::node_modules::metadata::{MetadataSetInput, METADATA_SET_IDENT};
+use radix_engine_interface::api::node_modules::metadata::{
+    MetadataRemoveInput, MetadataSetInput, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
+};
 use radix_engine_interface::api::node_modules::royalty::{
     ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput, PackageClaimRoyaltyInput,
     PackageSetRoyaltyConfigInput, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
@@ -59,6 +60,7 @@ pub enum TransactionProcessorError {
     BlobNotFound(Hash),
     IdAllocationError(ManifestIdAllocationError),
     InvalidCallData(DecodeError),
+    InvalidPackageSchema(DecodeError),
 }
 
 pub trait NativeOutput: ScryptoEncode + Debug + Send + Sync {}
@@ -113,8 +115,20 @@ fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFra
             extract_refs_from_value(&value, update);
         }
 
-        Instruction::SetMetadata { entity_address, .. }
-        | Instruction::SetMethodAccessRule { entity_address, .. } => {
+        Instruction::SetMetadata {
+            entity_address,
+            value,
+            ..
+        } => {
+            for reference in IndexedScryptoValue::from_typed(value).global_references() {
+                update.add_ref(*reference);
+            }
+            let address = to_address(entity_address.clone());
+            let node_id = address.into();
+            update.add_ref(node_id);
+        }
+        Instruction::SetMethodAccessRule { entity_address, .. }
+        | Instruction::RemoveMetadata { entity_address, .. } => {
             let address = to_address(entity_address.clone());
             let node_id = address.into();
             update.add_ref(node_id);
@@ -244,7 +258,7 @@ impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
     fn resolve<D: KernelSubstateApi>(
         self,
         _api: &mut D,
-    ) -> Result<TemporaryResolvedInvocation<Self::Exec>, RuntimeError> {
+    ) -> Result<ResolvedInvocation<Self::Exec>, RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
         // TODO: This can be refactored out once any type in sbor is implemented
         let instructions: Vec<Instruction> = manifest_decode(&self.instructions).unwrap();
@@ -264,11 +278,11 @@ impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
             ident: "run".to_string(),
         });
 
-        let resolved = TemporaryResolvedInvocation {
+        let resolved = ResolvedInvocation {
             resolved_actor: actor,
             update: call_frame_update,
             executor: self,
-            args: ScryptoValue::Tuple { fields: vec![] },
+            args: IndexedScryptoValue::unit(),
         };
 
         Ok(resolved)
@@ -284,7 +298,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
     fn execute<Y, W: WasmEngine>(
         self,
-        _args: ScryptoValue,
+        _args: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
@@ -500,8 +514,8 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let code = processor.get_blob(&code)?;
                     let schema = processor.get_blob(&schema)?;
                     let schema = scrypto_decode(schema).map_err(|e| {
-                        RuntimeError::ApplicationError(ApplicationError::PackageError(
-                            PackageError::InvalidSchema(e),
+                        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                            TransactionProcessorError::InvalidPackageSchema(e),
                         ))
                     })?;
 
@@ -517,6 +531,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                             access_rules: access_rules.clone(),
                             royalty_config: royalty_config.clone(),
                             metadata: metadata.clone(),
+                            event_schema: BTreeMap::new(), // TODO: Fix in Part3 of application events
                         })
                         .unwrap(),
                     )?;
@@ -551,7 +566,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 } => {
                     let rtn = api.call_method(
                         RENodeId::GlobalObject(resource_address.into()),
-                        RESOURCE_MANAGER_MINT_FUNGIBLE,
+                        RESOURCE_MANAGER_MINT_FUNGIBLE_IDENT,
                         scrypto_encode(&ResourceManagerMintFungibleInput { amount }).unwrap(),
                     )?;
 
@@ -567,7 +582,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 } => {
                     let rtn = api.call_method(
                         RENodeId::GlobalObject(resource_address.into()),
-                        RESOURCE_MANAGER_MINT_NON_FUNGIBLE,
+                        RESOURCE_MANAGER_MINT_NON_FUNGIBLE_IDENT,
                         scrypto_encode(&ResourceManagerMintNonFungibleInput { entries: entries })
                             .unwrap(),
                     )?;
@@ -584,7 +599,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 } => {
                     let rtn = api.call_method(
                         RENodeId::GlobalObject(resource_address.into()),
-                        RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE,
+                        RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE_IDENT,
                         scrypto_encode(&ResourceManagerMintUuidNonFungibleInput {
                             entries: entries,
                         })
@@ -623,9 +638,31 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         METADATA_SET_IDENT,
                         scrypto_encode(&MetadataSetInput {
                             key: key.clone(),
-                            value: value.clone(),
+                            value: scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap(),
                         })
                         .unwrap(),
+                    )?;
+
+                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result_indexed,
+                        &worktop,
+                        api,
+                    )?;
+
+                    InstructionOutput::CallReturn(result_indexed.into())
+                }
+                Instruction::RemoveMetadata {
+                    entity_address,
+                    key,
+                } => {
+                    let address = to_address(entity_address);
+                    let receiver = address.into();
+                    let result = api.call_module_method(
+                        receiver,
+                        NodeModuleId::Metadata,
+                        METADATA_REMOVE_IDENT,
+                        scrypto_encode(&MetadataRemoveInput { key: key.clone() }).unwrap(),
                     )?;
 
                     let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();

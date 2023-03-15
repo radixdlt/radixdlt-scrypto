@@ -119,7 +119,7 @@ impl KernelModule for CostingModule {
         api: &mut Y,
         callee: &Option<Actor>,
         _nodes_and_refs: &mut CallFrameUpdate,
-        _args: &ScryptoValue,
+        _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         // Identify the function, and optional component address
         let (fn_identifier, optional_component) = match &callee {
@@ -194,8 +194,12 @@ impl KernelModule for CostingModule {
         let package_royalty_accumulator: &PackageRoyaltyAccumulatorSubstate =
             api.kernel_get_substate_ref(handle)?;
         {
-            let royalty_vault = package_royalty_accumulator.royalty.clone();
-            let vault_node_id = RENodeId::Object(royalty_vault.vault_id());
+            let royalty_vault = package_royalty_accumulator.royalty_vault.clone();
+            let vault_node_id = RENodeId::Object(
+                royalty_vault
+                    .expect("FIXME: cleanup royalty vault mess")
+                    .vault_id(),
+            );
             let vault_handle = api.kernel_lock_substate(
                 vault_node_id,
                 NodeModuleId::SELF,
@@ -247,7 +251,7 @@ impl KernelModule for CostingModule {
             {
                 let royalty_accumulator: &ComponentRoyaltyAccumulatorSubstate =
                     api.kernel_get_substate_ref(handle)?;
-                let royalty_vault = royalty_accumulator.royalty.clone();
+                let royalty_vault = royalty_accumulator.royalty_vault.clone();
                 let vault_node_id = RENodeId::Object(royalty_vault.vault_id());
                 let vault_handle = api.kernel_lock_substate(
                     vault_node_id,

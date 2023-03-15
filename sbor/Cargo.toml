@@ -26,3 +26,6 @@ serde = ["dep:serde"]
 
 # Enable tracing
 trace = ["sbor-derive/trace"]
+
+[lib]
+bench = false

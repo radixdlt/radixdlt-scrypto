@@ -5,7 +5,7 @@ use sbor::value_kind::*;
 use super::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ScryptoCustomTerminalValueRef(ScryptoCustomValue);
+pub struct ScryptoCustomTerminalValueRef(pub ScryptoCustomValue);
 
 impl CustomTerminalValueRef for ScryptoCustomTerminalValueRef {
     type CustomValueKind = ScryptoCustomValueKind;

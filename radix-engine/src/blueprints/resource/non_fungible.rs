@@ -1,5 +1,8 @@
 use crate::types::*;
 
+#[derive(Debug, Clone, Sbor, PartialEq, Eq)]
+pub struct NonFungibleSubstate(pub Option<NonFungible>);
+
 /// A non-fungible is a piece of data that is uniquely identified within a resource.
 #[derive(Debug, Clone, Sbor, PartialEq, Eq)]
 pub struct NonFungible {

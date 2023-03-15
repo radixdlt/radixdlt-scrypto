@@ -20,8 +20,8 @@ use crate::transaction::{AbortReason, AbortResult, CommitResult};
 use crate::types::*;
 use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::api::types::Level;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::crypto::hash;
 use sbor::rust::collections::*;
@@ -234,14 +234,11 @@ impl<'s> Track<'s> {
         offset: &SubstateOffset,
     ) -> SubstateRef {
         let runtime_substate = match (node_id, offset) {
-            (
-                RENodeId::KeyValueStore(..),
-                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
-            )
+            (_, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)))
             | (
                 RENodeId::NonFungibleStore(..),
                 SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..)),
-            ) => self.read_key_value(node_id, offset),
+            ) => self.read_key_value(node_id, module_id, offset),
             _ => {
                 let substate_id = SubstateId(node_id, module_id, offset.clone());
                 &self
@@ -261,16 +258,12 @@ impl<'s> Track<'s> {
         offset: &SubstateOffset,
     ) -> SubstateRefMut {
         let runtime_substate = match (node_id, module_id, offset) {
-            (
-                RENodeId::KeyValueStore(..),
-                NodeModuleId::SELF,
-                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
-            )
+            (_, _, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)))
             | (
                 RENodeId::NonFungibleStore(..),
                 NodeModuleId::SELF,
                 SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..)),
-            ) => self.read_key_value_mut(node_id, offset),
+            ) => self.read_key_value_mut(node_id, module_id, offset),
             _ => {
                 let substate_id = SubstateId(node_id, module_id, offset.clone());
                 &mut self
@@ -304,13 +297,18 @@ impl<'s> Track<'s> {
     }
 
     /// Returns the value of a key value pair
-    fn read_key_value(&mut self, node_id: RENodeId, offset: &SubstateOffset) -> &RuntimeSubstate {
+    fn read_key_value(
+        &mut self,
+        node_id: RENodeId,
+        module_id: NodeModuleId,
+        offset: &SubstateOffset,
+    ) -> &RuntimeSubstate {
         match (node_id, offset) {
             (
                 RENodeId::NonFungibleStore(..),
                 SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..)),
             ) => {
-                let substate_id = SubstateId(node_id, NodeModuleId::SELF, offset.clone());
+                let substate_id = SubstateId(node_id, module_id, offset.clone());
                 if !self.loaded_substates.contains_key(&substate_id) {
                     let output = self.load_substate(&substate_id);
                     let (substate, version) = output
@@ -332,11 +330,8 @@ impl<'s> Track<'s> {
 
                 &self.loaded_substates.get(&substate_id).unwrap().substate
             }
-            (
-                RENodeId::KeyValueStore(..),
-                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
-            ) => {
-                let substate_id = SubstateId(node_id, NodeModuleId::SELF, offset.clone());
+            (_, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))) => {
+                let substate_id = SubstateId(node_id, module_id, offset.clone());
                 if !self.loaded_substates.contains_key(&substate_id) {
                     let output = self.load_substate(&substate_id);
                     let (substate, version) = output
@@ -368,6 +363,7 @@ impl<'s> Track<'s> {
     fn read_key_value_mut(
         &mut self,
         node_id: RENodeId,
+        module_id: NodeModuleId,
         offset: &SubstateOffset,
     ) -> &mut RuntimeSubstate {
         match (node_id, offset) {
@@ -375,7 +371,7 @@ impl<'s> Track<'s> {
                 RENodeId::NonFungibleStore(..),
                 SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..)),
             ) => {
-                let substate_id = SubstateId(node_id, NodeModuleId::SELF, offset.clone());
+                let substate_id = SubstateId(node_id, module_id, offset.clone());
                 if !self.loaded_substates.contains_key(&substate_id) {
                     let output = self.load_substate(&substate_id);
                     let (substate, version) = output
@@ -401,11 +397,8 @@ impl<'s> Track<'s> {
                     .unwrap()
                     .substate
             }
-            (
-                RENodeId::KeyValueStore(..),
-                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
-            ) => {
-                let substate_id = SubstateId(node_id, NodeModuleId::SELF, offset.clone());
+            (_, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))) => {
+                let substate_id = SubstateId(node_id, module_id, offset.clone());
                 if !self.loaded_substates.contains_key(&substate_id) {
                     let output = self.load_substate(&substate_id);
                     let (substate, version) = output
@@ -566,7 +559,7 @@ struct FinalizingTrack<'s> {
 
 impl<'s> FinalizingTrack<'s> {
     fn calculate_commit_result(
-        self,
+        mut self,
         invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
         fee_summary: &mut FeeSummary,
         vault_ops: Vec<(TraceActor, ObjectId, VaultOp, usize)>,
@@ -578,19 +571,35 @@ impl<'s> FinalizingTrack<'s> {
         // Commit/rollback application state changes
         let mut to_persist = HashMap::new();
         let next_epoch = {
-            // FIXME: schema - update
-            let expected_schema_hash = hash("EpochChangeEvent");
+            // TODO: Simplify once ScryptoEvent trait is implemented
+            let expected_event_name = {
+                let (local_type_index, schema) = generate_full_schema_from_single_type::<
+                    EpochChangeEvent,
+                    ScryptoCustomTypeExtension,
+                >();
+                (*schema
+                    .resolve_type_metadata(local_type_index)
+                    .expect("Cant fail")
+                    .type_name)
+                    .to_owned()
+            };
             application_events
                 .iter()
                 .find(|(identifier, _)| match identifier {
                     EventTypeIdentifier(
-                        RENodeId::GlobalObject(
-                            Address::Package(EPOCH_MANAGER_PACKAGE)
-                            | Address::Component(ComponentAddress::EpochManager(..)),
+                        Emitter::Function(
+                            RENodeId::GlobalObject(Address::Package(EPOCH_MANAGER_PACKAGE)),
+                            NodeModuleId::SELF,
+                            ..,
+                        )
+                        | Emitter::Method(
+                            RENodeId::GlobalObject(Address::Component(
+                                ComponentAddress::EpochManager(..),
+                            )),
+                            NodeModuleId::SELF,
                         ),
-                        NodeModuleId::SELF,
-                        schema_hash,
-                    ) if *schema_hash == expected_schema_hash => true,
+                        event_name,
+                    ) if *event_name == expected_event_name => true,
                     _ => false,
                 })
                 .map(|(_, data)| {
@@ -605,6 +614,12 @@ impl<'s> FinalizingTrack<'s> {
                     SubstateMetaState::Existing { old_version, .. } => Some(*old_version),
                 };
                 to_persist.insert(id, (loaded.substate.to_persisted(), old_version));
+            }
+
+            // TODO: Is there a better way to include this?
+            if matches!(next_epoch, Some((_, 1))) {
+                self.new_global_addresses
+                    .insert(0, Address::Package(PACKAGE_LOADER));
             }
 
             self.new_global_addresses
@@ -634,7 +649,7 @@ impl<'s> FinalizingTrack<'s> {
         let mut required = fee_summary.total_execution_cost_xrd
             + fee_summary.total_royalty_cost_xrd
             - fee_summary.bad_debt_xrd;
-        let mut fees: LiquidFungibleResource = LiquidFungibleResource::new_empty();
+        let mut fees: LiquidFungibleResource = LiquidFungibleResource::default();
         for (vault_id, mut locked, contingent) in fee_summary.vault_locks.iter().cloned().rev() {
             let amount = if contingent {
                 if is_success {
@@ -683,7 +698,8 @@ impl<'s> FinalizingTrack<'s> {
                     let royalty_vault_id = accumulator_substate
                         .0
                         .package_royalty_accumulator()
-                        .royalty
+                        .royalty_vault
+                        .expect("FIXME: clean up royalty vault mess")
                         .vault_id();
                     let royalty_vault_substate = to_persist
                         .get_mut(&SubstateId(
@@ -711,7 +727,7 @@ impl<'s> FinalizingTrack<'s> {
                     let royalty_vault_id = accumulator_substate
                         .0
                         .component_royalty_accumulator()
-                        .royalty
+                        .royalty_vault
                         .vault_id();
                     let royalty_vault_substate = to_persist
                         .get_mut(&SubstateId(

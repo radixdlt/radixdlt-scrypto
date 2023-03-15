@@ -61,11 +61,11 @@ impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>, E: Describe<C>> Describe<C
         #[allow(unused_imports)]
         use crate::rust::borrow::ToOwned;
         use crate::rust::collections::*;
-        Some(TypeData::named_enum(
+        Some(TypeData::enum_variants(
             "Result",
             btreemap![
-                RESULT_VARIANT_OK => TypeData::named_tuple("Ok", crate::rust::vec![T::TYPE_ID]),
-                RESULT_VARIANT_ERR => TypeData::named_tuple("Err", crate::rust::vec![E::TYPE_ID]),
+                RESULT_VARIANT_OK => TypeData::no_child_names(TypeKind::Tuple {field_types: crate::rust::vec![T::TYPE_ID]}, "Ok"),
+                RESULT_VARIANT_ERR => TypeData::no_child_names(TypeKind::Tuple {field_types: crate::rust::vec![E::TYPE_ID]}, "Err"),
             ],
         ))
     }

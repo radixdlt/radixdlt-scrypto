@@ -15,6 +15,7 @@ utils = { path = "../utils", default-features = false }
 wabt = { version = "0.10.0" }
 criterion = { version = "0.3", features = ["html_reports"] }
 scrypto = { path = "../scrypto", default-features = false }
+sbor-derive = { path = "../sbor-derive", default-features = false }
 scrypto-unit = { path = "../scrypto-unit", default-features = false }
 rand = { version = "0.8.5" }
 rand_chacha = { version = "0.3.1" }

@@ -283,6 +283,7 @@ impl NotarizedTransactionValidator {
                 }
                 Instruction::RecallResource { .. }
                 | Instruction::SetMetadata { .. }
+                | Instruction::RemoveMetadata { .. }
                 | Instruction::SetPackageRoyaltyConfig { .. }
                 | Instruction::SetComponentRoyaltyConfig { .. }
                 | Instruction::ClaimPackageRoyalty { .. }

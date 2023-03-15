@@ -1,23 +1,23 @@
 use super::actor::{Actor, ExecutionMode};
 use super::call_frame::{CallFrame, RENodeVisibilityOrigin};
+use super::executor::{ExecutableInvocation, Executor, ResolvedInvocation};
 use super::heap::{Heap, HeapRENode};
 use super::id_allocator::IdAllocator;
 use super::interpreters::ScryptoInterpreter;
 use super::kernel_api::{
-    ExecutableInvocation, Executor, Invokable, KernelApi, KernelInternalApi, KernelModuleApi,
-    KernelNodeApi, KernelSubstateApi, KernelWasmApi, LockInfo,
+    KernelApi, KernelInternalApi, KernelInvokeApi, KernelModuleApi, KernelNodeApi,
+    KernelSubstateApi, KernelWasmApi, LockInfo,
 };
 use super::module::KernelModule;
 use super::module_mixer::KernelModuleMixer;
 use super::track::{Track, TrackError};
 use crate::blueprints::account::AccountSubstate;
-use crate::blueprints::identity::Identity;
+use crate::blueprints::identity::IdentityBlueprint;
 use crate::blueprints::resource::{
     BucketInfoSubstate, FungibleProof, NonFungibleProof, ProofInfoSubstate,
 };
 use crate::errors::RuntimeError;
 use crate::errors::*;
-use crate::kernel::kernel_api::TemporaryResolvedInvocation;
 use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
@@ -169,7 +169,7 @@ where
         };
 
         let access_rules = {
-            let mut access_rules = AccessRules::new();
+            let mut access_rules = AccessRulesConfig::new();
             access_rules.set_access_rule_and_mutability(
                 MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_IDENT.to_string()),
                 AccessRule::AllowAll,
@@ -215,7 +215,7 @@ where
         );
 
         let access_rule = rule!(require(non_fungible_global_id));
-        let (local_id, access_rules) = Identity::create_virtual(access_rule, self)?;
+        let (local_id, access_rules) = IdentityBlueprint::create_virtual(access_rule, self)?;
 
         let access_rules = AccessRulesObject::sys_new(access_rules, self)?;
         let metadata = Metadata::sys_create(self)?;
@@ -340,7 +340,7 @@ where
 
     fn run<X: Executor>(
         &mut self,
-        resolved: TemporaryResolvedInvocation<X>,
+        resolved: ResolvedInvocation<X>,
     ) -> Result<X::Output, RuntimeError> {
         let executor = resolved.executor;
         let actor = resolved.resolved_actor;
@@ -441,7 +441,7 @@ where
 
     fn invoke_internal<X: Executor>(
         &mut self,
-        resolved: TemporaryResolvedInvocation<X>,
+        resolved: ResolvedInvocation<X>,
     ) -> Result<X::Output, RuntimeError> {
         let depth = self.current_frame.depth;
         // TODO: Move to higher layer
@@ -689,7 +689,7 @@ where
             (RENodeId::GlobalObject(Address::Package(..)), RENodeInit::GlobalPackage(..)) => {}
             (RENodeId::Object(..), RENodeInit::Object(..)) => {}
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
-            (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore(..)) => {}
+            (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore) => {}
             (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {}
             (RENodeId::TransactionRuntime, RENodeInit::TransactionRuntime(..)) => {}
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id))),
@@ -1065,7 +1065,7 @@ where
     }
 }
 
-impl<'g, 's, W, N> Invokable<N, RuntimeError> for Kernel<'g, 's, W>
+impl<'g, 's, W, N> KernelInvokeApi<N, RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
     N: ExecutableInvocation,

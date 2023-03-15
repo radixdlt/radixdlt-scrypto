@@ -10,7 +10,7 @@ mod auth_component {
         pub fn create_component(some_non_fungible: NonFungibleGlobalId) -> ComponentAddress {
             let component = Self { some_non_fungible }.instantiate();
             component.globalize_with_access_rules(
-                AccessRules::new()
+                AccessRulesConfig::new()
                     .method(
                         "get_secret",
                         rule!(require("some_non_fungible")),

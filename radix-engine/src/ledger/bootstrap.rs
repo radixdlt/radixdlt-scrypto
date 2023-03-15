@@ -1,30 +1,40 @@
+use crate::blueprints::access_controller::*;
 use crate::blueprints::account::AccountNativePackage;
+use crate::blueprints::auth_zone::AuthZoneNativePackage;
 use crate::blueprints::clock::ClockNativePackage;
-use crate::blueprints::epoch_manager::EpochManagerNativePackage;
+use crate::blueprints::epoch_manager::{
+    ClaimXrdEvent, EpochChangeEvent, EpochManagerNativePackage, RegisterValidatorEvent,
+    RoundChangeEvent, StakeEvent, UnregisterValidatorEvent, UnstakeEvent,
+    UpdateAcceptingStakeDelegationStateEvent,
+};
+use crate::blueprints::identity::IdentityNativePackage;
+use crate::blueprints::resource::*;
+use crate::blueprints::transaction_runtime::TransactionRuntimeNativePackage;
 use crate::kernel::interpreters::ScryptoInterpreter;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
-use crate::system::node_modules::access_rules::AccessRulesNativePackage;
-use crate::system::node_modules::metadata::MetadataNativePackage;
+use crate::system::node_modules::access_rules::{
+    AccessRulesNativePackage, SetMutabilityEvent, SetRuleEvent,
+};
+use crate::system::node_modules::metadata::{MetadataNativePackage, SetMetadataEvent};
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::transaction::{
     execute_transaction, ExecutionConfig, FeeReserveConfig, TransactionReceipt,
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_interface::api::node_modules::auth::{AuthAddresses, ACCESS_RULES_BLUEPRINT};
+use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
 use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::package::{
     PackageLoaderPublishNativeInput, PackageLoaderPublishWasmInput,
 };
+use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLUEPRINT;
 use radix_engine_interface::blueprints::clock::{
     ClockCreateInput, CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT,
 };
-use radix_engine_interface::blueprints::epoch_manager::{
-    ManifestValidatorInit, EPOCH_MANAGER_BLUEPRINT, EPOCH_MANAGER_CREATE_IDENT,
-};
+use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
-use radix_engine_interface::schema::PackageSchema;
 use transaction::model::{Instruction, SystemTransaction};
 use transaction::validation::ManifestIdAllocator;
 
@@ -52,10 +62,6 @@ pub fn create_genesis(
     let mut instructions = Vec::new();
     let mut pre_allocated_ids = BTreeSet::new();
 
-    // FIXME: schema - add schema for native packages
-    // Dev tools, mainly resim, use schema to construct call arguments from string.
-    // They should be able to do so for native blueprints.
-
     // Metadata Package
     {
         pre_allocated_ids.insert(RENodeId::GlobalObject(METADATA_PACKAGE.into()));
@@ -67,13 +73,21 @@ pub fn create_genesis(
             args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: METADATA_CODE_ID,
-                schema: PackageSchema::default(),
+                schema: MetadataNativePackage::schema(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
-                access_rules: AccessRules::new(),
+                access_rules: AccessRulesConfig::new(),
                 package_access_rules: MetadataNativePackage::function_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
+                event_schema: BTreeMap::from([(
+                    METADATA_BLUEPRINT.into(),
+                    [generate_full_schema_from_single_type::<
+                        SetMetadataEvent,
+                        ScryptoCustomTypeExtension,
+                    >()]
+                    .into(),
+                )]),
             })
             .unwrap(),
         });
@@ -91,13 +105,14 @@ pub fn create_genesis(
             args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: ROYALTY_CODE_ID,
-                schema: PackageSchema::default(),
+                schema: RoyaltyNativePackage::schema(),
                 dependent_resources: vec![RADIX_TOKEN],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
-                access_rules: AccessRules::new(),
+                access_rules: AccessRulesConfig::new(),
                 package_access_rules: RoyaltyNativePackage::function_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
+                event_schema: BTreeMap::new(), // TODO: Royalty application events
             })
             .unwrap(),
         });
@@ -114,13 +129,27 @@ pub fn create_genesis(
             args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: ACCESS_RULES_CODE_ID,
-                schema: PackageSchema::default(),
+                schema: AccessRulesNativePackage::schema(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
-                access_rules: AccessRules::new(),
+                access_rules: AccessRulesConfig::new(),
                 package_access_rules: AccessRulesNativePackage::function_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
+                event_schema: BTreeMap::from([(
+                    ACCESS_RULES_BLUEPRINT.into(),
+                    [
+                        generate_full_schema_from_single_type::<
+                            SetRuleEvent,
+                            ScryptoCustomTypeExtension,
+                        >(),
+                        generate_full_schema_from_single_type::<
+                            SetMutabilityEvent,
+                            ScryptoCustomTypeExtension,
+                        >(),
+                    ]
+                    .into(),
+                )]),
             })
             .unwrap(),
         });
@@ -137,13 +166,55 @@ pub fn create_genesis(
             args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: RESOURCE_MANAGER_PACKAGE_CODE_ID,
-                schema: PackageSchema::default(),
+                schema: ResourceManagerNativePackage::schema(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
-                access_rules: AccessRules::new(),
+                access_rules: AccessRulesConfig::new(),
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
+                event_schema: BTreeMap::from([
+                    (
+                        RESOURCE_MANAGER_BLUEPRINT.into(),
+                        [
+                            generate_full_schema_from_single_type::<
+                                VaultCreationEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                            generate_full_schema_from_single_type::<
+                                MintResourceEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                            generate_full_schema_from_single_type::<
+                                BurnResourceEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                        ]
+                        .into(),
+                    ),
+                    (
+                        VAULT_BLUEPRINT.into(),
+                        [
+                            generate_full_schema_from_single_type::<
+                                LockFeeEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                            generate_full_schema_from_single_type::<
+                                WithdrawResourceEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                            generate_full_schema_from_single_type::<
+                                DepositResourceEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                            generate_full_schema_from_single_type::<
+                                RecallResourceEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                        ]
+                        .into(),
+                    ),
+                ]),
             })
             .unwrap(),
         });
@@ -211,14 +282,15 @@ pub fn create_genesis(
             function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                schema: PackageSchema::default(),
+                schema: IdentityNativePackage::schema(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
                 native_package_code_id: IDENTITY_PACKAGE_CODE_ID,
                 metadata: BTreeMap::new(),
-                access_rules: AccessRules::new(),
+                access_rules: AccessRulesConfig::new(),
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
+                event_schema: BTreeMap::new(),
             })
             .unwrap(),
         });
@@ -234,14 +306,60 @@ pub fn create_genesis(
             function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                schema: PackageSchema::default(),
+                schema: EpochManagerNativePackage::schema(),
                 native_package_code_id: EPOCH_MANAGER_PACKAGE_CODE_ID,
                 metadata: BTreeMap::new(),
-                access_rules: AccessRules::new(),
+                access_rules: AccessRulesConfig::new(),
                 dependent_resources: vec![RADIX_TOKEN, PACKAGE_TOKEN, SYSTEM_TOKEN],
                 dependent_components: vec![],
                 package_access_rules: EpochManagerNativePackage::package_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
+                event_schema: BTreeMap::from([
+                    (
+                        EPOCH_MANAGER_BLUEPRINT.into(),
+                        [
+                            generate_full_schema_from_single_type::<
+                                RoundChangeEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                            generate_full_schema_from_single_type::<
+                                EpochChangeEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                        ]
+                        .into(),
+                    ),
+                    (
+                        VALIDATOR_BLUEPRINT.into(),
+                        [
+                            generate_full_schema_from_single_type::<
+                                RegisterValidatorEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                            generate_full_schema_from_single_type::<
+                                UnregisterValidatorEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                            generate_full_schema_from_single_type::<
+                                StakeEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                            generate_full_schema_from_single_type::<
+                                UnstakeEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                            generate_full_schema_from_single_type::<
+                                ClaimXrdEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                            generate_full_schema_from_single_type::<
+                                UpdateAcceptingStakeDelegationStateEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                        ]
+                        .into(),
+                    ),
+                ]),
             })
             .unwrap(),
         });
@@ -257,14 +375,15 @@ pub fn create_genesis(
             function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                schema: PackageSchema::default(),
+                schema: ClockNativePackage::schema(),
                 native_package_code_id: CLOCK_PACKAGE_CODE_ID,
                 metadata: BTreeMap::new(),
-                access_rules: AccessRules::new(),
+                access_rules: AccessRulesConfig::new(),
                 dependent_resources: vec![SYSTEM_TOKEN],
                 dependent_components: vec![],
                 package_access_rules: ClockNativePackage::package_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
+                event_schema: BTreeMap::new(),
             })
             .unwrap(),
         });
@@ -283,11 +402,12 @@ pub fn create_genesis(
                 schema: AccountNativePackage::schema(),
                 native_package_code_id: ACCOUNT_PACKAGE_CODE_ID,
                 metadata: BTreeMap::new(),
-                access_rules: AccessRules::new(),
+                access_rules: AccessRulesConfig::new(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
+                event_schema: BTreeMap::new(), // TODO: Account events
             })
             .unwrap(),
         });
@@ -303,14 +423,44 @@ pub fn create_genesis(
             function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                schema: PackageSchema::default(),
+                schema: AccessControllerNativePackage::schema(),
                 metadata: BTreeMap::new(),
-                access_rules: AccessRules::new(),
+                access_rules: AccessRulesConfig::new(),
                 native_package_code_id: ACCESS_CONTROLLER_PACKAGE_CODE_ID,
                 dependent_resources: vec![PACKAGE_TOKEN],
                 dependent_components: vec![CLOCK],
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
+                event_schema: BTreeMap::from([(
+                    ACCESS_CONTROLLER_BLUEPRINT.into(),
+                    [
+                        generate_full_schema_from_single_type::<
+                            InitiateRecoveryEvent,
+                            ScryptoCustomTypeExtension,
+                        >(),
+                        generate_full_schema_from_single_type::<
+                            RuleSetUpdateEvent,
+                            ScryptoCustomTypeExtension,
+                        >(),
+                        generate_full_schema_from_single_type::<
+                            CancelRecoveryProposalEvent,
+                            ScryptoCustomTypeExtension,
+                        >(),
+                        generate_full_schema_from_single_type::<
+                            LockPrimaryRoleEvent,
+                            ScryptoCustomTypeExtension,
+                        >(),
+                        generate_full_schema_from_single_type::<
+                            UnlockPrimaryRoleEvent,
+                            ScryptoCustomTypeExtension,
+                        >(),
+                        generate_full_schema_from_single_type::<
+                            StopTimedRecoveryEvent,
+                            ScryptoCustomTypeExtension,
+                        >(),
+                    ]
+                    .into(),
+                )]),
             })
             .unwrap(),
         });
@@ -326,14 +476,15 @@ pub fn create_genesis(
             function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                schema: PackageSchema::default(),
+                schema: TransactionRuntimeNativePackage::schema(),
                 metadata: BTreeMap::new(),
-                access_rules: AccessRules::new(),
+                access_rules: AccessRulesConfig::new(),
                 native_package_code_id: TRANSACTION_RUNTIME_CODE_ID,
                 dependent_resources: vec![],
                 dependent_components: vec![],
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::DenyAll,
+                event_schema: BTreeMap::new(),
             })
             .unwrap(),
         });
@@ -349,14 +500,15 @@ pub fn create_genesis(
             function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                schema: PackageSchema::default(),
+                schema: AuthZoneNativePackage::schema(),
                 metadata: BTreeMap::new(),
-                access_rules: AccessRules::new(),
+                access_rules: AccessRulesConfig::new(),
                 native_package_code_id: AUTH_ZONE_CODE_ID,
                 dependent_resources: vec![],
                 dependent_components: vec![],
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::DenyAll,
+                event_schema: BTreeMap::new(),
             })
             .unwrap(),
         });
@@ -383,7 +535,6 @@ pub fn create_genesis(
         });
     }
 
-    // TODO: Perhaps combine with ecdsa token?
     // EDDSA ED25519 Token
     {
         let metadata: BTreeMap<String, String> = BTreeMap::new();
@@ -405,7 +556,6 @@ pub fn create_genesis(
         });
     }
 
-    // TODO: Perhaps combine with ecdsa token?
     // System Token
     {
         let metadata: BTreeMap<String, String> = BTreeMap::new();
@@ -438,11 +588,13 @@ pub fn create_genesis(
             function_name: PACKAGE_LOADER_PUBLISH_WASM_IDENT.to_string(),
             args: manifest_encode(&PackageLoaderPublishWasmInput {
                 package_address: Some(package_address),
-                code: faucet_code, // TODO: Use blob here instead?
+                code: faucet_code,
                 schema: scrypto_decode(&faucet_abi).unwrap(),
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
-                access_rules: AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll),
+                access_rules: AccessRulesConfig::new()
+                    .default(AccessRule::DenyAll, AccessRule::DenyAll),
+                event_schema: BTreeMap::new(),
             })
             .unwrap(),
         });
@@ -658,6 +810,12 @@ mod tests {
             .as_ref()
             .expect("There should be a new epoch.");
 
+        assert!(transaction_receipt
+            .result
+            .expect_commit()
+            .entity_changes
+            .new_package_addresses
+            .contains(&PACKAGE_LOADER));
         let genesis_receipt = genesis_result(&transaction_receipt);
         assert_eq!(genesis_receipt.faucet_component, FAUCET_COMPONENT);
     }
@@ -684,6 +842,7 @@ mod tests {
             &genesis_transaction.get_executable(vec![AuthAddresses::system_role()]),
         );
 
+        transaction_receipt.expect_commit_success();
         let commit_result = transaction_receipt.result.expect_commit();
         commit_result.state_updates.commit(&mut substate_store);
 

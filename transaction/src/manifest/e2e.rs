@@ -105,7 +105,7 @@ CALL_METHOD
             vec![],
             r##"
 RECALL_RESOURCE
-    Bytes("49cd9235ba62b2c217e32e5b4754c08219ef16389761356eaccbf6f6bdbfa44d00000000")
+    Bytes("62b2c217e32e5b4754c08219ef16389761356eaccbf6f6bdbfa44d00000000")
     Decimal("1.2");
 "##,
         );
@@ -247,15 +247,24 @@ CLAIM_COMPONENT_ROYALTY
 SET_METADATA
     Address("package_sim1qy4hrp8a9apxldp5cazvxgwdj80cxad4u8cpkaqqnhlsa3lfpe")
     "k"
-    "v";
+    Enum(0u8, Enum(0u8, "v"));
 SET_METADATA
     Address("component_sim1qg2jwzl3hxnkqye8tfj5v3p2wp7cv9xdcjv4nl63refs785pvt")
     "k"
-    "v";
+    Enum(0u8, Enum(0u8, "v"));
 SET_METADATA
     Address("resource_sim1qq8cays25704xdyap2vhgmshkkfyr023uxdtk59ddd4qs8cr5v")
     "k"
-    "v";
+    Enum(0u8, Enum(0u8, "v"));
+REMOVE_METADATA
+    Address("package_sim1qy4hrp8a9apxldp5cazvxgwdj80cxad4u8cpkaqqnhlsa3lfpe")
+    "k";
+REMOVE_METADATA
+    Address("component_sim1qg2jwzl3hxnkqye8tfj5v3p2wp7cv9xdcjv4nl63refs785pvt")
+    "k";
+REMOVE_METADATA
+    Address("resource_sim1qq8cays25704xdyap2vhgmshkkfyr023uxdtk59ddd4qs8cr5v")
+    "k";
 "##,
         );
     }

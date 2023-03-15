@@ -10,7 +10,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::AccessRule;
-use radix_engine_interface::blueprints::resource::AccessRules;
+use radix_engine_interface::blueprints::resource::AccessRulesConfig;
 use radix_engine_interface::blueprints::resource::MethodKey;
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver};
 
@@ -46,11 +46,8 @@ impl AccountNativePackage {
     pub fn schema() -> PackageSchema {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-        let mut substates = BTreeMap::new();
-        substates.insert(
-            0,
-            aggregator.add_child_type_and_descendents::<AccountSubstate>(),
-        );
+        let mut substates = Vec::new();
+        substates.push(aggregator.add_child_type_and_descendents::<AccountSubstate>());
 
         let mut functions = BTreeMap::new();
         functions.insert(
@@ -77,8 +74,8 @@ impl AccountNativePackage {
             ACCOUNT_LOCK_FEE_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(Receiver::SelfRef),
-                input: aggregator.add_child_type_and_descendents::<AccountCreateGlobalInput>(),
-                output: aggregator.add_child_type_and_descendents::<AccountCreateGlobalOutput>(),
+                input: aggregator.add_child_type_and_descendents::<AccountLockFeeInput>(),
+                output: aggregator.add_child_type_and_descendents::<AccountLockFeeOutput>(),
                 export_name: ACCOUNT_LOCK_FEE_IDENT.to_string(),
             },
         );
@@ -177,7 +174,8 @@ impl AccountNativePackage {
                 receiver: Some(Receiver::SelfRef),
                 input: aggregator
                     .add_child_type_and_descendents::<AccountCreateProofByAmountInput>(),
-                output: aggregator.add_child_type_and_descendents::<AccountCreateGlobalOutput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccountCreateProofByAmountOutput>(),
                 export_name: ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
             },
         );
@@ -208,7 +206,7 @@ impl AccountNativePackage {
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<RENodeId>,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
@@ -330,17 +328,15 @@ impl AccountNativePackage {
     }
 
     fn create_global<Y>(
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
-        let input: AccountCreateGlobalInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: AccountCreateGlobalInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         // Creating the key-value-store where the vaults will be held. This is a KVStore of
         // [`ResourceAddress`] and [`Own`]ed vaults.
@@ -378,17 +374,15 @@ impl AccountNativePackage {
     }
 
     fn create_local<Y>(
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
-        let _input: AccountCreateLocalInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let _input: AccountCreateLocalInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         // Creating the key-value-store where the vaults will be held. This is a KVStore of
         // [`ResourceAddress`] and [`Own`]ed vaults.
@@ -447,7 +441,7 @@ impl AccountNativePackage {
                 api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
 
             match entry {
-                KeyValueStoreEntrySubstate::Some(_, value) => {
+                KeyValueStoreEntrySubstate::Some(value) => {
                     Ok(scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
                         .map(|own| Vault(own.vault_id()))
                         .expect("Impossible Case!"))
@@ -474,17 +468,15 @@ impl AccountNativePackage {
 
     fn lock_fee<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
-        let input: AccountLockFeeInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: AccountLockFeeInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         Self::lock_fee_internal(receiver, input.amount, false, api)?;
 
@@ -493,17 +485,15 @@ impl AccountNativePackage {
 
     fn lock_contingent_fee<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
-        let input: AccountLockContingentFeeInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: AccountLockContingentFeeInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         Self::lock_fee_internal(receiver, input.amount, true, api)?;
 
@@ -512,17 +502,15 @@ impl AccountNativePackage {
 
     fn deposit<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
-        let input: AccountDepositInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: AccountDepositInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let resource_address = input.bucket.sys_resource_address(api)?;
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
@@ -551,21 +539,18 @@ impl AccountNativePackage {
                 api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
 
             match entry {
-                KeyValueStoreEntrySubstate::Some(_, value) => {
+                KeyValueStoreEntrySubstate::Some(value) => {
                     scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
                         .map(|own| Vault(own.vault_id()))
                         .expect("Impossible Case!")
                 }
                 KeyValueStoreEntrySubstate::None => {
                     let vault = Vault::sys_new(resource_address, api)?;
-                    let encoded_key = IndexedScryptoValue::from_typed(&resource_address);
                     let encoded_value = IndexedScryptoValue::from_typed(&Own::Vault(vault.0));
 
                     let entry: &mut KeyValueStoreEntrySubstate =
                         api.kernel_get_substate_ref_mut(kv_store_entry_lock_handle)?;
-                    *entry =
-                        KeyValueStoreEntrySubstate::Some(encoded_key.into(), encoded_value.into());
-
+                    *entry = KeyValueStoreEntrySubstate::Some(encoded_value.to_scrypto_value());
                     vault
                 }
             }
@@ -583,17 +568,15 @@ impl AccountNativePackage {
 
     fn deposit_batch<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
-        let input: AccountDepositBatchInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: AccountDepositBatchInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let handle = api.sys_lock_substate(
             receiver,
@@ -627,23 +610,18 @@ impl AccountNativePackage {
                     api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
 
                 match entry {
-                    KeyValueStoreEntrySubstate::Some(_, value) => {
+                    KeyValueStoreEntrySubstate::Some(value) => {
                         scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
                             .map(|own| Vault(own.vault_id()))
                             .expect("Impossible Case!")
                     }
                     KeyValueStoreEntrySubstate::None => {
                         let vault = Vault::sys_new(resource_address, api)?;
-                        let encoded_key = IndexedScryptoValue::from_typed(&resource_address);
                         let encoded_value = IndexedScryptoValue::from_typed(&Own::Vault(vault.0));
 
                         let entry: &mut KeyValueStoreEntrySubstate =
                             api.kernel_get_substate_ref_mut(kv_store_entry_lock_handle)?;
-                        *entry = KeyValueStoreEntrySubstate::Some(
-                            encoded_key.into(),
-                            encoded_value.into(),
-                        );
-
+                        *entry = KeyValueStoreEntrySubstate::Some(encoded_value.to_scrypto_value());
                         vault
                     }
                 }
@@ -695,7 +673,7 @@ impl AccountNativePackage {
                 api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
 
             match entry {
-                KeyValueStoreEntrySubstate::Some(_, value) => {
+                KeyValueStoreEntrySubstate::Some(value) => {
                     Ok(scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
                         .map(|own| Vault(own.vault_id()))
                         .expect("Impossible Case!"))
@@ -718,17 +696,15 @@ impl AccountNativePackage {
 
     fn withdraw<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
-        let input: AccountWithdrawInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: AccountWithdrawInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let bucket = Self::get_vault(
             receiver,
@@ -742,17 +718,15 @@ impl AccountNativePackage {
 
     fn withdraw_non_fungibles<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
-        let input: AccountWithdrawNonFungiblesInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: AccountWithdrawNonFungiblesInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let bucket = Self::get_vault(
             receiver,
@@ -766,17 +740,15 @@ impl AccountNativePackage {
 
     fn lock_fee_and_withdraw<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
-        let input: AccountLockFeeAndWithdrawInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: AccountLockFeeAndWithdrawInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         Self::lock_fee_internal(receiver, input.amount_to_lock, false, api)?;
 
@@ -792,17 +764,15 @@ impl AccountNativePackage {
 
     fn lock_fee_and_withdraw_non_fungibles<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
-        let input: AccountLockFeeAndWithdrawNonFungiblesInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: AccountLockFeeAndWithdrawNonFungiblesInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         Self::lock_fee_internal(receiver, input.amount_to_lock, false, api)?;
 
@@ -818,17 +788,15 @@ impl AccountNativePackage {
 
     fn create_proof<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
-        let input: AccountCreateProofInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: AccountCreateProofInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let proof = Self::get_vault(
             receiver,
@@ -842,17 +810,15 @@ impl AccountNativePackage {
 
     fn create_proof_by_amount<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
-        let input: AccountCreateProofByAmountInput =
-            scrypto_decode(&scrypto_encode(&input).unwrap()).map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: AccountCreateProofByAmountInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let proof = Self::get_vault(
             receiver,
@@ -866,17 +832,15 @@ impl AccountNativePackage {
 
     fn create_proof_by_ids<Y>(
         receiver: RENodeId,
-        input: ScryptoValue,
+        input: IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        // TODO: Remove decode/encode mess
-        let input: AccountCreateProofByIdsInput = scrypto_decode(&scrypto_encode(&input).unwrap())
-            .map_err(|e| {
-                RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-            })?;
+        let input: AccountCreateProofByIdsInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
 
         let proof = Self::get_vault(
             receiver,
@@ -893,8 +857,8 @@ impl AccountNativePackage {
 // Helpers
 //=========
 
-fn access_rules_from_withdraw_rule(withdraw_rule: AccessRule) -> AccessRules {
-    let mut access_rules = AccessRules::new();
+fn access_rules_from_withdraw_rule(withdraw_rule: AccessRule) -> AccessRulesConfig {
+    let mut access_rules = AccessRulesConfig::new();
     access_rules.set_access_rule_and_mutability(
         MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_IDENT.to_string()),
         AccessRule::AllowAll,

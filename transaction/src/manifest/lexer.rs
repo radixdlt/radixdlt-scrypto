@@ -55,9 +55,6 @@ pub enum TokenKind {
     Err,
     Bytes,
     NonFungibleGlobalId,
-    PackageAddress,
-    ComponentAddress,
-    ResourceAddress,
 
     // ==============
     // SBOR custom types
@@ -103,6 +100,7 @@ pub enum TokenKind {
     BurnResource,
     RecallResource,
     SetMetadata,
+    RemoveMetadata,
     SetPackageRoyaltyConfig,
     SetComponentRoyaltyConfig,
     ClaimPackageRoyalty,
@@ -400,9 +398,6 @@ impl Lexer {
             "Err" => Ok(TokenKind::Err),
             "Bytes" => Ok(TokenKind::Bytes),
             "NonFungibleGlobalId" => Ok(TokenKind::NonFungibleGlobalId),
-            "PackageAddress" => Ok(TokenKind::PackageAddress),
-            "ComponentAddress" => Ok(TokenKind::ComponentAddress),
-            "ResourceAddress" => Ok(TokenKind::ResourceAddress),
 
             "Address" => Ok(TokenKind::Address),
             "Bucket" => Ok(TokenKind::Bucket),
@@ -438,6 +433,7 @@ impl Lexer {
             "BURN_RESOURCE" => Ok(TokenKind::BurnResource),
             "RECALL_RESOURCE" => Ok(TokenKind::RecallResource),
             "SET_METADATA" => Ok(TokenKind::SetMetadata),
+            "REMOVE_METADATA" => Ok(TokenKind::RemoveMetadata),
             "SET_PACKAGE_ROYALTY_CONFIG" => Ok(TokenKind::SetPackageRoyaltyConfig),
             "SET_COMPONENT_ROYALTY_CONFIG" => Ok(TokenKind::SetComponentRoyaltyConfig),
             "CLAIM_PACKAGE_ROYALTY" => Ok(TokenKind::ClaimPackageRoyalty),

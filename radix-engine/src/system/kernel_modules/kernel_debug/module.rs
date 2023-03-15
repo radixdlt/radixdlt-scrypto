@@ -43,7 +43,7 @@ impl KernelModule for KernelDebugModule {
         api: &mut Y,
         callee: &Option<Actor>,
         nodes_and_refs: &mut CallFrameUpdate,
-        _args: &ScryptoValue,
+        _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         log!(api, "Sending nodes: {:?}", nodes_and_refs.nodes_to_move);
         log!(api, "Sending refs: {:?}", nodes_and_refs.node_refs_to_copy);

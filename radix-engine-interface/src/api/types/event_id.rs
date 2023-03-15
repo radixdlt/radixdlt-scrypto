@@ -1,6 +1,6 @@
 use crate::api::types::{NodeModuleId, RENodeId};
-use crate::crypto::Hash;
 use crate::ScryptoSbor;
+use sbor::rust::string::String;
 
 /// Identifies a specific event schema emitter by some emitter RENode.
 ///
@@ -11,4 +11,12 @@ use crate::ScryptoSbor;
 /// It is important to note that application events are always emitted by an RENode, meaning that
 /// there is always an emitter of some [`RENodeId`].
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct EventTypeIdentifier(pub RENodeId, pub NodeModuleId, pub Hash);
+pub struct EventTypeIdentifier(pub Emitter, pub String);
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum Emitter {
+    // (Node id, module id, blueprint name)
+    Function(RENodeId, NodeModuleId, String),
+    // (Node id, module id)
+    Method(RENodeId, NodeModuleId),
+}

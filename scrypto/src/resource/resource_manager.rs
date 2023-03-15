@@ -3,9 +3,7 @@ use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetGroupAccessRuleInput, AccessRulesSetMethodAccessRuleInput,
 };
-use radix_engine_interface::api::node_modules::metadata::{
-    MetadataGetInput, MetadataSetInput, METADATA_GET_IDENT, METADATA_SET_IDENT,
-};
+use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::types::NonFungibleData;
 use radix_engine_interface::api::types::{NodeModuleId, RENodeId};
 use radix_engine_interface::api::ClientObjectApi;
@@ -15,38 +13,19 @@ use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;
 use sbor::rust::collections::BTreeMap;
-use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::engine::scrypto_env::ScryptoEnv;
+
+use crate::modules::AttachedMetadata;
 
 /// Represents a resource manager.
 #[derive(Debug)]
 pub struct ResourceManager(pub ResourceAddress);
 
 impl ResourceManager {
-    pub fn set_metadata(&self, key: String, value: String) {
-        ScryptoEnv
-            .call_module_method(
-                RENodeId::GlobalObject(self.0.into()),
-                NodeModuleId::Metadata,
-                METADATA_SET_IDENT,
-                scrypto_encode(&MetadataSetInput { key, value }).unwrap(),
-            )
-            .unwrap();
-    }
-
-    pub fn get_metadata(&self, key: String) -> Option<String> {
-        let rtn = ScryptoEnv
-            .call_module_method(
-                RENodeId::GlobalObject(self.0.into()),
-                NodeModuleId::Metadata,
-                METADATA_GET_IDENT,
-                scrypto_encode(&MetadataGetInput { key }).unwrap(),
-            )
-            .unwrap();
-
-        scrypto_decode(&rtn).unwrap()
+    pub fn metadata(&self) -> AttachedMetadata {
+        AttachedMetadata(self.0.into())
     }
 
     pub fn set_mintable(&self, access_rule: AccessRule) {
@@ -348,7 +327,7 @@ impl ResourceManager {
         let rtn = env
             .call_method(
                 RENodeId::GlobalObject(self.0.into()),
-                RESOURCE_MANAGER_MINT_FUNGIBLE,
+                RESOURCE_MANAGER_MINT_FUNGIBLE_IDENT,
                 scrypto_encode(&ResourceManagerMintFungibleInput {
                     amount: amount.into(),
                 })
@@ -374,7 +353,7 @@ impl ResourceManager {
         let rtn = env
             .call_method(
                 RENodeId::GlobalObject(self.0.into()),
-                RESOURCE_MANAGER_MINT_NON_FUNGIBLE,
+                RESOURCE_MANAGER_MINT_NON_FUNGIBLE_IDENT,
                 scrypto_encode(&ResourceManagerMintNonFungibleInput { entries }).unwrap(),
             )
             .unwrap();
@@ -391,7 +370,7 @@ impl ResourceManager {
         let rtn = env
             .call_method(
                 RENodeId::GlobalObject(self.0.into()),
-                RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE,
+                RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE_IDENT,
                 scrypto_encode(&ResourceManagerMintUuidNonFungibleInput { entries }).unwrap(),
             )
             .unwrap();

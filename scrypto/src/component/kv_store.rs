@@ -52,7 +52,7 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValu
         // Decode and create Ref
         let substate: KeyValueStoreEntrySubstate = scrypto_decode(&raw_bytes).unwrap();
         match substate {
-            KeyValueStoreEntrySubstate::Some(_, value) => Some(DataRef::new(
+            KeyValueStoreEntrySubstate::Some(value) => Some(DataRef::new(
                 handle,
                 scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap(),
             )),
@@ -79,11 +79,11 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValu
         // Decode and create RefMut
         let substate: KeyValueStoreEntrySubstate = scrypto_decode(&raw_bytes).unwrap();
         match substate {
-            KeyValueStoreEntrySubstate::Some(key, value) => {
+            KeyValueStoreEntrySubstate::Some(value) => {
                 let rust_value = scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap();
                 Some(DataRefMut::new(
                     handle,
-                    OriginalData::KeyValueStoreEntry(key, value),
+                    OriginalData::KeyValueStoreEntry(value),
                     rust_value,
                 ))
             }
@@ -110,7 +110,6 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValu
         env.sys_write_substate(
             handle,
             scrypto_encode(&KeyValueStoreEntrySubstate::Some(
-                scrypto_decode(&key_payload).unwrap(),
                 scrypto_decode(&value_payload).unwrap(),
             ))
             .unwrap(),

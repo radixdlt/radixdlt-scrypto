@@ -8,7 +8,7 @@ mod chess {
 
     impl Chess {
         pub fn create_game(players: [NonFungibleGlobalId; 2]) -> ComponentAddress {
-            let access_rules = AccessRules::new().method(
+            let access_rules = AccessRulesConfig::new().method(
                 "make_move",
                 rule!(require("players/0")),
                 rule!(deny_all),

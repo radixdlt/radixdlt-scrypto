@@ -12,10 +12,11 @@ mod schema_component {
             component.globalize()
         }
 
-        pub fn create_invalid_schema_component() -> ComponentAddress {
+        pub fn create_component_with_access_rules_containing_undefined_method_name(
+        ) -> ComponentAddress {
             let component = Self {}.instantiate();
             component.globalize_with_access_rules(
-                AccessRules::new()
+                AccessRulesConfig::new()
                     .method("no_method", rule!(require("something")), rule!(deny_all))
                     .default(rule!(allow_all), AccessRule::DenyAll),
             )
@@ -36,8 +37,8 @@ pub extern "C" fn dummy_export(_input: u64) -> Slice {
 #[no_mangle]
 pub extern "C" fn SchemaComponent2_schema() -> Slice {
     let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-    let mut substates = BTreeMap::new();
-    substates.insert(0u8, aggregator.add_child_type_and_descendents::<()>());
+    let mut substates = Vec::new();
+    substates.push(aggregator.add_child_type_and_descendents::<()>());
 
     let mut functions = BTreeMap::new();
 

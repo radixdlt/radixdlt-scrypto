@@ -1,10 +1,10 @@
 use super::node_modules::access_rules::AuthZoneStackSubstate;
 use super::node_modules::access_rules::MethodAccessRulesSubstate;
-use super::node_modules::metadata::MetadataSubstate;
+use super::node_modules::event_schema::PackageEventSchemaSubstate;
 use super::type_info::PackageCodeTypeSubstate;
 use crate::blueprints::access_controller::AccessControllerSubstate;
 use crate::blueprints::account::AccountSubstate;
-use crate::blueprints::clock::CurrentTimeRoundedToMinutesSubstate;
+use crate::blueprints::clock::ClockSubstate;
 use crate::blueprints::epoch_manager::EpochManagerSubstate;
 use crate::blueprints::epoch_manager::ValidatorSetSubstate;
 use crate::blueprints::epoch_manager::ValidatorSubstate;
@@ -36,7 +36,7 @@ pub enum PersistedSubstate {
     EpochManager(EpochManagerSubstate),
     ValidatorSet(ValidatorSetSubstate),
     Validator(ValidatorSubstate),
-    CurrentTimeRoundedToMinutes(CurrentTimeRoundedToMinutesSubstate),
+    CurrentTimeRoundedToMinutes(ClockSubstate),
     ResourceManager(ResourceManagerSubstate),
     ComponentState(ComponentStateSubstate),
     PackageInfo(PackageInfoSubstate),
@@ -57,9 +57,6 @@ pub enum PersistedSubstate {
     MethodAccessRules(MethodAccessRulesSubstate),
     FunctionAccessRules(FunctionAccessRulesSubstate),
 
-    /* Metadata */
-    Metadata(MetadataSubstate),
-
     /* Royalty */
     ComponentRoyaltyConfig(ComponentRoyaltyConfigSubstate),
     ComponentRoyaltyAccumulator(ComponentRoyaltyAccumulatorSubstate),
@@ -69,6 +66,9 @@ pub enum PersistedSubstate {
     /* KVStore entry */
     NonFungible(NonFungibleSubstate),
     KeyValueStoreEntry(KeyValueStoreEntrySubstate),
+
+    /* Event Schema */
+    PackageEventSchema(PackageEventSchemaSubstate),
 }
 
 impl PersistedSubstate {
@@ -141,6 +141,14 @@ impl PersistedSubstate {
             state
         } else {
             panic!("Not a resource manager substate");
+        }
+    }
+
+    pub fn event_schema(&self) -> &PackageEventSchemaSubstate {
+        if let PersistedSubstate::PackageEventSchema(state) = self {
+            state
+        } else {
+            panic!("Not a PackageEventSchema");
         }
     }
 }
@@ -217,7 +225,6 @@ impl PersistedSubstate {
             PersistedSubstate::FunctionAccessRules(value) => {
                 RuntimeSubstate::FunctionAccessRules(value)
             }
-            PersistedSubstate::Metadata(value) => RuntimeSubstate::Metadata(value),
             PersistedSubstate::PackageRoyaltyConfig(value) => {
                 RuntimeSubstate::PackageRoyaltyConfig(value)
             }
@@ -230,6 +237,9 @@ impl PersistedSubstate {
             PersistedSubstate::ComponentRoyaltyAccumulator(value) => {
                 RuntimeSubstate::ComponentRoyaltyAccumulator(value)
             }
+            PersistedSubstate::PackageEventSchema(value) => {
+                RuntimeSubstate::PackageEventSchema(value)
+            }
         }
     }
 }
@@ -239,7 +249,7 @@ pub enum RuntimeSubstate {
     EpochManager(EpochManagerSubstate),
     ValidatorSet(ValidatorSetSubstate),
     Validator(ValidatorSubstate),
-    CurrentTimeRoundedToMinutes(CurrentTimeRoundedToMinutesSubstate),
+    CurrentTimeRoundedToMinutes(ClockSubstate),
     ResourceManager(ResourceManagerSubstate),
     ComponentState(ComponentStateSubstate),
     PackageCode(PackageCodeSubstate),
@@ -276,9 +286,6 @@ pub enum RuntimeSubstate {
     MethodAccessRules(MethodAccessRulesSubstate),
     FunctionAccessRules(FunctionAccessRulesSubstate),
 
-    /* Metadata */
-    Metadata(MetadataSubstate),
-
     /* Royalty */
     ComponentRoyaltyConfig(ComponentRoyaltyConfigSubstate),
     ComponentRoyaltyAccumulator(ComponentRoyaltyAccumulatorSubstate),
@@ -288,6 +295,9 @@ pub enum RuntimeSubstate {
     /* KVStore entry */
     NonFungible(NonFungibleSubstate),
     KeyValueStoreEntry(KeyValueStoreEntrySubstate),
+
+    /* Event Schema */
+    PackageEventSchema(PackageEventSchemaSubstate),
 }
 
 impl RuntimeSubstate {
@@ -334,7 +344,6 @@ impl RuntimeSubstate {
             RuntimeSubstate::FunctionAccessRules(value) => {
                 PersistedSubstate::FunctionAccessRules(value.clone())
             }
-            RuntimeSubstate::Metadata(value) => PersistedSubstate::Metadata(value.clone()),
             RuntimeSubstate::ComponentRoyaltyConfig(value) => {
                 PersistedSubstate::ComponentRoyaltyConfig(value.clone())
             }
@@ -346,6 +355,9 @@ impl RuntimeSubstate {
             }
             RuntimeSubstate::PackageRoyaltyAccumulator(value) => {
                 PersistedSubstate::PackageRoyaltyAccumulator(value.clone())
+            }
+            RuntimeSubstate::PackageEventSchema(value) => {
+                PersistedSubstate::PackageEventSchema(value.clone())
             }
             /* Node module ends */
             RuntimeSubstate::AuthZoneStack(..)
@@ -407,7 +419,6 @@ impl RuntimeSubstate {
             RuntimeSubstate::FunctionAccessRules(value) => {
                 PersistedSubstate::FunctionAccessRules(value)
             }
-            RuntimeSubstate::Metadata(value) => PersistedSubstate::Metadata(value),
             RuntimeSubstate::ComponentRoyaltyConfig(value) => {
                 PersistedSubstate::ComponentRoyaltyConfig(value)
             }
@@ -419,6 +430,9 @@ impl RuntimeSubstate {
             }
             RuntimeSubstate::PackageRoyaltyAccumulator(value) => {
                 PersistedSubstate::PackageRoyaltyAccumulator(value)
+            }
+            RuntimeSubstate::PackageEventSchema(value) => {
+                PersistedSubstate::PackageEventSchema(value)
             }
             /* Node module ends */
             RuntimeSubstate::AuthZoneStack(..)
@@ -476,7 +490,6 @@ impl RuntimeSubstate {
                 SubstateRefMut::CurrentTimeRoundedToMinutes(value)
             }
             RuntimeSubstate::MethodAccessRules(value) => SubstateRefMut::MethodAccessRules(value),
-            RuntimeSubstate::Metadata(value) => SubstateRefMut::Metadata(value),
             RuntimeSubstate::ResourceManager(value) => SubstateRefMut::ResourceManager(value),
             RuntimeSubstate::TypeInfo(value) => SubstateRefMut::TypeInfo(value),
             RuntimeSubstate::ComponentState(value) => SubstateRefMut::ComponentState(value),
@@ -534,6 +547,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::TransactionRuntime(value) => SubstateRefMut::TransactionRuntime(value),
             RuntimeSubstate::Account(value) => SubstateRefMut::Account(value),
             RuntimeSubstate::AccessController(value) => SubstateRefMut::AccessController(value),
+            RuntimeSubstate::PackageEventSchema(value) => SubstateRefMut::PackageEventSchema(value),
         }
     }
 
@@ -547,7 +561,6 @@ impl RuntimeSubstate {
                 SubstateRef::CurrentTimeRoundedToMinutes(value)
             }
             RuntimeSubstate::MethodAccessRules(value) => SubstateRef::MethodAccessRules(value),
-            RuntimeSubstate::Metadata(value) => SubstateRef::Metadata(value),
             RuntimeSubstate::ResourceManager(value) => SubstateRef::ResourceManager(value),
             RuntimeSubstate::ComponentState(value) => SubstateRef::ComponentState(value),
             RuntimeSubstate::ComponentRoyaltyConfig(value) => {
@@ -598,6 +611,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::TransactionRuntime(value) => SubstateRef::TransactionRuntime(value),
             RuntimeSubstate::Account(value) => SubstateRef::Account(value),
             RuntimeSubstate::AccessController(value) => SubstateRef::AccessController(value),
+            RuntimeSubstate::PackageEventSchema(value) => SubstateRef::PackageEventSchema(value),
         }
     }
 
@@ -630,14 +644,6 @@ impl RuntimeSubstate {
             kv_store_entry
         } else {
             panic!("Not a KVEntry");
-        }
-    }
-
-    pub fn metadata(&self) -> &MetadataSubstate {
-        if let RuntimeSubstate::Metadata(metadata) = self {
-            metadata
-        } else {
-            panic!("Not metadata");
         }
     }
 
@@ -680,12 +686,6 @@ impl Into<RuntimeSubstate> for MethodAccessRulesSubstate {
     }
 }
 
-impl Into<RuntimeSubstate> for MetadataSubstate {
-    fn into(self) -> RuntimeSubstate {
-        RuntimeSubstate::Metadata(self)
-    }
-}
-
 impl Into<RuntimeSubstate> for EpochManagerSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::EpochManager(self)
@@ -704,7 +704,7 @@ impl Into<RuntimeSubstate> for ValidatorSubstate {
     }
 }
 
-impl Into<RuntimeSubstate> for CurrentTimeRoundedToMinutesSubstate {
+impl Into<RuntimeSubstate> for ClockSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::CurrentTimeRoundedToMinutes(self)
     }
@@ -808,6 +808,12 @@ impl Into<RuntimeSubstate> for AccountSubstate {
 impl Into<RuntimeSubstate> for AccessControllerSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::AccessController(self)
+    }
+}
+
+impl Into<RuntimeSubstate> for PackageEventSchemaSubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::PackageEventSchema(self)
     }
 }
 
@@ -1025,16 +1031,6 @@ impl Into<MethodAccessRulesSubstate> for RuntimeSubstate {
     }
 }
 
-impl Into<MetadataSubstate> for RuntimeSubstate {
-    fn into(self) -> MetadataSubstate {
-        if let RuntimeSubstate::Metadata(substate) = self {
-            substate
-        } else {
-            panic!("Not metadata");
-        }
-    }
-}
-
 impl Into<ValidatorSetSubstate> for RuntimeSubstate {
     fn into(self) -> ValidatorSetSubstate {
         if let RuntimeSubstate::ValidatorSet(substate) = self {
@@ -1097,13 +1093,13 @@ pub enum SubstateRef<'a> {
     EpochManager(&'a EpochManagerSubstate),
     ValidatorSet(&'a ValidatorSetSubstate),
     Validator(&'a ValidatorSubstate),
-    CurrentTimeRoundedToMinutes(&'a CurrentTimeRoundedToMinutesSubstate),
+    CurrentTimeRoundedToMinutes(&'a ClockSubstate),
     MethodAccessRules(&'a MethodAccessRulesSubstate),
     PackageAccessRules(&'a FunctionAccessRulesSubstate),
-    Metadata(&'a MetadataSubstate),
     TransactionRuntime(&'a TransactionRuntimeSubstate),
     Account(&'a AccountSubstate),
     AccessController(&'a AccessControllerSubstate),
+    PackageEventSchema(&'a PackageEventSchemaSubstate),
 }
 
 impl<'a> From<SubstateRef<'a>> for &'a VaultInfoSubstate {
@@ -1344,15 +1340,6 @@ impl<'a> From<SubstateRef<'a>> for &'a MethodAccessRulesSubstate {
     }
 }
 
-impl<'a> From<SubstateRef<'a>> for &'a MetadataSubstate {
-    fn from(value: SubstateRef<'a>) -> Self {
-        match value {
-            SubstateRef::Metadata(value) => value,
-            _ => panic!("Not global"),
-        }
-    }
-}
-
 impl<'a> From<SubstateRef<'a>> for &'a TransactionRuntimeSubstate {
     fn from(value: SubstateRef<'a>) -> Self {
         match value {
@@ -1362,7 +1349,7 @@ impl<'a> From<SubstateRef<'a>> for &'a TransactionRuntimeSubstate {
     }
 }
 
-impl<'a> From<SubstateRef<'a>> for &'a CurrentTimeRoundedToMinutesSubstate {
+impl<'a> From<SubstateRef<'a>> for &'a ClockSubstate {
     fn from(value: SubstateRef<'a>) -> Self {
         match value {
             SubstateRef::CurrentTimeRoundedToMinutes(value) => value,
@@ -1394,6 +1381,15 @@ impl<'a> From<SubstateRef<'a>> for &'a AuthZoneStackSubstate {
         match value {
             SubstateRef::AuthZoneStack(value) => value,
             _ => panic!("Not an AuthZoneStack"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a PackageEventSchemaSubstate {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::PackageEventSchema(value) => value,
+            _ => panic!("Not an PackageEventSchema"),
         }
     }
 }
@@ -1498,7 +1494,7 @@ impl<'a> SubstateRef<'a> {
                 (references, owned_nodes)
             }
             SubstateRef::MethodAccessRules(substate) => {
-                let (_, _, owns, refs) = IndexedScryptoValue::from_typed(&substate).unpack();
+                let (_, owns, refs) = IndexedScryptoValue::from_typed(&substate).unpack();
                 (refs, owns)
             }
             SubstateRef::AccessController(substate) => {
@@ -1508,18 +1504,20 @@ impl<'a> SubstateRef<'a> {
             }
             SubstateRef::PackageRoyaltyAccumulator(substate) => {
                 let mut owned_nodes = Vec::new();
-                owned_nodes.push(RENodeId::Object(substate.royalty.vault_id()));
+                if let Some(vault) = substate.royalty_vault {
+                    owned_nodes.push(RENodeId::Object(vault.vault_id()));
+                }
                 (HashSet::new(), owned_nodes)
             }
             SubstateRef::ComponentState(substate) => {
-                let (_, _, owns, refs) = IndexedScryptoValue::from_slice(&substate.raw)
+                let (_, owns, refs) = IndexedScryptoValue::from_slice(&substate.raw)
                     .unwrap()
                     .unpack();
                 (refs, owns)
             }
             SubstateRef::ComponentRoyaltyAccumulator(substate) => {
                 let mut owned_nodes = Vec::new();
-                owned_nodes.push(RENodeId::Object(substate.royalty.vault_id()));
+                owned_nodes.push(RENodeId::Object(substate.royalty_vault.vault_id()));
                 (HashSet::new(), owned_nodes)
             }
             SubstateRef::KeyValueStoreEntry(substate) => {
@@ -1531,7 +1529,7 @@ impl<'a> SubstateRef<'a> {
                     .as_ref()
                     .map(|non_fungible| IndexedScryptoValue::from_typed(non_fungible));
                 if let Some(scrypto_value) = maybe_scrypto_value {
-                    let (_, _, owns, refs) = scrypto_value.unpack();
+                    let (_, owns, refs) = scrypto_value.unpack();
                     (refs, owns)
                 } else {
                     (HashSet::new(), Vec::new())
@@ -1583,9 +1581,8 @@ pub enum SubstateRefMut<'a> {
     EpochManager(&'a mut EpochManagerSubstate),
     ValidatorSet(&'a mut ValidatorSetSubstate),
     Validator(&'a mut ValidatorSubstate),
-    CurrentTimeRoundedToMinutes(&'a mut CurrentTimeRoundedToMinutesSubstate),
+    CurrentTimeRoundedToMinutes(&'a mut ClockSubstate),
     MethodAccessRules(&'a mut MethodAccessRulesSubstate),
-    Metadata(&'a mut MetadataSubstate),
     ProofInfo(&'a mut ProofInfoSubstate),
     FungibleProof(&'a mut FungibleProof),
     NonFungibleProof(&'a mut NonFungibleProof),
@@ -1595,6 +1592,7 @@ pub enum SubstateRefMut<'a> {
     AuthZone(&'a mut AuthZoneStackSubstate),
     Account(&'a mut AccountSubstate),
     AccessController(&'a mut AccessControllerSubstate),
+    PackageEventSchema(&'a mut PackageEventSchemaSubstate),
 }
 
 impl<'a> From<SubstateRefMut<'a>> for &'a mut AuthZoneStackSubstate {
@@ -1714,7 +1712,7 @@ impl<'a> From<SubstateRefMut<'a>> for &'a mut ValidatorSetSubstate {
     }
 }
 
-impl<'a> From<SubstateRefMut<'a>> for &'a mut CurrentTimeRoundedToMinutesSubstate {
+impl<'a> From<SubstateRefMut<'a>> for &'a mut ClockSubstate {
     fn from(value: SubstateRefMut<'a>) -> Self {
         match value {
             SubstateRefMut::CurrentTimeRoundedToMinutes(value) => value,
@@ -1737,15 +1735,6 @@ impl<'a> From<SubstateRefMut<'a>> for &'a mut MethodAccessRulesSubstate {
         match value {
             SubstateRefMut::MethodAccessRules(value) => value,
             _ => panic!("Not a logger"),
-        }
-    }
-}
-
-impl<'a> From<SubstateRefMut<'a>> for &'a mut MetadataSubstate {
-    fn from(value: SubstateRefMut<'a>) -> Self {
-        match value {
-            SubstateRefMut::Metadata(value) => value,
-            _ => panic!("Not metadata"),
         }
     }
 }
