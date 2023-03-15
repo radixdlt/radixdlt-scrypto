@@ -235,12 +235,11 @@ where
         }
         for i in 0..app_states.len() {
             validate_payload_against_schema(&app_states[i], &schema.schema, schema.substates[i])
-                .map_err(|e| {
-                    // TODO: make `LocatedValidationError` encodable
+                .map_err(|err| {
                     RuntimeError::SystemError(SystemError::SubstateValidationError(
                         SubstateValidationError::SchemaValidationError(
                             blueprint_ident.to_string(),
-                            format!("{:?}", e),
+                            err.error_message(&schema.schema),
                         ),
                     ))
                 })?;
@@ -707,9 +706,9 @@ where
         };
 
         // Validating the event data against the event schema
-        validate_payload_against_schema(&event_data, &schema, local_type_index).map_err(|_| {
+        validate_payload_against_schema(&event_data, &schema, local_type_index).map_err(|err| {
             RuntimeError::ApplicationError(ApplicationError::EventError(
-                EventError::InvalidEventSchema,
+                EventError::EventSchemaNotMatch(err.error_message(&schema)),
             ))
         })?;
 
