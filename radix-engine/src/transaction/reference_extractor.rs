@@ -4,7 +4,7 @@ use transaction::model::*;
 
 pub fn extract_refs_from_manifest(
     instructions: &[Instruction],
-) -> (BTreeSet<Address>, BTreeSet<Reference>) {
+) -> (BTreeSet<Address>, BTreeSet<InternalRef>) {
     let mut global_references = BTreeSet::new();
     let mut local_references = BTreeSet::new();
 
@@ -25,7 +25,7 @@ pub fn extract_refs_from_manifest(
 pub fn extract_refs_from_instruction(
     instruction: &Instruction,
     global_references: &mut BTreeSet<Address>,
-    local_references: &mut BTreeSet<Reference>,
+    local_references: &mut BTreeSet<InternalRef>,
 ) {
     match instruction {
         Instruction::CallFunction {
@@ -74,7 +74,7 @@ pub fn extract_refs_from_instruction(
             // TODO: This needs to be cleaned up
             // TODO: How does this relate to newly created vaults in the transaction frame?
             // TODO: Will probably want different spacing for refed vs. owned nodes
-            local_references.insert(Reference(vault_id.clone()));
+            local_references.insert(InternalRef(vault_id.clone()));
         }
 
         Instruction::SetPackageRoyaltyConfig {
@@ -147,7 +147,7 @@ pub fn extract_refs_from_instruction(
 pub fn extract_refs_from_value(
     value: &ManifestValue,
     global_references: &mut BTreeSet<Address>,
-    local_references: &mut BTreeSet<Reference>,
+    local_references: &mut BTreeSet<InternalRef>,
 ) {
     match value {
         Value::Bool { .. }

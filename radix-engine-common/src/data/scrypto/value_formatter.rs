@@ -244,7 +244,7 @@ pub fn format_custom_value<F: fmt::Write>(
         ScryptoCustomValue::NonFungibleLocalId(value) => {
             write!(f, "NonFungibleLocalId(\"{}\")", value)?;
         }
-        ScryptoCustomValue::Reference(value) => {
+        ScryptoCustomValue::InternalRef(value) => {
             write!(f, "Reference(\"{}\")", hex::encode(value.to_vec()))?;
         }
     }
