@@ -25,14 +25,14 @@ pub fn trace_resources(attr: TokenStream, input: TokenStream) -> TokenStream {
                         QEMU_PLUGIN.with(|v| {
                             let stack = v.borrow().get_current_stack();
                             let space = std::iter::repeat(' ').take(4 * stack).collect::<String>();
-                            println!("[rtrack]{}++enter: {}", space, #fn_signature);
+                            println!("[rtrack]{}++enter: {} {} {}", space, #fn_signature, stack + 1, #arg);
                         });
                         QEMU_PLUGIN.with(|v| v.borrow_mut().start_counting(#fn_signature));
                         let ret = #original_block;
                         QEMU_PLUGIN.with(|v| {
                             let (stack, cnt) = v.borrow_mut().stop_counting();
                             let space = std::iter::repeat(' ').take(4 * stack).collect::<String>();
-                            println!("[rtrack]{}--exit: {} {} {} {}", space, #fn_signature, stack, cnt, #arg);
+                            println!("[rtrack]{}--exit: {} {} {}", space, #fn_signature, stack, cnt);
                         });
                         ret
                     }} )
@@ -41,7 +41,7 @@ pub fn trace_resources(attr: TokenStream, input: TokenStream) -> TokenStream {
                         QEMU_PLUGIN.with(|v| {
                             let stack = v.borrow().get_current_stack();
                             let space = std::iter::repeat(' ').take(4 * stack).collect::<String>();
-                            println!("[rtrack]{}++enter: {}", space, #fn_signature);
+                            println!("[rtrack]{}++enter: {} {}", space, #fn_signature, stack);
                         });
                         QEMU_PLUGIN.with(|v| v.borrow_mut().start_counting(#fn_signature));
                         let ret = #original_block;
