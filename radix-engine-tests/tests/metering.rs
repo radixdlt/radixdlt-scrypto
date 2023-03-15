@@ -76,7 +76,7 @@ fn test_basic_transfer() {
         + 67500 /* RunNative */
         + 0 /* RunWasm */
         + 50000 /* TxBaseCost */
-        + 1320 /* TxPayloadCost */
+        + 1260 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
         + 16000, /* WriteSubstate */
         receipt.execution.fee_summary.total_cost_units_consumed
@@ -208,7 +208,7 @@ fn test_radiswap() {
         + 150000 /* RunNative */
         + 1519970 /* RunWasm */
         + 50000 /* TxBaseCost */
-        + 1705 /* TxPayloadCost */
+        + 1625 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
         + 38000 /* WriteSubstate */
         + 2, /* royalty in cost units */
@@ -317,7 +317,7 @@ fn test_flash_loan() {
         + 242500 /* RunNative */
         + 1170535 /* RunWasm */
         + 50000 /* TxBaseCost */
-        + 2475 /* TxPayloadCost */
+        + 2375 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
         + 66500 /* WriteSubstate */
         + 2, /* royalty in cost units */

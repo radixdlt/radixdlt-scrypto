@@ -168,7 +168,7 @@ fn build_call_arguments<'a>(
     type_index: LocalTypeIndex,
     args: Vec<String>,
     account: Option<ComponentAddress>,
-) -> Result<(&'a mut ManifestBuilder, Vec<u8>), BuildCallArgumentsError> {
+) -> Result<(&'a mut ManifestBuilder, ManifestValue), BuildCallArgumentsError> {
     let mut built_args = Vec::<ManifestValue>::new();
     match schema.resolve_type_kind(type_index) {
         Some(TypeKind::Tuple { field_types }) => {
@@ -194,10 +194,10 @@ fn build_call_arguments<'a>(
         _ => panic!("Inconsistent schema"),
     }
 
-    let encoded = manifest_encode(&ManifestValue::Tuple { fields: built_args })
-        .expect("Failed to encode ManifestValue");
+    let manifest_value: ManifestValue = to_manifest_value(&ManifestValue::Tuple { fields: built_args })
+        .expect("Failed to transcode ManifestValue");
 
-    Ok((builder, encoded))
+    Ok((builder, manifest_value))
 }
 
 macro_rules! parse_basic_type {

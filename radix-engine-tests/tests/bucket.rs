@@ -8,7 +8,7 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use utils::ContextualDisplay;
 
-fn test_bucket_internal(method_name: &str, args: Vec<u8>, expect_success: bool) {
+fn test_bucket_internal(method_name: &str, args: ManifestValue, expect_success: bool) {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
