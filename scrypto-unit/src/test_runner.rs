@@ -161,7 +161,7 @@ impl TestRunnerBuilder {
             .custom_genesis
             .unwrap_or_else(|| create_genesis(BTreeMap::new(), BTreeMap::new(), 1u64, 1u64, 1u64));
         let receipt = runner.execute_transaction_with_config(
-            genesis.get_executable(vec![AuthAddresses::system_role()]),
+            genesis.get_executable(btreeset![AuthAddresses::system_role()]),
             &FeeReserveConfig::default(),
             &ExecutionConfig::genesis(),
         );
@@ -585,11 +585,14 @@ impl TestRunner {
         self.publish_package_with_owner(code, schema, owner_badge)
     }
 
-    pub fn execute_manifest_ignoring_fee(
+    pub fn execute_manifest_ignoring_fee<T>(
         &mut self,
         mut manifest: TransactionManifest,
-        initial_proofs: Vec<NonFungibleGlobalId>,
-    ) -> TransactionReceipt {
+        initial_proofs: T,
+    ) -> TransactionReceipt
+    where
+        T: IntoIterator<Item = NonFungibleGlobalId>,
+    {
         manifest.instructions.insert(
             0,
             transaction::model::Instruction::CallMethod {
@@ -601,11 +604,14 @@ impl TestRunner {
         self.execute_manifest(manifest, initial_proofs)
     }
 
-    pub fn execute_manifest(
+    pub fn execute_manifest<T>(
         &mut self,
         manifest: TransactionManifest,
-        initial_proofs: Vec<NonFungibleGlobalId>,
-    ) -> TransactionReceipt {
+        initial_proofs: T,
+    ) -> TransactionReceipt
+    where
+        T: IntoIterator<Item = NonFungibleGlobalId>,
+    {
         self.execute_manifest_with_cost_unit_limit(
             manifest,
             initial_proofs,
@@ -613,15 +619,18 @@ impl TestRunner {
         )
     }
 
-    pub fn execute_manifest_with_cost_unit_limit(
+    pub fn execute_manifest_with_cost_unit_limit<T>(
         &mut self,
         manifest: TransactionManifest,
-        initial_proofs: Vec<NonFungibleGlobalId>,
+        initial_proofs: T,
         cost_unit_limit: u32,
-    ) -> TransactionReceipt {
+    ) -> TransactionReceipt
+    where
+        T: IntoIterator<Item = NonFungibleGlobalId>,
+    {
         let transactions =
             TestTransaction::new(manifest, self.next_transaction_nonce(), cost_unit_limit);
-        let executable = transactions.get_executable(initial_proofs);
+        let executable = transactions.get_executable(initial_proofs.into_iter().collect());
 
         let fee_reserve_config = FeeReserveConfig::default();
         let execution_config = ExecutionConfig::default().with_trace(self.trace);
@@ -720,7 +729,7 @@ impl TestRunner {
             .build();
         self.execute_manifest(
             manifest,
-            vec![NonFungibleGlobalId::from_public_key(&signer_public_key)],
+            btreeset![NonFungibleGlobalId::from_public_key(&signer_public_key)],
         )
         .expect_commit_success();
     }
@@ -932,7 +941,7 @@ impl TestRunner {
 
     pub fn new_component<F>(
         &mut self,
-        initial_proofs: Vec<NonFungibleGlobalId>,
+        initial_proofs: BTreeSet<NonFungibleGlobalId>,
         handler: F,
     ) -> ComponentAddress
     where
@@ -964,7 +973,7 @@ impl TestRunner {
                 nonce,
                 pre_allocated_ids: BTreeSet::new(),
             }
-            .get_executable(vec![AuthAddresses::system_role()]),
+            .get_executable(btreeset![AuthAddresses::system_role()]),
         );
         receipt.expect_commit_success();
     }
@@ -986,7 +995,7 @@ impl TestRunner {
                 nonce,
                 pre_allocated_ids: BTreeSet::new(),
             }
-            .get_executable(vec![AuthAddresses::validator_role()]),
+            .get_executable(btreeset![AuthAddresses::validator_role()]),
         );
         receipt.expect_commit(true).output(0)
     }
@@ -1014,7 +1023,7 @@ impl TestRunner {
                 nonce,
                 pre_allocated_ids: BTreeSet::new(),
             }
-            .get_executable(vec![AuthAddresses::validator_role()]),
+            .get_executable(btreeset![AuthAddresses::validator_role()]),
         );
         receipt.expect_commit(true).output(0)
     }
@@ -1035,7 +1044,7 @@ impl TestRunner {
                 nonce,
                 pre_allocated_ids: BTreeSet::new(),
             }
-            .get_executable(vec![AuthAddresses::validator_role()]),
+            .get_executable(btreeset![AuthAddresses::validator_role()]),
         );
         receipt.expect_commit(true).output(0)
     }
@@ -1055,7 +1064,7 @@ impl TestRunner {
         let modules = KernelModuleMixer::standard(
             transaction_hash,
             AuthZoneParams {
-                initial_proofs: vec![],
+                initial_proofs: btreeset![],
                 virtual_resources: BTreeSet::new(),
             },
             SystemLoanFeeReserve::no_fee(),

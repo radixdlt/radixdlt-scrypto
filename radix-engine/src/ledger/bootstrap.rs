@@ -744,7 +744,7 @@ where
             scrypto_interpreter,
             &FeeReserveConfig::default(),
             &ExecutionConfig::genesis(),
-            &genesis_transaction.get_executable(vec![AuthAddresses::system_role()]),
+            &genesis_transaction.get_executable(btreeset![AuthAddresses::system_role()]),
         );
 
         let commit_result = transaction_receipt.expect_commit(true);
@@ -781,7 +781,7 @@ mod tests {
             &scrypto_interpreter,
             &FeeReserveConfig::default(),
             &ExecutionConfig::genesis().with_trace(true),
-            &genesis_transaction.get_executable(vec![AuthAddresses::system_role()]),
+            &genesis_transaction.get_executable(btreeset![AuthAddresses::system_role()]),
         );
         #[cfg(not(feature = "alloc"))]
         println!("{:?}", transaction_receipt);
@@ -818,7 +818,7 @@ mod tests {
             &scrypto_interpreter,
             &FeeReserveConfig::default(),
             &ExecutionConfig::genesis(),
-            &genesis_transaction.get_executable(vec![AuthAddresses::system_role()]),
+            &genesis_transaction.get_executable(btreeset![AuthAddresses::system_role()]),
         );
 
         let commit_result = transaction_receipt.expect_commit(true);

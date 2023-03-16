@@ -497,7 +497,7 @@ fn epoch_manager_round_update_emits_correct_event() {
             nonce: 0,
             pre_allocated_ids: BTreeSet::new(),
         }
-        .get_executable(vec![AuthAddresses::validator_role()]),
+        .get_executable(btreeset![AuthAddresses::validator_role()]),
     );
 
     // Assert
@@ -544,7 +544,7 @@ fn epoch_manager_epoch_update_emits_correct_event() {
             nonce: 0,
             pre_allocated_ids: BTreeSet::new(),
         }
-        .get_executable(vec![AuthAddresses::validator_role()]),
+        .get_executable(btreeset![AuthAddresses::validator_role()]),
     );
 
     // Assert

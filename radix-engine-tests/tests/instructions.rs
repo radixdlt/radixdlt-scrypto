@@ -1,5 +1,5 @@
 use radix_engine::{
-    blueprints::{auth_zone::AuthZoneError, transaction_processor::TransactionProcessorError},
+    blueprints::{resource::AuthZoneError, transaction_processor::TransactionProcessorError},
     errors::{ApplicationError, RuntimeError},
     types::*,
 };

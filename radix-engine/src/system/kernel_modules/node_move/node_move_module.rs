@@ -42,21 +42,6 @@ impl NodeMoveModule {
                             return Ok(());
                         }
 
-                        let handle = api.kernel_lock_substate(
-                            node_id,
-                            NodeModuleId::SELF,
-                            SubstateOffset::Proof(ProofOffset::Info),
-                            LockFlags::MUTABLE,
-                        )?;
-                        let proof: &mut ProofInfoSubstate =
-                            api.kernel_get_substate_ref_mut(handle)?;
-
-                        if proof.restricted {
-                            return Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
-                                NodeMoveError::CantMoveDownstream(node_id),
-                            )));
-                        }
-
                         // Change to restricted unless it's moved to auth zone.
                         // TODO: align with barrier design?
                         let mut changed_to_restricted = true;
@@ -72,6 +57,21 @@ impl NodeMoveModule {
                             {
                                 changed_to_restricted = false;
                             }
+                        }
+
+                        let handle = api.kernel_lock_substate(
+                            node_id,
+                            NodeModuleId::SELF,
+                            SubstateOffset::Proof(ProofOffset::Info),
+                            LockFlags::MUTABLE,
+                        )?;
+                        let proof: &mut ProofInfoSubstate =
+                            api.kernel_get_substate_ref_mut(handle)?;
+
+                        if proof.restricted {
+                            return Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
+                                NodeMoveError::CantMoveDownstream(node_id),
+                            )));
                         }
 
                         if changed_to_restricted {
