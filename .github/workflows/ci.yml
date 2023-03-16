@@ -168,7 +168,8 @@ jobs:
           -p radix-engine-derive \
           -p radix-engine-interface \
           -p radix-engine \
-          -p radix-engine-tests
+          -p radix-engine-tests \
+          --features serde
   radix-engine-no-std:
     name: Run Radix Engine tests (no_std)
     runs-on: ${{ matrix.os }}
