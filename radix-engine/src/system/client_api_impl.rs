@@ -133,7 +133,7 @@ where
         todo!()
     }
 
-    fn assert_access_rule(&mut self, rule: AccessRule) -> Result<(), RuntimeError> {
+    fn assert_access_rule(&mut self, _rule: AccessRule) -> Result<(), RuntimeError> {
         todo!()
     }
 }
