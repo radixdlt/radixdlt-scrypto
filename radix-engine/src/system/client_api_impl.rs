@@ -640,18 +640,17 @@ where
         // Costing event emission.
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-        // Construct the event type identifier based on the current actor
-        let (event_type_id, package_address, blueprint_name) = match self.kernel_get_current_actor()
-        {
-            Some(Actor {
-                identifier: ActorIdentifier::Method(MethodIdentifier(node_id, node_module_id, ..)),
-                ..
-            }) => {
-                let event_type_id = EventTypeIdentifier(
-                    Emitter::Method(node_id, node_module_id),
-                    event_name.clone(),
-                );
-                let (package_address, blueprint_name) = match node_module_id {
+        let actor = self.kernel_get_current_actor();
+
+        // Locking the package info substate associated with the emitter's package
+        let (handle, blueprint_schema, local_type_index) = {
+            // Getting the package address and blueprint name associated with the actor
+            let (package_address, blueprint_name) = match actor {
+                Some(Actor {
+                    identifier:
+                        ActorIdentifier::Method(MethodIdentifier(node_id, node_module_id, ..)),
+                    ..
+                }) => match node_module_id {
                     NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {
                         Ok((ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT.into()))
                     }
@@ -666,37 +665,21 @@ where
                     NodeModuleId::TypeInfo => Err(RuntimeError::ApplicationError(
                         ApplicationError::EventError(EventError::NoAssociatedPackage),
                     )),
-                }?;
+                },
+                Some(Actor {
+                    identifier:
+                        ActorIdentifier::Function(FnIdentifier {
+                            package_address,
+                            ref blueprint_name,
+                            ..
+                        }),
+                    ..
+                }) => Ok((package_address, blueprint_name.clone())),
+                None => Err(RuntimeError::ApplicationError(
+                    ApplicationError::EventError(EventError::InvalidActor),
+                )),
+            }?;
 
-                Ok((event_type_id, package_address, blueprint_name.to_owned()))
-            }
-            Some(Actor {
-                identifier:
-                    ActorIdentifier::Function(FnIdentifier {
-                        package_address,
-                        blueprint_name,
-                        ..
-                    }),
-                ..
-            }) => Ok((
-                EventTypeIdentifier(
-                    Emitter::Function(
-                        RENodeId::GlobalObject(Address::Package(package_address)),
-                        NodeModuleId::SELF,
-                        blueprint_name.clone(),
-                    ),
-                    event_name.clone(),
-                ),
-                package_address,
-                blueprint_name.to_owned(),
-            )),
-            _ => Err(RuntimeError::ApplicationError(
-                ApplicationError::EventError(EventError::InvalidActor),
-            )),
-        }?;
-
-        // Reading the schema to validate the payload against it
-        {
             let handle = self.kernel_lock_substate(
                 RENodeId::GlobalObject(Address::Package(package_address)),
                 NodeModuleId::SELF,
@@ -714,7 +697,9 @@ where
                 )),
                 Ok,
             )?;
-            let schema = &blueprint_schema.schema;
+
+            // Translating the event name to it's local_type_index which is stored in the blueprint
+            // schema
             let local_type_index = blueprint_schema.event_schema.get(&event_name).map_or(
                 Err(RuntimeError::ApplicationError(
                     ApplicationError::EventError(EventError::SchemaNotFoundError {
@@ -726,23 +711,58 @@ where
                 Ok,
             )?;
 
-            // Validating the event data against the event schema
-            validate_payload_against_schema(&event_data, schema, *local_type_index).map_err(
-                |err| {
-                    RuntimeError::ApplicationError(ApplicationError::EventError(
-                        EventError::EventSchemaNotMatch(err.error_message(&schema)),
-                    ))
-                },
-            )?;
-
-            self.kernel_drop_lock(handle)?;
+            (handle, blueprint_schema, local_type_index)
         };
+
+        // Construct the event type identifier based on the current actor
+        let event_type_identifier = match actor {
+            Some(Actor {
+                identifier: ActorIdentifier::Method(MethodIdentifier(node_id, node_module_id, ..)),
+                ..
+            }) => Ok(EventTypeIdentifier(
+                Emitter::Method(node_id, node_module_id),
+                *local_type_index,
+            )),
+            Some(Actor {
+                identifier:
+                    ActorIdentifier::Function(FnIdentifier {
+                        package_address,
+                        blueprint_name,
+                        ..
+                    }),
+                ..
+            }) => Ok(EventTypeIdentifier(
+                Emitter::Function(
+                    RENodeId::GlobalObject(Address::Package(package_address)),
+                    NodeModuleId::SELF,
+                    blueprint_name,
+                ),
+                *local_type_index,
+            )),
+            None => Err(RuntimeError::ApplicationError(
+                ApplicationError::EventError(EventError::InvalidActor),
+            )),
+        }?;
+
+        // Validating the event data against the event schema
+        validate_payload_against_schema(
+            &event_data,
+            &blueprint_schema.schema,
+            event_type_identifier.1,
+        )
+        .map_err(|err| {
+            RuntimeError::ApplicationError(ApplicationError::EventError(
+                EventError::EventSchemaNotMatch(err.error_message(&blueprint_schema.schema)),
+            ))
+        })?;
 
         // Adding the event to the event store
         self.kernel_get_module_state()
             .events
-            .add_event(event_type_id, event_data);
+            .add_event(event_type_identifier, event_data);
 
+        // Dropping the lock on the PackageInfo
+        self.kernel_drop_lock(handle)?;
         Ok(())
     }
 }

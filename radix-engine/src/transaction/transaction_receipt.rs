@@ -69,39 +69,31 @@ pub struct CommitResult {
 
 impl CommitResult {
     pub fn next_epoch(&self) -> Option<(BTreeMap<ComponentAddress, Validator>, u64)> {
-        // TODO: Simplify once ScryptoEvent trait is implemented
-        let expected_event_name = {
-            let (local_type_index, schema) = generate_full_schema_from_single_type::<
-                EpochChangeEvent,
-                ScryptoCustomTypeExtension,
-            >();
-            (*schema
-                .resolve_type_metadata(local_type_index)
-                .expect("Cant fail")
-                .type_name)
-                .to_owned()
-        };
-        self.application_events
-            .iter()
-            .find(|(identifier, _)| match identifier {
-                EventTypeIdentifier(
-                    Emitter::Function(
-                        RENodeId::GlobalObject(Address::Package(EPOCH_MANAGER_PACKAGE)),
-                        NodeModuleId::SELF,
-                        ..,
-                    )
-                    | Emitter::Method(
-                        RENodeId::GlobalObject(Address::Component(ComponentAddress::EpochManager(
-                            ..,
-                        ))),
-                        NodeModuleId::SELF,
-                    ),
-                    event_name,
-                ) if *event_name == expected_event_name => true,
-                _ => false,
-            })
-            .map(|(_, data)| scrypto_decode::<EpochChangeEvent>(data).expect("Impossible Case!"))
-            .map(|event| (event.validators, event.epoch))
+        // Note: Node should use a well-known index id
+        for (ref event_type_id, ref event_data) in self.application_events.iter() {
+            if let EventTypeIdentifier(
+                Emitter::Function(
+                    RENodeId::GlobalObject(Address::Package(EPOCH_MANAGER_PACKAGE)),
+                    NodeModuleId::SELF,
+                    ..,
+                )
+                | Emitter::Method(
+                    RENodeId::GlobalObject(Address::Component(ComponentAddress::EpochManager(..))),
+                    NodeModuleId::SELF,
+                ),
+                ..,
+            ) = event_type_id
+            {
+                if let Ok(EpochChangeEvent {
+                    ref epoch,
+                    ref validators,
+                }) = scrypto_decode(&event_data)
+                {
+                    return Some((validators.clone(), *epoch));
+                }
+            }
+        }
+        None
     }
 }
 

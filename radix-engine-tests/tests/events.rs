@@ -87,21 +87,21 @@ fn scrypto_can_emit_registered_events() {
     assert_eq!(events.len(), 2); // Two events: lock fee and registered event
     assert!(match events.get(0) {
         Some((
-            EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+            event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
             ref event_data,
-        )) if is_event_name_equal::<LockFeeEvent, _>(event_event_name)
+        )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
             && is_decoded_equal(&LockFeeEvent { amount: 100.into() }, event_data) =>
             true,
         _ => false,
     });
     assert!(match events.get(1) {
         Some((
-            EventTypeIdentifier(
+            event_identifier @ EventTypeIdentifier(
                 Emitter::Function(node_id, NodeModuleId::SELF, blueprint_name),
-                ref event_event_name,
+                ..,
             ),
             ref event_data,
-        )) if is_event_name_equal::<RegisteredEvent, _>(event_event_name)
+        )) if test_runner.is_event_name_equal::<RegisteredEvent>(event_identifier)
             && is_decoded_equal(&RegisteredEvent { number: 12 }, event_data)
             && *node_id == RENodeId::GlobalObject(Address::Package(package_address))
             && blueprint_name == "ScryptoEvents" =>
@@ -132,9 +132,9 @@ fn locking_fee_against_a_vault_emits_correct_events() {
         assert_eq!(events.len(), 1); // One event: lock fee
         assert!(match events.get(0) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
-            )) if is_event_name_equal::<LockFeeEvent, _>(event_event_name)
+            )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
                 && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
                 true,
             _ => false,
@@ -169,9 +169,9 @@ fn vault_fungible_recall_emits_correct_events() {
         assert_eq!(events.len(), 4); // Four events: vault lock fee, vault fungible withdraw, vault fungible recall, vault fungible deposit
         assert!(match events.get(0) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
-            )) if is_event_name_equal::<LockFeeEvent, _>(event_event_name)
+            )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
                 && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
                 true,
             _ => false,
@@ -180,27 +180,27 @@ fn vault_fungible_recall_emits_correct_events() {
         // redundant withdraw event go away or does it make sense from a user perspective?
         assert!(match events.get(1) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
-            )) if is_event_name_equal::<WithdrawResourceEvent, _>(event_event_name)
+            )) if test_runner.is_event_name_equal::<WithdrawResourceEvent>(event_identifier)
                 && is_decoded_equal(&WithdrawResourceEvent::Amount(1.into()), event_data) =>
                 true,
             _ => false,
         });
         assert!(match events.get(2) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
-            )) if is_event_name_equal::<RecallResourceEvent, _>(event_event_name)
+            )) if test_runner.is_event_name_equal::<RecallResourceEvent>(event_identifier)
                 && is_decoded_equal(&RecallResourceEvent::Amount(1.into()), event_data) =>
                 true,
             _ => false,
         });
         assert!(match events.get(3) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
-            )) if is_event_name_equal::<DepositResourceEvent, _>(event_event_name)
+            )) if test_runner.is_event_name_equal::<DepositResourceEvent>(event_identifier)
                 && is_decoded_equal(&DepositResourceEvent::Amount(1.into()), event_data) =>
                 true,
             _ => false,
@@ -268,9 +268,9 @@ fn vault_non_fungible_recall_emits_correct_events() {
         assert_eq!(events.len(), 4); // Four events: vault lock fee, vault non-fungible withdraw, vault non-fungible recall, vault non-fungible deposit
         assert!(match events.get(0) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
-            )) if is_event_name_equal::<LockFeeEvent, _>(event_event_name)
+            )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
                 && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
                 true,
             _ => false,
@@ -279,27 +279,27 @@ fn vault_non_fungible_recall_emits_correct_events() {
         // redundant withdraw event go away or does it make sense from a user perspective?
         assert!(match events.get(1) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
-            )) if is_event_name_equal::<WithdrawResourceEvent, _>(event_event_name)
+            )) if test_runner.is_event_name_equal::<WithdrawResourceEvent>(event_identifier)
                 && is_decoded_equal(&WithdrawResourceEvent::Amount(1.into()), event_data) =>
                 true,
             _ => false,
         });
         assert!(match events.get(2) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
-            )) if is_event_name_equal::<RecallResourceEvent, _>(event_event_name)
+            )) if test_runner.is_event_name_equal::<RecallResourceEvent>(event_identifier)
                 && is_decoded_equal(&RecallResourceEvent::Amount(1.into()), event_data) =>
                 true,
             _ => false,
         });
         assert!(match events.get(3) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
-            )) if is_event_name_equal::<DepositResourceEvent, _>(event_event_name)
+            )) if test_runner.is_event_name_equal::<DepositResourceEvent>(event_identifier)
                 && is_decoded_equal(
                     &DepositResourceEvent::Ids([non_fungible_local_id.clone()].into()),
                     event_data
@@ -344,31 +344,31 @@ fn resource_manager_new_vault_emits_correct_events() {
         assert_eq!(events.len(), 3); // Three events: vault lock fee, resource manager create vault, vault fungible deposit
         assert!(match events.get(0) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
-            )) if is_event_name_equal::<LockFeeEvent, _>(event_event_name)
+            )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
                 && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
                 true,
             _ => false,
         });
         assert!(match events.get(1) {
             Some((
-                EventTypeIdentifier(
+                event_identifier @ EventTypeIdentifier(
                     Emitter::Method(
                         RENodeId::GlobalObject(Address::Resource(..)),
                         NodeModuleId::SELF,
                     ),
-                    ref event_event_name,
+                    ..,
                 ),
                 ..,
-            )) if is_event_name_equal::<VaultCreationEvent, _>(event_event_name) => true,
+            )) if test_runner.is_event_name_equal::<VaultCreationEvent>(event_identifier) => true,
             _ => false,
         });
         assert!(match events.get(2) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
-            )) if is_event_name_equal::<DepositResourceEvent, _>(event_event_name)
+            )) if test_runner.is_event_name_equal::<DepositResourceEvent>(event_identifier)
                 && is_decoded_equal(&DepositResourceEvent::Amount(1.into()), event_data) =>
                 true,
             _ => false,
@@ -420,27 +420,27 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
         assert_eq!(events.len(), 3); // Three events: vault lock fee, resource manager mint fungible, resource manager burn fungible
         assert!(match events.get(0) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
-            )) if is_event_name_equal::<LockFeeEvent, _>(event_event_name)
+            )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
                 && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
                 true,
             _ => false,
         });
         assert!(match events.get(1) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
-            )) if is_event_name_equal::<MintResourceEvent, _>(event_event_name)
+            )) if test_runner.is_event_name_equal::<MintResourceEvent>(event_identifier)
                 && is_decoded_equal(&MintResourceEvent::Amount(10.into()), event_data) =>
                 true,
             _ => false,
         });
         assert!(match events.get(2) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
-            )) if is_event_name_equal::<BurnResourceEvent, _>(event_event_name)
+            )) if test_runner.is_event_name_equal::<BurnResourceEvent>(event_identifier)
                 && is_decoded_equal(&BurnResourceEvent::Amount(10.into()), event_data) =>
                 true,
             _ => false,
@@ -498,27 +498,27 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
         assert_eq!(events.len(), 3); // Three events: vault lock fee, resource manager mint non-fungible, resource manager burn non-fungible
         assert!(match events.get(0) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
-            )) if is_event_name_equal::<LockFeeEvent, _>(event_event_name)
+            )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
                 && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
                 true,
             _ => false,
         });
         assert!(match events.get(1) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
-            )) if is_event_name_equal::<MintResourceEvent, _>(event_event_name)
+            )) if test_runner.is_event_name_equal::<MintResourceEvent>(event_identifier)
                 && is_decoded_equal(&MintResourceEvent::Ids([id.clone()].into()), event_data) =>
                 true,
             _ => false,
         });
         assert!(match events.get(2) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
-            )) if is_event_name_equal::<BurnResourceEvent, _>(event_event_name)
+            )) if test_runner.is_event_name_equal::<BurnResourceEvent>(event_identifier)
                 && is_decoded_equal(&BurnResourceEvent::Ids([id.clone()].into()), event_data) =>
                 true,
             _ => false,
@@ -568,9 +568,9 @@ fn epoch_manager_round_update_emits_correct_event() {
         assert_eq!(events.len(), 1); // One event: round change event
         assert!(match events.get(0) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
-            )) if is_event_name_equal::<RoundChangeEvent, _>(event_event_name)
+            )) if test_runner.is_event_name_equal::<RoundChangeEvent>(event_identifier)
                 && is_decoded_equal(&RoundChangeEvent { round: 4 }, event_data) =>
                 true,
             _ => false,
@@ -616,9 +616,9 @@ fn epoch_manager_epoch_update_emits_correct_event() {
         assert_eq!(events.len(), 1); // One event: epoch change event
         assert!(match events.get(0) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ..,
-            )) if is_event_name_equal::<EpochChangeEvent, _>(event_event_name) => true,
+            )) if test_runner.is_event_name_equal::<EpochChangeEvent>(event_identifier) => true,
             _ => false,
         });
     }
@@ -660,18 +660,19 @@ fn validator_registration_emits_correct_event() {
         assert_eq!(events.len(), 2); // Two events: vault lock fee and register validator
         assert!(match events.get(0) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
-            )) if is_event_name_equal::<LockFeeEvent, _>(event_event_name)
+            )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
                 && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
                 true,
             _ => false,
         });
         assert!(match events.get(1) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ..,
-            )) if is_event_name_equal::<RegisterValidatorEvent, _>(event_event_name) => true,
+            )) if test_runner.is_event_name_equal::<RegisterValidatorEvent>(event_identifier) =>
+                true,
             _ => false,
         });
     }
@@ -716,18 +717,19 @@ fn validator_unregistration_emits_correct_event() {
         assert_eq!(events.len(), 2); // Two events: vault lock fee and register validator
         assert!(match events.get(0) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
-            )) if is_event_name_equal::<LockFeeEvent, _>(event_event_name)
+            )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
                 && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
                 true,
             _ => false,
         });
         assert!(match events.get(1) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ..,
-            )) if is_event_name_equal::<UnregisterValidatorEvent, _>(event_event_name) => true,
+            )) if test_runner.is_event_name_equal::<UnregisterValidatorEvent>(event_identifier) =>
+                true,
             _ => false,
         });
     }
@@ -784,43 +786,43 @@ fn validator_staking_emits_correct_event() {
         assert_eq!(events.len(), 7); // Seven events: vault lock fee, vault withdraw fungible, resource manager mint (lp tokens), vault deposit event, validator stake event, resource manager vault create (for the LP tokens), vault deposit
         assert!(match events.get(0) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
-            )) if is_event_name_equal::<LockFeeEvent, _>(event_event_name)
+            )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
                 && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
                 true,
             _ => false,
         });
         assert!(match events.get(1) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
-            )) if is_event_name_equal::<WithdrawResourceEvent, _>(event_event_name)
+            )) if test_runner.is_event_name_equal::<WithdrawResourceEvent>(event_identifier)
                 && is_decoded_equal(&WithdrawResourceEvent::Amount(100.into()), event_data) =>
                 true,
             _ => false,
         });
         assert!(match events.get(2) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ..,
-            )) if is_event_name_equal::<MintResourceEvent, _>(event_event_name) => true,
+            )) if test_runner.is_event_name_equal::<MintResourceEvent>(event_identifier) => true,
             _ => false,
         });
         assert!(match events.get(3) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
-            )) if is_event_name_equal::<DepositResourceEvent, _>(event_event_name)
+            )) if test_runner.is_event_name_equal::<DepositResourceEvent>(event_identifier)
                 && is_decoded_equal(&DepositResourceEvent::Amount(100.into()), event_data) =>
                 true,
             _ => false,
         });
         assert!(match events.get(4) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
-            )) if is_event_name_equal::<StakeEvent, _>(event_event_name)
+            )) if test_runner.is_event_name_equal::<StakeEvent>(event_identifier)
                 && is_decoded_equal(
                     &StakeEvent {
                         xrd_staked: 100.into()
@@ -832,22 +834,22 @@ fn validator_staking_emits_correct_event() {
         });
         assert!(match events.get(5) {
             Some((
-                EventTypeIdentifier(
+                event_identifier @ EventTypeIdentifier(
                     Emitter::Method(
                         RENodeId::GlobalObject(Address::Resource(..)),
                         NodeModuleId::SELF,
                     ),
-                    ref event_event_name,
+                    ..,
                 ),
                 ..,
-            )) if is_event_name_equal::<VaultCreationEvent, _>(event_event_name) => true,
+            )) if test_runner.is_event_name_equal::<VaultCreationEvent>(event_identifier) => true,
             _ => false,
         });
         assert!(match events.get(6) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ..,
-            )) if is_event_name_equal::<DepositResourceEvent, _>(event_event_name) => true,
+            )) if test_runner.is_event_name_equal::<DepositResourceEvent>(event_identifier) => true,
             _ => false,
         });
     }
@@ -921,85 +923,86 @@ fn validator_unstake_emits_correct_events() {
         assert_eq!(events.len(), 9);
         assert!(match events.get(0) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
-            )) if is_event_name_equal::<LockFeeEvent, _>(event_event_name)
+            )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
                 && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
                 true,
             _ => false,
         });
         assert!(match events.get(1) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
-            )) if is_event_name_equal::<WithdrawResourceEvent, _>(event_event_name)
+            )) if test_runner.is_event_name_equal::<WithdrawResourceEvent>(event_identifier)
                 && is_decoded_equal(&WithdrawResourceEvent::Amount(1.into()), event_data) =>
                 true,
             _ => false,
         });
         assert!(match events.get(2) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
-            )) if is_event_name_equal::<BurnResourceEvent, _>(event_event_name)
+            )) if test_runner.is_event_name_equal::<BurnResourceEvent>(event_identifier)
                 && is_decoded_equal(&BurnResourceEvent::Amount(1.into()), event_data) =>
                 true,
             _ => false,
         });
         assert!(match events.get(3) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ..,
-            )) if is_event_name_equal::<WithdrawResourceEvent, _>(event_event_name) => true,
+            )) if test_runner.is_event_name_equal::<WithdrawResourceEvent>(event_identifier) =>
+                true,
             _ => false,
         });
         assert!(match events.get(4) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ..,
-            )) if is_event_name_equal::<DepositResourceEvent, _>(event_event_name) => true,
+            )) if test_runner.is_event_name_equal::<DepositResourceEvent>(event_identifier) => true,
             _ => false,
         });
         assert!(match events.get(5) {
             Some((
-                EventTypeIdentifier(
+                event_identifier @ EventTypeIdentifier(
                     Emitter::Method(
                         RENodeId::GlobalObject(Address::Resource(resource_address)),
                         NodeModuleId::SELF,
                     ),
-                    ref event_event_name,
+                    ..,
                 ),
                 ..,
-            )) if is_event_name_equal::<MintResourceEvent, _>(event_event_name)
+            )) if test_runner.is_event_name_equal::<MintResourceEvent>(event_identifier)
                 && *resource_address == validator_substate.unstake_nft =>
                 true,
             _ => false,
         });
         assert!(match events.get(6) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ..,
-            )) if is_event_name_equal::<UnstakeEvent, _>(event_event_name) => true,
+            )) if test_runner.is_event_name_equal::<UnstakeEvent>(event_identifier) => true,
             _ => false,
         });
         assert!(match events.get(7) {
             Some((
-                EventTypeIdentifier(
+                event_identifier @ EventTypeIdentifier(
                     Emitter::Method(
                         RENodeId::GlobalObject(Address::Resource(..)),
                         NodeModuleId::SELF,
                     ),
-                    ref event_event_name,
+                    ..,
                 ),
                 ..,
-            )) if is_event_name_equal::<VaultCreationEvent, _>(event_event_name) => true,
+            )) if test_runner.is_event_name_equal::<VaultCreationEvent>(event_identifier) => true,
             _ => false,
         });
         assert!(match events.get(8) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ..,
-            )) if is_event_name_equal::<DepositResourceEvent, _>(event_event_name) => true,
+            )) if test_runner.is_event_name_equal::<DepositResourceEvent>(event_identifier) => true,
             _ => false,
         });
     }
@@ -1087,61 +1090,62 @@ fn validator_claim_xrd_emits_correct_events() {
         assert_eq!(events.len(), 7);
         assert!(match events.get(0) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
-            )) if is_event_name_equal::<LockFeeEvent, _>(event_event_name)
+            )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
                 && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
                 true,
             _ => false,
         });
         assert!(match events.get(1) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
-            )) if is_event_name_equal::<WithdrawResourceEvent, _>(event_event_name)
+            )) if test_runner.is_event_name_equal::<WithdrawResourceEvent>(event_identifier)
                 && is_decoded_equal(&WithdrawResourceEvent::Amount(1.into()), event_data) =>
                 true,
             _ => false,
         });
         assert!(match events.get(2) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ..,
-            )) if is_event_name_equal::<BurnResourceEvent, _>(event_event_name) => true,
+            )) if test_runner.is_event_name_equal::<BurnResourceEvent>(event_identifier) => true,
             _ => false,
         });
         assert!(match events.get(3) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ..,
-            )) if is_event_name_equal::<WithdrawResourceEvent, _>(event_event_name) => true,
+            )) if test_runner.is_event_name_equal::<WithdrawResourceEvent>(event_identifier) =>
+                true,
             _ => false,
         });
         assert!(match events.get(4) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ..,
-            )) if is_event_name_equal::<ClaimXrdEvent, _>(event_event_name) => true,
+            )) if test_runner.is_event_name_equal::<ClaimXrdEvent>(event_identifier) => true,
             _ => false,
         });
         assert!(match events.get(5) {
             Some((
-                EventTypeIdentifier(
+                event_identifier @ EventTypeIdentifier(
                     Emitter::Method(
                         RENodeId::GlobalObject(Address::Resource(..)),
                         NodeModuleId::SELF,
                     ),
-                    ref event_event_name,
+                    ..,
                 ),
                 ..,
-            )) if is_event_name_equal::<VaultCreationEvent, _>(event_event_name) => true,
+            )) if test_runner.is_event_name_equal::<VaultCreationEvent>(event_identifier) => true,
             _ => false,
         });
         assert!(match events.get(6) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ..,
-            )) if is_event_name_equal::<DepositResourceEvent, _>(event_event_name) => true,
+            )) if test_runner.is_event_name_equal::<DepositResourceEvent>(event_identifier) => true,
             _ => false,
         });
     }
@@ -1199,29 +1203,29 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
         assert_eq!(events.len(), 3);
         assert!(match events.get(0) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
-            )) if is_event_name_equal::<LockFeeEvent, _>(event_event_name)
+            )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
                 && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
                 true,
             _ => false,
         });
         assert!(match events.get(1) {
             Some((
-                EventTypeIdentifier(
+                event_identifier @ EventTypeIdentifier(
                     Emitter::Method(_, NodeModuleId::AccessRules),
-                    ref event_event_name,
+                    ..,
                 ),
                 ..,
-            )) if is_event_name_equal::<SetRuleEvent, _>(event_event_name) => true,
+            )) if test_runner.is_event_name_equal::<SetRuleEvent>(event_identifier) => true,
             _ => false,
         });
         assert!(match events.get(2) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
-            )) if is_event_name_equal::<UpdateAcceptingStakeDelegationStateEvent, _>(
-                event_event_name
+            )) if test_runner.is_event_name_equal::<UpdateAcceptingStakeDelegationStateEvent>(
+                event_identifier
             ) && is_decoded_equal(
                 &UpdateAcceptingStakeDelegationStateEvent {
                     accepts_delegation: false
@@ -1267,21 +1271,21 @@ fn setting_metadata_emits_correct_events() {
         assert_eq!(events.len(), 2);
         assert!(match events.get(0) {
             Some((
-                EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+                event_identifier @ EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ..),
                 ref event_data,
-            )) if is_event_name_equal::<LockFeeEvent, _>(event_event_name)
+            )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
                 && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
                 true,
             _ => false,
         });
         assert!(match events.get(1) {
             Some((
-                EventTypeIdentifier(
+                event_identifier @ EventTypeIdentifier(
                     Emitter::Method(_, NodeModuleId::Metadata),
-                    ref event_event_name,
+                    ..,
                 ),
                 ..,
-            )) if is_event_name_equal::<SetMetadataEvent, _>(event_event_name) => true,
+            )) if test_runner.is_event_name_equal::<SetMetadataEvent>(event_identifier) => true,
             _ => false,
         });
     }
@@ -1299,22 +1303,8 @@ struct RegisteredEvent {
     number: u64,
 }
 
-fn event_name<T: ScryptoDescribe>() -> String {
-    let (local_type_index, schema) =
-        generate_full_schema_from_single_type::<T, ScryptoCustomTypeExtension>();
-    (*schema
-        .resolve_type_metadata(local_type_index)
-        .expect("Cant fail")
-        .type_name)
-        .to_owned()
-}
-
 fn is_decoded_equal<T: ScryptoDecode + PartialEq>(expected: &T, actual: &[u8]) -> bool {
     scrypto_decode::<T>(&actual).unwrap() == *expected
-}
-
-fn is_event_name_equal<T: ScryptoDescribe, S: AsRef<str>>(actual: S) -> bool {
-    event_name::<T>() == actual.as_ref().to_owned()
 }
 
 fn create_validator(
