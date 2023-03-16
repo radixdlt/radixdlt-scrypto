@@ -25,7 +25,9 @@ use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig
 use radix_engine_interface::api::node_modules::auth::{
     AuthAddresses, ACCESS_RULES_BLUEPRINT, FUNCTION_ACCESS_RULES_BLUEPRINT,
 };
-use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, METADATA_BLUEPRINT};
+use radix_engine_interface::api::node_modules::metadata::{
+    MetadataEntry, MetadataValue, METADATA_BLUEPRINT,
+};
 use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_BLUEPRINT, PACKAGE_ROYALTY_BLUEPRINT,
 };
@@ -231,6 +233,26 @@ impl TestRunner {
             key_pair.1,
             NonFungibleGlobalId::from_public_key(&key_pair.0),
         )
+    }
+
+    pub fn set_metadata(
+        &mut self,
+        address: Address,
+        key: &str,
+        value: &str,
+        proof: NonFungibleGlobalId,
+    ) {
+        let manifest = ManifestBuilder::new()
+            .lock_fee(FAUCET_COMPONENT, 100u32.into())
+            .set_metadata(
+                address,
+                key.to_string(),
+                MetadataEntry::Value(MetadataValue::String(value.to_string())),
+            )
+            .build();
+
+        let receipt = self.execute_manifest(manifest, vec![proof]);
+        receipt.expect_commit_success();
     }
 
     pub fn get_metadata(&mut self, address: Address, key: &str) -> Option<MetadataEntry> {

@@ -9,7 +9,7 @@ pub struct Sandwich {
     pub available: bool,
     pub tastes_great: bool,
     #[mutable]
-    pub reference: Option<ResourceAddress>,
+    pub reference: Option<ComponentAddress>,
     #[mutable]
     pub own: Option<Own>,
 }
@@ -49,7 +49,7 @@ mod non_fungible_test {
                         name: "Test".to_owned(),
                         available: false,
                         tastes_great: true,
-                        reference: Some(resource_address),
+                        reference: None,
                         own: None,
                     },
                 )
@@ -138,18 +138,27 @@ mod non_fungible_test {
             );
         }
 
-        pub fn get_non_fungible_reference() -> (Bucket, Bucket) {
+        pub fn create_non_fungible_reference(address: ComponentAddress) -> (Bucket, Bucket) {
             let (mint_badge, resource_address, bucket) = Self::create_non_fungible_mutable();
 
-            let data1: Sandwich = borrow_resource_manager!(resource_address)
-                .get_non_fungible_data(&NonFungibleLocalId::integer(0));
-
-            let data2: Sandwich = borrow_resource_manager!(data1.reference.unwrap())
-                .get_non_fungible_data(&NonFungibleLocalId::integer(0));
-
-            assert_eq!(data1, data2);
+            mint_badge.authorize(|| {
+                borrow_resource_manager!(resource_address).update_non_fungible_data(
+                    &NonFungibleLocalId::integer(0),
+                    "reference",
+                    Some(address),
+                );
+            });
 
             (mint_badge, bucket)
+        }
+
+        pub fn call_non_fungible_reference(resource_address: ResourceAddress) -> String {
+            let data: Sandwich = borrow_resource_manager!(resource_address)
+                .get_non_fungible_data(&NonFungibleLocalId::integer(0));
+            let address = data.reference.unwrap();
+
+            let metadata = borrow_component!(address).metadata();
+            metadata.get_string("test_key").unwrap()
         }
 
         pub fn update_non_fungible_with_ownership() -> Bucket {
@@ -183,7 +192,7 @@ mod non_fungible_test {
         }
 
         pub fn update_and_get_non_fungible_reference(
-            reference: ResourceAddress,
+            reference: ComponentAddress,
         ) -> (Bucket, Bucket) {
             let (mint_badge, resource_address, bucket) = Self::create_non_fungible_mutable();
 
