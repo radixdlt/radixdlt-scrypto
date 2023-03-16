@@ -45,7 +45,7 @@ fn scrypto_cant_emit_unregistered_event() {
         .call_function(
             package_address,
             "ScryptoEvents",
-            "emit_event",
+            "emit_unregistered_event",
             manifest_args!(12u64),
         )
         .build();
@@ -61,6 +61,52 @@ fn scrypto_cant_emit_unregistered_event() {
                 EventError::SchemaNotFoundError { .. },
             )),
         )
+    });
+}
+
+#[test]
+fn scrypto_can_emit_registered_events() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().without_trace().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/events");
+
+    let manifest = ManifestBuilder::new()
+        .call_function(
+            package_address,
+            "ScryptoEvents",
+            "emit_registered_event",
+            manifest_args!(12u64),
+        )
+        .build();
+
+    // Act
+    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+
+    // Assert
+    let events = receipt.expect_commit(true).application_events.clone();
+    assert_eq!(events.len(), 2); // Two events: lock fee and registered event
+    assert!(match events.get(0) {
+        Some((
+            EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
+            ref event_data,
+        )) if is_event_name_equal::<LockFeeEvent, _>(event_event_name)
+            && is_decoded_equal(&LockFeeEvent { amount: 100.into() }, event_data) =>
+            true,
+        _ => false,
+    });
+    assert!(match events.get(1) {
+        Some((
+            EventTypeIdentifier(
+                Emitter::Function(node_id, NodeModuleId::SELF, blueprint_name),
+                ref event_event_name,
+            ),
+            ref event_data,
+        )) if is_event_name_equal::<RegisteredEvent, _>(event_event_name)
+            && is_decoded_equal(&RegisteredEvent { number: 12 }, event_data)
+            && *node_id == RENodeId::GlobalObject(Address::Package(package_address))
+            && blueprint_name == "ScryptoEvents" =>
+            true,
+        _ => false,
     });
 }
 
@@ -82,7 +128,6 @@ fn locking_fee_against_a_vault_emits_correct_events() {
 
     // Assert
     {
-        receipt.expect_commit_success();
         let events = receipt.expect_commit(true).clone().application_events;
         assert_eq!(events.len(), 1); // One event: lock fee
         assert!(match events.get(0) {
@@ -120,7 +165,6 @@ fn vault_fungible_recall_emits_correct_events() {
 
     // Assert
     {
-        receipt.expect_commit_success();
         let events = receipt.expect_commit(true).clone().application_events;
         assert_eq!(events.len(), 4); // Four events: vault lock fee, vault fungible withdraw, vault fungible recall, vault fungible deposit
         assert!(match events.get(0) {
@@ -220,7 +264,6 @@ fn vault_non_fungible_recall_emits_correct_events() {
 
     // Assert
     {
-        receipt.expect_commit_success();
         let events = receipt.expect_commit(true).clone().application_events;
         assert_eq!(events.len(), 4); // Four events: vault lock fee, vault non-fungible withdraw, vault non-fungible recall, vault non-fungible deposit
         assert!(match events.get(0) {
@@ -297,7 +340,6 @@ fn resource_manager_new_vault_emits_correct_events() {
 
     // Assert
     {
-        receipt.expect_commit_success();
         let events = receipt.expect_commit(true).clone().application_events;
         assert_eq!(events.len(), 3); // Three events: vault lock fee, resource manager create vault, vault fungible deposit
         assert!(match events.get(0) {
@@ -374,7 +416,6 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
 
     // Assert
     {
-        receipt.expect_commit_success();
         let events = receipt.expect_commit(true).clone().application_events;
         assert_eq!(events.len(), 3); // Three events: vault lock fee, resource manager mint fungible, resource manager burn fungible
         assert!(match events.get(0) {
@@ -453,7 +494,6 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
 
     // Assert
     {
-        receipt.expect_commit_success();
         let events = receipt.expect_commit(true).clone().application_events;
         assert_eq!(events.len(), 3); // Three events: vault lock fee, resource manager mint non-fungible, resource manager burn non-fungible
         assert!(match events.get(0) {
@@ -524,7 +564,6 @@ fn epoch_manager_round_update_emits_correct_event() {
 
     // Assert
     {
-        receipt.expect_commit_success();
         let events = receipt.expect_commit(true).clone().application_events;
         assert_eq!(events.len(), 1); // One event: round change event
         assert!(match events.get(0) {
@@ -573,7 +612,6 @@ fn epoch_manager_epoch_update_emits_correct_event() {
 
     // Assert
     {
-        receipt.expect_commit_success();
         let events = receipt.expect_commit(true).clone().application_events;
         assert_eq!(events.len(), 1); // One event: epoch change event
         assert!(match events.get(0) {
@@ -618,7 +656,6 @@ fn validator_registration_emits_correct_event() {
 
     // Assert
     {
-        receipt.expect_commit_success();
         let events = receipt.expect_commit(true).clone().application_events;
         assert_eq!(events.len(), 2); // Two events: vault lock fee and register validator
         assert!(match events.get(0) {
@@ -675,7 +712,6 @@ fn validator_unregistration_emits_correct_event() {
 
     // Assert
     {
-        receipt.expect_commit_success();
         let events = receipt.expect_commit(true).clone().application_events;
         assert_eq!(events.len(), 2); // Two events: vault lock fee and register validator
         assert!(match events.get(0) {
@@ -744,7 +780,6 @@ fn validator_staking_emits_correct_event() {
 
     // Assert
     {
-        receipt.expect_commit_success();
         let events = receipt.expect_commit(true).clone().application_events;
         assert_eq!(events.len(), 7); // Seven events: vault lock fee, vault withdraw fungible, resource manager mint (lp tokens), vault deposit event, validator stake event, resource manager vault create (for the LP tokens), vault deposit
         assert!(match events.get(0) {
@@ -870,7 +905,6 @@ fn validator_unstake_emits_correct_events() {
 
     // Assert
     {
-        receipt.expect_commit_success();
         let events = receipt.expect_commit(true).clone().application_events;
         /*
         Nine Events:
@@ -1039,7 +1073,6 @@ fn validator_claim_xrd_emits_correct_events() {
 
     // Assert
     {
-        receipt.expect_commit_success();
         let events = receipt.expect_commit(true).clone().application_events;
         /*
         Seven Events:
@@ -1156,7 +1189,6 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
 
     // Assert
     {
-        receipt.expect_commit_success();
         let events = receipt.expect_commit(true).clone().application_events;
         /*
         Two Events:
@@ -1226,7 +1258,6 @@ fn setting_metadata_emits_correct_events() {
 
     // Assert
     {
-        receipt.expect_commit_success();
         let events = receipt.expect_commit(true).clone().application_events;
         for (id, _) in events.iter() {
             println!("{}", test_runner.event_name(&id))
@@ -1266,8 +1297,8 @@ fn setting_metadata_emits_correct_events() {
 #[derive(NonFungibleData)]
 struct EmptyStruct {}
 
-#[derive(ScryptoEncode, Describe)]
-struct CustomEvent {
+#[derive(ScryptoSbor, PartialEq, Eq, PartialOrd, Ord)]
+struct RegisteredEvent {
     number: u64,
 }
 

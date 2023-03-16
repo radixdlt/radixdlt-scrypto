@@ -332,7 +332,9 @@ impl PackageNativePackage {
                 access_rules: BTreeMap::new(),
                 default_auth: AccessRule::AllowAll,
             },
-            BTreeMap::new(), // TODO: To rework in Pt3
+            convert_event_schema(input.event_schema).map_err(|error| {
+                RuntimeError::ApplicationError(ApplicationError::EventError(error))
+            })?,
         );
 
         // Create package node
