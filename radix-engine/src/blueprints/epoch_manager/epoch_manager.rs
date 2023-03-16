@@ -64,8 +64,8 @@ impl EpochManagerBlueprint {
             address,
             epoch: initial_epoch,
             round: 0,
-            rounds_per_epoch: rounds_per_epoch,
-            num_unstake_epochs: num_unstake_epochs,
+            rounds_per_epoch,
+            num_unstake_epochs,
         };
 
         let mut olympia_validator_token_resman: ResourceManager = {
@@ -83,20 +83,15 @@ impl EpochManagerBlueprint {
 
             access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
 
-            let result = api.call_function(
-                RESOURCE_MANAGER_PACKAGE,
-                RESOURCE_MANAGER_BLUEPRINT,
-                RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT,
-                scrypto_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
-                    id_type: NonFungibleIdType::Bytes,
-                    metadata,
-                    access_rules,
-                    resource_address: olympia_validator_token_address,
-                })
-                .unwrap(),
+            let resource_manager = ResourceManager::new_non_fungible_with_address(
+                NonFungibleIdType::Bytes,
+                metadata,
+                access_rules,
+                olympia_validator_token_address,
+                api,
             )?;
-            let resource_address: ResourceAddress = scrypto_decode(result.as_slice()).unwrap();
-            ResourceManager(resource_address)
+
+            resource_manager
         };
 
         let mut validators = BTreeMap::new();

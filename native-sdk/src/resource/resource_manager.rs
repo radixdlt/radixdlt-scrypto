@@ -72,6 +72,8 @@ impl ResourceManager {
         Ok((ResourceManager(resource_address), bucket))
     }
 
+
+
     pub fn new_non_fungible<Y, E: Debug + ScryptoDecode>(
         id_type: NonFungibleIdType,
         metadata: BTreeMap<String, String>,
@@ -93,6 +95,32 @@ impl ResourceManager {
             .unwrap(),
         )?;
         let resource_address = scrypto_decode(result.as_slice()).unwrap();
+        Ok(ResourceManager(resource_address))
+    }
+
+    pub fn new_non_fungible_with_address<Y, E: Debug + ScryptoDecode>(
+        id_type: NonFungibleIdType,
+        metadata: BTreeMap<String, String>,
+        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+        address: [u8; 26], // TODO: Clean this up
+        api: &mut Y,
+    ) -> Result<Self, E>
+        where
+            Y: ClientApi<E>,
+    {
+        let result = api.call_function(
+            RESOURCE_MANAGER_PACKAGE,
+            RESOURCE_MANAGER_BLUEPRINT,
+            RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT,
+            scrypto_encode(&ResourceManagerCreateNonFungibleWithAddressInput {
+                id_type,
+                metadata,
+                access_rules,
+                resource_address: address,
+            })
+                .unwrap(),
+        )?;
+        let resource_address: ResourceAddress = scrypto_decode(result.as_slice()).unwrap();
         Ok(ResourceManager(resource_address))
     }
 
