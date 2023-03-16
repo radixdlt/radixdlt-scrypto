@@ -450,135 +450,74 @@ where
         if depth == 0 {
             for node_id in &resolved.update.node_refs_to_copy {
                 match node_id {
-                    RENodeId::GlobalObject(Address::Resource(..)) => {
-                        if self.current_frame.get_node_visibility(node_id).is_none() {
-                            let offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
-                            self.track
-                                .acquire_lock(
-                                    SubstateId(*node_id, NodeModuleId::TypeInfo, offset.clone()),
-                                    LockFlags::read_only(),
-                                )
-                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
-                            self.track
-                                .release_lock(
-                                    SubstateId(*node_id, NodeModuleId::TypeInfo, offset),
-                                    false,
-                                )
-                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
-                            self.current_frame
-                                .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                        }
+                    RENodeId::GlobalObject(Address::Component(
+                        ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
+                        | ComponentAddress::EddsaEd25519VirtualAccount(..)
+                        | ComponentAddress::EcdsaSecp256k1VirtualIdentity(..)
+                        | ComponentAddress::EddsaEd25519VirtualIdentity(..),
+                    )) => {
+                        // For virtual accounts and native packages, create a reference directly
+                        self.current_frame
+                            .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                        continue;
                     }
-                    RENodeId::GlobalObject(Address::Package(package_address)) => {
-                        // TODO: Cleanup
-                        {
-                            if is_native_package(*package_address) {
-                                self.current_frame
-                                    .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                                continue;
-                            } else {
-                                if self.current_frame.get_node_visibility(node_id).is_none() {
-                                    let offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
-                                    self.track
-                                        .acquire_lock(
-                                            SubstateId(
-                                                *node_id,
-                                                NodeModuleId::TypeInfo,
-                                                offset.clone(),
-                                            ),
-                                            LockFlags::read_only(),
-                                        )
-                                        .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
-                                    self.track
-                                        .release_lock(
-                                            SubstateId(*node_id, NodeModuleId::TypeInfo, offset),
-                                            false,
-                                        )
-                                        .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
-                                    self.current_frame
-                                        .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                                }
-                            }
-                        }
-                    }
-                    RENodeId::GlobalObject(Address::Component(global_address)) => {
-                        if matches!(
-                            global_address,
-                            ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
-                        ) || matches!(
-                            global_address,
-                            ComponentAddress::EddsaEd25519VirtualAccount(..)
-                        ) || matches!(
-                            global_address,
-                            ComponentAddress::EcdsaSecp256k1VirtualIdentity(..)
-                        ) || matches!(
-                            global_address,
-                            ComponentAddress::EddsaEd25519VirtualIdentity(..)
-                        ) {
-                            // For virtual accounts and native packages, create a reference directly
-                            self.current_frame
-                                .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                            continue;
-                        }
-
-                        if self.current_frame.get_node_visibility(node_id).is_none() {
-                            let offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
-                            self.track
-                                .acquire_lock(
-                                    SubstateId(*node_id, NodeModuleId::TypeInfo, offset.clone()),
-                                    LockFlags::read_only(),
-                                )
-                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
-                            self.track
-                                .release_lock(
-                                    SubstateId(*node_id, NodeModuleId::TypeInfo, offset),
-                                    false,
-                                )
-                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
-                            self.current_frame
-                                .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                        }
-                    }
-                    RENodeId::Object(..) => {
-                        if self.current_frame.get_node_visibility(node_id).is_none() {
-                            let offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
-                            self.track
-                                .acquire_lock(
-                                    SubstateId(*node_id, NodeModuleId::TypeInfo, offset.clone()),
-                                    LockFlags::read_only(),
-                                )
-                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
-
-                            let substate_ref =
-                                self.track
-                                    .get_substate(*node_id, NodeModuleId::TypeInfo, &offset);
-                            let type_substate: &TypeInfoSubstate = substate_ref.into();
-                            if !matches!(type_substate,
-                                TypeInfoSubstate::Object {
-                                    package_address,
-                                    blueprint_name,
-                                    ..
-
-                                } if package_address.eq(&RESOURCE_MANAGER_PACKAGE) && blueprint_name.eq(VAULT_BLUEPRINT)
-                            ) {
-                                return Err(RuntimeError::KernelError(
-                                    KernelError::InvalidDirectAccess,
-                                ));
-                            }
-
-                            self.track
-                                .release_lock(
-                                    SubstateId(*node_id, NodeModuleId::TypeInfo, offset),
-                                    false,
-                                )
-                                .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
-
-                            self.current_frame
-                                .add_ref(*node_id, RENodeVisibilityOrigin::DirectAccess);
-                        }
+                    RENodeId::GlobalObject(Address::Package(package_address))
+                        if is_native_package(*package_address) =>
+                    {
+                        // TODO: This is required for bootstrap, can we clean this up and remove it at some point?
+                        self.current_frame
+                            .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                        continue;
                     }
                     _ => {}
                 }
+
+                if self.current_frame.get_node_visibility(node_id).is_some() {
+                    continue;
+                }
+
+                let offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
+                self.track
+                    .acquire_lock(
+                        SubstateId(*node_id, NodeModuleId::TypeInfo, offset.clone()),
+                        LockFlags::read_only(),
+                    )
+                    .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
+
+                let substate_ref =
+                    self.track
+                        .get_substate(*node_id, NodeModuleId::TypeInfo, &offset);
+                let type_substate: &TypeInfoSubstate = substate_ref.into();
+                match type_substate {
+                    TypeInfoSubstate::Object {
+                        package_address,
+                        blueprint_name,
+                        global,
+                    } => {
+                        if *global {
+                            self.current_frame
+                                .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                        } else if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                            && blueprint_name.eq(VAULT_BLUEPRINT)
+                        {
+                            self.current_frame
+                                .add_ref(*node_id, RENodeVisibilityOrigin::DirectAccess);
+                        } else {
+                            return Err(RuntimeError::KernelError(
+                                KernelError::InvalidDirectAccess,
+                            ));
+                        }
+                    }
+                    TypeInfoSubstate::KeyValueStore(..) => {
+                        return Err(RuntimeError::KernelError(
+                            KernelError::InvalidDirectAccess,
+                        ));
+                    }
+                }
+
+                self.track
+                    .release_lock(SubstateId(*node_id, NodeModuleId::TypeInfo, offset), false)
+                    .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
             }
         }
 
