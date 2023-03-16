@@ -76,7 +76,7 @@ fn test_basic_transfer() {
         + 7500 /* RunSystem */
         + 0 /* RunWasm */
         + 50000 /* TxBaseCost */
-        + 1320 /* TxPayloadCost */
+        + 1260 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
         + 22500, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
@@ -210,7 +210,7 @@ fn test_radiswap() {
         + 15000 /* RunSystem */
         + 1520645 /* RunWasm */
         + 50000 /* TxBaseCost */
-        + 1705 /* TxPayloadCost */
+        + 1625 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
         + 54000, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
@@ -319,7 +319,7 @@ fn test_flash_loan() {
         + 30000 /* RunSystem */
         + 1172035 /* RunWasm */
         + 50000 /* TxBaseCost */
-        + 2475 /* TxPayloadCost */
+        + 2375 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
         + 90500, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum

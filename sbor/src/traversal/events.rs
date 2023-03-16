@@ -83,6 +83,24 @@ pub struct MapHeader<X: CustomValueKind> {
 }
 
 impl<C: CustomTraversal> ContainerHeader<C> {
+    pub fn get_own_value_kind(&self) -> ValueKind<C::CustomValueKind> {
+        match self {
+            ContainerHeader::Tuple(_) => ValueKind::Tuple,
+            ContainerHeader::EnumVariant(_) => ValueKind::Enum,
+            ContainerHeader::Array(_) => ValueKind::Array,
+            ContainerHeader::Map(_) => ValueKind::Map,
+        }
+    }
+
+    pub fn value_kind_name(&self) -> &'static str {
+        match self {
+            ContainerHeader::Tuple(_) => "Tuple",
+            ContainerHeader::EnumVariant(_) => "Enum",
+            ContainerHeader::Array(_) => "Array",
+            ContainerHeader::Map(_) => "Map",
+        }
+    }
+
     pub fn get_child_count(&self) -> usize {
         match self {
             ContainerHeader::Tuple(TupleHeader { length }) => *length,

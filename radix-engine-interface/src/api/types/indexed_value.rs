@@ -41,7 +41,7 @@ impl IndexedScryptoValue {
                             ScryptoCustomValue::Address(a) => {
                                 references.insert(a.into());
                             }
-                            ScryptoCustomValue::Reference(a) => {
+                            ScryptoCustomValue::InternalRef(a) => {
                                 references.insert(RENodeId::Object(a.0));
                             }
                             ScryptoCustomValue::Own(o) => {
@@ -195,7 +195,7 @@ impl ValueVisitor<ScryptoCustomValueKind, ScryptoCustomValue> for ScryptoValueVi
             ScryptoCustomValue::Address(value) => {
                 self.references.insert(value.clone().into());
             }
-            ScryptoCustomValue::Reference(value) => {
+            ScryptoCustomValue::InternalRef(value) => {
                 self.references.insert(RENodeId::Object(value.0));
             }
             ScryptoCustomValue::Own(value) => {
