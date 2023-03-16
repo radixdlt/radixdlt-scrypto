@@ -439,14 +439,13 @@ impl NonFungibleResourceManagerBlueprint {
         Ok(Bucket(bucket_id))
     }
 
-
     pub(crate) fn mint_single_uuid_non_fungible<Y>(
         receiver: RENodeId,
         value: ScryptoValue,
         api: &mut Y,
     ) -> Result<(Bucket, NonFungibleLocalId), RuntimeError>
-        where
-            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.sys_lock_substate(
             receiver,

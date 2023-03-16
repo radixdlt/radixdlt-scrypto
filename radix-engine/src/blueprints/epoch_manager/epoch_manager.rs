@@ -4,13 +4,13 @@ use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use native_sdk::access_rules::AccessRulesObject;
+use native_sdk::account::Account;
 use native_sdk::metadata::Metadata;
 use native_sdk::resource::{ResourceManager, SysBucket};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::account::{AccountDepositInput, ACCOUNT_DEPOSIT_IDENT};
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
@@ -98,18 +98,12 @@ impl EpochManagerBlueprint {
         let mut validators = BTreeMap::new();
 
         for (key, validator_init) in validator_set {
-            let (owner_token_bucket, local_id) = owner_resman.mint_non_fungible_single_uuid((), api)?;
-            let global_id =
-                NonFungibleGlobalId::new(owner_resman.0, local_id.clone());
+            let (owner_token_bucket, local_id) =
+                owner_resman.mint_non_fungible_single_uuid((), api)?;
+            let global_id = NonFungibleGlobalId::new(owner_resman.0, local_id.clone());
 
-            api.call_method(
-                RENodeId::GlobalObject(validator_init.validator_account_address.into()),
-                ACCOUNT_DEPOSIT_IDENT,
-                scrypto_encode(&AccountDepositInput {
-                    bucket: owner_token_bucket,
-                })
-                .unwrap(),
-            )?;
+            let validator_account = Account(validator_init.validator_account_address);
+            validator_account.deposit(owner_token_bucket, api)?;
 
             let stake = validator_init.initial_stake.sys_amount(api)?;
             let (address, lp_bucket) = ValidatorCreator::create_with_initial_stake(
@@ -123,11 +117,8 @@ impl EpochManagerBlueprint {
             let validator = Validator { key, stake };
             validators.insert(address, validator);
 
-            api.call_method(
-                RENodeId::GlobalObject(validator_init.stake_account_address.into()),
-                ACCOUNT_DEPOSIT_IDENT,
-                scrypto_encode(&AccountDepositInput { bucket: lp_bucket }).unwrap(),
-            )?;
+            let staker_account = Account(validator_init.stake_account_address);
+            staker_account.deposit(lp_bucket, api)?;
         }
 
         let current_validator_set = ValidatorSetSubstate {

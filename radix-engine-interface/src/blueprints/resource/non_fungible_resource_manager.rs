@@ -131,7 +131,6 @@ pub struct NonFungibleResourceManagerMintUuidInput {
 
 pub type NonFungibleResourceManagerMintUuidOutput = Bucket;
 
-
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT: &str = "mint_single_uuid";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]

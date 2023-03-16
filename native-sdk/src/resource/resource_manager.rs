@@ -153,15 +153,16 @@ impl ResourceManager {
         data: T,
         api: &mut Y,
     ) -> Result<(Bucket, NonFungibleLocalId), E>
-        where
-            Y: ClientApi<E>,
+    where
+        Y: ClientApi<E>,
     {
         let value: ScryptoValue = scrypto_decode(&scrypto_encode(&data).unwrap()).unwrap();
 
         let rtn = api.call_method(
             RENodeId::GlobalObject(self.0.into()),
             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT,
-            scrypto_encode(&NonFungibleResourceManagerMintSingleUuidInput { entry: value }).unwrap(),
+            scrypto_encode(&NonFungibleResourceManagerMintSingleUuidInput { entry: value })
+                .unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())
