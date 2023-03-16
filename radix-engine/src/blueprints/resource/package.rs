@@ -235,6 +235,20 @@ impl ResourceManagerNativePackage {
             schema,
             substates,
             functions,
+            event_schema: vec![
+                generate_full_schema_from_single_type::<
+                    VaultCreationEvent,
+                    ScryptoCustomTypeExtension,
+                >(),
+                generate_full_schema_from_single_type::<
+                    MintResourceEvent,
+                    ScryptoCustomTypeExtension,
+                >(),
+                generate_full_schema_from_single_type::<
+                    BurnResourceEvent,
+                    ScryptoCustomTypeExtension,
+                >(),
+            ],
         };
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
@@ -403,6 +417,21 @@ impl ResourceManagerNativePackage {
             schema,
             substates,
             functions,
+            event_schema: vec![
+                generate_full_schema_from_single_type::<LockFeeEvent, ScryptoCustomTypeExtension>(),
+                generate_full_schema_from_single_type::<
+                    WithdrawResourceEvent,
+                    ScryptoCustomTypeExtension,
+                >(),
+                generate_full_schema_from_single_type::<
+                    DepositResourceEvent,
+                    ScryptoCustomTypeExtension,
+                >(),
+                generate_full_schema_from_single_type::<
+                    RecallResourceEvent,
+                    ScryptoCustomTypeExtension,
+                >(),
+            ],
         };
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
@@ -532,6 +561,7 @@ impl ResourceManagerNativePackage {
             schema,
             substates,
             functions,
+            event_schema: vec![],
         };
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
@@ -596,6 +626,7 @@ impl ResourceManagerNativePackage {
             schema,
             substates,
             functions,
+            event_schema: vec![],
         };
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
@@ -695,6 +726,7 @@ impl ResourceManagerNativePackage {
             schema,
             substates,
             functions,
+            event_schema: vec![],
         };
 
         PackageSchema {

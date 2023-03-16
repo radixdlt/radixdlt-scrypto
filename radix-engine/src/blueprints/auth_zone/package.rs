@@ -116,7 +116,8 @@ impl AuthZoneNativePackage {
                 AUTH_ZONE_BLUEPRINT.to_string() => BlueprintSchema {
                     schema,
                     substates,
-                    functions
+                    functions,
+                    event_schema: vec![]
                 }
             ),
         }

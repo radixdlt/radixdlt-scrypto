@@ -25,6 +25,12 @@ pub struct BlueprintSchema {
     pub substates: Vec<LocalTypeIndex>,
     /// For each function, there is a [`FunctionSchema`]
     pub functions: BTreeMap<String, FunctionSchema>,
+    /// TODO: Move to the following:
+    /// ```no_run
+    /// /// For each event there is a [`String`] name and a [`LocalTypeIndex`]
+    /// pub event_schema: BTreeMap<String, LocalTypeIndex>
+    /// ```
+    pub event_schema: Vec<(LocalTypeIndex, ScryptoSchema)>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
@@ -51,6 +57,7 @@ impl Default for BlueprintSchema {
             },
             substates: Vec::default(),
             functions: BTreeMap::default(),
+            event_schema: Default::default(),
         }
     }
 }

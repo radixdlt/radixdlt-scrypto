@@ -2,6 +2,8 @@
     "rust-analyzer.linkedProjects": [
         "Cargo.toml",
         "simulator/Cargo.toml",
+        "assets/blueprints/Cargo.toml",
+        "radix-engine-tests/tests/blueprints/Cargo.toml",
     ],
     "cSpell.words": [
         "bech",

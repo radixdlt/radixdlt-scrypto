@@ -2,37 +2,32 @@ use crate::blueprints::access_controller::*;
 use crate::blueprints::account::AccountNativePackage;
 use crate::blueprints::auth_zone::AuthZoneNativePackage;
 use crate::blueprints::clock::ClockNativePackage;
-use crate::blueprints::epoch_manager::{
-    ClaimXrdEvent, EpochChangeEvent, EpochManagerNativePackage, RegisterValidatorEvent,
-    RoundChangeEvent, StakeEvent, UnregisterValidatorEvent, UnstakeEvent,
-    UpdateAcceptingStakeDelegationStateEvent,
-};
+
+use crate::blueprints::epoch_manager::EpochManagerNativePackage;
 use crate::blueprints::identity::IdentityNativePackage;
 use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
-use crate::blueprints::resource::*;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::blueprints::transaction_runtime::TransactionRuntimeNativePackage;
 use crate::kernel::interpreters::ScryptoInterpreter;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
-use crate::system::node_modules::access_rules::{
-    AccessRulesNativePackage, SetMutabilityEvent, SetRuleEvent,
-};
-use crate::system::node_modules::metadata::{MetadataNativePackage, SetMetadataEvent};
+use crate::system::node_modules::access_rules::AccessRulesNativePackage;
+use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::transaction::{
     execute_transaction, ExecutionConfig, FeeReserveConfig, TransactionReceipt,
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::node_modules::auth::{AuthAddresses, ACCESS_RULES_BLUEPRINT};
-use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
-use radix_engine_interface::blueprints::access_controller::*;
-use radix_engine_interface::blueprints::clock::*;
+use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_interface::blueprints::clock::{
+    ClockCreateInput, CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT,
+};
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
+use radix_engine_interface::schema::{BlueprintSchema, PackageSchema};
 use transaction::model::{Instruction, SystemTransaction};
 use transaction::validation::ManifestIdAllocator;
 
@@ -78,7 +73,7 @@ pub fn create_genesis(
                 access_rules: AccessRulesConfig::new(),
                 package_access_rules: PackageNativePackage::function_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
-                event_schema: BTreeMap::new(),
+                event_schema: event_schema(PackageNativePackage::schema()),
             })
             .unwrap(),
         });
@@ -102,14 +97,7 @@ pub fn create_genesis(
                 access_rules: AccessRulesConfig::new(),
                 package_access_rules: MetadataNativePackage::function_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
-                event_schema: BTreeMap::from([(
-                    METADATA_BLUEPRINT.into(),
-                    [generate_full_schema_from_single_type::<
-                        SetMetadataEvent,
-                        ScryptoCustomTypeExtension,
-                    >()]
-                    .into(),
-                )]),
+                event_schema: event_schema(MetadataNativePackage::schema()),
             })
             .unwrap(),
         });
@@ -134,7 +122,7 @@ pub fn create_genesis(
                 access_rules: AccessRulesConfig::new(),
                 package_access_rules: RoyaltyNativePackage::function_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
-                event_schema: BTreeMap::new(), // TODO: Royalty application events
+                event_schema: event_schema(RoyaltyNativePackage::schema()),
             })
             .unwrap(),
         });
@@ -158,20 +146,7 @@ pub fn create_genesis(
                 access_rules: AccessRulesConfig::new(),
                 package_access_rules: AccessRulesNativePackage::function_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
-                event_schema: BTreeMap::from([(
-                    ACCESS_RULES_BLUEPRINT.into(),
-                    [
-                        generate_full_schema_from_single_type::<
-                            SetRuleEvent,
-                            ScryptoCustomTypeExtension,
-                        >(),
-                        generate_full_schema_from_single_type::<
-                            SetMutabilityEvent,
-                            ScryptoCustomTypeExtension,
-                        >(),
-                    ]
-                    .into(),
-                )]),
+                event_schema: event_schema(AccessRulesNativePackage::schema()),
             })
             .unwrap(),
         });
@@ -195,48 +170,7 @@ pub fn create_genesis(
                 access_rules: AccessRulesConfig::new(),
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
-                event_schema: BTreeMap::from([
-                    (
-                        RESOURCE_MANAGER_BLUEPRINT.into(),
-                        [
-                            generate_full_schema_from_single_type::<
-                                VaultCreationEvent,
-                                ScryptoCustomTypeExtension,
-                            >(),
-                            generate_full_schema_from_single_type::<
-                                MintResourceEvent,
-                                ScryptoCustomTypeExtension,
-                            >(),
-                            generate_full_schema_from_single_type::<
-                                BurnResourceEvent,
-                                ScryptoCustomTypeExtension,
-                            >(),
-                        ]
-                        .into(),
-                    ),
-                    (
-                        VAULT_BLUEPRINT.into(),
-                        [
-                            generate_full_schema_from_single_type::<
-                                LockFeeEvent,
-                                ScryptoCustomTypeExtension,
-                            >(),
-                            generate_full_schema_from_single_type::<
-                                WithdrawResourceEvent,
-                                ScryptoCustomTypeExtension,
-                            >(),
-                            generate_full_schema_from_single_type::<
-                                DepositResourceEvent,
-                                ScryptoCustomTypeExtension,
-                            >(),
-                            generate_full_schema_from_single_type::<
-                                RecallResourceEvent,
-                                ScryptoCustomTypeExtension,
-                            >(),
-                        ]
-                        .into(),
-                    ),
-                ]),
+                event_schema: event_schema(ResourceManagerNativePackage::schema()),
             })
             .unwrap(),
         });
@@ -312,7 +246,7 @@ pub fn create_genesis(
                 access_rules: AccessRulesConfig::new(),
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
-                event_schema: BTreeMap::new(),
+                event_schema: event_schema(IdentityNativePackage::schema()),
             })
             .unwrap(),
         });
@@ -336,52 +270,7 @@ pub fn create_genesis(
                 dependent_components: vec![],
                 package_access_rules: EpochManagerNativePackage::package_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
-                event_schema: BTreeMap::from([
-                    (
-                        EPOCH_MANAGER_BLUEPRINT.into(),
-                        [
-                            generate_full_schema_from_single_type::<
-                                RoundChangeEvent,
-                                ScryptoCustomTypeExtension,
-                            >(),
-                            generate_full_schema_from_single_type::<
-                                EpochChangeEvent,
-                                ScryptoCustomTypeExtension,
-                            >(),
-                        ]
-                        .into(),
-                    ),
-                    (
-                        VALIDATOR_BLUEPRINT.into(),
-                        [
-                            generate_full_schema_from_single_type::<
-                                RegisterValidatorEvent,
-                                ScryptoCustomTypeExtension,
-                            >(),
-                            generate_full_schema_from_single_type::<
-                                UnregisterValidatorEvent,
-                                ScryptoCustomTypeExtension,
-                            >(),
-                            generate_full_schema_from_single_type::<
-                                StakeEvent,
-                                ScryptoCustomTypeExtension,
-                            >(),
-                            generate_full_schema_from_single_type::<
-                                UnstakeEvent,
-                                ScryptoCustomTypeExtension,
-                            >(),
-                            generate_full_schema_from_single_type::<
-                                ClaimXrdEvent,
-                                ScryptoCustomTypeExtension,
-                            >(),
-                            generate_full_schema_from_single_type::<
-                                UpdateAcceptingStakeDelegationStateEvent,
-                                ScryptoCustomTypeExtension,
-                            >(),
-                        ]
-                        .into(),
-                    ),
-                ]),
+                event_schema: event_schema(EpochManagerNativePackage::schema()),
             })
             .unwrap(),
         });
@@ -405,7 +294,7 @@ pub fn create_genesis(
                 dependent_components: vec![],
                 package_access_rules: ClockNativePackage::package_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
-                event_schema: BTreeMap::new(),
+                event_schema: event_schema(ClockNativePackage::schema()),
             })
             .unwrap(),
         });
@@ -429,7 +318,7 @@ pub fn create_genesis(
                 dependent_components: vec![],
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
-                event_schema: BTreeMap::new(), // TODO: Account events
+                event_schema: event_schema(AccountNativePackage::schema()),
             })
             .unwrap(),
         });
@@ -453,36 +342,7 @@ pub fn create_genesis(
                 dependent_components: vec![CLOCK],
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
-                event_schema: BTreeMap::from([(
-                    ACCESS_CONTROLLER_BLUEPRINT.into(),
-                    [
-                        generate_full_schema_from_single_type::<
-                            InitiateRecoveryEvent,
-                            ScryptoCustomTypeExtension,
-                        >(),
-                        generate_full_schema_from_single_type::<
-                            RuleSetUpdateEvent,
-                            ScryptoCustomTypeExtension,
-                        >(),
-                        generate_full_schema_from_single_type::<
-                            CancelRecoveryProposalEvent,
-                            ScryptoCustomTypeExtension,
-                        >(),
-                        generate_full_schema_from_single_type::<
-                            LockPrimaryRoleEvent,
-                            ScryptoCustomTypeExtension,
-                        >(),
-                        generate_full_schema_from_single_type::<
-                            UnlockPrimaryRoleEvent,
-                            ScryptoCustomTypeExtension,
-                        >(),
-                        generate_full_schema_from_single_type::<
-                            StopTimedRecoveryEvent,
-                            ScryptoCustomTypeExtension,
-                        >(),
-                    ]
-                    .into(),
-                )]),
+                event_schema: event_schema(AccessControllerNativePackage::schema()),
             })
             .unwrap(),
         });
@@ -506,7 +366,7 @@ pub fn create_genesis(
                 dependent_components: vec![],
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
-                event_schema: BTreeMap::new(),
+                event_schema: event_schema(TransactionProcessorNativePackage::schema()),
             })
             .unwrap(),
         });
@@ -530,7 +390,7 @@ pub fn create_genesis(
                 dependent_components: vec![],
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::DenyAll,
-                event_schema: BTreeMap::new(),
+                event_schema: event_schema(TransactionRuntimeNativePackage::schema()),
             })
             .unwrap(),
         });
@@ -554,7 +414,7 @@ pub fn create_genesis(
                 dependent_components: vec![],
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::DenyAll,
-                event_schema: BTreeMap::new(),
+                event_schema: event_schema(AuthZoneNativePackage::schema()),
             })
             .unwrap(),
         });
@@ -816,6 +676,18 @@ where
     } else {
         None
     }
+}
+
+fn event_schema(
+    package_schema: PackageSchema,
+) -> BTreeMap<String, Vec<(LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>> {
+    package_schema
+        .blueprints
+        .into_iter()
+        .map(|(blueprint_name, BlueprintSchema { event_schema, .. })| {
+            (blueprint_name, event_schema)
+        })
+        .collect()
 }
 
 #[cfg(test)]

@@ -6,6 +6,7 @@ struct CustomEvent {
 }
 
 #[blueprint]
+#[events(CustomEvent)]
 mod scrypto_events {
     struct ScryptoEvents;
 

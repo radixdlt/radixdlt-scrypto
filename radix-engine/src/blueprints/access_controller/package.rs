@@ -267,7 +267,33 @@ impl AccessControllerNativePackage {
                 ACCESS_CONTROLLER_BLUEPRINT.to_string() => BlueprintSchema {
                     schema,
                     substates,
-                    functions
+                    functions,
+                    event_schema: vec![
+                        generate_full_schema_from_single_type::<
+                            InitiateRecoveryEvent,
+                            ScryptoCustomTypeExtension,
+                        >(),
+                        generate_full_schema_from_single_type::<
+                            RuleSetUpdateEvent,
+                            ScryptoCustomTypeExtension,
+                        >(),
+                        generate_full_schema_from_single_type::<
+                            CancelRecoveryProposalEvent,
+                            ScryptoCustomTypeExtension,
+                        >(),
+                        generate_full_schema_from_single_type::<
+                            LockPrimaryRoleEvent,
+                            ScryptoCustomTypeExtension,
+                        >(),
+                        generate_full_schema_from_single_type::<
+                            UnlockPrimaryRoleEvent,
+                            ScryptoCustomTypeExtension,
+                        >(),
+                        generate_full_schema_from_single_type::<
+                            StopTimedRecoveryEvent,
+                            ScryptoCustomTypeExtension,
+                        >(),
+                    ]
                 }
             ),
         }

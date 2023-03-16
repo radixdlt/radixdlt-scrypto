@@ -11,7 +11,7 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, FnKey};
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver};
 
-use super::{EpochManagerSubstate, ValidatorSetSubstate, ValidatorSubstate};
+use super::*;
 
 pub struct EpochManagerNativePackage;
 
@@ -90,6 +90,12 @@ impl EpochManagerNativePackage {
             schema,
             substates,
             functions,
+            event_schema: vec![
+                generate_full_schema_from_single_type::<RoundChangeEvent, ScryptoCustomTypeExtension>(
+                ),
+                generate_full_schema_from_single_type::<EpochChangeEvent, ScryptoCustomTypeExtension>(
+                ),
+            ],
         };
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
@@ -169,6 +175,24 @@ impl EpochManagerNativePackage {
             schema,
             substates,
             functions,
+            event_schema: vec![
+                generate_full_schema_from_single_type::<
+                    RegisterValidatorEvent,
+                    ScryptoCustomTypeExtension,
+                >(),
+                generate_full_schema_from_single_type::<
+                    UnregisterValidatorEvent,
+                    ScryptoCustomTypeExtension,
+                >(),
+                generate_full_schema_from_single_type::<StakeEvent, ScryptoCustomTypeExtension>(),
+                generate_full_schema_from_single_type::<UnstakeEvent, ScryptoCustomTypeExtension>(),
+                generate_full_schema_from_single_type::<ClaimXrdEvent, ScryptoCustomTypeExtension>(
+                ),
+                generate_full_schema_from_single_type::<
+                    UpdateAcceptingStakeDelegationStateEvent,
+                    ScryptoCustomTypeExtension,
+                >(),
+            ],
         };
 
         PackageSchema {

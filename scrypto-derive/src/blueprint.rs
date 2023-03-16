@@ -17,7 +17,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     trace!("handle_blueprint() starts");
 
     // parse blueprint struct and impl
-    let bp = parse2::<ast::BlueprintMod>(input)?;
+    let blueprint = parse2::<ast::Blueprint>(input)?;
+    let bp = blueprint.module;
     let bp_strut = &bp.structure;
     let bp_fields = &bp_strut.fields;
     let bp_semi_token = &bp_strut.semi_token;
@@ -107,6 +108,19 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let output_schema = {
         let schema_ident = format_ident!("{}_schema", bp_ident);
         let (function_names, function_schemas) = generate_schema(bp_ident, bp_items)?;
+
+        // Getting the event types if the event attribute is defined for the type
+        let event_type_names = {
+            let mut type_names = Vec::<Path>::new();
+            for attribute in blueprint.attributes {
+                if attribute.path.is_ident("events") {
+                    let events_inner = parse2::<ast::EventsInner>(attribute.tokens)?;
+                    type_names.extend(events_inner.paths.into_iter());
+                }
+            }
+            type_names
+        };
+
         quote! {
             #[no_mangle]
             pub extern "C" fn #schema_ident() -> ::scrypto::engine::wasm_api::Slice {
@@ -128,10 +142,17 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     functions.insert(#function_names.to_string(), #function_schemas);
                 )*
 
+                // Aggregate event schemas
+                let mut event_schema = Vec::new();
+                #(
+                    event_schema.push(sbor::generate_full_schema_from_single_type::<#event_type_names, ScryptoCustomTypeExtension>());
+                )*
+
                 let return_data = BlueprintSchema {
                     schema: generate_full_schema(aggregator),
                     substates,
                     functions,
+                    event_schema
                 };
 
                 return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
@@ -709,10 +730,12 @@ mod tests {
                                 export_name: "Test_y".to_string(),
                             }
                         );
+                        let mut event_schema = Vec::new();
                         let return_data = BlueprintSchema {
                             schema: generate_full_schema(aggregator),
                             substates,
                             functions,
+                            event_schema
                         };
                         return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
                     }
