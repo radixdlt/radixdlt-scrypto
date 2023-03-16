@@ -1,7 +1,7 @@
 use super::node_modules::access_rules::AuthZoneStackSubstate;
 use super::node_modules::access_rules::MethodAccessRulesSubstate;
 use super::node_modules::event_schema::PackageEventSchemaSubstate;
-use super::type_info::PackageCodeTypeSubstate;
+use super::package::PackageCodeTypeSubstate;
 use crate::blueprints::access_controller::AccessControllerSubstate;
 use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::clock::ClockSubstate;

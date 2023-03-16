@@ -150,19 +150,7 @@ impl KernelModule for CostingModule {
 
         // FIXME: algin native packages with wasm package, or read package type info and disallow royalty on native package.
         let package_address = fn_identifier.package_address;
-        if package_address == RESOURCE_MANAGER_PACKAGE
-            || package_address == IDENTITY_PACKAGE
-            || package_address == EPOCH_MANAGER_PACKAGE
-            || package_address == CLOCK_PACKAGE
-            || package_address == ACCOUNT_PACKAGE
-            || package_address == ACCESS_CONTROLLER_PACKAGE
-            || package_address == TRANSACTION_RUNTIME_PACKAGE
-            || package_address == AUTH_ZONE_PACKAGE
-            || package_address == METADATA_PACKAGE
-            || package_address == ROYALTY_PACKAGE
-            || package_address == ACCESS_RULES_PACKAGE
-            || package_address == PACKAGE_LOADER
-        {
+        if is_native_package(package_address) {
             return Ok(());
         }
 

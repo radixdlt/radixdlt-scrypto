@@ -468,45 +468,31 @@ where
                     RENodeId::GlobalObject(Address::Package(package_address)) => {
                         // TODO: Cleanup
                         {
-                            match *package_address {
-                                PACKAGE_LOADER
-                                | RESOURCE_MANAGER_PACKAGE
-                                | IDENTITY_PACKAGE
-                                | EPOCH_MANAGER_PACKAGE
-                                | CLOCK_PACKAGE
-                                | ACCOUNT_PACKAGE
-                                | ACCESS_CONTROLLER_PACKAGE => {
+                            if is_native_package(*package_address) {
+                                self.current_frame
+                                    .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
+                                continue;
+                            } else {
+                                if self.current_frame.get_node_visibility(node_id).is_none() {
+                                    let offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
+                                    self.track
+                                        .acquire_lock(
+                                            SubstateId(
+                                                *node_id,
+                                                NodeModuleId::TypeInfo,
+                                                offset.clone(),
+                                            ),
+                                            LockFlags::read_only(),
+                                        )
+                                        .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
+                                    self.track
+                                        .release_lock(
+                                            SubstateId(*node_id, NodeModuleId::TypeInfo, offset),
+                                            false,
+                                        )
+                                        .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
                                     self.current_frame
                                         .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                                    continue;
-                                }
-                                _ => {
-                                    if self.current_frame.get_node_visibility(node_id).is_none() {
-                                        let offset =
-                                            SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
-                                        self.track
-                                            .acquire_lock(
-                                                SubstateId(
-                                                    *node_id,
-                                                    NodeModuleId::TypeInfo,
-                                                    offset.clone(),
-                                                ),
-                                                LockFlags::read_only(),
-                                            )
-                                            .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
-                                        self.track
-                                            .release_lock(
-                                                SubstateId(
-                                                    *node_id,
-                                                    NodeModuleId::TypeInfo,
-                                                    offset,
-                                                ),
-                                                false,
-                                            )
-                                            .map_err(|_| KernelError::RENodeNotFound(*node_id))?;
-                                        self.current_frame
-                                            .add_ref(*node_id, RENodeVisibilityOrigin::Normal);
-                                    }
                                 }
                             }
                         }

@@ -174,7 +174,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
         &mut substate_store,
         &scrypto_interpreter,
         &FeeReserveConfig::default(),
-        &ExecutionConfig::with_tracing(trace),
+        &ExecutionConfig::standard().with_trace(trace),
         &transaction.get_executable(initial_proofs),
     );
     drop(substate_store);
@@ -235,7 +235,7 @@ pub fn handle_manifest<O: std::io::Write>(
                 &mut substate_store,
                 &scrypto_interpreter,
                 &FeeReserveConfig::default(),
-                &ExecutionConfig::with_tracing(trace),
+                &ExecutionConfig::standard().with_trace(trace),
                 &transaction.get_executable(initial_proofs),
             );
             drop(substate_store);

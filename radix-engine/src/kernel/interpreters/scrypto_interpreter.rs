@@ -5,6 +5,7 @@ use crate::blueprints::clock::ClockNativePackage;
 use crate::blueprints::epoch_manager::EpochManagerNativePackage;
 use crate::blueprints::identity::IdentityNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
+use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::blueprints::transaction_runtime::TransactionRuntimeNativePackage;
 use crate::errors::{InterpreterError, RuntimeError};
 use crate::kernel::actor::Actor;
@@ -15,8 +16,8 @@ use crate::system::node_modules::access_rules::{AccessRulesNativePackage, AuthZo
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
-use crate::system::package::Package;
-use crate::system::type_info::PackageCodeTypeSubstate;
+use crate::system::package::PackageCodeTypeSubstate;
+use crate::system::package::PackageNativePackage;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
 use radix_engine_interface::api::node_modules::auth::{
@@ -106,7 +107,7 @@ impl ExecutableInvocation for MethodInvocation {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
         let nodes_to_move = value.owned_node_ids().clone();
-        let mut node_refs_to_copy = value.global_references().clone();
+        let mut node_refs_to_copy = value.references().clone();
 
         // Pass the component ref
         node_refs_to_copy.insert(self.identifier.0);
@@ -162,7 +163,7 @@ impl ExecutableInvocation for MethodInvocation {
 
         // TODO: Remove this weirdness or move to a kernel module if we still want to support this
         {
-            if package_address.eq(&PACKAGE_LOADER) {
+            if package_address.eq(&PACKAGE_PACKAGE) {
                 node_refs_to_copy.insert(RENodeId::GlobalObject(RADIX_TOKEN.into()));
             } else {
                 let handle = api.kernel_lock_substate(
@@ -228,14 +229,22 @@ impl ExecutableInvocation for FunctionInvocation {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
         let nodes_to_move = value.owned_node_ids().clone();
-        let mut node_refs_to_copy = value.global_references().clone();
+        let mut node_refs_to_copy = value.references().clone();
 
         let actor = Actor::function(self.fn_identifier.clone());
 
         // TODO: Remove this weirdness or move to a kernel module if we still want to support this
         {
-            if self.fn_identifier.package_address.eq(&PACKAGE_LOADER) {
+            if self.fn_identifier.package_address.eq(&PACKAGE_PACKAGE) {
                 node_refs_to_copy.insert(RENodeId::GlobalObject(RADIX_TOKEN.into()));
+            } else if self
+                .fn_identifier
+                .package_address
+                .eq(&TRANSACTION_PROCESSOR_PACKAGE)
+            {
+                // Required for bootstrap.
+                // Can be removed once the auto reference copying logic is moved to a kernel module.
+                // Will just disable the module for genesis.
             } else {
                 let handle = api.kernel_lock_substate(
                     RENodeId::GlobalObject(self.fn_identifier.package_address.into()),
@@ -306,14 +315,31 @@ impl Executor for ScryptoExecutor {
         Y: KernelNodeApi + KernelSubstateApi + KernelWasmApi<W> + ClientApi<RuntimeError>,
         W: WasmEngine,
     {
-        let output = if self.fn_identifier.package_address.eq(&PACKAGE_LOADER) {
+        let output = if self.fn_identifier.package_address.eq(&PACKAGE_PACKAGE) {
             // TODO: Clean this up
             // Do we need to check against the abi? Probably not since we should be able to verify this
             // in the native package itself.
             let export_name = self.fn_identifier.ident.to_string(); // TODO: Clean this up
 
             NativeVm::invoke_native_package(
-                NATIVE_PACKAGE_CODE_ID,
+                PACKAGE_CODE_ID,
+                self.receiver,
+                &export_name,
+                args,
+                api,
+            )?
+        } else if self
+            .fn_identifier
+            .package_address
+            .eq(&TRANSACTION_PROCESSOR_PACKAGE)
+        {
+            // TODO: the above special rule can be removed if we move schema validation
+            // into a kernel model, and turn it off for genesis.
+
+            let export_name = self.fn_identifier.ident.to_string();
+
+            NativeVm::invoke_native_package(
+                TRANSACTION_PROCESSOR_CODE_ID,
                 self.receiver,
                 &export_name,
                 args,
@@ -446,7 +472,7 @@ impl Executor for ScryptoExecutor {
         };
 
         let update = CallFrameUpdate {
-            node_refs_to_copy: output.global_references().clone(),
+            node_refs_to_copy: output.references().clone(),
             nodes_to_move: output.owned_node_ids().clone(),
         };
 
@@ -470,24 +496,27 @@ impl NativeVm {
         let receiver = receiver.map(|r| r.0);
 
         match native_package_code_id {
-            NATIVE_PACKAGE_CODE_ID => Package::invoke_export(&export_name, receiver, input, api),
-            RESOURCE_MANAGER_PACKAGE_CODE_ID => {
+            PACKAGE_CODE_ID => {
+                PackageNativePackage::invoke_export(&export_name, receiver, input, api)
+            }
+            RESOURCE_MANAGER_CODE_ID => {
                 ResourceManagerNativePackage::invoke_export(&export_name, receiver, input, api)
             }
-            EPOCH_MANAGER_PACKAGE_CODE_ID => {
+            EPOCH_MANAGER_CODE_ID => {
                 EpochManagerNativePackage::invoke_export(&export_name, receiver, input, api)
             }
-            IDENTITY_PACKAGE_CODE_ID => {
+            IDENTITY_CODE_ID => {
                 IdentityNativePackage::invoke_export(&export_name, receiver, input, api)
             }
-            CLOCK_PACKAGE_CODE_ID => {
-                ClockNativePackage::invoke_export(&export_name, receiver, input, api)
-            }
-            ACCOUNT_PACKAGE_CODE_ID => {
+            CLOCK_CODE_ID => ClockNativePackage::invoke_export(&export_name, receiver, input, api),
+            ACCOUNT_CODE_ID => {
                 AccountNativePackage::invoke_export(&export_name, receiver, input, api)
             }
-            ACCESS_CONTROLLER_PACKAGE_CODE_ID => {
+            ACCESS_CONTROLLER_CODE_ID => {
                 AccessControllerNativePackage::invoke_export(&export_name, receiver, input, api)
+            }
+            TRANSACTION_PROCESSOR_CODE_ID => {
+                TransactionProcessorNativePackage::invoke_export(&export_name, receiver, input, api)
             }
             TRANSACTION_RUNTIME_CODE_ID => {
                 TransactionRuntimeNativePackage::invoke_export(&export_name, receiver, input, api)

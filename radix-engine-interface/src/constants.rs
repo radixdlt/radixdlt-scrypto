@@ -18,18 +18,40 @@ pub const PACKAGE_TOKEN: ResourceAddress = vanity_address!(EntityType::Resource,
 pub const OLYMPIA_VALIDATOR_TOKEN: ResourceAddress = vanity_address!(EntityType::Resource, 5);
 
 /// The address of the faucet package.
-pub const PACKAGE_LOADER: PackageAddress = vanity_address!(EntityType::Package, 0);
+pub const PACKAGE_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 0);
 pub const RESOURCE_MANAGER_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 1);
 pub const IDENTITY_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 2);
 pub const EPOCH_MANAGER_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 3);
 pub const CLOCK_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 4);
 pub const ACCOUNT_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 5);
 pub const ACCESS_CONTROLLER_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 6);
+pub const TRANSACTION_PROCESSOR_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 7);
 pub const TRANSACTION_RUNTIME_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 8);
 pub const AUTH_ZONE_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 9);
 pub const METADATA_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 10);
 pub const ROYALTY_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 11);
 pub const ACCESS_RULES_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 12);
+
+// There should be no need of this function, but many of our configurations are depending on it.
+// Having it in a single place to avoid out-of-sync.
+pub fn is_native_package(address: PackageAddress) -> bool {
+    match address {
+        PACKAGE_PACKAGE
+        | RESOURCE_MANAGER_PACKAGE
+        | IDENTITY_PACKAGE
+        | EPOCH_MANAGER_PACKAGE
+        | CLOCK_PACKAGE
+        | ACCOUNT_PACKAGE
+        | ACCESS_CONTROLLER_PACKAGE
+        | TRANSACTION_PROCESSOR_PACKAGE
+        | TRANSACTION_RUNTIME_PACKAGE
+        | AUTH_ZONE_PACKAGE
+        | METADATA_PACKAGE
+        | ROYALTY_PACKAGE
+        | ACCESS_RULES_PACKAGE => true,
+        _ => false,
+    }
+}
 
 pub const FAUCET_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 64);
 pub const FAUCET_BLUEPRINT: &str = "Faucet";

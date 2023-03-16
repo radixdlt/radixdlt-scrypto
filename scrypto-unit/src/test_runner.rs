@@ -167,7 +167,7 @@ impl TestRunnerBuilder {
         let receipt = runner.execute_transaction_with_config(
             genesis.get_executable(vec![AuthAddresses::system_role()]),
             &FeeReserveConfig::default(),
-            &ExecutionConfig::default(),
+            &ExecutionConfig::genesis(),
         );
         receipt.expect_commit_success();
         runner
@@ -638,16 +638,14 @@ impl TestRunner {
         let executable = transactions.get_executable(initial_proofs);
 
         let fee_reserve_config = FeeReserveConfig::default();
-        let mut execution_config = ExecutionConfig::default();
-        execution_config.debug = self.trace;
+        let execution_config = ExecutionConfig::default().with_trace(self.trace);
 
         self.execute_transaction_with_config(executable, &fee_reserve_config, &execution_config)
     }
 
     pub fn execute_transaction(&mut self, executable: Executable) -> TransactionReceipt {
         let fee_config = FeeReserveConfig::default();
-        let mut execution_config = ExecutionConfig::default();
-        execution_config.debug = self.trace;
+        let execution_config = ExecutionConfig::default().with_trace(self.trace);
 
         self.execute_transaction_with_config(executable, &fee_config, &execution_config)
     }
@@ -1085,7 +1083,6 @@ impl TestRunner {
         let mut id_allocator = IdAllocator::new(transaction_hash, BTreeSet::new());
         let execution_config = ExecutionConfig::standard();
         let modules = KernelModuleMixer::standard(
-            execution_config.debug,
             transaction_hash,
             AuthZoneParams {
                 initial_proofs: vec![],

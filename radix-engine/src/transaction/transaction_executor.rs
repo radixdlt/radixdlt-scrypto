@@ -1,9 +1,7 @@
-use crate::blueprints::transaction_processor::TransactionProcessorRunInvocation;
 use crate::errors::*;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::interpreters::ScryptoInterpreter;
 use crate::kernel::kernel::Kernel;
-use crate::kernel::kernel_api::KernelInvokeApi;
 use crate::kernel::module_mixer::KernelModuleMixer;
 use crate::kernel::track::{PreExecutionError, Track};
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
@@ -12,6 +10,13 @@ use crate::transaction::*;
 use crate::types::*;
 use crate::wasm::*;
 use radix_engine_constants::*;
+use radix_engine_interface::api::package::{
+    TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
+};
+use radix_engine_interface::api::ClientPackageApi;
+use radix_engine_interface::blueprints::transaction_processor::{
+    InstructionOutput, TransactionProcessorRunInput,
+};
 use sbor::rust::borrow::Cow;
 use transaction::model::*;
 
@@ -36,9 +41,10 @@ impl FeeReserveConfig {
 }
 
 pub struct ExecutionConfig {
-    pub debug: bool,
+    pub genesis: bool,
+    pub kernel_trace: bool,
+    pub execution_trace: Option<usize>,
     pub max_call_depth: usize,
-    pub max_kernel_call_depth_traced: Option<usize>,
     pub abort_when_loan_repaid: bool,
     pub max_wasm_mem_per_transaction: usize,
     pub max_wasm_mem_per_call_frame: usize,
@@ -57,9 +63,10 @@ impl Default for ExecutionConfig {
 impl ExecutionConfig {
     pub fn standard() -> Self {
         Self {
-            debug: false,
+            genesis: false,
+            kernel_trace: false,
+            execution_trace: Some(1),
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-            max_kernel_call_depth_traced: Some(1),
             abort_when_loan_repaid: false,
             max_wasm_mem_per_transaction: DEFAULT_MAX_WASM_MEM_PER_TRANSACTION,
             max_wasm_mem_per_call_frame: DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME,
@@ -70,19 +77,16 @@ impl ExecutionConfig {
         }
     }
 
-    pub fn debug() -> Self {
+    pub fn genesis() -> Self {
         Self {
-            debug: true,
+            genesis: true,
             ..Self::default()
         }
     }
 
-    pub fn with_tracing(trace: bool) -> Self {
-        if trace {
-            Self::debug()
-        } else {
-            Self::standard()
-        }
+    pub fn with_trace(mut self, kernel_trace: bool) -> Self {
+        self.kernel_trace = kernel_trace;
+        self
     }
 
     pub fn up_to_loan_repayment() -> Self {
@@ -95,7 +99,7 @@ impl ExecutionConfig {
     pub fn up_to_loan_repayment_with_debug() -> Self {
         Self {
             abort_when_loan_repaid: true,
-            debug: true,
+            kernel_trace: true,
             ..Self::default()
         }
     }
@@ -183,13 +187,13 @@ where
         &mut self,
         executable: &Executable,
         execution_config: &ExecutionConfig,
-        fee_reserve: SystemLoanFeeReserve,
+        mut fee_reserve: SystemLoanFeeReserve,
         fee_table: FeeTable,
     ) -> TransactionReceipt {
         let transaction_hash = executable.transaction_hash();
 
         #[cfg(not(feature = "alloc"))]
-        if execution_config.debug {
+        if execution_config.kernel_trace {
             println!("{:-^80}", "Transaction Metadata");
             println!("Transaction hash: {}", transaction_hash);
             println!(
@@ -207,25 +211,29 @@ where
             crate::kernel::resources_tracker::ResourcesTracker::start_measurement();
 
         // Apply pre execution costing
-        let pre_execution_result =
-            Self::apply_pre_execution_costs(fee_reserve, &fee_table, executable);
-        let fee_reserve = match pre_execution_result {
-            Ok(fee_reserve) => fee_reserve,
-            Err(err) => {
-                return TransactionReceipt {
-                    execution: TransactionExecution {
-                        fee_summary: err.fee_summary,
-                        events: vec![],
-                        resources_usage: ResourcesUsage::default(),
-                    },
-                    result: TransactionResult::Reject(RejectResult {
-                        error: RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::ModuleError(
-                            ModuleError::CostingError(CostingError::FeeReserveError(err.error)),
-                        )),
-                    }),
-                };
-            }
-        };
+        if !execution_config.genesis {
+            let pre_execution_result =
+                Self::apply_pre_execution_costs(fee_reserve, &fee_table, executable);
+            fee_reserve = match pre_execution_result {
+                Ok(fee_reserve) => fee_reserve,
+                Err(err) => {
+                    return TransactionReceipt {
+                        execution: TransactionExecution {
+                            fee_summary: err.fee_summary,
+                            events: vec![],
+                            resources_usage: ResourcesUsage::default(),
+                        },
+                        result: TransactionResult::Reject(RejectResult {
+                            error: RejectionError::ErrorBeforeFeeLoanRepaid(
+                                RuntimeError::ModuleError(ModuleError::CostingError(
+                                    CostingError::FeeReserveError(err.error),
+                                )),
+                            ),
+                        }),
+                    };
+                }
+            };
+        }
 
         // Prepare state track and execution trace
         let mut track = Track::new(self.substate_store);
@@ -239,7 +247,6 @@ where
 
             // Create kernel
             let modules = KernelModuleMixer::standard(
-                execution_config.debug,
                 transaction_hash.clone(),
                 executable.auth_zone_params().clone(),
                 fee_reserve,
@@ -256,13 +263,27 @@ where
             // Initialize
             kernel.initialize().expect("Failed to initialize kernel");
 
-            // Invoke transaction processor
-            let invoke_result = kernel.kernel_invoke(TransactionProcessorRunInvocation {
-                transaction_hash: transaction_hash.clone(),
-                runtime_validations: Cow::Borrowed(executable.runtime_validations()),
-                instructions: Cow::Owned(manifest_encode(executable.instructions()).unwrap()),
-                blobs: Cow::Borrowed(executable.blobs()),
-            });
+            // Call TransactionProcessor::Run()
+            let (global_references, local_references) =
+                extract_refs_from_manifest(executable.instructions());
+            let invoke_result = kernel
+                .call_function(
+                    TRANSACTION_PROCESSOR_PACKAGE,
+                    TRANSACTION_PROCESSOR_BLUEPRINT,
+                    TRANSACTION_PROCESSOR_RUN_IDENT,
+                    scrypto_encode(&TransactionProcessorRunInput {
+                        transaction_hash: transaction_hash.clone(),
+                        runtime_validations: Cow::Borrowed(executable.runtime_validations()),
+                        instructions: Cow::Owned(
+                            manifest_encode(executable.instructions()).unwrap(),
+                        ),
+                        blobs: Cow::Borrowed(executable.blobs()),
+                        global_references,
+                        local_references,
+                    })
+                    .unwrap(),
+                )
+                .map(|x| scrypto_decode::<Vec<InstructionOutput>>(&x).unwrap());
 
             // Teardown
             let (modules, invoke_result) = kernel.teardown(invoke_result);
@@ -299,7 +320,7 @@ where
             result: track_receipt.result,
         };
         #[cfg(not(feature = "alloc"))]
-        if execution_config.debug {
+        if execution_config.kernel_trace {
             println!("{:-^80}", "Cost Analysis");
             let break_down = receipt
                 .execution

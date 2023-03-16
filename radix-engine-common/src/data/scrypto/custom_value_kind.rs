@@ -5,6 +5,7 @@ pub const VALUE_KIND_OWN: u8 = 0x90;
 pub const VALUE_KIND_DECIMAL: u8 = 0xa0;
 pub const VALUE_KIND_PRECISE_DECIMAL: u8 = 0xb0;
 pub const VALUE_KIND_NON_FUNGIBLE_LOCAL_ID: u8 = 0xc0;
+pub const VALUE_KIND_REFERENCE: u8 = 0xd0;
 
 #[cfg_attr(
     feature = "serde",
@@ -18,6 +19,7 @@ pub enum ScryptoCustomValueKind {
     Decimal,
     PreciseDecimal,
     NonFungibleLocalId,
+    Reference,
 }
 
 impl From<ScryptoCustomValueKind> for ValueKind<ScryptoCustomValueKind> {
@@ -34,6 +36,7 @@ impl CustomValueKind for ScryptoCustomValueKind {
             Self::Decimal => VALUE_KIND_DECIMAL,
             Self::PreciseDecimal => VALUE_KIND_PRECISE_DECIMAL,
             Self::NonFungibleLocalId => VALUE_KIND_NON_FUNGIBLE_LOCAL_ID,
+            Self::Reference => VALUE_KIND_REFERENCE,
         }
     }
 
@@ -44,6 +47,7 @@ impl CustomValueKind for ScryptoCustomValueKind {
             VALUE_KIND_DECIMAL => Some(ScryptoCustomValueKind::Decimal),
             VALUE_KIND_PRECISE_DECIMAL => Some(ScryptoCustomValueKind::PreciseDecimal),
             VALUE_KIND_NON_FUNGIBLE_LOCAL_ID => Some(ScryptoCustomValueKind::NonFungibleLocalId),
+            VALUE_KIND_REFERENCE => Some(ScryptoCustomValueKind::Reference),
             _ => None,
         }
     }
