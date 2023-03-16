@@ -8,15 +8,15 @@ use sbor::*;
 use utils::copy_u8_array;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Reference(pub [u8; OBJECT_ID_LENGTH]);
+pub struct InternalRef(pub [u8; OBJECT_ID_LENGTH]);
 
-impl Reference {
+impl InternalRef {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
     }
 }
 
-impl TryFrom<&[u8]> for Reference {
+impl TryFrom<&[u8]> for InternalRef {
     type Error = ParseReferenceError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
@@ -51,7 +51,7 @@ impl fmt::Display for ParseReferenceError {
 //========
 
 well_known_scrypto_custom_type!(
-    Reference,
+    InternalRef,
     ScryptoCustomValueKind::Reference,
     Type::Reference,
     OBJECT_ID_LENGTH,

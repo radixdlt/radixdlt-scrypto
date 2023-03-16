@@ -24,7 +24,7 @@ impl SetCurrentEpoch {
         let instructions = vec![Instruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_SET_EPOCH_IDENT.to_string(),
-            args: manifest_encode(&EpochManagerSetEpochInput { epoch: self.epoch }).unwrap(),
+            args: to_manifest_value(&EpochManagerSetEpochInput { epoch: self.epoch }).unwrap(),
         }];
 
         let blobs = vec![];

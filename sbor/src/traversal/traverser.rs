@@ -24,25 +24,18 @@ pub trait CustomTerminalValueRef: Debug + Clone + PartialEq + Eq {
     fn custom_value_kind(&self) -> Self::CustomValueKind;
 }
 
-pub trait CustomTerminalValueBatchRef: Debug + Clone + PartialEq + Eq {
-    type CustomValueKind: CustomValueKind;
-
-    fn custom_value_kind(&self) -> Self::CustomValueKind;
-}
-
-pub trait CustomContainerHeader: Copy + Debug + Clone + PartialEq + Eq {
-    type CustomValueKind: CustomValueKind;
-    fn get_child_count(&self) -> u32;
-    fn get_implicit_child_value_kind(&self, index: u32)
-        -> Option<ValueKind<Self::CustomValueKind>>;
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ContainerState<C: CustomTraversal> {
     pub container_header: ContainerHeader<C>,
     pub container_start_offset: usize,
     pub container_child_count: usize,
     pub next_child_index: usize,
+}
+
+impl<C: CustomTraversal> ContainerState<C> {
+    pub fn current_child_index(&self) -> usize {
+        self.next_child_index - 1
+    }
 }
 
 /// The `VecTraverser` is for streamed decoding of a payload.

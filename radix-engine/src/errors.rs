@@ -180,6 +180,7 @@ pub enum CallFrameError {
     RENodeNotVisible(RENodeId),
     RENodeNotOwned(RENodeId),
     MovingLockedRENode(RENodeId),
+    FailedToMoveSubstateToTrack(TrackError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -214,11 +215,11 @@ pub enum InterpreterError {
     ScryptoBlueprintNotFound(PackageAddress, String),
     ScryptoFunctionNotFound(String),
     ScryptoReceiverNotMatch(String),
-    ScryptoInputSchemaNotMatch(String),
+    ScryptoInputSchemaNotMatch(String, String),
     ScryptoInputDecodeError(DecodeError),
 
     ScryptoOutputDecodeError(DecodeError),
-    ScryptoOutputSchemaNotMatch(String),
+    ScryptoOutputSchemaNotMatch(String, String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
