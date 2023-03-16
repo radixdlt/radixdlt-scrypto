@@ -488,8 +488,7 @@ fn epoch_manager_round_update_emits_correct_event() {
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&EpochManagerNextRoundInput {
             round: rounds_per_epoch - 1,
-        })
-        .unwrap(),
+        }),
     }];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
@@ -536,8 +535,7 @@ fn epoch_manager_epoch_update_emits_correct_event() {
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&EpochManagerNextRoundInput {
             round: rounds_per_epoch,
-        })
-        .unwrap(),
+        }),
     }];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
@@ -1120,8 +1118,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
             VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
             to_manifest_value(&ValidatorUpdateAcceptDelegatedStakeInput {
                 accept_delegated_stake: false,
-            })
-            .unwrap(),
+            }),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

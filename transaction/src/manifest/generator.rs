@@ -375,7 +375,7 @@ pub fn generate_instruction(
                 package_address,
                 blueprint_name,
                 function_name,
-                args: to_manifest_value(&args).unwrap(),
+                args: to_manifest_value(&args),
             }
         }
         ast::Instruction::CallMethod {
@@ -392,7 +392,7 @@ pub fn generate_instruction(
             Instruction::CallMethod {
                 component_address,
                 method_name,
-                args: to_manifest_value(&args).unwrap(),
+                args: to_manifest_value(&args),
             }
         }
         ast::Instruction::PublishPackage {
@@ -510,8 +510,7 @@ pub fn generate_instruction(
                     bech32_decoder,
                     blobs,
                 )?,
-            })
-            .unwrap(),
+            }),
         },
         ast::Instruction::CreateFungibleResource {
             divisibility,
@@ -525,8 +524,7 @@ pub fn generate_instruction(
                 divisibility: generate_u8(divisibility)?,
                 metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
                 access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
-            })
-            .unwrap(),
+            }),
         },
         ast::Instruction::CreateFungibleResourceWithInitialSupply {
             divisibility,
@@ -542,8 +540,7 @@ pub fn generate_instruction(
                 metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
                 access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
                 initial_supply: generate_decimal(initial_supply)?,
-            })
-            .unwrap(),
+            }),
         },
         ast::Instruction::CreateNonFungibleResource {
             id_type,
@@ -557,8 +554,7 @@ pub fn generate_instruction(
                 id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
                 metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
                 access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
-            })
-            .unwrap(),
+            }),
         },
         ast::Instruction::CreateNonFungibleResourceWithInitialSupply {
             id_type,
@@ -580,8 +576,7 @@ pub fn generate_instruction(
                     bech32_decoder,
                     blobs,
                 )?,
-            })
-            .unwrap(),
+            }),
         },
         ast::Instruction::CreateAccessController {
             controlled_asset,
@@ -621,8 +616,7 @@ pub fn generate_instruction(
                     bech32_decoder,
                     blobs,
                 )?,
-            })
-            .unwrap(),
+            }),
         },
         ast::Instruction::CreateAccount { withdraw_rule } => Instruction::CallFunction {
             package_address: ACCOUNT_PACKAGE,
@@ -635,8 +629,7 @@ pub fn generate_instruction(
                     bech32_decoder,
                     blobs,
                 )?,
-            })
-            .unwrap(),
+            }),
         },
     })
 }
@@ -1583,8 +1576,7 @@ mod tests {
                             (AccessRule::AllowAll, AccessRule::DenyAll)
                         ),
                     ]),
-                })
-                .unwrap(),
+                }),
             },
         );
     }
@@ -1618,8 +1610,7 @@ mod tests {
                             manifest_encode(&(12u8, 19u128)).unwrap()
                         )
                     )]),
-                })
-                .unwrap(),
+                }),
             },
         );
     }
@@ -1645,8 +1636,7 @@ mod tests {
                             (AccessRule::AllowAll, AccessRule::DenyAll)
                         ),
                     ]),
-                })
-                .unwrap(),
+                }),
             },
         );
     }
@@ -1675,7 +1665,6 @@ mod tests {
                     ]),
                     initial_supply: "500".parse().unwrap()
                 })
-                .unwrap()
             },
         );
     }
@@ -1724,8 +1713,7 @@ mod tests {
                         .unwrap()
                         .public_key(),
                     owner_access_rule: AccessRule::AllowAll,
-                })
-                .unwrap(),
+                }),
             },
         );
     }

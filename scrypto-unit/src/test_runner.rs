@@ -952,7 +952,7 @@ impl TestRunner {
         let instructions = vec![Instruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_SET_EPOCH_IDENT.to_string(),
-            args: to_manifest_value(&EpochManagerSetEpochInput { epoch }).unwrap(),
+            args: to_manifest_value(&EpochManagerSetEpochInput { epoch }),
         }];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
@@ -973,7 +973,7 @@ impl TestRunner {
         let instructions = vec![Instruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
-            args: to_manifest_value(&EpochManagerGetCurrentEpochInput).unwrap(),
+            args: to_manifest_value(&EpochManagerGetCurrentEpochInput),
         }];
 
         let blobs = vec![];
@@ -1002,7 +1002,7 @@ impl TestRunner {
         let instructions = vec![Instruction::CallMethod {
             component_address: CLOCK,
             method_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
-            args: to_manifest_value(&ClockSetCurrentTimeInput { current_time_ms }).unwrap(),
+            args: to_manifest_value(&ClockSetCurrentTimeInput { current_time_ms }),
         }];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
@@ -1023,7 +1023,7 @@ impl TestRunner {
         let instructions = vec![Instruction::CallMethod {
             component_address: CLOCK,
             method_name: CLOCK_GET_CURRENT_TIME_IDENT.to_string(),
-            args: to_manifest_value(&ClockGetCurrentTimeInput { precision }).unwrap(),
+            args: to_manifest_value(&ClockGetCurrentTimeInput { precision }),
         }];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();

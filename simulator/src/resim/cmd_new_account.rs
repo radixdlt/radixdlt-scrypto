@@ -86,8 +86,7 @@ impl NewAccount {
                                 scrypto_encode(&EmptyStruct).unwrap(),
                             )
                         ),
-                    })
-                    .unwrap(),
+                    }),
                 })
                 .0
                 .call_method(

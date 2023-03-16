@@ -78,8 +78,7 @@ pub fn create_genesis(
                 package_access_rules: PackageNativePackage::function_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
                 event_schema: BTreeMap::new(),
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -109,8 +108,7 @@ pub fn create_genesis(
                     >()]
                     .into(),
                 )]),
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -134,8 +132,7 @@ pub fn create_genesis(
                 package_access_rules: RoyaltyNativePackage::function_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
                 event_schema: BTreeMap::new(), // TODO: Royalty application events
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -171,8 +168,7 @@ pub fn create_genesis(
                     ]
                     .into(),
                 )]),
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -236,8 +232,7 @@ pub fn create_genesis(
                         .into(),
                     ),
                 ]),
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -267,8 +262,7 @@ pub fn create_genesis(
                     initial_supply,
                     resource_address,
                 },
-            )
-            .unwrap(),
+            ),
         });
     }
 
@@ -288,8 +282,7 @@ pub fn create_genesis(
                 metadata,
                 access_rules,
                 resource_address,
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -312,8 +305,7 @@ pub fn create_genesis(
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
                 event_schema: BTreeMap::new(),
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -381,8 +373,7 @@ pub fn create_genesis(
                         .into(),
                     ),
                 ]),
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -405,8 +396,7 @@ pub fn create_genesis(
                 package_access_rules: ClockNativePackage::package_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
                 event_schema: BTreeMap::new(),
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -429,8 +419,7 @@ pub fn create_genesis(
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
                 event_schema: BTreeMap::new(), // TODO: Account events
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -482,8 +471,7 @@ pub fn create_genesis(
                     ]
                     .into(),
                 )]),
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -506,8 +494,7 @@ pub fn create_genesis(
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
                 event_schema: BTreeMap::new(),
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -530,8 +517,7 @@ pub fn create_genesis(
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::DenyAll,
                 event_schema: BTreeMap::new(),
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -551,8 +537,7 @@ pub fn create_genesis(
                 metadata,
                 access_rules,
                 resource_address,
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -572,8 +557,7 @@ pub fn create_genesis(
                 metadata,
                 access_rules,
                 resource_address,
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -593,8 +577,7 @@ pub fn create_genesis(
                 metadata,
                 access_rules,
                 resource_address,
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -616,8 +599,7 @@ pub fn create_genesis(
                 access_rules: AccessRulesConfig::new()
                     .default(AccessRule::DenyAll, AccessRule::DenyAll),
                 event_schema: BTreeMap::new(),
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -629,7 +611,7 @@ pub fn create_genesis(
             package_address: CLOCK_PACKAGE,
             blueprint_name: CLOCK_BLUEPRINT.to_string(),
             function_name: CLOCK_CREATE_IDENT.to_string(),
-            args: to_manifest_value(&ClockCreateInput { component_address }).unwrap(),
+            args: to_manifest_value(&ClockCreateInput { component_address }),
         });
     }
 
