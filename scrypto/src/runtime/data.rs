@@ -130,11 +130,8 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
             )
             .unwrap();
         let raw_substate = env.sys_read_substate(lock_handle).unwrap();
-        let substate: ComponentStateSubstate = scrypto_decode(&raw_substate).unwrap();
-        DataRef {
-            lock_handle,
-            value: scrypto_decode(&scrypto_encode(&substate.0).unwrap()).unwrap(),
-        }
+        let value: V = scrypto_decode(&raw_substate).unwrap();
+        DataRef { lock_handle, value }
     }
 
     pub fn get_mut(&mut self) -> DataRefMut<V> {
@@ -147,11 +144,11 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
             )
             .unwrap();
         let raw_substate = env.sys_read_substate(lock_handle).unwrap();
-        let substate: ComponentStateSubstate = scrypto_decode(&raw_substate).unwrap();
+        let value: V = scrypto_decode(&raw_substate).unwrap();
         DataRefMut {
             lock_handle,
             original_data: OriginalData::ComponentAppState(raw_substate),
-            value: scrypto_decode(&scrypto_encode(&substate.0).unwrap()).unwrap(),
+            value,
         }
     }
 }

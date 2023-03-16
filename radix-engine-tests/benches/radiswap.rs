@@ -62,8 +62,8 @@ fn bench_radiswap(c: &mut Criterion) {
                                 bucket1,
                                 bucket2,
                                 dec!("1000"),
-                                "LP__ETH",
-                                "LP token for /ETH swap",
+                                "LP_BTC_ETH",
+                                "LP token for BTC/ETH swap",
                                 "https://www.radiswap.com",
                                 fee_amount
                             ),

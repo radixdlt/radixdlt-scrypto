@@ -132,8 +132,8 @@ fn test_radiswap() {
                                 bucket1,
                                 bucket2,
                                 dec!("1000"),
-                                "LP__ETH",
-                                "LP token for /ETH swap",
+                                "LP_BTC_ETH",
+                                "LP token for BTC/ETH swap",
                                 "https://www.radiswap.com",
                                 fee_amount
                             ),
@@ -206,10 +206,10 @@ fn test_radiswap() {
         + 10000 /* DropNode */
         + 25340 /* Invoke */
         + 231000 /* LockSubstate */
-        + 2625760 /* ReadSubstate */
+        + 2638520 /* ReadSubstate */
         + 137500 /* RunNative */
         + 15000 /* RunSystem */
-        + 1817520 /* RunWasm */
+        + 1653870 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1625 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
@@ -316,10 +316,10 @@ fn test_flash_loan() {
         + 20000 /* DropNode */
         + 45110 /* Invoke */
         + 354000 /* LockSubstate */
-        + 5251560 /* ReadSubstate */
+        + 5276660 /* ReadSubstate */
         + 215000 /* RunNative */
         + 30000 /* RunSystem */
-        + 1435220 /* RunWasm */
+        + 1279580 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2375 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
