@@ -1,6 +1,8 @@
-use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
+use radix_engine::blueprints::resource::VaultError;
+use radix_engine::errors::{ApplicationError, CallFrameError, KernelError, RuntimeError};
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
+use scrypto::prelude::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -447,4 +449,57 @@ fn create_mutable_vault_with_get_resource_manager() {
 
     // Assert
     receipt.expect_commit_success();
+}
+
+#[test]
+fn withdraw_with_over_specified_divisibility_should_result_in_error() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (pk, _, account) = test_runner.new_allocated_account();
+    let resource_address = test_runner.create_fungible_resource(100u32.into(), 4, account);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .withdraw_from_account(account, resource_address, dec!("5.55555"))
+        .call_method(
+            account,
+            "deposit_batch",
+            manifest_args!(ManifestExpression::EntireWorktop),
+        )
+        .build();
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::InvalidAmount))
+        )
+    });
+}
+
+#[test]
+fn create_proof_with_over_specified_divisibility_should_result_in_error() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (pk, _, account) = test_runner.new_allocated_account();
+    let resource_address = test_runner.create_fungible_resource(100u32.into(), 4, account);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .create_proof_from_account_by_amount(account, resource_address, dec!("5.55555"))
+        .build();
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::InvalidAmount))
+        )
+    });
 }

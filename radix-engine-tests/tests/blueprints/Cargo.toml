@@ -27,6 +27,7 @@ members = [
     "proof",
     "recursion",
     "reentrancy",
+    "reference",
     "resource",
     "resource_creator",
     "stored_external_component",

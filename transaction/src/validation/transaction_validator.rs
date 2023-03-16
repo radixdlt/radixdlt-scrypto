@@ -382,12 +382,9 @@ impl NotarizedTransactionValidator {
     }
 
     pub fn validate_call_args(
-        args: &[u8],
+        value: &ManifestValue,
         id_validator: &mut ManifestValidator,
     ) -> Result<(), CallDataValidationError> {
-        let value: ManifestValue =
-            manifest_decode(args).map_err(CallDataValidationError::DecodeError)?;
-
         id_validator
             .process_call_data(&value)
             .map_err(CallDataValidationError::IdValidationError)?;

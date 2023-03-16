@@ -10,6 +10,7 @@ pub enum EventError {
         event_name: String,
     },
     InvalidEventSchema,
+    EventSchemaNotMatch(String),
     NoAssociatedPackage,
     InvalidActor,
 }

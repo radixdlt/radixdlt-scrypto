@@ -242,15 +242,14 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
         let virtual_badge_non_fungible_global_id =
             NonFungibleGlobalId::from_public_key(&public_key);
 
-        let access_rules = manifest_decode::<AccessRulesConfig>(&manifest_args!(
+        let access_rules: AccessRulesConfig = manifest_args!(
             HashMap::<MethodKey, AccessRuleEntry>::new(),
             HashMap::<String, AccessRule>::new(),
             AccessRule::AllowAll,
             HashMap::<MethodKey, AccessRule>::new(),
             HashMap::<String, AccessRule>::new(),
             AccessRule::AllowAll
-        ))
-        .unwrap();
+        );
 
         let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
         test_runner.add_initial_proof(virtual_badge_non_fungible_global_id.clone());

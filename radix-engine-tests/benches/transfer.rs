@@ -47,25 +47,6 @@ fn bench_transfer(c: &mut Criterion) {
             .expect_commit(true)
             .new_component_addresses()[0];
 
-            let manifest = ManifestBuilder::new()
-                .lock_fee(FAUCET_COMPONENT, 100.into())
-                .call_method(FAUCET_COMPONENT, "free", manifest_args!())
-                .call_method(
-                    account,
-                    "deposit_batch",
-                    manifest_args!(ManifestExpression::EntireWorktop),
-                )
-                .build();
-            execute_and_commit_transaction(
-                &mut substate_store,
-                &mut scrypto_interpreter,
-                &FeeReserveConfig::default(),
-                &ExecutionConfig::default(),
-                &TestTransaction::new(manifest.clone(), 1, DEFAULT_COST_UNIT_LIMIT)
-                    .get_executable(vec![NonFungibleGlobalId::from_public_key(&public_key)]),
-            )
-            .expect_commit(true);
-
             account
         })
         .collect::<Vec<ComponentAddress>>();
