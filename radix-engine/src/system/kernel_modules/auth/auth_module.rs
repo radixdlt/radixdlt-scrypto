@@ -1,5 +1,5 @@
 use super::auth_converter::convert_contextless;
-use super::method_authorization::MethodAuthorization;
+use super::authorization::MethodAuthorization;
 use super::HardAuthRule;
 use super::HardProofRule;
 use super::HardResourceOrNonFungible;
