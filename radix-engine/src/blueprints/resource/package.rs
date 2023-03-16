@@ -231,12 +231,21 @@ impl ResourceManagerNativePackage {
             },
         );
 
+        let event_schema = event_schema! {
+            aggregator,
+            [
+                VaultCreationEvent,
+                MintResourceEvent,
+                BurnResourceEvent
+            ]
+        };
+
         let schema = generate_full_schema(aggregator);
         let resource_manager_schema = BlueprintSchema {
             schema,
             substates,
             functions,
-            event_schema: event_schema![VaultCreationEvent, MintResourceEvent, BurnResourceEvent],
+            event_schema,
         };
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
@@ -400,17 +409,22 @@ impl ResourceManagerNativePackage {
             },
         );
 
+        let event_schema = event_schema! {
+            aggregator,
+            [
+                LockFeeEvent,
+                WithdrawResourceEvent,
+                DepositResourceEvent,
+                RecallResourceEvent
+            ]
+        };
+
         let schema = generate_full_schema(aggregator);
         let vault_schema = BlueprintSchema {
             schema,
             substates,
             functions,
-            event_schema: event_schema![
-                LockFeeEvent,
-                WithdrawResourceEvent,
-                DepositResourceEvent,
-                RecallResourceEvent
-            ],
+            event_schema,
         };
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();

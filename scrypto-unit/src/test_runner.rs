@@ -1184,7 +1184,8 @@ impl TestRunner {
             NodeModuleId::SELF,
             SubstateOffset::Package(PackageOffset::Info),
         );
-        self.substate_store()
+        let local_type_index = *self
+            .substate_store()
             .get_substate(&substate_id)
             .unwrap()
             .substate
@@ -1195,8 +1196,22 @@ impl TestRunner {
             .unwrap()
             .event_schema
             .get(&event_name)
-            .unwrap()
-            .clone()
+            .unwrap();
+
+        (
+            local_type_index,
+            self.substate_store()
+                .get_substate(&substate_id)
+                .unwrap()
+                .substate
+                .package_info()
+                .schema
+                .blueprints
+                .get(&blueprint_name)
+                .unwrap()
+                .schema
+                .clone(),
+        )
     }
 }
 

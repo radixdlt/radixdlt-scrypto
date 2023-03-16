@@ -696,7 +696,7 @@ where
         }?;
 
         // Reading the schema to validate the payload against it
-        let (local_type_index, schema) = {
+        {
             let handle = self.kernel_lock_substate(
                 RENodeId::GlobalObject(Address::Package(package_address)),
                 NodeModuleId::SELF,
@@ -704,31 +704,39 @@ where
                 LockFlags::read_only(),
             )?;
             let package_info = self.kernel_get_substate_ref::<PackageInfoSubstate>(handle)?;
-            let contained_schema = package_info
-                .schema
-                .blueprints
-                .get(&blueprint_name)
-                .and_then(|blueprint_schema| blueprint_schema.event_schema.get(&event_name))
-                .map_or(
-                    Err(RuntimeError::ApplicationError(
-                        ApplicationError::EventError(EventError::SchemaNotFoundError {
-                            package_address,
-                            blueprint_name,
-                            event_name,
-                        }),
-                    )),
-                    |item| Ok(item.clone()),
-                )?;
-            self.kernel_drop_lock(handle)?;
-            contained_schema
-        };
+            let blueprint_schema = package_info.schema.blueprints.get(&blueprint_name).map_or(
+                Err(RuntimeError::ApplicationError(
+                    ApplicationError::EventError(EventError::SchemaNotFoundError {
+                        package_address,
+                        blueprint_name: blueprint_name.clone(),
+                        event_name: event_name.clone(),
+                    }),
+                )),
+                Ok,
+            )?;
+            let schema = &blueprint_schema.schema;
+            let local_type_index = blueprint_schema.event_schema.get(&event_name).map_or(
+                Err(RuntimeError::ApplicationError(
+                    ApplicationError::EventError(EventError::SchemaNotFoundError {
+                        package_address,
+                        blueprint_name,
+                        event_name,
+                    }),
+                )),
+                Ok,
+            )?;
 
-        // Validating the event data against the event schema
-        validate_payload_against_schema(&event_data, &schema, local_type_index).map_err(|err| {
-            RuntimeError::ApplicationError(ApplicationError::EventError(
-                EventError::EventSchemaNotMatch(err.error_message(&schema)),
-            ))
-        })?;
+            // Validating the event data against the event schema
+            validate_payload_against_schema(&event_data, schema, *local_type_index).map_err(
+                |err| {
+                    RuntimeError::ApplicationError(ApplicationError::EventError(
+                        EventError::EventSchemaNotMatch(err.error_message(&schema)),
+                    ))
+                },
+            )?;
+
+            self.kernel_drop_lock(handle)?;
+        };
 
         // Adding the event to the event store
         self.kernel_get_module_state()

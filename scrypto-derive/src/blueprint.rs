@@ -145,9 +145,13 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 // Aggregate event schemas
                 let mut event_schema = BTreeMap::new();
                 #({
-                    let (local_type_index, schema) = sbor::generate_full_schema_from_single_type::<#event_type_names, ScryptoCustomTypeExtension>();
-                    let type_name = schema.resolve_type_metadata(local_type_index).unwrap().type_name.to_string();
-                    event_schema.insert(type_name, (local_type_index, schema));
+                    let type_name = {
+                        let (local_type_index, schema) = sbor::generate_full_schema_from_single_type::<#event_type_names, ScryptoCustomTypeExtension>();
+                        let type_name = schema.resolve_type_metadata(local_type_index).unwrap().type_name.to_string();
+                        type_name
+                    };
+                    let local_type_index = aggregator.add_child_type_and_descendents::<#event_type_names>();
+                    event_schema.insert(type_name, local_type_index);
                 })*
 
                 let return_data = BlueprintSchema {

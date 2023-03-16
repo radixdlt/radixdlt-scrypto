@@ -25,12 +25,8 @@ pub struct BlueprintSchema {
     pub substates: Vec<LocalTypeIndex>,
     /// For each function, there is a [`FunctionSchema`]
     pub functions: BTreeMap<String, FunctionSchema>,
-    /// TODO: Move to the following:
-    /// ```no_run
-    /// /// For each event there is a [`String`] name and a [`LocalTypeIndex`]
-    /// pub event_schema: BTreeMap<String, LocalTypeIndex>
-    /// ```
-    pub event_schema: BTreeMap<String, (LocalTypeIndex, ScryptoSchema)>,
+    /// For each event, there is a name [`String`] that maps to a [`LocalTypeIndex`]
+    pub event_schema: BTreeMap<String, LocalTypeIndex>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]

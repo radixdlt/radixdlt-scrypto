@@ -85,12 +85,21 @@ impl EpochManagerNativePackage {
                 export_name: EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT.to_string(),
             },
         );
+
+        let event_schema = event_schema! {
+            aggregator,
+            [
+                RoundChangeEvent,
+                EpochChangeEvent
+            ]
+        };
+
         let schema = generate_full_schema(aggregator);
         let epoch_manager_schema = BlueprintSchema {
             schema,
             substates,
             functions,
-            event_schema: event_schema![RoundChangeEvent, EpochChangeEvent],
+            event_schema,
         };
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
@@ -165,19 +174,24 @@ impl EpochManagerNativePackage {
             },
         );
 
-        let schema = generate_full_schema(aggregator);
-        let validator_schema = BlueprintSchema {
-            schema,
-            substates,
-            functions,
-            event_schema: event_schema![
+        let event_schema = event_schema! {
+            aggregator,
+            [
                 RegisterValidatorEvent,
                 UnregisterValidatorEvent,
                 StakeEvent,
                 UnstakeEvent,
                 ClaimXrdEvent,
                 UpdateAcceptingStakeDelegationStateEvent
-            ],
+            ]
+        };
+
+        let schema = generate_full_schema(aggregator);
+        let validator_schema = BlueprintSchema {
+            schema,
+            substates,
+            functions,
+            event_schema,
         };
 
         PackageSchema {

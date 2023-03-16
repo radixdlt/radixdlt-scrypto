@@ -262,6 +262,18 @@ impl AccessControllerNativePackage {
             },
         );
 
+        let event_schema = event_schema! {
+            aggregator,
+            [
+                InitiateRecoveryEvent,
+                RuleSetUpdateEvent,
+                CancelRecoveryProposalEvent,
+                LockPrimaryRoleEvent,
+                UnlockPrimaryRoleEvent,
+                StopTimedRecoveryEvent
+            ]
+        };
+
         let schema = generate_full_schema(aggregator);
         PackageSchema {
             blueprints: btreemap!(
@@ -269,14 +281,7 @@ impl AccessControllerNativePackage {
                     schema,
                     substates,
                     functions,
-                    event_schema: event_schema![
-                        InitiateRecoveryEvent,
-                        RuleSetUpdateEvent,
-                        CancelRecoveryProposalEvent,
-                        LockPrimaryRoleEvent,
-                        UnlockPrimaryRoleEvent,
-                        StopTimedRecoveryEvent
-                    ]
+                    event_schema
                 }
             ),
         }
