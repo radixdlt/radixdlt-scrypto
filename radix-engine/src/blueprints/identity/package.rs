@@ -67,7 +67,13 @@ impl IdentityNativePackage {
                         InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
-                Self::create(input, api)
+                let input: IdentityCreateInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+
+                let rtn = IdentityBlueprint::create(input.access_rule, api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
@@ -75,44 +81,21 @@ impl IdentityNativePackage {
         }
     }
 
-    fn create<Y>(
-        input: IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
-    {
-        let input: IdentityCreateInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-
-        let (node_id, access_rules) = IdentityBlueprint::create(input.access_rule, api)?;
-        let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
-        let metadata = Metadata::sys_create(api)?;
-        let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
-
-        let address = api.globalize(
-            node_id,
-            btreemap!(
-                NodeModuleId::AccessRules => access_rules.id(),
-                NodeModuleId::Metadata => metadata.id(),
-                NodeModuleId::ComponentRoyalty => royalty.id(),
-            ),
-        )?;
-        Ok(IndexedScryptoValue::from_typed(&address))
-    }
 }
 
 pub struct IdentityBlueprint;
 
 impl IdentityBlueprint {
-    pub fn create<Y>(
+    pub fn create_with_address<Y>(
         access_rule: AccessRule,
+        address: Address,
         api: &mut Y,
-    ) -> Result<(RENodeId, AccessRulesConfig), RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    ) -> Result<(), RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
+        let object_id = api.new_object(IDENTITY_BLUEPRINT, vec![])?;
+
         let mut access_rules = AccessRulesConfig::new();
         access_rules.set_access_rule_and_mutability(
             MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
@@ -125,9 +108,35 @@ impl IdentityBlueprint {
             AccessRule::DenyAll,
         );
 
-        let component_id = api.new_object(IDENTITY_BLUEPRINT, vec![])?;
+        let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
+        let metadata = Metadata::sys_create(api)?;
+        let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
 
-        Ok((RENodeId::Object(component_id), access_rules))
+        api.globalize_with_address(
+            RENodeId::Object(object_id),
+            btreemap!(
+                NodeModuleId::AccessRules => access_rules.id(),
+                NodeModuleId::Metadata => metadata.id(),
+                NodeModuleId::ComponentRoyalty => royalty.id(),
+            ),
+            address
+        )?;
+
+        Ok(())
+    }
+
+    pub fn create<Y>(
+        access_rule: AccessRule,
+        api: &mut Y,
+    ) -> Result<Address, RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let node_id = api.kernel_allocate_node_id(RENodeType::GlobalIdentity)?;
+        let address: Address = node_id.into();
+        Self::create_with_address(access_rule, address, api)?;
+
+        Ok(address)
     }
 
     pub fn create_virtual<Y>(
