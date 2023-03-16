@@ -489,20 +489,11 @@ pub fn generate_instruction(
             args: generate_value(args, None, resolver, bech32_decoder, blobs)?,
         },
 
-        ast::Instruction::CreateValidator {
-            key,
-            owner_access_rule,
-        } => Instruction::CallMethod {
+        ast::Instruction::CreateValidator { key } => Instruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
             args: to_manifest_value(&EpochManagerCreateValidatorInput {
                 key: generate_typed_value(key, resolver, bech32_decoder, blobs)?,
-                owner_access_rule: generate_typed_value(
-                    owner_access_rule,
-                    resolver,
-                    bech32_decoder,
-                    blobs,
-                )?,
             })
             .unwrap(),
         },
@@ -1648,7 +1639,7 @@ mod tests {
     fn test_create_validator_instruction() {
         generate_instruction_ok!(
             r#"
-            CREATE_VALIDATOR Bytes("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5") Enum("AccessRule::AllowAll");
+            CREATE_VALIDATOR Bytes("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5");
             "#,
             Instruction::CallMethod {
                 component_address: EPOCH_MANAGER,
@@ -1657,7 +1648,6 @@ mod tests {
                     key: EcdsaSecp256k1PrivateKey::from_u64(2u64)
                         .unwrap()
                         .public_key(),
-                    owner_access_rule: AccessRule::AllowAll,
                 })
                 .unwrap(),
             },

@@ -1480,6 +1480,10 @@ impl<'a> SubstateRef<'a> {
 
                 (HashSet::new(), owned_nodes)
             }
+            SubstateRef::EpochManager(substate) => {
+                let (_, owns, refs) = IndexedScryptoValue::from_typed(&substate).unpack();
+                (refs, owns)
+            }
             SubstateRef::Validator(substate) => {
                 let (_, owns, refs) = IndexedScryptoValue::from_typed(&substate).unpack();
                 (refs, owns)

@@ -61,8 +61,7 @@ impl EpochManagerBlueprint {
     {
         let address = ComponentAddress::EpochManager(component_address);
 
-
-        let mut owner_resman: ResourceManager = {
+        let owner_resman: ResourceManager = {
             let metadata: BTreeMap<String, String> = BTreeMap::new();
             let mut access_rules = BTreeMap::new();
 
@@ -88,7 +87,6 @@ impl EpochManagerBlueprint {
 
             resource_manager
         };
-
 
         let mut validators = BTreeMap::new();
 
@@ -308,9 +306,8 @@ impl EpochManagerBlueprint {
     pub(crate) fn create_validator<Y>(
         receiver: RENodeId,
         key: EcdsaSecp256k1PublicKey,
-        owner_access_rule: AccessRule,
         api: &mut Y,
-    ) -> Result<ComponentAddress, RuntimeError>
+    ) -> Result<(ComponentAddress, Bucket), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
@@ -321,10 +318,15 @@ impl EpochManagerBlueprint {
         )?;
         let epoch_manager: &EpochManagerSubstate = api.kernel_get_substate_ref(handle)?;
         let manager = epoch_manager.address;
-        let validator_address =
-            ValidatorCreator::create(manager, key, owner_access_rule, false, api)?;
 
-        Ok(validator_address)
+        let owner_resman = ResourceManager(epoch_manager.validator_owner_resource);
+        let (owner_token_bucket, local_id) = owner_resman.mint_non_fungible_single_uuid((), api)?;
+        let global_id = NonFungibleGlobalId::new(owner_resman.0, local_id.clone());
+
+        let validator_address =
+            ValidatorCreator::create(manager, key, rule!(require(global_id)), false, api)?;
+
+        Ok((validator_address, owner_token_bucket))
     }
 
     pub(crate) fn update_validator<Y>(

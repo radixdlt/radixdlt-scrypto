@@ -213,7 +213,7 @@ impl EpochManagerNativePackage {
                     RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                 })?;
                 let rtn = EpochManagerBlueprint::create(
-                    input.olympia_validator_token_address,
+                    input.validator_owner_token,
                     input.component_address,
                     input.validator_set,
                     input.initial_epoch,
@@ -270,12 +270,7 @@ impl EpochManagerNativePackage {
                 let input: EpochManagerCreateValidatorInput = input.as_typed().map_err(|e| {
                     RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                 })?;
-                let rtn = EpochManagerBlueprint::create_validator(
-                    receiver,
-                    input.key,
-                    input.owner_access_rule,
-                    api,
-                )?;
+                let rtn = EpochManagerBlueprint::create_validator(receiver, input.key, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }

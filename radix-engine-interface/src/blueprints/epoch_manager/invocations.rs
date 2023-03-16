@@ -28,7 +28,7 @@ pub const EPOCH_MANAGER_CREATE_IDENT: &str = "create";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct EpochManagerCreateInput {
-    pub olympia_validator_token_address: [u8; 26], // TODO: Clean this up
+    pub validator_owner_token: [u8; 26], // TODO: Clean this up
     pub component_address: [u8; 26],               // TODO: Clean this up
     pub validator_set: BTreeMap<EcdsaSecp256k1PublicKey, ValidatorInit>,
     pub initial_epoch: u64,
@@ -53,7 +53,7 @@ impl Clone for EpochManagerCreateInput {
         }
 
         Self {
-            olympia_validator_token_address: self.olympia_validator_token_address,
+            validator_owner_token: self.validator_owner_token,
             component_address: self.component_address,
             validator_set,
             initial_epoch: self.initial_epoch,
@@ -93,10 +93,9 @@ pub const EPOCH_MANAGER_CREATE_VALIDATOR_IDENT: &str = "create_validator";
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct EpochManagerCreateValidatorInput {
     pub key: EcdsaSecp256k1PublicKey,
-    pub owner_access_rule: AccessRule,
 }
 
-pub type EpochManagerCreateValidatorOutput = ComponentAddress;
+pub type EpochManagerCreateValidatorOutput = (ComponentAddress, Bucket);
 
 pub const EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT: &str = "update_validator";
 

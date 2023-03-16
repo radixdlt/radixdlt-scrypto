@@ -149,7 +149,7 @@ impl ResourceManager {
 
     /// Mints non-fungible resources
     pub fn mint_non_fungible_single_uuid<Y, E: Debug + ScryptoDecode, T: ScryptoEncode>(
-        &mut self,
+        &self,
         data: T,
         api: &mut Y,
     ) -> Result<(Bucket, NonFungibleLocalId), E>

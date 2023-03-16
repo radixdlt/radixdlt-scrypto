@@ -15,7 +15,7 @@ pub const SYSTEM_TOKEN: ResourceAddress = vanity_address!(EntityType::Resource, 
 
 pub const PACKAGE_TOKEN: ResourceAddress = vanity_address!(EntityType::Resource, 4);
 
-pub const OLYMPIA_VALIDATOR_TOKEN: ResourceAddress = vanity_address!(EntityType::Resource, 5);
+pub const VALIDATOR_OWNER_TOKEN: ResourceAddress = vanity_address!(EntityType::Resource, 5);
 
 /// The address of the faucet package.
 pub const PACKAGE_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 0);
