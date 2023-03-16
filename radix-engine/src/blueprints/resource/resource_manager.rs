@@ -144,7 +144,11 @@ where
     Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
 {
     if divisibility > DIVISIBILITY_MAXIMUM {
-        return Err(RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(ResourceManagerError::InvalidDivisibility(divisibility,))));
+        return Err(RuntimeError::ApplicationError(
+            ApplicationError::ResourceManagerError(ResourceManagerError::InvalidDivisibility(
+                divisibility,
+            )),
+        ));
     }
 
     let mut resource_manager = ResourceManagerSubstate::new(
@@ -1463,7 +1467,11 @@ where
     let resource_address: ResourceAddress = global_node_id.into();
 
     if divisibility > DIVISIBILITY_MAXIMUM {
-        return Err(RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(ResourceManagerError::InvalidDivisibility(divisibility,))));
+        return Err(RuntimeError::ApplicationError(
+            ApplicationError::ResourceManagerError(ResourceManagerError::InvalidDivisibility(
+                divisibility,
+            )),
+        ));
     }
 
     let resource_manager_substate = ResourceManagerSubstate::new(
