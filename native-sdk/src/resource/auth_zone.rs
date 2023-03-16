@@ -149,20 +149,4 @@ impl ComponentAuthZone {
 
         Ok(())
     }
-
-    // TODO: remove
-
-    pub fn sys_assert_access_rule<Y, E>(access_rule: AccessRule, api: &mut Y) -> Result<(), E>
-    where
-        Y: ClientApi<E>,
-        E: Debug + ScryptoCategorize + ScryptoDecode,
-    {
-        let _rtn = api.call_method(
-            RENodeId::AuthZoneStack,
-            AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
-            scrypto_encode(&AuthZoneAssertAccessRuleInput { access_rule }).unwrap(),
-        )?;
-
-        Ok(())
-    }
 }

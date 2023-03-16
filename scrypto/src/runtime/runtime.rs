@@ -1,10 +1,11 @@
+use radix_engine_interface::api::kernel_modules::auth_api::ClientAuthApi;
 use radix_engine_interface::api::types::FnIdentifier;
 use radix_engine_interface::api::{types::*, ClientEventApi, ClientObjectApi};
 use radix_engine_interface::api::{ClientActorApi, ClientTransactionRuntimeApi};
 use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerGetCurrentEpochInput, EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
 };
-use radix_engine_interface::blueprints::resource::NonFungibleGlobalId;
+use radix_engine_interface::blueprints::resource::{AccessRule, NonFungibleGlobalId};
 use radix_engine_interface::constants::{EPOCH_MANAGER, PACKAGE_TOKEN};
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::{model::*, ScryptoCustomTypeExtension};
@@ -110,5 +111,10 @@ impl Runtime {
         ScryptoEnv
             .emit_event(event_name, scrypto_encode(&event).unwrap())
             .unwrap();
+    }
+
+    pub fn assert_access_rule(access_rule: AccessRule) {
+        let mut env = ScryptoEnv;
+        env.assert_access_rule(access_rule).unwrap();
     }
 }

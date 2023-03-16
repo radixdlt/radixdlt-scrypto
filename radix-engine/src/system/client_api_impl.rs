@@ -123,8 +123,17 @@ where
     fn get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
         Ok(self.kernel_get_current_actor().unwrap().fn_identifier)
     }
+}
 
+impl<'g, 's, W> ClientAuthApi<RuntimeError> for Kernel<'g, 's, W>
+where
+    W: WasmEngine,
+{
     fn get_auth_zone(&mut self) -> Result<ObjectId, RuntimeError> {
+        todo!()
+    }
+
+    fn assert_access_rule(&mut self, rule: AccessRule) -> Result<(), RuntimeError> {
         todo!()
     }
 }

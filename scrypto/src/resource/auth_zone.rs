@@ -88,14 +88,4 @@ impl ComponentAuthZone {
             .unwrap();
         scrypto_decode(&rtn).unwrap()
     }
-
-    pub fn assert_access_rule(access_rule: AccessRule) {
-        let mut env = ScryptoEnv;
-        env.call_method(
-            RENodeId::AuthZoneStack,
-            AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
-            scrypto_encode(&AuthZoneAssertAccessRuleInput { access_rule }).unwrap(),
-        )
-        .unwrap();
-    }
 }

@@ -1,10 +1,10 @@
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::kernel_modules::auth::convert_contextless;
 use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE};
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
+use native_sdk::resource::SysProof;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::{ClientApi, LockFlags};
@@ -107,16 +107,6 @@ impl AuthZoneNativePackage {
                 export_name: AUTH_ZONE_DRAIN_IDENT.to_string(),
             },
         );
-        functions.insert(
-            AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT.to_string(), // TODO: remove
-            FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
-                input: aggregator.add_child_type_and_descendents::<AuthZoneAssertAccessRuleInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AuthZoneAssertAccessRuleOutput>(),
-                export_name: AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT.to_string(),
-            },
-        );
 
         let schema = generate_full_schema(aggregator);
         PackageSchema {
@@ -203,14 +193,6 @@ impl AuthZoneNativePackage {
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 AuthZoneBlueprint::drain(receiver, input, api)
-            }
-            AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT => {
-                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
-
-                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                AuthZoneBlueprint::assert_access_rule(receiver, input, api)
             }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
@@ -482,39 +464,5 @@ impl AuthZoneBlueprint {
         };
 
         Ok(IndexedScryptoValue::from_typed(&proofs))
-    }
-
-    // TODO: remove
-
-    pub(crate) fn assert_access_rule<Y>(
-        receiver: RENodeId,
-        input: IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
-    {
-        let input: AuthZoneAssertAccessRuleInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-
-        let handle = api.sys_lock_substate(
-            receiver,
-            SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
-            LockFlags::read_only(),
-        )?;
-        let auth_zone: &AuthZone = api.kernel_get_substate_ref(handle)?;
-        let authorization = convert_contextless(&input.access_rule);
-
-        // Authorization check
-        if !auth_zone_stack.check_auth(false, &authorization, api)? {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::AuthZoneError(AuthZoneError::AssertAccessRuleFailed),
-            ));
-        }
-
-        api.sys_drop_lock(handle)?;
-
-        Ok(IndexedScryptoValue::from_typed(&()))
     }
 }

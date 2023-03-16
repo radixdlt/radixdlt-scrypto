@@ -1,7 +1,9 @@
 use crate::engine::wasm_api::*;
+use radix_engine_interface::api::kernel_modules::auth_api::ClientAuthApi;
 use radix_engine_interface::api::{types::*, ClientTransactionRuntimeApi};
 use radix_engine_interface::api::{ClientActorApi, ClientObjectApi, ClientSubstateApi};
 use radix_engine_interface::api::{ClientEventApi, ClientLoggerApi, LockFlags};
+use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::model::{Address, PackageAddress};
 use radix_engine_interface::data::scrypto::*;
@@ -212,11 +214,21 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
 
         scrypto_decode(&actor).map_err(ClientApiError::DecodeError)
     }
+}
 
+impl ClientAuthApi<ClientApiError> for ScryptoEnv {
     fn get_auth_zone(&mut self) -> Result<ObjectId, ClientApiError> {
-        let actor = copy_buffer(unsafe { get_auth_zone() });
+        let auth_zone = copy_buffer(unsafe { get_auth_zone() });
 
-        scrypto_decode(&actor).map_err(ClientApiError::DecodeError)
+        scrypto_decode(&auth_zone).map_err(ClientApiError::DecodeError)
+    }
+
+    fn assert_access_rule(&mut self, access_rule: AccessRule) -> Result<(), ClientApiError> {
+        let access_rule = scrypto_encode(&access_rule).unwrap();
+
+        unsafe { assert_access_rule(access_rule.as_ptr(), access_rule.len()) };
+
+        Ok(())
     }
 }
 
