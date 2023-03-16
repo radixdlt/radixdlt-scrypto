@@ -10,7 +10,7 @@ use crate::system::node_modules::access_rules::{
 use crate::system::node_modules::event_schema::PackageEventSchemaSubstate;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::RuntimeSubstate;
-use crate::system::type_info::PackageCodeTypeSubstate;
+use crate::system::package::PackageCodeTypeSubstate;
 use crate::types::*;
 use crate::wasm::{PrepareError, WasmValidator};
 use core::fmt::Debug;
@@ -68,8 +68,8 @@ fn build_package_node_modules(
     node_modules.insert(
         NodeModuleId::TypeInfo,
         RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-            package_address: PACKAGE_LOADER,
-            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
+            package_address: PACKAGE_PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             global: true,
         }),
     );
@@ -102,9 +102,9 @@ fn build_package_node_modules(
     node_modules
 }
 
-pub struct Package;
+pub struct PackageNativePackage;
 
-impl Package {
+impl PackageNativePackage {
     pub fn invoke_export<Y>(
         export_name: &str,
         receiver: Option<RENodeId>,
@@ -115,7 +115,7 @@ impl Package {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         match export_name {
-            PACKAGE_LOADER_PUBLISH_NATIVE_IDENT => {
+            PACKAGE_PUBLISH_NATIVE_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
@@ -126,7 +126,7 @@ impl Package {
 
                 Self::publish_native(input, api)
             }
-            PACKAGE_LOADER_PUBLISH_WASM_IDENT => {
+            PACKAGE_PUBLISH_WASM_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
@@ -150,7 +150,7 @@ impl Package {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: PackageLoaderPublishNativeInput = input.as_typed().map_err(|e| {
+        let input: PackagePublishNativeInput = input.as_typed().map_err(|e| {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
 
@@ -205,7 +205,7 @@ impl Package {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: PackageLoaderPublishWasmInput = input.as_typed().map_err(|e| {
+        let input: PackagePublishWasmInput = input.as_typed().map_err(|e| {
             RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
         })?;
 

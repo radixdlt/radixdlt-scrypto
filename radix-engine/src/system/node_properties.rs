@@ -116,21 +116,7 @@ impl VisibilityProperties {
                         // Native
                         FnIdentifier {
                             package_address, ..
-                        } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                            || package_address.eq(&IDENTITY_PACKAGE)
-                            || package_address.eq(&EPOCH_MANAGER_PACKAGE)
-                            || package_address.eq(&CLOCK_PACKAGE)
-                            || package_address.eq(&ACCOUNT_PACKAGE)
-                            || package_address.eq(&ACCESS_CONTROLLER_PACKAGE)
-                            || package_address.eq(&TRANSACTION_RUNTIME_PACKAGE)
-                            || package_address.eq(&AUTH_ZONE_PACKAGE)
-                            || package_address.eq(&METADATA_PACKAGE)
-                            || package_address.eq(&ROYALTY_PACKAGE)
-                            || package_address.eq(&ACCESS_RULES_PACKAGE)
-                            || package_address.eq(&PACKAGE_LOADER) =>
-                        {
-                            true
-                        }
+                        } if is_native_package(*package_address) => true,
                         // Scrypto
                         _ => match &actor.identifier {
                             ActorIdentifier::Function(..) => match (node_id, offset) {
@@ -233,21 +219,7 @@ impl VisibilityProperties {
                         // Native
                         FnIdentifier {
                             package_address, ..
-                        } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                            || package_address.eq(&IDENTITY_PACKAGE)
-                            || package_address.eq(&ACCESS_CONTROLLER_PACKAGE)
-                            || package_address.eq(&CLOCK_PACKAGE)
-                            || package_address.eq(&EPOCH_MANAGER_PACKAGE)
-                            || package_address.eq(&TRANSACTION_RUNTIME_PACKAGE)
-                            || package_address.eq(&AUTH_ZONE_PACKAGE)
-                            || package_address.eq(&METADATA_PACKAGE)
-                            || package_address.eq(&ROYALTY_PACKAGE)
-                            || package_address.eq(&ACCESS_RULES_PACKAGE)
-                            || package_address.eq(&PACKAGE_LOADER)
-                            || package_address.eq(&ACCOUNT_PACKAGE) =>
-                        {
-                            true
-                        }
+                        } if is_native_package(*package_address) => true,
 
                         // Scrypto
                         _ => match &actor.identifier {

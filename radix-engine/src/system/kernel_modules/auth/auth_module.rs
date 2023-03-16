@@ -21,7 +21,7 @@ use crate::types::*;
 use radix_engine_interface::api::component::ComponentStateSubstate;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::package::{
-    PackageInfoSubstate, PACKAGE_LOADER_BLUEPRINT, PACKAGE_LOADER_PUBLISH_NATIVE_IDENT,
+    PackageInfoSubstate, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT,
 };
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
@@ -59,9 +59,9 @@ impl AuthModule {
         identifier: &FnIdentifier,
         api: &mut Y,
     ) -> Result<MethodAuthorization, RuntimeError> {
-        let auth = if identifier.package_address.eq(&PACKAGE_LOADER) {
-            if identifier.blueprint_name.eq(PACKAGE_LOADER_BLUEPRINT)
-                && identifier.ident.eq(PACKAGE_LOADER_PUBLISH_NATIVE_IDENT)
+        let auth = if identifier.package_address.eq(&PACKAGE_PACKAGE) {
+            if identifier.blueprint_name.eq(PACKAGE_BLUEPRINT)
+                && identifier.ident.eq(PACKAGE_PUBLISH_NATIVE_IDENT)
             {
                 MethodAuthorization::Protected(HardAuthRule::ProofRule(HardProofRule::Require(
                     HardResourceOrNonFungible::NonFungible(AuthAddresses::system_role()),

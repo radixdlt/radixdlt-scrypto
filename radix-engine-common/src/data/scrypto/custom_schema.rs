@@ -24,6 +24,8 @@ pub enum ScryptoCustomTypeKind {
     Decimal,
     PreciseDecimal,
     NonFungibleLocalId,
+
+    Reference,
 }
 
 impl<L: SchemaTypeLink> CustomTypeKind<L> for ScryptoCustomTypeKind {
@@ -67,6 +69,8 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             ScryptoCustomTypeKind::Decimal => ScryptoCustomTypeKind::Decimal,
             ScryptoCustomTypeKind::PreciseDecimal => ScryptoCustomTypeKind::PreciseDecimal,
             ScryptoCustomTypeKind::NonFungibleLocalId => ScryptoCustomTypeKind::NonFungibleLocalId,
+
+            ScryptoCustomTypeKind::Reference => ScryptoCustomTypeKind::Reference,
         }
     }
 
@@ -92,7 +96,8 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             | ScryptoCustomTypeKind::KeyValueStore
             | ScryptoCustomTypeKind::Decimal
             | ScryptoCustomTypeKind::PreciseDecimal
-            | ScryptoCustomTypeKind::NonFungibleLocalId => {
+            | ScryptoCustomTypeKind::NonFungibleLocalId
+            | ScryptoCustomTypeKind::Reference => {
                 // No validations
             }
         }
@@ -118,7 +123,8 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             | ScryptoCustomTypeKind::KeyValueStore { .. }
             | ScryptoCustomTypeKind::Decimal
             | ScryptoCustomTypeKind::PreciseDecimal
-            | ScryptoCustomTypeKind::NonFungibleLocalId => {
+            | ScryptoCustomTypeKind::NonFungibleLocalId
+            | ScryptoCustomTypeKind::Reference => {
                 validate_childless_metadata(type_metadata)?;
             }
         }
@@ -149,7 +155,8 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             | ScryptoCustomTypeKind::KeyValueStore { .. }
             | ScryptoCustomTypeKind::Decimal
             | ScryptoCustomTypeKind::PreciseDecimal
-            | ScryptoCustomTypeKind::NonFungibleLocalId => {
+            | ScryptoCustomTypeKind::NonFungibleLocalId
+            | ScryptoCustomTypeKind::Reference => {
                 // All these custom type kinds only support `SchemaTypeValidation::None`.
                 // If they get to this point, they have been paired with some ScryptoCustomTypeValidation
                 // - which isn't valid.
@@ -206,6 +213,10 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             ScryptoCustomTypeKind::NonFungibleLocalId => matches!(
                 value_kind,
                 ValueKind::Custom(ScryptoCustomValueKind::NonFungibleLocalId)
+            ),
+            ScryptoCustomTypeKind::Reference => matches!(
+                value_kind,
+                ValueKind::Custom(ScryptoCustomValueKind::Reference)
             ),
         }
     }

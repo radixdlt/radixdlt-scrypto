@@ -49,7 +49,7 @@ fn test_state_track_success() {
         + 2 /* Account(Account) */
         + 4 /* TypeInfo(TypeInfo) */
         + 3 /* AccessRules(AccessRules) */
-        + 1 /* PackageAccessRules */
+        + 2 /* PackageAccessRules */
         + 1 /* PackageEventSchema */
     );
     assert_eq!(
@@ -63,7 +63,7 @@ fn test_state_track_success() {
         + 2 /* Account(Account) */
         + 4 /* TypeInfo(TypeInfo) */
         + 3 /* AccessRules(AccessRules) */
-        + 1 /* PackageAccessRules */
+        + 2 /* PackageAccessRules */
         + 1 /* PackageEventSchema */
     );
 }

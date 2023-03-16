@@ -151,10 +151,10 @@ where
         event_schema: BTreeMap<String, Vec<(LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>>,
     ) -> Result<PackageAddress, RuntimeError> {
         let result = self.call_function(
-            PACKAGE_LOADER,
-            PACKAGE_LOADER_BLUEPRINT,
-            PACKAGE_LOADER_PUBLISH_WASM_IDENT,
-            scrypto_encode(&PackageLoaderPublishWasmInput {
+            PACKAGE_PACKAGE,
+            PACKAGE_BLUEPRINT,
+            PACKAGE_PUBLISH_WASM_IDENT,
+            scrypto_encode(&PackagePublishWasmInput {
                 package_address: None,
                 code,
                 schema,

@@ -13,7 +13,7 @@ use radix_engine_interface::api::types::{
 use sbor::rust::collections::BTreeMap;
 
 #[derive(Debug, Clone)]
-pub struct KernelDebugModule {}
+pub struct KernelTraceModule {}
 
 #[macro_export]
 macro_rules! log {
@@ -24,7 +24,7 @@ macro_rules! log {
 }
 
 #[allow(unused_variables)] // for no_std
-impl KernelModule for KernelDebugModule {
+impl KernelModule for KernelTraceModule {
     fn before_invoke<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         identifier: &InvocationDebugIdentifier,
