@@ -8,6 +8,7 @@ use crate::blueprints::epoch_manager::{
     UpdateAcceptingStakeDelegationStateEvent,
 };
 use crate::blueprints::identity::IdentityNativePackage;
+use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::resource::*;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
@@ -26,13 +27,10 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::node_modules::auth::{AuthAddresses, ACCESS_RULES_BLUEPRINT};
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
-use radix_engine_interface::api::package::*;
-use radix_engine_interface::api::package::{PackagePublishNativeInput, PackagePublishWasmInput};
-use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLUEPRINT;
-use radix_engine_interface::blueprints::clock::{
-    ClockCreateInput, CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT,
-};
+use radix_engine_interface::blueprints::access_controller::*;
+use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
+use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use transaction::model::{Instruction, SystemTransaction};
@@ -61,6 +59,30 @@ pub fn create_genesis(
     let mut id_allocator = ManifestIdAllocator::new();
     let mut instructions = Vec::new();
     let mut pre_allocated_ids = BTreeSet::new();
+
+    // Package Package
+    {
+        pre_allocated_ids.insert(RENodeId::GlobalObject(PACKAGE_PACKAGE.into()));
+        let package_address = PACKAGE_PACKAGE.to_array_without_entity_id();
+        instructions.push(Instruction::CallFunction {
+            package_address: PACKAGE_PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
+            args: to_manifest_value(&PackagePublishNativeInput {
+                package_address: Some(package_address), // TODO: Clean this up
+                native_package_code_id: PACKAGE_CODE_ID,
+                schema: PackageNativePackage::schema(),
+                dependent_resources: vec![],
+                dependent_components: vec![],
+                metadata: BTreeMap::new(),
+                access_rules: AccessRulesConfig::new(),
+                package_access_rules: PackageNativePackage::function_access_rules(),
+                default_package_access_rule: AccessRule::DenyAll,
+                event_schema: BTreeMap::new(),
+            })
+            .unwrap(),
+        });
+    }
 
     // Metadata Package
     {
@@ -809,8 +831,7 @@ where
             &genesis_transaction.get_executable(vec![AuthAddresses::system_role()]),
         );
 
-        let commit_result = transaction_receipt.expect_commit();
-        commit_result.outcome.expect_success();
+        let commit_result = transaction_receipt.expect_commit(true);
         commit_result.state_updates.commit(substate_store);
 
         Some(transaction_receipt)
@@ -850,15 +871,13 @@ mod tests {
         println!("{:?}", transaction_receipt);
 
         transaction_receipt.expect_commit_success();
-        let commit_result = transaction_receipt.expect_commit();
+        let commit_result = transaction_receipt.expect_commit(true);
         commit_result
-            .next_epoch
-            .as_ref()
+            .next_epoch()
             .expect("There should be a new epoch.");
 
         assert!(transaction_receipt
-            .result
-            .expect_commit()
+            .expect_commit(true)
             .entity_changes
             .new_package_addresses
             .contains(&PACKAGE_PACKAGE));
@@ -889,10 +908,11 @@ mod tests {
         );
 
         transaction_receipt.expect_commit_success();
-        let commit_result = transaction_receipt.result.expect_commit();
+        let commit_result = transaction_receipt.expect_commit(true);
         commit_result.state_updates.commit(&mut substate_store);
 
-        assert!(commit_result
+        assert!(transaction_receipt
+            .execution_trace
             .resource_changes
             .iter()
             .flat_map(|(_, rc)| rc)

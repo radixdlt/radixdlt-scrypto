@@ -4,8 +4,9 @@ use crate::errors::{ApplicationError, InterpreterError, RuntimeError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
-use native_sdk::access_rules::AccessRulesObject;
-use native_sdk::metadata::Metadata;
+use native_sdk::modules::access_rules::AccessRulesObject;
+use native_sdk::modules::metadata::Metadata;
+use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::{SysBucket, Vault};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::*;
@@ -415,9 +416,10 @@ impl AccessControllerNativePackage {
             vec![scrypto_encode(&substate).unwrap()],
         )?;
 
-        let access_rules = access_rules_from_rule_set(input.rule_set);
-        let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
+        let access_rules =
+            AccessRulesObject::sys_new(access_rules_from_rule_set(input.rule_set), api)?;
         let metadata = Metadata::sys_create(api)?;
+        let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
 
         // Creating a global component address for the access controller RENode
         let address = api.globalize(
@@ -425,6 +427,7 @@ impl AccessControllerNativePackage {
             btreemap!(
                 NodeModuleId::AccessRules => access_rules.id(),
                 NodeModuleId::Metadata => metadata.id(),
+                NodeModuleId::ComponentRoyalty => royalty.id(),
             ),
         )?;
 

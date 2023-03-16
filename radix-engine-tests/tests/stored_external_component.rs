@@ -37,11 +37,11 @@ fn stored_component_addresses_are_invokable() {
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     receipt1.expect_commit_success();
     let component0 = receipt1
-        .expect_commit()
+        .expect_commit(true)
         .entity_changes
         .new_component_addresses[0];
     let component1 = receipt1
-        .expect_commit()
+        .expect_commit(true)
         .entity_changes
         .new_component_addresses[1];
 

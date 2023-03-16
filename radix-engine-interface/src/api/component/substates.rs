@@ -21,5 +21,5 @@ pub struct ComponentRoyaltyConfigSubstate {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ComponentRoyaltyAccumulatorSubstate {
-    pub royalty_vault: Own,
+    pub royalty_vault: Option<Own>,
 }

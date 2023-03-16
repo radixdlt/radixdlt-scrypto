@@ -14,12 +14,15 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;
 
+const DIVISIBILITY_MAXIMUM: u8 = 18;
+
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum FungibleResourceManagerError {
     InvalidAmount(Decimal, u8),
     MaxMintAmountExceeded,
     MismatchingBucketResource,
+    InvalidDivisibility(u8),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -27,6 +30,30 @@ pub struct FungibleResourceManagerSubstate {
     pub resource_address: ResourceAddress, // TODO: Figure out a way to remove?
     pub divisibility: u8,
     pub total_supply: Decimal,
+}
+
+impl FungibleResourceManagerSubstate {
+    pub fn create(
+        resource_address: ResourceAddress,
+        divisibility: u8,
+        total_supply: Decimal,
+    ) -> Result<Self, RuntimeError> {
+        if divisibility > DIVISIBILITY_MAXIMUM {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::ResourceManagerError(
+                    FungibleResourceManagerError::InvalidDivisibility(divisibility),
+                ),
+            ));
+        }
+
+        let substate = Self {
+            resource_address,
+            divisibility,
+            total_supply,
+        };
+
+        Ok(substate)
+    }
 }
 
 fn build_fungible_bucket<Y>(
@@ -92,11 +119,8 @@ impl FungibleResourceManagerBlueprint {
         let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalResourceManager)?;
         let resource_address: ResourceAddress = global_node_id.into();
 
-        let resource_manager_substate = FungibleResourceManagerSubstate {
-            divisibility,
-            resource_address,
-            total_supply: 0.into(),
-        };
+        let resource_manager_substate =
+            FungibleResourceManagerSubstate::create(resource_address, divisibility, 0.into())?;
 
         let object_id = api.new_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -144,11 +168,11 @@ impl FungibleResourceManagerBlueprint {
     {
         let resource_address: ResourceAddress = ResourceAddress::Normal(resource_address);
 
-        let resource_manager_substate = FungibleResourceManagerSubstate {
-            divisibility,
+        let resource_manager_substate = FungibleResourceManagerSubstate::create(
             resource_address,
-            total_supply: initial_supply,
-        };
+            divisibility,
+            initial_supply,
+        )?;
 
         let object_id = api.new_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,

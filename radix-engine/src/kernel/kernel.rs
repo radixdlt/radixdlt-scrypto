@@ -23,9 +23,9 @@ use crate::system::node_properties::VisibilityProperties;
 use crate::system::node_substates::{RuntimeSubstate, SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use native_sdk::access_rules::AccessRulesObject;
-use native_sdk::metadata::Metadata;
-use radix_engine_interface::api::package::PackageCodeSubstate;
+use native_sdk::modules::access_rules::AccessRulesObject;
+use native_sdk::modules::metadata::Metadata;
+use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
     LockHandle, ProofOffset, RENodeId, SubstateId, SubstateOffset,
@@ -34,6 +34,7 @@ use radix_engine_interface::api::{ClientObjectApi, ClientPackageApi};
 use radix_engine_interface::blueprints::account::{
     ACCOUNT_BLUEPRINT, ACCOUNT_DEPOSIT_BATCH_IDENT, ACCOUNT_DEPOSIT_IDENT,
 };
+use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use sbor::rust::mem;
@@ -182,14 +183,15 @@ where
         };
 
         let access_rules = AccessRulesObject::sys_new(access_rules, self)?;
-
         let metadata = Metadata::sys_create(self)?;
+        let royalty = ComponentRoyalty::sys_create(self, RoyaltyConfig::default())?;
 
         self.globalize_with_address(
             component_id,
             btreemap!(
                 NodeModuleId::AccessRules => access_rules.id(),
                 NodeModuleId::Metadata => metadata.id(),
+                NodeModuleId::ComponentRoyalty => royalty.id(),
             ),
             global_node_id.into(),
         )?;
@@ -217,12 +219,14 @@ where
 
         let access_rules = AccessRulesObject::sys_new(access_rules, self)?;
         let metadata = Metadata::sys_create(self)?;
+        let royalty = ComponentRoyalty::sys_create(self, RoyaltyConfig::default())?;
 
         self.globalize_with_address(
             local_id,
             btreemap!(
                 NodeModuleId::AccessRules => access_rules.id(),
                 NodeModuleId::Metadata => metadata.id(),
+                NodeModuleId::ComponentRoyalty => royalty.id(),
             ),
             global_node_id.into(),
         )?;

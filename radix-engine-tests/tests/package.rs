@@ -1,5 +1,5 @@
+use radix_engine::blueprints::package::PackageError;
 use radix_engine::errors::{ApplicationError, KernelError, RuntimeError};
-use radix_engine::system::package::PackageError;
 use radix_engine::types::*;
 use radix_engine::wasm::*;
 use radix_engine_interface::blueprints::resource::*;

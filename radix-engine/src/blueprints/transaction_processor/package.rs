@@ -4,7 +4,6 @@ use crate::kernel::kernel_api::KernelNodeApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
-use radix_engine_interface::api::package::TRANSACTION_PROCESSOR_RUN_IDENT;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::transaction_processor::*;

@@ -1,9 +1,10 @@
-use crate::blueprints::epoch_manager::Validator;
+use crate::blueprints::epoch_manager::{EpochChangeEvent, Validator};
 use crate::errors::*;
-use crate::kernel::event::TrackedEvent;
 use crate::state_manager::StateDiff;
 use crate::system::kernel_modules::costing::FeeSummary;
-use crate::system::kernel_modules::execution_trace::{ResourceChange, WorktopChange};
+use crate::system::kernel_modules::execution_trace::{
+    ExecutionTrace, ResourceChange, WorktopChange,
+};
 use crate::types::*;
 use colored::*;
 use radix_engine_interface::address::{AddressDisplayContext, NO_NETWORK};
@@ -22,21 +23,17 @@ pub struct ResourcesUsage {
 }
 
 #[derive(Debug, Clone, ScryptoSbor)]
-pub struct TransactionExecution {
-    pub fee_summary: FeeSummary,
-    pub events: Vec<TrackedEvent>,
+pub struct TransactionExecutionTrace {
+    pub execution_traces: Vec<ExecutionTrace>,
+    pub resource_changes: IndexMap<usize, Vec<ResourceChange>>,
     pub resources_usage: ResourcesUsage,
 }
 
-impl TransactionExecution {
+impl TransactionExecutionTrace {
     pub fn worktop_changes(&self) -> IndexMap<usize, Vec<WorktopChange>> {
         let mut aggregator = index_map_new::<usize, Vec<WorktopChange>>();
-        for event in &self.events {
-            match event {
-                TrackedEvent::KernelCallTrace(kernel_call_trace) => {
-                    kernel_call_trace.worktop_changes(&mut aggregator)
-                }
-            }
+        for trace in &self.execution_traces {
+            trace.worktop_changes(&mut aggregator)
         }
         aggregator
     }
@@ -51,11 +48,10 @@ pub enum TransactionResult {
 }
 
 impl TransactionResult {
-    pub fn expect_commit(&self) -> &CommitResult {
+    pub fn is_commit_success(&self) -> bool {
         match self {
-            TransactionResult::Commit(c) => c,
-            TransactionResult::Reject(_) => panic!("Transaction was rejected"),
-            TransactionResult::Abort(_) => panic!("Transaction was aborted"),
+            TransactionResult::Commit(c) => matches!(c.outcome, TransactionOutcome::Success(_)),
+            _ => false,
         }
     }
 }
@@ -63,12 +59,50 @@ impl TransactionResult {
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct CommitResult {
     pub outcome: TransactionOutcome,
+    pub fee_summary: FeeSummary,
+    pub actual_fee_payments: BTreeMap<ObjectId, Decimal>,
     pub state_updates: StateDiff,
     pub entity_changes: EntityChanges,
-    pub resource_changes: IndexMap<usize, Vec<ResourceChange>>,
-    pub application_logs: Vec<(Level, String)>,
     pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
-    pub next_epoch: Option<(BTreeMap<ComponentAddress, Validator>, u64)>,
+    pub application_logs: Vec<(Level, String)>,
+}
+
+impl CommitResult {
+    pub fn next_epoch(&self) -> Option<(BTreeMap<ComponentAddress, Validator>, u64)> {
+        // TODO: Simplify once ScryptoEvent trait is implemented
+        let expected_event_name = {
+            let (local_type_index, schema) = generate_full_schema_from_single_type::<
+                EpochChangeEvent,
+                ScryptoCustomTypeExtension,
+            >();
+            (*schema
+                .resolve_type_metadata(local_type_index)
+                .expect("Cant fail")
+                .type_name)
+                .to_owned()
+        };
+        self.application_events
+            .iter()
+            .find(|(identifier, _)| match identifier {
+                EventTypeIdentifier(
+                    Emitter::Function(
+                        RENodeId::GlobalObject(Address::Package(EPOCH_MANAGER_PACKAGE)),
+                        NodeModuleId::SELF,
+                        ..,
+                    )
+                    | Emitter::Method(
+                        RENodeId::GlobalObject(Address::Component(ComponentAddress::EpochManager(
+                            ..,
+                        ))),
+                        NodeModuleId::SELF,
+                    ),
+                    event_name,
+                ) if *event_name == expected_event_name => true,
+                _ => false,
+            })
+            .map(|(_, data)| scrypto_decode::<EpochChangeEvent>(data).expect("Impossible Case!"))
+            .map(|event| (event.validators, event.epoch))
+    }
 }
 
 /// Captures whether a transaction's commit outcome is Success or Failure
@@ -79,6 +113,10 @@ pub enum TransactionOutcome {
 }
 
 impl TransactionOutcome {
+    pub fn is_success(&self) -> bool {
+        matches!(self, Self::Success(_))
+    }
+
     pub fn expect_success(&self) -> &Vec<InstructionOutput> {
         match self {
             TransactionOutcome::Success(results) => results,
@@ -148,15 +186,11 @@ pub enum AbortReason {
 /// Represents a transaction receipt.
 #[derive(Clone, ScryptoSbor)]
 pub struct TransactionReceipt {
-    pub execution: TransactionExecution, // THIS FIELD IS USEFUL FOR DEBUGGING EVEN IF THE TRANSACTION IS REJECTED
     pub result: TransactionResult,
+    pub execution_trace: TransactionExecutionTrace,
 }
 
 impl TransactionReceipt {
-    pub fn is_commit(&self) -> bool {
-        matches!(self.result, TransactionResult::Commit(_))
-    }
-
     pub fn is_commit_success(&self) -> bool {
         matches!(
             self.result,
@@ -181,9 +215,14 @@ impl TransactionReceipt {
         matches!(self.result, TransactionResult::Reject(_))
     }
 
-    pub fn expect_commit(&self) -> &CommitResult {
+    pub fn expect_commit(&self, success: bool) -> &CommitResult {
         match &self.result {
-            TransactionResult::Commit(c) => c,
+            TransactionResult::Commit(c) => {
+                if c.outcome.is_success() != success {
+                    panic!("Transaction outcome (success or not) does not match")
+                }
+                c
+            }
             TransactionResult::Reject(_) => panic!("Transaction was rejected"),
             TransactionResult::Abort(_) => panic!("Transaction was aborted"),
         }
@@ -280,17 +319,17 @@ impl TransactionReceipt {
     }
 
     pub fn new_package_addresses(&self) -> &Vec<PackageAddress> {
-        let commit = self.expect_commit();
+        let commit = self.expect_commit(true);
         &commit.entity_changes.new_package_addresses
     }
 
     pub fn new_component_addresses(&self) -> &Vec<ComponentAddress> {
-        let commit = self.expect_commit();
+        let commit = self.expect_commit(true);
         &commit.entity_changes.new_component_addresses
     }
 
     pub fn new_resource_addresses(&self) -> &Vec<ResourceAddress> {
-        let commit = self.expect_commit();
+        let commit = self.expect_commit(true);
         &commit.entity_changes.new_resource_addresses
     }
 }
@@ -319,10 +358,9 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
         f: &mut F,
         context: &AddressDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
-        let execution = &self.execution;
         let result = &self.result;
-
         let bech32_encoder = context.encoder;
+        let context = ScryptoValueDisplayContext::with_optional_bench32(bech32_encoder);
 
         write!(
             f,
@@ -338,26 +376,26 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
             },
         )?;
 
-        write!(
-            f,
-            "\n{} {} XRD used for execution, {} XRD used for royalty, {} XRD in bad debt",
-            "Transaction Fee:".bold().green(),
-            execution.fee_summary.total_execution_cost_xrd,
-            execution.fee_summary.total_royalty_cost_xrd,
-            execution.fee_summary.bad_debt_xrd,
-        )?;
-
-        write!(
-            f,
-            "\n{} {} limit, {} consumed, {} XRD per cost unit, {}% tip",
-            "Cost Units:".bold().green(),
-            execution.fee_summary.cost_unit_limit,
-            execution.fee_summary.total_cost_units_consumed,
-            execution.fee_summary.cost_unit_price,
-            execution.fee_summary.tip_percentage
-        )?;
-
         if let TransactionResult::Commit(c) = &result {
+            write!(
+                f,
+                "\n{} {} XRD used for execution, {} XRD used for royalty, {} XRD in bad debt",
+                "Transaction Fee:".bold().green(),
+                c.fee_summary.total_execution_cost_xrd,
+                c.fee_summary.total_royalty_cost_xrd,
+                c.fee_summary.total_bad_debt_xrd,
+            )?;
+
+            write!(
+                f,
+                "\n{} {} limit, {} consumed, {} XRD per cost unit, {}% tip",
+                "Cost Units:".bold().green(),
+                c.fee_summary.cost_unit_limit,
+                c.fee_summary.execution_cost_sum,
+                c.fee_summary.cost_unit_price,
+                c.fee_summary.tip_percentage
+            )?;
+
             write!(
                 f,
                 "\n{} {}",
@@ -395,11 +433,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                     event_data_value
                 )?;
             }
-        }
 
-        let context = ScryptoValueDisplayContext::with_optional_bench32(bech32_encoder);
-
-        if let TransactionResult::Commit(c) = &result {
             if let TransactionOutcome::Success(outputs) = &c.outcome {
                 write!(f, "\n{}", "Outputs:".bold().green())?;
                 for (i, output) in outputs.iter().enumerate() {
@@ -416,9 +450,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                     )?;
                 }
             }
-        }
 
-        if let TransactionResult::Commit(c) = &result {
             write!(
                 f,
                 "\n{} {}",

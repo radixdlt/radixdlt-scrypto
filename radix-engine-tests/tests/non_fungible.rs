@@ -61,7 +61,7 @@ fn can_burn_non_fungible() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
     let resource_address = receipt
-        .expect_commit()
+        .expect_commit(true)
         .entity_changes
         .new_resource_addresses[0];
     let vault_id = test_runner.get_component_vaults(account, resource_address)[0];
@@ -497,11 +497,11 @@ fn test_mint_update_and_withdraw() {
     );
     receipt.expect_commit_success();
     let badge_resource_address = receipt
-        .expect_commit()
+        .expect_commit(true)
         .entity_changes
         .new_resource_addresses[0];
     let nft_resource_address = receipt
-        .expect_commit()
+        .expect_commit(true)
         .entity_changes
         .new_resource_addresses[1];
 
@@ -845,7 +845,7 @@ fn cant_burn_non_fungible_with_wrong_non_fungible_local_id_type() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
     let resource_address = receipt
-        .expect_commit()
+        .expect_commit(true)
         .entity_changes
         .new_resource_addresses[0];
     let non_fungible_global_id = NonFungibleGlobalId::new(
