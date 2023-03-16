@@ -205,6 +205,13 @@ where
         self.allocate_buffer(buffer)
     }
 
+    fn get_auth_zone(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let auth_zone = self.api.get_auth_zone()?;
+
+        let buffer = scrypto_encode(&auth_zone).expect("Failed to encode auth_zone");
+        self.allocate_buffer(buffer)
+    }
+
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
         self.api
             .consume_cost_units(n, ClientCostingReason::RunWasm)
@@ -363,6 +370,10 @@ impl WasmRuntime for NopWasmRuntime {
     }
 
     fn get_actor(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn get_auth_zone(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 

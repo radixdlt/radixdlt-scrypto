@@ -35,7 +35,6 @@ extern "C" {
     /// Consumes a buffer by copying the contents into the specified destination.
     pub fn consume_buffer(buffer_id: BufferId, destination_ptr: *mut u8);
 
-
     //===============
     // Object API
     //===============
@@ -118,10 +117,10 @@ extern "C" {
     //===============
     // System API
     //===============
-    
+
     pub fn get_actor() -> Buffer;
-    
-    pub fn get_current_auth_zone() -> Buffer;
+
+    pub fn get_auth_zone() -> Buffer;
 
     pub fn emit_event(
         event_name_ptr: *const u8,
@@ -251,7 +250,7 @@ pub unsafe fn get_actor() -> Buffer {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn get_current_auth_zone() -> Buffer {
+pub unsafe fn get_auth_zone() -> Buffer {
     unreachable!()
 }
 

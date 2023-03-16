@@ -39,6 +39,8 @@ pub const GENERATE_UUID_FUNCTION_ID: usize = 0x53;
 pub const GENERATE_UUID_FUNCTION_NAME: &str = "generate_uuid";
 pub const GET_ACTOR_FUNCTION_ID: usize = 0x54;
 pub const GET_ACTOR_FUNCTION_NAME: &str = "get_actor";
+pub const GET_AUTH_ZONE_FUNCTION_ID: usize = 0x56;
+pub const GET_AUTH_ZONE_FUNCTION_NAME: &str = "get_auth_zone";
 
 pub const MODULE_ENV_NAME: &str = "env";
 pub const EXPORT_MEMORY: &str = "memory";

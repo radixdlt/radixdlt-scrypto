@@ -213,8 +213,8 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&actor).map_err(ClientApiError::DecodeError)
     }
 
-    fn get_current_auth_zone(&mut self) -> Result<ObjectId, ClientApiError> {
-        let actor = copy_buffer(unsafe { get_current_auth_zone() });
+    fn get_auth_zone(&mut self) -> Result<ObjectId, ClientApiError> {
+        let actor = copy_buffer(unsafe { get_auth_zone() });
 
         scrypto_decode(&actor).map_err(ClientApiError::DecodeError)
     }

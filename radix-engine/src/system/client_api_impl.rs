@@ -124,7 +124,7 @@ where
         Ok(self.kernel_get_current_actor().unwrap().fn_identifier)
     }
 
-    fn get_current_auth_zone(&mut self) -> Result<ObjectId, RuntimeError> {
+    fn get_auth_zone(&mut self) -> Result<ObjectId, RuntimeError> {
         todo!()
     }
 }
