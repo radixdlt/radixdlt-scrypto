@@ -4,6 +4,8 @@ use crate::blueprints::account::AccountNativePackage;
 use crate::blueprints::clock::ClockNativePackage;
 use crate::blueprints::epoch_manager::EpochManagerNativePackage;
 use crate::blueprints::identity::IdentityNativePackage;
+use crate::blueprints::package::PackageCodeTypeSubstate;
+use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::blueprints::transaction_runtime::TransactionRuntimeNativePackage;
@@ -16,20 +18,16 @@ use crate::system::node_modules::access_rules::{AccessRulesNativePackage, AuthZo
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::node_modules::type_info::TypeInfoBlueprint;
-use crate::system::package::PackageCodeTypeSubstate;
-use crate::system::package::PackageNativePackage;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
 use radix_engine_interface::api::node_modules::auth::{
     ACCESS_RULES_BLUEPRINT, FUNCTION_ACCESS_RULES_BLUEPRINT,
 };
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
-use radix_engine_interface::api::node_modules::royalty::{
-    COMPONENT_ROYALTY_BLUEPRINT, PACKAGE_ROYALTY_BLUEPRINT,
-};
-use radix_engine_interface::api::package::*;
+use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::schema::BlueprintSchema;
 
 fn validate_input(
@@ -121,10 +119,6 @@ impl ExecutableInvocation for MethodInvocation {
             NodeModuleId::ComponentRoyalty => {
                 // TODO: Check if type has royalty
                 (ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT.to_string())
-            }
-            NodeModuleId::PackageRoyalty => {
-                // TODO: Check if type has royalty
-                (ROYALTY_PACKAGE, PACKAGE_ROYALTY_BLUEPRINT.to_string())
             }
             NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {
                 // TODO: Check if type has access rules

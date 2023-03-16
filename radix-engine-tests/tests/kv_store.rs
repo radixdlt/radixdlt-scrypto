@@ -113,7 +113,7 @@ fn cannot_remove_kv_stores() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let component_address = receipt
-        .expect_commit()
+        .expect_commit(true)
         .entity_changes
         .new_component_addresses[0];
 
@@ -149,7 +149,7 @@ fn cannot_overwrite_kv_stores() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let component_address = receipt
-        .expect_commit()
+        .expect_commit(true)
         .entity_changes
         .new_component_addresses[0];
 

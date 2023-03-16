@@ -7,8 +7,9 @@ use crate::kernel::heap::DroppedBucketResource;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node::RENodeInit;
 use crate::types::*;
-use native_sdk::access_rules::AccessRulesObject;
-use native_sdk::metadata::Metadata;
+use native_sdk::modules::access_rules::AccessRulesObject;
+use native_sdk::modules::metadata::Metadata;
+use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::SysBucket;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
@@ -458,6 +459,7 @@ where
     let resman_access_rules = AccessRulesObject::sys_new(resman_access_rules, api)?;
     let vault_access_rules = AccessRulesObject::sys_new(vault_access_rules, api)?;
     let metadata = Metadata::sys_create_with_data(metadata, api)?;
+    let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
 
     api.globalize_with_address(
         RENodeId::Object(object_id),
@@ -465,6 +467,7 @@ where
             NodeModuleId::AccessRules => resman_access_rules.id(),
             NodeModuleId::AccessRules1 => vault_access_rules.id(),
             NodeModuleId::Metadata => metadata.id(),
+            NodeModuleId::ComponentRoyalty => royalty.id(),
         ),
         resource_address.into(),
     )?;
@@ -565,6 +568,7 @@ impl ResourceManagerBlueprint {
         let resman_access_rules = AccessRulesObject::sys_new(resman_access_rules, api)?;
         let vault_access_rules = AccessRulesObject::sys_new(vault_access_rules, api)?;
         let metadata = Metadata::sys_create_with_data(input.metadata, api)?;
+        let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
 
         api.globalize_with_address(
             RENodeId::Object(object_id),
@@ -572,6 +576,7 @@ impl ResourceManagerBlueprint {
                 NodeModuleId::AccessRules => resman_access_rules.id(),
                 NodeModuleId::AccessRules1 => vault_access_rules.id(),
                 NodeModuleId::Metadata => metadata.id(),
+                NodeModuleId::ComponentRoyalty => royalty.id(),
             ),
             resource_address.into(),
         )?;
@@ -618,6 +623,7 @@ impl ResourceManagerBlueprint {
         let resman_access_rules = AccessRulesObject::sys_new(resman_access_rules, api)?;
         let vault_access_rules = AccessRulesObject::sys_new(vault_access_rules, api)?;
         let metadata = Metadata::sys_create_with_data(input.metadata, api)?;
+        let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
 
         api.globalize_with_address(
             RENodeId::Object(object_id),
@@ -625,6 +631,7 @@ impl ResourceManagerBlueprint {
                 NodeModuleId::AccessRules => resman_access_rules.id(),
                 NodeModuleId::AccessRules1 => vault_access_rules.id(),
                 NodeModuleId::Metadata => metadata.id(),
+                NodeModuleId::ComponentRoyalty => royalty.id(),
             ),
             resource_address.into(),
         )?;
@@ -686,6 +693,7 @@ impl ResourceManagerBlueprint {
         let resman_access_rules = AccessRulesObject::sys_new(resman_access_rules, api)?;
         let vault_access_rules = AccessRulesObject::sys_new(vault_access_rules, api)?;
         let metadata = Metadata::sys_create_with_data(input.metadata, api)?;
+        let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
 
         api.globalize_with_address(
             RENodeId::Object(object_id),
@@ -693,6 +701,7 @@ impl ResourceManagerBlueprint {
                 NodeModuleId::AccessRules => resman_access_rules.id(),
                 NodeModuleId::AccessRules1 => vault_access_rules.id(),
                 NodeModuleId::Metadata => metadata.id(),
+                NodeModuleId::ComponentRoyalty => royalty.id(),
             ),
             resource_address.into(),
         )?;
@@ -733,6 +742,7 @@ impl ResourceManagerBlueprint {
         let resman_access_rules = AccessRulesObject::sys_new(resman_access_rules, api)?;
         let vault_access_rules = AccessRulesObject::sys_new(vault_access_rules, api)?;
         let metadata = Metadata::sys_create_with_data(input.metadata, api)?;
+        let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
 
         api.globalize_with_address(
             RENodeId::Object(object_id),
@@ -740,6 +750,7 @@ impl ResourceManagerBlueprint {
                 NodeModuleId::AccessRules => resman_access_rules.id(),
                 NodeModuleId::AccessRules1 => vault_access_rules.id(),
                 NodeModuleId::Metadata => metadata.id(),
+                NodeModuleId::ComponentRoyalty => royalty.id(),
             ),
             resource_address.into(),
         )?;
@@ -1470,6 +1481,7 @@ where
     let resman_access_rules = AccessRulesObject::sys_new(resman_access_rules, api)?;
     let vault_access_rules = AccessRulesObject::sys_new(vault_access_rules, api)?;
     let metadata = Metadata::sys_create_with_data(metadata, api)?;
+    let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
 
     api.globalize_with_address(
         RENodeId::Object(object_id),
@@ -1477,6 +1489,7 @@ where
             NodeModuleId::AccessRules => resman_access_rules.id(),
             NodeModuleId::AccessRules1 => vault_access_rules.id(),
             NodeModuleId::Metadata => metadata.id(),
+            NodeModuleId::ComponentRoyalty => royalty.id(),
         ),
         resource_address.into(),
     )?;

@@ -6,8 +6,9 @@ use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
-use native_sdk::access_rules::AccessRulesObject;
-use native_sdk::metadata::Metadata;
+use native_sdk::modules::access_rules::AccessRulesObject;
+use native_sdk::modules::metadata::Metadata;
+use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
@@ -88,11 +89,14 @@ impl IdentityNativePackage {
         let (node_id, access_rules) = IdentityBlueprint::create(input.access_rule, api)?;
         let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
         let metadata = Metadata::sys_create(api)?;
+        let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
+
         let address = api.globalize(
             node_id,
             btreemap!(
                 NodeModuleId::AccessRules => access_rules.id(),
                 NodeModuleId::Metadata => metadata.id(),
+                NodeModuleId::ComponentRoyalty => royalty.id(),
             ),
         )?;
         Ok(IndexedScryptoValue::from_typed(&address))

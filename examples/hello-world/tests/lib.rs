@@ -29,7 +29,7 @@ fn test_hello() {
     println!("{:?}\n", receipt);
     receipt.expect_commit_success();
     let component = receipt
-        .expect_commit()
+        .expect_commit(true)
         .entity_changes
         .new_component_addresses[0];
 

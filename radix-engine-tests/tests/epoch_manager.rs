@@ -100,8 +100,8 @@ fn next_round_with_validator_auth_succeeds() {
 
     // Assert
     receipt.expect_commit_success();
-    let result = receipt.expect_commit();
-    assert!(result.next_epoch.is_none());
+    let result = receipt.expect_commit(true);
+    assert!(result.next_epoch().is_none());
 }
 
 #[test]
@@ -140,12 +140,8 @@ fn next_epoch_with_validator_auth_succeeds() {
 
     // Assert
     receipt.expect_commit_success();
-    let result = receipt.expect_commit();
-    let next_epoch = result
-        .next_epoch
-        .as_ref()
-        .expect("Should have next epoch")
-        .1;
+    let result = receipt.expect_commit(true);
+    let next_epoch = result.next_epoch().expect("Should have next epoch").1;
     assert_eq!(next_epoch, initial_epoch + 1);
 }
 
@@ -431,8 +427,8 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_on_epoch
 
     // Assert
     receipt.expect_commit_success();
-    let result = receipt.expect_commit();
-    let next_epoch = result.next_epoch.as_ref().expect("Should have next epoch");
+    let result = receipt.expect_commit(true);
+    let next_epoch = result.next_epoch().expect("Should have next epoch");
     assert_eq!(next_epoch.1, initial_epoch + 1);
     assert!(!next_epoch.0.contains_key(&validator_address));
 }
@@ -493,8 +489,8 @@ fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change
 
     // Assert
     receipt.expect_commit_success();
-    let result = receipt.expect_commit();
-    let next_epoch = result.next_epoch.as_ref().expect("Should have next epoch");
+    let result = receipt.expect_commit(true);
+    let next_epoch = result.next_epoch().expect("Should have next epoch");
     assert_eq!(next_epoch.1, initial_epoch + 1);
     assert_eq!(
         next_epoch.0.get(&validator_address).unwrap(),
@@ -562,8 +558,8 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
 
     // Assert
     receipt.expect_commit_success();
-    let result = receipt.expect_commit();
-    let next_epoch = result.next_epoch.as_ref().expect("Should have next epoch");
+    let result = receipt.expect_commit(true);
+    let next_epoch = result.next_epoch().expect("Should have next epoch");
     assert_eq!(next_epoch.1, initial_epoch + 1);
     assert!(!next_epoch.0.contains_key(&validator_address));
 }
@@ -632,8 +628,8 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
 
     // Assert
     receipt.expect_commit_success();
-    let result = receipt.expect_commit();
-    let next_epoch = result.next_epoch.as_ref().expect("Should have next epoch");
+    let result = receipt.expect_commit(true);
+    let next_epoch = result.next_epoch().expect("Should have next epoch");
     assert_eq!(next_epoch.1, initial_epoch + 1);
     assert_eq!(
         next_epoch.0.get(&validator_address).unwrap().key,
@@ -840,8 +836,8 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
 
     // Assert
     receipt.expect_commit_success();
-    let result = receipt.expect_commit();
-    let next_epoch = result.next_epoch.as_ref().expect("Should have next epoch");
+    let result = receipt.expect_commit(true);
+    let next_epoch = result.next_epoch().expect("Should have next epoch");
     assert_eq!(next_epoch.1, initial_epoch + 1);
     assert_eq!(
         next_epoch.0.get(&validator_address).unwrap(),
