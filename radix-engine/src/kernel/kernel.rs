@@ -364,12 +364,7 @@ where
         // Before push call frame
         {
             self.execute_in_mode(ExecutionMode::KernelModule, |api| {
-                KernelModuleMixer::before_push_frame(
-                    api,
-                    &Some(actor.clone()),
-                    &mut call_frame_update,
-                    &args,
-                )
+                KernelModuleMixer::before_push_frame(api, &actor, &mut call_frame_update, &args)
             })?;
         }
 

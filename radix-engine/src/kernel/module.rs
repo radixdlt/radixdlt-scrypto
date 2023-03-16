@@ -45,7 +45,7 @@ pub trait KernelModule {
     #[inline(always)]
     fn before_push_frame<Y: KernelModuleApi<RuntimeError> + ClientApi<RuntimeError>>(
         _api: &mut Y,
-        _actor: &Option<Actor>,
+        _callee: &Actor,
         _down_movement: &mut CallFrameUpdate,
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {

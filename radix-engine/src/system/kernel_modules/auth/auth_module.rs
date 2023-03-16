@@ -316,27 +316,26 @@ impl AuthModule {
     }
 }
 
+macro_rules! is_auth_zone {
+    ($fn_identifier: expr) => {
+        $fn_identifier.package_address == RESOURCE_MANAGER_PACKAGE
+            && $fn_identifier.blueprint_name.as_str() == AUTH_ZONE_BLUEPRINT
+    };
+}
+
 impl KernelModule for AuthModule {
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        next_actor: &Option<Actor>,
+        callee: &Actor,
         call_frame_update: &mut CallFrameUpdate,
         args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        if matches!(
-            next_actor,
-            Some(Actor {
-                fn_identifier: FnIdentifier {
-                    package_address: AUTH_ZONE_PACKAGE,
-                    ..
-                },
-                ..
-            })
-        ) {
+        let next_fn_identifier = callee.unwrap().fn_identifier;
+        if is_auth_zone!(next_fn_identifier) {
             return Ok(());
         }
 
-        let method_auth = if let Some(actor) = next_actor {
+        let method_auth = if let Some(actor) = callee {
             match &actor.identifier {
                 ActorIdentifier::Method(method) => Self::method_auth(method, &args, api)?,
                 ActorIdentifier::Function(function) => Self::function_auth(function, api)?,
@@ -353,15 +352,12 @@ impl KernelModule for AuthModule {
         )?;
         let substate_ref: &AuthZoneStackSubstate = api.kernel_get_substate_ref(handle)?;
         let auth_zone_stack = substate_ref.clone();
-        let is_barrier = Self::is_barrier(next_actor);
+        let is_barrier = Self::is_barrier(callee);
 
         // Authorization check
         if !auth_zone_stack.check_auth(is_barrier, &method_auth, api)? {
             return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                AuthError::Unauthorized(
-                    next_actor.as_ref().map(|a| a.identifier.clone()),
-                    method_auth,
-                ),
+                AuthError::Unauthorized(callee.as_ref().map(|a| a.identifier.clone()), method_auth),
             )));
         }
 
@@ -374,7 +370,7 @@ impl KernelModule for AuthModule {
             .insert(RENodeId::AuthZoneStack);
 
         if !matches!(
-            next_actor,
+            callee,
             Some(Actor {
                 fn_identifier: FnIdentifier {
                     package_address: ACCESS_RULES_PACKAGE | AUTH_ZONE_PACKAGE,
@@ -395,11 +391,11 @@ impl KernelModule for AuthModule {
                 api.kernel_get_substate_ref_mut(handle)?;
 
             // New auth zone frame managed by the AuthModule
-            let is_barrier = Self::is_barrier(next_actor);
+            let is_barrier = Self::is_barrier(callee);
 
             // Add Package Actor Auth
             let mut virtual_non_fungibles_non_extending = BTreeSet::new();
-            if let Some(actor) = next_actor {
+            if let Some(actor) = callee {
                 let package_address = actor.fn_identifier.package_address();
                 let id = scrypto_encode(&package_address).unwrap();
                 let non_fungible_global_id =
@@ -436,30 +432,21 @@ impl KernelModule for AuthModule {
         _caller: &Option<Actor>,
         _update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
-        let FnIdentifier {
-            package_address,
-            blueprint_name,
-            ..
-        } = api.kernel_get_current_actor().unwrap().fn_identifier;
-
-        if package_address == ACCESS_RULES_PACKAGE
-            && blueprint_name.as_str() == ACCESS_RULES_BLUEPRINT
-        {
+        let fn_identifier = api.kernel_get_current_actor().unwrap().fn_identifier;
+        if is_auth_zone!(fn_identifier) {
             return Ok(());
         }
 
-        let handle = api.kernel_lock_substate(
-            RENodeId::AuthZoneStack,
-            NodeModuleId::SELF,
-            SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
-            LockFlags::MUTABLE,
-        )?;
-        {
-            let auth_zone_stack: &mut AuthZoneStackSubstate =
-                api.kernel_get_substate_ref_mut(handle)?;
-            auth_zone_stack.pop_auth_zone();
-        }
-        api.kernel_drop_lock(handle)?;
+        let auth_zone = api
+            .kernel_get_module_state()
+            .auth
+            .auth_zone_stack
+            .pop()
+            .expect("Auth zone stack is broken");
+
+        api.kernel_drop_node(auth_zone)?;
+
+        // proofs in auth zone is re-owned by frame and auto dropped.
 
         Ok(())
     }

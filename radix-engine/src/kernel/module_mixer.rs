@@ -246,7 +246,7 @@ impl KernelModule for KernelModuleMixer {
 
     fn before_push_frame<Y: KernelModuleApi<RuntimeError> + ClientApi<RuntimeError>>(
         api: &mut Y,
-        actor: &Option<Actor>,
+        actor: &Actor,
         update: &mut CallFrameUpdate,
         args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {

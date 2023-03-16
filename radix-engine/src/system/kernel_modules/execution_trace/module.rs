@@ -328,7 +328,7 @@ impl KernelModule for ExecutionTraceModule {
 
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        callee: &Option<Actor>,
+        callee: &Actor,
         update: &mut CallFrameUpdate,
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
@@ -435,21 +435,16 @@ impl ExecutionTraceModule {
     fn handle_before_push_frame(
         &mut self,
         current_actor: Option<Actor>,
-        callee: &Option<Actor>,
+        callee: &Actor,
         resource_summary: ResourceSummary,
     ) {
         if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
-            let origin = match &callee {
-                Some(Actor {
-                    fn_identifier: identifier,
-                    identifier: receiver,
-                }) => match receiver {
-                    ActorIdentifier::Method(..) => Origin::ScryptoMethod(identifier.clone()),
-                    ActorIdentifier::Function(..) => Origin::ScryptoFunction(identifier.clone()),
-                },
-                _ => panic!("Should not get here."),
+            let origin = match callee.identifier {
+                ActorIdentifier::Method(..) => Origin::ScryptoMethod(callee.fn_identifier.clone()),
+                ActorIdentifier::Function(..) => {
+                    Origin::ScryptoFunction(callee.fn_identifier.clone())
+                }
             };
-
             let instruction_index = self.instruction_index();
 
             self.traced_kernel_call_inputs_stack.push((
@@ -462,7 +457,7 @@ impl ExecutionTraceModule {
         self.current_kernel_call_depth += 1;
 
         match &callee {
-            Some(Actor {
+            Actor {
                 fn_identifier:
                     FnIdentifier {
                         package_address,
@@ -471,13 +466,13 @@ impl ExecutionTraceModule {
                     },
                 identifier:
                     ActorIdentifier::Method(MethodIdentifier(RENodeId::Object(vault_id), ..)),
-            }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+            } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_PUT_IDENT) =>
             {
                 self.handle_vault_put_input(&resource_summary, &current_actor, vault_id)
             }
-            Some(Actor {
+            Actor {
                 fn_identifier:
                     FnIdentifier {
                         package_address,
@@ -486,7 +481,7 @@ impl ExecutionTraceModule {
                     },
                 identifier:
                     ActorIdentifier::Method(MethodIdentifier(RENodeId::Object(vault_id), ..)),
-            }) if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+            } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint_name.eq(VAULT_BLUEPRINT)
                 && ident.eq(VAULT_LOCK_FEE_IDENT) =>
             {

@@ -128,29 +128,25 @@ impl KernelModule for CostingModule {
 
     fn before_push_frame<Y: KernelModuleApi<RuntimeError> + ClientApi<RuntimeError>>(
         api: &mut Y,
-        callee: &Option<Actor>,
+        callee: &Actor,
         _nodes_and_refs: &mut CallFrameUpdate,
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         // Identify the function, and optional component address
-        let (fn_identifier, optional_component) = match &callee {
-            Some(Actor {
+        let (fn_identifier, optional_component) = {
+            let Actor {
                 identifier,
                 fn_identifier,
-            }) => {
-                let maybe_component = match &identifier {
-                    ActorIdentifier::Method(MethodIdentifier(node_id, ..)) => match node_id {
-                        RENodeId::GlobalObject(Address::Component(address)) => Some(address),
-                        _ => None,
-                    },
+            } = callee;
+            let maybe_component = match &identifier {
+                ActorIdentifier::Method(MethodIdentifier(node_id, ..)) => match node_id {
+                    RENodeId::GlobalObject(Address::Component(address)) => Some(address),
                     _ => None,
-                };
+                },
+                _ => None,
+            };
 
-                (fn_identifier, maybe_component)
-            }
-            _ => {
-                return Ok(());
-            }
+            (fn_identifier, maybe_component)
         };
 
         //===========================

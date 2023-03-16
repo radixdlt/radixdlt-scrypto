@@ -22,7 +22,7 @@ pub struct NodeMoveModule {}
 impl NodeMoveModule {
     fn prepare_move_downstream<Y: KernelModuleApi<RuntimeError> + ClientApi<RuntimeError>>(
         node_id: RENodeId,
-        actor: &Option<Actor>,
+        callee: &Actor,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
         match node_id {
@@ -30,14 +30,14 @@ impl NodeMoveModule {
                 let (package_address, blueprint) = api.get_object_type_info(node_id)?;
                 match (package_address, blueprint.as_str()) {
                     (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
-                        if let Some(Actor {
+                        if let Actor {
                             identifier:
                                 ActorIdentifier::Function(FnIdentifier {
                                     package_address: RESOURCE_MANAGER_PACKAGE,
                                     ..
                                 }),
                             ..
-                        }) = actor
+                        } = callee
                         {
                             return Ok(());
                         }
@@ -60,10 +60,10 @@ impl NodeMoveModule {
                         // Change to restricted unless it's moved to auth zone.
                         // TODO: align with barrier design?
                         let mut changed_to_restricted = true;
-                        if let Some(Actor {
+                        if let Actor {
                             identifier: ActorIdentifier::Method(MethodIdentifier(node_id, ..)),
                             ..
-                        }) = actor
+                        } = callee
                         {
                             let (package_address, blueprint_name) =
                                 TypeInfoBlueprint::get_type(node_id.clone(), api)?;
@@ -112,13 +112,13 @@ impl NodeMoveModule {
 impl KernelModule for NodeMoveModule {
     fn before_push_frame<Y: KernelModuleApi<RuntimeError> + ClientApi<RuntimeError>>(
         api: &mut Y,
-        actor: &Option<Actor>,
+        callee: &Actor,
         call_frame_update: &mut CallFrameUpdate,
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         for node_id in &call_frame_update.nodes_to_move {
             // TODO: Move into system layer
-            Self::prepare_move_downstream(*node_id, actor, api)?;
+            Self::prepare_move_downstream(*node_id, callee, api)?;
         }
 
         Ok(())

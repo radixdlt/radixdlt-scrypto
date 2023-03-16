@@ -41,7 +41,7 @@ impl KernelModule for KernelTraceModule {
 
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
-        callee: &Option<Actor>,
+        callee: &Actor,
         nodes_and_refs: &mut CallFrameUpdate,
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
