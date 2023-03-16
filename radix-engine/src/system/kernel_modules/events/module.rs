@@ -1,9 +1,12 @@
-use crate::errors::RuntimeError;
+use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::types::*;
 use radix_engine_interface::api::types::*;
+use radix_engine_interface::schema::BlueprintSchema;
+
+use super::EventError;
 
 #[derive(Debug, Default, Clone)]
 pub struct EventsModule(Vec<(EventTypeIdentifier, Vec<u8>)>);
@@ -20,44 +23,64 @@ impl EventsModule {
 
 impl KernelModule for EventsModule {
     fn before_create_node<Y: KernelModuleApi<RuntimeError>>(
-        _api: &mut Y,
-        _node_id: &RENodeId,
-        _node_init: &RENodeInit,
-        _node_module_init: &BTreeMap<NodeModuleId, RENodeModuleInit>,
+        _: &mut Y,
+        _: &RENodeId,
+        node_init: &RENodeInit,
+        _: &BTreeMap<NodeModuleId, RENodeModuleInit>,
     ) -> Result<(), RuntimeError> {
-        // Validating the schema before the node is created.
-        // if let Some(RENodeModuleInit::PackageEventSchema(PackageEventSchemaSubstate(
-        //     package_event_schema,
-        // ))) = node_module_init.get(&NodeModuleId::PackageEventSchema)
-        // {
-        //     for (_, blueprint_event_schemas) in package_event_schema {
-        //         // TODO: Should we check that the blueprint name is valid for that given package?
+        if let RENodeInit::GlobalPackage(package_info, ..) = node_init {
+            for BlueprintSchema {
+                schema,
+                event_schema,
+                ..
+            } in package_info.schema.blueprints.values()
+            {
+                // Package schema validation happens when the package is published. No need to redo
+                // it here again.
 
-        //         for (_, (local_type_index, schema)) in blueprint_event_schemas {
-        //             // Checking that the schema is itself valid
-        //             schema.validate().map_err(|_| {
-        //                 RuntimeError::ApplicationError(ApplicationError::EventError(
-        //                     EventError::InvalidEventSchema,
-        //                 ))
-        //             })?;
+                for (expected_event_name, local_type_index) in event_schema.iter() {
+                    // Checking that the event name is indeed what the user claims it to be
+                    let actual_event_name =
+                        schema.resolve_type_metadata(*local_type_index).map_or(
+                            Err(RuntimeError::ApplicationError(
+                                ApplicationError::EventError(
+                                    EventError::FailedToResolveLocalSchema {
+                                        local_type_index: *local_type_index,
+                                    },
+                                ),
+                            )),
+                            |metadata| Ok(metadata.type_name.to_string()),
+                        )?;
 
-        //             // Ensuring that the event is either a struct or an enum
-        //             match schema.resolve_type_kind(*local_type_index) {
-        //                 // Structs and Enums are allowed
-        //                 Some(TypeKind::Enum { .. } | TypeKind::Tuple { .. }) => Ok(()),
-        //                 _ => Err(RuntimeError::ApplicationError(
-        //                     ApplicationError::EventError(EventError::InvalidEventSchema),
-        //                 )),
-        //             }?
-        //         }
-        //     }
-        // }
-        // Ok(())
+                    if *expected_event_name != actual_event_name {
+                        Err(RuntimeError::ApplicationError(
+                            ApplicationError::EventError(EventError::EventNameMismatch {
+                                expected: expected_event_name.to_string(),
+                                actual: actual_event_name,
+                            }),
+                        ))?
+                    }
 
-        // TODO: When a package is created, check the following:
-        // 1. Check that the schema is valid.
-        // 2. Check that the name of the event provided is correct.
-        // 3. Ensure that it's either a struct or an enum.
+                    // Checking that the event is either a struct or an enum
+                    let type_kind = schema.resolve_type_kind(*local_type_index).map_or(
+                        Err(RuntimeError::ApplicationError(
+                            ApplicationError::EventError(EventError::FailedToResolveLocalSchema {
+                                local_type_index: *local_type_index,
+                            }),
+                        )),
+                        Ok,
+                    )?;
+                    match type_kind {
+                        // Structs and Enums are allowed
+                        TypeKind::Enum { .. } | TypeKind::Tuple { .. } => Ok(()),
+                        _ => Err(RuntimeError::ApplicationError(
+                            ApplicationError::EventError(EventError::InvalidEventSchema),
+                        )),
+                    }?;
+                }
+            }
+        }
+
         Ok(())
     }
 }

@@ -123,6 +123,14 @@ impl PersistedSubstate {
         }
     }
 
+    pub fn package_code(&self) -> &PackageCodeSubstate {
+        if let PersistedSubstate::PackageCode(code) = self {
+            code
+        } else {
+            panic!("Not a package royalty accumulator");
+        }
+    }
+
     pub fn type_info(&self) -> &TypeInfoSubstate {
         if let PersistedSubstate::TypeInfo(info) = self {
             info

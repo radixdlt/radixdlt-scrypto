@@ -17,7 +17,7 @@ use radix_engine_interface::blueprints::epoch_manager::{
     EPOCH_MANAGER_NEXT_ROUND_IDENT, VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
 };
 use scrypto::prelude::Mutability::LOCKED;
-use scrypto::prelude::{AccessRule, FromPublicKey, ResourceMethodAuthKey};
+use scrypto::prelude::{AccessRule, AccessRulesConfig, FromPublicKey, ResourceMethodAuthKey};
 use scrypto::NonFungibleData;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -107,6 +107,37 @@ fn scrypto_can_emit_registered_events() {
             && blueprint_name == "ScryptoEvents" =>
             true,
         _ => false,
+    });
+}
+
+#[test]
+fn cant_publish_a_package_with_non_struct_or_enum_event() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().without_trace().build();
+
+    let (code, schema) = Compile::compile("./tests/blueprints/events_invalid");
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .publish_package(
+            code,
+            schema,
+            BTreeMap::new(),
+            BTreeMap::new(),
+            AccessRulesConfig::new(),
+        )
+        .build();
+
+    // Act
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|runtime_error| {
+        matches!(
+            runtime_error,
+            RuntimeError::ApplicationError(ApplicationError::EventError(
+                EventError::InvalidEventSchema,
+            )),
+        )
     });
 }
 
