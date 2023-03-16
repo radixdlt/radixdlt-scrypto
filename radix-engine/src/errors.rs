@@ -147,7 +147,6 @@ pub enum KernelError {
     // Substate Constraints
     InvalidOffset(SubstateOffset),
     InvalidOwnership(SubstateOffset, PackageAddress, String),
-    InvalidOverwrite,
     InvalidId(RENodeId),
 
     // Actor Constraints
@@ -189,6 +188,7 @@ pub enum CallFrameError {
 pub enum SystemError {
     NotAnObject,
     NotAKeyValueStore,
+    InvalidSubstateWrite,
     InvalidKeyValueStoreOwnership,
     InvalidLockFlags,
     CannotGlobalize,

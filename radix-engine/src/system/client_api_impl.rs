@@ -1,5 +1,5 @@
 use crate::errors::{ApplicationError, RuntimeError, SubstateValidationError};
-use crate::errors::{KernelError, SystemError};
+use crate::errors::SystemError;
 use crate::kernel::actor::{Actor, ActorIdentifier};
 use crate::kernel::kernel::Kernel;
 use crate::kernel::kernel_api::KernelInternalApi;
@@ -102,11 +102,11 @@ where
             match type_info {
                 TypeInfoSubstate::KeyValueStore(schema) => {
                     validate_payload_against_schema(&buffer, &schema.schema, schema.value)
-                        .map_err(|_| RuntimeError::KernelError(KernelError::InvalidOverwrite))?;
+                        .map_err(|_| RuntimeError::SystemError(SystemError::InvalidSubstateWrite))?;
 
                     if !schema.can_own {
                         let indexed = IndexedScryptoValue::from_slice(&buffer).map_err(|_| {
-                            RuntimeError::KernelError(KernelError::InvalidOverwrite)
+                            RuntimeError::SystemError(SystemError::InvalidSubstateWrite)
                         })?;
                         let (_, own, _) = indexed.unpack();
                         if !own.is_empty() {
@@ -135,7 +135,7 @@ where
                     self.kernel_get_substate_ref_mut(lock_handle)?;
                 *entry = next;
             }
-            _ => return Err(RuntimeError::KernelError(KernelError::InvalidOverwrite)),
+            _ => return Err(RuntimeError::SystemError(SystemError::InvalidSubstateWrite)),
         }
 
         Ok(())
