@@ -3,6 +3,7 @@ use super::authorization::MethodAuthorization;
 use super::HardAuthRule;
 use super::HardProofRule;
 use super::HardResourceOrNonFungible;
+use crate::blueprints::resource::AuthZone;
 use crate::blueprints::resource::VaultInfoSubstate;
 use crate::errors::*;
 use crate::kernel::actor::{Actor, ActorIdentifier};
@@ -11,10 +12,14 @@ use crate::kernel::call_frame::RENodeVisibilityOrigin;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
 use crate::system::kernel_modules::auth::convert;
+use crate::system::node::RENodeInit;
+use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::access_rules::{
     AccessRulesNativePackage, FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
 use crate::system::node_modules::type_info::TypeInfoBlueprint;
+use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use radix_engine_interface::api::component::ComponentStateSubstate;
 use radix_engine_interface::api::node_modules::auth::*;
@@ -330,18 +335,14 @@ impl KernelModule for AuthModule {
         call_frame_update: &mut CallFrameUpdate,
         args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        let next_fn_identifier = callee.unwrap().fn_identifier;
+        let next_fn_identifier = callee.fn_identifier;
         if is_auth_zone!(next_fn_identifier) {
             return Ok(());
         }
 
-        let method_auth = if let Some(actor) = callee {
-            match &actor.identifier {
-                ActorIdentifier::Method(method) => Self::method_auth(method, &args, api)?,
-                ActorIdentifier::Function(function) => Self::function_auth(function, api)?,
-            }
-        } else {
-            MethodAuthorization::AllowAll
+        let method_auth = match &callee.identifier {
+            ActorIdentifier::Method(method) => Self::method_auth(method, &args, api)?,
+            ActorIdentifier::Function(function) => Self::function_auth(function, api)?,
         };
 
         let handle = api.kernel_lock_substate(
@@ -363,66 +364,75 @@ impl KernelModule for AuthModule {
 
         api.kernel_drop_lock(handle)?;
 
-        //  Additional ref copying
+        Ok(())
+    }
 
-        call_frame_update
-            .node_refs_to_copy
-            .insert(RENodeId::AuthZoneStack);
-
-        if !matches!(
-            callee,
-            Some(Actor {
-                fn_identifier: FnIdentifier {
-                    package_address: ACCESS_RULES_PACKAGE | AUTH_ZONE_PACKAGE,
-                    ..
-                },
-                ..
-            })
-        ) {
-            let auth_zone_params = api.kernel_get_module_state().auth.params.clone();
-
-            let handle = api.kernel_lock_substate(
-                RENodeId::AuthZoneStack,
-                NodeModuleId::SELF,
-                SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
-                LockFlags::MUTABLE,
-            )?;
-            let auth_zone_stack: &mut AuthZoneStackSubstate =
-                api.kernel_get_substate_ref_mut(handle)?;
-
-            // New auth zone frame managed by the AuthModule
-            let is_barrier = Self::is_barrier(callee);
-
-            // Add Package Actor Auth
-            let mut virtual_non_fungibles_non_extending = BTreeSet::new();
-            if let Some(actor) = callee {
-                let package_address = actor.fn_identifier.package_address();
-                let id = scrypto_encode(&package_address).unwrap();
-                let non_fungible_global_id =
-                    NonFungibleGlobalId::new(PACKAGE_TOKEN, NonFungibleLocalId::bytes(id).unwrap());
-                virtual_non_fungibles_non_extending.insert(non_fungible_global_id);
+    fn on_execution_start<Y: KernelModuleApi<RuntimeError>>(
+        api: &mut Y,
+        _caller: &Option<Actor>,
+    ) -> Result<(), RuntimeError> {
+        let actor = api.kernel_get_current_actor();
+        if let Some(actor) = actor {
+            if is_auth_zone!(actor.fn_identifier) {
+                return Ok(());
             }
-
-            let auth_zone = if auth_zone_stack.is_empty() {
-                AuthZone::new(
-                    vec![],
-                    auth_zone_params.virtual_resources,
-                    auth_zone_params.initial_proofs.into_iter().collect(),
-                    virtual_non_fungibles_non_extending,
-                    is_barrier,
-                )
-            } else {
-                AuthZone::new(
-                    vec![],
-                    BTreeSet::new(),
-                    BTreeSet::new(),
-                    virtual_non_fungibles_non_extending,
-                    is_barrier,
-                )
-            };
-            auth_zone_stack.push_auth_zone(auth_zone);
-            api.kernel_drop_lock(handle)?;
+        } else {
+            return Ok(());
         }
+
+        // Add Package Actor Auth
+        let mut virtual_non_fungibles_non_extending = BTreeSet::new();
+        if let Some(actor) = actor {
+            let package_address = actor.fn_identifier.package_address();
+            let id = scrypto_encode(&package_address).unwrap();
+            let non_fungible_global_id =
+                NonFungibleGlobalId::new(PACKAGE_TOKEN, NonFungibleLocalId::bytes(id).unwrap());
+            virtual_non_fungibles_non_extending.insert(non_fungible_global_id);
+        }
+
+        // Prepare a new auth zone
+        let is_barrier = Self::is_barrier(&actor);
+        let auth_module = api.kernel_get_module_state().auth;
+        let auth_zone = if auth_module.auth_zone_stack.is_empty() {
+            let virtual_resources = auth_module.params.virtual_resources;
+            let virtual_non_fungibles = auth_module.params.initial_proofs.into_iter().collect();
+            AuthZone::new(
+                vec![],
+                virtual_resources,
+                virtual_non_fungibles,
+                virtual_non_fungibles_non_extending,
+                is_barrier,
+            )
+        } else {
+            AuthZone::new(
+                vec![],
+                BTreeSet::new(),
+                BTreeSet::new(),
+                virtual_non_fungibles_non_extending,
+                is_barrier,
+            )
+        };
+
+        // Create node
+        let auth_zone_node_id = api.kernel_allocate_node_id(RENodeType::Object)?;
+        api.kernel_create_node(
+            auth_zone_node_id,
+            RENodeInit::Object(btreemap!(
+                SubstateOffset::AuthZone(AuthZoneOffset::AuthZone) => RuntimeSubstate::AuthZone(auth_zone)
+            )),
+            btreemap!(
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                    package_address: RESOURCE_MANAGER_PACKAGE,
+                    blueprint_name: AUTH_ZONE_BLUEPRINT.to_owned(),
+                    global: false
+                })
+            ),
+        )?;
+
+        api.kernel_get_module_state()
+            .auth
+            .auth_zone_stack
+            .push(auth_zone_node_id);
 
         Ok(())
     }
@@ -432,8 +442,12 @@ impl KernelModule for AuthModule {
         _caller: &Option<Actor>,
         _update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
-        let fn_identifier = api.kernel_get_current_actor().unwrap().fn_identifier;
-        if is_auth_zone!(fn_identifier) {
+        let actor = api.kernel_get_current_actor();
+        if let Some(actor) = actor {
+            if is_auth_zone!(actor.fn_identifier) {
+                return Ok(());
+            }
+        } else {
             return Ok(());
         }
 
@@ -446,7 +460,7 @@ impl KernelModule for AuthModule {
 
         api.kernel_drop_node(auth_zone)?;
 
-        // proofs in auth zone is re-owned by frame and auto dropped.
+        // Proofs in auth zone will be re-owned by the frame and auto dropped.
 
         Ok(())
     }

@@ -266,6 +266,7 @@ pub enum RuntimeSubstate {
     FunctionAccessRules(FunctionAccessRulesSubstate),
     PackageEventSchema(PackageEventSchemaSubstate),
     Worktop(WorktopSubstate),
+    AuthZone(AuthZone),
     Account(AccountSubstate),
     AccessController(AccessControllerSubstate),
 
@@ -369,7 +370,8 @@ impl RuntimeSubstate {
             | RuntimeSubstate::ProofInfo(..)
             | RuntimeSubstate::FungibleProof(..)
             | RuntimeSubstate::NonFungibleProof(..)
-            | RuntimeSubstate::Worktop(..) => {
+            | RuntimeSubstate::Worktop(..)
+            | RuntimeSubstate::AuthZone(..) => {
                 panic!("Should not get here");
             }
         }
@@ -435,7 +437,8 @@ impl RuntimeSubstate {
             | RuntimeSubstate::ProofInfo(..)
             | RuntimeSubstate::FungibleProof(..)
             | RuntimeSubstate::NonFungibleProof(..)
-            | RuntimeSubstate::Worktop(..) => {
+            | RuntimeSubstate::Worktop(..)
+            | RuntimeSubstate::AuthZone(..) => {
                 panic!("Should not get here");
             }
         }
@@ -528,6 +531,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::NonFungible(value) => SubstateRefMut::NonFungible(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => SubstateRefMut::KeyValueStoreEntry(value),
             RuntimeSubstate::Worktop(value) => SubstateRefMut::Worktop(value),
+            RuntimeSubstate::AuthZone(value) => SubstateRefMut::AuthZone(value),
             RuntimeSubstate::Account(value) => SubstateRefMut::Account(value),
             RuntimeSubstate::AccessController(value) => SubstateRefMut::AccessController(value),
             RuntimeSubstate::PackageEventSchema(value) => SubstateRefMut::PackageEventSchema(value),
@@ -585,6 +589,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::NonFungible(value) => SubstateRef::NonFungible(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => SubstateRef::KeyValueStoreEntry(value),
             RuntimeSubstate::Worktop(value) => SubstateRef::Worktop(value),
+            RuntimeSubstate::AuthZone(value) => SubstateRef::AuthZone(value),
             RuntimeSubstate::Account(value) => SubstateRef::Account(value),
             RuntimeSubstate::AccessController(value) => SubstateRef::AccessController(value),
             RuntimeSubstate::PackageEventSchema(value) => SubstateRef::PackageEventSchema(value),
@@ -998,7 +1003,7 @@ impl Into<ValidatorSetSubstate> for RuntimeSubstate {
 pub enum SubstateRef<'a> {
     TypeInfo(&'a TypeInfoSubstate),
     Worktop(&'a WorktopSubstate),
-    AuthZone(&'a mut AuthZone),
+    AuthZone(&'a AuthZone),
     ComponentInfo(&'a TypeInfoSubstate),
     ComponentState(&'a ComponentStateSubstate),
     ComponentRoyaltyConfig(&'a ComponentRoyaltyConfigSubstate),
