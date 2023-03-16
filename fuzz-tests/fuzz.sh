@@ -87,7 +87,7 @@ function fuzzer_libfuzzer() {
 
 function fuzzer_afl() {
     local cmd=${1:-$DFLT_CMD}
-    local run_args=""
+    local run_args="-T $target "
     local run_cmd_arg=
     # run_cmd_arg might be in seconds or 'inf', when fuzzing infinitely
     if [ $cmd = "run" ] ; then
@@ -102,8 +102,9 @@ function fuzzer_afl() {
             run_args="-V ${run_cmd_arg}"
         fi
         mkdir -p afl/${target}/out
+        AFL_AUTORESUME=1
         set -x
-        cargo afl fuzz -i fuzz_input/${target} -o afl/${target}/out $run_args target-afl/release/${target}
+        cargo afl fuzz -i fuzz_input/${target} -o afl/${target} $run_args target-afl/release/${target}
     fi
 }
 
