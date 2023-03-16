@@ -112,8 +112,15 @@ impl AuthZone {
     }
 
     pub fn clear_signature_proofs(&mut self) {
-        self.virtual_resources.clear();
-        self.virtual_non_fungibles.clear();
-        self.virtual_non_fungibles_non_extending.clear();
+        self.virtual_resources
+            .retain(|x| x != &ECDSA_SECP256K1_TOKEN && x != &EDDSA_ED25519_TOKEN);
+        self.virtual_non_fungibles.retain(|x| {
+            x.resource_address() != ECDSA_SECP256K1_TOKEN
+                && x.resource_address() != EDDSA_ED25519_TOKEN
+        });
+        self.virtual_non_fungibles_non_extending.retain(|x| {
+            x.resource_address() != ECDSA_SECP256K1_TOKEN
+                && x.resource_address() != EDDSA_ED25519_TOKEN
+        });
     }
 }
