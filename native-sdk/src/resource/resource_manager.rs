@@ -148,6 +148,26 @@ impl ResourceManager {
     }
 
     /// Mints non-fungible resources
+    pub fn mint_non_fungible_single_uuid<Y, E: Debug + ScryptoDecode, T: ScryptoEncode>(
+        &mut self,
+        data: T,
+        api: &mut Y,
+    ) -> Result<(Bucket, NonFungibleLocalId), E>
+        where
+            Y: ClientApi<E>,
+    {
+        let value: ScryptoValue = scrypto_decode(&scrypto_encode(&data).unwrap()).unwrap();
+
+        let rtn = api.call_method(
+            RENodeId::GlobalObject(self.0.into()),
+            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT,
+            scrypto_encode(&NonFungibleResourceManagerMintSingleUuidInput { entry: value }).unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
+    }
+
+    /// Mints non-fungible resources
     pub fn mint_non_fungible_uuid<Y, E: Debug + ScryptoDecode, T: ScryptoEncode>(
         &mut self,
         data: T,
@@ -156,7 +176,6 @@ impl ResourceManager {
     where
         Y: ClientApi<E>,
     {
-        // TODO: Implement UUID generation in ResourceManager
         let mut entries = Vec::new();
         let value: ScryptoValue = scrypto_decode(&scrypto_encode(&data).unwrap()).unwrap();
         entries.push((value,));

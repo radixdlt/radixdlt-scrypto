@@ -68,7 +68,7 @@ impl EpochManagerBlueprint {
             num_unstake_epochs,
         };
 
-        let mut olympia_validator_token_resman: ResourceManager = {
+        let mut owner_resman: ResourceManager = {
             let metadata: BTreeMap<String, String> = BTreeMap::new();
             let mut access_rules = BTreeMap::new();
 
@@ -85,7 +85,7 @@ impl EpochManagerBlueprint {
 
             let resource_manager =
                 ResourceManager::new_non_fungible_with_address::<(), Y, RuntimeError>(
-                    NonFungibleIdType::Bytes,
+                    NonFungibleIdType::UUID,
                     metadata,
                     access_rules,
                     olympia_validator_token_address,
@@ -98,11 +98,10 @@ impl EpochManagerBlueprint {
         let mut validators = BTreeMap::new();
 
         for (key, validator_init) in validator_set {
-            let local_id = NonFungibleLocalId::bytes(key.to_vec()).unwrap();
+            let (owner_token_bucket, local_id) = owner_resman.mint_non_fungible_single_uuid((), api)?;
             let global_id =
-                NonFungibleGlobalId::new(olympia_validator_token_resman.0, local_id.clone());
-            let owner_token_bucket =
-                olympia_validator_token_resman.mint_non_fungible(local_id, api)?;
+                NonFungibleGlobalId::new(owner_resman.0, local_id.clone());
+
             api.call_method(
                 RENodeId::GlobalObject(validator_init.validator_account_address.into()),
                 ACCOUNT_DEPOSIT_IDENT,
