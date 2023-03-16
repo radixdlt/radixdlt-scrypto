@@ -191,6 +191,7 @@ pub enum SystemError {
     InvalidSubstateWrite,
     InvalidKeyValueStoreOwnership,
     InvalidLockFlags,
+    InvalidKeyValueStoreSchema(SchemaValidationError),
     CannotGlobalize,
     InvalidModule,
     InvalidModuleType {

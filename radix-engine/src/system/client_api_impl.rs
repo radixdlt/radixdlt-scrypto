@@ -1,5 +1,5 @@
-use crate::errors::{ApplicationError, RuntimeError, SubstateValidationError};
 use crate::errors::SystemError;
+use crate::errors::{ApplicationError, RuntimeError, SubstateValidationError};
 use crate::kernel::actor::{Actor, ActorIdentifier};
 use crate::kernel::kernel::Kernel;
 use crate::kernel::kernel_api::KernelInternalApi;
@@ -102,7 +102,9 @@ where
             match type_info {
                 TypeInfoSubstate::KeyValueStore(schema) => {
                     validate_payload_against_schema(&buffer, &schema.schema, schema.value)
-                        .map_err(|_| RuntimeError::SystemError(SystemError::InvalidSubstateWrite))?;
+                        .map_err(|_| {
+                            RuntimeError::SystemError(SystemError::InvalidSubstateWrite)
+                        })?;
 
                     if !schema.can_own {
                         let indexed = IndexedScryptoValue::from_slice(&buffer).map_err(|_| {
@@ -639,6 +641,11 @@ where
         &mut self,
         schema: KeyValueStoreSchema,
     ) -> Result<KeyValueStoreId, RuntimeError> {
+        schema
+            .schema
+            .validate()
+            .map_err(|e| RuntimeError::SystemError(SystemError::InvalidKeyValueStoreSchema(e)))?;
+
         let node_id = self.kernel_allocate_node_id(RENodeType::KeyValueStore)?;
 
         self.kernel_create_node(
