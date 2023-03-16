@@ -998,6 +998,7 @@ impl Into<ValidatorSetSubstate> for RuntimeSubstate {
 pub enum SubstateRef<'a> {
     TypeInfo(&'a TypeInfoSubstate),
     Worktop(&'a WorktopSubstate),
+    AuthZone(&'a mut AuthZone),
     ComponentInfo(&'a TypeInfoSubstate),
     ComponentState(&'a ComponentStateSubstate),
     ComponentRoyaltyConfig(&'a ComponentRoyaltyConfigSubstate),
@@ -1213,6 +1214,15 @@ impl<'a> From<SubstateRef<'a>> for &'a WorktopSubstate {
         match value {
             SubstateRef::Worktop(value) => value,
             _ => panic!("Not a worktop"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRef<'a>> for &'a AuthZone {
+    fn from(value: SubstateRef<'a>) -> Self {
+        match value {
+            SubstateRef::AuthZone(value) => value,
+            _ => panic!("Not a AuthZone"),
         }
     }
 }
@@ -1492,6 +1502,15 @@ impl<'a> From<SubstateRefMut<'a>> for &'a mut WorktopSubstate {
         match value {
             SubstateRefMut::Worktop(value) => value,
             _ => panic!("Not a worktop"),
+        }
+    }
+}
+
+impl<'a> From<SubstateRefMut<'a>> for &'a mut AuthZone {
+    fn from(value: SubstateRefMut<'a>) -> Self {
+        match value {
+            SubstateRefMut::AuthZone(value) => value,
+            _ => panic!("Not a AuthZone"),
         }
     }
 }

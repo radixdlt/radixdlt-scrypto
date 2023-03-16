@@ -21,9 +21,7 @@ use crate::types::*;
 use radix_engine_interface::api::component::ComponentStateSubstate;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::{
-    AuthZoneStackOffset, RENodeId, SubstateOffset, VaultOffset,
-};
+use radix_engine_interface::api::types::{RENodeId, SubstateOffset, VaultOffset};
 use radix_engine_interface::blueprints::package::{
     PackageInfoSubstate, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT,
 };
@@ -323,30 +321,6 @@ impl AuthModule {
 }
 
 impl KernelModule for AuthModule {
-    fn on_init<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
-        let auth_zone = AuthZoneStackSubstate::new();
-        let node_id = api.kernel_allocate_node_id(RENodeType::AuthZoneStack)?;
-        api.kernel_create_node(
-            node_id,
-            RENodeInit::AuthZoneStack(auth_zone),
-            btreemap!(
-                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: AUTH_ZONE_PACKAGE,
-                        blueprint_name: AUTH_ZONE_BLUEPRINT.to_string(),
-                        global: false,
-                    })
-            ),
-        )?;
-        Ok(())
-    }
-
-    fn on_teardown<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
-        // Proofs in authzone will get auto-dropped when frame exits
-        api.kernel_drop_node(RENodeId::AuthZoneStack)?;
-
-        Ok(())
-    }
-
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         next_actor: &Option<Actor>,
