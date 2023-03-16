@@ -141,8 +141,9 @@ impl ComponentAuthZone {
     {
         let proof: Proof = proof.into();
 
+        let auth_zone = RENodeId::Object(api.get_auth_zone().unwrap());
         let _rtn = api.call_method(
-            RENodeId::AuthZoneStack,
+            auth_zone,
             AUTH_ZONE_PUSH_IDENT,
             scrypto_encode(&AuthZonePushInput { proof }).unwrap(),
         )?;

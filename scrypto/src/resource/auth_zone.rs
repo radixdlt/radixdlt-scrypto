@@ -1,6 +1,6 @@
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::api::ClientObjectApi;
+use radix_engine_interface::api::{ClientAuthApi, ClientObjectApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
@@ -22,8 +22,9 @@ impl ComponentAuthZone {
 
         let proof: Proof = proof.into();
 
+        let node_id = RENodeId::Object(env.get_auth_zone().unwrap());
         env.call_method(
-            RENodeId::AuthZoneStack,
+            node_id,
             AUTH_ZONE_PUSH_IDENT,
             scrypto_encode(&AuthZonePushInput { proof }).unwrap(),
         )
@@ -32,9 +33,10 @@ impl ComponentAuthZone {
 
     pub fn pop() -> Proof {
         let mut env = ScryptoEnv;
+        let node_id = RENodeId::Object(env.get_auth_zone().unwrap());
         let rtn = env
             .call_method(
-                RENodeId::AuthZoneStack,
+                node_id,
                 AUTH_ZONE_POP_IDENT,
                 scrypto_encode(&AuthZonePopInput {}).unwrap(),
             )
@@ -44,9 +46,10 @@ impl ComponentAuthZone {
 
     pub fn create_proof(resource_address: ResourceAddress) -> Proof {
         let mut env = ScryptoEnv;
+        let node_id = RENodeId::Object(env.get_auth_zone().unwrap());
         let rtn = env
             .call_method(
-                RENodeId::AuthZoneStack,
+                node_id,
                 AUTH_ZONE_CREATE_PROOF_IDENT,
                 scrypto_encode(&AuthZoneCreateProofInput { resource_address }).unwrap(),
             )
@@ -56,9 +59,10 @@ impl ComponentAuthZone {
 
     pub fn create_proof_by_amount(amount: Decimal, resource_address: ResourceAddress) -> Proof {
         let mut env = ScryptoEnv;
+        let node_id = RENodeId::Object(env.get_auth_zone().unwrap());
         let rtn = env
             .call_method(
-                RENodeId::AuthZoneStack,
+                node_id,
                 AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_IDENT,
                 scrypto_encode(&AuthZoneCreateProofByAmountInput {
                     resource_address,
@@ -75,9 +79,10 @@ impl ComponentAuthZone {
         resource_address: ResourceAddress,
     ) -> Proof {
         let mut env = ScryptoEnv;
+        let node_id = RENodeId::Object(env.get_auth_zone().unwrap());
         let rtn = env
             .call_method(
-                RENodeId::AuthZoneStack,
+                node_id,
                 AUTH_ZONE_CREATE_PROOF_BY_IDS_IDENT,
                 scrypto_encode(&AuthZoneCreateProofByIdsInput {
                     resource_address,

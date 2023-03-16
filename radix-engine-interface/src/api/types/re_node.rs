@@ -11,7 +11,6 @@ pub const INTERNAL_KV_STORE_ID: u8 = 0x0f;
 // TODO: Remove when better type system implemented
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor)]
 pub enum RENodeType {
-    AuthZoneStack,
     GlobalAccount,
     GlobalComponent,
     GlobalResourceManager,
@@ -28,7 +27,6 @@ pub enum RENodeType {
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum RENodeId {
-    AuthZoneStack,
     GlobalObject(Address),
     KeyValueStore(KeyValueStoreId),
     NonFungibleStore(NonFungibleStoreId),
@@ -38,7 +36,6 @@ pub enum RENodeId {
 impl fmt::Debug for RENodeId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::AuthZoneStack => write!(f, "AuthZoneStack"),
             Self::KeyValueStore(id) => f
                 .debug_tuple("KeyValueStore")
                 .field(&hex::encode(id))
@@ -48,7 +45,7 @@ impl fmt::Debug for RENodeId {
                 .field(&hex::encode(id))
                 .finish(),
             Self::Object(id) => f.debug_tuple("Object").field(&hex::encode(id)).finish(),
-            Self::GlobalObject(address) => f.debug_tuple("Global").field(&address).finish(),
+            Self::GlobalObject(address) => f.debug_tuple("GlobalObject").field(&address).finish(),
         }
     }
 }
@@ -59,7 +56,6 @@ impl Into<[u8; OBJECT_ID_LENGTH]> for RENodeId {
             RENodeId::KeyValueStore(id) => id,
             RENodeId::NonFungibleStore(id) => id,
             RENodeId::Object(id) => id,
-            RENodeId::AuthZoneStack => [5u8; OBJECT_ID_LENGTH], // TODO: Remove, this is here to preserve receiver in invocation for now
             _ => panic!("Not a stored id: {:?}", self),
         }
     }
