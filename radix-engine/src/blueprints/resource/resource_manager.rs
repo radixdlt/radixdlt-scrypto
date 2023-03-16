@@ -22,6 +22,8 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;
 
+const DIVISIBILITY_MAXIMUM: u8 = 18;
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ResourceManagerSubstate {
     pub resource_address: ResourceAddress, // TODO: Figure out a way to remove?
@@ -57,6 +59,7 @@ pub enum ResourceManagerError {
     NonFungibleIdTypeDoesNotMatch(NonFungibleIdType, NonFungibleIdType),
     ResourceTypeDoesNotMatch,
     InvalidNonFungibleIdType,
+    InvalidDivisibility(u8),
 }
 
 fn build_non_fungible_resource_manager_substate_with_initial_supply<Y>(
@@ -140,6 +143,10 @@ fn build_fungible_resource_manager_substate_with_initial_supply<Y>(
 where
     Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
 {
+    if divisibility > DIVISIBILITY_MAXIMUM {
+        return Err(RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(ResourceManagerError::InvalidDivisibility(divisibility,))));
+    }
+
     let mut resource_manager = ResourceManagerSubstate::new(
         ResourceType::Fungible { divisibility },
         None,
@@ -1454,6 +1461,10 @@ where
     Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
 {
     let resource_address: ResourceAddress = global_node_id.into();
+
+    if divisibility > DIVISIBILITY_MAXIMUM {
+        return Err(RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(ResourceManagerError::InvalidDivisibility(divisibility,))));
+    }
 
     let resource_manager_substate = ResourceManagerSubstate::new(
         ResourceType::Fungible { divisibility },
