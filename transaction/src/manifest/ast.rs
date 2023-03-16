@@ -80,7 +80,7 @@ pub enum Instruction {
 
     DropAllProofs,
 
-    DropAllVirtualProofs,
+    ClearSignatureProofs,
 
     CallFunction {
         package_address: Value,

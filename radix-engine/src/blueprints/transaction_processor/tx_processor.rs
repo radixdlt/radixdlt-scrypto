@@ -156,6 +156,10 @@ impl TransactionProcessorBlueprint {
                     ComponentAuthZone::sys_clear(api)?;
                     InstructionOutput::None
                 }
+                Instruction::ClearSignatureProofs => {
+                    ComponentAuthZone::sys_clear_virtual_proofs(api)?;
+                    InstructionOutput::None
+                }
                 Instruction::PushToAuthZone { proof_id } => {
                     let proof = processor.take_proof(&proof_id)?;
                     ComponentAuthZone::sys_push(proof, api)?;
@@ -205,7 +209,7 @@ impl TransactionProcessorBlueprint {
                     InstructionOutput::None
                 }
                 Instruction::DropAllProofs => {
-                    // NB: the difference between DROP_ALL_PROOFS and CLEAR_AUTH_ZONES is that
+                    // NB: the difference between DROP_ALL_PROOFS and CLEAR_AUTH_ZONE is that
                     // the former will drop all named proofs before clearing the auth zone.
 
                     for (_, real_id) in processor.proof_id_mapping.drain() {
@@ -213,10 +217,6 @@ impl TransactionProcessorBlueprint {
                         proof.sys_drop(api).map(|_| IndexedScryptoValue::unit())?;
                     }
                     ComponentAuthZone::sys_clear(api)?;
-                    InstructionOutput::None
-                }
-                Instruction::DropAllVirtualProofs => {
-                    ComponentAuthZone::sys_clear_virtual_proofs(api)?;
                     InstructionOutput::None
                 }
                 Instruction::CallFunction {
