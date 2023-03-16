@@ -13,7 +13,7 @@ use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::executor::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, KernelWasmApi};
-use crate::system::node_modules::access_rules::{AccessRulesNativePackage, AuthZoneNativePackage};
+use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::node_modules::type_info::TypeInfoBlueprint;
@@ -486,9 +486,6 @@ impl NativeVm {
             }
             TRANSACTION_PROCESSOR_CODE_ID => {
                 TransactionProcessorNativePackage::invoke_export(&export_name, receiver, input, api)
-            }
-            AUTH_ZONE_CODE_ID => {
-                AuthZoneNativePackage::invoke_export(&export_name, receiver, input, api)
             }
             METADATA_CODE_ID => {
                 MetadataNativePackage::invoke_export(&export_name, receiver, input, api)

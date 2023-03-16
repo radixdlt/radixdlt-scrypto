@@ -7,7 +7,6 @@ use crate::kernel::module::KernelModule;
 use crate::system::node_modules::type_info::TypeInfoBlueprint;
 use crate::types::*;
 use radix_engine_interface::api::{ClientApi, LockFlags};
-use radix_engine_interface::blueprints::auth_zone::AUTH_ZONE_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::*;
 
@@ -68,7 +67,7 @@ impl NodeMoveModule {
                         {
                             let (package_address, blueprint_name) =
                                 TypeInfoBlueprint::get_type(node_id.clone(), api)?;
-                            if package_address == AUTH_ZONE_PACKAGE
+                            if package_address == RESOURCE_MANAGER_PACKAGE
                                 && blueprint_name.as_str() == AUTH_ZONE_BLUEPRINT
                             {
                                 changed_to_restricted = false;

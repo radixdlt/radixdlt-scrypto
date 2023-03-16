@@ -3,7 +3,6 @@ use super::method_authorization::MethodAuthorization;
 use super::HardAuthRule;
 use super::HardProofRule;
 use super::HardResourceOrNonFungible;
-use crate::blueprints::auth_zone::AuthZone;
 use crate::blueprints::resource::VaultInfoSubstate;
 use crate::errors::*;
 use crate::kernel::actor::{Actor, ActorIdentifier};
@@ -12,11 +11,10 @@ use crate::kernel::call_frame::RENodeVisibilityOrigin;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
 use crate::system::kernel_modules::auth::convert;
-use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::access_rules::{
     AccessRulesNativePackage, FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
-use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
+use crate::system::node_modules::type_info::TypeInfoBlueprint;
 use crate::types::*;
 use radix_engine_interface::api::component::ComponentStateSubstate;
 use radix_engine_interface::api::node_modules::auth::*;

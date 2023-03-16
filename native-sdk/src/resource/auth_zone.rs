@@ -1,4 +1,3 @@
-use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;

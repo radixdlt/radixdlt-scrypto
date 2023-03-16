@@ -1,3 +1,6 @@
+mod auth_zone;
+mod auth_zone_composition;
+mod auth_zone_substates;
 mod bucket;
 mod events;
 mod non_fungible;
@@ -7,6 +10,9 @@ mod resource_manager;
 mod vault;
 mod worktop;
 
+pub use auth_zone::*;
+pub use auth_zone_composition::*;
+pub use auth_zone_substates::*;
 pub use bucket::*;
 pub use events::*;
 pub use non_fungible::*;

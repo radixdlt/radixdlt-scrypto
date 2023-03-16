@@ -1,6 +1,5 @@
 use crate::blueprints::access_controller::*;
 use crate::blueprints::account::AccountNativePackage;
-use crate::blueprints::auth_zone::AuthZoneNativePackage;
 use crate::blueprints::clock::ClockNativePackage;
 use crate::blueprints::epoch_manager::{
     ClaimXrdEvent, EpochChangeEvent, EpochManagerNativePackage, RegisterValidatorEvent,
@@ -493,29 +492,6 @@ pub fn create_genesis(
                 dependent_components: vec![],
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
-                event_schema: BTreeMap::new(),
-            }),
-        });
-    }
-
-    // AuthZone Package
-    {
-        pre_allocated_ids.insert(RENodeId::GlobalObject(AUTH_ZONE_PACKAGE.into()));
-        let package_address = AUTH_ZONE_PACKAGE.to_array_without_entity_id();
-        instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE_PACKAGE,
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeInput {
-                package_address: Some(package_address), // TODO: Clean this up
-                schema: AuthZoneNativePackage::schema(),
-                metadata: BTreeMap::new(),
-                access_rules: AccessRulesConfig::new(),
-                native_package_code_id: AUTH_ZONE_CODE_ID,
-                dependent_resources: vec![],
-                dependent_components: vec![],
-                package_access_rules: BTreeMap::new(),
-                default_package_access_rule: AccessRule::DenyAll,
                 event_schema: BTreeMap::new(),
             }),
         });

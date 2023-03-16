@@ -1,4 +1,5 @@
 mod access_rules;
+mod auth_zone;
 mod bucket;
 mod non_fungible_global_id;
 mod proof;
@@ -10,6 +11,7 @@ mod vault;
 mod worktop;
 
 pub use access_rules::*;
+pub use auth_zone::*;
 pub use bucket::*;
 pub use non_fungible_global_id::*;
 pub use proof::*;
