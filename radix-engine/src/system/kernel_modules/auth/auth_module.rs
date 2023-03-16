@@ -1,5 +1,6 @@
 use super::auth_converter::convert_contextless;
 use super::authorization::MethodAuthorization;
+use super::Authentication;
 use super::HardAuthRule;
 use super::HardProofRule;
 use super::HardResourceOrNonFungible;
@@ -355,7 +356,6 @@ impl KernelModule for AuthModule {
         let auth_zone_stack = substate_ref.clone();
         let is_barrier = Self::is_barrier(callee);
 
-        // Authorization check
         if !auth_zone_stack.check_auth(is_barrier, &method_auth, api)? {
             return Err(RuntimeError::ModuleError(ModuleError::AuthError(
                 AuthError::Unauthorized(callee.as_ref().map(|a| a.identifier.clone()), method_auth),
