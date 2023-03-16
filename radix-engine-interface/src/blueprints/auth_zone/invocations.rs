@@ -66,6 +66,13 @@ pub struct AuthZoneClearInput {}
 
 pub type AuthZoneClearOutput = ();
 
+pub const AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_IDENT: &str = "clear_signature_proofs";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct AuthZoneClearVirtualProofsInput {}
+
+pub type AuthZoneClearVirtualProofsOutput = ();
+
 pub const AUTH_ZONE_DRAIN_IDENT: &str = "drain";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
