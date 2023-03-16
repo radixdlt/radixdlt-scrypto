@@ -337,8 +337,8 @@ pub fn decompile_instruction<F: fmt::Write>(
         Instruction::DropAllProofs => {
             f.write_str("DROP_ALL_PROOFS;")?;
         }
-        Instruction::DropAllVirtualProofs => {
-            f.write_str("DROP_ALL_VIRTUAL_PROOFS;")?;
+        Instruction::ClearSignatureProofs => {
+            f.write_str("CLEAR_SIGNATURE_PROOFS;")?;
         }
         Instruction::CallFunction {
             package_address,

@@ -139,7 +139,7 @@ pub fn extract_refs_from_instruction(
         | Instruction::CloneProof { .. }
         | Instruction::DropProof { .. }
         | Instruction::DropAllProofs { .. }
-        | Instruction::DropAllVirtualProofs { .. }
+        | Instruction::ClearSignatureProofs { .. }
         | Instruction::BurnResource { .. }
         | Instruction::AssertAccessRule { .. } => {}
     }

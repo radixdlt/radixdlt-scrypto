@@ -269,8 +269,8 @@ impl ManifestBuilder {
     }
 
     /// Drops all virtual proofs.
-    pub fn drop_all_virtual_proofs(&mut self) -> &mut Self {
-        self.add_instruction(Instruction::DropAllVirtualProofs).0
+    pub fn clear_signature_proofs(&mut self) -> &mut Self {
+        self.add_instruction(Instruction::ClearSignatureProofs).0
     }
 
     /// Creates a fungible resource

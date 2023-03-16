@@ -128,7 +128,7 @@ CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS
     Address("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag")
     Proof("proof6");
 CLEAR_AUTH_ZONE;
-DROP_ALL_VIRTUAL_PROOFS;
+CLEAR_SIGNATURE_PROOFS;
 DROP_ALL_PROOFS;
 CALL_METHOD
     Address("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064")

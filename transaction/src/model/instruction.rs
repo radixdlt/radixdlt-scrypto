@@ -98,7 +98,7 @@ pub enum Instruction {
     DropAllProofs,
 
     /// Drop all virtual proofs (can only be auth zone proofs).
-    DropAllVirtualProofs,
+    ClearSignatureProofs,
 
     /// Publish a package.
     PublishPackage {
