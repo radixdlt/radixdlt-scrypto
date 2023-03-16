@@ -3,7 +3,7 @@ use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::*;
 use crate::types::*;
 use radix_engine_interface::api::component::*;
-use radix_engine_interface::api::types::{AuthZoneStackOffset, SubstateOffset};
+use radix_engine_interface::api::types::SubstateOffset;
 
 #[derive(Debug)]
 pub enum RENodeModuleInit {
@@ -62,7 +62,6 @@ impl RENodeModuleInit {
 pub enum RENodeInit {
     GlobalObject(BTreeMap<SubstateOffset, RuntimeSubstate>),
     Object(BTreeMap<SubstateOffset, RuntimeSubstate>),
-    AuthZoneStack(AuthZoneStackSubstate),
     KeyValueStore,
     NonFungibleStore,
 }
@@ -71,12 +70,6 @@ impl RENodeInit {
     pub fn to_substates(self) -> HashMap<SubstateOffset, RuntimeSubstate> {
         let mut substates = HashMap::<SubstateOffset, RuntimeSubstate>::new();
         match self {
-            RENodeInit::AuthZoneStack(auth_zone) => {
-                substates.insert(
-                    SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
-                    RuntimeSubstate::AuthZoneStack(auth_zone),
-                );
-            }
             RENodeInit::GlobalObject(object_substates) | RENodeInit::Object(object_substates) => {
                 substates.extend(object_substates);
             }

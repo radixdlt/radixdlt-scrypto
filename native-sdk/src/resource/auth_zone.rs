@@ -20,8 +20,9 @@ impl ComponentAuthZone {
     where
         Y: ClientApi<E>,
     {
+        let auth_zone = RENodeId::Object(api.get_auth_zone().unwrap());
         let rtn = api.call_method(
-            RENodeId::AuthZoneStack,
+            auth_zone,
             AUTH_ZONE_DRAIN_IDENT,
             scrypto_encode(&AuthZoneDrainInput {}).unwrap(),
         )?;
@@ -32,8 +33,9 @@ impl ComponentAuthZone {
     where
         Y: ClientApi<E>,
     {
+        let auth_zone = RENodeId::Object(api.get_auth_zone().unwrap());
         let rtn = api.call_method(
-            RENodeId::AuthZoneStack,
+            auth_zone,
             AUTH_ZONE_CLEAR_IDENT,
             scrypto_encode(&AuthZoneClearInput {}).unwrap(),
         )?;
@@ -46,8 +48,9 @@ impl ComponentAuthZone {
     where
         Y: ClientApi<E>,
     {
+        let auth_zone = RENodeId::Object(api.get_auth_zone().unwrap());
         let rtn = api.call_method(
-            RENodeId::AuthZoneStack,
+            auth_zone,
             AUTH_ZONE_CLEAR_VIRTUAL_PROOFS_IDENT,
             scrypto_encode(&AuthZoneClearVirtualProofsInput {}).unwrap(),
         )?;
@@ -58,8 +61,9 @@ impl ComponentAuthZone {
     where
         Y: ClientApi<E>,
     {
+        let auth_zone = RENodeId::Object(api.get_auth_zone().unwrap());
         let rtn = api.call_method(
-            RENodeId::AuthZoneStack,
+            auth_zone,
             AUTH_ZONE_POP_IDENT,
             scrypto_encode(&AuthZonePopInput {}).unwrap(),
         )?;
@@ -74,8 +78,9 @@ impl ComponentAuthZone {
     where
         Y: ClientApi<E>,
     {
+        let auth_zone = RENodeId::Object(api.get_auth_zone().unwrap());
         let rtn = api.call_method(
-            RENodeId::AuthZoneStack,
+            auth_zone,
             AUTH_ZONE_CREATE_PROOF_IDENT,
             scrypto_encode(&AuthZoneCreateProofInput { resource_address }).unwrap(),
         )?;
@@ -91,8 +96,9 @@ impl ComponentAuthZone {
     where
         Y: ClientApi<E>,
     {
+        let auth_zone = RENodeId::Object(api.get_auth_zone().unwrap());
         let rtn = api.call_method(
-            RENodeId::AuthZoneStack,
+            auth_zone,
             AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_IDENT,
             scrypto_encode(&AuthZoneCreateProofByAmountInput {
                 resource_address,
@@ -112,8 +118,9 @@ impl ComponentAuthZone {
     where
         Y: ClientApi<E>,
     {
+        let auth_zone = RENodeId::Object(api.get_auth_zone().unwrap());
         let rtn = api.call_method(
-            RENodeId::AuthZoneStack,
+            auth_zone,
             AUTH_ZONE_CREATE_PROOF_BY_IDS_IDENT,
             scrypto_encode(&AuthZoneCreateProofByIdsInput {
                 resource_address,
@@ -142,6 +149,8 @@ impl ComponentAuthZone {
 
         Ok(())
     }
+
+    // TODO: remove
 
     pub fn sys_assert_access_rule<Y, E>(access_rule: AccessRule, api: &mut Y) -> Result<(), E>
     where

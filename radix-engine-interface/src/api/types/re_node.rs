@@ -143,11 +143,6 @@ impl NodeModuleId {
 }
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum AuthZoneStackOffset {
-    AuthZoneStack,
-}
-
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum AccessRulesOffset {
     AccessRules,
 }
@@ -251,10 +246,14 @@ pub enum AccessControllerOffset {
     AccessController,
 }
 
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum AuthZoneOffset {
+    AuthZone,
+}
+
 /// Specifies a specific Substate into a given RENode
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
 pub enum SubstateOffset {
-    AuthZoneStack(AuthZoneStackOffset),
     Component(ComponentOffset),
     Package(PackageOffset),
     ResourceManager(ResourceManagerOffset),
@@ -269,6 +268,7 @@ pub enum SubstateOffset {
     Clock(ClockOffset),
     Account(AccountOffset),
     AccessController(AccessControllerOffset),
+    AuthZone(AuthZoneOffset),
 
     // Node modules
     // TODO: align with module ID allocation?

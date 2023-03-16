@@ -14,8 +14,7 @@ use crate::kernel::module::KernelModule;
 use crate::system::kernel_modules::auth::convert;
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::access_rules::{
-    AccessRulesNativePackage, AuthZoneStackSubstate, FunctionAccessRulesSubstate,
-    MethodAccessRulesSubstate,
+    AccessRulesNativePackage, FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::types::*;

@@ -1,8 +1,8 @@
-use super::node_modules::access_rules::AuthZoneStackSubstate;
 use super::node_modules::access_rules::MethodAccessRulesSubstate;
 use super::node_modules::event_schema::PackageEventSchemaSubstate;
 use crate::blueprints::access_controller::AccessControllerSubstate;
 use crate::blueprints::account::AccountSubstate;
+use crate::blueprints::auth_zone::AuthZone;
 use crate::blueprints::clock::ClockSubstate;
 use crate::blueprints::epoch_manager::EpochManagerSubstate;
 use crate::blueprints::epoch_manager::ValidatorSetSubstate;
@@ -265,7 +265,6 @@ pub enum RuntimeSubstate {
     PackageRoyalty(PackageRoyaltySubstate),
     FunctionAccessRules(FunctionAccessRulesSubstate),
     PackageEventSchema(PackageEventSchemaSubstate),
-    AuthZoneStack(AuthZoneStackSubstate),
     Worktop(WorktopSubstate),
     Account(AccountSubstate),
     AccessController(AccessControllerSubstate),
@@ -360,8 +359,7 @@ impl RuntimeSubstate {
                 PersistedSubstate::ComponentRoyaltyAccumulator(value.clone())
             }
             /* Node module ends */
-            RuntimeSubstate::AuthZoneStack(..)
-            | RuntimeSubstate::BucketInfo(..)
+            RuntimeSubstate::BucketInfo(..)
             | RuntimeSubstate::BucketLiquidFungible(..)
             | RuntimeSubstate::BucketLiquidNonFungible(..)
             | RuntimeSubstate::BucketLockedFungible(..)
@@ -429,8 +427,7 @@ impl RuntimeSubstate {
                 PersistedSubstate::ComponentRoyaltyAccumulator(value)
             }
             /* Node module ends */
-            RuntimeSubstate::AuthZoneStack(..)
-            | RuntimeSubstate::BucketInfo(..)
+            RuntimeSubstate::BucketInfo(..)
             | RuntimeSubstate::BucketLiquidFungible(..)
             | RuntimeSubstate::BucketLiquidNonFungible(..)
             | RuntimeSubstate::BucketLockedFungible(..)
@@ -530,7 +527,6 @@ impl RuntimeSubstate {
             RuntimeSubstate::NonFungibleProof(value) => SubstateRefMut::NonFungibleProof(value),
             RuntimeSubstate::NonFungible(value) => SubstateRefMut::NonFungible(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => SubstateRefMut::KeyValueStoreEntry(value),
-            RuntimeSubstate::AuthZoneStack(value) => SubstateRefMut::AuthZoneStack(value),
             RuntimeSubstate::Worktop(value) => SubstateRefMut::Worktop(value),
             RuntimeSubstate::Account(value) => SubstateRefMut::Account(value),
             RuntimeSubstate::AccessController(value) => SubstateRefMut::AccessController(value),
@@ -588,7 +584,6 @@ impl RuntimeSubstate {
             RuntimeSubstate::NonFungibleProof(value) => SubstateRef::NonFungibleProof(value),
             RuntimeSubstate::NonFungible(value) => SubstateRef::NonFungible(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => SubstateRef::KeyValueStoreEntry(value),
-            RuntimeSubstate::AuthZoneStack(value) => SubstateRef::AuthZoneStack(value),
             RuntimeSubstate::Worktop(value) => SubstateRef::Worktop(value),
             RuntimeSubstate::Account(value) => SubstateRef::Account(value),
             RuntimeSubstate::AccessController(value) => SubstateRef::AccessController(value),
@@ -1000,19 +995,8 @@ impl Into<ValidatorSetSubstate> for RuntimeSubstate {
     }
 }
 
-impl Into<AuthZoneStackSubstate> for RuntimeSubstate {
-    fn into(self) -> AuthZoneStackSubstate {
-        if let RuntimeSubstate::AuthZoneStack(substate) = self {
-            substate
-        } else {
-            panic!("Not a auth zone stack");
-        }
-    }
-}
-
 pub enum SubstateRef<'a> {
     TypeInfo(&'a TypeInfoSubstate),
-    AuthZoneStack(&'a AuthZoneStackSubstate),
     Worktop(&'a WorktopSubstate),
     ComponentInfo(&'a TypeInfoSubstate),
     ComponentState(&'a ComponentStateSubstate),
@@ -1305,15 +1289,6 @@ impl<'a> From<SubstateRef<'a>> for &'a AccessControllerSubstate {
     }
 }
 
-impl<'a> From<SubstateRef<'a>> for &'a AuthZoneStackSubstate {
-    fn from(value: SubstateRef<'a>) -> Self {
-        match value {
-            SubstateRef::AuthZoneStack(value) => value,
-            _ => panic!("Not an AuthZoneStack"),
-        }
-    }
-}
-
 impl<'a> From<SubstateRef<'a>> for &'a PackageEventSchemaSubstate {
     fn from(value: SubstateRef<'a>) -> Self {
         match value {
@@ -1469,13 +1444,6 @@ impl<'a> SubstateRef<'a> {
                 ));
                 (HashSet::new(), owned_nodes)
             }
-            SubstateRef::AuthZoneStack(substate) => {
-                let mut owned_nodes = Vec::new();
-                for p in substate.all_proofs() {
-                    owned_nodes.push(RENodeId::Object(p.0));
-                }
-                (HashSet::new(), owned_nodes)
-            }
             _ => (HashSet::new(), Vec::new()),
         }
     }
@@ -1513,27 +1481,17 @@ pub enum SubstateRefMut<'a> {
     FungibleProof(&'a mut FungibleProof),
     NonFungibleProof(&'a mut NonFungibleProof),
     Worktop(&'a mut WorktopSubstate),
-    AuthZoneStack(&'a mut AuthZoneStackSubstate),
-    AuthZone(&'a mut AuthZoneStackSubstate),
+    AuthZone(&'a mut AuthZone),
     Account(&'a mut AccountSubstate),
     AccessController(&'a mut AccessControllerSubstate),
     PackageEventSchema(&'a mut PackageEventSchemaSubstate),
-}
-
-impl<'a> From<SubstateRefMut<'a>> for &'a mut AuthZoneStackSubstate {
-    fn from(value: SubstateRefMut<'a>) -> Self {
-        match value {
-            SubstateRefMut::AuthZoneStack(value) => value,
-            _ => panic!("Not an auth zone"),
-        }
-    }
 }
 
 impl<'a> From<SubstateRefMut<'a>> for &'a mut WorktopSubstate {
     fn from(value: SubstateRefMut<'a>) -> Self {
         match value {
             SubstateRefMut::Worktop(value) => value,
-            _ => panic!("Not an auth zone"),
+            _ => panic!("Not a worktop"),
         }
     }
 }
@@ -1542,7 +1500,7 @@ impl<'a> From<SubstateRefMut<'a>> for &'a mut NonFungibleSubstate {
     fn from(value: SubstateRefMut<'a>) -> Self {
         match value {
             SubstateRefMut::NonFungible(value) => value,
-            _ => panic!("Not a bucket"),
+            _ => panic!("Not a non-fungible substate"),
         }
     }
 }

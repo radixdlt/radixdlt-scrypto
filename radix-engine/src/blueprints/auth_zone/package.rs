@@ -12,9 +12,7 @@ use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver};
 
-use super::{
-    compose_proof_by_amount, compose_proof_by_ids, AuthZoneStackSubstate, ComposeProofError,
-};
+use super::{compose_proof_by_amount, compose_proof_by_ids, AuthZone, ComposeProofError};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthZoneError {
@@ -30,7 +28,7 @@ impl AuthZoneNativePackage {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut substates = Vec::new();
-        substates.push(aggregator.add_child_type_and_descendents::<AuthZoneStackSubstate>());
+        substates.push(aggregator.add_child_type_and_descendents::<AuthZone>());
 
         let mut functions = BTreeMap::new();
         functions.insert(
@@ -111,7 +109,7 @@ impl AuthZoneNativePackage {
             },
         );
         functions.insert(
-            AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT.to_string(),
+            AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT.to_string(), // TODO: remove
             FunctionSchema {
                 receiver: Some(Receiver::SelfRefMut),
                 input: aggregator.add_child_type_and_descendents::<AuthZoneAssertAccessRuleInput>(),

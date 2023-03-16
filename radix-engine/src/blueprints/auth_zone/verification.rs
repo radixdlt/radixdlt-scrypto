@@ -1,4 +1,4 @@
-use super::{AuthZone, AuthZoneStackSubstate};
+use super::AuthZone;
 use crate::errors::RuntimeError;
 use crate::system::kernel_modules::auth::*;
 use crate::types::*;
