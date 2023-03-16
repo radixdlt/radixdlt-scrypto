@@ -45,17 +45,34 @@ pub struct AuthModule {
 }
 
 impl AuthModule {
-    fn is_barrier(actor: &Option<Actor>) -> bool {
+    fn is_actor_barrier(actor: &Actor) -> bool {
         matches!(
             actor,
-            Some(Actor {
+            Actor {
                 identifier: ActorIdentifier::Method(MethodIdentifier(
                     RENodeId::GlobalObject(Address::Component(..)),
                     ..
                 )),
                 ..
-            })
+            }
         )
+    }
+
+    fn is_barrier(actor: &Option<Actor>) -> bool {
+        match actor {
+            Some(actor) => Self::is_actor_barrier(actor),
+            _ => false,
+        }
+    }
+
+    fn is_auth_zone(actor: &Option<Actor>) -> bool {
+        match actor {
+            Some(actor) => {
+                actor.fn_identifier.package_address == RESOURCE_MANAGER_PACKAGE
+                    && actor.fn_identifier.blueprint_name.as_str() == AUTH_ZONE_BLUEPRINT
+            }
+            _ => false,
+        }
     }
 
     fn function_auth<Y: KernelModuleApi<RuntimeError>>(
@@ -322,13 +339,6 @@ impl AuthModule {
     }
 }
 
-macro_rules! is_auth_zone {
-    ($fn_identifier: expr) => {
-        $fn_identifier.package_address == RESOURCE_MANAGER_PACKAGE
-            && $fn_identifier.blueprint_name.as_str() == AUTH_ZONE_BLUEPRINT
-    };
-}
-
 impl KernelModule for AuthModule {
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
@@ -336,33 +346,18 @@ impl KernelModule for AuthModule {
         call_frame_update: &mut CallFrameUpdate,
         args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        let next_fn_identifier = callee.fn_identifier;
-        if is_auth_zone!(next_fn_identifier) {
-            return Ok(());
-        }
-
         let method_auth = match &callee.identifier {
             ActorIdentifier::Method(method) => Self::method_auth(method, &args, api)?,
             ActorIdentifier::Function(function) => Self::function_auth(function, api)?,
         };
 
-        let handle = api.kernel_lock_substate(
-            RENodeId::AuthZoneStack,
-            NodeModuleId::SELF,
-            SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
-            LockFlags::read_only(),
-        )?;
-        let substate_ref: &AuthZoneStackSubstate = api.kernel_get_substate_ref(handle)?;
-        let auth_zone_stack = substate_ref.clone();
-        let is_barrier = Self::is_barrier(callee);
+        let is_barrier = Self::is_actor_barrier(callee);
 
         if !auth_zone_stack.check_auth(is_barrier, &method_auth, api)? {
             return Err(RuntimeError::ModuleError(ModuleError::AuthError(
                 AuthError::Unauthorized(callee.as_ref().map(|a| a.identifier.clone()), method_auth),
             )));
         }
-
-        api.kernel_drop_lock(handle)?;
 
         Ok(())
     }
@@ -372,11 +367,8 @@ impl KernelModule for AuthModule {
         _caller: &Option<Actor>,
     ) -> Result<(), RuntimeError> {
         let actor = api.kernel_get_current_actor();
-        if let Some(actor) = actor {
-            if is_auth_zone!(actor.fn_identifier) {
-                return Ok(());
-            }
-        } else {
+        if Self::is_auth_zone(&actor) {
+            // We do no create auth zone for AuthZone so it can directly manipulates the HEAD auth zone.
             return Ok(());
         }
 
@@ -443,11 +435,7 @@ impl KernelModule for AuthModule {
         _update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         let actor = api.kernel_get_current_actor();
-        if let Some(actor) = actor {
-            if is_auth_zone!(actor.fn_identifier) {
-                return Ok(());
-            }
-        } else {
+        if Self::is_auth_zone(&actor) {
             return Ok(());
         }
 
