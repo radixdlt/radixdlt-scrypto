@@ -72,6 +72,7 @@ pub enum TrackError {
     SubstateLocked(SubstateId, LockState),
     LockUnmodifiedBaseOnNewSubstate(SubstateId),
     LockUnmodifiedBaseOnOnUpdatedSubstate(SubstateId),
+    InternalRefNotAllowed,
 }
 
 pub struct PreExecutionError {
@@ -191,6 +192,17 @@ impl<'s> Track<'s> {
         match loaded_substate.lock_state {
             LockState::Read(n) => loaded_substate.lock_state = LockState::Read(n - 1),
             LockState::Write => {
+                if loaded_substate
+                    .substate
+                    .to_ref()
+                    .references_and_owned_nodes()
+                    .0
+                    .iter()
+                    .any(|x| !matches!(x, RENodeId::GlobalObject(_)))
+                {
+                    return Err(TrackError::InternalRefNotAllowed);
+                }
+
                 loaded_substate.lock_state = LockState::no_lock();
 
                 if force_write {
@@ -267,8 +279,22 @@ impl<'s> Track<'s> {
         runtime_substate.to_ref_mut()
     }
 
-    pub fn insert_substate(&mut self, substate_id: SubstateId, substate: RuntimeSubstate) {
+    pub fn insert_substate(
+        &mut self,
+        substate_id: SubstateId,
+        substate: RuntimeSubstate,
+    ) -> Result<(), TrackError> {
         assert!(!self.loaded_substates.contains_key(&substate_id));
+
+        if substate
+            .to_ref()
+            .references_and_owned_nodes()
+            .0
+            .iter()
+            .any(|x| !matches!(x, RENodeId::GlobalObject(_)))
+        {
+            return Err(TrackError::InternalRefNotAllowed);
+        }
 
         match &substate_id {
             SubstateId(RENodeId::GlobalObject(address), NodeModuleId::TypeInfo, ..) => {
@@ -285,6 +311,8 @@ impl<'s> Track<'s> {
                 metastate: SubstateMetaState::New,
             },
         );
+
+        Ok(())
     }
 
     /// Returns the value of a key value pair

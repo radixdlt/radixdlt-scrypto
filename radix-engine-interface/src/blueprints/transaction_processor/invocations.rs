@@ -1,7 +1,7 @@
 use crate::*;
 use radix_engine_common::{
     crypto::*,
-    data::scrypto::model::{Address, Reference},
+    data::scrypto::model::{Address, InternalRef},
 };
 use sbor::rust::prelude::*;
 
@@ -16,7 +16,7 @@ pub struct TransactionProcessorRunInput<'a> {
     pub instructions: Cow<'a, Vec<u8>>,
     pub blobs: Cow<'a, [Vec<u8>]>,
     pub global_references: BTreeSet<Address>,
-    pub local_references: BTreeSet<Reference>,
+    pub local_references: BTreeSet<InternalRef>,
 }
 
 pub type TransactionProcessorRunOutput = Vec<InstructionOutput>;

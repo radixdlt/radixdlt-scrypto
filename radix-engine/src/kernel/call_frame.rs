@@ -498,7 +498,9 @@ impl CallFrame {
 
         if push_to_store {
             for ((module_id, offset), substate) in substates {
-                track.insert_substate(SubstateId(node_id, module_id, offset), substate);
+                track
+                    .insert_substate(SubstateId(node_id, module_id, offset), substate)
+                    .map_err(|e| RuntimeError::KernelError(KernelError::TrackError(e)))?;
             }
 
             self.add_ref(node_id, RENodeVisibilityOrigin::Normal);

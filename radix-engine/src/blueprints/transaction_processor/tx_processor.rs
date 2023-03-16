@@ -225,14 +225,12 @@ impl TransactionProcessorBlueprint {
                     function_name,
                     args,
                 } => {
-                    let value: ManifestValue =
-                        manifest_decode(&args).expect("Invalid CALL_FUNCTION arguments");
                     let mut processor_with_api = TransactionProcessorWithApi {
                         worktop,
                         processor,
                         api,
                     };
-                    let scrypto_value = transform(value, &mut processor_with_api)?;
+                    let scrypto_value = transform(args, &mut processor_with_api)?;
                     processor = processor_with_api.processor;
 
                     let rtn = api.call_function(
@@ -253,14 +251,12 @@ impl TransactionProcessorBlueprint {
                     method_name,
                     args,
                 } => {
-                    let value: ManifestValue =
-                        manifest_decode(&args).expect("Invalid CALL_METHOD arguments");
                     let mut processor_with_api = TransactionProcessorWithApi {
                         worktop,
                         processor,
                         api,
                     };
-                    let scrypto_value = transform(value, &mut processor_with_api)?;
+                    let scrypto_value = transform(args, &mut processor_with_api)?;
                     processor = processor_with_api.processor;
 
                     let rtn = api.call_method(
