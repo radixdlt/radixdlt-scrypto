@@ -30,7 +30,7 @@ pub struct BlueprintSchema {
     /// /// For each event there is a [`String`] name and a [`LocalTypeIndex`]
     /// pub event_schema: BTreeMap<String, LocalTypeIndex>
     /// ```
-    pub event_schema: Vec<(LocalTypeIndex, ScryptoSchema)>,
+    pub event_schema: BTreeMap<String, (LocalTypeIndex, ScryptoSchema)>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]

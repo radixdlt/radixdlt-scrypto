@@ -143,10 +143,12 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 )*
 
                 // Aggregate event schemas
-                let mut event_schema = Vec::new();
-                #(
-                    event_schema.push(sbor::generate_full_schema_from_single_type::<#event_type_names, ScryptoCustomTypeExtension>());
-                )*
+                let mut event_schema = BTreeMap::new();
+                #({
+                    let (local_type_index, schema) = sbor::generate_full_schema_from_single_type::<#event_type_names, ScryptoCustomTypeExtension>();
+                    let type_name = schema.resolve_type_metadata(local_type_index).unwrap().type_name.to_string();
+                    event_schema.insert(type_name, (local_type_index, schema));
+                })*
 
                 let return_data = BlueprintSchema {
                     schema: generate_full_schema(aggregator),
@@ -730,7 +732,7 @@ mod tests {
                                 export_name: "Test_y".to_string(),
                             }
                         );
-                        let mut event_schema = Vec::new();
+                        let mut event_schema = BTreeMap::new();
                         let return_data = BlueprintSchema {
                             schema: generate_full_schema(aggregator),
                             substates,

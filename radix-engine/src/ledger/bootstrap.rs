@@ -27,7 +27,6 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
-use radix_engine_interface::schema::{BlueprintSchema, PackageSchema};
 use transaction::model::{Instruction, SystemTransaction};
 use transaction::validation::ManifestIdAllocator;
 
@@ -73,7 +72,6 @@ pub fn create_genesis(
                 access_rules: AccessRulesConfig::new(),
                 package_access_rules: PackageNativePackage::function_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
-                event_schema: event_schema(PackageNativePackage::schema()),
             })
             .unwrap(),
         });
@@ -97,7 +95,6 @@ pub fn create_genesis(
                 access_rules: AccessRulesConfig::new(),
                 package_access_rules: MetadataNativePackage::function_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
-                event_schema: event_schema(MetadataNativePackage::schema()),
             })
             .unwrap(),
         });
@@ -122,7 +119,6 @@ pub fn create_genesis(
                 access_rules: AccessRulesConfig::new(),
                 package_access_rules: RoyaltyNativePackage::function_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
-                event_schema: event_schema(RoyaltyNativePackage::schema()),
             })
             .unwrap(),
         });
@@ -146,7 +142,6 @@ pub fn create_genesis(
                 access_rules: AccessRulesConfig::new(),
                 package_access_rules: AccessRulesNativePackage::function_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
-                event_schema: event_schema(AccessRulesNativePackage::schema()),
             })
             .unwrap(),
         });
@@ -170,7 +165,6 @@ pub fn create_genesis(
                 access_rules: AccessRulesConfig::new(),
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
-                event_schema: event_schema(ResourceManagerNativePackage::schema()),
             })
             .unwrap(),
         });
@@ -246,7 +240,6 @@ pub fn create_genesis(
                 access_rules: AccessRulesConfig::new(),
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
-                event_schema: event_schema(IdentityNativePackage::schema()),
             })
             .unwrap(),
         });
@@ -270,7 +263,6 @@ pub fn create_genesis(
                 dependent_components: vec![],
                 package_access_rules: EpochManagerNativePackage::package_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
-                event_schema: event_schema(EpochManagerNativePackage::schema()),
             })
             .unwrap(),
         });
@@ -294,7 +286,6 @@ pub fn create_genesis(
                 dependent_components: vec![],
                 package_access_rules: ClockNativePackage::package_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
-                event_schema: event_schema(ClockNativePackage::schema()),
             })
             .unwrap(),
         });
@@ -318,7 +309,6 @@ pub fn create_genesis(
                 dependent_components: vec![],
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
-                event_schema: event_schema(AccountNativePackage::schema()),
             })
             .unwrap(),
         });
@@ -342,7 +332,6 @@ pub fn create_genesis(
                 dependent_components: vec![CLOCK],
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
-                event_schema: event_schema(AccessControllerNativePackage::schema()),
             })
             .unwrap(),
         });
@@ -366,7 +355,6 @@ pub fn create_genesis(
                 dependent_components: vec![],
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
-                event_schema: event_schema(TransactionProcessorNativePackage::schema()),
             })
             .unwrap(),
         });
@@ -390,7 +378,6 @@ pub fn create_genesis(
                 dependent_components: vec![],
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::DenyAll,
-                event_schema: event_schema(TransactionRuntimeNativePackage::schema()),
             })
             .unwrap(),
         });
@@ -414,7 +401,6 @@ pub fn create_genesis(
                 dependent_components: vec![],
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::DenyAll,
-                event_schema: event_schema(AuthZoneNativePackage::schema()),
             })
             .unwrap(),
         });
@@ -500,7 +486,6 @@ pub fn create_genesis(
                 metadata: BTreeMap::new(),
                 access_rules: AccessRulesConfig::new()
                     .default(AccessRule::DenyAll, AccessRule::DenyAll),
-                event_schema: BTreeMap::new(),
             })
             .unwrap(),
         });
@@ -676,18 +661,6 @@ where
     } else {
         None
     }
-}
-
-fn event_schema(
-    package_schema: PackageSchema,
-) -> BTreeMap<String, Vec<(LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>> {
-    package_schema
-        .blueprints
-        .into_iter()
-        .map(|(blueprint_name, BlueprintSchema { event_schema, .. })| {
-            (blueprint_name, event_schema)
-        })
-        .collect()
 }
 
 #[cfg(test)]

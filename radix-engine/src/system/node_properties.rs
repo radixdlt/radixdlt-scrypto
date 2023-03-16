@@ -103,13 +103,7 @@ impl VisibilityProperties {
             },
             (ExecutionMode::Client, offset) => {
                 if !flags.contains(LockFlags::MUTABLE) {
-                    if matches!(
-                        offset,
-                        SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo)
-                            | SubstateOffset::PackageEventSchema(
-                                PackageEventSchemaOffset::PackageEventSchema
-                            )
-                    ) {
+                    if matches!(offset, SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo)) {
                         return true;
                     }
 
@@ -299,7 +293,6 @@ impl SubstateProperties {
             SubstateOffset::AccessController(..) => true,
             SubstateOffset::TypeInfo(..) => true,
             SubstateOffset::PackageAccessRules => true,
-            SubstateOffset::PackageEventSchema(..) => true,
         }
     }
 

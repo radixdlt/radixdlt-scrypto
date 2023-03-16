@@ -41,7 +41,7 @@ impl TransactionProcessorNativePackage {
                     schema,
                     substates,
                     functions,
-                    event_schema: vec![]
+                    event_schema: [].into()
                 }
             ),
         }

@@ -8,8 +8,6 @@ use radix_engine_interface::api::component::*;
 use radix_engine_interface::api::types::{AuthZoneStackOffset, PackageOffset, SubstateOffset};
 use radix_engine_interface::blueprints::package::*;
 
-use super::node_modules::event_schema::PackageEventSchemaSubstate;
-
 #[derive(Debug)]
 pub enum RENodeModuleInit {
     /* Type info */
@@ -27,9 +25,6 @@ pub enum RENodeModuleInit {
         ComponentRoyaltyConfigSubstate,
         ComponentRoyaltyAccumulatorSubstate,
     ),
-
-    /* Events */
-    PackageEventSchema(PackageEventSchemaSubstate),
 }
 
 impl RENodeModuleInit {
@@ -62,14 +57,6 @@ impl RENodeModuleInit {
                 substates.insert(
                     SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
                     accumulator.into(),
-                );
-            }
-            RENodeModuleInit::PackageEventSchema(event_schema) => {
-                substates.insert(
-                    SubstateOffset::PackageEventSchema(
-                        PackageEventSchemaOffset::PackageEventSchema,
-                    ),
-                    event_schema.into(),
                 );
             }
         }

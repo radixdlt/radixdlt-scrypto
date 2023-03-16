@@ -60,7 +60,7 @@ impl TransactionRuntimeNativePackage {
                     schema,
                     substates,
                     functions,
-                    event_schema: vec![]
+                    event_schema: [].into()
                 }
             ),
         }

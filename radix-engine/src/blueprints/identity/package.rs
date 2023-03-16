@@ -44,7 +44,7 @@ impl IdentityNativePackage {
                     schema,
                     substates,
                     functions,
-                    event_schema: vec![]
+                    event_schema: [].into()
                 }
             ),
         }

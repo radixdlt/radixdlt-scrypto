@@ -1,6 +1,7 @@
 use super::events::*;
 use super::state_machine::*;
 use crate::errors::{ApplicationError, InterpreterError, RuntimeError};
+use crate::event_schema;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
@@ -268,31 +269,13 @@ impl AccessControllerNativePackage {
                     schema,
                     substates,
                     functions,
-                    event_schema: vec![
-                        generate_full_schema_from_single_type::<
-                            InitiateRecoveryEvent,
-                            ScryptoCustomTypeExtension,
-                        >(),
-                        generate_full_schema_from_single_type::<
-                            RuleSetUpdateEvent,
-                            ScryptoCustomTypeExtension,
-                        >(),
-                        generate_full_schema_from_single_type::<
-                            CancelRecoveryProposalEvent,
-                            ScryptoCustomTypeExtension,
-                        >(),
-                        generate_full_schema_from_single_type::<
-                            LockPrimaryRoleEvent,
-                            ScryptoCustomTypeExtension,
-                        >(),
-                        generate_full_schema_from_single_type::<
-                            UnlockPrimaryRoleEvent,
-                            ScryptoCustomTypeExtension,
-                        >(),
-                        generate_full_schema_from_single_type::<
-                            StopTimedRecoveryEvent,
-                            ScryptoCustomTypeExtension,
-                        >(),
+                    event_schema: event_schema![
+                        InitiateRecoveryEvent,
+                        RuleSetUpdateEvent,
+                        CancelRecoveryProposalEvent,
+                        LockPrimaryRoleEvent,
+                        UnlockPrimaryRoleEvent,
+                        StopTimedRecoveryEvent
                     ]
                 }
             ),

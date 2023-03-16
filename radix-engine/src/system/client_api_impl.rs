@@ -39,8 +39,6 @@ use radix_engine_interface::schema::PackageSchema;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
-use super::node_modules::event_schema::PackageEventSchemaSubstate;
-
 impl<'g, 's, W> ClientNodeApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
@@ -148,7 +146,6 @@ where
         access_rules: AccessRulesConfig,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
-        event_schema: BTreeMap<String, Vec<(LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>>,
     ) -> Result<PackageAddress, RuntimeError> {
         let result = self.call_function(
             PACKAGE_PACKAGE,
@@ -161,7 +158,6 @@ where
                 access_rules,
                 royalty_config,
                 metadata,
-                event_schema,
             })
             .unwrap(),
         )?;
@@ -454,10 +450,7 @@ where
 
         for (module_id, object_id) in modules {
             match module_id {
-                NodeModuleId::SELF
-                | NodeModuleId::TypeInfo
-                | NodeModuleId::FunctionAccessRules
-                | NodeModuleId::PackageEventSchema => {
+                NodeModuleId::SELF | NodeModuleId::TypeInfo | NodeModuleId::FunctionAccessRules => {
                     return Err(RuntimeError::SystemError(SystemError::InvalidModule))
                 }
                 NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {
@@ -670,11 +663,9 @@ where
                     }
                     NodeModuleId::Metadata => Ok((METADATA_PACKAGE, METADATA_BLUEPRINT.into())),
                     NodeModuleId::SELF => self.get_object_type_info(node_id),
-                    NodeModuleId::TypeInfo | NodeModuleId::PackageEventSchema => {
-                        Err(RuntimeError::ApplicationError(
-                            ApplicationError::EventError(EventError::NoAssociatedPackage),
-                        ))
-                    }
+                    NodeModuleId::TypeInfo => Err(RuntimeError::ApplicationError(
+                        ApplicationError::EventError(EventError::NoAssociatedPackage),
+                    )),
                 }?;
 
                 Ok((event_type_id, package_address, blueprint_name.to_owned()))
@@ -708,16 +699,16 @@ where
         let (local_type_index, schema) = {
             let handle = self.kernel_lock_substate(
                 RENodeId::GlobalObject(Address::Package(package_address)),
-                NodeModuleId::PackageEventSchema,
-                SubstateOffset::PackageEventSchema(PackageEventSchemaOffset::PackageEventSchema),
+                NodeModuleId::SELF,
+                SubstateOffset::Package(PackageOffset::Info),
                 LockFlags::read_only(),
             )?;
-            let package_schema =
-                self.kernel_get_substate_ref::<PackageEventSchemaSubstate>(handle)?;
-            let contained_schema = package_schema
-                .0
+            let package_info = self.kernel_get_substate_ref::<PackageInfoSubstate>(handle)?;
+            let contained_schema = package_info
+                .schema
+                .blueprints
                 .get(&blueprint_name)
-                .and_then(|blueprint_schema| blueprint_schema.get(&event_name))
+                .and_then(|blueprint_schema| blueprint_schema.event_schema.get(&event_name))
                 .map_or(
                     Err(RuntimeError::ApplicationError(
                         ApplicationError::EventError(EventError::SchemaNotFoundError {

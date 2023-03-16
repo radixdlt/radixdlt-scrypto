@@ -1,6 +1,7 @@
 use crate::blueprints::resource::*;
 use crate::errors::InterpreterError;
 use crate::errors::RuntimeError;
+use crate::event_schema;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE, FIXED_MEDIUM_FEE};
 use crate::types::*;
@@ -235,20 +236,7 @@ impl ResourceManagerNativePackage {
             schema,
             substates,
             functions,
-            event_schema: vec![
-                generate_full_schema_from_single_type::<
-                    VaultCreationEvent,
-                    ScryptoCustomTypeExtension,
-                >(),
-                generate_full_schema_from_single_type::<
-                    MintResourceEvent,
-                    ScryptoCustomTypeExtension,
-                >(),
-                generate_full_schema_from_single_type::<
-                    BurnResourceEvent,
-                    ScryptoCustomTypeExtension,
-                >(),
-            ],
+            event_schema: event_schema![VaultCreationEvent, MintResourceEvent, BurnResourceEvent],
         };
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
@@ -417,20 +405,11 @@ impl ResourceManagerNativePackage {
             schema,
             substates,
             functions,
-            event_schema: vec![
-                generate_full_schema_from_single_type::<LockFeeEvent, ScryptoCustomTypeExtension>(),
-                generate_full_schema_from_single_type::<
-                    WithdrawResourceEvent,
-                    ScryptoCustomTypeExtension,
-                >(),
-                generate_full_schema_from_single_type::<
-                    DepositResourceEvent,
-                    ScryptoCustomTypeExtension,
-                >(),
-                generate_full_schema_from_single_type::<
-                    RecallResourceEvent,
-                    ScryptoCustomTypeExtension,
-                >(),
+            event_schema: event_schema![
+                LockFeeEvent,
+                WithdrawResourceEvent,
+                DepositResourceEvent,
+                RecallResourceEvent
             ],
         };
 
@@ -561,7 +540,7 @@ impl ResourceManagerNativePackage {
             schema,
             substates,
             functions,
-            event_schema: vec![],
+            event_schema: [].into(),
         };
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
@@ -626,7 +605,7 @@ impl ResourceManagerNativePackage {
             schema,
             substates,
             functions,
-            event_schema: vec![],
+            event_schema: [].into(),
         };
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
@@ -726,7 +705,7 @@ impl ResourceManagerNativePackage {
             schema,
             substates,
             functions,
-            event_schema: vec![],
+            event_schema: [].into(),
         };
 
         PackageSchema {

@@ -1162,7 +1162,7 @@ impl TestRunner {
                             event_name.clone(),
                         )
                     }
-                    NodeModuleId::TypeInfo | NodeModuleId::PackageEventSchema => {
+                    NodeModuleId::TypeInfo => {
                         panic!("No event schema.")
                     }
                 }
@@ -1181,25 +1181,22 @@ impl TestRunner {
 
         let substate_id = SubstateId(
             RENodeId::GlobalObject(Address::Package(package_address)),
-            NodeModuleId::PackageEventSchema,
-            SubstateOffset::PackageEventSchema(PackageEventSchemaOffset::PackageEventSchema),
+            NodeModuleId::SELF,
+            SubstateOffset::Package(PackageOffset::Info),
         );
         self.substate_store()
             .get_substate(&substate_id)
             .unwrap()
             .substate
-            .event_schema()
-            .clone()
-            .0
+            .package_info()
+            .schema
+            .blueprints
             .get(&blueprint_name)
             .unwrap()
+            .event_schema
             .get(&event_name)
             .unwrap()
             .clone()
-    }
-
-    pub fn event_name(&mut self, event_type_identifier: &EventTypeIdentifier) -> String {
-        event_type_identifier.1.clone()
     }
 }
 
@@ -1310,7 +1307,7 @@ pub fn single_function_package_schema(blueprint_name: &str, function_name: &str)
                     export_name: format!("{}_{}", blueprint_name, function_name),
                 }
             ),
-            event_schema: vec![],
+            event_schema: [].into(),
         },
     );
     package_schema

@@ -26,7 +26,6 @@ use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::blueprints::transaction_processor::*;
-use radix_engine_interface::schema::BlueprintSchema;
 use radix_engine_interface::schema::PackageSchema;
 use transaction::data::to_address;
 use transaction::data::transform;
@@ -293,13 +292,6 @@ impl TransactionProcessorBlueprint {
                             access_rules: access_rules.clone(),
                             royalty_config: royalty_config.clone(),
                             metadata: metadata.clone(),
-                            event_schema: schema
-                                .blueprints
-                                .into_iter()
-                                .map(|(blueprint_name, BlueprintSchema { event_schema, .. })| {
-                                    (blueprint_name, event_schema)
-                                })
-                                .collect(),
                         })
                         .unwrap(),
                     )?;

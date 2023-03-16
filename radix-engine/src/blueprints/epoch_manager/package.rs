@@ -3,7 +3,7 @@ use crate::errors::InterpreterError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
-use crate::types::*;
+use crate::{event_schema, types::*};
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
@@ -90,12 +90,7 @@ impl EpochManagerNativePackage {
             schema,
             substates,
             functions,
-            event_schema: vec![
-                generate_full_schema_from_single_type::<RoundChangeEvent, ScryptoCustomTypeExtension>(
-                ),
-                generate_full_schema_from_single_type::<EpochChangeEvent, ScryptoCustomTypeExtension>(
-                ),
-            ],
+            event_schema: event_schema![RoundChangeEvent, EpochChangeEvent],
         };
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
@@ -175,23 +170,13 @@ impl EpochManagerNativePackage {
             schema,
             substates,
             functions,
-            event_schema: vec![
-                generate_full_schema_from_single_type::<
-                    RegisterValidatorEvent,
-                    ScryptoCustomTypeExtension,
-                >(),
-                generate_full_schema_from_single_type::<
-                    UnregisterValidatorEvent,
-                    ScryptoCustomTypeExtension,
-                >(),
-                generate_full_schema_from_single_type::<StakeEvent, ScryptoCustomTypeExtension>(),
-                generate_full_schema_from_single_type::<UnstakeEvent, ScryptoCustomTypeExtension>(),
-                generate_full_schema_from_single_type::<ClaimXrdEvent, ScryptoCustomTypeExtension>(
-                ),
-                generate_full_schema_from_single_type::<
-                    UpdateAcceptingStakeDelegationStateEvent,
-                    ScryptoCustomTypeExtension,
-                >(),
+            event_schema: event_schema![
+                RegisterValidatorEvent,
+                UnregisterValidatorEvent,
+                StakeEvent,
+                UnstakeEvent,
+                ClaimXrdEvent,
+                UpdateAcceptingStakeDelegationStateEvent
             ],
         };
 

@@ -1259,9 +1259,6 @@ fn setting_metadata_emits_correct_events() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        for (id, _) in events.iter() {
-            println!("{}", test_runner.event_name(&id))
-        }
         /*
         Two events:
         1. Vault lock fee
