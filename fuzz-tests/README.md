@@ -54,11 +54,15 @@ Before starting to fuzz AFL checks machine configuration and requests to adjust 
   ```
 
 # Input data
-Sample input data shall be placed in [fuzz_input](./fuzz_input) folder in dedicated subfolder.
+Sample input data shall be placed in `fuzz_input` folder in dedicated subfolder.
 `libfuzzer` and `AFL` are able to use the data in the same format.
 
-In order to minimize the test corpus, the data might prior processed.
+In order to minimize the test corpus, the data might be prior processed.
 Processing method is specific for fuzzing engine.
+
+One can use following command to generate input data (`cargo afl cmin|tmin` are used here)
+`./fuzz.sh generate-input [raw|unique|minimize]`
+Check `./fuzz.sh help` for more details
 
 # Fuzz tests
 Available fuzz tests:
@@ -68,7 +72,7 @@ Available fuzz tests:
 
 Helper script [fuzz.sh](./fuzz.sh) to unify fuzzing experience accross the fuzzing engines ;)
 
-`./fuzz.sh [FUZZER] [COMMAND] [COMMAND-ARGS]`
+`./fuzz.sh [FUZZER/COMMAND] [SUBCOMMAND] [COMMAND-ARGS]`
 
 Currently it allows to build and run fuzz tests using some default configuration.
 Check: `./fuzz.sh help` for more details.
@@ -80,6 +84,12 @@ or
 `cargo afl --help`
 
 ## Examples
+* Generate input
+  - Generate input
+    ```
+    ./fuzz.sh generate-input raw|unique|minimize
+    ```
+  - Generate unique input
 * AFL
   - Run 2 AFL sessions (`main` and `slave`) and let it automatically resume if the same session was already running
     (each command in separate console)

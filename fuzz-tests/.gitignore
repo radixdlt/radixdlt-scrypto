@@ -3,4 +3,6 @@ target-afl
 afl
 corpus
 artifacts
+fuzz_input
+fuzz-*.log
 #coverage
