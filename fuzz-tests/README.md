@@ -79,8 +79,45 @@ Check:
 or
 `cargo afl --help`
 
-# TODO
+## Examples
+* AFL
+  - Run 2 AFL sessions (`main` and `slave`) and let it automatically resume if the same session was already running
+    (each command in separate console)
+    ```
+    AFL_AUTORESUME=1 cargo afl fuzz -i fuzz_input/transaction -o afl/transaction -M main -T transaction  target-afl/release/transaction
+    ```
+    ```
+    AFL_AUTORESUME=1 cargo afl fuzz -i fuzz_input/transaction -o afl/transaction -S slave -T transaction  target-afl/release/transaction
+    ```
+  - Check status of the AFL fuzzing session in the AFL output folder `afl/transaction`
+    ```
+    cargo afl whatsup afl/transaction
+    ```
+* LibFuzzer
+  - Run 2 LibFuzzer sessions and do not stop if crash discovered
+    ```
+    cargo +nightly fuzz run --release --no-default-features --features std,libfuzzer-sys --fuzz-dir . --no-cfg-fuzzing --target-dir target-libfuzzer transaction -- -create_missing_dirs=1 -jobs=2 -fork=1 -ignore_crashes=1
+    ```
+    If fuzzer is running in forked mode it logs to file (file per job) `file-<job_number>.log`.
+    One can monitor logs using below command:
+    ```
+    tail -f file-*.log
+    ```
+  - Reproduce discovered crash
+    ```
+    cargo +nightly fuzz run --release --no-default-features --features std,libfuzzer-sys --fuzz-dir . --no-cfg-fuzzing --target-dir target-libfuzzer transaction artifacts/transaction/crash-0734fdddb6de62d6d954c06c65b310d185656e10
+    ```
+* simple-fuzzer
+  - Reproduce discovered crash
+    ```
+    ./fuzz.sh simple run artifacts/transaction/crash-0734fdddb6de62d6d954c06c65b310d185656e10
+    ```
+    or
+    ```
+    RUST_BACKTRACE=1 cargo run --release --no-default-features --features std,simple-fuzzer --bin transaction -- -v artifacts/transaction/crash-0734fdddb6de62d6d954c06c65b310d185656e10
+    ```
 
+# TODO
 - Run more worker processes in parallel for `LibFuzzer`
 - Add more fuzz tests
 - Add easy to use option to reconstruct sample input data.
