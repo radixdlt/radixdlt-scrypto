@@ -97,6 +97,7 @@ impl KernelModuleMixer {
             node_move: NodeMoveModule {},
             auth: AuthModule {
                 params: auth_zone_params.clone(),
+                auth_zone_stack: Vec::new(),
             },
             logger: LoggerModule::default(),
             transaction_runtime: TransactionRuntimeModule {

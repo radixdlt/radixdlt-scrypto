@@ -35,6 +35,7 @@ pub enum AuthError {
 #[derive(Debug, Clone)]
 pub struct AuthModule {
     pub params: AuthZoneParams,
+    pub auth_zone_stack: Vec<RENodeId>,
 }
 
 impl AuthModule {
@@ -125,7 +126,6 @@ impl AuthModule {
                     _ => MethodAuthorization::AllowAll,
                 }
             }
-            MethodIdentifier(RENodeId::AuthZoneStack, ..) => MethodAuthorization::AllowAll,
 
             MethodIdentifier(RENodeId::Object(object_id), ..) => {
                 let node_id = RENodeId::Object(*object_id);
@@ -153,14 +153,12 @@ impl AuthModule {
                         // TODO: Revisit what the correct abstraction is for visibility in the auth module
                         let method_key = identifier.method_key();
                         let auth = match visibility {
-                            RENodeVisibilityOrigin::Normal => {
-                                Self::method_authorization_contextless(
-                                    RENodeId::GlobalObject(resource_address.into()),
-                                    NodeModuleId::AccessRules1,
-                                    method_key,
-                                    api,
-                                )?
-                            }
+                            RENodeVisibilityOrigin::Normal => Self::method_authorization_stateless(
+                                RENodeId::GlobalObject(resource_address.into()),
+                                NodeModuleId::AccessRules1,
+                                method_key,
+                                api,
+                            )?,
                             RENodeVisibilityOrigin::DirectAccess => {
                                 let handle = api.kernel_lock_substate(
                                     RENodeId::GlobalObject(resource_address.into()),
@@ -208,14 +206,14 @@ impl AuthModule {
                     RENodeId::GlobalObject(Address::Component(ComponentAddress::Normal(..)))
                 ) && module_id.eq(&NodeModuleId::SELF)
                 {
-                    Self::normal_component_method_authorization(
+                    Self::method_authorization_stateful(
                         *node_id,
                         NodeModuleId::AccessRules,
                         method_key,
                         api,
                     )?
                 } else {
-                    Self::method_authorization_contextless(
+                    Self::method_authorization_stateless(
                         *node_id,
                         NodeModuleId::AccessRules,
                         method_key,
@@ -230,7 +228,7 @@ impl AuthModule {
         Ok(auth)
     }
 
-    fn normal_component_method_authorization<Y: KernelModuleApi<RuntimeError>>(
+    fn method_authorization_stateful<Y: KernelModuleApi<RuntimeError>>(
         receiver: RENodeId,
         module_id: NodeModuleId,
         key: MethodKey,
@@ -255,7 +253,7 @@ impl AuthModule {
             let index = match schema.substates.get(0) {
                 Some(index) => index.clone(),
                 None => {
-                    return Self::method_authorization_contextless(receiver, module_id, key, api);
+                    return Self::method_authorization_stateless(receiver, module_id, key, api);
                 }
             };
 
@@ -293,7 +291,7 @@ impl AuthModule {
         Ok(authorization)
     }
 
-    pub fn method_authorization_contextless<Y: KernelModuleApi<RuntimeError>>(
+    fn method_authorization_stateless<Y: KernelModuleApi<RuntimeError>>(
         receiver: RENodeId,
         module_id: NodeModuleId,
         key: MethodKey,
@@ -438,13 +436,15 @@ impl KernelModule for AuthModule {
         _caller: &Option<Actor>,
         _update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
-        if matches!(
-            api.kernel_get_current_actor().unwrap().fn_identifier,
-            FnIdentifier {
-                package_address: ACCESS_RULES_PACKAGE | AUTH_ZONE_PACKAGE,
-                ..
-            }
-        ) {
+        let FnIdentifier {
+            package_address,
+            blueprint_name,
+            ..
+        } = api.kernel_get_current_actor().unwrap().fn_identifier;
+
+        if package_address == ACCESS_RULES_PACKAGE
+            && blueprint_name.as_str() == ACCESS_RULES_BLUEPRINT
+        {
             return Ok(());
         }
 
