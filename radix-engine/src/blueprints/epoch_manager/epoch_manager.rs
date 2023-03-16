@@ -18,6 +18,7 @@ use radix_engine_interface::rule;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct EpochManagerSubstate {
     pub address: ComponentAddress, // TODO: Does it make sense for this to be stored here?
+    pub validator_owner_resource: ResourceAddress,
     pub epoch: u64,
     pub round: u64,
 
@@ -60,13 +61,6 @@ impl EpochManagerBlueprint {
     {
         let address = ComponentAddress::EpochManager(component_address);
 
-        let epoch_manager = EpochManagerSubstate {
-            address,
-            epoch: initial_epoch,
-            round: 0,
-            rounds_per_epoch,
-            num_unstake_epochs,
-        };
 
         let mut owner_resman: ResourceManager = {
             let metadata: BTreeMap<String, String> = BTreeMap::new();
@@ -95,6 +89,7 @@ impl EpochManagerBlueprint {
             resource_manager
         };
 
+
         let mut validators = BTreeMap::new();
 
         for (key, validator_init) in validator_set {
@@ -121,24 +116,34 @@ impl EpochManagerBlueprint {
             staker_account.deposit(lp_bucket, api)?;
         }
 
-        let current_validator_set = ValidatorSetSubstate {
-            epoch: initial_epoch,
-            validator_set: validators.clone(),
-        };
+        let epoch_manager_id = {
+            let epoch_manager = EpochManagerSubstate {
+                address,
+                validator_owner_resource: owner_resman.0,
+                epoch: initial_epoch,
+                round: 0,
+                rounds_per_epoch,
+                num_unstake_epochs,
+            };
+            let current_validator_set = ValidatorSetSubstate {
+                epoch: initial_epoch,
+                validator_set: validators.clone(),
+            };
 
-        let preparing_validator_set = ValidatorSetSubstate {
-            epoch: initial_epoch + 1,
-            validator_set: validators.clone(),
-        };
+            let preparing_validator_set = ValidatorSetSubstate {
+                epoch: initial_epoch + 1,
+                validator_set: validators.clone(),
+            };
 
-        let epoch_manager_id = api.new_object(
-            EPOCH_MANAGER_BLUEPRINT,
-            vec![
-                scrypto_encode(&epoch_manager).unwrap(),
-                scrypto_encode(&current_validator_set).unwrap(),
-                scrypto_encode(&preparing_validator_set).unwrap(),
-            ],
-        )?;
+            api.new_object(
+                EPOCH_MANAGER_BLUEPRINT,
+                vec![
+                    scrypto_encode(&epoch_manager).unwrap(),
+                    scrypto_encode(&current_validator_set).unwrap(),
+                    scrypto_encode(&preparing_validator_set).unwrap(),
+                ],
+            )?
+        };
 
         Runtime::emit_event(
             api,
