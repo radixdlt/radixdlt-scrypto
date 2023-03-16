@@ -111,7 +111,7 @@ impl AuthZone {
         self.proofs.drain(0..).collect()
     }
 
-    pub fn clear_virtual_proofs(&mut self) {
+    pub fn clear_signature_proofs(&mut self) {
         self.virtual_resources.clear();
         self.virtual_non_fungibles.clear();
         self.virtual_non_fungibles_non_extending.clear();

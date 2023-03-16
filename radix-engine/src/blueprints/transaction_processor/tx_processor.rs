@@ -157,7 +157,7 @@ impl TransactionProcessorBlueprint {
                     InstructionOutput::None
                 }
                 Instruction::ClearSignatureProofs => {
-                    ComponentAuthZone::sys_clear_virtual_proofs(api)?;
+                    ComponentAuthZone::sys_clear_signature_proofs(api)?;
                     InstructionOutput::None
                 }
                 Instruction::PushToAuthZone { proof_id } => {

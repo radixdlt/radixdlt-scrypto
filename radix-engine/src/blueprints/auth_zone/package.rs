@@ -91,14 +91,14 @@ impl AuthZoneNativePackage {
             },
         );
         functions.insert(
-            AUTH_ZONE_CLEAR_VIRTUAL_PROOFS_IDENT.to_string(),
+            AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(Receiver::SelfRefMut),
                 input: aggregator
                     .add_child_type_and_descendents::<AuthZoneClearVirtualProofsInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AuthZoneClearVirtualProofsOutput>(),
-                export_name: AUTH_ZONE_CLEAR_VIRTUAL_PROOFS_IDENT.to_string(),
+                export_name: AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -191,13 +191,13 @@ impl AuthZoneNativePackage {
                 ))?;
                 AuthZoneBlueprint::clear(receiver, input, api)
             }
-            AUTH_ZONE_CLEAR_VIRTUAL_PROOFS_IDENT => {
+            AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                AuthZoneBlueprint::clear_virtual_proofs(receiver, input, api)
+                AuthZoneBlueprint::clear_signature_proofs(receiver, input, api)
             }
             AUTH_ZONE_DRAIN_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
@@ -439,7 +439,7 @@ impl AuthZoneBlueprint {
         let auth_zone_stack: &mut AuthZoneStackSubstate =
             api.kernel_get_substate_ref_mut(handle)?;
         let auth_zone = auth_zone_stack.cur_auth_zone_mut();
-        auth_zone.clear_virtual_proofs();
+        auth_zone.clear_signature_proofs();
         let proofs = auth_zone.drain();
         api.sys_drop_lock(handle)?;
 
@@ -450,7 +450,7 @@ impl AuthZoneBlueprint {
         Ok(IndexedScryptoValue::from_typed(&()))
     }
 
-    pub(crate) fn clear_virtual_proofs<Y>(
+    pub(crate) fn clear_signature_proofs<Y>(
         receiver: RENodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
@@ -469,7 +469,7 @@ impl AuthZoneBlueprint {
         )?;
         let auth_zone_stack: &mut AuthZoneStackSubstate =
             api.kernel_get_substate_ref_mut(handle)?;
-        auth_zone_stack.cur_auth_zone_mut().clear_virtual_proofs();
+        auth_zone_stack.cur_auth_zone_mut().clear_signature_proofs();
         api.sys_drop_lock(handle)?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
