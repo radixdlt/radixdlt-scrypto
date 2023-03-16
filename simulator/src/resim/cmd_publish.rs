@@ -3,9 +3,9 @@ use colored::*;
 use radix_engine::ledger::{OutputValue, ReadableSubstateStore, WriteableSubstateStore};
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::*;
-use radix_engine_interface::api::package::PackageCodeSubstate;
-use radix_engine_interface::api::package::PackageInfoSubstate;
 use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::blueprints::package::PackageCodeSubstate;
+use radix_engine_interface::blueprints::package::PackageInfoSubstate;
 use std::collections::BTreeSet;
 use std::ffi::OsStr;
 use std::fs;
@@ -138,7 +138,10 @@ impl Publish {
                 writeln!(
                     out,
                     "Success! New Package: {}",
-                    receipt.expect_commit().entity_changes.new_package_addresses[0]
+                    receipt
+                        .expect_commit(true)
+                        .entity_changes
+                        .new_package_addresses[0]
                         .display(&Bech32Encoder::for_simulator())
                         .to_string()
                         .green()

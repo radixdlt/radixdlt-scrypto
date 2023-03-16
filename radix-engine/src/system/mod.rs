@@ -4,4 +4,3 @@ pub mod node;
 pub mod node_modules;
 pub mod node_properties;
 pub mod node_substates;
-pub mod package;

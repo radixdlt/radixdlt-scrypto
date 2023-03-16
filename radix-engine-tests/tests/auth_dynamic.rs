@@ -45,7 +45,7 @@ fn test_dynamic_auth(
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     receipt1.expect_commit_success();
     let component = receipt1
-        .expect_commit()
+        .expect_commit(true)
         .entity_changes
         .new_component_addresses[0];
 
@@ -118,7 +118,7 @@ fn test_dynamic_authlist(
     let receipt0 = test_runner.execute_manifest(manifest1, vec![]);
     receipt0.expect_commit_success();
     let component = receipt0
-        .expect_commit()
+        .expect_commit(true)
         .entity_changes
         .new_component_addresses[0];
 
@@ -244,7 +244,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     receipt1.expect_commit_success();
     let component = receipt1
-        .expect_commit()
+        .expect_commit(true)
         .entity_changes
         .new_component_addresses[0];
 
@@ -279,7 +279,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     receipt1.expect_commit_success();
     let component = receipt1
-        .expect_commit()
+        .expect_commit(true)
         .entity_changes
         .new_component_addresses[0];
     let manifest2 = ManifestBuilder::new()

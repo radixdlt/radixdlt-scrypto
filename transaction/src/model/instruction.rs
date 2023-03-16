@@ -57,7 +57,7 @@ pub enum Instruction {
         proof_id: ManifestProof,
     },
 
-    /// Drops all proofs in the auth zone
+    /// Clears the auth zone.
     ClearAuthZone,
 
     // TODO: do we need `CreateProofFromWorktop`, to avoid taking resource out and then creating proof?
@@ -93,8 +93,11 @@ pub enum Instruction {
         proof_id: ManifestProof,
     },
 
-    /// Drops all of the proofs in the transaction.
+    /// Drops all proofs, both named proofs and auth zone proofs.
     DropAllProofs,
+
+    /// Drop all virtual proofs (can only be auth zone proofs).
+    ClearSignatureProofs,
 
     /// Publish a package.
     PublishPackage {

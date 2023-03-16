@@ -17,14 +17,12 @@ use radix_engine_interface::api::node_modules::metadata::{
     MetadataRemoveInput, MetadataSetInput, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
 };
 use radix_engine_interface::api::node_modules::royalty::{
-    ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput, PackageClaimRoyaltyInput,
-    PackageSetRoyaltyConfigInput, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
-    COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT, PACKAGE_ROYALTY_CLAIM_ROYALTY_IDENT,
-    PACKAGE_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+    ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput,
+    COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
-use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientObjectApi;
+use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::blueprints::transaction_processor::*;
@@ -155,8 +153,11 @@ impl TransactionProcessorBlueprint {
                     InstructionOutput::None
                 }
                 Instruction::ClearAuthZone => {
-                    processor.proof_id_mapping.clear();
                     ComponentAuthZone::sys_clear(api)?;
+                    InstructionOutput::None
+                }
+                Instruction::ClearSignatureProofs => {
+                    ComponentAuthZone::sys_clear_signature_proofs(api)?;
                     InstructionOutput::None
                 }
                 Instruction::PushToAuthZone { proof_id } => {
@@ -208,6 +209,9 @@ impl TransactionProcessorBlueprint {
                     InstructionOutput::None
                 }
                 Instruction::DropAllProofs => {
+                    // NB: the difference between DROP_ALL_PROOFS and CLEAR_AUTH_ZONE is that
+                    // the former will drop all named proofs before clearing the auth zone.
+
                     for (_, real_id) in processor.proof_id_mapping.drain() {
                         let proof = Proof(real_id);
                         proof.sys_drop(api).map(|_| IndexedScryptoValue::unit())?;
@@ -452,8 +456,8 @@ impl TransactionProcessorBlueprint {
                 } => {
                     let result = api.call_module_method(
                         RENodeId::GlobalObject(package_address.into()),
-                        NodeModuleId::PackageRoyalty,
-                        PACKAGE_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+                        NodeModuleId::SELF,
+                        PACKAGE_SET_ROYALTY_CONFIG_IDENT,
                         scrypto_encode(&PackageSetRoyaltyConfigInput {
                             royalty_config: royalty_config.clone(),
                         })
@@ -495,8 +499,8 @@ impl TransactionProcessorBlueprint {
                 Instruction::ClaimPackageRoyalty { package_address } => {
                     let result = api.call_module_method(
                         RENodeId::GlobalObject(package_address.into()),
-                        NodeModuleId::PackageRoyalty,
-                        PACKAGE_ROYALTY_CLAIM_ROYALTY_IDENT,
+                        NodeModuleId::SELF,
+                        PACKAGE_CLAIM_ROYALTY_IDENT,
                         scrypto_encode(&PackageClaimRoyaltyInput {}).unwrap(),
                     )?;
 

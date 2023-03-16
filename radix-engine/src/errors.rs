@@ -1,6 +1,7 @@
 use crate::blueprints::access_controller::AccessControllerError;
 use crate::blueprints::account::AccountError;
 use crate::blueprints::epoch_manager::{EpochManagerError, ValidatorError};
+use crate::blueprints::package::PackageError;
 use crate::blueprints::resource::{
     BucketError, FungibleResourceManagerError, NonFungibleResourceManagerError, ProofError,
     VaultError, WorktopError,
@@ -16,7 +17,6 @@ use crate::system::kernel_modules::node_move::NodeMoveError;
 use crate::system::kernel_modules::transaction_limits::TransactionLimitsError;
 use crate::system::node_modules::access_rules::{AccessRulesChainError, AuthZoneError};
 use crate::system::node_modules::metadata::MetadataPanicError;
-use crate::system::package::PackageError;
 use crate::transaction::AbortReason;
 use crate::types::*;
 use crate::wasm::WasmRuntimeError;
@@ -147,7 +147,6 @@ pub enum KernelError {
     // Substate Constraints
     InvalidOffset(SubstateOffset),
     InvalidOwnership(SubstateOffset, PackageAddress, String),
-    InvalidOverwrite,
     InvalidId(RENodeId),
 
     // Actor Constraints
@@ -189,9 +188,12 @@ pub enum CallFrameError {
 pub enum SystemError {
     NotAnObject,
     NotAKeyValueStore,
+    InvalidSubstateWrite,
     InvalidKeyValueStoreOwnership,
     InvalidLockFlags,
+    InvalidKeyValueStoreSchema(SchemaValidationError),
     CannotGlobalize,
+    InvalidModuleSet(RENodeId, BTreeSet<NodeModuleId>),
     InvalidModule,
     InvalidModuleType {
         expected_package: PackageAddress,

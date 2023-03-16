@@ -2,6 +2,7 @@ use radix_engine::blueprints::resource::NonFungibleResourceManagerError;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
+use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use scrypto::NonFungibleData;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -60,7 +61,7 @@ fn can_burn_non_fungible() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
     let resource_address = receipt
-        .expect_commit()
+        .expect_commit(true)
         .entity_changes
         .new_resource_addresses[0];
     let vault_id = test_runner.get_component_vaults(account, resource_address)[0];
@@ -244,17 +245,24 @@ fn cannot_update_non_fungible_when_does_not_exist() {
 }
 
 #[test]
-fn can_get_non_fungible_data_reference() {
+fn can_call_non_fungible_data_reference() {
+    // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
+    test_runner.set_metadata(
+        account.into(),
+        "test_key",
+        "test_value",
+        NonFungibleGlobalId::from_public_key(&public_key),
+    );
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
             "NonFungibleTest",
-            "get_non_fungible_reference",
-            manifest_args!(),
+            "create_non_fungible_reference",
+            manifest_args!(account),
         )
         .call_method(
             account,
@@ -267,6 +275,24 @@ fn can_get_non_fungible_data_reference() {
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     receipt.expect_commit_success();
+    let resource_address = receipt.new_resource_addresses()[1];
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(
+            package_address,
+            "NonFungibleTest",
+            "call_non_fungible_reference",
+            manifest_args!(resource_address),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let result = receipt.expect_commit_success();
+    assert_eq!(
+        result[1],
+        InstructionOutput::CallReturn(scrypto_encode("test_value").unwrap())
+    );
 }
 
 #[test]
@@ -330,7 +356,6 @@ fn can_update_and_get_non_fungible() {
 fn can_update_and_get_non_fungible_reference() {
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let (resource_address, ..) = test_runner.create_restricted_token(account);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
@@ -338,7 +363,7 @@ fn can_update_and_get_non_fungible_reference() {
             package_address,
             "NonFungibleTest",
             "update_and_get_non_fungible_reference",
-            manifest_args!(resource_address),
+            manifest_args!(account),
         )
         .call_method(
             account,
@@ -472,11 +497,11 @@ fn test_mint_update_and_withdraw() {
     );
     receipt.expect_commit_success();
     let badge_resource_address = receipt
-        .expect_commit()
+        .expect_commit(true)
         .entity_changes
         .new_resource_addresses[0];
     let nft_resource_address = receipt
-        .expect_commit()
+        .expect_commit(true)
         .entity_changes
         .new_resource_addresses[1];
 
@@ -820,7 +845,7 @@ fn cant_burn_non_fungible_with_wrong_non_fungible_local_id_type() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
     let resource_address = receipt
-        .expect_commit()
+        .expect_commit(true)
         .entity_changes
         .new_resource_addresses[0];
     let non_fungible_global_id = NonFungibleGlobalId::new(

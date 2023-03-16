@@ -1,6 +1,6 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use radix_engine::system::package::extract_schema;
 use radix_engine::types::PackageAddress;
+use radix_engine::utils::extract_schema;
 use radix_engine::wasm::DefaultWasmEngine;
 use radix_engine::wasm::InstrumentedCode;
 use radix_engine::wasm::WasmEngine;

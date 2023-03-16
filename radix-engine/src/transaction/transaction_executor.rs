@@ -6,16 +6,17 @@ use crate::kernel::module_mixer::KernelModuleMixer;
 use crate::kernel::track::{PreExecutionError, Track};
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::system::kernel_modules::costing::*;
+use crate::system::kernel_modules::execution_trace::calculate_resource_changes;
 use crate::transaction::*;
 use crate::types::*;
 use crate::wasm::*;
 use radix_engine_constants::*;
-use radix_engine_interface::api::package::{
-    TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
-};
 use radix_engine_interface::api::ClientPackageApi;
 use radix_engine_interface::blueprints::transaction_processor::{
     InstructionOutput, TransactionProcessorRunInput,
+};
+use radix_engine_interface::blueprints::transaction_processor::{
+    TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
 use sbor::rust::borrow::Cow;
 use transaction::model::*;
@@ -197,10 +198,10 @@ where
             println!("{:-^80}", "Transaction Metadata");
             println!("Transaction hash: {}", transaction_hash);
             println!(
-                "Transaction auth zone params: {:?}",
+                "Preallocated Node IDs: {:?}",
                 executable.pre_allocated_ids()
             );
-            println!("Number of unique blobs: {}", executable.blobs().len());
+            println!("Number of blobs: {}", executable.blobs().len());
 
             println!("{:-^80}", "Engine Execution Log");
         }
@@ -218,9 +219,9 @@ where
                 Ok(fee_reserve) => fee_reserve,
                 Err(err) => {
                     return TransactionReceipt {
-                        execution: TransactionExecution {
-                            fee_summary: err.fee_summary,
-                            events: vec![],
+                        execution_trace: TransactionExecutionTrace {
+                            execution_traces: vec![],
+                            resource_changes: index_map_new(),
                             resources_usage: ResourcesUsage::default(),
                         },
                         result: TransactionResult::Reject(RejectResult {
@@ -235,11 +236,9 @@ where
             };
         }
 
-        // Prepare state track and execution trace
+        // Execute the instructions
         let mut track = Track::new(self.substate_store);
-
-        // Invoke the function/method
-        let track_receipt = {
+        let (transaction_result, execution_traces, vault_ops) = {
             let mut id_allocator = IdAllocator::new(
                 transaction_hash.clone(),
                 executable.pre_allocated_ids().clone(),
@@ -288,19 +287,29 @@ where
             // Teardown
             let (modules, invoke_result) = kernel.teardown(invoke_result);
             let fee_reserve = modules.costing.take_fee_reserve();
-            let (vault_ops, events) = modules.execution_trace.collect_events();
             let application_events = modules.events.events();
             let application_logs = modules.logger.logs();
+            let (execution_traces, vault_ops) = modules.execution_trace.collect_traces();
 
             // Finalize track
-            track.finalize(
+            let transaction_result = track.finalize(
                 invoke_result,
                 fee_reserve,
-                vault_ops,
-                events,
                 application_events,
                 application_logs,
-            )
+            );
+
+            (transaction_result, execution_traces, vault_ops)
+        };
+
+        // Calculate resource changes
+        let resource_changes = match &transaction_result {
+            TransactionResult::Commit(c) => calculate_resource_changes(
+                vault_ops,
+                &c.actual_fee_payments,
+                transaction_result.is_commit_success(),
+            ),
+            TransactionResult::Reject(_) | TransactionResult::Abort(_) => index_map_new(),
         };
 
         // Finish resources usage measurement and get results
@@ -311,75 +320,68 @@ where
             () => resources_tracker.end_measurement(),
         };
 
+        // Produce final receipt
         let receipt = TransactionReceipt {
-            execution: TransactionExecution {
-                fee_summary: track_receipt.fee_summary,
-                events: track_receipt.events,
+            result: transaction_result,
+            execution_trace: TransactionExecutionTrace {
+                execution_traces,
+                resource_changes,
                 resources_usage,
             },
-            result: track_receipt.result,
         };
+
         #[cfg(not(feature = "alloc"))]
         if execution_config.kernel_trace {
-            println!("{:-^80}", "Cost Analysis");
-            let break_down = receipt
-                .execution
-                .fee_summary
-                .execution_cost_unit_breakdown
-                .iter()
-                .map(|(k, v)| (k.to_string(), v))
-                .collect::<BTreeMap<String, &u32>>();
-            for (k, v) in break_down {
-                println!("{:<30}: {:>10}", k, v);
-            }
-
-            println!("{:-^80}", "Cost Totals");
-            println!(
-                "{:<30}: {:>10}",
-                "Total Cost Units Consumed",
-                receipt.execution.fee_summary.total_cost_units_consumed
-            );
-            println!(
-                "{:<30}: {:>10}",
-                "Cost Unit Limit", receipt.execution.fee_summary.cost_unit_limit
-            );
-            // NB - we use "to_string" to ensure they align correctly
-            println!(
-                "{:<30}: {:>10}",
-                "Execution XRD",
-                receipt
-                    .execution
-                    .fee_summary
-                    .total_execution_cost_xrd
-                    .to_string()
-            );
-            println!(
-                "{:<30}: {:>10}",
-                "Royalty XRD",
-                receipt
-                    .execution
-                    .fee_summary
-                    .total_royalty_cost_xrd
-                    .to_string()
-            );
-
             match &receipt.result {
                 TransactionResult::Commit(commit) => {
+                    println!("{:-^80}", "Cost Analysis");
+                    let break_down = commit
+                        .fee_summary
+                        .execution_cost_breakdown
+                        .iter()
+                        .map(|(k, v)| (k.to_string(), v))
+                        .collect::<BTreeMap<String, &u32>>();
+                    for (k, v) in break_down {
+                        println!("{:<30}: {:>10}", k, v);
+                    }
+
+                    println!("{:-^80}", "Cost Totals");
+                    println!(
+                        "{:<30}: {:>10}",
+                        "Total Cost Units Consumed", commit.fee_summary.execution_cost_sum
+                    );
+                    println!(
+                        "{:<30}: {:>10}",
+                        "Cost Unit Limit", commit.fee_summary.cost_unit_limit
+                    );
+                    // NB - we use "to_string" to ensure they align correctly
+                    println!(
+                        "{:<30}: {:>10}",
+                        "Execution XRD",
+                        commit.fee_summary.total_execution_cost_xrd.to_string()
+                    );
+                    println!(
+                        "{:<30}: {:>10}",
+                        "Royalty XRD",
+                        commit.fee_summary.total_royalty_cost_xrd.to_string()
+                    );
                     println!("{:-^80}", "Application Logs");
                     for (level, message) in &commit.application_logs {
                         println!("[{}] {}", level, message);
-                    }
-                    if commit.application_logs.is_empty() {
-                        println!("None");
                     }
                 }
                 TransactionResult::Reject(e) => {
                     println!("{:-^80}", "Transaction Rejected");
                     println!("{:?}", e.error);
                 }
-                _ => {}
+                TransactionResult::Abort(e) => {
+                    println!("{:-^80}", "Transaction Aborted");
+                    println!("{:?}", e);
+                }
             }
+            println!("{:-^80}", "Finish");
         }
+
         receipt
     }
 }

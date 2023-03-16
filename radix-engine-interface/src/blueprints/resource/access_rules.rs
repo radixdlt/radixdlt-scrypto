@@ -1,6 +1,7 @@
 use crate::api::node_modules::metadata::*;
-use crate::api::node_modules::royalty::*;
 use crate::api::types::NodeModuleId;
+use crate::blueprints::package::PACKAGE_CLAIM_ROYALTY_IDENT;
+use crate::blueprints::package::PACKAGE_SET_ROYALTY_CONFIG_IDENT;
 use crate::blueprints::resource::*;
 use crate::rule;
 use crate::*;
@@ -241,17 +242,14 @@ pub fn package_access_rules_from_owner_badge(
     );
     access_rules.set_access_rule_and_mutability(
         MethodKey::new(
-            NodeModuleId::PackageRoyalty,
-            PACKAGE_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(),
+            NodeModuleId::SELF,
+            PACKAGE_SET_ROYALTY_CONFIG_IDENT.to_string(),
         ),
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
     );
     access_rules.set_access_rule_and_mutability(
-        MethodKey::new(
-            NodeModuleId::PackageRoyalty,
-            PACKAGE_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
-        ),
+        MethodKey::new(NodeModuleId::SELF, PACKAGE_CLAIM_ROYALTY_IDENT.to_string()),
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
     );

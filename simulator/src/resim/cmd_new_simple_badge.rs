@@ -121,7 +121,7 @@ impl NewSimpleBadge {
 
         if let Some(receipt) = receipt {
             let resource_address = receipt
-                .expect_commit()
+                .expect_commit(true)
                 .entity_changes
                 .new_resource_addresses[0];
 

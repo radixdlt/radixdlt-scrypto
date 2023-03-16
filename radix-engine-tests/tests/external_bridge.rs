@@ -28,7 +28,7 @@ fn test_external_bridges() {
     receipt1.expect_commit_success();
 
     let target_component_address = receipt1
-        .expect_commit()
+        .expect_commit(true)
         .entity_changes
         .new_component_addresses[0];
 
@@ -46,7 +46,7 @@ fn test_external_bridges() {
     receipt2.expect_commit_success();
 
     let caller_component_address = receipt2
-        .expect_commit()
+        .expect_commit(true)
         .entity_changes
         .new_component_addresses[0];
 

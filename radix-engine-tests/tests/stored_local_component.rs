@@ -63,7 +63,7 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_global_component(
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
     let component_address = receipt
-        .expect_commit()
+        .expect_commit(true)
         .entity_changes
         .new_component_addresses[0];
 
@@ -97,7 +97,7 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_global_component
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
     let component_address = receipt
-        .expect_commit()
+        .expect_commit(true)
         .entity_changes
         .new_component_addresses[0];
 
@@ -180,7 +180,7 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_global_compone
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
     let component_address = receipt
-        .expect_commit()
+        .expect_commit(true)
         .entity_changes
         .new_component_addresses[0];
 
@@ -214,7 +214,7 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_global_compon
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
     let component_address = receipt
-        .expect_commit()
+        .expect_commit(true)
         .entity_changes
         .new_component_addresses[0];
 

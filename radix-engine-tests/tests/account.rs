@@ -33,7 +33,7 @@ fn can_withdraw_from_my_account_internal(use_virtual: bool) {
 
     assert_resource_changes_for_transfer(
         &receipt
-            .expect_commit()
+            .execution_trace
             .resource_changes
             .iter()
             .flat_map(|(_, rc)| rc)
@@ -152,7 +152,7 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
     receipt.expect_commit_success();
     assert_eq!(
         1,
-        aggregate_resource_changes(receipt.expect_commit().resource_changes.clone()).len()
+        aggregate_resource_changes(receipt.execution_trace.resource_changes.clone()).len()
     ); // Just the lock fee
 }
 

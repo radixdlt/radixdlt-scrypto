@@ -80,6 +80,8 @@ pub enum Instruction {
 
     DropAllProofs,
 
+    ClearSignatureProofs,
+
     CallFunction {
         package_address: Value,
         blueprint_name: Value,

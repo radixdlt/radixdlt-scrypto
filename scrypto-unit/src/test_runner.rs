@@ -15,20 +15,20 @@ use radix_engine::ledger::*;
 use radix_engine::system::kernel_modules::costing::FeeTable;
 use radix_engine::system::kernel_modules::costing::SystemLoanFeeReserve;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine::system::package::*;
 use radix_engine::transaction::{
     execute_preview, execute_transaction, ExecutionConfig, FeeReserveConfig, PreviewError,
     PreviewResult, TransactionReceipt, TransactionResult,
 };
 use radix_engine::types::*;
+use radix_engine::utils::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_interface::api::node_modules::auth::{
     AuthAddresses, ACCESS_RULES_BLUEPRINT, FUNCTION_ACCESS_RULES_BLUEPRINT,
 };
-use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, METADATA_BLUEPRINT};
-use radix_engine_interface::api::node_modules::royalty::{
-    COMPONENT_ROYALTY_BLUEPRINT, PACKAGE_ROYALTY_BLUEPRINT,
+use radix_engine_interface::api::node_modules::metadata::{
+    MetadataEntry, MetadataValue, METADATA_BLUEPRINT,
 };
+use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
 use radix_engine_interface::api::types::{RENodeId, VaultOffset};
 use radix_engine_interface::api::ClientPackageApi;
 use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
@@ -234,6 +234,26 @@ impl TestRunner {
         )
     }
 
+    pub fn set_metadata(
+        &mut self,
+        address: Address,
+        key: &str,
+        value: &str,
+        proof: NonFungibleGlobalId,
+    ) {
+        let manifest = ManifestBuilder::new()
+            .lock_fee(FAUCET_COMPONENT, 100u32.into())
+            .set_metadata(
+                address,
+                key.to_string(),
+                MetadataEntry::Value(MetadataValue::String(value.to_string())),
+            )
+            .build();
+
+        let receipt = self.execute_manifest(manifest, vec![proof]);
+        receipt.expect_commit_success();
+    }
+
     pub fn get_metadata(&mut self, address: Address, key: &str) -> Option<MetadataEntry> {
         let metadata_entry = self
             .substate_store
@@ -268,19 +288,19 @@ impl TestRunner {
             NodeModuleId::ComponentRoyalty,
             SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
         )) {
-            let royalty_vault: Own = output
+            output
                 .substate
                 .component_royalty_accumulator()
                 .royalty_vault
-                .clone();
-
-            self.substate_store
-                .get_substate(&SubstateId(
-                    RENodeId::Object(royalty_vault.vault_id()),
-                    NodeModuleId::SELF,
-                    SubstateOffset::Vault(VaultOffset::LiquidFungible),
-                ))
-                .map(|mut output| output.substate.vault_liquid_fungible_mut().amount())
+                .and_then(|vault| {
+                    self.substate_store
+                        .get_substate(&SubstateId(
+                            RENodeId::Object(vault.vault_id()),
+                            NodeModuleId::SELF,
+                            SubstateOffset::Vault(VaultOffset::LiquidFungible),
+                        ))
+                        .map(|mut output| output.substate.vault_liquid_fungible_mut().amount())
+                })
         } else {
             None
         }
@@ -289,23 +309,22 @@ impl TestRunner {
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
         if let Some(output) = self.substate_store.get_substate(&SubstateId(
             RENodeId::GlobalObject(package_address.into()),
-            NodeModuleId::PackageRoyalty,
-            SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator),
+            NodeModuleId::SELF,
+            SubstateOffset::Package(PackageOffset::Royalty),
         )) {
-            let royalty_vault: Own = output
+            output
                 .substate
-                .package_royalty_accumulator()
+                .package_royalty()
                 .royalty_vault
-                .expect("FIXME: cleanup royalty vault mess")
-                .clone();
-
-            self.substate_store
-                .get_substate(&SubstateId(
-                    RENodeId::Object(royalty_vault.vault_id()),
-                    NodeModuleId::SELF,
-                    SubstateOffset::Vault(VaultOffset::LiquidFungible),
-                ))
-                .map(|mut output| output.substate.vault_liquid_fungible_mut().amount())
+                .and_then(|vault| {
+                    self.substate_store
+                        .get_substate(&SubstateId(
+                            RENodeId::Object(vault.vault_id()),
+                            NodeModuleId::SELF,
+                            SubstateOffset::Vault(VaultOffset::LiquidFungible),
+                        ))
+                        .map(|mut output| output.substate.vault_liquid_fungible_mut().amount())
+                })
         } else {
             None
         }
@@ -422,7 +441,7 @@ impl TestRunner {
         receipt.expect_commit_success();
 
         let account_component = receipt
-            .expect_commit()
+            .expect_commit(true)
             .entity_changes
             .new_component_addresses[0];
 
@@ -538,7 +557,7 @@ impl TestRunner {
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
         let address = receipt
-            .expect_commit()
+            .expect_commit(true)
             .entity_changes
             .new_component_addresses[0];
         address
@@ -559,7 +578,10 @@ impl TestRunner {
 
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
-        receipt.expect_commit().entity_changes.new_package_addresses[0]
+        receipt
+            .expect_commit(true)
+            .entity_changes
+            .new_package_addresses[0]
     }
 
     pub fn publish_package_with_owner(
@@ -575,7 +597,10 @@ impl TestRunner {
 
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
-        receipt.expect_commit().entity_changes.new_package_addresses[0]
+        receipt
+            .expect_commit(true)
+            .entity_changes
+            .new_package_addresses[0]
     }
 
     pub fn compile_and_publish<P: AsRef<Path>>(&mut self, package_dir: P) -> PackageAddress {
@@ -755,7 +780,7 @@ impl TestRunner {
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
         receipt
-            .expect_commit()
+            .expect_commit(true)
             .entity_changes
             .new_resource_addresses[0]
     }
@@ -901,7 +926,7 @@ impl TestRunner {
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
         receipt
-            .expect_commit()
+            .expect_commit(true)
             .entity_changes
             .new_resource_addresses[0]
     }
@@ -927,7 +952,7 @@ impl TestRunner {
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
         receipt
-            .expect_commit()
+            .expect_commit(true)
             .entity_changes
             .new_resource_addresses[0]
     }
@@ -954,7 +979,7 @@ impl TestRunner {
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
         receipt
-            .expect_commit()
+            .expect_commit(true)
             .entity_changes
             .new_resource_addresses[0]
     }
@@ -1085,7 +1110,7 @@ impl TestRunner {
             transaction_hash,
             AuthZoneParams {
                 initial_proofs: vec![],
-                virtualizable_proofs_resource_addresses: BTreeSet::new(),
+                virtual_resources: BTreeSet::new(),
             },
             SystemLoanFeeReserve::no_fee(),
             FeeTable::new(),
@@ -1127,11 +1152,6 @@ impl TestRunner {
                     NodeModuleId::ComponentRoyalty => (
                         ROYALTY_PACKAGE,
                         COMPONENT_ROYALTY_BLUEPRINT.into(),
-                        event_name.clone(),
-                    ),
-                    NodeModuleId::PackageRoyalty => (
-                        ROYALTY_PACKAGE,
-                        PACKAGE_ROYALTY_BLUEPRINT.into(),
                         event_name.clone(),
                     ),
                     NodeModuleId::FunctionAccessRules => (

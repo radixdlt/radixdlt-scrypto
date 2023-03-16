@@ -20,7 +20,7 @@ fn bench_spin_loop(c: &mut Criterion) {
                 .build(),
             vec![],
         )
-        .expect_commit()
+        .expect_commit(true)
         .entity_changes
         .new_component_addresses[0];
 
