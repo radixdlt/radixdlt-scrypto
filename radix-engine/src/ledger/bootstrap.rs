@@ -68,7 +68,7 @@ pub fn create_genesis(
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: manifest_encode(&PackagePublishNativeInput {
+            args: to_manifest_value(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: PACKAGE_CODE_ID,
                 schema: PackageNativePackage::schema(),
