@@ -35,7 +35,7 @@ use transaction::model::AuthZoneParams;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
     VisibilityError(RENodeId),
-    Unauthorized(Option<ActorIdentifier>, MethodAuthorization),
+    Unauthorized(ActorIdentifier, MethodAuthorization),
 }
 
 #[derive(Debug, Clone)]
@@ -343,7 +343,7 @@ impl KernelModule for AuthModule {
     fn before_push_frame<Y: KernelModuleApi<RuntimeError>>(
         api: &mut Y,
         callee: &Actor,
-        call_frame_update: &mut CallFrameUpdate,
+        _call_frame_update: &mut CallFrameUpdate,
         args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         let method_auth = match &callee.identifier {
@@ -351,11 +351,36 @@ impl KernelModule for AuthModule {
             ActorIdentifier::Function(function) => Self::function_auth(function, api)?,
         };
 
-        let is_barrier = Self::is_actor_barrier(callee);
+        let mut barrier_crossing = if Self::is_actor_barrier(callee) {
+            0usize
+        } else {
+            1usize
+        };
+        let mut auth_zones = Vec::<AuthZone>::new();
+        let mut handles = Vec::<LockHandle>::new();
+        loop {
+            if let Some(auth_zone_id) = api.kernel_get_module_state().auth.auth_zone_stack.pop() {
+                let handle = api.kernel_lock_substate(
+                    auth_zone_id,
+                    NodeModuleId::SELF,
+                    SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
+                    LockFlags::read_only(),
+                )?;
+                let auth_zone: &AuthZone = api.kernel_get_substate_ref(handle)?;
+                auth_zones.push(auth_zone.clone());
+                handles.push(handle);
+            }
 
-        if !auth_zone_stack.check_auth(is_barrier, &method_auth, api)? {
+            if barrier_crossing == 0 {
+                break;
+            } else {
+                barrier_crossing -= 1;
+            }
+        }
+
+        if !Authentication::verify_method_auth(&method_auth, &auth_zones, api)? {
             return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                AuthError::Unauthorized(callee.as_ref().map(|a| a.identifier.clone()), method_auth),
+                AuthError::Unauthorized(callee.identifier.clone(), method_auth),
             )));
         }
 
@@ -374,7 +399,7 @@ impl KernelModule for AuthModule {
 
         // Add Package Actor Auth
         let mut virtual_non_fungibles_non_extending = BTreeSet::new();
-        if let Some(actor) = actor {
+        if let Some(actor) = &actor {
             let package_address = actor.fn_identifier.package_address();
             let id = scrypto_encode(&package_address).unwrap();
             let non_fungible_global_id =
@@ -384,10 +409,10 @@ impl KernelModule for AuthModule {
 
         // Prepare a new auth zone
         let is_barrier = Self::is_barrier(&actor);
-        let auth_module = api.kernel_get_module_state().auth;
+        let auth_module = &api.kernel_get_module_state().auth;
         let auth_zone = if auth_module.auth_zone_stack.is_empty() {
-            let virtual_resources = auth_module.params.virtual_resources;
-            let virtual_non_fungibles = auth_module.params.initial_proofs.into_iter().collect();
+            let virtual_resources = auth_module.params.virtual_resources.clone();
+            let virtual_non_fungibles = auth_module.params.initial_proofs.clone();
             AuthZone::new(
                 vec![],
                 virtual_resources,
