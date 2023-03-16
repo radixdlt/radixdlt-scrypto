@@ -2,11 +2,16 @@ use scrypto::api::ClientPackageApi;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 use scrypto::prelude::*;
 
-#[derive(NonFungibleData)]
+#[derive(Debug, PartialEq, Eq, ScryptoSbor, NonFungibleData)]
 pub struct Sandwich {
     pub name: String,
     #[mutable]
     pub available: bool,
+    pub tastes_great: bool,
+    #[mutable]
+    pub reference: Option<ResourceAddress>,
+    #[mutable]
+    pub own: Option<Own>,
 }
 
 #[blueprint]
@@ -23,7 +28,7 @@ mod non_fungible_test {
                 .mint_initial_supply(1);
 
             // Create non-fungible resource with mutable supply
-            let resource_address = ResourceBuilder::new_integer_non_fungible()
+            let resource_address = ResourceBuilder::new_integer_non_fungible::<Sandwich>()
                 .metadata("name", "Katz's Sandwiches")
                 .mintable(
                     rule!(require(mint_badge.resource_address())),
@@ -43,6 +48,9 @@ mod non_fungible_test {
                     Sandwich {
                         name: "Test".to_owned(),
                         available: false,
+                        tastes_great: true,
+                        reference: Some(resource_address),
+                        own: None,
                     },
                 )
             });
@@ -55,10 +63,8 @@ mod non_fungible_test {
             mint_badge.authorize(|| {
                 borrow_resource_manager!(proof.resource_address()).update_non_fungible_data(
                     &proof.non_fungible_local_id(),
-                    Sandwich {
-                        name: "Test".to_owned(),
-                        available: true,
-                    },
+                    "available",
+                    true,
                 )
             });
 
@@ -73,10 +79,16 @@ mod non_fungible_test {
                     Sandwich {
                         name: "Zero".to_owned(),
                         available: true,
+                        tastes_great: true,
+                        reference: None,
+                        own: None,
                     },
                     Sandwich {
                         name: "One".to_owned(),
                         available: true,
+                        tastes_great: true,
+                        reference: None,
+                        own: None,
                     },
                 ])
         }
@@ -90,6 +102,9 @@ mod non_fungible_test {
                         Sandwich {
                             name: "One".to_owned(),
                             available: true,
+                            tastes_great: true,
+                            reference: None,
+                            own: None,
                         },
                     ),
                     (
@@ -97,6 +112,9 @@ mod non_fungible_test {
                         Sandwich {
                             name: "Two".to_owned(),
                             available: true,
+                            tastes_great: true,
+                            reference: None,
+                            own: None,
                         },
                     ),
                     (
@@ -104,6 +122,9 @@ mod non_fungible_test {
                         Sandwich {
                             name: "Three".to_owned(),
                             available: true,
+                            tastes_great: true,
+                            reference: None,
+                            own: None,
                         },
                     ),
                 ])
@@ -117,22 +138,98 @@ mod non_fungible_test {
             );
         }
 
+        pub fn get_non_fungible_reference() -> (Bucket, Bucket) {
+            let (mint_badge, resource_address, bucket) = Self::create_non_fungible_mutable();
+
+            let data1: Sandwich = borrow_resource_manager!(resource_address)
+                .get_non_fungible_data(&NonFungibleLocalId::integer(0));
+
+            let data2: Sandwich = borrow_resource_manager!(data1.reference.unwrap())
+                .get_non_fungible_data(&NonFungibleLocalId::integer(0));
+
+            assert_eq!(data1, data2);
+
+            (mint_badge, bucket)
+        }
+
+        pub fn update_non_fungible_with_ownership() -> Bucket {
+            let (mint_badge, resource_address, bucket) = Self::create_non_fungible_mutable();
+
+            let vault = Vault::with_bucket(bucket);
+
+            mint_badge.authorize(|| {
+                borrow_resource_manager!(resource_address).update_non_fungible_data(
+                    &NonFungibleLocalId::integer(0),
+                    "own",
+                    Some(Own::Vault(vault.0)),
+                );
+            });
+
+            mint_badge
+        }
+
+        pub fn update_non_fungible(field: String, value: bool) -> (Bucket, Bucket) {
+            let (mint_badge, resource_address, bucket) = Self::create_non_fungible_mutable();
+
+            mint_badge.authorize(|| {
+                borrow_resource_manager!(resource_address).update_non_fungible_data(
+                    &NonFungibleLocalId::integer(0),
+                    &field,
+                    value,
+                );
+            });
+
+            (mint_badge, bucket)
+        }
+
+        pub fn update_and_get_non_fungible_reference(
+            reference: ResourceAddress,
+        ) -> (Bucket, Bucket) {
+            let (mint_badge, resource_address, bucket) = Self::create_non_fungible_mutable();
+
+            mint_badge.authorize(|| {
+                borrow_resource_manager!(resource_address).update_non_fungible_data(
+                    &NonFungibleLocalId::integer(0),
+                    "reference",
+                    Some(reference),
+                );
+            });
+
+            let data: Sandwich = borrow_resource_manager!(resource_address)
+                .get_non_fungible_data(&NonFungibleLocalId::integer(0));
+            assert_eq!(data.reference, Some(reference));
+            (mint_badge, bucket)
+        }
+
         pub fn update_and_get_non_fungible() -> (Bucket, Bucket) {
             let (mint_badge, resource_address, bucket) = Self::create_non_fungible_mutable();
-            let mut data: Sandwich = borrow_resource_manager!(resource_address)
+            let data: Sandwich = borrow_resource_manager!(resource_address)
                 .get_non_fungible_data(&NonFungibleLocalId::integer(0));
             assert_eq!(data.available, false);
 
-            data.available = true;
             mint_badge.authorize(|| {
-                borrow_resource_manager!(resource_address)
-                    .update_non_fungible_data(&NonFungibleLocalId::integer(0), data);
+                borrow_resource_manager!(resource_address).update_non_fungible_data(
+                    &NonFungibleLocalId::integer(0),
+                    "available",
+                    true,
+                );
             });
 
             let data: Sandwich = borrow_resource_manager!(resource_address)
                 .get_non_fungible_data(&NonFungibleLocalId::integer(0));
             assert_eq!(data.available, true);
             (mint_badge, bucket)
+        }
+
+        pub fn get_total_supply() {
+            let resource_address = ResourceBuilder::new_integer_non_fungible::<Sandwich>()
+                .metadata("name", "Katz's Sandwiches")
+                .create_with_no_initial_supply();
+
+            assert_eq!(
+                borrow_resource_manager!(resource_address).total_supply(),
+                Decimal::zero(),
+            );
         }
 
         pub fn non_fungible_exists() -> (Bucket, Bucket) {
@@ -294,23 +391,24 @@ mod non_fungible_test {
         }
 
         pub fn create_wrong_non_fungible_local_id_type() -> Bucket {
-            let mut encoded = BTreeMap::new();
-            encoded.insert(
+            let mut entries = BTreeMap::new();
+            entries.insert(
                 NonFungibleLocalId::integer(0),
-                (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
+                (scrypto_decode(&scrypto_encode(&()).unwrap()).unwrap(),),
             );
 
             // creating non-fungible id with id type set to default (UUID)
             let rtn = ScryptoEnv
                 .call_function(
                     RESOURCE_MANAGER_PACKAGE,
-                    RESOURCE_MANAGER_BLUEPRINT,
-                    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
-                    scrypto_encode(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
+                    NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+                    scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
                         id_type: NonFungibleIdType::UUID,
                         metadata: BTreeMap::new(),
                         access_rules: BTreeMap::new(),
-                        entries: encoded,
+                        non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                        entries,
                     })
                     .unwrap(),
                 )
@@ -323,12 +421,15 @@ mod non_fungible_test {
 
         pub fn create_string_non_fungible() -> Bucket {
             // creating non-fungible id with id type set to default (UUID)
-            ResourceBuilder::new_string_non_fungible().mint_initial_supply([
+            ResourceBuilder::new_string_non_fungible::<Sandwich>().mint_initial_supply([
                 (
                     "1".try_into().unwrap(),
                     Sandwich {
                         name: "One".to_owned(),
                         available: true,
+                        tastes_great: true,
+                        reference: None,
+                        own: None,
                     },
                 ),
                 (
@@ -336,18 +437,24 @@ mod non_fungible_test {
                     Sandwich {
                         name: "Two".to_owned(),
                         available: true,
+                        tastes_great: true,
+                        reference: None,
+                        own: None,
                     },
                 ),
             ])
         }
 
         pub fn create_bytes_non_fungible() -> Bucket {
-            ResourceBuilder::new_bytes_non_fungible().mint_initial_supply([
+            ResourceBuilder::new_bytes_non_fungible::<Sandwich>().mint_initial_supply([
                 (
                     1u32.to_le_bytes().to_vec().try_into().unwrap(),
                     Sandwich {
                         name: "One".to_owned(),
                         available: true,
+                        tastes_great: true,
+                        reference: None,
+                        own: None,
                     },
                 ),
                 (
@@ -355,27 +462,33 @@ mod non_fungible_test {
                     Sandwich {
                         name: "Two".to_owned(),
                         available: true,
+                        tastes_great: true,
+                        reference: None,
+                        own: None,
                     },
                 ),
             ])
         }
 
         pub fn create_uuid_non_fungible() -> Bucket {
-            ResourceBuilder::new_uuid_non_fungible().mint_initial_supply([Sandwich {
+            ResourceBuilder::new_uuid_non_fungible::<Sandwich>().mint_initial_supply([Sandwich {
                 name: "Zero".to_owned(),
                 available: true,
+                tastes_great: true,
+                reference: None,
+                own: None,
             }])
         }
 
         pub fn create_mintable_uuid_non_fungible() -> ResourceAddress {
-            ResourceBuilder::new_uuid_non_fungible()
+            ResourceBuilder::new_uuid_non_fungible::<Sandwich>()
                 .mintable(rule!(allow_all), rule!(deny_all))
                 .create_with_no_initial_supply()
         }
 
         pub fn create_uuid_non_fungible_and_mint() -> Bucket {
             // creating non-fungible id with id type set to default (UUID)
-            let resource_address = ResourceBuilder::new_uuid_non_fungible()
+            let resource_address = ResourceBuilder::new_uuid_non_fungible::<Sandwich>()
                 .mintable(rule!(allow_all), rule!(deny_all))
                 .metadata("name", "Katz's Sandwiches")
                 .create_with_no_initial_supply();
@@ -383,6 +496,9 @@ mod non_fungible_test {
             borrow_resource_manager!(resource_address).mint_uuid_non_fungible(Sandwich {
                 name: "Test".to_owned(),
                 available: false,
+                tastes_great: true,
+                reference: None,
+                own: None,
             })
         }
     }

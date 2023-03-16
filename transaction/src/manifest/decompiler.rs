@@ -2,7 +2,6 @@ use crate::data::*;
 use crate::errors::*;
 use crate::model::*;
 use crate::validation::*;
-use radix_engine_common::data::scrypto::model::NonFungibleLocalId;
 use radix_engine_interface::address::{AddressError, Bech32Encoder};
 use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
@@ -11,10 +10,10 @@ use radix_engine_interface::blueprints::account::{ACCOUNT_BLUEPRINT, ACCOUNT_CRE
 use radix_engine_interface::blueprints::epoch_manager::EPOCH_MANAGER_CREATE_VALIDATOR_IDENT;
 use radix_engine_interface::blueprints::identity::{IDENTITY_BLUEPRINT, IDENTITY_CREATE_IDENT};
 use radix_engine_interface::blueprints::resource::{
-    RESOURCE_MANAGER_BLUEPRINT, RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT,
-    RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
-    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT,
-    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
+    FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+    FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+    NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
 };
 use radix_engine_interface::constants::{
     ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, EPOCH_MANAGER, IDENTITY_PACKAGE,
@@ -114,6 +113,7 @@ pub fn decompile_instruction<F: fmt::Write>(
     instruction: &Instruction,
     context: &mut DecompilationContext,
 ) -> Result<(), DecompileError> {
+    println!("{:?}", instruction);
     match instruction {
         Instruction::TakeFromWorktop { resource_address } => {
             let bucket_id = context
@@ -363,29 +363,29 @@ pub fn decompile_instruction<F: fmt::Write>(
                 }
                 (
                     &RESOURCE_MANAGER_PACKAGE,
-                    RESOURCE_MANAGER_BLUEPRINT,
-                    RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT,
+                    FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                    FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
                 ) => {
                     write!(f, "CREATE_FUNGIBLE_RESOURCE")?;
                 }
                 (
                     &RESOURCE_MANAGER_PACKAGE,
-                    RESOURCE_MANAGER_BLUEPRINT,
-                    RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
+                    FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                    FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 ) => {
                     write!(f, "CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY")?;
                 }
                 (
                     &RESOURCE_MANAGER_PACKAGE,
-                    RESOURCE_MANAGER_BLUEPRINT,
-                    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT,
+                    NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
                 ) => {
                     write!(f, "CREATE_NON_FUNGIBLE_RESOURCE")?;
                 }
                 (
                     &RESOURCE_MANAGER_PACKAGE,
-                    RESOURCE_MANAGER_BLUEPRINT,
-                    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
+                    NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 ) => {
                     write!(f, "CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY")?;
                 }
@@ -526,24 +526,22 @@ pub fn decompile_instruction<F: fmt::Write>(
         }
         Instruction::MintNonFungible {
             resource_address,
-            entries,
+            args,
         } => {
-            let entries = transform_non_fungible_mint_params(entries)?;
-
             f.write_str("MINT_NON_FUNGIBLE")?;
             format_typed_value(f, context, resource_address)?;
-            format_typed_value(f, context, &entries)?;
+            f.write_str("\n    ")?;
+            format_manifest_value(f, args, &context.for_value_display())?;
             f.write_str(";")?;
         }
         Instruction::MintUuidNonFungible {
             resource_address,
-            entries,
+            args,
         } => {
-            let entries = transform_uuid_non_fungible_mint_params(entries)?;
-
             f.write_str("MINT_UUID_NON_FUNGIBLE")?;
             format_typed_value(f, context, resource_address)?;
-            format_typed_value(f, context, &entries)?;
+            f.write_str("\n    ")?;
+            format_manifest_value(f, args, &context.for_value_display())?;
             f.write_str(";")?;
         }
         Instruction::AssertAccessRule { access_rule } => {
@@ -582,34 +580,4 @@ pub fn format_encoded_args<F: fmt::Write>(
     }
 
     Ok(())
-}
-
-fn transform_non_fungible_mint_params(
-    mint_params: &BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>,
-) -> Result<BTreeMap<NonFungibleLocalId, (ManifestValue, ManifestValue)>, DecodeError> {
-    let mut mint_params_manifest_value =
-        BTreeMap::<NonFungibleLocalId, (ManifestValue, ManifestValue)>::new();
-    for (id, (immutable_data, mutable_data)) in mint_params.into_iter() {
-        mint_params_manifest_value.insert(
-            id.clone(),
-            (
-                manifest_decode(&immutable_data)?,
-                manifest_decode(&mutable_data)?,
-            ),
-        );
-    }
-    Ok(mint_params_manifest_value)
-}
-
-fn transform_uuid_non_fungible_mint_params(
-    mint_params: &Vec<(Vec<u8>, Vec<u8>)>,
-) -> Result<Vec<(ManifestValue, ManifestValue)>, DecodeError> {
-    let mut mint_params_manifest_value = Vec::<(ManifestValue, ManifestValue)>::new();
-    for (immutable_data, mutable_data) in mint_params.into_iter() {
-        mint_params_manifest_value.push((
-            manifest_decode(&immutable_data)?,
-            manifest_decode(&mutable_data)?,
-        ));
-    }
-    Ok(mint_params_manifest_value)
 }

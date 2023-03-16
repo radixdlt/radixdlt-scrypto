@@ -209,11 +209,11 @@ impl Parser {
             },
             TokenKind::MintNonFungible => Instruction::MintNonFungible {
                 resource_address: self.parse_value()?,
-                entries: self.parse_value()?,
+                args: self.parse_value()?,
             },
             TokenKind::MintUuidNonFungible => Instruction::MintUuidNonFungible {
                 resource_address: self.parse_value()?,
-                entries: self.parse_value()?,
+                args: self.parse_value()?,
             },
             TokenKind::CreateFungibleResource => Instruction::CreateFungibleResource {
                 divisibility: self.parse_value()?,
@@ -230,12 +230,14 @@ impl Parser {
             }
             TokenKind::CreateNonFungibleResource => Instruction::CreateNonFungibleResource {
                 id_type: self.parse_value()?,
+                schema: self.parse_value()?,
                 metadata: self.parse_value()?,
                 access_rules: self.parse_value()?,
             },
             TokenKind::CreateNonFungibleResourceWithInitialSupply => {
                 Instruction::CreateNonFungibleResourceWithInitialSupply {
                     id_type: self.parse_value()?,
+                    schema: self.parse_value()?,
                     metadata: self.parse_value()?,
                     access_rules: self.parse_value()?,
                     initial_supply: self.parse_value()?,

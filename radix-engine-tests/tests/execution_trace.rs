@@ -582,7 +582,7 @@ fn test_worktop_changes() {
                     ]
                     .into()
                 )),
-                WorktopChange::Take(ResourceSpecifier::Amount(fungible_resource, 100.into()))
+                WorktopChange::Take(ResourceSpecifier::Amount(fungible_resource, 100.into())),
             ])
         );
     }

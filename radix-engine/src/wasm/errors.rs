@@ -134,6 +134,7 @@ pub enum WasmRuntimeError {
     InvalidMetadata(DecodeError),
     /// Invalid component id
     InvalidComponentId(DecodeError),
+    InvalidKeyValueStoreSchema(DecodeError),
     InvalidValue(DecodeError),
     // Invalid EventSchema
     InvalidEventSchema(DecodeError),

@@ -8,6 +8,7 @@ use crate::blueprints::epoch_manager::{
     UpdateAcceptingStakeDelegationStateEvent,
 };
 use crate::blueprints::identity::IdentityNativePackage;
+use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::resource::*;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::blueprints::transaction_runtime::TransactionRuntimeNativePackage;
@@ -174,18 +175,36 @@ pub fn create_genesis(
                 default_package_access_rule: AccessRule::AllowAll,
                 event_schema: BTreeMap::from([
                     (
-                        RESOURCE_MANAGER_BLUEPRINT.into(),
+                        FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.into(),
                         [
                             generate_full_schema_from_single_type::<
                                 VaultCreationEvent,
                                 ScryptoCustomTypeExtension,
                             >(),
                             generate_full_schema_from_single_type::<
-                                MintResourceEvent,
+                                MintFungibleResourceEvent,
                                 ScryptoCustomTypeExtension,
                             >(),
                             generate_full_schema_from_single_type::<
-                                BurnResourceEvent,
+                                BurnFungibleResourceEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                        ]
+                        .into(),
+                    ),
+                    (
+                        NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.into(),
+                        [
+                            generate_full_schema_from_single_type::<
+                                VaultCreationEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                            generate_full_schema_from_single_type::<
+                                MintNonFungibleResourceEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                            generate_full_schema_from_single_type::<
+                                BurnNonFungibleResourceEvent,
                                 ScryptoCustomTypeExtension,
                             >(),
                         ]
@@ -234,11 +253,11 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::GlobalObject(RADIX_TOKEN.into()));
         instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
-            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT
+            blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT
                 .to_string(),
             args: to_manifest_value(
-                &ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput {
+                &FungibleResourceManagerCreateWithInitialSupplyAndAddressInput {
                     divisibility: 18,
                     metadata,
                     access_rules,
@@ -259,10 +278,11 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::GlobalObject(PACKAGE_TOKEN.into()));
         instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
-            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT.to_string(),
-            args: to_manifest_value(&ResourceManagerCreateNonFungibleWithAddressInput {
+            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
+            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
                 id_type: NonFungibleIdType::Bytes,
+                non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
                 resource_address,
@@ -546,10 +566,11 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()));
         instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
-            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT.to_string(),
-            args: to_manifest_value(&ResourceManagerCreateNonFungibleWithAddressInput {
+            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
+            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
                 id_type: NonFungibleIdType::Bytes,
+                non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
                 resource_address,
@@ -567,10 +588,11 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()));
         instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
-            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT.to_string(),
-            args: to_manifest_value(&ResourceManagerCreateNonFungibleWithAddressInput {
+            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
+            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
                 id_type: NonFungibleIdType::Bytes,
+                non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
                 resource_address,
@@ -588,10 +610,11 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::GlobalObject(SYSTEM_TOKEN.into()));
         instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
-            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT.to_string(),
-            args: to_manifest_value(&ResourceManagerCreateNonFungibleWithAddressInput {
+            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
+            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
                 id_type: NonFungibleIdType::Bytes,
+                non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
                 resource_address,

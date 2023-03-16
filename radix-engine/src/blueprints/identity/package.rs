@@ -150,7 +150,7 @@ impl IdentityBlueprint {
             node_id,
             RENodeInit::Object(btreemap!()),
             btreemap!(
-                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
                     package_address: IDENTITY_PACKAGE,
                     blueprint_name: IDENTITY_BLUEPRINT.to_string(),
                     global: false,

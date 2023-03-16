@@ -1,6 +1,6 @@
 use super::{EpochChangeEvent, RoundChangeEvent, ValidatorCreator};
-use crate::errors::RuntimeError;
 use crate::errors::ApplicationError;
+use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use native_sdk::access_rules::AccessRulesObject;
@@ -83,13 +83,14 @@ impl EpochManagerBlueprint {
 
             access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
 
-            let resource_manager = ResourceManager::new_non_fungible_with_address(
-                NonFungibleIdType::Bytes,
-                metadata,
-                access_rules,
-                olympia_validator_token_address,
-                api,
-            )?;
+            let resource_manager =
+                ResourceManager::new_non_fungible_with_address::<(), Y, RuntimeError>(
+                    NonFungibleIdType::Bytes,
+                    metadata,
+                    access_rules,
+                    olympia_validator_token_address,
+                    api,
+                )?;
 
             resource_manager
         };

@@ -155,12 +155,12 @@ pub enum Instruction {
 
     MintNonFungible {
         resource_address: Value,
-        entries: Value,
+        args: Value,
     },
 
     MintUuidNonFungible {
         resource_address: Value,
-        entries: Value,
+        args: Value,
     },
 
     CreateFungibleResource {
@@ -178,12 +178,14 @@ pub enum Instruction {
 
     CreateNonFungibleResource {
         id_type: Value,
+        schema: Value,
         metadata: Value,
         access_rules: Value,
     },
 
     CreateNonFungibleResourceWithInitialSupply {
         id_type: Value,
+        schema: Value,
         metadata: Value,
         access_rules: Value,
         initial_supply: Value,

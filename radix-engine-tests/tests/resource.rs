@@ -1,4 +1,4 @@
-use radix_engine::blueprints::resource::ResourceManagerError;
+use radix_engine::blueprints::resource::FungibleResourceManagerError;
 use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
@@ -100,7 +100,7 @@ fn mint_with_bad_granularity_should_fail() {
     // Assert
     receipt.expect_specific_failure(|e| {
         if let RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(
-            ResourceManagerError::InvalidAmount(amount, granularity),
+            FungibleResourceManagerError::InvalidAmount(amount, granularity),
         )) = e
         {
             amount.eq(&dec!("0.1")) && *granularity == 0
@@ -142,7 +142,7 @@ fn mint_too_much_should_fail() {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(
-                ResourceManagerError::MaxMintAmountExceeded
+                FungibleResourceManagerError::MaxMintAmountExceeded
             ))
         )
     })

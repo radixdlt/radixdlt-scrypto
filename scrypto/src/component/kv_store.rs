@@ -1,4 +1,3 @@
-use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
     KeyValueStoreId, KeyValueStoreOffset, RENodeId, SubstateOffset,
@@ -9,6 +8,7 @@ use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::OWN_
 use radix_engine_interface::data::scrypto::*;
 use sbor::rust::marker::PhantomData;
 use sbor::*;
+use scrypto_schema::KeyValueStoreSchema;
 
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::{DataRef, DataRefMut, OriginalData};
@@ -16,17 +16,27 @@ use crate::runtime::{DataRef, DataRefMut, OriginalData};
 // TODO: optimize `rust_value -> bytes -> scrypto_value` conversion.
 
 /// A scalable key-value map which loads entries on demand.
-pub struct KeyValueStore<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> {
+pub struct KeyValueStore<
+    K: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
+    V: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
+> {
     pub id: KeyValueStoreId,
     pub key: PhantomData<K>,
     pub value: PhantomData<V>,
 }
 
-impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValueStore<K, V> {
+impl<
+        K: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
+        V: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
+    > KeyValueStore<K, V>
+{
     /// Creates a new key value store.
     pub fn new() -> Self {
         let mut env = ScryptoEnv;
-        let id = env.new_key_value_store().unwrap();
+
+        let schema = KeyValueStoreSchema::new::<K, V>(true);
+
+        let id = env.new_key_value_store(schema).unwrap();
 
         Self {
             id,
@@ -50,13 +60,13 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValu
         let raw_bytes = env.sys_read_substate(handle).unwrap();
 
         // Decode and create Ref
-        let substate: KeyValueStoreEntrySubstate = scrypto_decode(&raw_bytes).unwrap();
+        let substate: Option<ScryptoValue> = scrypto_decode(&raw_bytes).unwrap();
         match substate {
-            KeyValueStoreEntrySubstate::Some(value) => Some(DataRef::new(
+            Option::Some(value) => Some(DataRef::new(
                 handle,
                 scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap(),
             )),
-            KeyValueStoreEntrySubstate::None => {
+            Option::None => {
                 env.sys_drop_lock(handle).unwrap();
                 None
             }
@@ -77,9 +87,9 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValu
         let raw_bytes = env.sys_read_substate(handle).unwrap();
 
         // Decode and create RefMut
-        let substate: KeyValueStoreEntrySubstate = scrypto_decode(&raw_bytes).unwrap();
+        let substate: Option<ScryptoValue> = scrypto_decode(&raw_bytes).unwrap();
         match substate {
-            KeyValueStoreEntrySubstate::Some(value) => {
+            Option::Some(value) => {
                 let rust_value = scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap();
                 Some(DataRefMut::new(
                     handle,
@@ -87,7 +97,7 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValu
                     rust_value,
                 ))
             }
-            KeyValueStoreEntrySubstate::None => {
+            Option::None => {
                 env.sys_drop_lock(handle).unwrap();
                 None
             }
@@ -107,14 +117,9 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValu
                 LockFlags::MUTABLE,
             )
             .unwrap();
-        env.sys_write_substate(
-            handle,
-            scrypto_encode(&KeyValueStoreEntrySubstate::Some(
-                scrypto_decode(&value_payload).unwrap(),
-            ))
-            .unwrap(),
-        )
-        .unwrap();
+        let substate: Option<ScryptoValue> = Option::Some(scrypto_decode(&value_payload).unwrap());
+        env.sys_write_substate(handle, scrypto_encode(&substate).unwrap())
+            .unwrap();
         env.sys_drop_lock(handle).unwrap();
     }
 }
@@ -122,8 +127,10 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValu
 //========
 // binary
 //========
-impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode>
-    Categorize<ScryptoCustomValueKind> for KeyValueStore<K, V>
+impl<
+        K: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
+        V: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
+    > Categorize<ScryptoCustomValueKind> for KeyValueStore<K, V>
 {
     #[inline]
     fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
@@ -132,8 +139,8 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode>
 }
 
 impl<
-        K: ScryptoEncode + ScryptoDecode,
-        V: ScryptoEncode + ScryptoDecode,
+        K: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
+        V: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
         E: Encoder<ScryptoCustomValueKind>,
     > Encode<ScryptoCustomValueKind, E> for KeyValueStore<K, V>
 {
@@ -149,8 +156,8 @@ impl<
 }
 
 impl<
-        K: ScryptoEncode + ScryptoDecode,
-        V: ScryptoEncode + ScryptoDecode,
+        K: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
+        V: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
         D: Decoder<ScryptoCustomValueKind>,
     > Decode<ScryptoCustomValueKind, D> for KeyValueStore<K, V>
 {
@@ -170,8 +177,10 @@ impl<
     }
 }
 
-impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode>
-    Describe<ScryptoCustomTypeKind> for KeyValueStore<K, V>
+impl<
+        K: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
+        V: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
+    > Describe<ScryptoCustomTypeKind> for KeyValueStore<K, V>
 {
     const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown([OWN_KEY_VALUE_STORE_ID]);
 }
