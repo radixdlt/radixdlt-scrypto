@@ -40,6 +40,26 @@ impl AuthZone {
         }
     }
 
+    pub fn proofs(&self) -> &[Proof] {
+        &self.proofs
+    }
+
+    pub fn virtual_resources(&self) -> &BTreeSet<ResourceAddress> {
+        &self.virtual_resources
+    }
+
+    pub fn virtual_non_fungibles(&self) -> &BTreeSet<NonFungibleGlobalId> {
+        &self.virtual_non_fungibles
+    }
+
+    pub fn virtual_non_fungibles_non_extending(&self) -> &BTreeSet<NonFungibleGlobalId> {
+        &self.virtual_non_fungibles_non_extending
+    }
+
+    pub fn is_barrier(&self) -> bool {
+        self.barrier
+    }
+
     pub fn push(&mut self, proof: Proof) {
         self.proofs.push(proof);
     }

@@ -1,3 +1,4 @@
+use crate::blueprints::resource::AuthZone;
 use crate::errors::RuntimeError;
 use crate::system::kernel_modules::auth::*;
 use crate::types::*;
@@ -6,9 +7,9 @@ use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::ops::Fn;
 
-pub struct AuthVerification;
+pub struct Authentication;
 
-impl AuthVerification {
+impl Authentication {
     fn proof_matches<Y: ClientObjectApi<RuntimeError>>(
         resource_rule: &HardResourceOrNonFungible,
         proof: &Proof,
@@ -37,7 +38,7 @@ impl AuthVerification {
 
     fn auth_zone_stack_matches<P, Y>(
         mut barriers_crossings_allowed: u32,
-        auth_zones: &AuthZoneStackSubstate,
+        auth_zones: &[AuthZone],
         api: &mut Y,
         check: P,
     ) -> Result<bool, RuntimeError>
@@ -45,12 +46,12 @@ impl AuthVerification {
         Y: ClientObjectApi<RuntimeError>,
         P: Fn(&AuthZone, usize, &mut Y) -> Result<bool, RuntimeError>,
     {
-        for (rev_index, auth_zone) in auth_zones.auth_zones.iter().rev().enumerate() {
+        for (rev_index, auth_zone) in auth_zones.iter().rev().enumerate() {
             if check(auth_zone, rev_index, api)? {
                 return Ok(true);
             }
 
-            if auth_zone.barrier {
+            if auth_zone.is_barrier() {
                 if barriers_crossings_allowed == 0 {
                     return Ok(false);
                 }
@@ -65,7 +66,7 @@ impl AuthVerification {
         barrier_crossings_allowed: u32,
         resource_rule: &HardResourceOrNonFungible,
         amount: Decimal,
-        auth_zone: &AuthZoneStackSubstate,
+        auth_zone: &[AuthZone],
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         Self::auth_zone_stack_matches(
@@ -74,7 +75,7 @@ impl AuthVerification {
             api,
             |auth_zone, _, api| {
                 // FIXME: Need to check the composite max amount rather than just each proof individually
-                for p in &auth_zone.proofs {
+                for p in auth_zone.proofs() {
                     if Self::proof_matches(resource_rule, p, api)? && p.sys_amount(api)? >= amount {
                         return Ok(true);
                     }
@@ -88,7 +89,7 @@ impl AuthVerification {
     fn auth_zone_stack_matches_rule<Y: ClientObjectApi<RuntimeError>>(
         barrier_crossings_allowed: u32,
         resource_rule: &HardResourceOrNonFungible,
-        auth_zone: &AuthZoneStackSubstate,
+        auth_zone: &[AuthZone],
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         Self::auth_zone_stack_matches(
@@ -101,7 +102,7 @@ impl AuthVerification {
                 {
                     if rev_index == 0 {
                         if auth_zone
-                            .virtual_non_fungibles_non_extending
+                            .virtual_non_fungibles_non_extending()
                             .contains(&non_fungible_global_id)
                         {
                             return Ok(true);
@@ -109,20 +110,20 @@ impl AuthVerification {
                     }
 
                     if auth_zone
-                        .virtual_non_fungibles
+                        .virtual_non_fungibles()
                         .contains(&non_fungible_global_id)
                     {
                         return Ok(true);
                     }
                     if auth_zone
-                        .virtual_resources
+                        .virtual_resources()
                         .contains(&non_fungible_global_id.resource_address())
                     {
                         return Ok(true);
                     }
                 }
 
-                for p in &auth_zone.proofs {
+                for p in auth_zone.proofs() {
                     if Self::proof_matches(resource_rule, p, api)? {
                         return Ok(true);
                     }
@@ -136,7 +137,7 @@ impl AuthVerification {
     pub fn verify_proof_rule<Y: ClientObjectApi<RuntimeError>>(
         barrier_crossings_allowed: u32,
         proof_rule: &HardProofRule,
-        auth_zone: &AuthZoneStackSubstate,
+        auth_zone: &[AuthZone],
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         match proof_rule {
@@ -220,7 +221,7 @@ impl AuthVerification {
     pub fn verify_auth_rule<Y: ClientObjectApi<RuntimeError>>(
         barrier_crossings_allowed: u32,
         auth_rule: &HardAuthRule,
-        auth_zone: &AuthZoneStackSubstate,
+        auth_zone: &[AuthZone],
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         match auth_rule {
@@ -250,7 +251,7 @@ impl AuthVerification {
     pub fn verify_method_auth<Y: ClientObjectApi<RuntimeError>>(
         barrier_crossings_allowed: u32,
         method_auth: &MethodAuthorization,
-        auth_zone: &AuthZoneStackSubstate,
+        auth_zone: &[AuthZone],
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         match method_auth {
