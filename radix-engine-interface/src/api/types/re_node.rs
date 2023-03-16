@@ -34,6 +34,8 @@ pub enum RENodeId {
     GlobalObject(Address),
     KeyValueStore(KeyValueStoreId),
     NonFungibleStore(NonFungibleStoreId),
+    // This is only used for owned objects (global objects have addresses)
+    // TODO: Rename to OwnedObject when it won't cause so many merge conflicts!
     Object(ObjectId),
 }
 
@@ -56,15 +58,29 @@ impl fmt::Debug for RENodeId {
     }
 }
 
-impl Into<[u8; OBJECT_ID_LENGTH]> for RENodeId {
-    fn into(self) -> [u8; OBJECT_ID_LENGTH] {
-        match self {
+impl From<RENodeId> for [u8; OBJECT_ID_LENGTH] {
+    fn from(value: RENodeId) -> Self {
+        match value {
             RENodeId::KeyValueStore(id) => id,
             RENodeId::NonFungibleStore(id) => id,
             RENodeId::Object(id) => id,
             RENodeId::TransactionRuntime => [4u8; OBJECT_ID_LENGTH], // TODO: Remove, this is here to preserve receiver in invocation for now
             RENodeId::AuthZoneStack => [5u8; OBJECT_ID_LENGTH], // TODO: Remove, this is here to preserve receiver in invocation for now
-            _ => panic!("Not a stored id: {:?}", self),
+            _ => panic!("Not a stored id: {:?}", value),
+        }
+    }
+}
+
+impl From<RENodeId> for Vec<u8> {
+    fn from(value: RENodeId) -> Self {
+        // Note - these are all guaranteed to be distinct
+        match value {
+            RENodeId::KeyValueStore(id) => id.to_vec(),
+            RENodeId::NonFungibleStore(id) => id.to_vec(),
+            RENodeId::Object(id) => id.to_vec(),
+            RENodeId::TransactionRuntime => [4u8; OBJECT_ID_LENGTH].to_vec(), // TODO: Remove, this is here to preserve receiver in invocation for now
+            RENodeId::AuthZoneStack => [5u8; OBJECT_ID_LENGTH].to_vec(), // TODO: Remove, this is here to preserve receiver in invocation for now
+            RENodeId::GlobalObject(address) => address.to_vec(),
         }
     }
 }
