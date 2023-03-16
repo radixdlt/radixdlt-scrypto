@@ -123,6 +123,10 @@ where
     fn get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
         Ok(self.kernel_get_current_actor().unwrap().fn_identifier)
     }
+
+    fn get_current_auth_zone(&mut self) -> Result<ObjectId, RuntimeError> {
+        todo!()
+    }
 }
 
 impl<'g, 's, W> ClientObjectApi<RuntimeError> for Kernel<'g, 's, W>
