@@ -215,19 +215,11 @@ where
         );
 
         let access_rule = rule!(require(non_fungible_global_id));
-        let (local_id, access_rules) = IdentityBlueprint::create_virtual(access_rule, self)?;
-
-        let access_rules = AccessRulesObject::sys_new(access_rules, self)?;
-        let metadata = Metadata::sys_create(self)?;
-        let royalty = ComponentRoyalty::sys_create(self, RoyaltyConfig::default())?;
+        let (local_id, modules) = IdentityBlueprint::create_virtual(access_rule, self)?;
 
         self.globalize_with_address(
             local_id,
-            btreemap!(
-                NodeModuleId::AccessRules => access_rules.id(),
-                NodeModuleId::Metadata => metadata.id(),
-                NodeModuleId::ComponentRoyalty => royalty.id(),
-            ),
+            modules,
             global_node_id.into(),
         )?;
 

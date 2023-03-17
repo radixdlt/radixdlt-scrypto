@@ -11,7 +11,7 @@ use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
-use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
+use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::BlueprintSchema;
@@ -142,9 +142,9 @@ impl IdentityBlueprint {
     pub fn create_virtual<Y>(
         access_rule: AccessRule,
         api: &mut Y,
-    ) -> Result<(RENodeId, AccessRulesConfig), RuntimeError>
+    ) -> Result<(RENodeId, BTreeMap<NodeModuleId, ObjectId>), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientSubstateApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let mut access_rules = AccessRulesConfig::new();
         access_rules.set_access_rule_and_mutability(
@@ -157,6 +157,9 @@ impl IdentityBlueprint {
             AccessRule::AllowAll,
             AccessRule::DenyAll,
         );
+        let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
+        let metadata = Metadata::sys_create(api)?;
+        let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
 
         let node_id = api.kernel_allocate_node_id(RENodeType::Object)?;
         api.kernel_create_node(
@@ -171,6 +174,12 @@ impl IdentityBlueprint {
             ),
         )?;
 
-        Ok((node_id, access_rules))
+        let modules = btreemap!(
+                NodeModuleId::AccessRules => access_rules.id(),
+                NodeModuleId::Metadata => metadata.id(),
+                NodeModuleId::ComponentRoyalty => royalty.id(),
+            );
+
+        Ok((node_id, modules))
     }
 }
