@@ -36,6 +36,24 @@ impl IdentityNativePackage {
                 export_name: IDENTITY_CREATE_IDENT.to_string(),
             },
         );
+        functions.insert(
+            IDENTITY_CREATE_VIRTUAL_ECDSA_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<VirtualLazyLoadInput>(),
+                output: aggregator.add_child_type_and_descendents::<VirtualLazyLoadOutput>(),
+                export_name: IDENTITY_CREATE_VIRTUAL_ECDSA_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            IDENTITY_CREATE_VIRTUAL_EDDSA_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<VirtualLazyLoadInput>(),
+                output: aggregator.add_child_type_and_descendents::<VirtualLazyLoadOutput>(),
+                export_name: IDENTITY_CREATE_VIRTUAL_EDDSA_IDENT.to_string(),
+            },
+        );
 
         let schema = generate_full_schema(aggregator);
         PackageSchema {
@@ -75,6 +93,38 @@ impl IdentityNativePackage {
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
+            IDENTITY_CREATE_VIRTUAL_ECDSA_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                if receiver.is_some() {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    ));
+                }
+                let input: VirtualLazyLoadInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+
+                let rtn = IdentityBlueprint::create_ecdsa_virtual(input.id, api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            IDENTITY_CREATE_VIRTUAL_EDDSA_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                if receiver.is_some() {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    ));
+                }
+                let input: VirtualLazyLoadInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+
+                let rtn = IdentityBlueprint::create_eddsa_virtual(input.id, api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
             )),
@@ -85,7 +135,7 @@ impl IdentityNativePackage {
 pub struct IdentityBlueprint;
 
 impl IdentityBlueprint {
-    pub fn create_with_address<Y>(
+    fn create_with_address<Y>(
         access_rule: AccessRule,
         address: Address,
         api: &mut Y,

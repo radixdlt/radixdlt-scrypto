@@ -12,7 +12,6 @@ use super::module::KernelModule;
 use super::module_mixer::KernelModuleMixer;
 use super::track::{Track, TrackError};
 use crate::blueprints::account::AccountSubstate;
-use crate::blueprints::identity::IdentityBlueprint;
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::*;
@@ -34,6 +33,7 @@ use radix_engine_interface::api::{ClientObjectApi, ClientPackageApi};
 use radix_engine_interface::blueprints::account::{
     ACCOUNT_BLUEPRINT, ACCOUNT_DEPOSIT_BATCH_IDENT, ACCOUNT_DEPOSIT_IDENT,
 };
+use radix_engine_interface::blueprints::identity::{IDENTITY_BLUEPRINT, IDENTITY_CREATE_VIRTUAL_ECDSA_IDENT, IDENTITY_CREATE_VIRTUAL_EDDSA_IDENT, VirtualLazyLoadInput};
 use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
@@ -199,31 +199,6 @@ where
         Ok(())
     }
 
-    fn create_ecdsa_virtual_identity(
-        &mut self,
-        id: [u8; 26],
-    ) -> Result<(Own, BTreeMap<NodeModuleId, Own>), RuntimeError> {
-        // TODO: This should move into the appropriate place once virtual manager is implemented
-        self.current_frame.add_ref(
-            RENodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()),
-            RENodeVisibilityOrigin::Normal,
-        );
-        IdentityBlueprint::create_ecdsa_virtual(id, self)
-    }
-
-    fn create_eddsa_virtual_identity(
-        &mut self,
-        id: [u8; 26],
-    ) -> Result<(Own, BTreeMap<NodeModuleId, Own>), RuntimeError> {
-        // TODO: This should move into the appropriate place once virtual manager is implemented
-        self.current_frame.add_ref(
-            RENodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()),
-            RENodeVisibilityOrigin::Normal,
-        );
-
-        IdentityBlueprint::create_eddsa_virtual(id, self)
-    }
-
     fn try_virtualize(
         &mut self,
         node_id: RENodeId,
@@ -251,18 +226,31 @@ where
                         );
                         self.create_virtual_account(node_id, non_fungible_global_id)?;
                     }
-                    ComponentAddress::EcdsaSecp256k1VirtualIdentity(address) => {
-                        let (object_id, modules) = self.create_ecdsa_virtual_identity(address)?;
-                        let modules = modules.into_iter().map(|(id, own)| (id, own.id())).collect();
-                        self.id_allocator.allocate_virtual_node_id(node_id);
-                        self.globalize_with_address(
-                            RENodeId::Object(object_id.id()),
-                            modules,
-                            node_id.into(),
-                        )?;
-                    }
-                    ComponentAddress::EddsaEd25519VirtualIdentity(address) => {
-                        let (object_id, modules) = self.create_eddsa_virtual_identity(address)?;
+                    ComponentAddress::EcdsaSecp256k1VirtualIdentity(id)
+                    | ComponentAddress::EddsaEd25519VirtualIdentity(id) => {
+                        let input = scrypto_encode(&VirtualLazyLoadInput {
+                            id
+                        }).unwrap();
+                        let rtn = match component_address {
+                            ComponentAddress::EcdsaSecp256k1VirtualIdentity(..) => {
+                                self.call_function(
+                                    IDENTITY_PACKAGE,
+                                    IDENTITY_BLUEPRINT,
+                                    IDENTITY_CREATE_VIRTUAL_ECDSA_IDENT,
+                                    input,
+                                )?
+                            }
+                            ComponentAddress::EddsaEd25519VirtualIdentity(..) => {
+                                self.call_function(
+                                    IDENTITY_PACKAGE,
+                                    IDENTITY_BLUEPRINT,
+                                    IDENTITY_CREATE_VIRTUAL_EDDSA_IDENT,
+                                    input,
+                                )?
+                            }
+                            _ => return Ok(false),
+                        };
+                        let (object_id, modules): (Own, BTreeMap<NodeModuleId, Own>) = scrypto_decode(&rtn).unwrap();
                         let modules = modules.into_iter().map(|(id, own)| (id, own.id())).collect();
                         self.id_allocator.allocate_virtual_node_id(node_id);
                         self.globalize_with_address(

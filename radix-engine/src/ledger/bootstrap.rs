@@ -324,7 +324,7 @@ pub fn create_genesis(
             args: to_manifest_value(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: IdentityNativePackage::schema(),
-                dependent_resources: vec![],
+                dependent_resources: vec![ECDSA_SECP256K1_TOKEN, EDDSA_ED25519_TOKEN],
                 dependent_components: vec![],
                 native_package_code_id: IDENTITY_CODE_ID,
                 metadata: BTreeMap::new(),
