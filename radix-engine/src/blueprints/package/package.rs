@@ -13,7 +13,7 @@ use crate::types::*;
 use crate::wasm::{PrepareError, WasmValidator};
 use native_sdk::resource::{ResourceManager, Vault};
 use radix_engine_interface::api::component::{
-    ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, KeyValueStoreEntrySubstate,
+    ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
 };
 use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::{ClientApi, LockFlags};
@@ -100,7 +100,7 @@ where
     let mut node_modules = BTreeMap::new();
     node_modules.insert(
         NodeModuleId::TypeInfo,
-        RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+        RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             global: true,
@@ -116,9 +116,7 @@ where
                         SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
                             scrypto_encode(&key).unwrap(),
                         )),
-                        RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::Some(
-                            ScryptoValue::String { value },
-                        )),
+                        RuntimeSubstate::KeyValueStoreEntry(Some(ScryptoValue::String { value })),
                     )
                 })
                 .collect(),
@@ -372,6 +370,7 @@ impl PackageNativePackage {
             dependent_resources: BTreeSet::new(),
             dependent_components: BTreeSet::new(),
         };
+
         let code_type = PackageCodeTypeSubstate::Wasm;
         let code = PackageCodeSubstate { code: input.code };
         let royalty = PackageRoyaltySubstate {

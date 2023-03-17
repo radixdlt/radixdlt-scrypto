@@ -13,9 +13,7 @@ use super::module_mixer::KernelModuleMixer;
 use super::track::{Track, TrackError};
 use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::identity::IdentityBlueprint;
-use crate::blueprints::resource::{
-    BucketInfoSubstate, FungibleProof, NonFungibleProof, ProofInfoSubstate,
-};
+use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
@@ -145,20 +143,14 @@ where
                 self.kernel_create_node(
                     node_id,
                     node,
-                    btreemap!(
-                        NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                            package_address: KEY_VALUE_STORE_PACKAGE,
-                            blueprint_name: KEY_VALUE_STORE_BLUEPRINT.to_owned(),
-                            global: false
-                        })
-                    ),
+                    btreemap!(), // FIXME: add TypeInfo
                 )?;
                 node_id
             };
 
             let node_id = {
                 let node_modules = btreemap!(
-                    NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                    NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
                         package_address: ACCOUNT_PACKAGE,
                         blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
                         global: false
@@ -565,12 +557,13 @@ where
                                 self.track
                                     .get_substate(*node_id, NodeModuleId::TypeInfo, &offset);
                             let type_substate: &TypeInfoSubstate = substate_ref.into();
-                            if !matches!(
-                                (
-                                    type_substate.package_address,
-                                    type_substate.blueprint_name.as_str()
-                                ),
-                                (RESOURCE_MANAGER_PACKAGE, VAULT_BLUEPRINT)
+                            if !matches!(type_substate,
+                                TypeInfoSubstate::Object {
+                                    package_address,
+                                    blueprint_name,
+                                    ..
+
+                                } if package_address.eq(&RESOURCE_MANAGER_PACKAGE) && blueprint_name.eq(VAULT_BLUEPRINT)
                             ) {
                                 return Err(RuntimeError::KernelError(
                                     KernelError::InvalidDirectAccess,
@@ -689,7 +682,6 @@ where
             (RENodeId::GlobalObject(Address::Package(..)), RENodeInit::GlobalObject(..)) => {}
             (RENodeId::Object(..), RENodeInit::Object(..)) => {}
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
-            (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore) => {}
             (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {}
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id))),
         }

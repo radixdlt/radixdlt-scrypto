@@ -31,10 +31,6 @@ pub const METADATA_PACKAGE: PackageAddress = vanity_address!(EntityType::Package
 pub const ROYALTY_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 11);
 pub const ACCESS_RULES_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 12);
 
-// TODO: added to unblock balance changes feature; check and verify this per KVStore refactoring
-pub const KEY_VALUE_STORE_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 13);
-pub const KEY_VALUE_STORE_BLUEPRINT: &'static str = "KeyValueStore";
-
 // There should be no need of this function, but many of our configurations are depending on it.
 // Having it in a single place to avoid out-of-sync.
 pub fn is_native_package(address: PackageAddress) -> bool {

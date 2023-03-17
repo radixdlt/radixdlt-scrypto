@@ -1,13 +1,11 @@
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::node::{RENodeInit, RENodeModuleInit};
-use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::system::node::RENodeInit;
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRulesObject;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
-use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
@@ -348,13 +346,7 @@ impl AccountNativePackage {
             api.kernel_create_node(
                 node_id,
                 node,
-                btreemap!(
-                    NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: KEY_VALUE_STORE_PACKAGE,
-                        blueprint_name: KEY_VALUE_STORE_BLUEPRINT.to_owned(),
-                        global: false
-                    })
-                ),
+                btreemap!(), // FIXME: add TypeInfo
             )?;
             node_id
         };
@@ -406,13 +398,7 @@ impl AccountNativePackage {
             api.kernel_create_node(
                 node_id,
                 node,
-                btreemap!(
-                    NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
-                        package_address: KEY_VALUE_STORE_PACKAGE,
-                        blueprint_name: KEY_VALUE_STORE_BLUEPRINT.to_owned(),
-                        global: false
-                    })
-                ),
+                btreemap!(), // FIXME: add TypeInfo
             )?;
             node_id
         };
@@ -461,18 +447,14 @@ impl AccountNativePackage {
 
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then error out.
         let mut vault = {
-            let entry: &KeyValueStoreEntrySubstate =
+            let entry: &Option<ScryptoValue> =
                 api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
 
             match entry {
-                KeyValueStoreEntrySubstate::Some(value) => {
-                    Ok(scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
-                        .map(|own| Vault(own.vault_id()))
-                        .expect("Impossible Case!"))
-                }
-                KeyValueStoreEntrySubstate::None => {
-                    Err(AccountError::VaultDoesNotExist { resource_address })
-                }
+                Option::Some(value) => Ok(scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
+                    .map(|own| Vault(own.vault_id()))
+                    .expect("Impossible Case!")),
+                Option::None => Err(AccountError::VaultDoesNotExist { resource_address }),
             }
         }?;
 
@@ -559,22 +541,20 @@ impl AccountNativePackage {
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then create it and
         // insert it's entry into the KVStore
         let mut vault = {
-            let entry: &KeyValueStoreEntrySubstate =
+            let entry: &Option<ScryptoValue> =
                 api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
 
             match entry {
-                KeyValueStoreEntrySubstate::Some(value) => {
-                    scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
-                        .map(|own| Vault(own.vault_id()))
-                        .expect("Impossible Case!")
-                }
-                KeyValueStoreEntrySubstate::None => {
+                Option::Some(value) => scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
+                    .map(|own| Vault(own.vault_id()))
+                    .expect("Impossible Case!"),
+                Option::None => {
                     let vault = Vault::sys_new(resource_address, api)?;
                     let encoded_value = IndexedScryptoValue::from_typed(&Own::Vault(vault.0));
 
-                    let entry: &mut KeyValueStoreEntrySubstate =
+                    let entry: &mut Option<ScryptoValue> =
                         api.kernel_get_substate_ref_mut(kv_store_entry_lock_handle)?;
-                    *entry = KeyValueStoreEntrySubstate::Some(encoded_value.to_scrypto_value());
+                    *entry = Option::Some(encoded_value.to_scrypto_value());
                     vault
                 }
             }
@@ -630,22 +610,20 @@ impl AccountNativePackage {
             // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then create it
             // and insert it's entry into the KVStore
             let mut vault = {
-                let entry: &KeyValueStoreEntrySubstate =
+                let entry: &Option<ScryptoValue> =
                     api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
 
                 match entry {
-                    KeyValueStoreEntrySubstate::Some(value) => {
-                        scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
-                            .map(|own| Vault(own.vault_id()))
-                            .expect("Impossible Case!")
-                    }
-                    KeyValueStoreEntrySubstate::None => {
+                    Option::Some(value) => scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
+                        .map(|own| Vault(own.vault_id()))
+                        .expect("Impossible Case!"),
+                    Option::None => {
                         let vault = Vault::sys_new(resource_address, api)?;
                         let encoded_value = IndexedScryptoValue::from_typed(&Own::Vault(vault.0));
 
-                        let entry: &mut KeyValueStoreEntrySubstate =
+                        let entry: &mut Option<ScryptoValue> =
                             api.kernel_get_substate_ref_mut(kv_store_entry_lock_handle)?;
-                        *entry = KeyValueStoreEntrySubstate::Some(encoded_value.to_scrypto_value());
+                        *entry = Option::Some(encoded_value.to_scrypto_value());
                         vault
                     }
                 }
@@ -693,18 +671,14 @@ impl AccountNativePackage {
 
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then error out.
         let mut vault = {
-            let entry: &KeyValueStoreEntrySubstate =
+            let entry: &Option<ScryptoValue> =
                 api.kernel_get_substate_ref(kv_store_entry_lock_handle)?;
 
             match entry {
-                KeyValueStoreEntrySubstate::Some(value) => {
-                    Ok(scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
-                        .map(|own| Vault(own.vault_id()))
-                        .expect("Impossible Case!"))
-                }
-                KeyValueStoreEntrySubstate::None => {
-                    Err(AccountError::VaultDoesNotExist { resource_address })
-                }
+                Option::Some(value) => Ok(scrypto_decode::<Own>(&scrypto_encode(value).unwrap())
+                    .map(|own| Vault(own.vault_id()))
+                    .expect("Impossible Case!")),
+                Option::None => Err(AccountError::VaultDoesNotExist { resource_address }),
             }
         }?;
 

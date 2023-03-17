@@ -242,7 +242,17 @@ impl AuthModule {
         api: &mut Y,
     ) -> Result<MethodAuthorization, RuntimeError> {
         let (blueprint_schema, index) = {
-            let (package_address, blueprint_ident) = TypeInfoBlueprint::get_type(receiver, api)?;
+            let type_info = TypeInfoBlueprint::get_type(receiver, api)?;
+            let (package_address, blueprint_ident) = match type_info {
+                TypeInfoSubstate::Object {
+                    package_address,
+                    blueprint_name,
+                    ..
+                } => (package_address, blueprint_name),
+                TypeInfoSubstate::KeyValueStore(..) => {
+                    return Err(RuntimeError::SystemError(SystemError::NotAnObject))
+                }
+            };
 
             let handle = api.kernel_lock_substate(
                 RENodeId::GlobalObject(package_address.into()),
@@ -331,7 +341,7 @@ impl KernelModule for AuthModule {
             node_id,
             RENodeInit::AuthZoneStack(auth_zone),
             btreemap!(
-                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
                         package_address: AUTH_ZONE_PACKAGE,
                         blueprint_name: AUTH_ZONE_BLUEPRINT.to_string(),
                         global: false,

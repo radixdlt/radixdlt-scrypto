@@ -1,4 +1,3 @@
-use crate::blueprints::resource::NonFungibleSubstate;
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::errors::*;
 use crate::ledger::*;
@@ -7,6 +6,7 @@ use crate::system::kernel_modules::costing::u128_to_decimal;
 use crate::system::kernel_modules::costing::FinalizingFeeReserve;
 use crate::system::kernel_modules::costing::{CostingError, FeeReserveError};
 use crate::system::kernel_modules::costing::{FeeSummary, SystemLoanFeeReserve};
+use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::{
     PersistedSubstate, RuntimeSubstate, SubstateRef, SubstateRefMut,
 };
@@ -17,7 +17,6 @@ use crate::transaction::TransactionOutcome;
 use crate::transaction::TransactionResult;
 use crate::transaction::{AbortReason, AbortResult, CommitResult};
 use crate::types::*;
-use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::Level;
 use radix_engine_interface::api::types::*;
@@ -227,11 +226,9 @@ impl<'s> Track<'s> {
         offset: &SubstateOffset,
     ) -> SubstateRef {
         let runtime_substate = match (node_id, offset) {
-            (_, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)))
-            | (
-                RENodeId::NonFungibleStore(..),
-                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..)),
-            ) => self.read_key_value(node_id, module_id, offset),
+            (_, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))) => {
+                self.read_key_value(node_id, module_id, offset)
+            }
             _ => {
                 let substate_id = SubstateId(node_id, module_id, offset.clone());
                 &self
@@ -251,12 +248,9 @@ impl<'s> Track<'s> {
         offset: &SubstateOffset,
     ) -> SubstateRefMut {
         let runtime_substate = match (node_id, module_id, offset) {
-            (_, _, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)))
-            | (
-                RENodeId::NonFungibleStore(..),
-                NodeModuleId::SELF,
-                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..)),
-            ) => self.read_key_value_mut(node_id, module_id, offset),
+            (_, _, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))) => {
+                self.read_key_value_mut(node_id, module_id, offset)
+            }
             _ => {
                 let substate_id = SubstateId(node_id, module_id, offset.clone());
                 &mut self
@@ -306,42 +300,13 @@ impl<'s> Track<'s> {
         offset: &SubstateOffset,
     ) -> &RuntimeSubstate {
         match (node_id, offset) {
-            (
-                RENodeId::NonFungibleStore(..),
-                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..)),
-            ) => {
-                let substate_id = SubstateId(node_id, module_id, offset.clone());
-                if !self.loaded_substates.contains_key(&substate_id) {
-                    let output = self.load_substate(&substate_id);
-                    let (substate, version) = output
-                        .map(|o| (o.substate.to_runtime(), o.version))
-                        .unwrap_or((RuntimeSubstate::NonFungible(NonFungibleSubstate(None)), 0));
-
-                    self.loaded_substates.insert(
-                        substate_id.clone(),
-                        LoadedSubstate {
-                            substate,
-                            lock_state: LockState::no_lock(),
-                            metastate: SubstateMetaState::Existing {
-                                old_version: version,
-                                state: ExistingMetaState::Loaded,
-                            },
-                        },
-                    );
-                }
-
-                &self.loaded_substates.get(&substate_id).unwrap().substate
-            }
             (_, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))) => {
                 let substate_id = SubstateId(node_id, module_id, offset.clone());
                 if !self.loaded_substates.contains_key(&substate_id) {
                     let output = self.load_substate(&substate_id);
                     let (substate, version) = output
                         .map(|o| (o.substate.to_runtime(), o.version))
-                        .unwrap_or((
-                            RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::None),
-                            0,
-                        ));
+                        .unwrap_or((RuntimeSubstate::KeyValueStoreEntry(Option::None), 0));
 
                     self.loaded_substates.insert(
                         substate_id.clone(),
@@ -369,46 +334,13 @@ impl<'s> Track<'s> {
         offset: &SubstateOffset,
     ) -> &mut RuntimeSubstate {
         match (node_id, offset) {
-            (
-                RENodeId::NonFungibleStore(..),
-                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..)),
-            ) => {
-                let substate_id = SubstateId(node_id, module_id, offset.clone());
-                if !self.loaded_substates.contains_key(&substate_id) {
-                    let output = self.load_substate(&substate_id);
-                    let (substate, version) = output
-                        .map(|o| (o.substate.to_runtime(), o.version))
-                        .unwrap_or((RuntimeSubstate::NonFungible(NonFungibleSubstate(None)), 0));
-
-                    self.loaded_substates.insert(
-                        substate_id.clone(),
-                        LoadedSubstate {
-                            substate,
-                            lock_state: LockState::no_lock(),
-                            metastate: SubstateMetaState::Existing {
-                                old_version: version,
-                                state: ExistingMetaState::Loaded,
-                            },
-                        },
-                    );
-                }
-
-                &mut self
-                    .loaded_substates
-                    .get_mut(&substate_id)
-                    .unwrap()
-                    .substate
-            }
             (_, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))) => {
                 let substate_id = SubstateId(node_id, module_id, offset.clone());
                 if !self.loaded_substates.contains_key(&substate_id) {
                     let output = self.load_substate(&substate_id);
                     let (substate, version) = output
                         .map(|o| (o.substate.to_runtime(), o.version))
-                        .unwrap_or((
-                            RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::None),
-                            0,
-                        ));
+                        .unwrap_or((RuntimeSubstate::KeyValueStoreEntry(Option::None), 0));
 
                     self.loaded_substates.insert(
                         substate_id.clone(),
@@ -921,8 +853,16 @@ impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
             .type_info()
             .clone();
 
-        type_info.package_address == RESOURCE_MANAGER_PACKAGE
-            && type_info.blueprint_name == VAULT_BLUEPRINT
+        if let TypeInfoSubstate::Object {
+            package_address,
+            blueprint_name,
+            ..
+        } = type_info
+        {
+            package_address == RESOURCE_MANAGER_PACKAGE && blueprint_name == VAULT_BLUEPRINT
+        } else {
+            false
+        }
     }
 
     fn calculate_vault_balance_change(

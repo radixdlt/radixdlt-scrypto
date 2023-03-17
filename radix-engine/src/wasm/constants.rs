@@ -15,9 +15,11 @@ pub const CALL_METHOD_FUNCTION_ID: usize = 0x33;
 pub const CALL_METHOD_FUNCTION_NAME: &str = "call_method";
 pub const CALL_FUNCTION_FUNCTION_ID: usize = 0x34;
 pub const CALL_FUNCTION_FUNCTION_NAME: &str = "call_function";
-pub const GET_TYPE_INFO_FUNCTION_ID: usize = 0x35;
-pub const GET_TYPE_INFO_FUNCTION_NAME: &str = "get_type_info";
-pub const DROP_OBJECT_FUNCTION_ID: usize = 0x36;
+pub const GET_OBJECT_TYPE_INFO_FUNCTION_ID: usize = 0x35;
+pub const GET_OBJECT_TYPE_INFO_FUNCTION_NAME: &str = "get_object_type_info";
+pub const GET_KEY_VALUE_STORE_INFO_FUNCTION_ID: usize = 0x36;
+pub const GET_KEY_VALUE_STORE_INFO_FUNCTION_NAME: &str = "get_key_value_store_info";
+pub const DROP_OBJECT_FUNCTION_ID: usize = 0x37;
 pub const DROP_OBJECT_FUNCTION_NAME: &str = "drop_object";
 
 pub const LOCK_SUBSTATE_FUNCTION_ID: usize = 0x40;

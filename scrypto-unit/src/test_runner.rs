@@ -14,6 +14,7 @@ use radix_engine::kernel::track::Track;
 use radix_engine::ledger::*;
 use radix_engine::system::kernel_modules::costing::FeeTable;
 use radix_engine::system::kernel_modules::costing::SystemLoanFeeReserve;
+use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::transaction::{
     execute_preview, execute_transaction, ExecutionConfig, FeeReserveConfig, PreviewError,
     PreviewResult, TransactionReceipt, TransactionResult,
@@ -21,10 +22,9 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::utils::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
-use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
-use radix_engine_interface::api::node_modules::auth::{AuthAddresses, ACCESS_RULES_BLUEPRINT};
-use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, METADATA_BLUEPRINT};
-use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
+use radix_engine_interface::api::node_modules::auth::*;
+use radix_engine_interface::api::node_modules::metadata::*;
+use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::types::{RENodeId, VaultOffset};
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::clock::{
@@ -229,6 +229,26 @@ impl TestRunner {
         )
     }
 
+    pub fn set_metadata(
+        &mut self,
+        address: Address,
+        key: &str,
+        value: &str,
+        proof: NonFungibleGlobalId,
+    ) {
+        let manifest = ManifestBuilder::new()
+            .lock_fee(FAUCET_COMPONENT, 100u32.into())
+            .set_metadata(
+                address,
+                key.to_string(),
+                MetadataEntry::Value(MetadataValue::String(value.to_string())),
+            )
+            .build();
+
+        let receipt = self.execute_manifest(manifest, vec![proof]);
+        receipt.expect_commit_success();
+    }
+
     pub fn get_metadata(&mut self, address: Address, key: &str) -> Option<MetadataEntry> {
         let metadata_entry = self
             .substate_store
@@ -241,14 +261,14 @@ impl TestRunner {
             ))
             .map(|s| s.substate.to_runtime())?;
 
-        let metadata_entry: KeyValueStoreEntrySubstate = metadata_entry.into();
+        let metadata_entry: Option<ScryptoValue> = metadata_entry.into();
         let metadata_entry = match metadata_entry {
-            KeyValueStoreEntrySubstate::Some(value) => {
+            Option::Some(value) => {
                 let value: MetadataEntry =
                     scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap();
                 Some(value)
             }
-            KeyValueStoreEntrySubstate::None => None,
+            Option::None => None,
         };
 
         metadata_entry
@@ -1118,11 +1138,14 @@ impl TestRunner {
                             .type_info()
                             .clone();
 
-                        (
-                            type_info.package_address,
-                            type_info.blueprint_name,
-                            event_name.clone(),
-                        )
+                        match type_info {
+                            TypeInfoSubstate::Object {
+                                package_address,
+                                blueprint_name,
+                                ..
+                            } => (package_address, blueprint_name, event_name.clone()),
+                            TypeInfoSubstate::KeyValueStore(..) => panic!("No event schema."),
+                        }
                     }
                     NodeModuleId::TypeInfo => {
                         panic!("No event schema.")
@@ -1277,5 +1300,5 @@ pub fn single_function_package_schema(blueprint_name: &str, function_name: &str)
     package_schema
 }
 
-#[derive(NonFungibleData)]
+#[derive(ScryptoSbor, NonFungibleData, ManifestSbor)]
 struct EmptyNonFungibleData {}

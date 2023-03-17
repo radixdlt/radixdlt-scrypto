@@ -19,7 +19,9 @@ use radix_engine_interface::constants::{
     RESOURCE_MANAGER_PACKAGE,
 };
 use radix_engine_interface::crypto::{hash, EcdsaSecp256k1PublicKey, Hash};
-use radix_engine_interface::data::manifest::{model::*, to_manifest_value, ManifestValue};
+use radix_engine_interface::data::manifest::{
+    model::*, to_manifest_value, ManifestEncode, ManifestValue,
+};
 use radix_engine_interface::data::scrypto::{model::*, scrypto_encode};
 use radix_engine_interface::math::*;
 use radix_engine_interface::schema::PackageSchema;
@@ -269,8 +271,8 @@ impl ManifestBuilder {
     }
 
     /// Drops all virtual proofs.
-    pub fn drop_all_virtual_proofs(&mut self) -> &mut Self {
-        self.add_instruction(Instruction::DropAllVirtualProofs).0
+    pub fn clear_signature_proofs(&mut self) -> &mut Self {
+        self.add_instruction(Instruction::ClearSignatureProofs).0
     }
 
     /// Creates a fungible resource
@@ -288,9 +290,10 @@ impl ManifestBuilder {
         if let Some(initial_supply) = initial_supply {
             self.add_instruction(Instruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
-                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: "create_fungible_with_initial_supply".to_string(),
-                args: to_manifest_value(&ResourceManagerCreateFungibleWithInitialSupplyInput {
+                blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
+                    .to_string(),
+                args: to_manifest_value(&FungibleResourceManagerCreateWithInitialSupplyInput {
                     divisibility,
                     metadata,
                     access_rules,
@@ -300,9 +303,9 @@ impl ManifestBuilder {
         } else {
             self.add_instruction(Instruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
-                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT.to_string(),
-                args: to_manifest_value(&ResourceManagerCreateFungibleInput {
+                blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
+                args: to_manifest_value(&FungibleResourceManagerCreateInput {
                     divisibility,
                     metadata,
                     access_rules,
@@ -324,7 +327,7 @@ impl ManifestBuilder {
     where
         R: Into<AccessRule>,
         T: IntoIterator<Item = (NonFungibleLocalId, V)>,
-        V: NonFungibleData,
+        V: ManifestEncode + NonFungibleData,
     {
         let access_rules = access_rules
             .into_iter()
@@ -334,28 +337,32 @@ impl ManifestBuilder {
         if let Some(initial_supply) = initial_supply {
             let entries = initial_supply
                 .into_iter()
-                .map(|(id, e)| (id, (e.immutable_data().unwrap(), e.mutable_data().unwrap())))
+                .map(|(id, e)| (id, (to_manifest_value(&e),)))
                 .collect();
 
             self.add_instruction(Instruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
-                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT
+                blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
-                args: to_manifest_value(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
-                    id_type,
-                    metadata,
-                    access_rules,
-                    entries,
-                }),
+                args: to_manifest_value(
+                    &NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
+                        id_type,
+                        non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
+                        metadata,
+                        access_rules,
+                        entries,
+                    },
+                ),
             });
         } else {
             self.add_instruction(Instruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
-                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT.to_string(),
-                args: to_manifest_value(&ResourceManagerCreateNonFungibleInput {
+                blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
+                args: to_manifest_value(&NonFungibleResourceManagerCreateInput {
                     id_type,
+                    non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
                     metadata,
                     access_rules,
                 }),
@@ -694,15 +701,17 @@ impl ManifestBuilder {
     ) -> &mut Self
     where
         T: IntoIterator<Item = (NonFungibleLocalId, V)>,
-        V: NonFungibleData,
+        V: ManifestEncode,
     {
         let entries = entries
             .into_iter()
-            .map(|(id, e)| (id, (e.immutable_data().unwrap(), e.mutable_data().unwrap())))
+            .map(|(id, e)| (id, (to_manifest_value(&e),)))
             .collect();
+        let input = NonFungibleResourceManagerMintManifestInput { entries };
+
         self.add_instruction(Instruction::MintNonFungible {
             resource_address,
-            entries,
+            args: to_manifest_value(&input),
         });
         self
     }
@@ -714,15 +723,17 @@ impl ManifestBuilder {
     ) -> &mut Self
     where
         T: IntoIterator<Item = V>,
-        V: NonFungibleData,
+        V: ManifestEncode,
     {
         let entries = entries
             .into_iter()
-            .map(|e| (e.immutable_data().unwrap(), e.mutable_data().unwrap()))
+            .map(|e| (to_manifest_value(&e),))
             .collect();
+        let input = NonFungibleResourceManagerMintUuidManifestInput { entries };
+
         self.add_instruction(Instruction::MintUuidNonFungible {
             resource_address,
-            entries,
+            args: to_manifest_value(&input),
         });
         self
     }

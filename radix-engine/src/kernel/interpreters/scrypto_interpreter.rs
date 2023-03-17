@@ -4,8 +4,7 @@ use crate::blueprints::account::AccountNativePackage;
 use crate::blueprints::clock::ClockNativePackage;
 use crate::blueprints::epoch_manager::EpochManagerNativePackage;
 use crate::blueprints::identity::IdentityNativePackage;
-use crate::blueprints::package::PackageCodeTypeSubstate;
-use crate::blueprints::package::PackageNativePackage;
+use crate::blueprints::package::{PackageCodeTypeSubstate, PackageNativePackage};
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::errors::{InterpreterError, RuntimeError};
@@ -16,7 +15,7 @@ use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi, KernelWasmApi}
 use crate::system::node_modules::access_rules::{AccessRulesNativePackage, AuthZoneNativePackage};
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
-use crate::system::node_modules::type_info::TypeInfoBlueprint;
+use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
 use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
@@ -108,7 +107,22 @@ impl ExecutableInvocation for MethodInvocation {
         node_refs_to_copy.insert(self.identifier.0);
 
         let (package_address, blueprint_name) = match self.identifier.1 {
-            NodeModuleId::SELF => TypeInfoBlueprint::get_type(self.identifier.0, api)?,
+            NodeModuleId::SELF => {
+                let type_info = TypeInfoBlueprint::get_type(self.identifier.0, api)?;
+                match type_info {
+                    TypeInfoSubstate::Object {
+                        package_address,
+                        blueprint_name,
+                        ..
+                    } => (package_address, blueprint_name),
+
+                    TypeInfoSubstate::KeyValueStore(..) => {
+                        return Err(RuntimeError::InterpreterError(
+                            InterpreterError::CallMethodOnKeyValueStore,
+                        ))
+                    }
+                }
+            }
             NodeModuleId::Metadata => {
                 // TODO: Check if type has metadata
                 (METADATA_PACKAGE, METADATA_BLUEPRINT.to_string())
