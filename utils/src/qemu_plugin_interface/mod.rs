@@ -1,21 +1,50 @@
+#![allow(dead_code)]
+
 use std::os::unix::net::UnixDatagram;
+use std::fs::File;
+use std::io::prelude::*;
+
 
 const SRV_SOCKET_FN: &str = "/tmp/scrypto-qemu-plugin-server.socket";
 const CLI_SOCKET_FN: &str = "/tmp/scrypto-qemu-plugin-client.socket";
-
+const OUTPUT_DATA_COUNT: usize = 500000;
 
 std::thread_local! {
-    pub static QEMU_PLUGIN: std::cell::RefCell<QemuPluginInterface> = std::cell::RefCell::new(QemuPluginInterface::new(true));
+    pub static QEMU_PLUGIN: std::cell::RefCell<QemuPluginInterface<'static>> = std::cell::RefCell::new(QemuPluginInterface::new(true));
 }
 
-pub struct QemuPluginInterface {
+
+enum OutputDataEvent {
+    FunctionEnter,
+    FunctionExit
+}
+
+enum OutputParam {
+    Number(i64),
+    //Literal(fstr<50>)
+}
+
+struct OutputData<'a> {
+    event: OutputDataEvent,
+    stack_depth: usize,
+    cpu_instructions: u64,
+    cpu_instructions_calibrated: u64,
+    function_name: &'a str,
+    param: Option<OutputParam>,
+}
+
+
+pub struct QemuPluginInterface<'a> {
     enabled: bool,
     counters_stack: Vec<(String,u64)>,
     stack_top: usize,
-    socket: UnixDatagram
+    socket: UnixDatagram,
+    output_data: Vec<OutputData<'a>>,
+    counter_offset: u64,
+    counter_offset_parent: u64
 }
 
-impl QemuPluginInterface {
+impl<'a> QemuPluginInterface<'a> {
     pub fn new(enabled: bool) -> Self {
 
         std::fs::remove_file(CLI_SOCKET_FN).unwrap_or_default();
@@ -27,21 +56,69 @@ impl QemuPluginInterface {
             enabled,
             counters_stack: Vec::with_capacity(100),
             stack_top: 0,
-            socket
+            socket,
+            output_data: Vec::with_capacity(OUTPUT_DATA_COUNT),
+            counter_offset: 0,
+            counter_offset_parent: 0
         };
+
+        // test connection
+        ret.communicate_with_server(SRV_SOCKET_FN);
 
         for _ in 0..ret.counters_stack.capacity() {
             ret.counters_stack.push((String::with_capacity(50),0));
         }
 
+        ret.calibrate_counters();
+
         ret
     }
 
+
+    fn calibrate_inner(&mut self) -> u64 {
+        self.start_counting("test_inner");
+        self.stop_counting("test_inner").1
+    }
+
+    fn calibrate(&mut self, call_inner: bool) -> (u64, u64) {
+        self.start_counting("test");
+        let ret = if call_inner {
+            self.calibrate_inner()
+        } else {
+            0
+        };
+        (self.stop_counting("test").1, ret)
+    }
+
+
+    fn calibrate_counters(&mut self) {
+        let mut cnt = 0;
+        let mut cnt_parent = 0;
+
+        let loop_max = 1000;
+
+        for _ in 0..loop_max {
+            let (parent, child) = self.calibrate(true);
+            cnt_parent += parent;
+            cnt += child;
+        }
+        for _ in 0..loop_max {
+            let (parent, _child) = self.calibrate(false);
+            cnt_parent -= parent;
+        }
+
+        self.output_data.clear();
+
+        self.counter_offset = cnt / loop_max;
+        self.counter_offset_parent = cnt_parent / loop_max;
+        println!("QemuPlugin counter offset: {} instructions, parent: {}", self.counter_offset, self.counter_offset_parent)
+    }
+    
     pub fn get_current_stack(&self) -> usize {
         self.stack_top
     }
 
-    pub fn start_counting(&mut self, key: &str) {
+    pub fn start_counting(&mut self, key: &'static str) {
         if !self.enabled {
             return;
         }
@@ -52,14 +129,22 @@ impl QemuPluginInterface {
 
         self.counters_stack[self.stack_top].0.push_str(key);
 
-        let n = self.connect(SRV_SOCKET_FN);
+        let n = self.communicate_with_server(SRV_SOCKET_FN);
 
         self.counters_stack[self.stack_top].1 = n;
+
+        self.output_data.push(OutputData {
+            event: OutputDataEvent::FunctionEnter,
+            stack_depth: self.stack_top,
+            cpu_instructions: n,
+            cpu_instructions_calibrated: 0,
+            function_name: key,
+            param: None });
 
         self.stack_top += 1;
     }
 
-    pub fn stop_counting(&mut self) -> (usize, u64) {
+    pub fn stop_counting(&mut self, key: &'static str) -> (usize, u64) {
         if !self.enabled {
             return (0,0);
         }
@@ -69,15 +154,23 @@ impl QemuPluginInterface {
         }
         self.stack_top -= 1;
 
-        let n = self.connect(SRV_SOCKET_FN);
+        let n = self.communicate_with_server(SRV_SOCKET_FN);
 
         self.counters_stack[self.stack_top].1 = n - self.counters_stack[self.stack_top].1;
+
+        self.output_data.push(OutputData {
+            event: OutputDataEvent::FunctionExit,
+            stack_depth: self.stack_top,
+            cpu_instructions: self.counters_stack[self.stack_top].1,
+            cpu_instructions_calibrated: 0,
+            function_name: key,
+            param: None });
 
         let ret = self.counters_stack[self.stack_top].1;
         (self.stack_top, ret)
     }
 
-    fn connect(&mut self, addr: &str) -> u64 {
+    fn communicate_with_server(&mut self, addr: &str) -> u64 {
 
         self.socket.send_to(b"", addr).unwrap();
         //let mut buf = Vec::with_capacity(64);
@@ -93,4 +186,70 @@ impl QemuPluginInterface {
         ret
 
     }
+
+    fn prepare_output_data(&mut self) {
+        if self.output_data.is_empty() {
+            return;
+        }
+
+        for i in (0..=self.output_data.len()-1).rev() {
+            if ! matches!(self.output_data[i].event, OutputDataEvent::FunctionExit) {
+                continue;
+            }
+
+            self.output_data[i].cpu_instructions_calibrated = self.output_data[i].cpu_instructions - self.counter_offset;
+            //self.output_data[i].cpu_instructions.checked_sub(self.counter_offset);
+                //expect(&format!("Subtraction overflow on {}, {}", self.output_data[i].function_name, i ));
+
+            if i > 0 {
+                for j in (0..=i-1).rev() {
+                    if ! matches!(self.output_data[j].event, OutputDataEvent::FunctionExit) {
+                        if j == i - 1 {
+                            break;
+                        }
+                        continue;
+                    }
+                    if self.output_data[j].stack_depth > self.output_data[i].stack_depth {
+                        self.output_data[i].cpu_instructions_calibrated -= self.counter_offset_parent;
+                        //self.output_data[i].cpu_instructions.checked_sub(self.counter_offset_parent);
+                            //expect(&format!("Subtraction overflow on {}, {}, {}", self.output_data[i].function_name, i, j ));
+                    } else {
+                        self.output_data[i].cpu_instructions_calibrated -= self.counter_offset;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    fn save_output_to_file(&self, file_name: &str) {
+        if let Ok(mut file) = File::create(file_name) {
+            for v in &self.output_data {
+                v.write(&mut file);
+            }
+            file.flush().expect("Unable to flush /tmp/out.txt file.")
+        } else {
+            panic!("Unable to create /tmp/out.txt file.")
+        }
+    }
 }
+
+impl<'a> Drop for QemuPluginInterface<'a> {
+    fn drop(&mut self) {
+        self.prepare_output_data();
+        self.save_output_to_file("/tmp/out.txt");
+    }
+}
+
+impl<'a> OutputData<'a> {
+    fn write(&self, file: &mut File) {
+        let spaces = std::iter::repeat(' ').take(4 * self.stack_depth).collect::<String>();
+        match self.event {
+            OutputDataEvent::FunctionEnter => 
+                file.write(format!("{}++enter: {} {} {}\n", spaces, self.function_name, self.stack_depth, "").as_bytes()).expect("Unable to write output data"),
+            OutputDataEvent::FunctionExit =>
+                file.write(format!("{}--exit: {} {} {} {} {}\n", spaces, self.function_name, self.stack_depth, self.cpu_instructions, self.cpu_instructions_calibrated, "").as_bytes()).expect("Unable to write output data")
+        };
+    }
+}
+

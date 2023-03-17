@@ -9,7 +9,7 @@ use syn::{
 #[cfg(target_family = "unix")]
 #[proc_macro_attribute]
 pub fn trace_resources(attr: TokenStream, input: TokenStream) -> TokenStream {
-    let arg = if let Ok(attrs) = syn::Ident::parse.parse(attr) {
+    let _arg = if let Ok(attrs) = syn::Ident::parse.parse(attr) {
         quote!{ #attrs }
     } else {
         quote!{ "" }
@@ -22,16 +22,17 @@ pub fn trace_resources(attr: TokenStream, input: TokenStream) -> TokenStream {
                 let fn_signature = item_fn.sig.ident.to_string();
                 item_fn.block = Box::new( parse_quote! {{ 
                     QEMU_PLUGIN.with(|v| {
-                        let stack = v.borrow().get_current_stack();
-                        let space = std::iter::repeat(' ').take(4 * stack).collect::<String>();
-                        println!("[rtrack]{}++enter: {} {} {}", space, #fn_signature, stack + 1, #arg);
+                        // let stack = v.borrow().get_current_stack();
+                        // let spaces = [' '; 40];
+                        // //let space = std::iter::repeat(' ').take(4 * stack).collect::<String>();
+                        // println!("[rtrack]{}++enter: {} {} {}", spaces[], #fn_signature, stack + 1, #arg);
                         v.borrow_mut().start_counting(#fn_signature);
                     });
                     let ret = #original_block;
                     QEMU_PLUGIN.with(|v| {
-                        let (stack, cnt) = v.borrow_mut().stop_counting();
-                        let space = std::iter::repeat(' ').take(4 * stack).collect::<String>();
-                        println!("[rtrack]{}--exit: {} {} {} {}", space, #fn_signature, stack, cnt, #arg);
+                        let (stack, cnt) = v.borrow_mut().stop_counting(#fn_signature);
+                        //let space = std::iter::repeat(' ').take(4 * stack).collect::<String>();
+                        //println!("[rtrack]{}--exit: {} {} {} {}", space, #fn_signature, stack, cnt, #arg);
                     });
                     ret
                 }} );
