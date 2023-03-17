@@ -1,10 +1,6 @@
 use crate::errors::InterpreterError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::KernelNodeApi;
-use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
-use crate::system::node::{RENodeInit, RENodeModuleInit};
-use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRulesObject;
 use native_sdk::modules::metadata::Metadata;
@@ -76,7 +72,7 @@ impl IdentityNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         match export_name {
             IDENTITY_CREATE_IDENT => {
@@ -139,7 +135,7 @@ pub struct IdentityBlueprint;
 impl IdentityBlueprint {
     pub fn create<Y>(access_rule: AccessRule, api: &mut Y) -> Result<Address, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let (object, modules) = Self::create_object(access_rule, api)?;
         let modules = modules
@@ -155,7 +151,7 @@ impl IdentityBlueprint {
         api: &mut Y,
     ) -> Result<(Own, BTreeMap<NodeModuleId, Own>), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let non_fungible_global_id = NonFungibleGlobalId::new(
             ECDSA_SECP256K1_TOKEN,
@@ -171,7 +167,7 @@ impl IdentityBlueprint {
         api: &mut Y,
     ) -> Result<(Own, BTreeMap<NodeModuleId, Own>), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let non_fungible_global_id = NonFungibleGlobalId::new(
             EDDSA_ED25519_TOKEN,
@@ -187,7 +183,7 @@ impl IdentityBlueprint {
         api: &mut Y,
     ) -> Result<(Own, BTreeMap<NodeModuleId, Own>), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let mut access_rules = AccessRulesConfig::new();
         access_rules.set_access_rule_and_mutability(
@@ -199,17 +195,9 @@ impl IdentityBlueprint {
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
 
-        let node_id = api.kernel_allocate_node_id(RENodeType::Object)?;
-        api.kernel_create_node(
-            node_id,
-            RENodeInit::Object(btreemap!()),
-            btreemap!(
-                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
-                    package_address: IDENTITY_PACKAGE,
-                    blueprint_name: IDENTITY_BLUEPRINT.to_string(),
-                    global: false,
-                })
-            ),
+        let object_id = api.new_object(
+            IDENTITY_BLUEPRINT,
+            vec![]
         )?;
 
         let modules = btreemap!(
@@ -218,6 +206,6 @@ impl IdentityBlueprint {
             NodeModuleId::ComponentRoyalty => royalty,
         );
 
-        Ok((Own::Object(node_id.into()), modules))
+        Ok((Own::Object(object_id), modules))
     }
 }
