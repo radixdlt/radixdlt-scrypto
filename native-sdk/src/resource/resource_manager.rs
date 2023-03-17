@@ -10,7 +10,6 @@ use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
 
 /// Represents a resource manager.
 #[derive(Debug)]
@@ -126,28 +125,6 @@ impl ResourceManager {
     }
 
     /// Mints non-fungible resources
-    pub fn mint_non_fungible<Y, E: Debug + ScryptoDecode>(
-        &mut self,
-        local_id: NonFungibleLocalId,
-        api: &mut Y,
-    ) -> Result<Bucket, E>
-    where
-        Y: ClientApi<E>,
-    {
-        let mut entries = BTreeMap::new();
-        let value: ScryptoValue = scrypto_decode(&scrypto_encode(&()).unwrap()).unwrap();
-        entries.insert(local_id, (value,));
-
-        let rtn = api.call_method(
-            RENodeId::GlobalObject(self.0.into()),
-            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
-            scrypto_encode(&NonFungibleResourceManagerMintInput { entries }).unwrap(),
-        )?;
-
-        Ok(scrypto_decode(&rtn).unwrap())
-    }
-
-    /// Mints non-fungible resources
     pub fn mint_non_fungible_single_uuid<Y, E: Debug + ScryptoDecode, T: ScryptoEncode>(
         &self,
         data: T,
@@ -163,28 +140,6 @@ impl ResourceManager {
             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT,
             scrypto_encode(&NonFungibleResourceManagerMintSingleUuidInput { entry: value })
                 .unwrap(),
-        )?;
-
-        Ok(scrypto_decode(&rtn).unwrap())
-    }
-
-    /// Mints non-fungible resources
-    pub fn mint_non_fungible_uuid<Y, E: Debug + ScryptoDecode, T: ScryptoEncode>(
-        &mut self,
-        data: T,
-        api: &mut Y,
-    ) -> Result<Bucket, E>
-    where
-        Y: ClientApi<E>,
-    {
-        let mut entries = Vec::new();
-        let value: ScryptoValue = scrypto_decode(&scrypto_encode(&data).unwrap()).unwrap();
-        entries.push((value,));
-
-        let rtn = api.call_method(
-            RENodeId::GlobalObject(self.0.into()),
-            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
-            scrypto_encode(&NonFungibleResourceManagerMintUuidInput { entries }).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())
