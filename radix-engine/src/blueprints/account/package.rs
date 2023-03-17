@@ -361,7 +361,7 @@ impl AccountNativePackage {
         let access_rules =
             AccessRulesObject::sys_new(access_rules_from_withdraw_rule(input.withdraw_rule), api)?;
         let metadata = Metadata::sys_create(api)?;
-        let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
+        let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
         let address = api.globalize(
             RENodeId::Object(account_id),

@@ -30,7 +30,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
     LockHandle, ProofOffset, RENodeId, SubstateId, SubstateOffset,
 };
-use radix_engine_interface::api::{ClientObjectApi, ClientPackageApi};
+use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::account::{
     ACCOUNT_BLUEPRINT, ACCOUNT_DEPOSIT_BATCH_IDENT, ACCOUNT_DEPOSIT_IDENT,
 };
@@ -184,7 +184,7 @@ where
 
         let access_rules = AccessRulesObject::sys_new(access_rules, self)?;
         let metadata = Metadata::sys_create(self)?;
-        let royalty = ComponentRoyalty::sys_create(self, RoyaltyConfig::default())?;
+        let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), self)?;
 
         self.globalize_with_address(
             component_id,
@@ -219,7 +219,7 @@ where
 
         let access_rules = AccessRulesObject::sys_new(access_rules, self)?;
         let metadata = Metadata::sys_create(self)?;
-        let royalty = ComponentRoyalty::sys_create(self, RoyaltyConfig::default())?;
+        let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), self)?;
 
         self.globalize_with_address(
             local_id,
@@ -675,7 +675,7 @@ where
         match (node_id, &init) {
             (RENodeId::GlobalObject(Address::Component(..)), RENodeInit::GlobalObject(..)) => {}
             (RENodeId::GlobalObject(Address::Resource(..)), RENodeInit::GlobalObject(..)) => {}
-            (RENodeId::GlobalObject(Address::Package(..)), RENodeInit::GlobalPackage(..)) => {}
+            (RENodeId::GlobalObject(Address::Package(..)), RENodeInit::GlobalObject(..)) => {}
             (RENodeId::Object(..), RENodeInit::Object(..)) => {}
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
             (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {}
@@ -683,7 +683,7 @@ where
         }
 
         let push_to_store = match init {
-            RENodeInit::GlobalObject(..) | RENodeInit::GlobalPackage(..) => true,
+            RENodeInit::GlobalObject(..) => true,
             _ => false,
         };
 

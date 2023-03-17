@@ -32,7 +32,6 @@ pub trait KernelNodeApi {
     fn kernel_allocate_node_id(&mut self, node_type: RENodeType) -> Result<RENodeId, RuntimeError>;
 
     /// Creates a new RENode
-    /// TODO: Remove, replace with lock_substate + get_ref_mut use
     fn kernel_create_node(
         &mut self,
         node_id: RENodeId,

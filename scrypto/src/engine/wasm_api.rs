@@ -35,7 +35,7 @@ extern "C" {
     /// Consumes a buffer by copying the contents into the specified destination.
     pub fn consume_buffer(buffer_id: BufferId, destination_ptr: *mut u8);
 
-    pub fn new_component(
+    pub fn new_object(
         blueprint_ident_ptr: *const u8,
         blueprint_ident: usize,
         app_states_ptr: *const u8,
@@ -44,7 +44,7 @@ extern "C" {
 
     pub fn new_key_value_store(schema_ptr: *const u8, schema_len: usize) -> Buffer;
 
-    pub fn globalize_component(
+    pub fn globalize_object(
         component_id_ptr: *const u8,
         component_id_len: usize,
         modules_ptr: *const u8,
@@ -60,7 +60,7 @@ extern "C" {
         _address_len: usize,
     ) -> Buffer;
 
-    pub fn get_component_type_info(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
+    pub fn get_object_type_info(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
 
     pub fn get_key_value_store_info(
         key_value_store_id_ptr: *const u8,
@@ -109,15 +109,8 @@ extern "C" {
         args_len: usize,
     ) -> Buffer;
 
-    //===============
-    // Node API
-    //===============
-
-    /// Creates a node with the given initial data.
-    pub fn create_node(node_ptr: *const u8, node_len: usize) -> Buffer;
-
     /// Destroys a node.
-    pub fn drop_node(node_id_ptr: *const u8, node_id_len: usize);
+    pub fn drop_object(node_id_ptr: *const u8, node_id_len: usize);
 
     //===============
     // Substate API
@@ -181,7 +174,7 @@ pub unsafe fn consume_buffer(_buffer_id: BufferId, _destination_ptr: *mut u8) {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn new_component(
+pub unsafe fn new_object(
     _blueprint_ident_ptr: *const u8,
     _blueprint_ident: usize,
     _app_states_ptr: *const u8,
@@ -196,7 +189,7 @@ pub unsafe fn new_key_value_store(_schema_ptr: *const u8, _schema_len: usize) ->
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn globalize_component(
+pub unsafe fn globalize_object(
     _node_id_ptr: *const u8,
     _node_id_len: usize,
     _modules_ptr: *const u8,
@@ -218,7 +211,7 @@ pub unsafe fn globalize_with_address(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn get_component_type_info(
+pub unsafe fn get_object_type_info(
     _component_id_ptr: *const u8,
     _component_id_len: usize,
 ) -> Buffer {
@@ -279,7 +272,7 @@ pub unsafe fn call_function(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn drop_node(_node_id_ptr: *const u8, _node_id_len: usize) {
+pub unsafe fn drop_object(_node_id_ptr: *const u8, _node_id_len: usize) {
     unreachable!()
 }
 

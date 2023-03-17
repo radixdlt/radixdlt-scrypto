@@ -122,8 +122,6 @@ pub enum NodeModuleId {
     AccessRules,
     AccessRules1, // TODO: remove
     ComponentRoyalty,
-    FunctionAccessRules, // TODO: remove
-    PackageEventSchema,  // TODO: remove
 }
 
 impl NodeModuleId {
@@ -135,8 +133,6 @@ impl NodeModuleId {
             3u32 => Some(NodeModuleId::AccessRules),
             4u32 => Some(NodeModuleId::AccessRules1),
             5u32 => Some(NodeModuleId::ComponentRoyalty),
-            7u32 => Some(NodeModuleId::FunctionAccessRules),
-            8u32 => Some(NodeModuleId::PackageEventSchema),
             _ => None,
         }
     }
@@ -149,8 +145,6 @@ impl NodeModuleId {
             NodeModuleId::AccessRules => 3u32,
             NodeModuleId::AccessRules1 => 4u32,
             NodeModuleId::ComponentRoyalty => 5u32,
-            NodeModuleId::FunctionAccessRules => 7u32,
-            NodeModuleId::PackageEventSchema => 8u32,
         }
     }
 }
@@ -177,11 +171,6 @@ pub enum RoyaltyOffset {
 }
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum PackageEventSchemaOffset {
-    PackageEventSchema,
-}
-
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ComponentOffset {
     /// Component application state at offset `0x00`.
     State0,
@@ -193,6 +182,8 @@ pub enum PackageOffset {
     CodeType,
     Code,
     Royalty,
+    FunctionAccessRules,
+    EventSchema,
 }
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -268,7 +259,6 @@ pub enum SubstateOffset {
     AuthZoneStack(AuthZoneStackOffset),
     Component(ComponentOffset),
     Package(PackageOffset),
-    PackageAccessRules,
     ResourceManager(ResourceManagerOffset),
     KeyValueStore(KeyValueStoreOffset),
     Vault(VaultOffset),
@@ -286,7 +276,6 @@ pub enum SubstateOffset {
     TypeInfo(TypeInfoOffset),
     AccessRules(AccessRulesOffset),
     Royalty(RoyaltyOffset),
-    PackageEventSchema(PackageEventSchemaOffset),
 }
 
 /// TODO: separate space addresses?

@@ -22,15 +22,11 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::utils::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
-use radix_engine_interface::api::node_modules::auth::{
-    AuthAddresses, ACCESS_RULES_BLUEPRINT, FUNCTION_ACCESS_RULES_BLUEPRINT,
-};
-use radix_engine_interface::api::node_modules::metadata::{
-    MetadataEntry, MetadataValue, METADATA_BLUEPRINT,
-};
-use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
+use radix_engine_interface::api::node_modules::auth::*;
+use radix_engine_interface::api::node_modules::metadata::*;
+use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::types::{RENodeId, VaultOffset};
-use radix_engine_interface::api::ClientPackageApi;
+use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::clock::{
     ClockGetCurrentTimeInput, ClockSetCurrentTimeInput, TimePrecision,
     CLOCK_GET_CURRENT_TIME_IDENT, CLOCK_SET_CURRENT_TIME_IDENT,
@@ -1155,11 +1151,6 @@ impl TestRunner {
                         COMPONENT_ROYALTY_BLUEPRINT.into(),
                         event_name.clone(),
                     ),
-                    NodeModuleId::FunctionAccessRules => (
-                        ACCESS_RULES_PACKAGE,
-                        FUNCTION_ACCESS_RULES_BLUEPRINT.into(),
-                        event_name.clone(),
-                    ),
                     NodeModuleId::Metadata => (
                         METADATA_PACKAGE,
                         METADATA_BLUEPRINT.into(),
@@ -1187,7 +1178,7 @@ impl TestRunner {
                             TypeInfoSubstate::KeyValueStore(..) => panic!("No event schema."),
                         }
                     }
-                    NodeModuleId::TypeInfo | NodeModuleId::PackageEventSchema => {
+                    NodeModuleId::TypeInfo => {
                         panic!("No event schema.")
                     }
                 }
@@ -1206,8 +1197,8 @@ impl TestRunner {
 
         let substate_id = SubstateId(
             RENodeId::GlobalObject(Address::Package(package_address)),
-            NodeModuleId::PackageEventSchema,
-            SubstateOffset::PackageEventSchema(PackageEventSchemaOffset::PackageEventSchema),
+            NodeModuleId::SELF,
+            SubstateOffset::Package(PackageOffset::EventSchema),
         );
         self.substate_store()
             .get_substate(&substate_id)

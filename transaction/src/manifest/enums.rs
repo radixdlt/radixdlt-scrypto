@@ -88,7 +88,6 @@ lazy_static! {
                 AccessRules = 3;
                 AccessRules1 = 4;
                 ComponentRoyalty = 5;
-                PackageRoyalty = 6;
             }
         );
 

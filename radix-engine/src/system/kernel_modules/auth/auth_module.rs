@@ -74,8 +74,8 @@ impl AuthModule {
         } else {
             let handle = api.kernel_lock_substate(
                 RENodeId::GlobalObject(identifier.package_address.into()),
-                NodeModuleId::FunctionAccessRules,
-                SubstateOffset::PackageAccessRules,
+                NodeModuleId::SELF,
+                SubstateOffset::Package(PackageOffset::FunctionAccessRules),
                 LockFlags::read_only(),
             )?;
             let package_access_rules: &FunctionAccessRulesSubstate =
