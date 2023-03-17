@@ -1,0 +1,52 @@
+[package]
+name = "fuzz-tests"
+version = "0.0.1"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = { version = "0.4", optional = true }
+afl = { version = "0.12.16", optional = true }
+clap = { version = "4.1.7", optional = true }
+rand = { version = "0.8.5", optional = true }
+rand_chacha = { version = "0.3.1", optional = true }
+log = { version = "0.4.17", optional = true }
+once_cell = { version = "1.17.1"}
+sbor = { path = "../sbor", default-features = false }
+radix-engine = { path = "../radix-engine", default-features = false }
+radix-engine-constants = { path = "../radix-engine-constants" }
+radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
+transaction = { path = "../transaction", default-features = false }
+utils = { path = "../utils", default-features = false }
+scrypto-unit = { path = "../scrypto-unit", default-features = false }
+
+[workspace]
+members = ["."]
+
+[profile.release]
+# TODO: check if really this required
+debug = 1
+
+[[bin]]
+name = "transaction"
+path = "src/transaction.rs"
+#test = false
+doc = false
+
+[features]
+# You should enable either `std` or `alloc`
+default = ["std", "fuzzer" ]
+std = ["sbor/std", "transaction/std", "radix-engine/std", "radix-engine-interface/std", "utils/std", "scrypto-unit/std"]
+alloc = ["sbor/alloc", "transaction/alloc", "radix-engine/alloc", "radix-engine-interface/alloc", "utils/alloc", "scrypto-unit/alloc"]
+wasmer = ["radix-engine/wasmer"]
+cpu_ram_metrics = ["radix-engine/cpu_ram_metrics"]
+flamegraph = []
+
+simple-fuzzer = [ "clap", "rand", "rand_chacha", "log" ]
+
+#fuzzer = [ "libfuzzer-sys" ]
+#fuzzer = [ "afl" ]
+fuzzer = [ "simple-fuzzer" ]

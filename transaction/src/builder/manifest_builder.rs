@@ -19,6 +19,8 @@ use radix_engine_interface::constants::{
     RESOURCE_MANAGER_PACKAGE,
 };
 use radix_engine_interface::crypto::{hash, EcdsaSecp256k1PublicKey, Hash};
+#[cfg(feature = "dump_manifest_to_file")]
+use radix_engine_interface::data::manifest::manifest_encode;
 use radix_engine_interface::data::manifest::{
     model::*, to_manifest_value, ManifestEncode, ManifestValue,
 };
@@ -607,10 +609,19 @@ impl ManifestBuilder {
     /// Builds a transaction manifest.
     /// TODO: consider using self
     pub fn build(&self) -> TransactionManifest {
-        TransactionManifest {
+        let m = TransactionManifest {
             instructions: self.instructions.clone(),
             blobs: self.blobs.values().cloned().collect(),
+        };
+        #[cfg(feature = "dump_manifest_to_file")]
+        {
+            let bytes = manifest_encode(&m).unwrap();
+            let m_hash = hash(&bytes);
+            let path = format!("manifest_{:?}.raw", m_hash);
+            std::fs::write(&path, bytes).unwrap();
+            println!("manifest dumped to file {}", &path);
         }
+        m
     }
 
     /// Creates a token resource with mutable supply.
