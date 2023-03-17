@@ -138,7 +138,7 @@ impl IdentityBlueprint {
     fn create_virtual<Y>(
         access_rule: AccessRule,
         api: &mut Y,
-    ) -> Result<(RENodeId, BTreeMap<NodeModuleId, ObjectId>), RuntimeError>
+    ) -> Result<(Own, BTreeMap<NodeModuleId, Own>), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
@@ -147,11 +147,6 @@ impl IdentityBlueprint {
             MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
             access_rule.clone(),
             access_rule,
-        );
-        access_rules.set_access_rule_and_mutability(
-            MethodKey::new(NodeModuleId::Metadata, METADATA_GET_IDENT.to_string()),
-            AccessRule::AllowAll,
-            AccessRule::DenyAll,
         );
         let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
         let metadata = Metadata::sys_create(api)?;
@@ -171,18 +166,18 @@ impl IdentityBlueprint {
         )?;
 
         let modules = btreemap!(
-            NodeModuleId::AccessRules => access_rules.id(),
-            NodeModuleId::Metadata => metadata.id(),
-            NodeModuleId::ComponentRoyalty => royalty.id(),
+            NodeModuleId::AccessRules => access_rules,
+            NodeModuleId::Metadata => metadata,
+            NodeModuleId::ComponentRoyalty => royalty,
         );
 
-        Ok((node_id, modules))
+        Ok((Own::Object(node_id.into()), modules))
     }
 
     pub fn create_ecdsa_virtual<Y>(
         id: [u8; 26],
         api: &mut Y,
-    ) -> Result<(RENodeId, BTreeMap<NodeModuleId, ObjectId>), RuntimeError>
+    ) -> Result<(Own, BTreeMap<NodeModuleId, Own>), RuntimeError>
         where
             Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
@@ -198,7 +193,7 @@ impl IdentityBlueprint {
     pub fn create_eddsa_virtual<Y>(
         id: [u8; 26],
         api: &mut Y,
-    ) -> Result<(RENodeId, BTreeMap<NodeModuleId, ObjectId>), RuntimeError>
+    ) -> Result<(Own, BTreeMap<NodeModuleId, Own>), RuntimeError>
         where
             Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {

@@ -202,7 +202,7 @@ where
     fn create_ecdsa_virtual_identity(
         &mut self,
         id: [u8; 26],
-    ) -> Result<(RENodeId, BTreeMap<NodeModuleId, ObjectId>), RuntimeError> {
+    ) -> Result<(Own, BTreeMap<NodeModuleId, Own>), RuntimeError> {
         // TODO: This should move into the appropriate place once virtual manager is implemented
         self.current_frame.add_ref(
             RENodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()),
@@ -214,7 +214,7 @@ where
     fn create_eddsa_virtual_identity(
         &mut self,
         id: [u8; 26],
-    ) -> Result<(RENodeId, BTreeMap<NodeModuleId, ObjectId>), RuntimeError> {
+    ) -> Result<(Own, BTreeMap<NodeModuleId, Own>), RuntimeError> {
         // TODO: This should move into the appropriate place once virtual manager is implemented
         self.current_frame.add_ref(
             RENodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()),
@@ -252,14 +252,24 @@ where
                         self.create_virtual_account(node_id, non_fungible_global_id)?;
                     }
                     ComponentAddress::EcdsaSecp256k1VirtualIdentity(address) => {
-                        let (local_id, modules) = self.create_ecdsa_virtual_identity(address)?;
+                        let (object_id, modules) = self.create_ecdsa_virtual_identity(address)?;
+                        let modules = modules.into_iter().map(|(id, own)| (id, own.id())).collect();
                         self.id_allocator.allocate_virtual_node_id(node_id);
-                        self.globalize_with_address(local_id, modules, node_id.into())?;
+                        self.globalize_with_address(
+                            RENodeId::Object(object_id.id()),
+                            modules,
+                            node_id.into(),
+                        )?;
                     }
                     ComponentAddress::EddsaEd25519VirtualIdentity(address) => {
-                        let (local_id, modules) = self.create_eddsa_virtual_identity(address)?;
+                        let (object_id, modules) = self.create_eddsa_virtual_identity(address)?;
+                        let modules = modules.into_iter().map(|(id, own)| (id, own.id())).collect();
                         self.id_allocator.allocate_virtual_node_id(node_id);
-                        self.globalize_with_address(local_id, modules, node_id.into())?;
+                        self.globalize_with_address(
+                            RENodeId::Object(object_id.id()),
+                            modules,
+                            node_id.into(),
+                        )?;
                     }
                     _ => return Ok(false),
                 };
