@@ -2,11 +2,7 @@ use crate::errors::SystemError;
 use crate::errors::{ApplicationError, RuntimeError, SubstateValidationError};
 use crate::kernel::actor::{Actor, ActorIdentifier};
 use crate::kernel::kernel::Kernel;
-use crate::kernel::kernel_api::KernelInternalApi;
-use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::kernel::kernel_api::{KernelInvokeApi, KernelNodeApi, LockInfo};
-use crate::kernel::module::KernelModule;
-use crate::kernel::module_mixer::KernelModuleMixer;
+use crate::kernel::kernel_api::*;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::system::kernel_modules::events::EventError;
 use crate::system::node::RENodeInit;
@@ -23,9 +19,9 @@ use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::types::Level;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
@@ -37,6 +33,7 @@ use radix_engine_interface::schema::{KeyValueStoreSchema, PackageSchema};
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
+use super::kernel_modules::costing::CostingReason;
 use super::node_modules::event_schema::PackageEventSchemaSubstate;
 
 impl<'g, 's, W> ClientNodeApi<RuntimeError> for Kernel<'g, 's, W>
@@ -689,7 +686,7 @@ where
     }
 }
 
-impl<'g, 's, W> ClientUnsafeApi<RuntimeError> for Kernel<'g, 's, W>
+impl<'g, 's, W> ClientCostingApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
@@ -698,7 +695,17 @@ where
         units: u32,
         reason: ClientCostingReason,
     ) -> Result<(), RuntimeError> {
-        KernelModuleMixer::on_consume_cost_units(self, units, reason)
+        // No costing applied
+
+        self.kernel_get_module_state().costing.apply_execution_cost(
+            match reason {
+                ClientCostingReason::RunWasm => CostingReason::RunWasm,
+                ClientCostingReason::RunNative => CostingReason::RunNative,
+                ClientCostingReason::RunSystem => CostingReason::RunSystem,
+            },
+            |_| units,
+            5,
+        )
     }
 
     fn credit_cost_units(
@@ -707,15 +714,39 @@ where
         locked_fee: LiquidFungibleResource,
         contingent: bool,
     ) -> Result<LiquidFungibleResource, RuntimeError> {
-        KernelModuleMixer::on_credit_cost_units(self, vault_id, locked_fee, contingent)
-    }
+        // No costing applied
 
+        self.kernel_get_module_state()
+            .costing
+            .credit_cost_units(vault_id, locked_fee, contingent)
+    }
+}
+
+impl<'g, 's, W> ClientTransactionLimitsApi<RuntimeError> for Kernel<'g, 's, W>
+where
+    W: WasmEngine,
+{
+    fn update_wasm_memory_usage(&mut self, consumed_memory: usize) -> Result<(), RuntimeError> {
+        // No costing applied
+
+        let current_depth = self.kernel_get_current_depth();
+        self.kernel_get_module_state()
+            .transaction_limits
+            .update_wasm_memory_usage(current_depth, consumed_memory)
+    }
+}
+
+impl<'g, 's, W> ClientExecutionTraceApi<RuntimeError> for Kernel<'g, 's, W>
+where
+    W: WasmEngine,
+{
     fn update_instruction_index(&mut self, new_index: usize) -> Result<(), RuntimeError> {
-        KernelModuleMixer::on_update_instruction_index(self, new_index)
-    }
+        // No costing applied
 
-    fn update_wasm_memory_usage(&mut self, size: usize) -> Result<(), RuntimeError> {
-        KernelModuleMixer::on_update_wasm_memory_usage(self, size)
+        self.kernel_get_module_state()
+            .execution_trace
+            .update_instruction_index(new_index);
+        Ok(())
     }
 }
 
@@ -725,7 +756,7 @@ where
 {
     fn emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), RuntimeError> {
         // Costing event emission.
-        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         // Construct the event type identifier based on the current actor
         let (event_type_id, package_address, blueprint_name) = match self.kernel_get_current_actor()
@@ -833,10 +864,35 @@ where
     W: WasmEngine,
 {
     fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
+        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
+
         self.kernel_get_module_state()
             .logger
             .add_log(level, message);
         Ok(())
+    }
+}
+
+impl<'g, 's, W> ClientTransactionRuntimeApi<RuntimeError> for Kernel<'g, 's, W>
+where
+    W: WasmEngine,
+{
+    fn get_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
+        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
+
+        Ok(self
+            .kernel_get_module_state()
+            .transaction_runtime
+            .transaction_hash())
+    }
+
+    fn generate_uuid(&mut self) -> Result<u128, RuntimeError> {
+        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
+
+        Ok(self
+            .kernel_get_module_state()
+            .transaction_runtime
+            .generate_uuid())
     }
 }
 

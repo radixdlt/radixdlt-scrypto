@@ -26,7 +26,6 @@ pub const CLOCK_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 4
 pub const ACCOUNT_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 5);
 pub const ACCESS_CONTROLLER_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 6);
 pub const TRANSACTION_PROCESSOR_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 7);
-pub const TRANSACTION_RUNTIME_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 8);
 pub const AUTH_ZONE_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 9);
 pub const METADATA_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 10);
 pub const ROYALTY_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 11);
@@ -44,7 +43,6 @@ pub fn is_native_package(address: PackageAddress) -> bool {
         | ACCOUNT_PACKAGE
         | ACCESS_CONTROLLER_PACKAGE
         | TRANSACTION_PROCESSOR_PACKAGE
-        | TRANSACTION_RUNTIME_PACKAGE
         | AUTH_ZONE_PACKAGE
         | METADATA_PACKAGE
         | ROYALTY_PACKAGE

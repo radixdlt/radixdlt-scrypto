@@ -97,37 +97,31 @@ pub enum WasmRuntimeError {
 
     Trap(String),
 
-    //=============
-    // SHIM ERRORS
-    //=============
+    //=================
+    // Scrypto Runtime
+    //=================
     /// Not implemented, no-op wasm runtime
     NotImplemented,
     /// Buffer not found
     BufferNotFound(BufferId),
-    /// Invalid scrypto receiver
-    InvalidReceiver(DecodeError),
     /// Invalid package address
     InvalidPackageAddress(DecodeError),
     /// Invalid method ident
-    InvalidIdent,
-    /// Invalid native fn identifier
-    InvalidNativeFnIdentifier(DecodeError),
-    /// Invalid RE node data
-    InvalidNode(DecodeError),
+    InvalidString,
     /// Invalid RE node ID
     InvalidNodeId(DecodeError),
     /// Invalid RE module ID
     InvalidModuleId(u32),
     /// Invalid substate offset
     InvalidOffset(DecodeError),
-    /// Invalid package abi
-    InvalidPackageAbi(DecodeError),
     /// Invalid initial app states
     InvalidAppStates(DecodeError),
     /// Invalid access rules
-    InvalidAccessRulesChain(DecodeError),
+    InvalidAccessRules(DecodeError),
     /// Invalid access rules
     InvalidSchema(DecodeError),
+    /// Invalid modules
+    InvalidModules(DecodeError),
     /// Invalid royalty config
     InvalidRoyaltyConfig(DecodeError),
     /// Invalid metadata
@@ -140,6 +134,12 @@ pub enum WasmRuntimeError {
     InvalidEventSchema(DecodeError),
     /// Invalid component address
     InvalidLockFlags,
+    /// Invalid log level
+    InvalidLogLevel(DecodeError),
+
+    //=============
+    // No-op Runtime
+    //=============
     /// Costing error
     FeeReserveError(FeeReserveError),
 }

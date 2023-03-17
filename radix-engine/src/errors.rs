@@ -7,7 +7,6 @@ use crate::blueprints::resource::{
     VaultError, WorktopError,
 };
 use crate::blueprints::transaction_processor::TransactionProcessorError;
-use crate::blueprints::transaction_runtime::TransactionRuntimeError;
 use crate::kernel::actor::{Actor, ExecutionMode};
 use crate::kernel::track::TrackError;
 use crate::system::kernel_modules::auth::AuthError;
@@ -333,8 +332,6 @@ pub enum ApplicationError {
 
     AccessRulesChainError(AccessRulesChainError),
 
-    TransactionRuntimeError(TransactionRuntimeError),
-
     BucketError(BucketError),
 
     ProofError(ProofError),
@@ -381,12 +378,6 @@ impl From<FungibleResourceManagerError> for ApplicationError {
 impl From<AccessRulesChainError> for ApplicationError {
     fn from(value: AccessRulesChainError) -> Self {
         Self::AccessRulesChainError(value)
-    }
-}
-
-impl From<TransactionRuntimeError> for ApplicationError {
-    fn from(value: TransactionRuntimeError) -> Self {
-        Self::TransactionRuntimeError(value)
     }
 }
 

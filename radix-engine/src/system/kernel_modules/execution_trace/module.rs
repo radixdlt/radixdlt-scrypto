@@ -38,6 +38,12 @@ pub struct ExecutionTraceModule {
     vault_ops: Vec<(TraceActor, ObjectId, VaultOp, usize)>,
 }
 
+impl ExecutionTraceModule {
+    pub fn update_instruction_index(&mut self, new_index: usize) {
+        self.current_instruction_index = new_index;
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ResourceChange {
     pub resource_address: ResourceAddress,
@@ -345,16 +351,6 @@ impl KernelModule for ExecutionTraceModule {
         api.kernel_get_module_state()
             .execution_trace
             .handle_on_execution_finish(current_actor, current_depth, caller, resource_summary);
-        Ok(())
-    }
-
-    fn on_update_instruction_index<Y: KernelModuleApi<RuntimeError>>(
-        api: &mut Y,
-        new_index: usize,
-    ) -> Result<(), RuntimeError> {
-        api.kernel_get_module_state()
-            .execution_trace
-            .current_instruction_index = new_index;
         Ok(())
     }
 }

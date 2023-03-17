@@ -36,6 +36,7 @@ members = [
     "royalty",
     "royalty-auth",
     "transaction_limits",
+    "transaction_runtime",
     "events",
     "logger"
 ]
