@@ -25,12 +25,7 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
     LockHandle, ProofOffset, RENodeId, SubstateId, SubstateOffset,
 };
-use radix_engine_interface::api::{ClientApi, ClientObjectApi, ClientPackageApi};
-use radix_engine_interface::blueprints::account::{ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_IDENT, ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_IDENT};
-use radix_engine_interface::blueprints::identity::{
-    VirtualLazyLoadInput, IDENTITY_BLUEPRINT, IDENTITY_CREATE_VIRTUAL_ECDSA_IDENT,
-    IDENTITY_CREATE_VIRTUAL_EDDSA_IDENT,
-};
+use radix_engine_interface::api::{ClientObjectApi, ClientPackageApi};
 use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::mem;
@@ -114,69 +109,6 @@ where
         };
 
         (self.module, new_result)
-    }
-
-    fn try_virtualize<Y: KernelNodeApi + ClientApi<RuntimeError>>(
-        node_id: RENodeId,
-        _module_id: NodeModuleId,
-        _offset: &SubstateOffset,
-        api: &mut Y
-    ) -> Result<bool, RuntimeError> {
-        match node_id {
-            // TODO: Need to have a schema check in place before this in order to not create virtual components when accessing illegal substates
-            RENodeId::GlobalObject(Address::Component(component_address)) => {
-                // Lazy create component if missing
-                let (package, blueprint, func, id) = match component_address {
-                    ComponentAddress::EcdsaSecp256k1VirtualAccount(id) => (
-                        ACCOUNT_PACKAGE,
-                        ACCOUNT_BLUEPRINT,
-                        ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_IDENT,
-                        id,
-                    ),
-                    ComponentAddress::EddsaEd25519VirtualAccount(id) => (
-                        ACCOUNT_PACKAGE,
-                        ACCOUNT_BLUEPRINT,
-                        ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_IDENT,
-                        id,
-                    ),
-                    ComponentAddress::EcdsaSecp256k1VirtualIdentity(id) => (
-                        IDENTITY_PACKAGE,
-                        IDENTITY_BLUEPRINT,
-                        IDENTITY_CREATE_VIRTUAL_ECDSA_IDENT,
-                        id
-                    ),
-                    ComponentAddress::EddsaEd25519VirtualIdentity(id) => (
-                        IDENTITY_PACKAGE,
-                        IDENTITY_BLUEPRINT,
-                        IDENTITY_CREATE_VIRTUAL_EDDSA_IDENT,
-                        id,
-                    ),
-                    _ => return Ok(false),
-                };
-
-                let rtn = api.call_function(
-                    package,
-                    blueprint,
-                    func,
-                    scrypto_encode(&VirtualLazyLoadInput { id }).unwrap(),
-                )?;
-                let (object_id, modules): (Own, BTreeMap<NodeModuleId, Own>) =
-                    scrypto_decode(&rtn).unwrap();
-                let modules = modules
-                    .into_iter()
-                    .map(|(id, own)| (id, own.id()))
-                    .collect();
-                api.kernel_allocate_virtual_node_id(node_id)?;
-                api.globalize_with_address(
-                    RENodeId::Object(object_id.id()),
-                    modules,
-                    node_id.into(),
-                )?;
-
-                Ok(true)
-            }
-            _ => Ok(false),
-        }
     }
 
     fn drop_node_internal(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError> {
@@ -723,7 +655,9 @@ where
             Err(RuntimeError::KernelError(KernelError::TrackError(TrackError::NotFound(
                 SubstateId(node_id, module_id, ref offset),
             )))) => {
-                if Self::try_virtualize(node_id, module_id, &offset, self)? {
+                let retry =
+                    KernelModuleMixer::on_substate_lock_fault(node_id, module_id, &offset, self)?;
+                if retry {
                     self.current_frame.acquire_lock(
                         &mut self.heap,
                         &mut self.track,

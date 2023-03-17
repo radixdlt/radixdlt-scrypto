@@ -9,9 +9,9 @@ use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::resource::{AccessRule, Bucket, Proof, require};
 use radix_engine_interface::blueprints::resource::AccessRulesConfig;
 use radix_engine_interface::blueprints::resource::MethodKey;
+use radix_engine_interface::blueprints::resource::{require, AccessRule, Bucket, Proof};
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver};
 
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
@@ -374,7 +374,8 @@ impl AccountNativePackage {
                 let input: AccountWithdrawNonFungiblesInput = input.as_typed().map_err(|e| {
                     RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                 })?;
-                let rtn = Self::withdraw_non_fungibles(receiver, input.resource_address, input.ids, api)?;
+                let rtn =
+                    Self::withdraw_non_fungibles(receiver, input.resource_address, input.ids, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT => {
@@ -386,7 +387,13 @@ impl AccountNativePackage {
                 let input: AccountLockFeeAndWithdrawInput = input.as_typed().map_err(|e| {
                     RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                 })?;
-                let rtn = Self::lock_fee_and_withdraw(receiver, input.amount_to_lock, input.resource_address, input.amount, api)?;
+                let rtn = Self::lock_fee_and_withdraw(
+                    receiver,
+                    input.amount_to_lock,
+                    input.resource_address,
+                    input.amount,
+                    api,
+                )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT => {
@@ -395,10 +402,17 @@ impl AccountNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                let input: AccountLockFeeAndWithdrawNonFungiblesInput = input.as_typed().map_err(|e| {
-                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-                })?;
-                let rtn = Self::lock_fee_and_withdraw_non_fungibles(receiver, input.amount_to_lock, input.resource_address, input.ids, api)?;
+                let input: AccountLockFeeAndWithdrawNonFungiblesInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                    })?;
+                let rtn = Self::lock_fee_and_withdraw_non_fungibles(
+                    receiver,
+                    input.amount_to_lock,
+                    input.resource_address,
+                    input.ids,
+                    api,
+                )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_CREATE_PROOF_IDENT => {
@@ -422,7 +436,12 @@ impl AccountNativePackage {
                 let input: AccountCreateProofByAmountInput = input.as_typed().map_err(|e| {
                     RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                 })?;
-                let rtn = Self::create_proof_by_amount(receiver, input.resource_address, input.amount, api)?;
+                let rtn = Self::create_proof_by_amount(
+                    receiver,
+                    input.resource_address,
+                    input.amount,
+                    api,
+                )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_CREATE_PROOF_BY_IDS_IDENT => {
@@ -434,7 +453,8 @@ impl AccountNativePackage {
                 let input: AccountCreateProofByIdsInput = input.as_typed().map_err(|e| {
                     RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                 })?;
-                let rtn = Self::create_proof_by_ids(receiver, input.resource_address, input.ids, api)?;
+                let rtn =
+                    Self::create_proof_by_ids(receiver, input.resource_address, input.ids, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             _ => Err(RuntimeError::InterpreterError(
@@ -443,26 +463,33 @@ impl AccountNativePackage {
         }
     }
 
-    fn create_modules<Y>(access_rule: AccessRule, api: &mut Y) -> Result<BTreeMap<NodeModuleId, Own>, RuntimeError>
-        where
-            Y: KernelNodeApi + ClientApi<RuntimeError> {
+    fn create_modules<Y>(
+        access_rule: AccessRule,
+        api: &mut Y,
+    ) -> Result<BTreeMap<NodeModuleId, Own>, RuntimeError>
+    where
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
+    {
         let access_rules =
             AccessRulesObject::sys_new(access_rules_from_withdraw_rule(access_rule), api)?;
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
 
         let modules = btreemap!(
-                NodeModuleId::AccessRules => access_rules,
-                NodeModuleId::Metadata => metadata,
-                NodeModuleId::ComponentRoyalty => royalty,
-            );
+            NodeModuleId::AccessRules => access_rules,
+            NodeModuleId::Metadata => metadata,
+            NodeModuleId::ComponentRoyalty => royalty,
+        );
 
         Ok(modules)
     }
 
-    fn create_virtual_ecdsa_256k1<Y>(id: [u8; 26], api: &mut Y) -> Result<VirtualLazyLoadOutput, RuntimeError>
-        where
-            Y: KernelNodeApi + ClientApi<RuntimeError>,
+    fn create_virtual_ecdsa_256k1<Y>(
+        id: [u8; 26],
+        api: &mut Y,
+    ) -> Result<VirtualLazyLoadOutput, RuntimeError>
+    where
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let account = Self::create_local(api)?;
         let non_fungible_global_id = NonFungibleGlobalId::new(
@@ -475,9 +502,12 @@ impl AccountNativePackage {
         Ok((account, modules))
     }
 
-    fn create_virtual_eddsa_25519<Y>(id: [u8; 26], api: &mut Y) -> Result<VirtualLazyLoadOutput, RuntimeError>
-        where
-            Y: KernelNodeApi + ClientApi<RuntimeError>,
+    fn create_virtual_eddsa_25519<Y>(
+        id: [u8; 26],
+        api: &mut Y,
+    ) -> Result<VirtualLazyLoadOutput, RuntimeError>
+    where
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let account = Self::create_local(api)?;
         let non_fungible_global_id = NonFungibleGlobalId::new(
@@ -501,10 +531,7 @@ impl AccountNativePackage {
             .map(|(id, own)| (id, own.id()))
             .collect();
 
-        let address = api.globalize(
-            RENodeId::Object(account.id()),
-            modules,
-        )?;
+        let address = api.globalize(RENodeId::Object(account.id()), modules)?;
 
         Ok(address)
     }
@@ -591,11 +618,7 @@ impl AccountNativePackage {
         Ok(())
     }
 
-    fn lock_fee<Y>(
-        receiver: RENodeId,
-        amount: Decimal,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    fn lock_fee<Y>(receiver: RENodeId, amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
@@ -615,11 +638,7 @@ impl AccountNativePackage {
         Ok(())
     }
 
-    fn deposit<Y>(
-        receiver: RENodeId,
-        bucket: Bucket,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    fn deposit<Y>(receiver: RENodeId, bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
@@ -921,7 +940,6 @@ impl AccountNativePackage {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-
         let proof = Self::get_vault(
             receiver,
             resource_address,
