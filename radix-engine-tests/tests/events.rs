@@ -141,6 +141,47 @@ fn cant_publish_a_package_with_non_struct_or_enum_event() {
     });
 }
 
+#[test]
+fn local_type_index_with_misleading_name_fails() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().without_trace().build();
+
+    let (code, mut schema) = Compile::compile("./tests/blueprints/events");
+    let blueprint_schema = schema.blueprints.get_mut("ScryptoEvents").unwrap();
+    blueprint_schema.event_schema.insert(
+        "HelloHelloEvent".to_string(),
+        blueprint_schema
+            .event_schema
+            .get("RegisteredEvent")
+            .unwrap()
+            .clone(),
+    );
+
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10u32.into())
+        .publish_package(
+            code,
+            schema,
+            BTreeMap::new(),
+            BTreeMap::new(),
+            AccessRulesConfig::new(),
+        )
+        .build();
+
+    // Act
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|runtime_error| {
+        matches!(
+            runtime_error,
+            RuntimeError::ApplicationError(ApplicationError::EventError(
+                EventError::EventNameMismatch { .. },
+            )),
+        )
+    });
+}
+
 //=======
 // Vault
 //=======
