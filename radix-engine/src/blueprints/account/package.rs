@@ -9,7 +9,7 @@ use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::resource::AccessRule;
+use radix_engine_interface::blueprints::resource::{AccessRule, Bucket, Proof};
 use radix_engine_interface::blueprints::resource::AccessRulesConfig;
 use radix_engine_interface::blueprints::resource::MethodKey;
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver};
@@ -252,7 +252,11 @@ impl AccountNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                Self::lock_fee(receiver, input, api)
+                let input: AccountLockFeeInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = Self::lock_fee(receiver, input.amount, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_LOCK_CONTINGENT_FEE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -260,7 +264,12 @@ impl AccountNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                Self::lock_contingent_fee(receiver, input, api)
+                let input: AccountLockContingentFeeInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+
+                let rtn = Self::lock_contingent_fee(receiver, input.amount, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_DEPOSIT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -268,7 +277,12 @@ impl AccountNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                Self::deposit(receiver, input, api)
+                let input: AccountDepositInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+
+                let rtn = Self::deposit(receiver, input.bucket, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_DEPOSIT_BATCH_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -276,7 +290,12 @@ impl AccountNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                Self::deposit_batch(receiver, input, api)
+                let input: AccountDepositBatchInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+
+                let rtn = Self::deposit_batch(receiver, input.buckets, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_WITHDRAW_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -284,7 +303,12 @@ impl AccountNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                Self::withdraw(receiver, input, api)
+                let input: AccountWithdrawInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+
+                let rtn = Self::withdraw(receiver, input.resource_address, input.amount, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -292,7 +316,12 @@ impl AccountNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                Self::withdraw_non_fungibles(receiver, input, api)
+
+                let input: AccountWithdrawNonFungiblesInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = Self::withdraw_non_fungibles(receiver, input.resource_address, input.ids, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -300,7 +329,11 @@ impl AccountNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                Self::lock_fee_and_withdraw(receiver, input, api)
+                let input: AccountLockFeeAndWithdrawInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = Self::lock_fee_and_withdraw(receiver, input.amount_to_lock, input.resource_address, input.amount, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -308,7 +341,11 @@ impl AccountNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                Self::lock_fee_and_withdraw_non_fungibles(receiver, input, api)
+                let input: AccountLockFeeAndWithdrawNonFungiblesInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = Self::lock_fee_and_withdraw_non_fungibles(receiver, input.amount_to_lock, input.resource_address, input.ids, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_CREATE_PROOF_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -316,7 +353,11 @@ impl AccountNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                Self::create_proof(receiver, input, api)
+                let input: AccountCreateProofInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = Self::create_proof(receiver, input.resource_address, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -324,7 +365,11 @@ impl AccountNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                Self::create_proof_by_amount(receiver, input, api)
+                let input: AccountCreateProofByAmountInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = Self::create_proof_by_amount(receiver, input.resource_address, input.amount, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_CREATE_PROOF_BY_IDS_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -332,7 +377,11 @@ impl AccountNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                Self::create_proof_by_ids(receiver, input, api)
+                let input: AccountCreateProofByIdsInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = Self::create_proof_by_ids(receiver, input.resource_address, input.ids, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             _ => Err(RuntimeError::InterpreterError(
                 InterpreterError::NativeExportDoesNotExist(export_name.to_string()),
@@ -446,51 +495,37 @@ impl AccountNativePackage {
 
     fn lock_fee<Y>(
         receiver: RENodeId,
-        input: IndexedScryptoValue,
+        amount: Decimal,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: AccountLockFeeInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-
-        Self::lock_fee_internal(receiver, input.amount, false, api)?;
-
-        Ok(IndexedScryptoValue::from_typed(&()))
+        Self::lock_fee_internal(receiver, amount, false, api)?;
+        Ok(())
     }
 
     fn lock_contingent_fee<Y>(
         receiver: RENodeId,
-        input: IndexedScryptoValue,
+        amount: Decimal,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: AccountLockContingentFeeInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-
-        Self::lock_fee_internal(receiver, input.amount, true, api)?;
-
-        Ok(IndexedScryptoValue::from_typed(&()))
+        Self::lock_fee_internal(receiver, amount, true, api)?;
+        Ok(())
     }
 
     fn deposit<Y>(
         receiver: RENodeId,
-        input: IndexedScryptoValue,
+        bucket: Bucket,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: AccountDepositInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-
-        let resource_address = input.bucket.sys_resource_address(api)?;
+        let resource_address = bucket.sys_resource_address(api)?;
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
         let handle = api.sys_lock_substate(
@@ -533,27 +568,23 @@ impl AccountNativePackage {
         };
 
         // Put the bucket in the vault
-        vault.sys_put(input.bucket, api)?;
+        vault.sys_put(bucket, api)?;
 
         // Drop locks (LIFO)
         api.sys_drop_lock(kv_store_entry_lock_handle)?;
         api.sys_drop_lock(handle)?;
 
-        Ok(IndexedScryptoValue::from_typed(&()))
+        Ok(())
     }
 
     fn deposit_batch<Y>(
         receiver: RENodeId,
-        input: IndexedScryptoValue,
+        buckets: Vec<Bucket>,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: AccountDepositBatchInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-
         let handle = api.sys_lock_substate(
             receiver,
             SubstateOffset::Account(AccountOffset::Account),
@@ -564,7 +595,7 @@ impl AccountNativePackage {
         // KV-store entries again and again because of buckets that have the same resource address.
         // Perhaps these should be grouped into a HashMap<ResourceAddress, Vec<Bucket>> when being
         // resolved.
-        for bucket in input.buckets {
+        for bucket in buckets {
             let resource_address = bucket.sys_resource_address(api)?;
             let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
@@ -609,7 +640,7 @@ impl AccountNativePackage {
 
         api.sys_drop_lock(handle)?;
 
-        Ok(IndexedScryptoValue::from_typed(&()))
+        Ok(())
     }
 
     fn get_vault<F, Y, R>(
@@ -666,160 +697,141 @@ impl AccountNativePackage {
 
     fn withdraw<Y>(
         receiver: RENodeId,
-        input: IndexedScryptoValue,
+        resource_address: ResourceAddress,
+        amount: Decimal,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<Bucket, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: AccountWithdrawInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-
         let bucket = Self::get_vault(
             receiver,
-            input.resource_address,
-            |vault, api| vault.sys_take(input.amount, api),
+            resource_address,
+            |vault, api| vault.sys_take(amount, api),
             api,
         )?;
 
-        Ok(IndexedScryptoValue::from_typed(&bucket))
+        Ok(bucket)
     }
 
     fn withdraw_non_fungibles<Y>(
         receiver: RENodeId,
-        input: IndexedScryptoValue,
+        resource_address: ResourceAddress,
+        ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<Bucket, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: AccountWithdrawNonFungiblesInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-
         let bucket = Self::get_vault(
             receiver,
-            input.resource_address,
-            |vault, api| vault.sys_take_non_fungibles(input.ids, api),
+            resource_address,
+            |vault, api| vault.sys_take_non_fungibles(ids, api),
             api,
         )?;
 
-        Ok(IndexedScryptoValue::from_typed(&bucket))
+        Ok(bucket)
     }
 
     fn lock_fee_and_withdraw<Y>(
         receiver: RENodeId,
-        input: IndexedScryptoValue,
+        amount_to_lock: Decimal,
+        resource_address: ResourceAddress,
+        amount: Decimal,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<Bucket, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: AccountLockFeeAndWithdrawInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-
-        Self::lock_fee_internal(receiver, input.amount_to_lock, false, api)?;
+        Self::lock_fee_internal(receiver, amount_to_lock, false, api)?;
 
         let bucket = Self::get_vault(
             receiver,
-            input.resource_address,
-            |vault, api| vault.sys_take(input.amount, api),
+            resource_address,
+            |vault, api| vault.sys_take(amount, api),
             api,
         )?;
 
-        Ok(IndexedScryptoValue::from_typed(&bucket))
+        Ok(bucket)
     }
 
     fn lock_fee_and_withdraw_non_fungibles<Y>(
         receiver: RENodeId,
-        input: IndexedScryptoValue,
+        amount_to_lock: Decimal,
+        resource_address: ResourceAddress,
+        ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<Bucket, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: AccountLockFeeAndWithdrawNonFungiblesInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-
-        Self::lock_fee_internal(receiver, input.amount_to_lock, false, api)?;
+        Self::lock_fee_internal(receiver, amount_to_lock, false, api)?;
 
         let bucket = Self::get_vault(
             receiver,
-            input.resource_address,
-            |vault, api| vault.sys_take_non_fungibles(input.ids, api),
+            resource_address,
+            |vault, api| vault.sys_take_non_fungibles(ids, api),
             api,
         )?;
 
-        Ok(IndexedScryptoValue::from_typed(&bucket))
+        Ok(bucket)
     }
 
     fn create_proof<Y>(
         receiver: RENodeId,
-        input: IndexedScryptoValue,
+        resource_address: ResourceAddress,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<Proof, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: AccountCreateProofInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-
         let proof = Self::get_vault(
             receiver,
-            input.resource_address,
+            resource_address,
             |vault, api| vault.sys_create_proof(api),
             api,
         )?;
 
-        Ok(IndexedScryptoValue::from_typed(&proof))
+        Ok(proof)
     }
 
     fn create_proof_by_amount<Y>(
         receiver: RENodeId,
-        input: IndexedScryptoValue,
+        resource_address: ResourceAddress,
+        amount: Decimal,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<Proof, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: AccountCreateProofByAmountInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-
         let proof = Self::get_vault(
             receiver,
-            input.resource_address,
-            |vault, api| vault.sys_create_proof_by_amount(input.amount, api),
+            resource_address,
+            |vault, api| vault.sys_create_proof_by_amount(amount, api),
             api,
         )?;
 
-        Ok(IndexedScryptoValue::from_typed(&proof))
+        Ok(proof)
     }
 
     fn create_proof_by_ids<Y>(
         receiver: RENodeId,
-        input: IndexedScryptoValue,
+        resource_address: ResourceAddress,
+        ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<Proof, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let input: AccountCreateProofByIdsInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
 
         let proof = Self::get_vault(
             receiver,
-            input.resource_address,
-            |vault, api| vault.sys_create_proof_by_ids(input.ids, api),
+            resource_address,
+            |vault, api| vault.sys_create_proof_by_ids(ids, api),
             api,
         )?;
 
-        Ok(IndexedScryptoValue::from_typed(&proof))
+        Ok(proof)
     }
 }
 
