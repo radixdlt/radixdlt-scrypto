@@ -219,6 +219,10 @@ where
         self.allocate_buffer(buffer)
     }
 
+    fn assert_access_rule(&mut self, rule: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
+        todo!()
+    }
+
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
         self.api
             .consume_cost_units(n, ClientCostingReason::RunWasm)
@@ -428,6 +432,10 @@ impl WasmRuntime for NopWasmRuntime {
     }
 
     fn generate_uuid(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn assert_access_rule(&mut self, rule: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 }

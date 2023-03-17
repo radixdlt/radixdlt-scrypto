@@ -336,6 +336,18 @@ fn get_auth_zone(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmR
     runtime.get_auth_zone().map(|buffer| buffer.0)
 }
 
+fn assert_access_rule(
+    mut caller: Caller<'_, HostState>,
+    data_ptr: u32,
+    data_len: u32,
+) -> Result<(), InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let data = read_memory(caller.as_context_mut(), memory, data_ptr, data_len)?;
+
+    runtime.assert_access_rule(data)
+}
+
 fn consume_cost_units(
     caller: Caller<'_, HostState>,
     cost_unit: u32,
@@ -619,6 +631,13 @@ impl WasmiModule {
             },
         );
 
+        let host_assert_access_rule = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>, data_ptr: u32, data_len: u32| -> Result<(), Trap> {
+                assert_access_rule(caller, data_ptr, data_len).map_err(|e| e.into())
+            },
+        );
+
         let host_consume_cost_units = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>, cost_unit: u32| -> Result<(), Trap> {
@@ -698,7 +717,12 @@ impl WasmiModule {
         linker_define!(linker, WRITE_SUBSTATE_FUNCTION_NAME, host_write_substate);
         linker_define!(linker, DROP_LOCK_FUNCTION_NAME, host_drop_lock);
         linker_define!(linker, GET_ACTOR_FUNCTION_NAME, host_get_actor);
-        linker_define!(linker, GET_ACTOR_FUNCTION_NAME, host_get_auth_zone);
+        linker_define!(linker, GET_AUTH_ZONE_FUNCTION_NAME, host_get_auth_zone);
+        linker_define!(
+            linker,
+            ASSERT_ACCESS_RULE_FUNCTION_NAME,
+            host_assert_access_rule
+        );
         linker_define!(
             linker,
             CONSUME_COST_UNITS_FUNCTION_NAME,

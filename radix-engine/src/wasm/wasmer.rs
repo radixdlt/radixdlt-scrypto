@@ -394,6 +394,22 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
+        pub fn assert_access_rule(
+            env: &WasmerInstanceEnv,
+            rule_ptr: u32,
+            rule_len: u32,
+        ) -> Result<u64, RuntimeError> {
+            let (_instance, runtime) = grab_runtime!(env);
+
+            let rule = read_memory(&instance, rule_ptr, rule_len)?;
+
+            let buffer = runtime
+                .assert_access_rule(rule)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer.0)
+        }
+
         fn consume_cost_units(env: &WasmerInstanceEnv, cost_unit: u32) -> Result<(), RuntimeError> {
             let (_instance, runtime) = grab_runtime!(env);
             runtime
@@ -476,6 +492,7 @@ impl WasmerModule {
                 DROP_LOCK_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), drop_lock),
                 GET_ACTOR_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_actor),
                 GET_AUTH_ZONE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_auth_zone),
+                ASSERT_ACCESS_RULE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), assert_access_rule),
                 CONSUME_COST_UNITS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), consume_cost_units),
                 EMIT_EVENT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), emit_event),
                 LOG_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), log_message),
