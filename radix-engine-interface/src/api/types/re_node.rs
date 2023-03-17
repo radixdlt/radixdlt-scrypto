@@ -20,7 +20,6 @@ pub enum RENodeType {
     GlobalAccessController,
     GlobalIdentity,
     KeyValueStore,
-    NonFungibleStore,
     Object,
     Vault,
 }
@@ -29,7 +28,8 @@ pub enum RENodeType {
 pub enum RENodeId {
     GlobalObject(Address),
     KeyValueStore(KeyValueStoreId),
-    NonFungibleStore(NonFungibleStoreId),
+    // This is only used for owned objects (global objects have addresses)
+    // TODO: Rename to OwnedObject when it won't cause so many merge conflicts!
     Object(ObjectId),
 }
 
@@ -40,23 +40,29 @@ impl fmt::Debug for RENodeId {
                 .debug_tuple("KeyValueStore")
                 .field(&hex::encode(id))
                 .finish(),
-            Self::NonFungibleStore(id) => f
-                .debug_tuple("NonFungibleStore")
-                .field(&hex::encode(id))
-                .finish(),
             Self::Object(id) => f.debug_tuple("Object").field(&hex::encode(id)).finish(),
             Self::GlobalObject(address) => f.debug_tuple("GlobalObject").field(&address).finish(),
         }
     }
 }
 
-impl Into<[u8; OBJECT_ID_LENGTH]> for RENodeId {
-    fn into(self) -> [u8; OBJECT_ID_LENGTH] {
-        match self {
+impl From<RENodeId> for [u8; OBJECT_ID_LENGTH] {
+    fn from(value: RENodeId) -> Self {
+        match value {
             RENodeId::KeyValueStore(id) => id,
-            RENodeId::NonFungibleStore(id) => id,
             RENodeId::Object(id) => id,
-            _ => panic!("Not a stored id: {:?}", self),
+            _ => panic!("Not a stored id: {:?}", value),
+        }
+    }
+}
+
+impl From<RENodeId> for Vec<u8> {
+    fn from(value: RENodeId) -> Self {
+        // Note - these are all guaranteed to be distinct
+        match value {
+            RENodeId::KeyValueStore(id) => id.to_vec(),
+            RENodeId::Object(id) => id.to_vec(),
+            RENodeId::GlobalObject(address) => address.to_vec(),
         }
     }
 }
@@ -180,11 +186,6 @@ pub enum KeyValueStoreOffset {
     Entry(Vec<u8>),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
-pub enum NonFungibleStoreOffset {
-    Entry(NonFungibleLocalId),
-}
-
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum VaultOffset {
     Info,
@@ -254,7 +255,6 @@ pub enum SubstateOffset {
     Package(PackageOffset),
     ResourceManager(ResourceManagerOffset),
     KeyValueStore(KeyValueStoreOffset),
-    NonFungibleStore(NonFungibleStoreOffset),
     Vault(VaultOffset),
     EpochManager(EpochManagerOffset),
     Validator(ValidatorOffset),

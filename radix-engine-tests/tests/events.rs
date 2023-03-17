@@ -374,8 +374,11 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
             Some((
                 EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
                 ref event_data,
-            )) if is_event_name_equal::<MintResourceEvent, _>(event_event_name)
-                && is_decoded_equal(&MintResourceEvent::Amount(10.into()), event_data) =>
+            )) if is_event_name_equal::<MintFungibleResourceEvent, _>(event_event_name)
+                && is_decoded_equal(
+                    &MintFungibleResourceEvent { amount: 10.into() },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -383,8 +386,11 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
             Some((
                 EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
                 ref event_data,
-            )) if is_event_name_equal::<BurnResourceEvent, _>(event_event_name)
-                && is_decoded_equal(&BurnResourceEvent::Amount(10.into()), event_data) =>
+            )) if is_event_name_equal::<BurnFungibleResourceEvent, _>(event_event_name)
+                && is_decoded_equal(
+                    &BurnFungibleResourceEvent { amount: 10.into() },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -448,8 +454,13 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
             Some((
                 EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
                 ref event_data,
-            )) if is_event_name_equal::<MintResourceEvent, _>(event_event_name)
-                && is_decoded_equal(&MintResourceEvent::Ids([id.clone()].into()), event_data) =>
+            )) if is_event_name_equal::<MintNonFungibleResourceEvent, _>(event_event_name)
+                && is_decoded_equal(
+                    &MintNonFungibleResourceEvent {
+                        ids: [id.clone()].into()
+                    },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -457,8 +468,13 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
             Some((
                 EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
                 ref event_data,
-            )) if is_event_name_equal::<BurnResourceEvent, _>(event_event_name)
-                && is_decoded_equal(&BurnResourceEvent::Ids([id.clone()].into()), event_data) =>
+            )) if is_event_name_equal::<BurnNonFungibleResourceEvent, _>(event_event_name)
+                && is_decoded_equal(
+                    &BurnNonFungibleResourceEvent {
+                        ids: [id.clone()].into()
+                    },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -741,7 +757,7 @@ fn validator_staking_emits_correct_event() {
             Some((
                 EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
                 ..,
-            )) if is_event_name_equal::<MintResourceEvent, _>(event_event_name) => true,
+            )) if is_event_name_equal::<MintFungibleResourceEvent, _>(event_event_name) => true,
             _ => false,
         });
         assert!(match events.get(3) {
@@ -878,8 +894,11 @@ fn validator_unstake_emits_correct_events() {
             Some((
                 EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
                 ref event_data,
-            )) if is_event_name_equal::<BurnResourceEvent, _>(event_event_name)
-                && is_decoded_equal(&BurnResourceEvent::Amount(1.into()), event_data) =>
+            )) if is_event_name_equal::<BurnFungibleResourceEvent, _>(event_event_name)
+                && is_decoded_equal(
+                    &BurnFungibleResourceEvent { amount: 1.into() },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -907,7 +926,7 @@ fn validator_unstake_emits_correct_events() {
                     ref event_event_name,
                 ),
                 ..,
-            )) if is_event_name_equal::<MintResourceEvent, _>(event_event_name)
+            )) if is_event_name_equal::<MintNonFungibleResourceEvent, _>(event_event_name)
                 && *resource_address == validator_substate.unstake_nft =>
                 true,
             _ => false,
@@ -1044,7 +1063,7 @@ fn validator_claim_xrd_emits_correct_events() {
             Some((
                 EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
                 ..,
-            )) if is_event_name_equal::<BurnResourceEvent, _>(event_event_name) => true,
+            )) if is_event_name_equal::<BurnNonFungibleResourceEvent, _>(event_event_name) => true,
             _ => false,
         });
         assert!(match events.get(3) {
@@ -1230,7 +1249,7 @@ fn setting_metadata_emits_correct_events() {
 // Helpers
 //=========
 
-#[derive(NonFungibleData)]
+#[derive(ScryptoSbor, NonFungibleData, ManifestSbor)]
 struct EmptyStruct {}
 
 #[derive(ScryptoEncode, Describe)]

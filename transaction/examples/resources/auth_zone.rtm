@@ -21,7 +21,7 @@ CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS Array<NonFungibleLocalId>(NonFungibleLocalId(
 CLEAR_AUTH_ZONE;
 
 # Drop all virtual proofs in the auth zone.
-DROP_ALL_VIRTUAL_PROOFS;
+CLEAR_SIGNATURE_PROOFS;
 
 # Drop all proofs, and move resources to account
 DROP_ALL_PROOFS;

@@ -101,7 +101,7 @@ impl AuthZoneBlueprint {
             node_id,
             composed_proof.into(),
             btreemap!(
-                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
                     package_address: RESOURCE_MANAGER_PACKAGE,
                     blueprint_name: PROOF_BLUEPRINT.to_string(),
                     global: false,
@@ -142,7 +142,7 @@ impl AuthZoneBlueprint {
             node_id,
             composed_proof.into(),
             btreemap!(
-                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
                     package_address: RESOURCE_MANAGER_PACKAGE,
                     blueprint_name: PROOF_BLUEPRINT.to_string(),
                     global: false,
@@ -183,7 +183,7 @@ impl AuthZoneBlueprint {
             node_id,
             composed_proof.into(),
             btreemap!(
-                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
                     package_address: RESOURCE_MANAGER_PACKAGE,
                     blueprint_name: PROOF_BLUEPRINT.to_string(),
                     global: false,
@@ -213,7 +213,7 @@ impl AuthZoneBlueprint {
             LockFlags::MUTABLE,
         )?;
         let auth_zone: &mut AuthZone = api.kernel_get_substate_ref_mut(handle)?;
-        auth_zone.clear_virtual_proofs();
+        auth_zone.clear_signature_proofs();
         let proofs = auth_zone.drain();
         api.sys_drop_lock(handle)?;
 
@@ -224,7 +224,7 @@ impl AuthZoneBlueprint {
         Ok(IndexedScryptoValue::from_typed(&()))
     }
 
-    pub(crate) fn clear_virtual_proofs<Y>(
+    pub(crate) fn clear_signature_proofs<Y>(
         receiver: RENodeId,
         input: IndexedScryptoValue,
         api: &mut Y,
@@ -242,7 +242,7 @@ impl AuthZoneBlueprint {
             LockFlags::MUTABLE,
         )?;
         let auth_zone: &mut AuthZone = api.kernel_get_substate_ref_mut(handle)?;
-        auth_zone.clear_virtual_proofs();
+        auth_zone.clear_signature_proofs();
         api.sys_drop_lock(handle)?;
 
         Ok(IndexedScryptoValue::from_typed(&()))

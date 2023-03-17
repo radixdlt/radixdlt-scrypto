@@ -315,5 +315,5 @@ where
         .expect_commit_success();
 }
 
-#[derive(NonFungibleData)]
+#[derive(ScryptoSbor, NonFungibleData, ManifestSbor)]
 struct SampleNonFungibleData {}

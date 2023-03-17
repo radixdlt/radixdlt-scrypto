@@ -4,7 +4,7 @@ use crate::kernel::actor::{Actor, ActorIdentifier};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelModuleApi;
 use crate::kernel::module::KernelModule;
-use crate::system::node_modules::type_info::TypeInfoBlueprint;
+use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::types::*;
 use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
@@ -50,12 +50,18 @@ impl NodeMoveModule {
                             ..
                         } = callee
                         {
-                            let (package_address, blueprint_name) =
-                                TypeInfoBlueprint::get_type(node_id.clone(), api)?;
-                            if package_address == RESOURCE_MANAGER_PACKAGE
-                                && blueprint_name.as_str() == AUTH_ZONE_BLUEPRINT
+                            let type_info = TypeInfoBlueprint::get_type(node_id.clone(), api)?;
+                            if let TypeInfoSubstate::Object {
+                                package_address,
+                                blueprint_name,
+                                ..
+                            } = type_info
                             {
-                                changed_to_restricted = false;
+                                if package_address == RESOURCE_MANAGER_PACKAGE
+                                    && blueprint_name.as_str() == AUTH_ZONE_BLUEPRINT
+                                {
+                                    changed_to_restricted = false;
+                                }
                             }
                         }
 
@@ -85,11 +91,11 @@ impl NodeMoveModule {
                 Ok(())
             }
 
-            RENodeId::KeyValueStore(..)
-            | RENodeId::NonFungibleStore(..)
-            | RENodeId::GlobalObject(..) => Err(RuntimeError::ModuleError(
-                ModuleError::NodeMoveError(NodeMoveError::CantMoveDownstream(node_id)),
-            )),
+            RENodeId::KeyValueStore(..) | RENodeId::GlobalObject(..) => {
+                Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
+                    NodeMoveError::CantMoveDownstream(node_id),
+                )))
+            }
         }
     }
 
@@ -100,11 +106,11 @@ impl NodeMoveModule {
         match node_id {
             RENodeId::Object(..) => Ok(()),
 
-            RENodeId::KeyValueStore(..)
-            | RENodeId::NonFungibleStore(..)
-            | RENodeId::GlobalObject(..) => Err(RuntimeError::ModuleError(
-                ModuleError::NodeMoveError(NodeMoveError::CantMoveUpstream(node_id)),
-            )),
+            RENodeId::KeyValueStore(..) | RENodeId::GlobalObject(..) => {
+                Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
+                    NodeMoveError::CantMoveUpstream(node_id),
+                )))
+            }
         }
     }
 }

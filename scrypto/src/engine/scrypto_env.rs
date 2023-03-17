@@ -10,6 +10,7 @@ use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use sbor::*;
+use scrypto_schema::KeyValueStoreSchema;
 
 #[derive(Debug, Sbor)]
 pub enum ClientApiError {
@@ -34,6 +35,27 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
                 app_states.len(),
             )
         });
+        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
+    }
+
+    fn new_key_value_store(
+        &mut self,
+        schema: KeyValueStoreSchema,
+    ) -> Result<KeyValueStoreId, ClientApiError> {
+        let schema = scrypto_encode(&schema).unwrap();
+        let bytes = copy_buffer(unsafe { new_key_value_store(schema.as_ptr(), schema.len()) });
+        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
+    }
+
+    fn get_key_value_store_info(
+        &mut self,
+        node_id: RENodeId,
+    ) -> Result<KeyValueStoreSchema, ClientApiError> {
+        let node_id = scrypto_encode(&node_id).unwrap();
+
+        let bytes =
+            copy_buffer(unsafe { get_key_value_store_info(node_id.as_ptr(), node_id.len()) });
+
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
@@ -118,13 +140,8 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     ) -> Result<(PackageAddress, String), ClientApiError> {
         let node_id = scrypto_encode(&node_id).unwrap();
 
-        let bytes = copy_buffer(unsafe { get_type_info(node_id.as_ptr(), node_id.len()) });
+        let bytes = copy_buffer(unsafe { get_object_type_info(node_id.as_ptr(), node_id.len()) });
 
-        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
-    }
-
-    fn new_key_value_store(&mut self) -> Result<KeyValueStoreId, ClientApiError> {
-        let bytes = copy_buffer(unsafe { new_key_value_store() });
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 

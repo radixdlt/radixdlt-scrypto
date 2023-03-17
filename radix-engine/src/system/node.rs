@@ -63,7 +63,6 @@ pub enum RENodeInit {
     GlobalObject(BTreeMap<SubstateOffset, RuntimeSubstate>),
     Object(BTreeMap<SubstateOffset, RuntimeSubstate>),
     KeyValueStore,
-    NonFungibleStore,
 }
 
 impl RENodeInit {
@@ -73,7 +72,7 @@ impl RENodeInit {
             RENodeInit::GlobalObject(object_substates) | RENodeInit::Object(object_substates) => {
                 substates.extend(object_substates);
             }
-            RENodeInit::KeyValueStore | RENodeInit::NonFungibleStore => {}
+            RENodeInit::KeyValueStore => {}
         };
 
         substates

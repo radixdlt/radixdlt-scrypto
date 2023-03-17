@@ -7,7 +7,6 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
-use sbor::rust::vec::Vec;
 
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
 pub enum Instruction {
@@ -98,7 +97,7 @@ pub enum Instruction {
     DropAllProofs,
 
     /// Drop all virtual proofs (can only be auth zone proofs).
-    DropAllVirtualProofs,
+    ClearSignatureProofs,
 
     /// Publish a package.
     PublishPackage {
@@ -160,12 +159,12 @@ pub enum Instruction {
 
     MintNonFungible {
         resource_address: ResourceAddress,
-        entries: BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>,
+        args: ManifestValue,
     },
 
     MintUuidNonFungible {
         resource_address: ResourceAddress,
-        entries: Vec<(Vec<u8>, Vec<u8>)>,
+        args: ManifestValue,
     },
 
     AssertAccessRule {

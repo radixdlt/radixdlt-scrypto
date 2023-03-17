@@ -65,9 +65,6 @@ impl IdAllocator {
             RENodeType::KeyValueStore => {
                 self.new_kv_store_id().map(|id| RENodeId::KeyValueStore(id))
             }
-            RENodeType::NonFungibleStore => self
-                .new_nf_store_id()
-                .map(|id| RENodeId::NonFungibleStore(id)),
             RENodeType::Object => self.new_object_id().map(|id| RENodeId::Object(id)),
             RENodeType::Vault => self.new_vault_id().map(|id| RENodeId::Object(id)),
             RENodeType::GlobalPackage => self
@@ -221,11 +218,6 @@ impl IdAllocator {
 
     /// Creates a new key value store ID.
     pub fn new_kv_store_id(&mut self) -> Result<KeyValueStoreId, IdAllocationError> {
-        self.next_object_id(INTERNAL_KV_STORE_ID)
-    }
-
-    /// Creates a new non-fungible store ID.
-    pub fn new_nf_store_id(&mut self) -> Result<NonFungibleStoreId, IdAllocationError> {
         self.next_object_id(INTERNAL_KV_STORE_ID)
     }
 }

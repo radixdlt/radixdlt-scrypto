@@ -205,11 +205,20 @@ fn new_object(
 }
 
 fn new_key_value_store(
-    caller: Caller<'_, HostState>,
+    mut caller: Caller<'_, HostState>,
+    schema_id_ptr: u32,
+    schema_id_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (_memory, runtime) = grab_runtime!(caller);
+    let (memory, runtime) = grab_runtime!(caller);
 
-    runtime.new_key_value_store().map(|buffer| buffer.0)
+    runtime
+        .new_key_value_store(read_memory(
+            caller.as_context_mut(),
+            memory,
+            schema_id_ptr,
+            schema_id_len,
+        )?)
+        .map(|buffer| buffer.0)
 }
 
 fn globalize_object(
@@ -503,8 +512,11 @@ impl WasmiModule {
 
         let host_new_key_value_store = Func::wrap(
             store.as_context_mut(),
-            |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
-                new_key_value_store(caller).map_err(|e| e.into())
+            |caller: Caller<'_, HostState>,
+             schema_ptr: u32,
+             schema_len: u32|
+             -> Result<u64, Trap> {
+                new_key_value_store(caller, schema_ptr, schema_len).map_err(|e| e.into())
             },
         );
 
@@ -675,7 +687,11 @@ impl WasmiModule {
             GLOBALIZE_OBJECT_FUNCTION_NAME,
             host_globalize_object
         );
-        linker_define!(linker, GET_TYPE_INFO_FUNCTION_NAME, host_get_type_info);
+        linker_define!(
+            linker,
+            GET_OBJECT_TYPE_INFO_FUNCTION_NAME,
+            host_get_type_info
+        );
         linker_define!(linker, DROP_OBJECT_FUNCTION_NAME, host_drop_node);
         linker_define!(linker, LOCK_SUBSTATE_FUNCTION_NAME, host_lock_substate);
         linker_define!(linker, READ_SUBSTATE_FUNCTION_NAME, host_read_substate);

@@ -15,6 +15,8 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::*;
 
 pub struct LockInfo {
+    pub node_id: RENodeId,
+    pub module_id: NodeModuleId,
     pub offset: SubstateOffset,
     pub flags: LockFlags,
 }
