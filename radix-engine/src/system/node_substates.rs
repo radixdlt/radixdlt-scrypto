@@ -69,11 +69,27 @@ impl PersistedSubstate {
         }
     }
 
+    pub fn vault_liquid_fungible(&self) -> &LiquidFungibleResource {
+        if let PersistedSubstate::VaultLiquidFungible(vault) = self {
+            vault
+        } else {
+            panic!("Not a vault liquid fungible");
+        }
+    }
+
     pub fn vault_liquid_fungible_mut(&mut self) -> &mut LiquidFungibleResource {
         if let PersistedSubstate::VaultLiquidFungible(vault) = self {
             vault
         } else {
-            panic!("Not a vault");
+            panic!("Not a vault liquid fungible");
+        }
+    }
+
+    pub fn vault_liquid_non_fungible(&self) -> &LiquidNonFungibleResource {
+        if let PersistedSubstate::VaultLiquidNonFungible(vault) = self {
+            vault
+        } else {
+            panic!("Not a vault liquid non-fungible");
         }
     }
 
@@ -81,7 +97,7 @@ impl PersistedSubstate {
         if let PersistedSubstate::VaultLiquidNonFungible(vault) = self {
             vault
         } else {
-            panic!("Not a vault");
+            panic!("Not a vault liquid non-fungible");
         }
     }
 
@@ -1418,9 +1434,8 @@ impl<'a> SubstateRef<'a> {
                 (HashSet::new(), owned_nodes)
             }
             SubstateRef::ComponentState(substate) => {
-                let (_, owns, refs) = IndexedScryptoValue::from_slice(&substate.raw)
-                    .unwrap()
-                    .unpack();
+                let (_, owns, refs) =
+                    IndexedScryptoValue::from_scrypto_value(substate.0.clone()).unpack();
                 (refs, owns)
             }
             SubstateRef::ComponentRoyaltyAccumulator(substate) => {

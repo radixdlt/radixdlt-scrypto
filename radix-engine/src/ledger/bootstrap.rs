@@ -78,8 +78,7 @@ pub fn create_genesis(
                 package_access_rules: PackageNativePackage::function_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
                 event_schema: BTreeMap::new(),
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -109,8 +108,7 @@ pub fn create_genesis(
                     >()]
                     .into(),
                 )]),
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -134,8 +132,7 @@ pub fn create_genesis(
                 package_access_rules: RoyaltyNativePackage::function_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
                 event_schema: BTreeMap::new(), // TODO: Royalty application events
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -171,8 +168,7 @@ pub fn create_genesis(
                     ]
                     .into(),
                 )]),
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -254,8 +250,7 @@ pub fn create_genesis(
                         .into(),
                     ),
                 ]),
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -285,8 +280,7 @@ pub fn create_genesis(
                     initial_supply,
                     resource_address,
                 },
-            )
-            .unwrap(),
+            ),
         });
     }
 
@@ -307,8 +301,7 @@ pub fn create_genesis(
                 metadata,
                 access_rules,
                 resource_address,
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -331,8 +324,7 @@ pub fn create_genesis(
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
                 event_schema: BTreeMap::new(),
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -400,8 +392,7 @@ pub fn create_genesis(
                         .into(),
                     ),
                 ]),
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -424,8 +415,7 @@ pub fn create_genesis(
                 package_access_rules: ClockNativePackage::package_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
                 event_schema: BTreeMap::new(),
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -448,8 +438,7 @@ pub fn create_genesis(
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
                 event_schema: BTreeMap::new(), // TODO: Account events
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -501,8 +490,7 @@ pub fn create_genesis(
                     ]
                     .into(),
                 )]),
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -525,8 +513,7 @@ pub fn create_genesis(
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
                 event_schema: BTreeMap::new(),
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -549,8 +536,7 @@ pub fn create_genesis(
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::DenyAll,
                 event_schema: BTreeMap::new(),
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -571,8 +557,7 @@ pub fn create_genesis(
                 metadata,
                 access_rules,
                 resource_address,
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -593,8 +578,7 @@ pub fn create_genesis(
                 metadata,
                 access_rules,
                 resource_address,
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -615,8 +599,7 @@ pub fn create_genesis(
                 metadata,
                 access_rules,
                 resource_address,
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -638,8 +621,7 @@ pub fn create_genesis(
                 access_rules: AccessRulesConfig::new()
                     .default(AccessRule::DenyAll, AccessRule::DenyAll),
                 event_schema: BTreeMap::new(),
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -651,7 +633,7 @@ pub fn create_genesis(
             package_address: CLOCK_PACKAGE,
             blueprint_name: CLOCK_BLUEPRINT.to_string(),
             function_name: CLOCK_CREATE_IDENT.to_string(),
-            args: to_manifest_value(&ClockCreateInput { component_address }).unwrap(),
+            args: to_manifest_value(&ClockCreateInput { component_address }),
         });
     }
 
@@ -746,7 +728,12 @@ pub fn create_genesis(
 
 pub fn genesis_result(receipt: &TransactionReceipt) -> GenesisReceipt {
     // TODO: Remove this when appropriate syscalls are implemented for Scrypto
-    let faucet_component = receipt.new_component_addresses().last().unwrap().clone();
+    let faucet_component = receipt
+        .expect_commit(true)
+        .new_component_addresses()
+        .last()
+        .unwrap()
+        .clone();
     GenesisReceipt { faucet_component }
 }
 
@@ -845,16 +832,14 @@ mod tests {
         #[cfg(not(feature = "alloc"))]
         println!("{:?}", transaction_receipt);
 
-        transaction_receipt.expect_commit_success();
-        let commit_result = transaction_receipt.expect_commit(true);
-        commit_result
+        transaction_receipt
+            .expect_commit(true)
             .next_epoch()
             .expect("There should be a new epoch.");
 
         assert!(transaction_receipt
             .expect_commit(true)
-            .entity_changes
-            .new_package_addresses
+            .new_package_addresses()
             .contains(&PACKAGE_PACKAGE));
         let genesis_receipt = genesis_result(&transaction_receipt);
         assert_eq!(genesis_receipt.faucet_component, FAUCET_COMPONENT);
@@ -882,7 +867,6 @@ mod tests {
             &genesis_transaction.get_executable(vec![AuthAddresses::system_role()]),
         );
 
-        transaction_receipt.expect_commit_success();
         let commit_result = transaction_receipt.expect_commit(true);
         commit_result.state_updates.commit(&mut substate_store);
 

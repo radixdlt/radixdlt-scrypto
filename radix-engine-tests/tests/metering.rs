@@ -132,8 +132,8 @@ fn test_radiswap() {
                                 bucket1,
                                 bucket2,
                                 dec!("1000"),
-                                "LP__ETH",
-                                "LP token for /ETH swap",
+                                "LP_BTC_ETH",
+                                "LP token for BTC/ETH swap",
                                 "https://www.radiswap.com",
                                 fee_amount
                             ),
@@ -148,6 +148,7 @@ fn test_radiswap() {
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
+        .expect_commit(true)
         .output::<(ComponentAddress, Own)>(5);
 
     // Transfer `10,000 BTC` from `account2` to `account3`
@@ -205,10 +206,10 @@ fn test_radiswap() {
         + 10000 /* DropNode */
         + 25340 /* Invoke */
         + 231500 /* LockSubstate */
-        + 2622360 /* ReadSubstate */
+        + 2635210 /* ReadSubstate */
         + 137500 /* RunNative */
         + 15000 /* RunSystem */
-        + 1520135 /* RunWasm */
+        + 1653705 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1625 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
@@ -265,6 +266,7 @@ fn test_flash_loan() {
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
+        .expect_commit(true)
         .output::<(ComponentAddress, ResourceAddress)>(3);
 
     // Take loan
@@ -314,10 +316,10 @@ fn test_flash_loan() {
         + 20000 /* DropNode */
         + 44790 /* Invoke */
         + 356000 /* LockSubstate */
-        + 6620330 /* ReadSubstate */
+        + 6645010 /* ReadSubstate */
         + 215000 /* RunNative */
         + 30000 /* RunSystem */
-        + 1199045 /* RunWasm */
+        + 1307375 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2375 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
@@ -442,7 +444,7 @@ fn setup_test_runner_with_fee_blueprint_component() -> (TestRunner, ComponentAdd
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     let commit_result = receipt1.expect_commit(true);
-    let component_address = commit_result.entity_changes.new_component_addresses[0];
+    let component_address = commit_result.new_component_addresses()[0];
 
     (test_runner, component_address)
 }

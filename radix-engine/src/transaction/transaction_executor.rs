@@ -306,7 +306,7 @@ where
         let resource_changes = match &transaction_result {
             TransactionResult::Commit(c) => calculate_resource_changes(
                 vault_ops,
-                &c.actual_fee_payments,
+                &c.fee_payments,
                 transaction_result.is_commit_success(),
             ),
             TransactionResult::Reject(_) | TransactionResult::Abort(_) => index_map_new(),

@@ -37,6 +37,7 @@ use radix_engine_interface::blueprints::account::{
 use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
+use radix_engine_interface::schema::KeyValueStoreSchema;
 use sbor::rust::mem;
 
 pub struct Kernel<
@@ -140,7 +141,15 @@ where
             let kv_store_id = {
                 let node_id = self.kernel_allocate_node_id(RENodeType::KeyValueStore)?;
                 let node = RENodeInit::KeyValueStore;
-                self.kernel_create_node(node_id, node, BTreeMap::new())?;
+                self.kernel_create_node(
+                    node_id,
+                    node,
+                    btreemap!(
+                        NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::KeyValueStore(
+                            KeyValueStoreSchema::new::<ResourceAddress, Own>(false))
+                        )
+                    ),
+                )?;
                 node_id
             };
 

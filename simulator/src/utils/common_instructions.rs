@@ -194,11 +194,10 @@ fn build_call_arguments<'a>(
         _ => panic!("Inconsistent schema"),
     }
 
-    let manifest_value: ManifestValue =
-        to_manifest_value(&ManifestValue::Tuple { fields: built_args })
-            .expect("Failed to transcode ManifestValue");
-
-    Ok((builder, manifest_value))
+    Ok((
+        builder,
+        to_manifest_value(&ManifestValue::Tuple { fields: built_args }),
+    ))
 }
 
 macro_rules! parse_basic_type {

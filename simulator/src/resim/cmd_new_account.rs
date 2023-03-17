@@ -64,7 +64,7 @@ impl NewAccount {
                 .outcome
                 .success_or_else(|err| TransactionFailed(err.clone()))?;
 
-            let account = commit_result.entity_changes.new_component_addresses[0];
+            let account = commit_result.new_component_addresses()[0];
             let manifest = ManifestBuilder::new()
                 .lock_fee(FAUCET_COMPONENT, 100.into())
                 .call_method(FAUCET_COMPONENT, "free", manifest_args!())
@@ -83,10 +83,9 @@ impl NewAccount {
                             ResourceMethodAuthKey::Withdraw => (rule!(allow_all), rule!(deny_all))
                         ),
                         entries: btreemap!(
-                            NonFungibleLocalId::integer(1) => (to_manifest_value(&EmptyStruct {}).unwrap(),),
+                            NonFungibleLocalId::integer(1) => (to_manifest_value(&EmptyStruct {}) ,),
                         ),
-                    })
-                    .unwrap(),
+                    }),
                 })
                 .0
                 .call_method(
@@ -105,10 +104,7 @@ impl NewAccount {
                 out,
             )?
             .unwrap();
-            let resource_address = receipt
-                .expect_commit(true)
-                .entity_changes
-                .new_resource_addresses[0];
+            let resource_address = receipt.expect_commit(true).new_resource_addresses()[0];
             let owner_badge =
                 NonFungibleGlobalId::new(resource_address, NonFungibleLocalId::integer(1));
 
