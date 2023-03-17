@@ -22,14 +22,6 @@ static guint64* shared_mem_ptr = NULL;
 
 void* create_shared_memory(size_t size) 
 {
-  // Our memory buffer will be readable and writable:
-  //int protection = PROT_READ | PROT_WRITE;
-
-  // The buffer will be shared (meaning other processes can access it), but
-  // anonymous (meaning third-party processes cannot obtain an address for it),
-  // so only this process and its children will be able to use it:
-  //int visibility = MAP_SHARED | MAP_ANONYMOUS;
-
     int fd = shm_open( "/shm-radix", O_CREAT | O_EXCL | O_RDWR, S_IRUSR | S_IWUSR);
     if (fd == -1)
     {
@@ -44,12 +36,12 @@ void* create_shared_memory(size_t size)
     }
 
     return mmap(NULL, sizeof(guint64), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+}
 
-
-
-  // The remaining parameters to `mmap()` are not important for this use case,
-  // but the manpage for `mmap` explains their purpose.
-  //return mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+void vcpu_udata_cb(unsigned int vcpu_index,void *userdata)
+{
+    instructions_count++;
+    *shared_mem_ptr = instructions_count;
 }
 
 static void vcpu_tb_trans_callback(qemu_plugin_id_t id, struct qemu_plugin_tb *tb)
@@ -62,15 +54,8 @@ static void vcpu_tb_trans_callback(qemu_plugin_id_t id, struct qemu_plugin_tb *t
     {
         struct qemu_plugin_insn *instructions = qemu_plugin_tb_get_insn(tb, i);
 
-        //g_mutex_lock(&data_lock);
-
-        qemu_plugin_register_vcpu_insn_exec_inline(instructions, QEMU_PLUGIN_INLINE_ADD_U64, &instructions_count, 1);
-//        qemu_plugin_register_vcpu_insn_exec_inline(instructions, QEMU_PLUGIN_INLINE_ADD_U64, &instructions_count, 1);
-
-        //g_mutex_unlock(&data_lock);
+        qemu_plugin_register_vcpu_insn_exec_cb( instructions, vcpu_udata_cb, QEMU_PLUGIN_CB_NO_REGS, 0 );
     }
-
-    *shared_mem_ptr = instructions_count;
 }
 
 gpointer thr_callback(gpointer data)
