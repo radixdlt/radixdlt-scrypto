@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use sbor::rust::collections::BTreeMap;
 use crate::blueprints::resource::*;
 use crate::*;
 use radix_engine_common::data::scrypto::model::{ComponentAddress, Own};

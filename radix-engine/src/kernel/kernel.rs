@@ -228,28 +228,24 @@ where
                     }
                     ComponentAddress::EcdsaSecp256k1VirtualIdentity(id)
                     | ComponentAddress::EddsaEd25519VirtualIdentity(id) => {
-                        let input = scrypto_encode(&VirtualLazyLoadInput {
-                            id
-                        }).unwrap();
-                        let rtn = match component_address {
+                        let (package, blueprint, func) = match component_address {
                             ComponentAddress::EcdsaSecp256k1VirtualIdentity(..) => {
-                                self.call_function(
-                                    IDENTITY_PACKAGE,
-                                    IDENTITY_BLUEPRINT,
-                                    IDENTITY_CREATE_VIRTUAL_ECDSA_IDENT,
-                                    input,
-                                )?
+                                (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT, IDENTITY_CREATE_VIRTUAL_ECDSA_IDENT)
                             }
                             ComponentAddress::EddsaEd25519VirtualIdentity(..) => {
-                                self.call_function(
-                                    IDENTITY_PACKAGE,
-                                    IDENTITY_BLUEPRINT,
-                                    IDENTITY_CREATE_VIRTUAL_EDDSA_IDENT,
-                                    input,
-                                )?
+                                (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT, IDENTITY_CREATE_VIRTUAL_EDDSA_IDENT)
                             }
                             _ => return Ok(false),
                         };
+
+                        let rtn = self.call_function(
+                            package,
+                            blueprint,
+                            func,
+                            scrypto_encode(&VirtualLazyLoadInput {
+                                id
+                            }).unwrap()
+                        )?;
                         let (object_id, modules): (Own, BTreeMap<NodeModuleId, Own>) = scrypto_decode(&rtn).unwrap();
                         let modules = modules.into_iter().map(|(id, own)| (id, own.id())).collect();
                         self.id_allocator.allocate_virtual_node_id(node_id);
