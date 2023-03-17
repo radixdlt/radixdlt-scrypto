@@ -271,7 +271,7 @@ impl NotarizedTransactionValidator {
                         .drop_all_proofs()
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::DropAllVirtualProofs => {}
+                Instruction::ClearSignatureProofs => {}
                 Instruction::CallFunction { args, .. } | Instruction::CallMethod { args, .. } => {
                     // TODO: decode into Value
                     Self::validate_call_args(&args, &mut id_validator)

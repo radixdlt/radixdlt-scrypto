@@ -66,7 +66,7 @@ fn drop_all_proofs_should_drop_named_proofs() {
 }
 
 #[test]
-fn drop_all_virtual_proofs_should_invalid_public_key_proof() {
+fn clear_signature_proofs_should_invalid_public_key_proof() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
@@ -75,7 +75,7 @@ fn drop_all_virtual_proofs_should_invalid_public_key_proof() {
     let manifest = ManifestBuilder::new()
         .lock_fee(account, dec!(10))
         .create_proof_from_account_by_amount(account, RADIX_TOKEN, dec!(5))
-        .drop_all_virtual_proofs()
+        .clear_signature_proofs()
         .assert_access_rule(rule!(require(NonFungibleGlobalId::from_public_key(
             &public_key
         ))))
@@ -97,7 +97,7 @@ fn drop_all_virtual_proofs_should_invalid_public_key_proof() {
 }
 
 #[test]
-fn drop_all_virtual_proofs_should_not_invalid_physical_proof() {
+fn clear_signature_proofs_should_not_invalid_physical_proof() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
@@ -106,7 +106,7 @@ fn drop_all_virtual_proofs_should_not_invalid_physical_proof() {
     let manifest = ManifestBuilder::new()
         .lock_fee(account, dec!(10))
         .create_proof_from_account_by_amount(account, RADIX_TOKEN, dec!(5))
-        .drop_all_virtual_proofs()
+        .clear_signature_proofs()
         .assert_access_rule(rule!(require_amount(dec!(5), RADIX_TOKEN)))
         .build();
     let receipt = test_runner.execute_manifest(

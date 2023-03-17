@@ -410,7 +410,7 @@ impl WasmModule {
                                 if Self::function_type_matches(
                                     &self.module,
                                     *type_index as usize,
-                                    vec![],
+                                    vec![ValueType::I32, ValueType::I32],
                                     vec![ValueType::I64],
                                 ) {
                                     continue;
@@ -422,7 +422,7 @@ impl WasmModule {
                                 ));
                             }
                         }
-                        GET_TYPE_INFO_FUNCTION_NAME => {
+                        GET_OBJECT_TYPE_INFO_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -434,7 +434,24 @@ impl WasmModule {
                                 }
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        GET_TYPE_INFO_FUNCTION_NAME.to_string(),
+                                        GET_OBJECT_TYPE_INFO_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
+                            }
+                        }
+                        GET_KEY_VALUE_STORE_INFO_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![ValueType::I32, ValueType::I32],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        GET_KEY_VALUE_STORE_INFO_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }
