@@ -9,7 +9,6 @@ use crate::blueprints::epoch_manager::ValidatorSetSubstate;
 use crate::blueprints::epoch_manager::ValidatorSubstate;
 use crate::blueprints::package::PackageCodeTypeSubstate;
 use crate::blueprints::resource::*;
-use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::errors::*;
 use crate::system::node_modules::access_rules::FunctionAccessRulesSubstate;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
@@ -248,7 +247,6 @@ pub enum RuntimeSubstate {
     PackageRoyalty(PackageRoyaltySubstate),
     AuthZoneStack(AuthZoneStackSubstate),
     Worktop(WorktopSubstate),
-    TransactionRuntime(TransactionRuntimeSubstate),
     Account(AccountSubstate),
     AccessController(AccessControllerSubstate),
 
@@ -358,8 +356,7 @@ impl RuntimeSubstate {
             | RuntimeSubstate::ProofInfo(..)
             | RuntimeSubstate::FungibleProof(..)
             | RuntimeSubstate::NonFungibleProof(..)
-            | RuntimeSubstate::Worktop(..)
-            | RuntimeSubstate::TransactionRuntime(..) => {
+            | RuntimeSubstate::Worktop(..) => {
                 panic!("Should not get here");
             }
         }
@@ -428,8 +425,7 @@ impl RuntimeSubstate {
             | RuntimeSubstate::ProofInfo(..)
             | RuntimeSubstate::FungibleProof(..)
             | RuntimeSubstate::NonFungibleProof(..)
-            | RuntimeSubstate::Worktop(..)
-            | RuntimeSubstate::TransactionRuntime(..) => {
+            | RuntimeSubstate::Worktop(..) => {
                 panic!("Should not get here");
             }
         }
@@ -520,7 +516,6 @@ impl RuntimeSubstate {
             RuntimeSubstate::KeyValueStoreEntry(value) => SubstateRefMut::KeyValueStoreEntry(value),
             RuntimeSubstate::AuthZoneStack(value) => SubstateRefMut::AuthZoneStack(value),
             RuntimeSubstate::Worktop(value) => SubstateRefMut::Worktop(value),
-            RuntimeSubstate::TransactionRuntime(value) => SubstateRefMut::TransactionRuntime(value),
             RuntimeSubstate::Account(value) => SubstateRefMut::Account(value),
             RuntimeSubstate::AccessController(value) => SubstateRefMut::AccessController(value),
             RuntimeSubstate::PackageEventSchema(value) => SubstateRefMut::PackageEventSchema(value),
@@ -581,7 +576,6 @@ impl RuntimeSubstate {
             RuntimeSubstate::KeyValueStoreEntry(value) => SubstateRef::KeyValueStoreEntry(value),
             RuntimeSubstate::AuthZoneStack(value) => SubstateRef::AuthZoneStack(value),
             RuntimeSubstate::Worktop(value) => SubstateRef::Worktop(value),
-            RuntimeSubstate::TransactionRuntime(value) => SubstateRef::TransactionRuntime(value),
             RuntimeSubstate::Account(value) => SubstateRef::Account(value),
             RuntimeSubstate::AccessController(value) => SubstateRef::AccessController(value),
             RuntimeSubstate::PackageEventSchema(value) => SubstateRef::PackageEventSchema(value),
@@ -751,12 +745,6 @@ impl Into<RuntimeSubstate> for Option<ScryptoValue> {
 impl Into<RuntimeSubstate> for PackageRoyaltySubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::PackageRoyalty(self)
-    }
-}
-
-impl Into<RuntimeSubstate> for TransactionRuntimeSubstate {
-    fn into(self) -> RuntimeSubstate {
-        RuntimeSubstate::TransactionRuntime(self)
     }
 }
 
@@ -1002,16 +990,6 @@ impl Into<AuthZoneStackSubstate> for RuntimeSubstate {
     }
 }
 
-impl Into<TransactionRuntimeSubstate> for RuntimeSubstate {
-    fn into(self) -> TransactionRuntimeSubstate {
-        if let RuntimeSubstate::TransactionRuntime(substate) = self {
-            substate
-        } else {
-            panic!("Not a transaction runtime");
-        }
-    }
-}
-
 pub enum SubstateRef<'a> {
     TypeInfo(&'a TypeInfoSubstate),
     AuthZoneStack(&'a AuthZoneStackSubstate),
@@ -1046,7 +1024,6 @@ pub enum SubstateRef<'a> {
     CurrentTimeRoundedToMinutes(&'a ClockSubstate),
     MethodAccessRules(&'a MethodAccessRulesSubstate),
     PackageAccessRules(&'a FunctionAccessRulesSubstate),
-    TransactionRuntime(&'a TransactionRuntimeSubstate),
     Account(&'a AccountSubstate),
     AccessController(&'a AccessControllerSubstate),
     PackageEventSchema(&'a PackageEventSchemaSubstate),
@@ -1277,15 +1254,6 @@ impl<'a> From<SubstateRef<'a>> for &'a MethodAccessRulesSubstate {
         match value {
             SubstateRef::MethodAccessRules(value) => value,
             _ => panic!("Not access rules chain"),
-        }
-    }
-}
-
-impl<'a> From<SubstateRef<'a>> for &'a TransactionRuntimeSubstate {
-    fn from(value: SubstateRef<'a>) -> Self {
-        match value {
-            SubstateRef::TransactionRuntime(value) => value,
-            _ => panic!("Not transaction runtime"),
         }
     }
 }
@@ -1526,7 +1494,6 @@ pub enum SubstateRefMut<'a> {
     FungibleProof(&'a mut FungibleProof),
     NonFungibleProof(&'a mut NonFungibleProof),
     Worktop(&'a mut WorktopSubstate),
-    TransactionRuntime(&'a mut TransactionRuntimeSubstate),
     AuthZoneStack(&'a mut AuthZoneStackSubstate),
     AuthZone(&'a mut AuthZoneStackSubstate),
     Account(&'a mut AccountSubstate),
@@ -1647,15 +1614,6 @@ impl<'a> From<SubstateRefMut<'a>> for &'a mut ClockSubstate {
         match value {
             SubstateRefMut::CurrentTimeRoundedToMinutes(value) => value,
             _ => panic!("Not current time"),
-        }
-    }
-}
-
-impl<'a> From<SubstateRefMut<'a>> for &'a mut TransactionRuntimeSubstate {
-    fn from(value: SubstateRefMut<'a>) -> Self {
-        match value {
-            SubstateRefMut::TransactionRuntime(value) => value,
-            _ => panic!("Not a transaction runtime"),
         }
     }
 }

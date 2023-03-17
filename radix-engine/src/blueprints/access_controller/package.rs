@@ -11,7 +11,7 @@ use native_sdk::resource::{SysBucket, Vault};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::unsafe_api::ClientCostingReason;
+use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{ACCESS_CONTROLLER_PACKAGE, PACKAGE_TOKEN};

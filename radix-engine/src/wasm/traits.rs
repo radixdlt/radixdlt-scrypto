@@ -105,6 +105,10 @@ pub trait WasmRuntime {
         level: Vec<u8>,
         message: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>>;
+
+    fn get_transaction_hash(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
+    fn generate_uuid(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 }
 
 /// Represents an instantiated, invokable Scrypto module.

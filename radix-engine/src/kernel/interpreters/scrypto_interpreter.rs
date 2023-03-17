@@ -7,7 +7,6 @@ use crate::blueprints::identity::IdentityNativePackage;
 use crate::blueprints::package::{PackageCodeTypeSubstate, PackageNativePackage};
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
-use crate::blueprints::transaction_runtime::TransactionRuntimeNativePackage;
 use crate::errors::{InterpreterError, RuntimeError};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
@@ -510,9 +509,6 @@ impl NativeVm {
             }
             TRANSACTION_PROCESSOR_CODE_ID => {
                 TransactionProcessorNativePackage::invoke_export(&export_name, receiver, input, api)
-            }
-            TRANSACTION_RUNTIME_CODE_ID => {
-                TransactionRuntimeNativePackage::invoke_export(&export_name, receiver, input, api)
             }
             AUTH_ZONE_CODE_ID => {
                 AuthZoneNativePackage::invoke_export(&export_name, receiver, input, api)

@@ -10,7 +10,7 @@ use native_sdk::modules::access_rules::AccessRulesObject;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
-use radix_engine_interface::api::unsafe_api::ClientCostingReason;
+use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::{ClientApi, ClientSubstateApi};
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;

@@ -293,7 +293,6 @@ impl SubstateProperties {
             SubstateOffset::Proof(..) => false,
             SubstateOffset::Worktop(..) => false,
             SubstateOffset::Clock(..) => true,
-            SubstateOffset::TransactionRuntime(..) => false,
             SubstateOffset::Account(..) => true,
             SubstateOffset::AccessController(..) => true,
             SubstateOffset::TypeInfo(..) => true,

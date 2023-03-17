@@ -7,7 +7,7 @@ use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::unsafe_api::ClientCostingReason;
+use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::clock::ClockCreateInput;
 use radix_engine_interface::blueprints::clock::TimePrecision;

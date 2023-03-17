@@ -23,13 +23,11 @@ pub enum RENodeType {
     KeyValueStore,
     Object,
     Vault,
-    TransactionRuntime,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum RENodeId {
     AuthZoneStack,
-    TransactionRuntime,
     GlobalObject(Address),
     KeyValueStore(KeyValueStoreId),
     // This is only used for owned objects (global objects have addresses)
@@ -41,7 +39,6 @@ impl fmt::Debug for RENodeId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::AuthZoneStack => write!(f, "AuthZoneStack"),
-            Self::TransactionRuntime => write!(f, "TransactionRuntime"),
             Self::KeyValueStore(id) => f
                 .debug_tuple("KeyValueStore")
                 .field(&hex::encode(id))
@@ -57,7 +54,6 @@ impl From<RENodeId> for [u8; OBJECT_ID_LENGTH] {
         match value {
             RENodeId::KeyValueStore(id) => id,
             RENodeId::Object(id) => id,
-            RENodeId::TransactionRuntime => [4u8; OBJECT_ID_LENGTH], // TODO: Remove, this is here to preserve receiver in invocation for now
             RENodeId::AuthZoneStack => [5u8; OBJECT_ID_LENGTH], // TODO: Remove, this is here to preserve receiver in invocation for now
             _ => panic!("Not a stored id: {:?}", value),
         }
@@ -70,7 +66,6 @@ impl From<RENodeId> for Vec<u8> {
         match value {
             RENodeId::KeyValueStore(id) => id.to_vec(),
             RENodeId::Object(id) => id.to_vec(),
-            RENodeId::TransactionRuntime => [4u8; OBJECT_ID_LENGTH].to_vec(), // TODO: Remove, this is here to preserve receiver in invocation for now
             RENodeId::AuthZoneStack => [5u8; OBJECT_ID_LENGTH].to_vec(), // TODO: Remove, this is here to preserve receiver in invocation for now
             RENodeId::GlobalObject(address) => address.to_vec(),
         }
@@ -258,11 +253,6 @@ pub enum ClockOffset {
 }
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum TransactionRuntimeOffset {
-    TransactionRuntime,
-}
-
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum AccountOffset {
     Account,
 }
@@ -288,7 +278,6 @@ pub enum SubstateOffset {
     Proof(ProofOffset),
     Worktop(WorktopOffset),
     Clock(ClockOffset),
-    TransactionRuntime(TransactionRuntimeOffset),
     Account(AccountOffset),
     AccessController(AccessControllerOffset),
 
