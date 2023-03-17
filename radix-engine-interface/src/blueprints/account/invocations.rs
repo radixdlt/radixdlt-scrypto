@@ -10,7 +10,7 @@ use sbor::rust::prelude::*;
 pub const ACCOUNT_BLUEPRINT: &str = "Account";
 
 //================
-// Account Create
+// Account Create Local
 //================
 
 pub const ACCOUNT_CREATE_LOCAL_IDENT: &str = "create_local";
@@ -21,7 +21,7 @@ pub struct AccountCreateLocalInput {}
 pub type AccountCreateLocalOutput = Own;
 
 //=============
-// Account New
+// Account Create Global
 //=============
 
 pub const ACCOUNT_CREATE_GLOBAL_IDENT: &str = "create_global";
@@ -32,6 +32,12 @@ pub struct AccountCreateGlobalInput {
 }
 
 pub type AccountCreateGlobalOutput = ComponentAddress;
+
+//=============
+// Account Virtual Lazy Load Functions
+//=============
+pub const ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_IDENT: &str = "create_virtual_ecdsa_256k1";
+pub const ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_IDENT: &str = "create_virtual_ecdsa_25519";
 
 //==================
 // Account Lock Fee

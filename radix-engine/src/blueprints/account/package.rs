@@ -9,7 +9,7 @@ use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::resource::{AccessRule, Bucket, Proof};
+use radix_engine_interface::blueprints::resource::{AccessRule, Bucket, Proof, require};
 use radix_engine_interface::blueprints::resource::AccessRulesConfig;
 use radix_engine_interface::blueprints::resource::MethodKey;
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver};
@@ -17,6 +17,7 @@ use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSch
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use native_sdk::resource::{SysBucket, Vault};
 use radix_engine_interface::api::types::ClientCostingReason;
+use radix_engine_interface::blueprints::identity::{VirtualLazyLoadInput, VirtualLazyLoadOutput};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct AccountSubstate {
@@ -50,6 +51,27 @@ impl AccountNativePackage {
         substates.push(aggregator.add_child_type_and_descendents::<AccountSubstate>());
 
         let mut functions = BTreeMap::new();
+
+        // TODO: Protect virtual functions from being called by client layer
+        functions.insert(
+            ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<VirtualLazyLoadInput>(),
+                output: aggregator.add_child_type_and_descendents::<VirtualLazyLoadOutput>(),
+                export_name: ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<VirtualLazyLoadInput>(),
+                output: aggregator.add_child_type_and_descendents::<VirtualLazyLoadOutput>(),
+                export_name: ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_IDENT.to_string(),
+            },
+        );
+
         functions.insert(
             ACCOUNT_CREATE_GLOBAL_IDENT.to_string(),
             FunctionSchema {
@@ -213,6 +235,38 @@ impl AccountNativePackage {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         match export_name {
+            ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                if receiver.is_some() {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    ));
+                }
+
+                let input: VirtualLazyLoadInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = Self::create_virtual_ecdsa_256k1(input.id, api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                if receiver.is_some() {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    ));
+                }
+
+                let input: VirtualLazyLoadInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = Self::create_virtual_eddsa_25519(input.id, api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
             ACCOUNT_CREATE_GLOBAL_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
@@ -389,23 +443,67 @@ impl AccountNativePackage {
         }
     }
 
+    fn create_modules<Y>(access_rule: AccessRule, api: &mut Y) -> Result<BTreeMap<NodeModuleId, Own>, RuntimeError>
+        where
+            Y: KernelNodeApi + ClientApi<RuntimeError> {
+        let access_rules =
+            AccessRulesObject::sys_new(access_rules_from_withdraw_rule(access_rule), api)?;
+        let metadata = Metadata::sys_create(api)?;
+        let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
+
+        let modules = btreemap!(
+                NodeModuleId::AccessRules => access_rules,
+                NodeModuleId::Metadata => metadata,
+                NodeModuleId::ComponentRoyalty => royalty,
+            );
+
+        Ok(modules)
+    }
+
+    fn create_virtual_ecdsa_256k1<Y>(id: [u8; 26], api: &mut Y) -> Result<VirtualLazyLoadOutput, RuntimeError>
+        where
+            Y: KernelNodeApi + ClientApi<RuntimeError>,
+    {
+        let account = Self::create_local(api)?;
+        let non_fungible_global_id = NonFungibleGlobalId::new(
+            ECDSA_SECP256K1_TOKEN,
+            NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
+        );
+        let access_rule = rule!(require(non_fungible_global_id));
+        let modules = Self::create_modules(access_rule, api)?;
+
+        Ok((account, modules))
+    }
+
+    fn create_virtual_eddsa_25519<Y>(id: [u8; 26], api: &mut Y) -> Result<VirtualLazyLoadOutput, RuntimeError>
+        where
+            Y: KernelNodeApi + ClientApi<RuntimeError>,
+    {
+        let account = Self::create_local(api)?;
+        let non_fungible_global_id = NonFungibleGlobalId::new(
+            EDDSA_ED25519_TOKEN,
+            NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
+        );
+        let access_rule = rule!(require(non_fungible_global_id));
+        let modules = Self::create_modules(access_rule, api)?;
+
+        Ok((account, modules))
+    }
+
     fn create_global<Y>(withdraw_rule: AccessRule, api: &mut Y) -> Result<Address, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let account = Self::create_local(api)?;
-        let access_rules =
-            AccessRulesObject::sys_new(access_rules_from_withdraw_rule(withdraw_rule), api)?;
-        let metadata = Metadata::sys_create(api)?;
-        let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
+        let modules = Self::create_modules(withdraw_rule, api)?;
+        let modules = modules
+            .into_iter()
+            .map(|(id, own)| (id, own.id()))
+            .collect();
 
         let address = api.globalize(
             RENodeId::Object(account.id()),
-            btreemap!(
-                NodeModuleId::AccessRules => access_rules.id(),
-                NodeModuleId::Metadata => metadata.id(),
-                NodeModuleId::ComponentRoyalty => royalty.id(),
-            ),
+            modules,
         )?;
 
         Ok(address)

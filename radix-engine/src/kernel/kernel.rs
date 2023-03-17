@@ -30,9 +30,7 @@ use radix_engine_interface::api::types::{
     LockHandle, ProofOffset, RENodeId, SubstateId, SubstateOffset,
 };
 use radix_engine_interface::api::{ClientObjectApi, ClientPackageApi};
-use radix_engine_interface::blueprints::account::{
-    ACCOUNT_BLUEPRINT, ACCOUNT_DEPOSIT_BATCH_IDENT, ACCOUNT_DEPOSIT_IDENT,
-};
+use radix_engine_interface::blueprints::account::{ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_IDENT, ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_IDENT, ACCOUNT_DEPOSIT_BATCH_IDENT, ACCOUNT_DEPOSIT_IDENT};
 use radix_engine_interface::blueprints::identity::{
     VirtualLazyLoadInput, IDENTITY_BLUEPRINT, IDENTITY_CREATE_VIRTUAL_ECDSA_IDENT,
     IDENTITY_CREATE_VIRTUAL_EDDSA_IDENT,
@@ -123,85 +121,6 @@ where
         (self.module, new_result)
     }
 
-    fn create_virtual_account(
-        &mut self,
-        global_node_id: RENodeId,
-        non_fungible_global_id: NonFungibleGlobalId,
-    ) -> Result<(), RuntimeError> {
-        // TODO: This should move into the appropriate place once virtual manager is implemented
-        self.current_frame.add_ref(
-            RENodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()),
-            RENodeVisibilityOrigin::Normal,
-        );
-        self.current_frame.add_ref(
-            RENodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()),
-            RENodeVisibilityOrigin::Normal,
-        );
-
-        let access_rule = rule!(require(non_fungible_global_id));
-        let component_id = {
-            let kv_store_id = {
-                let node_id = self.kernel_allocate_node_id(RENodeType::KeyValueStore)?;
-                let node = RENodeInit::KeyValueStore;
-                self.kernel_create_node(node_id, node, BTreeMap::new())?;
-                node_id
-            };
-
-            let node_id = {
-                let node_modules = btreemap!(
-                    NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
-                        package_address: ACCOUNT_PACKAGE,
-                        blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
-                        global: false
-                    })
-                );
-
-                let account_substate = AccountSubstate {
-                    vaults: Own::KeyValueStore(kv_store_id.into()),
-                };
-
-                let node_id = self.kernel_allocate_node_id(RENodeType::Object)?;
-                let node = RENodeInit::Object(btreemap!(
-                    SubstateOffset::Account(AccountOffset::Account) => RuntimeSubstate::Account(account_substate)
-                ));
-                self.kernel_create_node(node_id, node, node_modules)?;
-                node_id
-            };
-            node_id
-        };
-
-        let access_rules = {
-            let mut access_rules = AccessRulesConfig::new();
-            access_rules.set_access_rule_and_mutability(
-                MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_IDENT.to_string()),
-                AccessRule::AllowAll,
-                AccessRule::DenyAll,
-            );
-            access_rules.set_access_rule_and_mutability(
-                MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_BATCH_IDENT.to_string()),
-                AccessRule::AllowAll,
-                AccessRule::DenyAll,
-            );
-            access_rules.default(access_rule.clone(), access_rule)
-        };
-
-        let access_rules = AccessRulesObject::sys_new(access_rules, self)?;
-        let metadata = Metadata::sys_create(self)?;
-        let royalty = ComponentRoyalty::sys_create(self, RoyaltyConfig::default())?;
-
-        self.globalize_with_address(
-            component_id,
-            btreemap!(
-                NodeModuleId::AccessRules => access_rules.id(),
-                NodeModuleId::Metadata => metadata.id(),
-                NodeModuleId::ComponentRoyalty => royalty.id(),
-            ),
-            global_node_id.into(),
-        )?;
-
-        Ok(())
-    }
-
     fn try_virtualize(
         &mut self,
         node_id: RENodeId,
@@ -212,60 +131,52 @@ where
             // TODO: Need to have a schema check in place before this in order to not create virtual components when accessing illegal substates
             RENodeId::GlobalObject(Address::Component(component_address)) => {
                 // Lazy create component if missing
-                match component_address {
-                    ComponentAddress::EcdsaSecp256k1VirtualAccount(address) => {
-                        self.id_allocator.allocate_virtual_node_id(node_id);
-                        let non_fungible_global_id = NonFungibleGlobalId::new(
-                            ECDSA_SECP256K1_TOKEN,
-                            NonFungibleLocalId::bytes(address.to_vec()).unwrap(),
-                        );
-                        self.create_virtual_account(node_id, non_fungible_global_id)?;
-                    }
-                    ComponentAddress::EddsaEd25519VirtualAccount(address) => {
-                        self.id_allocator.allocate_virtual_node_id(node_id);
-                        let non_fungible_global_id = NonFungibleGlobalId::new(
-                            EDDSA_ED25519_TOKEN,
-                            NonFungibleLocalId::bytes(address.to_vec()).unwrap(),
-                        );
-                        self.create_virtual_account(node_id, non_fungible_global_id)?;
-                    }
-                    ComponentAddress::EcdsaSecp256k1VirtualIdentity(id)
-                    | ComponentAddress::EddsaEd25519VirtualIdentity(id) => {
-                        let (package, blueprint, func) = match component_address {
-                            ComponentAddress::EcdsaSecp256k1VirtualIdentity(..) => (
-                                IDENTITY_PACKAGE,
-                                IDENTITY_BLUEPRINT,
-                                IDENTITY_CREATE_VIRTUAL_ECDSA_IDENT,
-                            ),
-                            ComponentAddress::EddsaEd25519VirtualIdentity(..) => (
-                                IDENTITY_PACKAGE,
-                                IDENTITY_BLUEPRINT,
-                                IDENTITY_CREATE_VIRTUAL_EDDSA_IDENT,
-                            ),
-                            _ => return Ok(false),
-                        };
-
-                        let rtn = self.call_function(
-                            package,
-                            blueprint,
-                            func,
-                            scrypto_encode(&VirtualLazyLoadInput { id }).unwrap(),
-                        )?;
-                        let (object_id, modules): (Own, BTreeMap<NodeModuleId, Own>) =
-                            scrypto_decode(&rtn).unwrap();
-                        let modules = modules
-                            .into_iter()
-                            .map(|(id, own)| (id, own.id()))
-                            .collect();
-                        self.id_allocator.allocate_virtual_node_id(node_id);
-                        self.globalize_with_address(
-                            RENodeId::Object(object_id.id()),
-                            modules,
-                            node_id.into(),
-                        )?;
-                    }
+                let (package, blueprint, func, id) = match component_address {
+                    ComponentAddress::EcdsaSecp256k1VirtualAccount(id) => (
+                        ACCOUNT_PACKAGE,
+                        ACCOUNT_BLUEPRINT,
+                        ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_IDENT,
+                        id,
+                    ),
+                    ComponentAddress::EddsaEd25519VirtualAccount(id) => (
+                        ACCOUNT_PACKAGE,
+                        ACCOUNT_BLUEPRINT,
+                        ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_IDENT,
+                        id,
+                    ),
+                    ComponentAddress::EcdsaSecp256k1VirtualIdentity(id) => (
+                        IDENTITY_PACKAGE,
+                        IDENTITY_BLUEPRINT,
+                        IDENTITY_CREATE_VIRTUAL_ECDSA_IDENT,
+                        id
+                    ),
+                    ComponentAddress::EddsaEd25519VirtualIdentity(id) => (
+                        IDENTITY_PACKAGE,
+                        IDENTITY_BLUEPRINT,
+                        IDENTITY_CREATE_VIRTUAL_EDDSA_IDENT,
+                        id,
+                    ),
                     _ => return Ok(false),
                 };
+
+                let rtn = self.call_function(
+                    package,
+                    blueprint,
+                    func,
+                    scrypto_encode(&VirtualLazyLoadInput { id }).unwrap(),
+                )?;
+                let (object_id, modules): (Own, BTreeMap<NodeModuleId, Own>) =
+                    scrypto_decode(&rtn).unwrap();
+                let modules = modules
+                    .into_iter()
+                    .map(|(id, own)| (id, own.id()))
+                    .collect();
+                self.id_allocator.allocate_virtual_node_id(node_id);
+                self.globalize_with_address(
+                    RENodeId::Object(object_id.id()),
+                    modules,
+                    node_id.into(),
+                )?;
 
                 Ok(true)
             }
