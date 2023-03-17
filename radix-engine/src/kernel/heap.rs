@@ -132,7 +132,9 @@ impl Heap {
         for ((module_id, offset), substate) in node.substates {
             let (_, owned_nodes) = substate.to_ref().references_and_owned_nodes();
             self.move_nodes_to_store(track, owned_nodes)?;
-            track.insert_substate(SubstateId(node_id, module_id, offset), substate);
+            track
+                .insert_substate(SubstateId(node_id, module_id, offset), substate)
+                .map_err(|e| CallFrameError::FailedToMoveSubstateToTrack(e))?;
         }
 
         Ok(())

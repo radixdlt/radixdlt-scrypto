@@ -1,0 +1,28 @@
+# Withdraw XRD from account
+CALL_METHOD Address("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064") "withdraw" Address("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Decimal("5.0");
+
+# Create a proof from bucket, clone it and drop both
+TAKE_FROM_WORKTOP Address("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("some_xrd");
+CREATE_PROOF_FROM_BUCKET Bucket("some_xrd") Proof("proof1");
+CLONE_PROOF Proof("proof1") Proof("proof2");
+DROP_PROOF Proof("proof1");
+DROP_PROOF Proof("proof2");
+
+# Create a proof from account and drop it
+CALL_METHOD Address("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064") "create_proof_by_amount" Address("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Decimal("5.0");
+POP_FROM_AUTH_ZONE Proof("proof3");
+DROP_PROOF Proof("proof3");
+
+# Compose proofs
+CALL_METHOD Address("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064") "create_proof_by_amount" Address("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Decimal("5.0");
+CREATE_PROOF_FROM_AUTH_ZONE Address("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Proof("Proof Name");
+CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT Decimal("1") Address("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Proof("proof4");
+CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS Array<NonFungibleLocalId>(NonFungibleLocalId("#123#")) Address("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Proof("proof5");
+CLEAR_AUTH_ZONE;
+
+# Drop all virtual proofs in the auth zone.
+CLEAR_SIGNATURE_PROOFS;
+
+# Drop all proofs, and move resources to account
+DROP_ALL_PROOFS;
+CALL_METHOD Address("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064") "deposit_batch" Expression("ENTIRE_WORKTOP");

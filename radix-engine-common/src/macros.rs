@@ -245,14 +245,7 @@ macro_rules! manifest_args {
         $crate::data::manifest::manifest_decode(&buf).unwrap()
     }};
 }
-/*
-#[macro_export]
-macro_rules! manifest_args {
-    ($($args: tt)*) => {{
-        $crate::data::manifest::manifest_decode(&manifest_vec!($($args)*)).unwrap()
-    }};
-}
-*/
+
 /// Constructs an address.
 #[macro_export]
 macro_rules! construct_address {

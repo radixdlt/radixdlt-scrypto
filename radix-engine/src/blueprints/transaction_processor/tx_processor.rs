@@ -1,16 +1,13 @@
 use crate::blueprints::resource::WorktopSubstate;
 use crate::errors::ApplicationError;
+use crate::errors::InterpreterError;
 use crate::errors::RuntimeError;
-use crate::kernel::actor::Actor;
-use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::executor::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
-use crate::wasm::WasmEngine;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::{
@@ -20,30 +17,21 @@ use radix_engine_interface::api::node_modules::metadata::{
     MetadataRemoveInput, MetadataSetInput, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
 };
 use radix_engine_interface::api::node_modules::royalty::{
-    ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput, PackageClaimRoyaltyInput,
-    PackageSetRoyaltyConfigInput, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
-    COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT, PACKAGE_ROYALTY_CLAIM_ROYALTY_IDENT,
-    PACKAGE_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+    ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput,
+    COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
-use radix_engine_interface::api::package::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientObjectApi;
+use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
-use sbor::rust::borrow::Cow;
+use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
+use radix_engine_interface::blueprints::transaction_processor::*;
 use transaction::data::to_address;
 use transaction::data::transform;
 use transaction::data::TransformHandler;
 use transaction::errors::ManifestIdAllocationError;
 use transaction::model::*;
 use transaction::validation::*;
-
-#[derive(Debug, ScryptoSbor)]
-pub struct TransactionProcessorRunInvocation<'a> {
-    pub transaction_hash: Hash,
-    pub runtime_validations: Cow<'a, [RuntimeValidationRequest]>,
-    pub instructions: Cow<'a, Vec<u8>>,
-    pub blobs: Cow<'a, [Vec<u8>]>,
-}
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TransactionProcessorError {
@@ -63,247 +51,26 @@ pub enum TransactionProcessorError {
     InvalidPackageSchema(DecodeError),
 }
 
-pub trait NativeOutput: ScryptoEncode + Debug + Send + Sync {}
-impl<T: ScryptoEncode + Debug + Send + Sync> NativeOutput for T {}
+pub struct TransactionProcessorBlueprint;
 
-#[derive(Debug, Clone, ScryptoSbor)]
-pub enum InstructionOutput {
-    CallReturn(Vec<u8>),
-    None,
-}
-
-impl<'a> Invocation for TransactionProcessorRunInvocation<'a> {
-    type Output = Vec<InstructionOutput>;
-
-    fn debug_identifier(&self) -> InvocationDebugIdentifier {
-        InvocationDebugIdentifier::Transaction
-    }
-}
-
-fn extract_refs_from_instruction(instruction: &Instruction, update: &mut CallFrameUpdate) {
-    match instruction {
-        Instruction::CallFunction {
-            package_address,
-            args,
-            ..
-        } => {
-            update.add_ref(RENodeId::GlobalObject(package_address.clone().into()));
-            extract_refs_from_value(args, update);
-
-            if package_address.eq(&EPOCH_MANAGER_PACKAGE) {
-                update.add_ref(RENodeId::GlobalObject(PACKAGE_TOKEN.into()));
-            }
-        }
-        Instruction::PublishPackage { access_rules, .. } => {
-            update.add_ref(RENodeId::GlobalObject(PACKAGE_LOADER.into()));
-
-            // TODO: Remove and cleanup
-            let value: ManifestValue = manifest_decode(&manifest_encode(access_rules).unwrap())
-                .expect("Invalid CALL_FUNCTION arguments");
-            extract_refs_from_value(&value, update);
-        }
-        Instruction::CallMethod {
-            component_address,
-            args,
-            ..
-        } => {
-            update.add_ref(RENodeId::GlobalObject(component_address.clone().into()));
-            extract_refs_from_value(args, update);
-        }
-
-        Instruction::SetMetadata {
-            entity_address,
-            value,
-            ..
-        } => {
-            for reference in IndexedScryptoValue::from_typed(value).global_references() {
-                update.add_ref(*reference);
-            }
-            let address = to_address(entity_address.clone());
-            let node_id = address.into();
-            update.add_ref(node_id);
-        }
-        Instruction::SetMethodAccessRule { entity_address, .. }
-        | Instruction::RemoveMetadata { entity_address, .. } => {
-            let address = to_address(entity_address.clone());
-            let node_id = address.into();
-            update.add_ref(node_id);
-        }
-        Instruction::RecallResource { vault_id, .. } => {
-            // TODO: This needs to be cleaned up
-            // TODO: How does this relate to newly created vaults in the transaction frame?
-            // TODO: Will probably want different spacing for refed vs. owned nodes
-            update.add_ref(RENodeId::Object(*vault_id));
-        }
-
-        Instruction::SetPackageRoyaltyConfig {
-            package_address, ..
-        }
-        | Instruction::ClaimPackageRoyalty {
-            package_address, ..
-        } => {
-            update.add_ref(RENodeId::GlobalObject(package_address.clone().into()));
-        }
-        Instruction::SetComponentRoyaltyConfig {
-            component_address, ..
-        }
-        | Instruction::ClaimComponentRoyalty {
-            component_address, ..
-        } => {
-            update.add_ref(RENodeId::GlobalObject(component_address.clone().into()));
-        }
-        Instruction::TakeFromWorktop {
-            resource_address, ..
-        }
-        | Instruction::TakeFromWorktopByAmount {
-            resource_address, ..
-        }
-        | Instruction::TakeFromWorktopByIds {
-            resource_address, ..
-        }
-        | Instruction::AssertWorktopContains {
-            resource_address, ..
-        }
-        | Instruction::AssertWorktopContainsByAmount {
-            resource_address, ..
-        }
-        | Instruction::AssertWorktopContainsByIds {
-            resource_address, ..
-        }
-        | Instruction::CreateProofFromAuthZone {
-            resource_address, ..
-        }
-        | Instruction::CreateProofFromAuthZoneByAmount {
-            resource_address, ..
-        }
-        | Instruction::CreateProofFromAuthZoneByIds {
-            resource_address, ..
-        }
-        | Instruction::MintFungible {
-            resource_address, ..
-        }
-        | Instruction::MintNonFungible {
-            resource_address, ..
-        }
-        | Instruction::MintUuidNonFungible {
-            resource_address, ..
-        } => {
-            update.add_ref(RENodeId::GlobalObject(resource_address.clone().into()));
-        }
-        Instruction::ReturnToWorktop { .. }
-        | Instruction::PopFromAuthZone { .. }
-        | Instruction::PushToAuthZone { .. }
-        | Instruction::ClearAuthZone { .. }
-        | Instruction::CreateProofFromBucket { .. }
-        | Instruction::CloneProof { .. }
-        | Instruction::DropProof { .. }
-        | Instruction::DropAllProofs { .. }
-        | Instruction::BurnResource { .. }
-        | Instruction::AssertAccessRule { .. } => {}
-    }
-}
-
-fn extract_refs_from_value(value: &ManifestValue, collector: &mut CallFrameUpdate) {
-    match value {
-        Value::Bool { .. }
-        | Value::I8 { .. }
-        | Value::I16 { .. }
-        | Value::I32 { .. }
-        | Value::I64 { .. }
-        | Value::I128 { .. }
-        | Value::U8 { .. }
-        | Value::U16 { .. }
-        | Value::U32 { .. }
-        | Value::U64 { .. }
-        | Value::U128 { .. }
-        | Value::String { .. } => {}
-        Value::Enum { fields, .. } => {
-            for f in fields {
-                extract_refs_from_value(f, collector);
-            }
-        }
-        Value::Array { elements, .. } => {
-            for f in elements {
-                extract_refs_from_value(f, collector);
-            }
-        }
-        Value::Tuple { fields } => {
-            for f in fields {
-                extract_refs_from_value(f, collector);
-            }
-        }
-        Value::Map { entries, .. } => {
-            for f in entries {
-                extract_refs_from_value(&f.0, collector);
-                extract_refs_from_value(&f.1, collector);
-            }
-        }
-        Value::Custom { value } => match value {
-            ManifestCustomValue::Address(a) => {
-                let address = to_address(a.clone());
-                collector.add_ref(RENodeId::GlobalObject(address))
-            }
-            _ => {}
-        },
-    }
-}
-
-impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
-    type Exec = Self;
-
-    fn resolve<D: KernelSubstateApi>(
-        self,
-        _api: &mut D,
-    ) -> Result<ResolvedInvocation<Self::Exec>, RuntimeError> {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        // TODO: This can be refactored out once any type in sbor is implemented
-        let instructions: Vec<Instruction> = manifest_decode(&self.instructions).unwrap();
-        for instruction in instructions {
-            extract_refs_from_instruction(&instruction, &mut call_frame_update);
-        }
-        call_frame_update.add_ref(RENodeId::GlobalObject(RADIX_TOKEN.into()));
-        call_frame_update.add_ref(RENodeId::GlobalObject(PACKAGE_TOKEN.into()));
-        call_frame_update.add_ref(RENodeId::GlobalObject(EPOCH_MANAGER.into()));
-        call_frame_update.add_ref(RENodeId::GlobalObject(CLOCK.into()));
-        call_frame_update.add_ref(RENodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()));
-        call_frame_update.add_ref(RENodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()));
-
-        let actor = Actor::function(FnIdentifier {
-            package_address: PACKAGE_LOADER,
-            blueprint_name: TRANSACTION_PROCESSOR_BLUEPRINT.to_string(),
-            ident: "run".to_string(),
-        });
-
-        let resolved = ResolvedInvocation {
-            resolved_actor: actor,
-            update: call_frame_update,
-            executor: self,
-            args: IndexedScryptoValue::unit(),
-        };
-
-        Ok(resolved)
-    }
-
-    fn payload_size(&self) -> usize {
-        0
-    }
-}
-
-impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
-    type Output = Vec<InstructionOutput>;
-
-    fn execute<Y, W: WasmEngine>(
-        self,
-        _args: IndexedScryptoValue,
+impl TransactionProcessorBlueprint {
+    pub(crate) fn run<Y>(
+        input: IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        for request in self.runtime_validations.as_ref() {
+        let input: TransactionProcessorRunInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
+
+        // Runtime transaction validation
+        for request in input.runtime_validations.as_ref() {
             TransactionProcessor::perform_validation(request, api)?;
         }
 
+        // Create a worktop
         let worktop_node_id = api.kernel_allocate_node_id(RENodeType::Object)?;
         api.kernel_create_node(
             worktop_node_id,
@@ -318,14 +85,15 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 })
             ),
         )?;
-
         let worktop = Worktop(worktop_node_id.into());
 
-        let instructions: Vec<Instruction> = manifest_decode(&self.instructions).unwrap();
+        // Decode instructions
+        let instructions: Vec<Instruction> = manifest_decode(&input.instructions).unwrap();
 
+        // Index blobs
         // TODO: defer blob hashing to post fee payments as it's computationally costly
         let mut blobs_by_hash = HashMap::new();
-        for blob in self.blobs.as_ref() {
+        for blob in input.blobs.as_ref() {
             blobs_by_hash.insert(hash(blob), blob);
         }
 
@@ -385,8 +153,11 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     InstructionOutput::None
                 }
                 Instruction::ClearAuthZone => {
-                    processor.proof_id_mapping.clear();
                     ComponentAuthZone::sys_clear(api)?;
+                    InstructionOutput::None
+                }
+                Instruction::ClearSignatureProofs => {
+                    ComponentAuthZone::sys_clear_signature_proofs(api)?;
                     InstructionOutput::None
                 }
                 Instruction::PushToAuthZone { proof_id } => {
@@ -438,6 +209,9 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     InstructionOutput::None
                 }
                 Instruction::DropAllProofs => {
+                    // NB: the difference between DROP_ALL_PROOFS and CLEAR_AUTH_ZONE is that
+                    // the former will drop all named proofs before clearing the auth zone.
+
                     for (_, real_id) in processor.proof_id_mapping.drain() {
                         let proof = Proof(real_id);
                         proof.sys_drop(api).map(|_| IndexedScryptoValue::unit())?;
@@ -513,10 +287,10 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
                     // TODO: remove clone by allowing invocation to have references, like in TransactionProcessorRunInvocation.
                     let result = api.call_function(
-                        PACKAGE_LOADER,
-                        PACKAGE_LOADER_BLUEPRINT,
-                        PACKAGE_LOADER_PUBLISH_WASM_IDENT,
-                        scrypto_encode(&PackageLoaderPublishWasmInput {
+                        PACKAGE_PACKAGE,
+                        PACKAGE_BLUEPRINT,
+                        PACKAGE_PUBLISH_WASM_IDENT,
+                        scrypto_encode(&PackagePublishWasmInput {
                             package_address: None,
                             code: code.clone(),
                             schema,
@@ -672,8 +446,8 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 } => {
                     let result = api.call_module_method(
                         RENodeId::GlobalObject(package_address.into()),
-                        NodeModuleId::PackageRoyalty,
-                        PACKAGE_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+                        NodeModuleId::SELF,
+                        PACKAGE_SET_ROYALTY_CONFIG_IDENT,
                         scrypto_encode(&PackageSetRoyaltyConfigInput {
                             royalty_config: royalty_config.clone(),
                         })
@@ -715,8 +489,8 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 Instruction::ClaimPackageRoyalty { package_address } => {
                     let result = api.call_module_method(
                         RENodeId::GlobalObject(package_address.into()),
-                        NodeModuleId::PackageRoyalty,
-                        PACKAGE_ROYALTY_CLAIM_ROYALTY_IDENT,
+                        NodeModuleId::SELF,
+                        PACKAGE_CLAIM_ROYALTY_IDENT,
                         scrypto_encode(&PackageClaimRoyaltyInput {}).unwrap(),
                     )?;
 
@@ -788,7 +562,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
         worktop.sys_drop(api)?;
 
-        Ok((outputs, CallFrameUpdate::empty()))
+        Ok(IndexedScryptoValue::from_typed(&outputs))
     }
 }
 

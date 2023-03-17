@@ -9,12 +9,12 @@ use sbor::rust::vec::Vec;
 use sbor::{LocalTypeIndex, Schema};
 use scrypto_schema::PackageSchema;
 
-pub const PACKAGE_LOADER_BLUEPRINT: &str = "PackageLoader";
+pub const PACKAGE_BLUEPRINT: &str = "Package";
 
-pub const PACKAGE_LOADER_PUBLISH_WASM_IDENT: &str = "publish_wasm";
+pub const PACKAGE_PUBLISH_WASM_IDENT: &str = "publish_wasm";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct PackageLoaderPublishWasmInput {
+pub struct PackagePublishWasmInput {
     pub package_address: Option<[u8; 26]>, // TODO: Clean this up
     pub code: Vec<u8>,
     pub schema: PackageSchema,
@@ -24,10 +24,12 @@ pub struct PackageLoaderPublishWasmInput {
     pub event_schema: BTreeMap<String, Vec<(LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>>,
 }
 
-pub const PACKAGE_LOADER_PUBLISH_NATIVE_IDENT: &str = "publish_native";
+pub type PackagePublishWasmOutput = PackageAddress;
+
+pub const PACKAGE_PUBLISH_NATIVE_IDENT: &str = "publish_native";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct PackageLoaderPublishNativeInput {
+pub struct PackagePublishNativeInput {
     pub package_address: Option<[u8; 26]>, // TODO: Clean this up
     pub native_package_code_id: u8,
     pub schema: PackageSchema,
@@ -42,6 +44,24 @@ pub struct PackageLoaderPublishNativeInput {
     pub event_schema: BTreeMap<String, Vec<(LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>>,
 }
 
-pub const TRANSACTION_PROCESSOR_BLUEPRINT: &str = "TransactionProcessor";
+pub type PackagePublishNativeOutput = PackageAddress;
 
-pub const TRANSACTION_PROCESSOR_RUN_IDENT: &str = "run";
+pub const PACKAGE_SET_ROYALTY_CONFIG_IDENT: &str = "PackageRoyalty_set_royalty_config";
+
+#[derive(
+    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
+)]
+pub struct PackageSetRoyaltyConfigInput {
+    pub royalty_config: BTreeMap<String, RoyaltyConfig>, // TODO: optimize to allow per blueprint configuration.
+}
+
+pub type PackageSetRoyaltyConfigOutput = ();
+
+pub const PACKAGE_CLAIM_ROYALTY_IDENT: &str = "PackageRoyalty_claim_royalty";
+
+#[derive(
+    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
+)]
+pub struct PackageClaimRoyaltyInput {}
+
+pub type PackageClaimRoyaltyOutput = Bucket;

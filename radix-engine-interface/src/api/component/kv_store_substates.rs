@@ -25,7 +25,7 @@ impl KeyValueStoreEntrySubstate {
         }
     }
 
-    pub fn global_references(&self) -> HashSet<RENodeId> {
+    pub fn references(&self) -> HashSet<RENodeId> {
         match self {
             KeyValueStoreEntrySubstate::Some(v) => {
                 IndexedScryptoValue::from_scrypto_value(v.clone())

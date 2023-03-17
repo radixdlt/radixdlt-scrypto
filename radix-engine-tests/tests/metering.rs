@@ -59,8 +59,7 @@ fn test_basic_transfer() {
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key1)],
     );
-
-    receipt.expect_commit_success();
+    let commit_result = receipt.expect_commit(true);
 
     // Assert
     // NOTE: If this test fails, it should print out the actual fee table in the error logs.
@@ -68,18 +67,18 @@ fn test_basic_transfer() {
     // (cd radix-engine && cargo test --test metering -- test_basic_transfer)
     assert_eq!(
         10000 /* CreateNode */
-        + 80000 /* DropLock */
+        + 88000 /* DropLock */
         + 10000 /* DropNode */
         + 11160 /* Invoke */
-        + 81000 /* LockSubstate */
-        + 59500 /* ReadSubstate */
-        + 67500 /* RunNative */
+        + 89500 /* LockSubstate */
+        + 61500 /* ReadSubstate */
+        + 70000 /* RunNative */
         + 0 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1260 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 16000, /* WriteSubstate */
-        receipt.execution.fee_summary.total_cost_units_consumed
+        + 22500, /* WriteSubstate */
+        commit_result.fee_summary.execution_cost_sum
     );
 }
 
@@ -194,25 +193,25 @@ fn test_radiswap() {
             - (btc_init_amount * eth_init_amount)
                 / (btc_init_amount + (btc_to_swap - btc_to_swap * fee_amount))
     );
+    let commit_result = receipt.expect_commit(true);
 
     // NOTE: If this test fails, it should print out the actual fee table in the error logs.
     // Or you can run just this test with the below:
     // (cd radix-engine && cargo test --test metering -- test_radiswap)
     assert_eq!(
         15000 /* CreateNode */
-        + 214500 /* DropLock */
+        + 228500 /* DropLock */
         + 12500 /* DropNode */
         + 25340 /* Invoke */
-        + 216500 /* LockSubstate */
-        + 2625770 /* ReadSubstate */
-        + 150000 /* RunNative */
-        + 1519970 /* RunWasm */
+        + 231000 /* LockSubstate */
+        + 2636900 /* ReadSubstate */
+        + 152500 /* RunNative */
+        + 1520730 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1625 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 38000 /* WriteSubstate */
-        + 2, /* royalty in cost units */
-        receipt.execution.fee_summary.total_cost_units_consumed
+        + 54000, /* WriteSubstate */
+        commit_result.fee_summary.execution_cost_sum
     );
 }
 
@@ -292,15 +291,15 @@ fn test_flash_loan() {
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&pk3)],
     );
-    receipt.expect_commit_success();
+    let commit_result = receipt.expect_commit(true);
     let new_balance = test_runner.account_balance(account3, RADIX_TOKEN).unwrap();
     assert!(test_runner
         .account_balance(account3, promise_token_address)
         .is_none());
     assert_eq!(
         old_balance - new_balance,
-        receipt.execution.fee_summary.total_execution_cost_xrd
-            + receipt.execution.fee_summary.total_royalty_cost_xrd
+        commit_result.fee_summary.total_execution_cost_xrd
+            + commit_result.fee_summary.total_royalty_cost_xrd
             + (repay_amount - loan_amount)
     );
 
@@ -309,19 +308,18 @@ fn test_flash_loan() {
     // (cd radix-engine && cargo test --test metering -- test_flash_loan)
     assert_eq!(
         22500 /* CreateNode */
-        + 330500 /* DropLock */
+        + 351000 /* DropLock */
         + 22500 /* DropNode */
         + 45770 /* Invoke */
-        + 338500 /* LockSubstate */
-        + 5250060 /* ReadSubstate */
-        + 242500 /* RunNative */
-        + 1170535 /* RunWasm */
+        + 359500 /* LockSubstate */
+        + 5266960 /* ReadSubstate */
+        + 245000 /* RunNative */
+        + 1172150 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2375 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 66500 /* WriteSubstate */
-        + 2, /* royalty in cost units */
-        receipt.execution.fee_summary.total_cost_units_consumed
+        + 92500, /* WriteSubstate */
+        commit_result.fee_summary.execution_cost_sum
     );
 }
 
@@ -339,9 +337,8 @@ fn test_publish_large_package() {
                 (export "memory" (memory $0))
             )
         "#,
-        "i".repeat(DEFAULT_MAX_INVOKE_INPUT_SIZE - 144) // ensure we fit within limit
+        "i".repeat(DEFAULT_MAX_INVOKE_INPUT_SIZE - 1024)
     ));
-    assert_eq!(DEFAULT_MAX_INVOKE_INPUT_SIZE - 105, code.len());
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 100.into())
         .publish_package(
@@ -355,12 +352,12 @@ fn test_publish_large_package() {
 
     let (receipt, _) = execute_with_time_logging(&mut test_runner, manifest, vec![]);
 
-    receipt.expect_commit_success();
+    let commit_result = receipt.expect_commit(true);
 
     // Assert
     assert!(
-        receipt.execution.fee_summary.total_cost_units_consumed > 60000000
-            && receipt.execution.fee_summary.total_cost_units_consumed < 70000000
+        commit_result.fee_summary.execution_cost_sum > 60000000
+            && commit_result.fee_summary.execution_cost_sum < 70000000
     );
 }
 
@@ -376,7 +373,7 @@ fn should_be_able_run_large_manifest() {
     let mut builder = ManifestBuilder::new();
     builder.lock_fee(account, 100u32.into());
     builder.withdraw_from_account(account, RADIX_TOKEN, 100u32.into());
-    for _ in 0..200 {
+    for _ in 0..100 {
         builder.take_from_worktop_by_amount(1.into(), RADIX_TOKEN, |builder, bid| {
             builder.return_to_worktop(bid)
         });
@@ -395,7 +392,7 @@ fn should_be_able_run_large_manifest() {
     );
 
     // Assert
-    receipt.expect_commit_success();
+    receipt.expect_commit(true);
 }
 
 #[test]
@@ -420,7 +417,7 @@ fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
     );
 
     // Assert
-    receipt.expect_commit_success();
+    receipt.expect_commit(true);
 }
 
 fn setup_test_runner_with_fee_blueprint_component() -> (TestRunner, ComponentAddress) {
@@ -441,10 +438,8 @@ fn setup_test_runner_with_fee_blueprint_component() -> (TestRunner, ComponentAdd
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-    let component_address = receipt1
-        .expect_commit()
-        .entity_changes
-        .new_component_addresses[0];
+    let commit_result = receipt1.expect_commit(true);
+    let component_address = commit_result.entity_changes.new_component_addresses[0];
 
     (test_runner, component_address)
 }

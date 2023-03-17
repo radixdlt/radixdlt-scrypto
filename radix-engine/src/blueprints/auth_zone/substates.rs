@@ -11,19 +11,12 @@ pub struct AuthZoneStackSubstate {
 }
 
 impl AuthZoneStackSubstate {
-    pub fn new(
-        proofs: Vec<Proof>,
-        virtual_resources: BTreeSet<ResourceAddress>,
-        virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
-    ) -> Self {
-        Self {
-            auth_zones: vec![AuthZone::new_with_virtual_proofs(
-                proofs,
-                virtual_resources,
-                virtual_non_fungibles,
-                false,
-            )],
-        }
+    pub fn new() -> Self {
+        Self { auth_zones: vec![] }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.auth_zones.is_empty()
     }
 
     pub fn check_auth<Y: ClientObjectApi<RuntimeError>>(
@@ -32,30 +25,15 @@ impl AuthZoneStackSubstate {
         method_auth: &MethodAuthorization,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
-        let mut barrier_crossings_allowed = 1u32;
-        if is_barrier {
-            barrier_crossings_allowed -= 1;
-        }
-
-        if !AuthVerification::verify_method_auth(
-            barrier_crossings_allowed,
+        AuthVerification::verify_method_auth(
+            if is_barrier { 0 } else { 1 },
             method_auth,
             &self,
             api,
-        )? {
-            return Ok(false);
-        }
-
-        Ok(true)
+        )
     }
 
-    pub fn push_auth_zone(
-        &mut self,
-        virtual_non_fungibles_non_extending: BTreeSet<NonFungibleGlobalId>,
-        barrier: bool,
-    ) {
-        let auth_zone =
-            AuthZone::new_with_virtual_non_fungibles(virtual_non_fungibles_non_extending, barrier);
+    pub fn push_auth_zone(&mut self, auth_zone: AuthZone) {
         self.auth_zones.push(auth_zone);
     }
 
@@ -105,30 +83,18 @@ impl Clone for AuthZone {
 }
 
 impl AuthZone {
-    fn new_with_virtual_non_fungibles(
-        virtual_non_fungibles_non_extending: BTreeSet<NonFungibleGlobalId>,
-        barrier: bool,
-    ) -> Self {
-        Self {
-            proofs: vec![],
-            virtual_resources: BTreeSet::new(),
-            virtual_non_fungibles: BTreeSet::new(),
-            virtual_non_fungibles_non_extending,
-            barrier,
-        }
-    }
-
-    fn new_with_virtual_proofs(
+    pub fn new(
         proofs: Vec<Proof>,
         virtual_resources: BTreeSet<ResourceAddress>,
         virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
+        virtual_non_fungibles_non_extending: BTreeSet<NonFungibleGlobalId>,
         barrier: bool,
     ) -> Self {
         Self {
             proofs,
             virtual_resources,
             virtual_non_fungibles,
-            virtual_non_fungibles_non_extending: BTreeSet::new(),
+            virtual_non_fungibles_non_extending,
             barrier,
         }
     }
@@ -143,5 +109,18 @@ impl AuthZone {
 
     pub fn drain(&mut self) -> Vec<Proof> {
         self.proofs.drain(0..).collect()
+    }
+
+    pub fn clear_signature_proofs(&mut self) {
+        self.virtual_resources
+            .retain(|x| x != &ECDSA_SECP256K1_TOKEN && x != &EDDSA_ED25519_TOKEN);
+        self.virtual_non_fungibles.retain(|x| {
+            x.resource_address() != ECDSA_SECP256K1_TOKEN
+                && x.resource_address() != EDDSA_ED25519_TOKEN
+        });
+        self.virtual_non_fungibles_non_extending.retain(|x| {
+            x.resource_address() != ECDSA_SECP256K1_TOKEN
+                && x.resource_address() != EDDSA_ED25519_TOKEN
+        });
     }
 }

@@ -24,7 +24,7 @@ impl SystemTransaction {
 
         let auth_zone_params = AuthZoneParams {
             initial_proofs,
-            virtualizable_proofs_resource_addresses: BTreeSet::new(),
+            virtual_resources: BTreeSet::new(),
         };
 
         Executable::new(

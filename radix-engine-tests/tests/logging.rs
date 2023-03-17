@@ -38,7 +38,7 @@ fn log_messages_from_transaction_with_no_panic_shows_up_in_receipts() {
     {
         receipt.expect_commit_success();
 
-        let logs = receipt.expect_commit().application_logs.clone();
+        let logs = receipt.expect_commit(true).application_logs.clone();
         let expected_logs = vec![(Level::Info, message.to_owned())];
 
         assert_eq!(expected_logs, logs)
@@ -56,9 +56,7 @@ fn log_messages_from_transaction_with_panic_shows_up_in_receipts() {
 
     // Assert
     {
-        receipt.expect_commit_failure();
-
-        let logs = receipt.expect_commit().application_logs.clone();
+        let logs = receipt.expect_commit(false).application_logs.clone();
         let expected_logs = vec![
             (Level::Info, message.to_owned()),
             (

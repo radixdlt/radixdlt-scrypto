@@ -8,7 +8,6 @@ use sbor::rust::string::String;
 // TODO: Remove
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub enum InvocationDebugIdentifier {
-    Transaction,
     Function(FnIdentifier),
     Method(MethodIdentifier),
 }

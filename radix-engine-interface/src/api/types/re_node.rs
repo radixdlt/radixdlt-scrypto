@@ -34,6 +34,8 @@ pub enum RENodeId {
     GlobalObject(Address),
     KeyValueStore(KeyValueStoreId),
     NonFungibleStore(NonFungibleStoreId),
+    // This is only used for owned objects (global objects have addresses)
+    // TODO: Rename to OwnedObject when it won't cause so many merge conflicts!
     Object(ObjectId),
 }
 
@@ -56,15 +58,29 @@ impl fmt::Debug for RENodeId {
     }
 }
 
-impl Into<[u8; OBJECT_ID_LENGTH]> for RENodeId {
-    fn into(self) -> [u8; OBJECT_ID_LENGTH] {
-        match self {
+impl From<RENodeId> for [u8; OBJECT_ID_LENGTH] {
+    fn from(value: RENodeId) -> Self {
+        match value {
             RENodeId::KeyValueStore(id) => id,
             RENodeId::NonFungibleStore(id) => id,
             RENodeId::Object(id) => id,
             RENodeId::TransactionRuntime => [4u8; OBJECT_ID_LENGTH], // TODO: Remove, this is here to preserve receiver in invocation for now
             RENodeId::AuthZoneStack => [5u8; OBJECT_ID_LENGTH], // TODO: Remove, this is here to preserve receiver in invocation for now
-            _ => panic!("Not a stored id: {:?}", self),
+            _ => panic!("Not a stored id: {:?}", value),
+        }
+    }
+}
+
+impl From<RENodeId> for Vec<u8> {
+    fn from(value: RENodeId) -> Self {
+        // Note - these are all guaranteed to be distinct
+        match value {
+            RENodeId::KeyValueStore(id) => id.to_vec(),
+            RENodeId::NonFungibleStore(id) => id.to_vec(),
+            RENodeId::Object(id) => id.to_vec(),
+            RENodeId::TransactionRuntime => [4u8; OBJECT_ID_LENGTH].to_vec(), // TODO: Remove, this is here to preserve receiver in invocation for now
+            RENodeId::AuthZoneStack => [5u8; OBJECT_ID_LENGTH].to_vec(), // TODO: Remove, this is here to preserve receiver in invocation for now
+            RENodeId::GlobalObject(address) => address.to_vec(),
         }
     }
 }
@@ -117,11 +133,10 @@ pub enum NodeModuleId {
     TypeInfo,
     Metadata,
     AccessRules,
-    AccessRules1,
+    AccessRules1, // TODO: remove
     ComponentRoyalty,
-    PackageRoyalty,
-    FunctionAccessRules,
-    PackageEventSchema,
+    FunctionAccessRules, // TODO: remove
+    PackageEventSchema,  // TODO: remove
 }
 
 impl NodeModuleId {
@@ -133,7 +148,6 @@ impl NodeModuleId {
             3u32 => Some(NodeModuleId::AccessRules),
             4u32 => Some(NodeModuleId::AccessRules1),
             5u32 => Some(NodeModuleId::ComponentRoyalty),
-            6u32 => Some(NodeModuleId::PackageRoyalty),
             7u32 => Some(NodeModuleId::FunctionAccessRules),
             8u32 => Some(NodeModuleId::PackageEventSchema),
             _ => None,
@@ -148,7 +162,6 @@ impl NodeModuleId {
             NodeModuleId::AccessRules => 3u32,
             NodeModuleId::AccessRules1 => 4u32,
             NodeModuleId::ComponentRoyalty => 5u32,
-            NodeModuleId::PackageRoyalty => 6u32,
             NodeModuleId::FunctionAccessRules => 7u32,
             NodeModuleId::PackageEventSchema => 8u32,
         }
@@ -192,6 +205,7 @@ pub enum PackageOffset {
     Info,
     CodeType,
     Code,
+    Royalty,
 }
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -277,6 +291,7 @@ pub enum SubstateOffset {
     AuthZoneStack(AuthZoneStackOffset),
     Component(ComponentOffset),
     Package(PackageOffset),
+    PackageAccessRules,
     ResourceManager(ResourceManagerOffset),
     KeyValueStore(KeyValueStoreOffset),
     NonFungibleStore(NonFungibleStoreOffset),
@@ -295,7 +310,6 @@ pub enum SubstateOffset {
     // TODO: align with module ID allocation?
     TypeInfo(TypeInfoOffset),
     AccessRules(AccessRulesOffset),
-    PackageAccessRules,
     Royalty(RoyaltyOffset),
     PackageEventSchema(PackageEventSchemaOffset),
 }

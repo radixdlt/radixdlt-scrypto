@@ -5,7 +5,6 @@ pub mod events_api;
 pub mod logger_api;
 pub mod node_api;
 pub mod node_modules;
-pub mod package;
 pub mod package_api;
 pub mod substate_api;
 pub mod types;

@@ -25,7 +25,7 @@ fn test_component() {
 
     // Find the component address from receipt
     let component = receipt1
-        .expect_commit()
+        .expect_commit(true)
         .entity_changes
         .new_component_addresses[0];
 

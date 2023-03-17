@@ -8,7 +8,10 @@ use crate::blueprints::epoch_manager::{
     UpdateAcceptingStakeDelegationStateEvent,
 };
 use crate::blueprints::identity::IdentityNativePackage;
+use crate::blueprints::package::PackageNativePackage;
+use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::resource::*;
+use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::blueprints::transaction_runtime::TransactionRuntimeNativePackage;
 use crate::kernel::interpreters::ScryptoInterpreter;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
@@ -24,15 +27,10 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::node_modules::auth::{AuthAddresses, ACCESS_RULES_BLUEPRINT};
 use radix_engine_interface::api::node_modules::metadata::METADATA_BLUEPRINT;
-use radix_engine_interface::api::package::*;
-use radix_engine_interface::api::package::{
-    PackageLoaderPublishNativeInput, PackageLoaderPublishWasmInput,
-};
-use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLUEPRINT;
-use radix_engine_interface::blueprints::clock::{
-    ClockCreateInput, CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT,
-};
+use radix_engine_interface::blueprints::access_controller::*;
+use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
+use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use transaction::model::{Instruction, SystemTransaction};
@@ -62,15 +60,39 @@ pub fn create_genesis(
     let mut instructions = Vec::new();
     let mut pre_allocated_ids = BTreeSet::new();
 
+    // Package Package
+    {
+        pre_allocated_ids.insert(RENodeId::GlobalObject(PACKAGE_PACKAGE.into()));
+        let package_address = PACKAGE_PACKAGE.to_array_without_entity_id();
+        instructions.push(Instruction::CallFunction {
+            package_address: PACKAGE_PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
+            args: to_manifest_value(&PackagePublishNativeInput {
+                package_address: Some(package_address), // TODO: Clean this up
+                native_package_code_id: PACKAGE_CODE_ID,
+                schema: PackageNativePackage::schema(),
+                dependent_resources: vec![],
+                dependent_components: vec![],
+                metadata: BTreeMap::new(),
+                access_rules: AccessRulesConfig::new(),
+                package_access_rules: PackageNativePackage::function_access_rules(),
+                default_package_access_rule: AccessRule::DenyAll,
+                event_schema: BTreeMap::new(),
+            })
+            .unwrap(),
+        });
+    }
+
     // Metadata Package
     {
         pre_allocated_ids.insert(RENodeId::GlobalObject(METADATA_PACKAGE.into()));
         let package_address = METADATA_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE_LOADER,
-            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackageLoaderPublishNativeInput {
+            package_address: PACKAGE_PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
+            args: to_manifest_value(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: METADATA_CODE_ID,
                 schema: MetadataNativePackage::schema(),
@@ -99,10 +121,10 @@ pub fn create_genesis(
         let package_address = ROYALTY_PACKAGE.to_array_without_entity_id();
 
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE_LOADER,
-            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackageLoaderPublishNativeInput {
+            package_address: PACKAGE_PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
+            args: to_manifest_value(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: ROYALTY_CODE_ID,
                 schema: RoyaltyNativePackage::schema(),
@@ -123,10 +145,10 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::GlobalObject(ACCESS_RULES_PACKAGE.into()));
         let package_address = ACCESS_RULES_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE_LOADER,
-            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackageLoaderPublishNativeInput {
+            package_address: PACKAGE_PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
+            args: to_manifest_value(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: ACCESS_RULES_CODE_ID,
                 schema: AccessRulesNativePackage::schema(),
@@ -160,12 +182,12 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::GlobalObject(RESOURCE_MANAGER_PACKAGE.into()));
         let package_address = RESOURCE_MANAGER_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE_LOADER,
-            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackageLoaderPublishNativeInput {
+            package_address: PACKAGE_PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
+            args: to_manifest_value(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
-                native_package_code_id: RESOURCE_MANAGER_PACKAGE_CODE_ID,
+                native_package_code_id: RESOURCE_MANAGER_CODE_ID,
                 schema: ResourceManagerNativePackage::schema(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
@@ -277,15 +299,15 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::GlobalObject(IDENTITY_PACKAGE.into()));
         let package_address = IDENTITY_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE_LOADER,
-            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackageLoaderPublishNativeInput {
+            package_address: PACKAGE_PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
+            args: to_manifest_value(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: IdentityNativePackage::schema(),
                 dependent_resources: vec![],
                 dependent_components: vec![],
-                native_package_code_id: IDENTITY_PACKAGE_CODE_ID,
+                native_package_code_id: IDENTITY_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRulesConfig::new(),
                 package_access_rules: BTreeMap::new(),
@@ -301,13 +323,13 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::GlobalObject(EPOCH_MANAGER_PACKAGE.into()));
         let package_address = EPOCH_MANAGER_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE_LOADER,
-            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackageLoaderPublishNativeInput {
+            package_address: PACKAGE_PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
+            args: to_manifest_value(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: EpochManagerNativePackage::schema(),
-                native_package_code_id: EPOCH_MANAGER_PACKAGE_CODE_ID,
+                native_package_code_id: EPOCH_MANAGER_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRulesConfig::new(),
                 dependent_resources: vec![RADIX_TOKEN, PACKAGE_TOKEN, SYSTEM_TOKEN],
@@ -370,13 +392,13 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::GlobalObject(CLOCK_PACKAGE.into()));
         let package_address = CLOCK_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE_LOADER,
-            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackageLoaderPublishNativeInput {
+            package_address: PACKAGE_PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
+            args: to_manifest_value(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: ClockNativePackage::schema(),
-                native_package_code_id: CLOCK_PACKAGE_CODE_ID,
+                native_package_code_id: CLOCK_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRulesConfig::new(),
                 dependent_resources: vec![SYSTEM_TOKEN],
@@ -394,13 +416,13 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::GlobalObject(ACCOUNT_PACKAGE.into()));
         let package_address = ACCOUNT_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE_LOADER,
-            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackageLoaderPublishNativeInput {
+            package_address: PACKAGE_PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
+            args: to_manifest_value(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: AccountNativePackage::schema(),
-                native_package_code_id: ACCOUNT_PACKAGE_CODE_ID,
+                native_package_code_id: ACCOUNT_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRulesConfig::new(),
                 dependent_resources: vec![],
@@ -418,15 +440,15 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::GlobalObject(ACCESS_CONTROLLER_PACKAGE.into()));
         let package_address = ACCESS_CONTROLLER_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE_LOADER,
-            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackageLoaderPublishNativeInput {
+            package_address: PACKAGE_PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
+            args: to_manifest_value(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: AccessControllerNativePackage::schema(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRulesConfig::new(),
-                native_package_code_id: ACCESS_CONTROLLER_PACKAGE_CODE_ID,
+                native_package_code_id: ACCESS_CONTROLLER_CODE_ID,
                 dependent_resources: vec![PACKAGE_TOKEN],
                 dependent_components: vec![CLOCK],
                 package_access_rules: BTreeMap::new(),
@@ -466,15 +488,39 @@ pub fn create_genesis(
         });
     }
 
+    // TransactionProcessor Package
+    {
+        pre_allocated_ids.insert(RENodeId::GlobalObject(TRANSACTION_PROCESSOR_PACKAGE.into()));
+        let package_address = TRANSACTION_PROCESSOR_PACKAGE.to_array_without_entity_id();
+        instructions.push(Instruction::CallFunction {
+            package_address: PACKAGE_PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
+            args: to_manifest_value(&PackagePublishNativeInput {
+                package_address: Some(package_address), // TODO: Clean this up
+                schema: TransactionProcessorNativePackage::schema(),
+                metadata: BTreeMap::new(),
+                access_rules: AccessRulesConfig::new(),
+                native_package_code_id: TRANSACTION_PROCESSOR_CODE_ID,
+                dependent_resources: vec![],
+                dependent_components: vec![],
+                package_access_rules: BTreeMap::new(),
+                default_package_access_rule: AccessRule::AllowAll,
+                event_schema: BTreeMap::new(),
+            })
+            .unwrap(),
+        });
+    }
+
     // TransactionRuntime Package
     {
         pre_allocated_ids.insert(RENodeId::GlobalObject(TRANSACTION_RUNTIME_PACKAGE.into()));
         let package_address = TRANSACTION_RUNTIME_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE_LOADER,
-            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackageLoaderPublishNativeInput {
+            package_address: PACKAGE_PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
+            args: to_manifest_value(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: TransactionRuntimeNativePackage::schema(),
                 metadata: BTreeMap::new(),
@@ -495,10 +541,10 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::GlobalObject(AUTH_ZONE_PACKAGE.into()));
         let package_address = AUTH_ZONE_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE_LOADER,
-            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackageLoaderPublishNativeInput {
+            package_address: PACKAGE_PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
+            args: to_manifest_value(&PackagePublishNativeInput {
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: AuthZoneNativePackage::schema(),
                 metadata: BTreeMap::new(),
@@ -583,10 +629,10 @@ pub fn create_genesis(
         let package_address = FAUCET_PACKAGE.to_array_without_entity_id();
         pre_allocated_ids.insert(RENodeId::GlobalObject(FAUCET_PACKAGE.into()));
         instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE_LOADER,
-            blueprint_name: PACKAGE_LOADER_BLUEPRINT.to_string(),
-            function_name: PACKAGE_LOADER_PUBLISH_WASM_IDENT.to_string(),
-            args: to_manifest_value(&PackageLoaderPublishWasmInput {
+            package_address: PACKAGE_PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_WASM_IDENT.to_string(),
+            args: to_manifest_value(&PackagePublishWasmInput {
                 package_address: Some(package_address),
                 code: faucet_code,
                 schema: scrypto_decode(&faucet_abi).unwrap(),
@@ -759,12 +805,11 @@ where
             substate_store,
             scrypto_interpreter,
             &FeeReserveConfig::default(),
-            &ExecutionConfig::default(),
+            &ExecutionConfig::genesis(),
             &genesis_transaction.get_executable(vec![AuthAddresses::system_role()]),
         );
 
-        let commit_result = transaction_receipt.expect_commit();
-        commit_result.outcome.expect_success();
+        let commit_result = transaction_receipt.expect_commit(true);
         commit_result.state_updates.commit(substate_store);
 
         Some(transaction_receipt)
@@ -797,25 +842,23 @@ mod tests {
             &substate_store,
             &scrypto_interpreter,
             &FeeReserveConfig::default(),
-            &ExecutionConfig::debug(),
+            &ExecutionConfig::genesis().with_trace(true),
             &genesis_transaction.get_executable(vec![AuthAddresses::system_role()]),
         );
         #[cfg(not(feature = "alloc"))]
         println!("{:?}", transaction_receipt);
 
         transaction_receipt.expect_commit_success();
-        let commit_result = transaction_receipt.expect_commit();
+        let commit_result = transaction_receipt.expect_commit(true);
         commit_result
-            .next_epoch
-            .as_ref()
+            .next_epoch()
             .expect("There should be a new epoch.");
 
         assert!(transaction_receipt
-            .result
-            .expect_commit()
+            .expect_commit(true)
             .entity_changes
             .new_package_addresses
-            .contains(&PACKAGE_LOADER));
+            .contains(&PACKAGE_PACKAGE));
         let genesis_receipt = genesis_result(&transaction_receipt);
         assert_eq!(genesis_receipt.faucet_component, FAUCET_COMPONENT);
     }
@@ -838,15 +881,16 @@ mod tests {
             &substate_store,
             &scrypto_interpreter,
             &FeeReserveConfig::default(),
-            &ExecutionConfig::default(),
+            &ExecutionConfig::genesis(),
             &genesis_transaction.get_executable(vec![AuthAddresses::system_role()]),
         );
 
         transaction_receipt.expect_commit_success();
-        let commit_result = transaction_receipt.result.expect_commit();
+        let commit_result = transaction_receipt.expect_commit(true);
         commit_result.state_updates.commit(&mut substate_store);
 
-        assert!(commit_result
+        assert!(transaction_receipt
+            .execution_trace
             .resource_changes
             .iter()
             .flat_map(|(_, rc)| rc)

@@ -24,7 +24,10 @@ fn cannot_set_package_metadata_with_no_owner() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let package_address = receipt.expect_commit().entity_changes.new_package_addresses[0];
+    let package_address = receipt
+        .expect_commit(true)
+        .entity_changes
+        .new_package_addresses[0];
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -67,7 +70,10 @@ fn can_set_package_metadata_with_owner() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
-    let package_address = receipt.expect_commit().entity_changes.new_package_addresses[0];
+    let package_address = receipt
+        .expect_commit(true)
+        .entity_changes
+        .new_package_addresses[0];
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -114,7 +120,10 @@ fn can_lock_package_metadata_with_owner() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
-    let package_address = receipt.expect_commit().entity_changes.new_package_addresses[0];
+    let package_address = receipt
+        .expect_commit(true)
+        .entity_changes
+        .new_package_addresses[0];
 
     // Act
     let manifest = ManifestBuilder::new()
