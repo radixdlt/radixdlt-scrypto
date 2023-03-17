@@ -6,7 +6,14 @@ use syn::{
 };
 
 
+#[cfg(not(feature = "resource_tracker"))]
+#[proc_macro_attribute]
+pub fn trace_resources(_attr: TokenStream, input: TokenStream) -> TokenStream {
+    input
+}
+
 #[cfg(target_family = "unix")]
+#[cfg(feature = "resource_tracker")]
 #[proc_macro_attribute]
 pub fn trace_resources(attr: TokenStream, input: TokenStream) -> TokenStream {
     let _arg = if let Ok(attrs) = syn::Ident::parse.parse(attr) {

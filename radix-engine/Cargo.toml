@@ -17,7 +17,7 @@ lru = { version = "0.8.1", default-features = false, optional = true}
 moka = { version = "0.9.4", features = ["sync"], default-features = false, optional = true }
 strum = { version = "0.24", default-features = false, features = ["derive"] }
 perfcnt = { version = "0.8.0", optional = true }
-radix-engine-utils = { path = "../radix-engine-utils" }
+radix-engine-utils = { path = "../radix-engine-utils", optional = true, features = ["resource_tracker"] }
 resources-tracker-macro = { path = "../radix-engine-utils/resources-tracker-macro" }
 
 # WASM de-/serialization
@@ -56,6 +56,8 @@ wasmer = ["dep:wasmer", "dep:wasmer-compiler-singlepass"]
 
 # Use moka for caching
 moka = ["dep:moka"]
+
+resource_tracker = ["dep:radix-engine-utils", "resources-tracker-macro/resource_tracker"]
 
 # Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
 [lib]

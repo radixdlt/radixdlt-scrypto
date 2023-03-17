@@ -19,6 +19,7 @@ use native_sdk::resource::{SysBucket, Vault};
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 
 #[cfg(target_family = "unix")]
+#[cfg(feature = "resource_tracker")]
 use radix_engine_utils::QEMU_PLUGIN;
 use resources_tracker_macro::trace_resources;
 
