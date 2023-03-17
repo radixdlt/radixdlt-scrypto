@@ -386,19 +386,11 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn create_validator(
-        &mut self,
-        key: EcdsaSecp256k1PublicKey,
-        owner_access_rule: AccessRule,
-    ) -> &mut Self {
+    pub fn create_validator(&mut self, key: EcdsaSecp256k1PublicKey) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
-            args: to_manifest_value(&EpochManagerCreateValidatorInput {
-                key,
-                owner_access_rule,
-            })
-            .unwrap(),
+            args: to_manifest_value(&EpochManagerCreateValidatorInput { key }).unwrap(),
         });
         self
     }

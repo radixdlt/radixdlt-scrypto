@@ -1401,16 +1401,13 @@ impl<'a> SubstateRef<'a> {
 
                 (HashSet::new(), owned_nodes)
             }
+            SubstateRef::EpochManager(substate) => {
+                let (_, owns, refs) = IndexedScryptoValue::from_typed(&substate).unpack();
+                (refs, owns)
+            }
             SubstateRef::Validator(substate) => {
-                let mut references = HashSet::new();
-                let mut owned_nodes = Vec::new();
-                references.insert(RENodeId::GlobalObject(substate.manager.into()));
-                references.insert(RENodeId::GlobalObject(substate.address.into()));
-                references.insert(RENodeId::GlobalObject(substate.unstake_nft.into()));
-                references.insert(RENodeId::GlobalObject(substate.liquidity_token.into()));
-                owned_nodes.push(RENodeId::Object(substate.stake_xrd_vault_id));
-                owned_nodes.push(RENodeId::Object(substate.pending_xrd_withdraw_vault_id));
-                (references, owned_nodes)
+                let (_, owns, refs) = IndexedScryptoValue::from_typed(&substate).unpack();
+                (refs, owns)
             }
             SubstateRef::MethodAccessRules(substate) => {
                 let (_, owns, refs) = IndexedScryptoValue::from_typed(&substate).unpack();

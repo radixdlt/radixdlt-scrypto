@@ -678,8 +678,8 @@ pub fn create_genesis(
         }
 
         let component_address = EPOCH_MANAGER.to_array_without_entity_id();
-        let olympia_validator_token_address = OLYMPIA_VALIDATOR_TOKEN.to_array_without_entity_id();
-        pre_allocated_ids.insert(RENodeId::GlobalObject(OLYMPIA_VALIDATOR_TOKEN.into()));
+        let olympia_validator_token_address = VALIDATOR_OWNER_TOKEN.to_array_without_entity_id();
+        pre_allocated_ids.insert(RENodeId::GlobalObject(VALIDATOR_OWNER_TOKEN.into()));
         pre_allocated_ids.insert(RENodeId::GlobalObject(EPOCH_MANAGER.into()));
         instructions.push(Instruction::CallFunction {
             package_address: EPOCH_MANAGER_PACKAGE,

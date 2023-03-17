@@ -439,6 +439,75 @@ impl NonFungibleResourceManagerBlueprint {
         Ok(Bucket(bucket_id))
     }
 
+    pub(crate) fn mint_single_uuid_non_fungible<Y>(
+        receiver: RENodeId,
+        value: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<(Bucket, NonFungibleLocalId), RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let resman_handle = api.sys_lock_substate(
+            receiver,
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            LockFlags::MUTABLE,
+        )?;
+
+        let resource_manager: &mut NonFungibleResourceManagerSubstate =
+            api.kernel_get_substate_ref_mut(resman_handle)?;
+        let resource_address = resource_manager.resource_address;
+        let nf_store_id = resource_manager.non_fungible_table;
+        let id_type = resource_manager.id_type;
+
+        if id_type != NonFungibleIdType::UUID {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::NonFungibleResourceManagerError(
+                    NonFungibleResourceManagerError::InvalidNonFungibleIdType,
+                ),
+            ));
+        }
+
+        resource_manager.total_supply += 1;
+
+        // TODO: Is this enough bits to prevent hash collisions?
+        // TODO: Possibly use an always incrementing timestamp
+        let uuid = Runtime::generate_uuid(api)?;
+        let id = NonFungibleLocalId::uuid(uuid).unwrap();
+
+        {
+            let non_fungible_handle = api.sys_lock_substate(
+                RENodeId::KeyValueStore(nf_store_id),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                    scrypto_encode(&id).unwrap(),
+                )),
+                LockFlags::MUTABLE,
+            )?;
+            api.sys_write_typed_substate(non_fungible_handle, Some(value))?;
+
+            api.sys_drop_lock(non_fungible_handle)?;
+        }
+
+        let info = BucketInfoSubstate {
+            resource_address,
+            resource_type: ResourceType::NonFungible { id_type },
+        };
+        let ids = BTreeSet::from([id.clone()]);
+        let bucket_id = api.new_object(
+            BUCKET_BLUEPRINT,
+            vec![
+                scrypto_encode(&info).unwrap(),
+                scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
+                scrypto_encode(&LockedFungibleResource::default()).unwrap(),
+                scrypto_encode(&LiquidNonFungibleResource::new(ids.clone())).unwrap(),
+                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
+            ],
+        )?;
+
+        Runtime::emit_event(api, MintNonFungibleResourceEvent { ids })?;
+
+        Ok((Bucket(bucket_id), id))
+    }
+
     pub(crate) fn mint_uuid_non_fungible<Y>(
         receiver: RENodeId,
         entries: Vec<(ScryptoValue,)>,
