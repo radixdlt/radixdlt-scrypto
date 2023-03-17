@@ -547,7 +547,7 @@ impl<'s> FinalizingTrack<'s> {
 
         // Finalize fee payments
         let fee_summary = fee_reserve.finalize();
-        let mut fee_payments: IndexMap<ObjectId, Decimal> = IndexMap::new();
+        let mut fee_payments: IndexMap<ObjectId, Decimal> = index_map_new();
         let mut required = fee_summary.total_execution_cost_xrd
             + fee_summary.total_royalty_cost_xrd
             - fee_summary.total_bad_debt_xrd;
@@ -606,9 +606,9 @@ impl<'s> FinalizingTrack<'s> {
         substate_store: &dyn ReadableSubstateStore,
         state_updates: &IndexMap<SubstateId, (PersistedSubstate, Option<u32>)>,
     ) -> StateUpdateSummary {
-        let mut new_packages = IndexSet::new();
-        let mut new_components = IndexSet::new();
-        let mut new_resources = IndexSet::new();
+        let mut new_packages = index_set_new();
+        let mut new_components = index_set_new();
+        let mut new_resources = index_set_new();
         for (k, v) in state_updates {
             if v.1.is_none() {
                 match k.0 {
@@ -694,10 +694,10 @@ impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
         substate_store: &'a dyn ReadableSubstateStore,
         state_updates: &'b IndexMap<SubstateId, (PersistedSubstate, Option<u32>)>,
     ) -> Self {
-        let mut indexed_state_updates = IndexMap::<
+        let mut indexed_state_updates: IndexMap<
             RENodeId,
-            IndexMap<NodeModuleId, IndexMap<SubstateOffset, &(PersistedSubstate, Option<u32>)>>,
-        >::new();
+            IndexMap<NodeModuleId, IndexMap<SubstateOffset, &'b (PersistedSubstate, Option<u32>)>>,
+        > = index_map_new();
         for (SubstateId(node_id, module_id, offset), v) in state_updates {
             indexed_state_updates
                 .entry(*node_id)
@@ -719,11 +719,10 @@ impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
         IndexMap<Address, IndexMap<ResourceAddress, BalanceChange>>,
         IndexMap<ObjectId, IndexMap<ResourceAddress, BalanceChange>>,
     ) {
-        let mut balance_changes =
-            IndexMap::<Address, IndexMap<ResourceAddress, BalanceChange>>::new();
-        let mut direct_vault_updates =
-            IndexMap::<ObjectId, IndexMap<ResourceAddress, BalanceChange>>::new();
-        let mut accounted_vaults = IndexSet::<RENodeId>::new();
+        let mut balance_changes = index_map_new();
+        let mut direct_vault_updates: IndexMap<ObjectId, IndexMap<ResourceAddress, BalanceChange>> =
+            index_map_new();
+        let mut accounted_vaults = index_set_new();
 
         self.indexed_state_updates
             .keys()
@@ -783,37 +782,33 @@ impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
                 }
             });
 
-        let mut pruned_balance_changes =
-            IndexMap::<Address, IndexMap<ResourceAddress, BalanceChange>>::new();
-        for (entity, map) in balance_changes {
-            for (resource, balance_changes) in map {
-                match balance_changes {
-                    BalanceChange::Fungible(delta) => {
-                        if !delta.is_zero() {
-                            pruned_balance_changes
-                                .entry(entity)
-                                .or_default()
-                                .insert(resource, BalanceChange::Fungible(delta));
-                        }
-                    }
-                    BalanceChange::NonFungible {
-                        mut added,
-                        mut removed,
-                    } => {
-                        added.retain(|x| !removed.contains(x));
-                        removed.retain(|x| !added.contains(x));
-                        if !added.is_empty() || !removed.is_empty() {
-                            pruned_balance_changes
-                                .entry(entity)
-                                .or_default()
-                                .insert(resource, BalanceChange::NonFungible { added, removed });
-                        }
-                    }
-                }
-            }
-        }
+        // prune balance changes
 
-        (pruned_balance_changes, direct_vault_updates)
+        balance_changes.retain(|_, map| {
+            map.retain(|_, change| match change {
+                BalanceChange::Fungible(delta) => !delta.is_zero(),
+                BalanceChange::NonFungible { added, removed } => {
+                    added.retain(|x| !removed.contains(x));
+                    removed.retain(|x| !added.contains(x));
+                    !added.is_empty() || !removed.is_empty()
+                }
+            });
+            !map.is_empty()
+        });
+
+        direct_vault_updates.retain(|_, map| {
+            map.retain(|_, change| match change {
+                BalanceChange::Fungible(delta) => !delta.is_zero(),
+                BalanceChange::NonFungible { added, removed } => {
+                    added.retain(|x| !removed.contains(x));
+                    removed.retain(|x| !added.contains(x));
+                    !added.is_empty() || !removed.is_empty()
+                }
+            });
+            !map.is_empty()
+        });
+
+        (balance_changes, direct_vault_updates)
     }
 
     fn traverse_state_updates(
