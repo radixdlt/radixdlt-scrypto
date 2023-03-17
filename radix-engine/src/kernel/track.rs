@@ -783,7 +783,37 @@ impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
                 }
             });
 
-        (balance_changes, direct_vault_updates)
+        let mut pruned_balance_changes =
+            IndexMap::<Address, IndexMap<ResourceAddress, BalanceChange>>::new();
+        for (entity, map) in balance_changes {
+            for (resource, balance_changes) in map {
+                match balance_changes {
+                    BalanceChange::Fungible(delta) => {
+                        if !delta.is_zero() {
+                            pruned_balance_changes
+                                .entry(entity)
+                                .or_default()
+                                .insert(resource, BalanceChange::Fungible(delta));
+                        }
+                    }
+                    BalanceChange::NonFungible {
+                        mut added,
+                        mut removed,
+                    } => {
+                        added.retain(|x| !removed.contains(x));
+                        removed.retain(|x| !added.contains(x));
+                        if !added.is_empty() || !removed.is_empty() {
+                            pruned_balance_changes
+                                .entry(entity)
+                                .or_default()
+                                .insert(resource, BalanceChange::NonFungible { added, removed });
+                        }
+                    }
+                }
+            }
+        }
+
+        (pruned_balance_changes, direct_vault_updates)
     }
 
     fn traverse_state_updates(
@@ -913,7 +943,7 @@ impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
                     SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
                 ))
             {
-                let old_balance = if old_version.is_none() {
+                let mut old_balance = if old_version.is_none() {
                     BTreeSet::new()
                 } else {
                     self.fetch_substate_from_store(&SubstateId(
@@ -925,20 +955,17 @@ impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
                     .ids()
                     .clone()
                 };
-                let new_balance = substate.vault_liquid_non_fungible().ids().clone();
+                let mut new_balance = substate.vault_liquid_non_fungible().ids().clone();
 
                 let intersection: HashSet<NonFungibleLocalId> =
                     new_balance.intersection(&old_balance).cloned().collect();
-                let added: BTreeSet<NonFungibleLocalId> = new_balance
-                    .into_iter()
-                    .filter(|x| !intersection.contains(x))
-                    .collect();
-                let removed: BTreeSet<NonFungibleLocalId> = old_balance
-                    .into_iter()
-                    .filter(|x| !intersection.contains(x))
-                    .collect();
+                new_balance.retain(|x| !intersection.contains(x));
+                old_balance.retain(|x| !intersection.contains(x));
 
-                Some(BalanceChange::NonFungible { added, removed })
+                Some(BalanceChange::NonFungible {
+                    added: new_balance,
+                    removed: old_balance,
+                })
             } else {
                 None
             }
