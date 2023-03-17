@@ -6,9 +6,7 @@ use crate::system::node_properties::SubstateProperties;
 use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use radix_engine_interface::api::substate_api::LockFlags;
-use radix_engine_interface::api::types::{
-    LockHandle, NonFungibleStoreOffset, RENodeId, SubstateId, SubstateOffset,
-};
+use radix_engine_interface::api::types::{LockHandle, RENodeId, SubstateId, SubstateOffset};
 
 use super::heap::{Heap, HeapRENode};
 use super::kernel_api::LockInfo;
@@ -122,12 +120,7 @@ impl CallFrame {
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
         self.check_node_visibility(&node_id)?;
-        if !(matches!(offset, SubstateOffset::KeyValueStore(..))
-            || matches!(
-                offset,
-                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..))
-            ))
-        {
+        if !(matches!(offset, SubstateOffset::KeyValueStore(..))) {
             let substate_id = SubstateId(node_id, module_id, offset.clone());
             if heap.contains_node(&node_id) {
                 if flags.contains(LockFlags::UNMODIFIED_BASE) {
@@ -210,7 +203,7 @@ impl CallFrame {
 
         if substate_lock.flags.contains(LockFlags::MUTABLE) {
             let substate_ref = self.get_substate(heap, track, node_id, module_id, &offset)?;
-            let (_references, owned_nodes) = substate_ref.references_and_owned_nodes();
+            let (references, owned_nodes) = substate_ref.references_and_owned_nodes();
 
             // Reserving original Vec element order with `IndexSet`
             let mut new_children: IndexSet<RENodeId> = index_set_new();
@@ -220,6 +213,11 @@ impl CallFrame {
                         KernelError::ContainsDuplicatedOwns,
                     ));
                 }
+            }
+
+            // Check references exist
+            for reference in references {
+                self.check_node_visibility(&reference)?;
             }
 
             for old_child in &substate_lock.substate_owned_nodes {
@@ -247,11 +245,20 @@ impl CallFrame {
                     &SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
                 ) {
                     let type_info: &TypeInfoSubstate = info.into();
-                    SubstateProperties::verify_can_own(
-                        &offset,
-                        type_info.package_address,
-                        type_info.blueprint_name.as_str(),
-                    )?;
+                    match type_info {
+                        TypeInfoSubstate::Object {
+                            package_address,
+                            blueprint_name,
+                            ..
+                        } => {
+                            SubstateProperties::verify_can_own(
+                                &offset,
+                                *package_address,
+                                blueprint_name.as_str(),
+                            )?;
+                        }
+                        TypeInfoSubstate::KeyValueStore(..) => {}
+                    }
                 }
             }
 
@@ -274,12 +281,7 @@ impl CallFrame {
 
         let flags = substate_lock.flags;
 
-        if !(matches!(offset, SubstateOffset::KeyValueStore(..))
-            || matches!(
-                offset,
-                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..))
-            ))
-        {
+        if !(matches!(offset, SubstateOffset::KeyValueStore(..))) {
             if !heap.contains_node(&node_id) {
                 track
                     .release_lock(
@@ -300,6 +302,8 @@ impl CallFrame {
             .ok_or(KernelError::LockDoesNotExist(lock_handle))?;
 
         Ok(LockInfo {
+            node_id: substate_lock.node_id,
+            module_id: substate_lock.module_id,
             offset: substate_lock.offset.clone(),
             flags: substate_lock.flags,
         })
@@ -483,11 +487,20 @@ impl CallFrame {
                     &SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
                 ) {
                     let type_info: &TypeInfoSubstate = info.into();
-                    SubstateProperties::verify_can_own(
-                        &offset,
-                        type_info.package_address,
-                        type_info.blueprint_name.as_str(),
-                    )?;
+                    match type_info {
+                        TypeInfoSubstate::Object {
+                            package_address,
+                            blueprint_name,
+                            ..
+                        } => {
+                            SubstateProperties::verify_can_own(
+                                &offset,
+                                *package_address,
+                                blueprint_name.as_str(),
+                            )?;
+                        }
+                        TypeInfoSubstate::KeyValueStore(..) => {}
+                    }
                 }
 
                 if push_to_store {

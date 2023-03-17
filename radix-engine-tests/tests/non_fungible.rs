@@ -1,5 +1,8 @@
+use radix_engine::blueprints::resource::NonFungibleResourceManagerError;
+use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
+use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use scrypto::NonFungibleData;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -146,6 +149,232 @@ fn test_take_non_fungibles() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn can_update_non_fungible_when_mutable() {
+    let mut test_runner = TestRunner::builder().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(
+            package_address,
+            "NonFungibleTest",
+            "update_non_fungible",
+            manifest_args!("available".to_string(), true),
+        )
+        .call_method(
+            account,
+            "deposit_batch",
+            manifest_args!(ManifestExpression::EntireWorktop),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn cannot_update_non_fungible_when_not_mutable() {
+    let mut test_runner = TestRunner::builder().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(
+            package_address,
+            "NonFungibleTest",
+            "update_non_fungible",
+            manifest_args!("tastes_great".to_string(), false),
+        )
+        .call_method(
+            account,
+            "deposit_batch",
+            manifest_args!(ManifestExpression::EntireWorktop),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
+                NonFungibleResourceManagerError::FieldNotMutable(..)
+            ))
+        )
+    });
+}
+
+#[test]
+fn cannot_update_non_fungible_when_does_not_exist() {
+    let mut test_runner = TestRunner::builder().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(
+            package_address,
+            "NonFungibleTest",
+            "update_non_fungible",
+            manifest_args!("does_not_exist".to_string(), false),
+        )
+        .call_method(
+            account,
+            "deposit_batch",
+            manifest_args!(ManifestExpression::EntireWorktop),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
+                NonFungibleResourceManagerError::InvalidField(..)
+            ))
+        )
+    });
+}
+
+#[test]
+fn can_call_non_fungible_data_reference() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    test_runner.set_metadata(
+        account.into(),
+        "test_key",
+        "test_value",
+        NonFungibleGlobalId::from_public_key(&public_key),
+    );
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(
+            package_address,
+            "NonFungibleTest",
+            "create_non_fungible_reference",
+            manifest_args!(account),
+        )
+        .call_method(
+            account,
+            "deposit_batch",
+            manifest_args!(ManifestExpression::EntireWorktop),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+    receipt.expect_commit_success();
+    let resource_address = receipt.new_resource_addresses()[1];
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(
+            package_address,
+            "NonFungibleTest",
+            "call_non_fungible_reference",
+            manifest_args!(resource_address),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let result = receipt.expect_commit_success();
+    assert_eq!(
+        result[1],
+        InstructionOutput::CallReturn(scrypto_encode("test_value").unwrap())
+    );
+}
+
+#[test]
+fn cannot_have_non_fungible_data_ownership() {
+    let mut test_runner = TestRunner::builder().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(
+            package_address,
+            "NonFungibleTest",
+            "update_non_fungible_with_ownership",
+            manifest_args!(),
+        )
+        .call_method(
+            account,
+            "deposit_batch",
+            manifest_args!(ManifestExpression::EntireWorktop),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemError(SystemError::InvalidKeyValueStoreOwnership)
+        )
+    });
+}
+
+#[test]
+fn can_update_and_get_non_fungible() {
+    let mut test_runner = TestRunner::builder().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(
+            package_address,
+            "NonFungibleTest",
+            "update_and_get_non_fungible",
+            manifest_args!(),
+        )
+        .call_method(
+            account,
+            "deposit_batch",
+            manifest_args!(ManifestExpression::EntireWorktop),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn can_update_and_get_non_fungible_reference() {
+    let mut test_runner = TestRunner::builder().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(
+            package_address,
+            "NonFungibleTest",
+            "update_and_get_non_fungible_reference",
+            manifest_args!(account),
+        )
+        .call_method(
+            account,
+            "deposit_batch",
+            manifest_args!(ManifestExpression::EntireWorktop),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
     receipt.expect_commit_success();
 }
 
@@ -439,6 +668,29 @@ fn create_uuid_non_fungible() {
 }
 
 #[test]
+fn can_get_total_supply() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(
+            package,
+            "NonFungibleTest",
+            "get_total_supply",
+            manifest_args!(),
+        )
+        .build();
+
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
 fn can_mint_uuid_non_fungible_in_scrypto() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
@@ -469,11 +721,61 @@ fn can_mint_uuid_non_fungible_in_scrypto() {
     receipt.expect_commit_success();
 }
 
-#[derive(NonFungibleData)]
+#[derive(ManifestSbor, ScryptoSbor, NonFungibleData)]
 pub struct Sandwich {
     pub name: String,
     #[mutable]
     pub available: bool,
+    pub tastes_great: bool,
+    #[mutable]
+    pub reference: Option<ResourceAddress>,
+    #[mutable]
+    pub own: Option<()>,
+}
+
+#[test]
+fn can_mint_uuid_non_fungible_with_reference_in_manifest() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (_, _, account) = test_runner.new_allocated_account();
+    let (other_address, ..) = test_runner.create_restricted_token(account);
+    let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(
+            package,
+            "NonFungibleTest",
+            "create_mintable_uuid_non_fungible",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    receipt.expect_commit_success();
+    let resource_address = receipt.new_resource_addresses()[0];
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .mint_uuid_non_fungible(
+            resource_address,
+            vec![Sandwich {
+                name: "test".to_string(),
+                available: false,
+                tastes_great: true,
+                reference: Some(other_address),
+                own: None,
+            }],
+        )
+        .call_method(
+            account,
+            "deposit_batch",
+            manifest_args!(ManifestExpression::EntireWorktop),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -503,6 +805,9 @@ fn can_mint_uuid_non_fungible_in_manifest() {
             vec![Sandwich {
                 name: "test".to_string(),
                 available: false,
+                tastes_great: true,
+                reference: None,
+                own: None,
             }],
         )
         .call_method(

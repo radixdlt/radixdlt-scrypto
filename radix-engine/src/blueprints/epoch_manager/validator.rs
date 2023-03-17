@@ -42,6 +42,10 @@ pub struct UnstakeData {
     amount: Decimal,
 }
 
+impl NonFungibleData for UnstakeData {
+    const MUTABLE_FIELDS: &'static [&'static str] = &[];
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ValidatorError {
     InvalidClaimResource,
@@ -368,7 +372,7 @@ impl ValidatorBlueprint {
         let mut unstake_amount = Decimal::zero();
 
         for id in bucket.sys_non_fungible_local_ids(api)? {
-            let data: UnstakeData = nft_resman.get_non_fungible_mutable_data(id, api)?;
+            let data: UnstakeData = nft_resman.get_non_fungible_data(id, api)?;
             if current_epoch < data.epoch_unlocked {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::ValidatorError(ValidatorError::EpochUnlockHasNotOccurredYet),
@@ -569,12 +573,13 @@ impl ValidatorCreator {
         unstake_token_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         unstake_token_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
 
-        let unstake_resource_manager = ResourceManager::new_non_fungible(
-            NonFungibleIdType::UUID,
-            BTreeMap::new(),
-            unstake_token_auth,
-            api,
-        )?;
+        let unstake_resource_manager =
+            ResourceManager::new_non_fungible::<UnstakeData, Y, RuntimeError>(
+                NonFungibleIdType::UUID,
+                BTreeMap::new(),
+                unstake_token_auth,
+                api,
+            )?;
 
         Ok(unstake_resource_manager.0)
     }

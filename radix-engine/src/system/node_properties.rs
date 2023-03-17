@@ -286,7 +286,6 @@ impl SubstateProperties {
             SubstateOffset::Package(..) => true,
             SubstateOffset::ResourceManager(..) => true,
             SubstateOffset::KeyValueStore(..) => true,
-            SubstateOffset::NonFungibleStore(..) => true,
             SubstateOffset::Vault(..) => true,
             SubstateOffset::EpochManager(..) => true,
             SubstateOffset::Validator(..) => true,

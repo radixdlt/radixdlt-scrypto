@@ -13,6 +13,23 @@ use super::Proof;
 
 pub const BUCKET_BLUEPRINT: &str = "Bucket";
 
+pub const BUCKET_BURN_IDENT: &str = "burn_bucket";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct BucketBurnInput {
+    pub bucket: Bucket,
+}
+
+pub type BucketBurnOutput = ();
+
+impl Clone for BucketBurnInput {
+    fn clone(&self) -> Self {
+        Self {
+            bucket: Bucket(self.bucket.0),
+        }
+    }
+}
+
 pub const BUCKET_DROP_EMPTY_IDENT: &str = "Bucket_drop_empty";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
