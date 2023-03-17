@@ -192,14 +192,20 @@ impl<'a> QemuPluginInterface<'a> {
             return;
         }
 
+        let mut ov_cnt = 0;
         for i in (0..=self.output_data.len()-1).rev() {
             if ! matches!(self.output_data[i].event, OutputDataEvent::FunctionExit) {
                 continue;
             }
 
-            self.output_data[i].cpu_instructions_calibrated = self.output_data[i].cpu_instructions - self.counter_offset;
-            //self.output_data[i].cpu_instructions.checked_sub(self.counter_offset);
-                //expect(&format!("Subtraction overflow on {}, {}", self.output_data[i].function_name, i ));
+            self.output_data[i].cpu_instructions_calibrated = match self.output_data[i].cpu_instructions.checked_sub(self.counter_offset) {
+                Some(v) => v,
+                None => {
+                    println!("Subtraction overflow on {}, {}", self.output_data[i].function_name, i );
+                    ov_cnt += 1;
+                    0
+                }
+            };
 
             if i > 0 {
                 for j in (0..=i-1).rev() {
@@ -210,16 +216,23 @@ impl<'a> QemuPluginInterface<'a> {
                         continue;
                     }
                     if self.output_data[j].stack_depth > self.output_data[i].stack_depth {
-                        self.output_data[i].cpu_instructions_calibrated -= self.counter_offset_parent;
-                        //self.output_data[i].cpu_instructions.checked_sub(self.counter_offset_parent);
-                            //expect(&format!("Subtraction overflow on {}, {}, {}", self.output_data[i].function_name, i, j ));
+
+                        self.output_data[i].cpu_instructions_calibrated = match self.output_data[i].cpu_instructions_calibrated.checked_sub(self.counter_offset_parent) {
+                            Some(v) => v,
+                            None => {
+                                println!("Subtraction overflow on {}, {}, {}", self.output_data[i].function_name, i, j );
+                                ov_cnt += 1;
+                                0
+                            }
+                        };
                     } else {
-                        self.output_data[i].cpu_instructions_calibrated -= self.counter_offset;
                         break;
                     }
                 }
             }
         }
+
+        println!("Subtraction overflow count {}", ov_cnt );
     }
 
     fn save_output_to_file(&self, file_name: &str) {
