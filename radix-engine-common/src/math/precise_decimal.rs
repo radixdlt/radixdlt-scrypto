@@ -495,7 +495,11 @@ impl FromStr for PreciseDecimal {
         int *= tens.pow(Self::SCALE);
 
         if v.len() == 2 {
-            let scale: u32 = Self::SCALE - (v[1].len() as u32);
+            let scale = if let Some(scale) = Self::SCALE.checked_sub(v[1].len() as u32) {
+                Ok(scale)
+            } else {
+                Err(Self::Err::UnsupportedDecimalPlace)
+            }?;
 
             let frac = match BnumI512::from_str(v[1]) {
                 Ok(val) => val,
@@ -1334,5 +1338,32 @@ mod tests {
             pdec!("-2.1117857649667539127325673305502334863032026536306378208090387860")
         );
         assert_eq!(root_0, None);
+    }
+
+    #[test]
+    fn no_panic_with_64_decimal_places() {
+        // Arrange
+        let string = "1.1111111111111111111111111111111111111111111111111111111111111111";
+
+        // Act
+        let decimal = PreciseDecimal::from_str(string);
+
+        // Assert
+        assert!(decimal.is_ok())
+    }
+
+    #[test]
+    fn no_panic_with_65_decimal_places() {
+        // Arrange
+        let string = "1.11111111111111111111111111111111111111111111111111111111111111111";
+
+        // Act
+        let decimal = PreciseDecimal::from_str(string);
+
+        // Assert
+        assert!(matches!(
+            decimal,
+            Err(ParsePreciseDecimalError::UnsupportedDecimalPlace)
+        ))
     }
 }
