@@ -80,7 +80,6 @@ impl IdentityNativePackage {
             )),
         }
     }
-
 }
 
 pub struct IdentityBlueprint;
@@ -91,8 +90,8 @@ impl IdentityBlueprint {
         address: Address,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
-        where
-            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let object_id = api.new_object(IDENTITY_BLUEPRINT, vec![])?;
 
@@ -119,18 +118,15 @@ impl IdentityBlueprint {
                 NodeModuleId::Metadata => metadata.id(),
                 NodeModuleId::ComponentRoyalty => royalty.id(),
             ),
-            address
+            address,
         )?;
 
         Ok(())
     }
 
-    pub fn create<Y>(
-        access_rule: AccessRule,
-        api: &mut Y,
-    ) -> Result<Address, RuntimeError>
-        where
-            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    pub fn create<Y>(access_rule: AccessRule, api: &mut Y) -> Result<Address, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let node_id = api.kernel_allocate_node_id(RENodeType::GlobalIdentity)?;
         let address: Address = node_id.into();
@@ -139,7 +135,7 @@ impl IdentityBlueprint {
         Ok(address)
     }
 
-    pub fn create_virtual<Y>(
+    fn create_virtual<Y>(
         access_rule: AccessRule,
         api: &mut Y,
     ) -> Result<(RENodeId, BTreeMap<NodeModuleId, ObjectId>), RuntimeError>
@@ -175,11 +171,43 @@ impl IdentityBlueprint {
         )?;
 
         let modules = btreemap!(
-                NodeModuleId::AccessRules => access_rules.id(),
-                NodeModuleId::Metadata => metadata.id(),
-                NodeModuleId::ComponentRoyalty => royalty.id(),
-            );
+            NodeModuleId::AccessRules => access_rules.id(),
+            NodeModuleId::Metadata => metadata.id(),
+            NodeModuleId::ComponentRoyalty => royalty.id(),
+        );
 
         Ok((node_id, modules))
+    }
+
+    pub fn create_ecdsa_virtual<Y>(
+        id: [u8; 26],
+        api: &mut Y,
+    ) -> Result<(RENodeId, BTreeMap<NodeModuleId, ObjectId>), RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let non_fungible_global_id = NonFungibleGlobalId::new(
+            ECDSA_SECP256K1_TOKEN,
+            NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
+        );
+
+        let access_rule = rule!(require(non_fungible_global_id));
+        Self::create_virtual(access_rule, api)
+    }
+
+    pub fn create_eddsa_virtual<Y>(
+        id: [u8; 26],
+        api: &mut Y,
+    ) -> Result<(RENodeId, BTreeMap<NodeModuleId, ObjectId>), RuntimeError>
+        where
+            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let non_fungible_global_id = NonFungibleGlobalId::new(
+            EDDSA_ED25519_TOKEN,
+            NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
+        );
+        let access_rule = rule!(require(non_fungible_global_id));
+
+        Self::create_virtual(access_rule, api)
     }
 }

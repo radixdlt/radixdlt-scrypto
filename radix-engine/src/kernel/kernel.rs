@@ -199,31 +199,29 @@ where
         Ok(())
     }
 
-    fn create_virtual_identity(
+    fn create_ecdsa_virtual_identity(
         &mut self,
-        global_node_id: RENodeId,
-        non_fungible_global_id: NonFungibleGlobalId,
-    ) -> Result<(), RuntimeError> {
+        id: [u8; 26],
+    ) -> Result<(RENodeId, BTreeMap<NodeModuleId, ObjectId>), RuntimeError> {
         // TODO: This should move into the appropriate place once virtual manager is implemented
         self.current_frame.add_ref(
             RENodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
+        IdentityBlueprint::create_ecdsa_virtual(id, self)
+    }
+
+    fn create_eddsa_virtual_identity(
+        &mut self,
+        id: [u8; 26],
+    ) -> Result<(RENodeId, BTreeMap<NodeModuleId, ObjectId>), RuntimeError> {
+        // TODO: This should move into the appropriate place once virtual manager is implemented
         self.current_frame.add_ref(
             RENodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()),
             RENodeVisibilityOrigin::Normal,
         );
 
-        let access_rule = rule!(require(non_fungible_global_id));
-        let (local_id, modules) = IdentityBlueprint::create_virtual(access_rule, self)?;
-
-        self.globalize_with_address(
-            local_id,
-            modules,
-            global_node_id.into(),
-        )?;
-
-        Ok(())
+        IdentityBlueprint::create_eddsa_virtual(id, self)
     }
 
     fn try_virtualize(
@@ -254,20 +252,14 @@ where
                         self.create_virtual_account(node_id, non_fungible_global_id)?;
                     }
                     ComponentAddress::EcdsaSecp256k1VirtualIdentity(address) => {
+                        let (local_id, modules) = self.create_ecdsa_virtual_identity(address)?;
                         self.id_allocator.allocate_virtual_node_id(node_id);
-                        let non_fungible_global_id = NonFungibleGlobalId::new(
-                            ECDSA_SECP256K1_TOKEN,
-                            NonFungibleLocalId::bytes(address.to_vec()).unwrap(),
-                        );
-                        self.create_virtual_identity(node_id, non_fungible_global_id)?;
+                        self.globalize_with_address(local_id, modules, node_id.into())?;
                     }
                     ComponentAddress::EddsaEd25519VirtualIdentity(address) => {
+                        let (local_id, modules) = self.create_eddsa_virtual_identity(address)?;
                         self.id_allocator.allocate_virtual_node_id(node_id);
-                        let non_fungible_global_id = NonFungibleGlobalId::new(
-                            EDDSA_ED25519_TOKEN,
-                            NonFungibleLocalId::bytes(address.to_vec()).unwrap(),
-                        );
-                        self.create_virtual_identity(node_id, non_fungible_global_id)?;
+                        self.globalize_with_address(local_id, modules, node_id.into())?;
                     }
                     _ => return Ok(false),
                 };
@@ -501,9 +493,7 @@ where
                         }
                     }
                     TypeInfoSubstate::KeyValueStore(..) => {
-                        return Err(RuntimeError::KernelError(
-                            KernelError::InvalidDirectAccess,
-                        ));
+                        return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
                     }
                 }
 
