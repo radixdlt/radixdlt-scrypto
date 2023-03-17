@@ -21,7 +21,7 @@ pub struct TransactionProcessorRunInput<'a> {
 
 pub type TransactionProcessorRunOutput = Vec<InstructionOutput>;
 
-#[derive(Debug, Clone, Sbor)]
+#[derive(Debug, Clone, Sbor, Eq, PartialEq)]
 pub enum InstructionOutput {
     CallReturn(Vec<u8>),
     None,

@@ -89,7 +89,6 @@ pub enum RENodeInit {
     Object(BTreeMap<SubstateOffset, RuntimeSubstate>),
     AuthZoneStack(AuthZoneStackSubstate),
     KeyValueStore,
-    NonFungibleStore,
 }
 
 impl RENodeInit {
@@ -105,7 +104,7 @@ impl RENodeInit {
             RENodeInit::GlobalObject(object_substates) | RENodeInit::Object(object_substates) => {
                 substates.extend(object_substates);
             }
-            RENodeInit::KeyValueStore | RENodeInit::NonFungibleStore => {}
+            RENodeInit::KeyValueStore => {}
             RENodeInit::GlobalPackage(package_info, code_type, code, royalty) => {
                 substates.insert(
                     SubstateOffset::Package(PackageOffset::Info),

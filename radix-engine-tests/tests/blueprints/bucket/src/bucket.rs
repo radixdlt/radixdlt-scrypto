@@ -2,6 +2,9 @@ use scrypto::api::*;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 
+#[derive(ScryptoSbor, NonFungibleData)]
+pub struct MyData {}
+
 #[blueprint]
 mod bucket_test {
 
@@ -124,7 +127,7 @@ mod bucket_test {
 
         pub fn create_empty_bucket_non_fungible() -> Bucket {
             let resource_address =
-                ResourceBuilder::new_uuid_non_fungible().create_with_no_initial_supply();
+                ResourceBuilder::new_uuid_non_fungible::<MyData>().create_with_no_initial_supply();
             Bucket::new(resource_address)
         }
     }
