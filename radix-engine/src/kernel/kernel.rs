@@ -33,7 +33,10 @@ use radix_engine_interface::api::{ClientObjectApi, ClientPackageApi};
 use radix_engine_interface::blueprints::account::{
     ACCOUNT_BLUEPRINT, ACCOUNT_DEPOSIT_BATCH_IDENT, ACCOUNT_DEPOSIT_IDENT,
 };
-use radix_engine_interface::blueprints::identity::{IDENTITY_BLUEPRINT, IDENTITY_CREATE_VIRTUAL_ECDSA_IDENT, IDENTITY_CREATE_VIRTUAL_EDDSA_IDENT, VirtualLazyLoadInput};
+use radix_engine_interface::blueprints::identity::{
+    VirtualLazyLoadInput, IDENTITY_BLUEPRINT, IDENTITY_CREATE_VIRTUAL_ECDSA_IDENT,
+    IDENTITY_CREATE_VIRTUAL_EDDSA_IDENT,
+};
 use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
@@ -229,12 +232,16 @@ where
                     ComponentAddress::EcdsaSecp256k1VirtualIdentity(id)
                     | ComponentAddress::EddsaEd25519VirtualIdentity(id) => {
                         let (package, blueprint, func) = match component_address {
-                            ComponentAddress::EcdsaSecp256k1VirtualIdentity(..) => {
-                                (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT, IDENTITY_CREATE_VIRTUAL_ECDSA_IDENT)
-                            }
-                            ComponentAddress::EddsaEd25519VirtualIdentity(..) => {
-                                (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT, IDENTITY_CREATE_VIRTUAL_EDDSA_IDENT)
-                            }
+                            ComponentAddress::EcdsaSecp256k1VirtualIdentity(..) => (
+                                IDENTITY_PACKAGE,
+                                IDENTITY_BLUEPRINT,
+                                IDENTITY_CREATE_VIRTUAL_ECDSA_IDENT,
+                            ),
+                            ComponentAddress::EddsaEd25519VirtualIdentity(..) => (
+                                IDENTITY_PACKAGE,
+                                IDENTITY_BLUEPRINT,
+                                IDENTITY_CREATE_VIRTUAL_EDDSA_IDENT,
+                            ),
                             _ => return Ok(false),
                         };
 
@@ -242,12 +249,14 @@ where
                             package,
                             blueprint,
                             func,
-                            scrypto_encode(&VirtualLazyLoadInput {
-                                id
-                            }).unwrap()
+                            scrypto_encode(&VirtualLazyLoadInput { id }).unwrap(),
                         )?;
-                        let (object_id, modules): (Own, BTreeMap<NodeModuleId, Own>) = scrypto_decode(&rtn).unwrap();
-                        let modules = modules.into_iter().map(|(id, own)| (id, own.id())).collect();
+                        let (object_id, modules): (Own, BTreeMap<NodeModuleId, Own>) =
+                            scrypto_decode(&rtn).unwrap();
+                        let modules = modules
+                            .into_iter()
+                            .map(|(id, own)| (id, own.id()))
+                            .collect();
                         self.id_allocator.allocate_virtual_node_id(node_id);
                         self.globalize_with_address(
                             RENodeId::Object(object_id.id()),

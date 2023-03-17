@@ -1,9 +1,9 @@
-use sbor::rust::collections::BTreeMap;
+use crate::api::types::NodeModuleId;
 use crate::blueprints::resource::*;
 use crate::*;
 use radix_engine_common::data::scrypto::model::{ComponentAddress, Own};
+use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
-use crate::api::types::NodeModuleId;
 
 pub const IDENTITY_BLUEPRINT: &str = "Identity";
 
@@ -15,7 +15,6 @@ pub struct IdentityCreateInput {
 }
 
 pub type IdentityCreateOutput = ComponentAddress;
-
 
 pub const IDENTITY_CREATE_VIRTUAL_ECDSA_IDENT: &str = "create_virtual_ecdsa";
 pub const IDENTITY_CREATE_VIRTUAL_EDDSA_IDENT: &str = "create_virtual_eddsa";

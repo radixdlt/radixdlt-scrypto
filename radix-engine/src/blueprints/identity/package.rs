@@ -9,7 +9,7 @@ use crate::types::*;
 use native_sdk::modules::access_rules::AccessRulesObject;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
-use radix_engine_interface::api::node_modules::metadata::{METADATA_SET_IDENT};
+use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
@@ -142,7 +142,10 @@ impl IdentityBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let (object, modules) = Self::create_object(access_rule, api)?;
-        let modules = modules.into_iter().map(|(id, own)| (id, own.id())).collect();
+        let modules = modules
+            .into_iter()
+            .map(|(id, own)| (id, own.id()))
+            .collect();
         let address = api.globalize(RENodeId::Object(object.id()), modules)?;
         Ok(address)
     }
@@ -151,8 +154,8 @@ impl IdentityBlueprint {
         id: [u8; 26],
         api: &mut Y,
     ) -> Result<(Own, BTreeMap<NodeModuleId, Own>), RuntimeError>
-        where
-            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let non_fungible_global_id = NonFungibleGlobalId::new(
             ECDSA_SECP256K1_TOKEN,
@@ -167,8 +170,8 @@ impl IdentityBlueprint {
         id: [u8; 26],
         api: &mut Y,
     ) -> Result<(Own, BTreeMap<NodeModuleId, Own>), RuntimeError>
-        where
-            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let non_fungible_global_id = NonFungibleGlobalId::new(
             EDDSA_ED25519_TOKEN,
@@ -183,8 +186,8 @@ impl IdentityBlueprint {
         access_rule: AccessRule,
         api: &mut Y,
     ) -> Result<(Own, BTreeMap<NodeModuleId, Own>), RuntimeError>
-        where
-            Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let mut access_rules = AccessRulesConfig::new();
         access_rules.set_access_rule_and_mutability(

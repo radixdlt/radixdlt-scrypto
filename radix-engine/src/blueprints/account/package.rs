@@ -221,7 +221,13 @@ impl AccountNativePackage {
                         InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
-                Self::create_global(input, api)
+
+                let input: AccountCreateGlobalInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = Self::create_global(input.withdraw_rule, api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_CREATE_LOCAL_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -231,7 +237,14 @@ impl AccountNativePackage {
                         InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
-                Self::create_local(input, api)
+
+                let _input: AccountCreateLocalInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+
+                let rtn = Self::create_local(api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_LOCK_FEE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -327,44 +340,18 @@ impl AccountNativePackage {
         }
     }
 
-    fn create_global<Y>(
-        input: IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    fn create_global<Y>(withdraw_rule: AccessRule, api: &mut Y) -> Result<Address, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let input: AccountCreateGlobalInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-
-        // Creating the key-value-store where the vaults will be held. This is a KVStore of
-        // [`ResourceAddress`] and [`Own`]ed vaults.
-        let kv_store_id = {
-            let node_id = api.kernel_allocate_node_id(RENodeType::KeyValueStore)?;
-            let node = RENodeInit::KeyValueStore;
-            api.kernel_create_node(node_id, node, BTreeMap::new())?;
-            node_id
-        };
-
-        let account_id = {
-            let account_substate = AccountSubstate {
-                vaults: Own::KeyValueStore(kv_store_id.into()),
-            };
-            api.new_object(
-                ACCOUNT_BLUEPRINT,
-                vec![scrypto_encode(&account_substate).unwrap()],
-            )?
-        };
-
-        // Creating [`AccessRules`] from the passed withdraw access rule.
+        let account = Self::create_local(api)?;
         let access_rules =
-            AccessRulesObject::sys_new(access_rules_from_withdraw_rule(input.withdraw_rule), api)?;
+            AccessRulesObject::sys_new(access_rules_from_withdraw_rule(withdraw_rule), api)?;
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
 
         let address = api.globalize(
-            RENodeId::Object(account_id),
+            RENodeId::Object(account.id()),
             btreemap!(
                 NodeModuleId::AccessRules => access_rules.id(),
                 NodeModuleId::Metadata => metadata.id(),
@@ -372,30 +359,23 @@ impl AccountNativePackage {
             ),
         )?;
 
-        Ok(IndexedScryptoValue::from_typed(&address))
+        Ok(address)
     }
 
-    fn create_local<Y>(
-        input: IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    fn create_local<Y>(api: &mut Y) -> Result<Own, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let _input: AccountCreateLocalInput = input.as_typed().map_err(|e| {
-            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
-        })?;
-
-        // Creating the key-value-store where the vaults will be held. This is a KVStore of
-        // [`ResourceAddress`] and [`Own`]ed vaults.
-        let kv_store_id = {
-            let node_id = api.kernel_allocate_node_id(RENodeType::KeyValueStore)?;
-            let node = RENodeInit::KeyValueStore;
-            api.kernel_create_node(node_id, node, BTreeMap::new())?;
-            node_id
-        };
-
         let account_id = {
+            // Creating the key-value-store where the vaults will be held. This is a KVStore of
+            // [`ResourceAddress`] and [`Own`]ed vaults.
+            let kv_store_id = {
+                let node_id = api.kernel_allocate_node_id(RENodeType::KeyValueStore)?;
+                let node = RENodeInit::KeyValueStore;
+                api.kernel_create_node(node_id, node, BTreeMap::new())?;
+                node_id
+            };
+
             let account_substate = AccountSubstate {
                 vaults: Own::KeyValueStore(kv_store_id.into()),
             };
@@ -405,7 +385,7 @@ impl AccountNativePackage {
             )?
         };
 
-        Ok(IndexedScryptoValue::from_typed(&Own::Object(account_id)))
+        Ok(Own::Object(account_id))
     }
 
     fn lock_fee_internal<Y>(
