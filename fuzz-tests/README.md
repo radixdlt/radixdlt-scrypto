@@ -27,8 +27,11 @@ cargo +nightly install cargo-fuzz
 ```
 
 # AFL
-* Similarly to `libfuzzer` it sets `fuzzing` flag by default. Unfortunately there is no easy switch to disable that.
-  Thus `cargo afl` shall be built and installed using this [modification](https://github.com/lrubasze/afl.rs/commit/16c25fd74aec105c1b75c1b046e8dfd6b6fd3175)
+* Similarly to `libfuzzer` it sets `fuzzing` flag by default.
+  Thus `cargo afl` shall be built and installed using below command
+  ```
+  cargo install afl --features no_cfg_fuzzing
+  ```
 * It requires some input data to be provided.
 
 ## Installation
