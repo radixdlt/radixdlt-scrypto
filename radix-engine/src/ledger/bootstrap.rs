@@ -12,7 +12,6 @@ use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::resource::*;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
-use crate::blueprints::transaction_runtime::TransactionRuntimeNativePackage;
 use crate::kernel::interpreters::ScryptoInterpreter;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::system::node_modules::access_rules::{
@@ -525,30 +524,6 @@ pub fn create_genesis(
                 dependent_components: vec![],
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
-                event_schema: BTreeMap::new(),
-            })
-            .unwrap(),
-        });
-    }
-
-    // TransactionRuntime Package
-    {
-        pre_allocated_ids.insert(RENodeId::GlobalObject(TRANSACTION_RUNTIME_PACKAGE.into()));
-        let package_address = TRANSACTION_RUNTIME_PACKAGE.to_array_without_entity_id();
-        instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE_PACKAGE,
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeInput {
-                package_address: Some(package_address), // TODO: Clean this up
-                schema: TransactionRuntimeNativePackage::schema(),
-                metadata: BTreeMap::new(),
-                access_rules: AccessRulesConfig::new(),
-                native_package_code_id: TRANSACTION_RUNTIME_CODE_ID,
-                dependent_resources: vec![],
-                dependent_components: vec![],
-                package_access_rules: BTreeMap::new(),
-                default_package_access_rule: AccessRule::DenyAll,
                 event_schema: BTreeMap::new(),
             })
             .unwrap(),

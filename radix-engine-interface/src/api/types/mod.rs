@@ -1,3 +1,4 @@
+mod costing_reason;
 mod event_id;
 mod indexed_value;
 mod invocation;
@@ -9,6 +10,7 @@ mod royalty_config;
 mod traits;
 mod wasm;
 
+pub use costing_reason::*;
 pub use event_id::*;
 pub use indexed_value::*;
 pub use invocation::*;
