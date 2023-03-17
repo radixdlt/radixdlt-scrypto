@@ -37,6 +37,7 @@ use radix_engine_interface::blueprints::account::{
 use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
+use radix_engine_interface::schema::KeyValueStoreSchema;
 use sbor::rust::mem;
 
 pub struct Kernel<
@@ -143,7 +144,11 @@ where
                 self.kernel_create_node(
                     node_id,
                     node,
-                    btreemap!(), // FIXME: add TypeInfo
+                    btreemap!(
+                        NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::KeyValueStore(
+                            KeyValueStoreSchema::new::<ResourceAddress, Own>(false))
+                        )
+                    ),
                 )?;
                 node_id
             };

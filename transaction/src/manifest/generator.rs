@@ -1511,14 +1511,13 @@ mod tests {
                         ]),
                         entries: BTreeMap::from([(
                             NonFungibleLocalId::integer(1),
-                            (
-                                to_manifest_value(&(String::from("Hello World"), dec!("12")))
-                                    .unwrap(),
-                            ),
+                            (to_manifest_value(&(
+                                String::from("Hello World"),
+                                dec!("12")
+                            )),),
                         )]),
                     }
-                )
-                .unwrap(),
+                ),
             },
         );
     }
@@ -1599,10 +1598,12 @@ mod tests {
                 args: to_manifest_value(&NonFungibleResourceManagerMintManifestInput {
                     entries: BTreeMap::from([(
                         NonFungibleLocalId::integer(1),
-                        (to_manifest_value(&(String::from("Hello World"), dec!("12"))).unwrap(),)
+                        (to_manifest_value(&(
+                            String::from("Hello World"),
+                            dec!("12")
+                        )),)
                     )])
                 })
-                .unwrap()
             },
         );
     }
@@ -1632,10 +1633,8 @@ mod tests {
                     entries: Vec::from([(to_manifest_value(&(
                         String::from("Hello World"),
                         dec!("12")
-                    ))
-                    .unwrap(),),])
-                })
-                .unwrap(),
+                    )),),])
+                }),
             },
         );
     }

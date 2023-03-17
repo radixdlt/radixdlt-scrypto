@@ -1,7 +1,8 @@
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::node::RENodeInit;
+use crate::system::node::{RENodeInit, RENodeModuleInit};
+use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRulesObject;
 use native_sdk::modules::metadata::Metadata;
@@ -12,7 +13,9 @@ use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::blueprints::resource::AccessRulesConfig;
 use radix_engine_interface::blueprints::resource::MethodKey;
-use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver};
+use radix_engine_interface::schema::{
+    BlueprintSchema, FunctionSchema, KeyValueStoreSchema, PackageSchema, Receiver,
+};
 
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use native_sdk::resource::{SysBucket, Vault};
@@ -346,7 +349,11 @@ impl AccountNativePackage {
             api.kernel_create_node(
                 node_id,
                 node,
-                btreemap!(), // FIXME: add TypeInfo
+                btreemap!(
+                    NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::KeyValueStore(
+                        KeyValueStoreSchema::new::<ResourceAddress, Own>(false))
+                    )
+                ),
             )?;
             node_id
         };
@@ -398,7 +405,11 @@ impl AccountNativePackage {
             api.kernel_create_node(
                 node_id,
                 node,
-                btreemap!(), // FIXME: add TypeInfo
+                btreemap!(
+                    NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::KeyValueStore(
+                        KeyValueStoreSchema::new::<ResourceAddress, Own>(false))
+                    )
+                ),
             )?;
             node_id
         };

@@ -270,8 +270,7 @@ fn can_call_non_fungible_data_reference() {
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-    receipt.expect_commit_success();
-    let resource_address = receipt.new_resource_addresses()[1];
+    let resource_address = receipt.expect_commit_success().new_resource_addresses()[1];
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -284,7 +283,7 @@ fn can_call_non_fungible_data_reference() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let result = receipt.expect_commit_success();
+    let result = receipt.expect_commit_success().outcome.expect_success();
     assert_eq!(
         result[1],
         InstructionOutput::CallReturn(scrypto_encode("test_value").unwrap())
@@ -739,8 +738,7 @@ fn can_mint_uuid_non_fungible_with_reference_in_manifest() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    receipt.expect_commit_success();
-    let resource_address = receipt.new_resource_addresses()[0];
+    let resource_address = receipt.expect_commit_success().new_resource_addresses()[0];
 
     // Act
     let manifest = ManifestBuilder::new()

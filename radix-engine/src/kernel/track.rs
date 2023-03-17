@@ -947,6 +947,8 @@ impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
     }
 
     fn fetch_substate(&self, substate_id: &SubstateId) -> PersistedSubstate {
+        // TODO: we should not need to load substates form substate store
+        // Part of the engine still reads/writes substates without touching the TypeInfo.
         self.fetch_substate_from_state_updates(substate_id)
             .map(|x| x.0)
             .unwrap_or_else(|| self.fetch_substate_from_store(substate_id))
@@ -963,6 +965,7 @@ impl<'a, 'b> BalanceChangeAccounting<'a, 'b> {
             .map(|x| (x.0.clone(), x.1.clone()))
     }
 
+    // TODO: remove this by keeping a copy of the initial value of loaded substates
     fn fetch_substate_from_store(&self, substate_id: &SubstateId) -> PersistedSubstate {
         self.substate_store
             .get_substate(substate_id)
