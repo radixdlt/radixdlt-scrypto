@@ -252,13 +252,13 @@ impl ValidatorBlueprint {
         )?;
 
         // Unstake
-        let unstake_bucket = {
+        let (unstake_bucket, _) = {
             let validator: &ValidatorSubstate = api.kernel_get_substate_ref(handle)?;
 
             let manager = validator.manager;
             let mut stake_vault = Vault(validator.stake_xrd_vault_id.id());
             let mut unstake_vault = Vault(validator.pending_xrd_withdraw_vault_id.id());
-            let mut nft_resman = ResourceManager(validator.unstake_nft);
+            let nft_resman = ResourceManager(validator.unstake_nft);
             let mut lp_token_resman = ResourceManager(validator.liquidity_token);
 
             let active_stake_amount = stake_vault.sys_amount(api)?;
@@ -291,7 +291,7 @@ impl ValidatorBlueprint {
 
             let bucket = stake_vault.sys_take(xrd_amount, api)?;
             unstake_vault.sys_put(bucket, api)?;
-            nft_resman.mint_non_fungible_uuid(data, api)?
+            nft_resman.mint_non_fungible_single_uuid(data, api)?
         };
 
         // Update Epoch Manager
