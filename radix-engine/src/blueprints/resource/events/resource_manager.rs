@@ -6,13 +6,21 @@ pub struct VaultCreationEvent {
 }
 
 #[derive(ScryptoSbor, PartialEq, Eq)]
-pub enum MintResourceEvent {
-    Amount(Decimal),
-    Ids(BTreeSet<NonFungibleLocalId>),
+pub struct MintFungibleResourceEvent {
+    pub amount: Decimal,
 }
 
 #[derive(ScryptoSbor, PartialEq, Eq)]
-pub enum BurnResourceEvent {
-    Amount(Decimal),
-    Ids(BTreeSet<NonFungibleLocalId>),
+pub struct BurnFungibleResourceEvent {
+    pub amount: Decimal,
+}
+
+#[derive(ScryptoSbor, PartialEq, Eq)]
+pub struct MintNonFungibleResourceEvent {
+    pub ids: BTreeSet<NonFungibleLocalId>,
+}
+
+#[derive(ScryptoSbor, PartialEq, Eq)]
+pub struct BurnNonFungibleResourceEvent {
+    pub ids: BTreeSet<NonFungibleLocalId>,
 }

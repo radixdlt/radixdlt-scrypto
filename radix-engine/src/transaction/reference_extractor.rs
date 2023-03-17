@@ -48,7 +48,20 @@ pub fn extract_refs_from_instruction(
             global_references.insert(component_address.clone().into());
             extract_refs_from_value(&args, global_references, local_references);
         }
-
+        Instruction::MintUuidNonFungible {
+            resource_address,
+            args,
+        } => {
+            global_references.insert(resource_address.clone().into());
+            extract_refs_from_value(&args, global_references, local_references);
+        }
+        Instruction::MintNonFungible {
+            resource_address,
+            args,
+        } => {
+            global_references.insert(resource_address.clone().into());
+            extract_refs_from_value(&args, global_references, local_references);
+        }
         Instruction::PublishPackage { access_rules, .. } => {
             global_references.insert(PACKAGE_PACKAGE.clone().into());
             // TODO: Remove and cleanup
@@ -122,12 +135,6 @@ pub fn extract_refs_from_instruction(
         }
         | Instruction::MintFungible {
             resource_address, ..
-        }
-        | Instruction::MintNonFungible {
-            resource_address, ..
-        }
-        | Instruction::MintUuidNonFungible {
-            resource_address, ..
         } => {
             global_references.insert(resource_address.clone().into());
         }
@@ -139,6 +146,7 @@ pub fn extract_refs_from_instruction(
         | Instruction::CloneProof { .. }
         | Instruction::DropProof { .. }
         | Instruction::DropAllProofs { .. }
+        | Instruction::ClearSignatureProofs { .. }
         | Instruction::BurnResource { .. }
         | Instruction::AssertAccessRule { .. } => {}
     }

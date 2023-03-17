@@ -79,7 +79,7 @@ impl TransactionProcessorBlueprint {
                 SubstateOffset::Worktop(WorktopOffset::Worktop) => RuntimeSubstate::Worktop(WorktopSubstate::new())
             )),
             btreemap!(
-                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
                     package_address: RESOURCE_MANAGER_PACKAGE,
                     blueprint_name: WORKTOP_BLUEPRINT.to_string(),
                     global: false,
@@ -154,8 +154,11 @@ impl TransactionProcessorBlueprint {
                     InstructionOutput::None
                 }
                 Instruction::ClearAuthZone => {
-                    processor.proof_id_mapping.clear();
                     ComponentAuthZone::sys_clear(api)?;
+                    InstructionOutput::None
+                }
+                Instruction::ClearSignatureProofs => {
+                    ComponentAuthZone::sys_clear_signature_proofs(api)?;
                     InstructionOutput::None
                 }
                 Instruction::PushToAuthZone { proof_id } => {
@@ -207,6 +210,9 @@ impl TransactionProcessorBlueprint {
                     InstructionOutput::None
                 }
                 Instruction::DropAllProofs => {
+                    // NB: the difference between DROP_ALL_PROOFS and CLEAR_AUTH_ZONE is that
+                    // the former will drop all named proofs before clearing the auth zone.
+
                     for (_, real_id) in processor.proof_id_mapping.drain() {
                         let proof = Proof(real_id);
                         proof.sys_drop(api).map(|_| IndexedScryptoValue::unit())?;
@@ -309,9 +315,9 @@ impl TransactionProcessorBlueprint {
                     let bucket = processor.take_bucket(&bucket_id)?;
                     let rtn = api.call_function(
                         RESOURCE_MANAGER_PACKAGE,
-                        RESOURCE_MANAGER_BLUEPRINT,
-                        RESOURCE_MANAGER_BURN_BUCKET_IDENT,
-                        scrypto_encode(&ResourceManagerBurnBucketInput { bucket }).unwrap(),
+                        BUCKET_BLUEPRINT,
+                        BUCKET_BURN_IDENT,
+                        scrypto_encode(&BucketBurnInput { bucket }).unwrap(),
                     )?;
 
                     let result = IndexedScryptoValue::from_vec(rtn).unwrap();
@@ -326,8 +332,8 @@ impl TransactionProcessorBlueprint {
                 } => {
                     let rtn = api.call_method(
                         RENodeId::GlobalObject(resource_address.into()),
-                        RESOURCE_MANAGER_MINT_FUNGIBLE_IDENT,
-                        scrypto_encode(&ResourceManagerMintFungibleInput { amount }).unwrap(),
+                        FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
+                        scrypto_encode(&FungibleResourceManagerMintInput { amount }).unwrap(),
                     )?;
 
                     let result = IndexedScryptoValue::from_vec(rtn).unwrap();
@@ -338,15 +344,21 @@ impl TransactionProcessorBlueprint {
                 }
                 Instruction::MintNonFungible {
                     resource_address,
-                    entries,
+                    args,
                 } => {
+                    let mut processor_with_api = TransactionProcessorWithApi {
+                        worktop,
+                        processor,
+                        api,
+                    };
+                    let scrypto_value = transform(args, &mut processor_with_api)?;
+                    processor = processor_with_api.processor;
+
                     let rtn = api.call_method(
                         RENodeId::GlobalObject(resource_address.into()),
-                        RESOURCE_MANAGER_MINT_NON_FUNGIBLE_IDENT,
-                        scrypto_encode(&ResourceManagerMintNonFungibleInput { entries: entries })
-                            .unwrap(),
+                        NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
+                        scrypto_encode(&scrypto_value).unwrap(),
                     )?;
-
                     let result = IndexedScryptoValue::from_vec(rtn).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result, &worktop, api,
@@ -355,15 +367,19 @@ impl TransactionProcessorBlueprint {
                 }
                 Instruction::MintUuidNonFungible {
                     resource_address,
-                    entries,
+                    args,
                 } => {
+                    let mut processor_with_api = TransactionProcessorWithApi {
+                        worktop,
+                        processor,
+                        api,
+                    };
+                    let scrypto_value = transform(args, &mut processor_with_api)?;
+                    processor = processor_with_api.processor;
                     let rtn = api.call_method(
                         RENodeId::GlobalObject(resource_address.into()),
-                        RESOURCE_MANAGER_MINT_UUID_NON_FUNGIBLE_IDENT,
-                        scrypto_encode(&ResourceManagerMintUuidNonFungibleInput {
-                            entries: entries,
-                        })
-                        .unwrap(),
+                        NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
+                        scrypto_encode(&scrypto_value).unwrap(),
                     )?;
 
                     let result = IndexedScryptoValue::from_vec(rtn).unwrap();

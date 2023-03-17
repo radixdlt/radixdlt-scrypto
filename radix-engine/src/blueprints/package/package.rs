@@ -13,7 +13,6 @@ use crate::types::*;
 use crate::wasm::{PrepareError, WasmValidator};
 use core::fmt::Debug;
 use native_sdk::resource::{ResourceManager, Vault};
-use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::package::*;
@@ -50,16 +49,14 @@ fn build_package_node_modules(
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
                 scrypto_encode(&key).unwrap(),
             )),
-            RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::Some(
-                ScryptoValue::String { value },
-            )),
+            RuntimeSubstate::KeyValueStoreEntry(Some(ScryptoValue::String { value })),
         );
     }
 
     let mut node_modules = BTreeMap::new();
     node_modules.insert(
         NodeModuleId::TypeInfo,
-        RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+        RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             global: true,
@@ -303,6 +300,7 @@ impl PackageNativePackage {
             dependent_resources: BTreeSet::new(),
             dependent_components: BTreeSet::new(),
         };
+
         let code_type = PackageCodeTypeSubstate::Wasm;
         let code = PackageCodeSubstate { code: input.code };
         let royalty = PackageRoyaltySubstate {

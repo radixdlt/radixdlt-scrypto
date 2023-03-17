@@ -7,7 +7,6 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
-use sbor::rust::vec::Vec;
 
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
 pub enum Instruction {
@@ -58,7 +57,7 @@ pub enum Instruction {
         proof_id: ManifestProof,
     },
 
-    /// Drops all proofs in the auth zone
+    /// Clears the auth zone.
     ClearAuthZone,
 
     // TODO: do we need `CreateProofFromWorktop`, to avoid taking resource out and then creating proof?
@@ -94,8 +93,11 @@ pub enum Instruction {
         proof_id: ManifestProof,
     },
 
-    /// Drops all of the proofs in the transaction.
+    /// Drops all proofs, both named proofs and auth zone proofs.
     DropAllProofs,
+
+    /// Drop all virtual proofs (can only be auth zone proofs).
+    ClearSignatureProofs,
 
     /// Publish a package.
     PublishPackage {
@@ -157,12 +159,12 @@ pub enum Instruction {
 
     MintNonFungible {
         resource_address: ResourceAddress,
-        entries: BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>,
+        args: ManifestValue,
     },
 
     MintUuidNonFungible {
         resource_address: ResourceAddress,
-        entries: Vec<(Vec<u8>, Vec<u8>)>,
+        args: ManifestValue,
     },
 
     AssertAccessRule {

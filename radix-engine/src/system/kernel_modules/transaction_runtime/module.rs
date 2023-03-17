@@ -35,7 +35,7 @@ impl KernelModule for TransactionRuntimeModule {
                 next_id: 0u32,
             }),
             btreemap!(
-                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
                         package_address: TRANSACTION_RUNTIME_PACKAGE,
                         blueprint_name: TRANSACTION_RUNTIME_BLUEPRINT.to_string(),
                         global: false,

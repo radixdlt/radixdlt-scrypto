@@ -62,8 +62,38 @@ ASSERT_WORKTOP_CONTAINS
 TAKE_FROM_WORKTOP
     Address("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag")
     Bucket("bucket2");
+RETURN_TO_WORKTOP
+    Bucket("bucket2");
+TAKE_FROM_WORKTOP_BY_IDS
+    Array<NonFungibleLocalId>(NonFungibleLocalId("#1#"))
+    Address("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag")
+    Bucket("bucket3");
+CALL_METHOD
+    Address("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064")
+    "deposit_batch"
+    Expression("ENTIRE_WORKTOP");
+"##,
+        );
+    }
+
+    #[test]
+    fn test_resource_auth_zone() {
+        compile_and_decompile_with_inversion_test(
+            "resource_auth_zone",
+            include_str!("../../examples/resources/auth_zone.rtm"),
+            &NetworkDefinition::simulator(),
+            vec![],
+            r##"
+CALL_METHOD
+    Address("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064")
+    "withdraw"
+    Address("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag")
+    Decimal("5");
+TAKE_FROM_WORKTOP
+    Address("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag")
+    Bucket("bucket1");
 CREATE_PROOF_FROM_BUCKET
-    Bucket("bucket2")
+    Bucket("bucket1")
     Proof("proof1");
 CLONE_PROOF
     Proof("proof1")
@@ -81,12 +111,24 @@ POP_FROM_AUTH_ZONE
     Proof("proof3");
 DROP_PROOF
     Proof("proof3");
-RETURN_TO_WORKTOP
-    Bucket("bucket2");
-TAKE_FROM_WORKTOP_BY_IDS
-    Array<NonFungibleLocalId>(NonFungibleLocalId("#1#"))
+CALL_METHOD
+    Address("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064")
+    "create_proof_by_amount"
     Address("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag")
-    Bucket("bucket3");
+    Decimal("5");
+CREATE_PROOF_FROM_AUTH_ZONE
+    Address("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag")
+    Proof("proof4");
+CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT
+    Decimal("1")
+    Address("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag")
+    Proof("proof5");
+CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS
+    Array<NonFungibleLocalId>(NonFungibleLocalId("#123#"))
+    Address("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag")
+    Proof("proof6");
+CLEAR_AUTH_ZONE;
+CLEAR_SIGNATURE_PROOFS;
 DROP_ALL_PROOFS;
 CALL_METHOD
     Address("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064")
@@ -358,9 +400,10 @@ CALL_METHOD
     Decimal("10");
 CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     Enum(1u8)
+    Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum(0u8, 64u8))
     Map<String, String>("description", "A very innovative and important resource", "name", "MyResource")
     Map<Enum, Tuple>(Enum(4u8), Tuple(Enum(0u8), Enum(1u8)), Enum(5u8), Tuple(Enum(0u8), Enum(1u8)))
-    Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#12#"), Tuple(Bytes("4d21020c0b48656c6c6f20576f726c64850000b0d86b9088a6000000000000000000000000000000000000000000000000"), Bytes("4d2102070c0b13000000000000000000000000000000")));
+    Map<NonFungibleLocalId, Array>(NonFungibleLocalId("#12#"), Bytes("5c21020c0b48656c6c6f20576f726c64a00000b0d86b9088a6000000000000000000000000000000000000000000000000"));
 CALL_METHOD
     Address("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na")
     "deposit_batch"
@@ -388,6 +431,7 @@ CALL_METHOD
     Decimal("10");
 CREATE_NON_FUNGIBLE_RESOURCE
     Enum(1u8)
+    Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum(0u8, 64u8), Array<String>())
     Map<String, String>("description", "A very innovative and important resource", "name", "MyResource")
     Map<Enum, Tuple>(Enum(4u8), Tuple(Enum(0u8), Enum(1u8)), Enum(5u8), Tuple(Enum(0u8), Enum(1u8)));
 "##,
@@ -445,7 +489,7 @@ CALL_METHOD
     Decimal("1");
 MINT_NON_FUNGIBLE
     Address("resource_sim1qqgvpz8q7ypeueqcv4qthsv7ezt8h9m3depmqqw7pc4sfmucfx")
-    Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#12#"), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128)));
+    Tuple(Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#12#"), Tuple(Tuple())));
 CALL_METHOD
     Address("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na")
     "deposit_batch"

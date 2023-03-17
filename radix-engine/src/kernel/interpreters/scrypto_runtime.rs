@@ -13,7 +13,7 @@ use radix_engine_interface::api::{
     ClientUnsafeApi,
 };
 use radix_engine_interface::blueprints::resource::AccessRulesConfig;
-use radix_engine_interface::schema::PackageSchema;
+use radix_engine_interface::schema::{KeyValueStoreSchema, PackageSchema};
 use sbor::rust::vec::Vec;
 
 /// A shim between ClientApi and WASM, with buffer capability.
@@ -191,8 +191,14 @@ where
         self.allocate_buffer(component_address_encoded)
     }
 
-    fn new_key_value_store(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let key_value_store_id = self.api.new_key_value_store()?;
+    fn new_key_value_store(
+        &mut self,
+        schema: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let schema = scrypto_decode::<KeyValueStoreSchema>(&schema)
+            .map_err(WasmRuntimeError::InvalidKeyValueStoreSchema)?;
+
+        let key_value_store_id = self.api.new_key_value_store(schema)?;
         let key_value_store_id_encoded =
             scrypto_encode(&key_value_store_id).expect("Failed to encode package address");
 
@@ -383,7 +389,10 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn new_key_value_store(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+    fn new_key_value_store(
+        &mut self,
+        schema: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 

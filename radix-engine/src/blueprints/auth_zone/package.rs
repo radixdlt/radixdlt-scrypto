@@ -91,6 +91,17 @@ impl AuthZoneNativePackage {
             },
         );
         functions.insert(
+            AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator
+                    .add_child_type_and_descendents::<AuthZoneClearVirtualProofsInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AuthZoneClearVirtualProofsOutput>(),
+                export_name: AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_IDENT.to_string(),
+            },
+        );
+        functions.insert(
             AUTH_ZONE_DRAIN_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(Receiver::SelfRefMut),
@@ -180,6 +191,14 @@ impl AuthZoneNativePackage {
                     InterpreterError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
                 AuthZoneBlueprint::clear(receiver, input, api)
+            }
+            AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_IDENT => {
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                AuthZoneBlueprint::clear_signature_proofs(receiver, input, api)
             }
             AUTH_ZONE_DRAIN_IDENT => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
@@ -295,7 +314,7 @@ impl AuthZoneBlueprint {
             node_id,
             composed_proof.into(),
             btreemap!(
-                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
                     package_address: RESOURCE_MANAGER_PACKAGE,
                     blueprint_name: PROOF_BLUEPRINT.to_string(),
                     global: false,
@@ -342,7 +361,7 @@ impl AuthZoneBlueprint {
             node_id,
             composed_proof.into(),
             btreemap!(
-                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
                     package_address: RESOURCE_MANAGER_PACKAGE,
                     blueprint_name: PROOF_BLUEPRINT.to_string(),
                     global: false,
@@ -389,7 +408,7 @@ impl AuthZoneBlueprint {
             node_id,
             composed_proof.into(),
             btreemap!(
-                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
                     package_address: RESOURCE_MANAGER_PACKAGE,
                     blueprint_name: PROOF_BLUEPRINT.to_string(),
                     global: false,
@@ -420,12 +439,39 @@ impl AuthZoneBlueprint {
         )?;
         let auth_zone_stack: &mut AuthZoneStackSubstate =
             api.kernel_get_substate_ref_mut(handle)?;
-        let proofs = auth_zone_stack.cur_auth_zone_mut().drain();
+        let auth_zone = auth_zone_stack.cur_auth_zone_mut();
+        auth_zone.clear_signature_proofs();
+        let proofs = auth_zone.drain();
         api.sys_drop_lock(handle)?;
 
         for proof in proofs {
             proof.sys_drop(api)?;
         }
+
+        Ok(IndexedScryptoValue::from_typed(&()))
+    }
+
+    pub(crate) fn clear_signature_proofs<Y>(
+        receiver: RENodeId,
+        input: IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    {
+        let _input: AuthZoneClearInput = input.as_typed().map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+        })?;
+
+        let handle = api.sys_lock_substate(
+            receiver,
+            SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
+            LockFlags::MUTABLE,
+        )?;
+        let auth_zone_stack: &mut AuthZoneStackSubstate =
+            api.kernel_get_substate_ref_mut(handle)?;
+        auth_zone_stack.cur_auth_zone_mut().clear_signature_proofs();
+        api.sys_drop_lock(handle)?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }

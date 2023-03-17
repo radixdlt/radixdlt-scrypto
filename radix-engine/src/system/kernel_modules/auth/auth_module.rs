@@ -3,6 +3,7 @@ use super::method_authorization::MethodAuthorization;
 use super::HardAuthRule;
 use super::HardProofRule;
 use super::HardResourceOrNonFungible;
+use crate::blueprints::auth_zone::AuthZone;
 use crate::blueprints::resource::VaultInfoSubstate;
 use crate::errors::*;
 use crate::kernel::actor::{Actor, ActorIdentifier};
@@ -243,7 +244,17 @@ impl AuthModule {
         api: &mut Y,
     ) -> Result<MethodAuthorization, RuntimeError> {
         let (blueprint_schema, index) = {
-            let (package_address, blueprint_ident) = TypeInfoBlueprint::get_type(receiver, api)?;
+            let type_info = TypeInfoBlueprint::get_type(receiver, api)?;
+            let (package_address, blueprint_ident) = match type_info {
+                TypeInfoSubstate::Object {
+                    package_address,
+                    blueprint_name,
+                    ..
+                } => (package_address, blueprint_name),
+                TypeInfoSubstate::KeyValueStore(..) => {
+                    return Err(RuntimeError::SystemError(SystemError::NotAnObject))
+                }
+            };
 
             let handle = api.kernel_lock_substate(
                 RENodeId::GlobalObject(package_address.into()),
@@ -327,18 +338,13 @@ impl AuthModule {
 
 impl KernelModule for AuthModule {
     fn on_init<Y: KernelModuleApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
-        let auth_zone_params = api.kernel_get_module_state().auth.params.clone();
-        let auth_zone = AuthZoneStackSubstate::new(
-            vec![],
-            auth_zone_params.virtualizable_proofs_resource_addresses,
-            auth_zone_params.initial_proofs.into_iter().collect(),
-        );
+        let auth_zone = AuthZoneStackSubstate::new();
         let node_id = api.kernel_allocate_node_id(RENodeType::AuthZoneStack)?;
         api.kernel_create_node(
             node_id,
             RENodeInit::AuthZoneStack(auth_zone),
             btreemap!(
-                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
                         package_address: AUTH_ZONE_PACKAGE,
                         blueprint_name: AUTH_ZONE_BLUEPRINT.to_string(),
                         global: false,
@@ -421,6 +427,8 @@ impl KernelModule for AuthModule {
                 ..
             })
         ) {
+            let auth_zone_params = api.kernel_get_module_state().auth.params.clone();
+
             let handle = api.kernel_lock_substate(
                 RENodeId::AuthZoneStack,
                 NodeModuleId::SELF,
@@ -434,16 +442,33 @@ impl KernelModule for AuthModule {
             let is_barrier = Self::is_barrier(next_actor);
 
             // Add Package Actor Auth
-            let mut virtual_non_fungibles = BTreeSet::new();
+            let mut virtual_non_fungibles_non_extending = BTreeSet::new();
             if let Some(actor) = next_actor {
                 let package_address = actor.fn_identifier.package_address();
                 let id = scrypto_encode(&package_address).unwrap();
                 let non_fungible_global_id =
                     NonFungibleGlobalId::new(PACKAGE_TOKEN, NonFungibleLocalId::bytes(id).unwrap());
-                virtual_non_fungibles.insert(non_fungible_global_id);
+                virtual_non_fungibles_non_extending.insert(non_fungible_global_id);
             }
 
-            auth_zone_stack.push_auth_zone(virtual_non_fungibles, is_barrier);
+            let auth_zone = if auth_zone_stack.is_empty() {
+                AuthZone::new(
+                    vec![],
+                    auth_zone_params.virtual_resources,
+                    auth_zone_params.initial_proofs.into_iter().collect(),
+                    virtual_non_fungibles_non_extending,
+                    is_barrier,
+                )
+            } else {
+                AuthZone::new(
+                    vec![],
+                    BTreeSet::new(),
+                    BTreeSet::new(),
+                    virtual_non_fungibles_non_extending,
+                    is_barrier,
+                )
+            };
+            auth_zone_stack.push_auth_zone(auth_zone);
             api.kernel_drop_lock(handle)?;
         }
 
