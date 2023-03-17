@@ -32,5 +32,6 @@ members = [
     "radix-engine-tests",
     "radix-engine-constants",
     "utils",
-    "utils/resources-tracker-macro",
+    "radix-engine-utils",
+    "radix-engine-utils/resources-tracker-macro",
 ]

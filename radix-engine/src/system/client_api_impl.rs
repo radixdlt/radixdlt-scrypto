@@ -42,7 +42,7 @@ use sbor::rust::vec::Vec;
 use super::node_modules::event_schema::PackageEventSchemaSubstate;
 
 #[cfg(target_family = "unix")]
-use utils::QEMU_PLUGIN;
+use radix_engine_utils::QEMU_PLUGIN;
 use resources_tracker_macro::trace_resources;
 
 

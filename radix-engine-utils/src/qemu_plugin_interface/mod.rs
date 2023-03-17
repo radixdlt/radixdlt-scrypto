@@ -3,6 +3,7 @@
 use std::os::unix::net::UnixDatagram;
 use std::fs::File;
 use std::io::prelude::*;
+use shared_memory::*;
 
 
 const SRV_SOCKET_FN: &str = "/tmp/scrypto-qemu-plugin-server.socket";
@@ -41,7 +42,8 @@ pub struct QemuPluginInterface<'a> {
     socket: UnixDatagram,
     output_data: Vec<OutputData<'a>>,
     counter_offset: u64,
-    counter_offset_parent: u64
+    counter_offset_parent: u64,
+    shmem: Shmem 
 }
 
 impl<'a> QemuPluginInterface<'a> {
@@ -52,6 +54,13 @@ impl<'a> QemuPluginInterface<'a> {
         let socket = UnixDatagram::bind(CLI_SOCKET_FN).unwrap();
         socket.set_read_timeout(None).unwrap();
 
+        //shared_memory::Shmem::
+        let shmem_conf = ShmemConf::new().os_id("/shm-radix");
+        let shmem = match shmem_conf.open() {
+            Ok(v) => v,
+            Err(x) => panic!("Unable to open shmem {:?}", x)
+        };
+
         let mut ret = Self {
             enabled,
             counters_stack: Vec::with_capacity(100),
@@ -59,8 +68,10 @@ impl<'a> QemuPluginInterface<'a> {
             socket,
             output_data: Vec::with_capacity(OUTPUT_DATA_COUNT),
             counter_offset: 0,
-            counter_offset_parent: 0
+            counter_offset_parent: 0,
+            shmem
         };
+
 
         // test connection
         ret.communicate_with_server(SRV_SOCKET_FN);
@@ -95,16 +106,18 @@ impl<'a> QemuPluginInterface<'a> {
         let mut cnt = 0;
         let mut cnt_parent = 0;
 
-        let loop_max = 1000;
+        let loop_max = 10;
 
         for _ in 0..loop_max {
             let (parent, child) = self.calibrate(true);
             cnt_parent += parent;
             cnt += child;
+            println!("1 child/parent: {} {}", child, parent);
         }
         for _ in 0..loop_max {
             let (parent, _child) = self.calibrate(false);
             cnt_parent -= parent;
+            println!("2 parent: {}", parent);
         }
 
         self.output_data.clear();
@@ -170,9 +183,16 @@ impl<'a> QemuPluginInterface<'a> {
         (self.stack_top, ret)
     }
 
-    fn communicate_with_server(&mut self, addr: &str) -> u64 {
+    fn communicate_with_server(&mut self, _addr: &str) -> u64 {
 
-        self.socket.send_to(b"", addr).unwrap();
+        let raw_ptr = self.shmem.as_ptr() as *const u64;
+        let ret = unsafe {
+            std::ptr::read_volatile(raw_ptr)
+        };
+
+        return ret;
+
+/*        self.socket.send_to(b"", _addr).unwrap();
         //let mut buf = Vec::with_capacity(64);
         let mut buf = [0; 100];
         //self.socket.recv(&mut buf)
@@ -183,7 +203,7 @@ impl<'a> QemuPluginInterface<'a> {
         //println!("socket {:?} sent {:?} -> {}", address, &buf[..count], ret);
         //let s = [0..ret].map(|_| " ").collect::<String>();
         //let s = String::from_utf8(vec![b' '; ret as usize]).unwrap();
-        ret
+        ret*/
 
     }
 

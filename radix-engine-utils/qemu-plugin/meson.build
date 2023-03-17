@@ -2,7 +2,8 @@
 project('qemu scrypto plugin', 'c')
 
 # update this path
-qemu_source_dir = '/home/qemu/qemu-7.2.0/'
+#qemu_source_dir = '/home/qemu/qemu-7.2.0/'
+qemu_source_dir = '/Users/michal.strug/dev/qemu/qemu/'
 
 # to build this project run:
 #  meson setup builddir
