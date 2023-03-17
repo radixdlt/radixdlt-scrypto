@@ -322,11 +322,15 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
-        pub fn new_key_value_store(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
-            let (_, runtime) = grab_runtime!(env);
+        pub fn new_key_value_store(
+            env: &WasmerInstanceEnv,
+            schema_id_ptr: u32,
+            schema_id_len: u32,
+        ) -> Result<u64, RuntimeError> {
+            let (instance, runtime) = grab_runtime!(env);
 
             let buffer = runtime
-                .new_key_value_store()
+                .new_key_value_store(read_memory(&instance, schema_id_ptr, schema_id_len)?)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)

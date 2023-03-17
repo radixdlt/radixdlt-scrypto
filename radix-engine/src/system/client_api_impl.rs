@@ -1,11 +1,10 @@
-use crate::blueprints::resource::*;
+use crate::errors::SystemError;
 use crate::errors::{ApplicationError, RuntimeError, SubstateValidationError};
-use crate::errors::{KernelError, SystemError};
 use crate::kernel::actor::{Actor, ActorIdentifier};
 use crate::kernel::kernel::Kernel;
-use crate::kernel::kernel_api::KernelNodeApi;
+use crate::kernel::kernel_api::KernelInternalApi;
 use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::kernel::kernel_api::{KernelInternalApi, KernelInvokeApi};
+use crate::kernel::kernel_api::{KernelInvokeApi, KernelNodeApi, LockInfo};
 use crate::kernel::module::KernelModule;
 use crate::kernel::module_mixer::KernelModuleMixer;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
@@ -19,7 +18,6 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate,
-    KeyValueStoreEntrySubstate,
 };
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
@@ -35,7 +33,7 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::PackageSchema;
+use radix_engine_interface::schema::{KeyValueStoreSchema, PackageSchema};
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
@@ -92,9 +90,39 @@ where
         lock_handle: LockHandle,
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        let offset = self.kernel_get_lock_info(lock_handle)?.offset;
-        let substate = RuntimeSubstate::decode_from_buffer(&offset, &buffer)?;
+        let LockInfo {
+            node_id,
+            module_id,
+            offset,
+            ..
+        } = self.kernel_get_lock_info(lock_handle)?;
 
+        if module_id.eq(&NodeModuleId::SELF) {
+            let type_info = TypeInfoBlueprint::get_type(node_id, self)?;
+            match type_info {
+                TypeInfoSubstate::KeyValueStore(schema) => {
+                    validate_payload_against_schema(&buffer, &schema.schema, schema.value)
+                        .map_err(|_| {
+                            RuntimeError::SystemError(SystemError::InvalidSubstateWrite)
+                        })?;
+
+                    if !schema.can_own {
+                        let indexed = IndexedScryptoValue::from_slice(&buffer).map_err(|_| {
+                            RuntimeError::SystemError(SystemError::InvalidSubstateWrite)
+                        })?;
+                        let (_, own, _) = indexed.unpack();
+                        if !own.is_empty() {
+                            return Err(RuntimeError::SystemError(
+                                SystemError::InvalidKeyValueStoreOwnership,
+                            ));
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        let substate = RuntimeSubstate::decode_from_buffer(&offset, &buffer)?;
         // TODO: support all self substates
         // TODO: add payload schema validation
 
@@ -105,16 +133,11 @@ where
                 *state = next
             }
             RuntimeSubstate::KeyValueStoreEntry(next) => {
-                let entry: &mut KeyValueStoreEntrySubstate =
+                let entry: &mut Option<ScryptoValue> =
                     self.kernel_get_substate_ref_mut(lock_handle)?;
                 *entry = next;
             }
-            RuntimeSubstate::NonFungible(next) => {
-                let non_fungible: &mut NonFungibleSubstate =
-                    self.kernel_get_substate_ref_mut(lock_handle)?;
-                *non_fungible = next;
-            }
-            _ => return Err(RuntimeError::KernelError(KernelError::InvalidOverwrite)),
+            _ => return Err(RuntimeError::SystemError(SystemError::InvalidSubstateWrite)),
         }
 
         Ok(())
@@ -280,8 +303,11 @@ where
         let mut parser = SubstateSchemaParser::new(&mut app_states);
         let node_init = match package_address {
             RESOURCE_MANAGER_PACKAGE => match blueprint_ident {
-                RESOURCE_MANAGER_BLUEPRINT => RENodeInit::Object(btreemap!(
+                FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT => RENodeInit::Object(btreemap!(
                     SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => RuntimeSubstate::ResourceManager(parser.decode_next())
+                )),
+                NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT => RENodeInit::Object(btreemap!(
+                    SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => RuntimeSubstate::NonFungibleResourceManager(parser.decode_next())
                 )),
                 PROOF_BLUEPRINT => RENodeInit::Object(btreemap!(
                     SubstateOffset::Proof(ProofOffset::Info) => RuntimeSubstate::ProofInfo(parser.decode_next()),
@@ -371,7 +397,16 @@ where
 
         let node_type = match node_id {
             RENodeId::Object(..) => {
-                let (package_address, blueprint) = TypeInfoBlueprint::get_type(node_id, self)?;
+                let type_info = TypeInfoBlueprint::get_type(node_id, self)?;
+                let (package_address, blueprint) = match type_info {
+                    TypeInfoSubstate::Object {
+                        package_address,
+                        blueprint_name,
+                        global,
+                    } if !global => (package_address, blueprint_name),
+                    _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
+                };
+
                 match (package_address, blueprint.as_str()) {
                     (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => RENodeType::GlobalAccount,
                     (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => RENodeType::GlobalIdentity,
@@ -444,7 +479,12 @@ where
             ))
             .unwrap();
         let mut type_info_substate: TypeInfoSubstate = type_info.into();
-        type_info_substate.global = true;
+
+        match type_info_substate {
+            TypeInfoSubstate::Object { ref mut global, .. } if !*global => *global = true,
+            _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
+        };
+
         module_init.insert(
             NodeModuleId::TypeInfo,
             RENodeModuleInit::TypeInfo(type_info_substate),
@@ -597,13 +637,53 @@ where
         &mut self,
         node_id: RENodeId,
     ) -> Result<(PackageAddress, String), RuntimeError> {
-        TypeInfoBlueprint::get_type(node_id, self)
+        let type_info = TypeInfoBlueprint::get_type(node_id, self)?;
+        let blueprint = match type_info {
+            TypeInfoSubstate::Object {
+                package_address,
+                blueprint_name,
+                ..
+            } => (package_address, blueprint_name),
+            TypeInfoSubstate::KeyValueStore(..) => {
+                return Err(RuntimeError::SystemError(SystemError::NotAnObject))
+            }
+        };
+
+        Ok(blueprint)
     }
 
-    fn new_key_value_store(&mut self) -> Result<KeyValueStoreId, RuntimeError> {
+    fn get_key_value_store_info(
+        &mut self,
+        node_id: RENodeId,
+    ) -> Result<KeyValueStoreSchema, RuntimeError> {
+        let type_info = TypeInfoBlueprint::get_type(node_id, self)?;
+        let schema = match type_info {
+            TypeInfoSubstate::Object { .. } => {
+                return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
+            }
+            TypeInfoSubstate::KeyValueStore(schema) => schema,
+        };
+
+        Ok(schema)
+    }
+
+    fn new_key_value_store(
+        &mut self,
+        schema: KeyValueStoreSchema,
+    ) -> Result<KeyValueStoreId, RuntimeError> {
+        schema
+            .schema
+            .validate()
+            .map_err(|e| RuntimeError::SystemError(SystemError::InvalidKeyValueStoreSchema(e)))?;
+
         let node_id = self.kernel_allocate_node_id(RENodeType::KeyValueStore)?;
 
-        self.kernel_create_node(node_id, RENodeInit::KeyValueStore, btreemap!())?;
+        self.kernel_create_node(
+            node_id,
+            RENodeInit::KeyValueStore,
+            btreemap!(
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::KeyValueStore(schema)),
+        ))?;
 
         Ok(node_id.into())
     }

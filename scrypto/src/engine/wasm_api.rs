@@ -42,7 +42,7 @@ extern "C" {
         app_states_len: usize,
     ) -> Buffer;
 
-    pub fn new_key_value_store() -> Buffer;
+    pub fn new_key_value_store(schema_ptr: *const u8, schema_len: usize) -> Buffer;
 
     pub fn globalize_component(
         component_id_ptr: *const u8,
@@ -61,6 +61,11 @@ extern "C" {
     ) -> Buffer;
 
     pub fn get_component_type_info(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
+
+    pub fn get_key_value_store_info(
+        key_value_store_id_ptr: *const u8,
+        key_value_store_id_len: usize,
+    ) -> Buffer;
 
     /// Invokes a method on a component.
     pub fn call_method(
@@ -182,7 +187,7 @@ pub unsafe fn new_component(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn new_key_value_store() -> Buffer {
+pub unsafe fn new_key_value_store(_schema_ptr: *const u8, _schema_len: usize) -> Buffer {
     unreachable!()
 }
 
@@ -212,6 +217,14 @@ pub unsafe fn globalize_with_address(
 pub unsafe fn get_component_type_info(
     _component_id_ptr: *const u8,
     _component_id_len: usize,
+) -> Buffer {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn get_key_value_store_info(
+    _key_value_store_id_ptr: *const u8,
+    _key_value_store_id_len: usize,
 ) -> Buffer {
     unreachable!()
 }
