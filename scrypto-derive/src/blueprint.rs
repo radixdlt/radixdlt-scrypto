@@ -110,15 +110,32 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         let (function_names, function_schemas) = generate_schema(bp_ident, bp_items)?;
 
         // Getting the event types if the event attribute is defined for the type
-        let event_type_names = {
-            let mut type_names = Vec::<Path>::new();
+        let (event_type_names, event_type_paths) = {
+            let mut paths = std::collections::BTreeMap::<String, Path>::new();
             for attribute in blueprint.attributes {
                 if attribute.path.is_ident("events") {
                     let events_inner = parse2::<ast::EventsInner>(attribute.tokens)?;
-                    type_names.extend(events_inner.paths.into_iter());
+                    for path in events_inner.paths.iter() {
+                        let ident_string = quote! { #path }
+                            .to_string()
+                            .split(':')
+                            .last()
+                            .unwrap()
+                            .trim()
+                            .to_owned();
+                        if let Some(..) = paths.insert(ident_string, path.clone()) {
+                            return Err(Error::new(
+                                path.span(),
+                                "An event with an identical name has already been registered",
+                            ));
+                        }
+                    }
                 }
             }
-            type_names
+            (
+                paths.keys().into_iter().cloned().collect::<Vec<_>>(),
+                paths.values().into_iter().cloned().collect::<Vec<_>>(),
+            )
         };
 
         quote! {
@@ -145,13 +162,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 // Aggregate event schemas
                 let mut event_schema = BTreeMap::new();
                 #({
-                    let type_name = {
-                        let (local_type_index, schema) = sbor::generate_full_schema_from_single_type::<#event_type_names, ScryptoCustomTypeExtension>();
-                        let type_name = schema.resolve_type_metadata(local_type_index).unwrap().type_name.to_string();
-                        type_name
-                    };
-                    let local_type_index = aggregator.add_child_type_and_descendents::<#event_type_names>();
-                    event_schema.insert(type_name, local_type_index);
+                    let local_type_index = aggregator.add_child_type_and_descendents::<#event_type_paths>();
+                    event_schema.insert(#event_type_names.to_owned(), local_type_index);
                 })*
 
                 let return_data = BlueprintSchema {

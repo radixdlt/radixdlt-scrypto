@@ -1,7 +1,7 @@
 use scrypto::prelude::*;
 
 #[blueprint]
-#[events(u32)]
+#[events(String, u32)]
 mod blueprint {
     struct Club {}
     impl Club {}
