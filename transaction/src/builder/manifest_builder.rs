@@ -19,11 +19,9 @@ use radix_engine_interface::constants::{
     RESOURCE_MANAGER_PACKAGE,
 };
 use radix_engine_interface::crypto::{hash, EcdsaSecp256k1PublicKey, Hash};
-use radix_engine_interface::data::manifest::{
-    model::*, to_manifest_value, ManifestValue,
-};
 #[cfg(feature = "dump_manifest_to_file")]
 use radix_engine_interface::data::manifest::manifest_encode;
+use radix_engine_interface::data::manifest::{model::*, to_manifest_value, ManifestValue};
 use radix_engine_interface::data::scrypto::{model::*, scrypto_encode};
 use radix_engine_interface::math::*;
 use radix_engine_interface::schema::PackageSchema;
