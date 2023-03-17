@@ -39,7 +39,7 @@ Before starting to fuzz AFL checks machine configuration and requests to adjust 
 * Linux
   - do not send core dump notifications to external utilities.
     This is to notify fuzzer immediately about the crash, so it does not misinterpret crash as timeout.
-    `sudo bash -c "echo core > /proc/sys/kernel/core/core_pattern"`
+    `sudo bash -c "echo core > /proc/sys/kernel/core_pattern"`
 
     Alternatively it is possible to use env `AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1`
   - disable CPU frequency scaling to provide best performance
@@ -128,8 +128,6 @@ or
     ```
 
 # TODO
-- Run more worker processes in parallel for `LibFuzzer`
+- Implement more smart mutations in 'transaction' fuzz test
 - Add more fuzz tests
-- Add easy to use option to reconstruct sample input data.
-  (eg. for transaction tests it is transaction manifest serialized to raw bytes)
 - any ideas?
