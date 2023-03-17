@@ -154,14 +154,11 @@ impl Fuzzer {
                 );
                 if receipt.is_commit_success() {
                     TxStatus::CommitSuccess
-                }
-                else {
+                } else {
                     TxStatus::CommitFailure
                 }
             }
-            Err(_err) => {
-                TxStatus::DecodeError
-            }
+            Err(_err) => TxStatus::DecodeError,
         }
     }
 }
@@ -186,18 +183,24 @@ fn test_fuzz_tx() {
         "fuzz_input/transaction/manifest_01995e0d6005c34ad99fba993ebe1443ef55c4db71ed037de12afb3eb28bbfae.raw",
     )
     .unwrap();
-    assert!(matches!(fuzzer.fuzz_tx_manifest(&data), TxStatus::CommitSuccess));
+    assert!(matches!(
+        fuzzer.fuzz_tx_manifest(&data),
+        TxStatus::CommitSuccess
+    ));
 
     let data = std::fs::read(
         "fuzz_input/transaction//manifest_0113970c0a72935c8c27ddd97a9396d1839f0173bf9ed091f9706aa61db8417e.raw",
     )
     .unwrap();
-    assert!(matches!(fuzzer.fuzz_tx_manifest(&data), TxStatus::CommitFailure));
+    assert!(matches!(
+        fuzzer.fuzz_tx_manifest(&data),
+        TxStatus::CommitFailure
+    ));
 }
 
 // Fuzzer entry points
 #[cfg(feature = "libfuzzer-sys")]
-fuzz_target!(|data: &[u8]|{
+fuzz_target!(|data: &[u8]| {
     unsafe {
         static mut FUZZER: Lazy<Fuzzer> = Lazy::new(|| Fuzzer::new());
 
@@ -221,7 +224,5 @@ fn main() {
 fn main() {
     let mut fuzzer = Fuzzer::new();
 
-    simple_fuzzer::fuzz(|data: &[u8]| -> TxStatus {
-        fuzzer.fuzz_tx_manifest(data)
-    });
+    simple_fuzzer::fuzz(|data: &[u8]| -> TxStatus { fuzzer.fuzz_tx_manifest(data) });
 }

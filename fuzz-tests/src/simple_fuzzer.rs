@@ -66,16 +66,14 @@ impl DataFuzzer {
     fn set_input_data(&mut self, path: &String) {
         if fs::metadata(path).unwrap().is_file() {
             self.input_files.push(path.to_string());
-        }
-        else {
+        } else {
             let mut files = fs::read_dir(path)
                 .unwrap()
                 .filter_map(|res| {
                     let dir_entry = res.unwrap();
                     if dir_entry.file_type().unwrap().is_file() {
                         Some(dir_entry.path().to_str().unwrap().to_string())
-                    }
-                    else {
+                    } else {
                         None
                     }
                 })
@@ -116,8 +114,7 @@ impl DataFuzzer {
             let file = self.input_files.pop().unwrap();
             trace!("reading file = {}", file);
             fs::read(file).unwrap()
-        }
-        else {
+        } else {
             self.get_rand_vector()
         }
     }
