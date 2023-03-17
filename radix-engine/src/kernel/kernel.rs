@@ -11,7 +11,6 @@ use super::kernel_api::{
 use super::module::KernelModule;
 use super::module_mixer::KernelModuleMixer;
 use super::track::{Track, TrackError};
-use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::*;
@@ -19,25 +18,21 @@ use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapsh
 use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_properties::VisibilityProperties;
-use crate::system::node_substates::{RuntimeSubstate, SubstateRef, SubstateRefMut};
+use crate::system::node_substates::{SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use native_sdk::modules::access_rules::AccessRulesObject;
-use native_sdk::modules::metadata::Metadata;
-use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
     LockHandle, ProofOffset, RENodeId, SubstateId, SubstateOffset,
 };
-use radix_engine_interface::api::{ClientObjectApi, ClientPackageApi};
-use radix_engine_interface::blueprints::account::{ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_IDENT, ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_IDENT, ACCOUNT_DEPOSIT_BATCH_IDENT, ACCOUNT_DEPOSIT_IDENT};
+use radix_engine_interface::api::{ClientApi, ClientObjectApi, ClientPackageApi};
+use radix_engine_interface::blueprints::account::{ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_IDENT, ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_IDENT};
 use radix_engine_interface::blueprints::identity::{
     VirtualLazyLoadInput, IDENTITY_BLUEPRINT, IDENTITY_CREATE_VIRTUAL_ECDSA_IDENT,
     IDENTITY_CREATE_VIRTUAL_EDDSA_IDENT,
 };
 use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::rule;
 use sbor::rust::mem;
 
 pub struct Kernel<
@@ -121,11 +116,11 @@ where
         (self.module, new_result)
     }
 
-    fn try_virtualize(
-        &mut self,
+    fn try_virtualize<Y: KernelNodeApi + ClientApi<RuntimeError>>(
         node_id: RENodeId,
         _module_id: NodeModuleId,
         _offset: &SubstateOffset,
+        api: &mut Y
     ) -> Result<bool, RuntimeError> {
         match node_id {
             // TODO: Need to have a schema check in place before this in order to not create virtual components when accessing illegal substates
@@ -159,7 +154,7 @@ where
                     _ => return Ok(false),
                 };
 
-                let rtn = self.call_function(
+                let rtn = api.call_function(
                     package,
                     blueprint,
                     func,
@@ -171,8 +166,8 @@ where
                     .into_iter()
                     .map(|(id, own)| (id, own.id()))
                     .collect();
-                self.id_allocator.allocate_virtual_node_id(node_id);
-                self.globalize_with_address(
+                api.kernel_allocate_virtual_node_id(node_id)?;
+                api.globalize_with_address(
                     RENodeId::Object(object_id.id()),
                     modules,
                     node_id.into(),
@@ -495,6 +490,12 @@ where
         Ok(node_id)
     }
 
+    fn kernel_allocate_virtual_node_id(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
+        self.id_allocator.allocate_virtual_node_id(node_id);
+
+        Ok(())
+    }
+
     fn kernel_create_node(
         &mut self,
         node_id: RENodeId,
@@ -722,7 +723,7 @@ where
             Err(RuntimeError::KernelError(KernelError::TrackError(TrackError::NotFound(
                 SubstateId(node_id, module_id, ref offset),
             )))) => {
-                if self.try_virtualize(node_id, module_id, &offset)? {
+                if Self::try_virtualize(node_id, module_id, &offset, self)? {
                     self.current_frame.acquire_lock(
                         &mut self.heap,
                         &mut self.track,

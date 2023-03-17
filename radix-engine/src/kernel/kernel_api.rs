@@ -28,6 +28,9 @@ pub trait KernelNodeApi {
     /// Removes an RENode and all of it's children from the Heap
     fn kernel_drop_node(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError>;
 
+    /// TODO: Cleanup
+    fn kernel_allocate_virtual_node_id(&mut self, node_id: RENodeId) -> Result<(), RuntimeError>;
+
     /// Allocates a new node id useable for create_node
     fn kernel_allocate_node_id(&mut self, node_type: RENodeType) -> Result<RENodeId, RuntimeError>;
 
