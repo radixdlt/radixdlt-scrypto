@@ -32,9 +32,10 @@ pub use radix_engine_interface::data::scrypto::*;
 pub use radix_engine_interface::math::*;
 pub use radix_engine_interface::radix_engine_common;
 pub use radix_engine_interface::time::*;
+pub use radix_engine_interface::traits::*;
 pub use radix_engine_interface::{
     access_and_or, access_rule_node, dec, i, manifest_args, pdec, rule, scrypto_args,
-    ScryptoCategorize, ScryptoDecode, ScryptoEncode, ScryptoSbor,
+    ScryptoCategorize, ScryptoDecode, ScryptoEncode, ScryptoEvent, ScryptoSbor,
 };
 
 //=======

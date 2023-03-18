@@ -1,11 +1,11 @@
 use scrypto::prelude::*;
 
-#[derive(ScryptoSbor)]
+#[derive(ScryptoSbor, ScryptoEvent)]
 struct RegisteredEvent {
     number: u64,
 }
 
-#[derive(ScryptoSbor)]
+#[derive(ScryptoSbor, ScryptoEvent)]
 struct UnregisteredEvent {
     number: u64,
 }

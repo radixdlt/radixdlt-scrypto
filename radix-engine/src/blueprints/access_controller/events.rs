@@ -1,28 +1,28 @@
+use crate::types::*;
 use radix_engine_interface::blueprints::access_controller::{Proposer, RecoveryProposal};
-use radix_engine_interface::*;
 
-#[derive(ScryptoSbor)]
+#[derive(ScryptoSbor, ScryptoEvent)]
 pub struct InitiateRecoveryEvent {
     pub proposer: Proposer,
     pub proposal: RecoveryProposal,
 }
 
-#[derive(ScryptoSbor)]
+#[derive(ScryptoSbor, ScryptoEvent)]
 pub struct RuleSetUpdateEvent {
     pub proposer: Proposer,
     pub proposal: RecoveryProposal,
 }
 
-#[derive(ScryptoSbor)]
+#[derive(ScryptoSbor, ScryptoEvent)]
 pub struct CancelRecoveryProposalEvent {
     pub proposer: Proposer,
 }
 
-#[derive(ScryptoSbor)]
+#[derive(ScryptoSbor, ScryptoEvent)]
 pub struct LockPrimaryRoleEvent;
 
-#[derive(ScryptoSbor)]
+#[derive(ScryptoSbor, ScryptoEvent)]
 pub struct UnlockPrimaryRoleEvent;
 
-#[derive(ScryptoSbor)]
+#[derive(ScryptoSbor, ScryptoEvent)]
 pub struct StopTimedRecoveryEvent;
