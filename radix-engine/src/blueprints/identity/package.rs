@@ -2,7 +2,7 @@ use crate::errors::InterpreterError;
 use crate::errors::RuntimeError;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
-use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
+use native_sdk::modules::access_rules::{AccessRules, AttachedAccessRules};
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::ResourceManager;
@@ -13,6 +13,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::FunctionSchema;
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::schema::{BlueprintSchema, Receiver};
+use crate::blueprints::util::{AccessRuleState, OwnerAccessRules};
 
 pub const OWNER_GROUP_NAME: &str = "owner";
 
@@ -183,10 +184,13 @@ impl IdentityNativePackage {
     }
 }
 
-enum AccessRuleState {
-    Advanced(AccessRule, AccessRule),
-    PreSecurifiedSingleOwner(NonFungibleGlobalId),
-    SecurifiedSingleOwner(NonFungibleLocalId),
+pub struct IdentityOwnerAccessRules;
+
+impl OwnerAccessRules for IdentityOwnerAccessRules {
+    const OWNER_GROUP_NAME: &'static str = OWNER_GROUP_NAME;
+    const SECURIFY_IDENT: &'static str = IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT;
+    const PACKAGE: PackageAddress = IDENTITY_PACKAGE;
+    const OWNER_TOKEN: ResourceAddress = IDENTITY_OWNER_TOKEN;
 }
 
 pub struct IdentityBlueprint;
@@ -277,7 +281,8 @@ impl IdentityBlueprint {
         );
         let access_rules = AccessRules::sys_new(access_rules, api)?;
 
-        Self::update_access_rules(&access_rules, init, api)?;
+        IdentityOwnerAccessRules::update_access_rules(&access_rules, init, api)?;
+
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
 
@@ -300,7 +305,8 @@ impl IdentityBlueprint {
         let (bucket, local_id) = owner_token.mint_non_fungible_single_uuid((), api)?;
 
         let attached_access_rules = AttachedAccessRules(receiver);
-        Self::update_access_rules(
+
+        IdentityOwnerAccessRules::update_access_rules(
             &attached_access_rules,
             AccessRuleState::SecurifiedSingleOwner(local_id),
             api,
@@ -309,73 +315,4 @@ impl IdentityBlueprint {
         Ok(bucket)
     }
 
-    fn update_access_rules<A: AccessRulesObject, Y: ClientApi<RuntimeError>>(
-        access_rules: &A,
-        to_state: AccessRuleState,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError> {
-        match to_state {
-            AccessRuleState::Advanced(access_rule, mutability) => {
-                access_rules.set_method_access_rule_and_mutability(
-                    MethodKey::new(
-                        NodeModuleId::SELF,
-                        IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT,
-                    ),
-                    AccessRuleEntry::AccessRule(AccessRule::DenyAll),
-                    AccessRule::DenyAll,
-                    api,
-                )?;
-                access_rules.set_group_access_rule_and_mutability(
-                    OWNER_GROUP_NAME,
-                    access_rule,
-                    mutability,
-                    api,
-                )?;
-            }
-            AccessRuleState::PreSecurifiedSingleOwner(owner_id) => {
-                let package_id = NonFungibleGlobalId::new(
-                    PACKAGE_TOKEN,
-                    NonFungibleLocalId::bytes(scrypto_encode(&IDENTITY_PACKAGE).unwrap()).unwrap(),
-                );
-                let this_package_rule = rule!(require(package_id));
-
-                let access_rule = rule!(require(owner_id));
-                access_rules.set_method_access_rule_and_mutability(
-                    MethodKey::new(
-                        NodeModuleId::SELF,
-                        IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT,
-                    ),
-                    AccessRuleEntry::AccessRule(access_rule.clone()),
-                    this_package_rule.clone(),
-                    api,
-                )?;
-                access_rules.set_group_access_rule_and_mutability(
-                    OWNER_GROUP_NAME,
-                    access_rule,
-                    this_package_rule,
-                    api,
-                )?;
-            }
-            AccessRuleState::SecurifiedSingleOwner(owner_local_id) => {
-                access_rules.set_method_access_rule_and_mutability(
-                    MethodKey::new(
-                        NodeModuleId::SELF,
-                        IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT,
-                    ),
-                    AccessRuleEntry::AccessRule(AccessRule::DenyAll),
-                    AccessRule::DenyAll,
-                    api,
-                )?;
-                let global_id = NonFungibleGlobalId::new(IDENTITY_OWNER_TOKEN, owner_local_id);
-                access_rules.set_group_access_rule_and_mutability(
-                    OWNER_GROUP_NAME,
-                    rule!(require(global_id)),
-                    AccessRule::DenyAll,
-                    api,
-                )?;
-            }
-        }
-
-        Ok(())
-    }
 }

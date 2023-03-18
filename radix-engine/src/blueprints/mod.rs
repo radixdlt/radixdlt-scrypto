@@ -4,6 +4,7 @@ pub mod auth_zone;
 pub mod clock;
 pub mod epoch_manager;
 pub mod identity;
+pub mod util;
 pub mod package;
 pub mod resource;
 pub mod transaction_processor;
