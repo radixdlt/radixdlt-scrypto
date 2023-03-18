@@ -31,10 +31,10 @@ pub struct MethodKey {
 }
 
 impl MethodKey {
-    pub fn new(node_module_id: NodeModuleId, method_ident: String) -> Self {
+    pub fn new(node_module_id: NodeModuleId, method_ident: &str) -> Self {
         Self {
             node_module_id,
-            ident: method_ident,
+            ident: method_ident.to_string(),
         }
     }
 }
@@ -87,7 +87,7 @@ impl AccessRulesConfig {
         method_auth: AccessRule,
         mutability: R,
     ) -> Self {
-        let key = MethodKey::new(NodeModuleId::SELF, method_name.to_string());
+        let key = MethodKey::new(NodeModuleId::SELF, method_name);
         let mutability = mutability.into();
 
         self.method_auth
@@ -238,25 +238,25 @@ pub fn package_access_rules_from_owner_badge(
         AccessRule::DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        MethodKey::new(NodeModuleId::Metadata, METADATA_GET_IDENT.to_string()),
+        MethodKey::new(NodeModuleId::Metadata, METADATA_GET_IDENT),
         AccessRule::AllowAll,
         rule!(require(owner_badge.clone())),
     );
     access_rules.set_access_rule_and_mutability(
-        MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
+        MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT),
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
     );
     access_rules.set_access_rule_and_mutability(
         MethodKey::new(
             NodeModuleId::SELF,
-            PACKAGE_SET_ROYALTY_CONFIG_IDENT.to_string(),
+            PACKAGE_SET_ROYALTY_CONFIG_IDENT,
         ),
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
     );
     access_rules.set_access_rule_and_mutability(
-        MethodKey::new(NodeModuleId::SELF, PACKAGE_CLAIM_ROYALTY_IDENT.to_string()),
+        MethodKey::new(NodeModuleId::SELF, PACKAGE_CLAIM_ROYALTY_IDENT),
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
     );

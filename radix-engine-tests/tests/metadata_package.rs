@@ -131,7 +131,7 @@ fn can_lock_package_metadata_with_owner() {
         .create_proof_from_account(account, owner_badge_resource)
         .set_method_access_rule(
             Address::Package(package_address),
-            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
+            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT),
             AccessRule::DenyAll,
         )
         .build();

@@ -273,7 +273,7 @@ impl IdentityBlueprint {
     {
         let mut access_rules = AccessRulesConfig::new();
         access_rules.set_method_access_rule_to_group(
-            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
+            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT),
             OWNER_GROUP_NAME.to_string(),
         );
         let access_rules = AccessRules::sys_new(access_rules, api)?;
@@ -320,7 +320,7 @@ impl IdentityBlueprint {
                 access_rules.set_method_access_rule_and_mutability(
                     MethodKey::new(
                         NodeModuleId::SELF,
-                        IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT.to_string(),
+                        IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT,
                     ),
                     AccessRuleEntry::AccessRule(AccessRule::DenyAll),
                     AccessRule::DenyAll,
@@ -344,7 +344,7 @@ impl IdentityBlueprint {
                 access_rules.set_method_access_rule_and_mutability(
                     MethodKey::new(
                         NodeModuleId::SELF,
-                        IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT.to_string(),
+                        IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT,
                     ),
                     AccessRuleEntry::AccessRule(access_rule.clone()),
                     this_package_rule.clone(),
@@ -361,7 +361,7 @@ impl IdentityBlueprint {
                 access_rules.set_method_access_rule_and_mutability(
                     MethodKey::new(
                         NodeModuleId::SELF,
-                        IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT.to_string(),
+                        IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT,
                     ),
                     AccessRuleEntry::AccessRule(AccessRule::DenyAll),
                     AccessRule::DenyAll,

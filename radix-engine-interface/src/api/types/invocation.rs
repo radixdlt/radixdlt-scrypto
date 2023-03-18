@@ -33,7 +33,7 @@ pub struct MethodIdentifier(pub RENodeId, pub NodeModuleId, pub String);
 
 impl MethodIdentifier {
     pub fn method_key(&self) -> MethodKey {
-        MethodKey::new(self.1, self.2.clone())
+        MethodKey::new(self.1, self.2.as_str())
     }
 }
 

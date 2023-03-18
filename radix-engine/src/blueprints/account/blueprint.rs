@@ -46,12 +46,12 @@ impl AccountBlueprint {
     {
         let mut access_rules = AccessRulesConfig::new();
         access_rules.set_access_rule_and_mutability(
-            MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_IDENT.to_string()),
+            MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_IDENT),
             AccessRule::AllowAll,
             AccessRule::DenyAll,
         );
         access_rules.set_access_rule_and_mutability(
-            MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_BATCH_IDENT.to_string()),
+            MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_BATCH_IDENT),
             AccessRule::AllowAll,
             AccessRule::DenyAll,
         );

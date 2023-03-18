@@ -202,7 +202,7 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
         MutableAccessRulesTestRunner::manifest_builder()
             .set_method_access_rule(
                 Address::Component(test_runner.component_address),
-                MethodKey::new(NodeModuleId::SELF, "borrow_funds".to_string()),
+                MethodKey::new(NodeModuleId::SELF, "borrow_funds"),
                 rule!(deny_all),
             )
             .build(),
@@ -222,19 +222,19 @@ fn user_cannot_mutate_auth_on_methods_that_control_auth() {
     for access_rule_key in [
         MethodKey::new(
             NodeModuleId::AccessRules,
-            ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT.to_string(),
+            ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
         ),
         MethodKey::new(
             NodeModuleId::AccessRules,
-            ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT.to_string(),
+            ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
         ),
         MethodKey::new(
             NodeModuleId::AccessRules,
-            ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT.to_string(),
+            ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
         ),
         MethodKey::new(
             NodeModuleId::AccessRules,
-            ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT.to_string(),
+            ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
         ),
     ] {
         let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
