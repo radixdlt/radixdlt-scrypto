@@ -14,9 +14,7 @@ use radix_engine_interface::blueprints::account::{
 use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerCreateValidatorInput, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT,
 };
-use radix_engine_interface::blueprints::identity::{
-    IdentityCreateAdvancedInput, IDENTITY_BLUEPRINT, IDENTITY_CREATE_ADVANCED_IDENT,
-};
+use radix_engine_interface::blueprints::identity::{IdentityCreateAdvancedInput, IDENTITY_BLUEPRINT, IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT, IdentityCreateInput};
 use radix_engine_interface::blueprints::resource::{
     AccessRule, FungibleResourceManagerCreateInput,
     FungibleResourceManagerCreateWithInitialSupplyInput, NonFungibleResourceManagerCreateInput,
@@ -615,6 +613,13 @@ pub fn generate_instruction(
         },
         ast::Instruction::AssertAccessRule { access_rule } => Instruction::AssertAccessRule {
             access_rule: generate_typed_value(access_rule, resolver, bech32_decoder, blobs)?,
+        },
+        ast::Instruction::CreateIdentity {
+        } => Instruction::CallFunction {
+            package_address: IDENTITY_PACKAGE,
+            blueprint_name: IDENTITY_BLUEPRINT.to_string(),
+            function_name: IDENTITY_CREATE_IDENT.to_string(),
+            args: to_manifest_value(&IdentityCreateInput {}).unwrap(),
         },
         ast::Instruction::CreateIdentityAdvanced {
             access_rule,

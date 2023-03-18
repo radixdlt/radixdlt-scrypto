@@ -544,9 +544,10 @@ CREATE_ACCOUNT
             &NetworkDefinition::simulator(),
             vec![],
             r##"
-CREATE_IDENTITY
+CREATE_IDENTITY_ADVANCED
     Enum(0u8)
     Enum(0u8);
+CREATE_IDENTITY;
 "##,
         );
     }

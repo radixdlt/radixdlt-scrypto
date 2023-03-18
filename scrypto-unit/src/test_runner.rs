@@ -551,7 +551,7 @@ impl TestRunner {
             let owner_id = NonFungibleGlobalId::from_public_key(&pk);
             let manifest = ManifestBuilder::new()
                 .lock_fee(FAUCET_COMPONENT, 10.into())
-                .create_identity(rule!(require(owner_id)))
+                .create_identity_advanced(rule!(require(owner_id)))
                 .build();
             let receipt = self.execute_manifest(manifest, vec![]);
             receipt.expect_commit_success();
@@ -562,6 +562,29 @@ impl TestRunner {
 
             component_address
         }
+    }
+
+    pub fn new_securified_identity(
+        &mut self,
+        account: ComponentAddress,
+    ) -> ComponentAddress {
+        let manifest = ManifestBuilder::new()
+            .lock_fee(FAUCET_COMPONENT, 10.into())
+            .create_identity()
+            .call_method(
+                account,
+                ACCOUNT_DEPOSIT_BATCH_IDENT,
+                manifest_args!(ManifestExpression::EntireWorktop),
+            )
+            .build();
+        let receipt = self.execute_manifest(manifest, vec![]);
+        receipt.expect_commit_success();
+        let component_address = receipt
+            .expect_commit(true)
+            .entity_changes
+            .new_component_addresses[0];
+
+        component_address
     }
 
     pub fn new_validator_with_pub_key(

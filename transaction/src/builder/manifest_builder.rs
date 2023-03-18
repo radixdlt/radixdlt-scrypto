@@ -9,9 +9,7 @@ use radix_engine_interface::blueprints::epoch_manager::{
     VALIDATOR_CLAIM_XRD_IDENT, VALIDATOR_REGISTER_IDENT, VALIDATOR_STAKE_IDENT,
     VALIDATOR_UNREGISTER_IDENT, VALIDATOR_UNSTAKE_IDENT,
 };
-use radix_engine_interface::blueprints::identity::{
-    IdentityCreateAdvancedInput, IDENTITY_BLUEPRINT, IDENTITY_CREATE_ADVANCED_IDENT,
-};
+use radix_engine_interface::blueprints::identity::{IdentityCreateAdvancedInput, IDENTITY_BLUEPRINT, IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT, IdentityCreateInput};
 use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey::{Burn, Mint};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{
@@ -376,7 +374,7 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn create_identity(&mut self, access_rule: AccessRule) -> &mut Self {
+    pub fn create_identity_advanced(&mut self, access_rule: AccessRule) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             package_address: IDENTITY_PACKAGE,
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
@@ -386,6 +384,18 @@ impl ManifestBuilder {
                 mutability: access_rule.clone(),
             })
             .unwrap(),
+        });
+        self
+    }
+
+    pub fn create_identity(&mut self) -> &mut Self {
+        self.add_instruction(Instruction::CallFunction {
+            package_address: IDENTITY_PACKAGE,
+            blueprint_name: IDENTITY_BLUEPRINT.to_string(),
+            function_name: IDENTITY_CREATE_IDENT.to_string(),
+            args: to_manifest_value(&IdentityCreateInput {
+            })
+                .unwrap(),
         });
         self
     }

@@ -201,6 +201,9 @@ pub enum Instruction {
         rule_set: Value,
         timed_recovery_delay_in_minutes: Value,
     },
+
+    CreateIdentity {
+    },
     CreateIdentityAdvanced {
         access_rule: Value,
         mutability: Value,
