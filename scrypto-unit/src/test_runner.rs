@@ -564,10 +564,7 @@ impl TestRunner {
         }
     }
 
-    pub fn new_securified_identity(
-        &mut self,
-        account: ComponentAddress,
-    ) -> ComponentAddress {
+    pub fn new_securified_identity(&mut self, account: ComponentAddress) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 10.into())
             .create_identity()

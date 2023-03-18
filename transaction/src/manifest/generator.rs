@@ -14,7 +14,10 @@ use radix_engine_interface::blueprints::account::{
 use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerCreateValidatorInput, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT,
 };
-use radix_engine_interface::blueprints::identity::{IdentityCreateAdvancedInput, IDENTITY_BLUEPRINT, IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT, IdentityCreateInput};
+use radix_engine_interface::blueprints::identity::{
+    IdentityCreateAdvancedInput, IdentityCreateInput, IDENTITY_BLUEPRINT,
+    IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
+};
 use radix_engine_interface::blueprints::resource::{
     AccessRule, FungibleResourceManagerCreateInput,
     FungibleResourceManagerCreateWithInitialSupplyInput, NonFungibleResourceManagerCreateInput,
@@ -614,8 +617,7 @@ pub fn generate_instruction(
         ast::Instruction::AssertAccessRule { access_rule } => Instruction::AssertAccessRule {
             access_rule: generate_typed_value(access_rule, resolver, bech32_decoder, blobs)?,
         },
-        ast::Instruction::CreateIdentity {
-        } => Instruction::CallFunction {
+        ast::Instruction::CreateIdentity {} => Instruction::CallFunction {
             package_address: IDENTITY_PACKAGE,
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
             function_name: IDENTITY_CREATE_IDENT.to_string(),
@@ -1447,7 +1449,7 @@ mod tests {
     #[test]
     fn test_publish_instruction() {
         generate_instruction_ok!(
-            r#"PUBLISH_PACKAGE Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Blob("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791") Map<String, Tuple>() Map<String, String>() Tuple(Map<Tuple, Enum>(), Map<String, Enum>(), Enum("AccessRule::DenyAll"), Map<Tuple, Enum>(), Map<String, Enum>(), Enum("AccessRule::DenyAll"));"#,
+            r#"PUBLISH_PACKAGE Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Blob("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791") Map<String, Tuple>() Map<String, String>() Tuple(Map<Tuple, Enum>(), Map<String, Enum>(), Enum("AccessRuleEntry::AccessRule", Enum("AccessRule::DenyAll")), Map<Tuple, Enum>(), Map<String, Enum>(), Enum("AccessRule::DenyAll"));"#,
             Instruction::PublishPackage {
                 code: ManifestBlobRef(
                     hex::decode("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0")

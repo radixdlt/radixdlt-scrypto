@@ -1,15 +1,15 @@
-use crate::errors::RuntimeError;
 use crate::errors::InterpreterError;
+use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver};
 
+use crate::blueprints::account::{AccountBlueprint, AccountSubstate};
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::blueprints::identity::{VirtualLazyLoadInput, VirtualLazyLoadOutput};
-use crate::blueprints::account::{AccountBlueprint, AccountSubstate};
 
 //================
 // Account Create
@@ -335,7 +335,12 @@ impl AccountNativePackage {
                     RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                 })?;
 
-                let rtn = AccountBlueprint::withdraw(receiver, input.resource_address, input.amount, api)?;
+                let rtn = AccountBlueprint::withdraw(
+                    receiver,
+                    input.resource_address,
+                    input.amount,
+                    api,
+                )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT => {
@@ -348,8 +353,12 @@ impl AccountNativePackage {
                 let input: AccountWithdrawNonFungiblesInput = input.as_typed().map_err(|e| {
                     RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                 })?;
-                let rtn =
-                    AccountBlueprint::withdraw_non_fungibles(receiver, input.resource_address, input.ids, api)?;
+                let rtn = AccountBlueprint::withdraw_non_fungibles(
+                    receiver,
+                    input.resource_address,
+                    input.ids,
+                    api,
+                )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT => {
@@ -427,8 +436,12 @@ impl AccountNativePackage {
                 let input: AccountCreateProofByIdsInput = input.as_typed().map_err(|e| {
                     RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                 })?;
-                let rtn =
-                    AccountBlueprint::create_proof_by_ids(receiver, input.resource_address, input.ids, api)?;
+                let rtn = AccountBlueprint::create_proof_by_ids(
+                    receiver,
+                    input.resource_address,
+                    input.ids,
+                    api,
+                )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             _ => Err(RuntimeError::InterpreterError(
@@ -436,5 +449,4 @@ impl AccountNativePackage {
             )),
         }
     }
-
 }

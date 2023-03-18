@@ -194,7 +194,7 @@ impl AuthModule {
                                         || method_key.ident.eq(VAULT_RECALL_NON_FUNGIBLES_IDENT))
                                 {
                                     let access_rule = substate.access_rules.get_group("recall");
-                                    let authorization = convert_contextless(access_rule);
+                                    let authorization = convert_contextless(&access_rule);
                                     authorization
                                 } else {
                                     return Err(RuntimeError::ModuleError(ModuleError::AuthError(
@@ -312,7 +312,7 @@ impl AuthModule {
         let access_rules: &MethodAccessRulesSubstate = api.kernel_get_substate_ref(handle)?;
 
         let method_auth = access_rules.access_rules.get(&key);
-        let authorization = convert(&blueprint_schema.schema, index, &state, method_auth);
+        let authorization = convert(&blueprint_schema.schema, index, &state, &method_auth);
 
         api.kernel_drop_lock(handle)?;
 
@@ -336,7 +336,7 @@ impl AuthModule {
         let method_auth = access_rules.access_rules.get(&key);
 
         // TODO: Remove
-        let authorization = convert_contextless(method_auth);
+        let authorization = convert_contextless(&method_auth);
 
         api.kernel_drop_lock(handle)?;
 

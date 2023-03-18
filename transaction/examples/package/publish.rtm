@@ -90,7 +90,10 @@ PUBLISH_PACKAGE
             )
         ), 
         Map<String, Enum>(),     # Grouped Auth Field
-        Enum("AccessRule::DenyAll"),         # Default Auth Field
+        Enum(
+            "AccessRuleEntry::AccessRule",
+            Enum("AccessRule::DenyAll")         # Default Auth Field
+        ),
         Map<Tuple, Enum>(         # Method Auth Mutability Field
             Tuple(
                 Enum("NodeModuleId::PackageRoyalty"),

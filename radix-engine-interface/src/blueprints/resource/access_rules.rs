@@ -62,7 +62,7 @@ impl From<String> for AccessRuleEntry {
 pub struct AccessRulesConfig {
     method_auth: BTreeMap<MethodKey, AccessRuleEntry>,
     grouped_auth: BTreeMap<String, AccessRule>,
-    default_auth: AccessRule,
+    default_auth: AccessRuleEntry,
     method_auth_mutability: BTreeMap<MethodKey, AccessRule>,
     grouped_auth_mutability: BTreeMap<String, AccessRule>,
     default_auth_mutability: AccessRule,
@@ -73,7 +73,7 @@ impl AccessRulesConfig {
         Self {
             method_auth: BTreeMap::new(),
             grouped_auth: BTreeMap::new(),
-            default_auth: AccessRule::DenyAll,
+            default_auth: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
             method_auth_mutability: BTreeMap::new(),
             grouped_auth_mutability: BTreeMap::new(),
             default_auth_mutability: AccessRule::DenyAll,
@@ -97,17 +97,17 @@ impl AccessRulesConfig {
     }
 
     // TODO: Move into scrypto repo as a builder
-    pub fn default<R: Into<AccessRule>>(
+    pub fn default<A: Into<AccessRuleEntry>, R: Into<AccessRule>>(
         mut self,
-        default_auth: AccessRule,
+        default_auth: A,
         default_auth_mutability: R,
     ) -> Self {
-        self.default_auth = default_auth;
+        self.default_auth = default_auth.into();
         self.default_auth_mutability = default_auth_mutability.into();
         self
     }
 
-    pub fn set_default_auth(&mut self, default_auth: AccessRule) {
+    pub fn set_default_auth(&mut self, default_auth: AccessRuleEntry) {
         self.default_auth = default_auth;
     }
 
@@ -135,20 +135,29 @@ impl AccessRulesConfig {
         self.grouped_auth_mutability.insert(key, method_auth);
     }
 
-    pub fn get(&self, key: &MethodKey) -> &AccessRule {
+    pub fn get(&self, key: &MethodKey) -> AccessRule {
         match self.method_auth.get(key) {
-            None => &self.default_auth,
-            Some(AccessRuleEntry::AccessRule(access_rule)) => access_rule,
+            None => self.get_default(),
+            Some(AccessRuleEntry::AccessRule(access_rule)) => access_rule.clone(),
             Some(AccessRuleEntry::Group(group_key)) => self.get_group(group_key),
         }
     }
 
-    pub fn get_group(&self, key: &str) -> &AccessRule {
-        self.grouped_auth.get(key).unwrap_or(&self.default_auth)
+    pub fn get_group(&self, key: &str) -> AccessRule {
+        self.grouped_auth
+            .get(key)
+            .cloned()
+            .unwrap_or_else(|| self.get_default())
     }
 
-    pub fn get_default(&self) -> &AccessRule {
-        &self.default_auth
+    fn get_default(&self) -> AccessRule {
+        match &self.default_auth {
+            AccessRuleEntry::AccessRule(access_rule) => access_rule.clone(),
+            AccessRuleEntry::Group(name) => match self.grouped_auth.get(name) {
+                Some(access_rule) => access_rule.clone(),
+                None => AccessRule::DenyAll,
+            },
+        }
     }
 
     pub fn set_method_access_rule<E: Into<AccessRuleEntry>>(
@@ -208,10 +217,6 @@ impl AccessRulesConfig {
         &self.grouped_auth
     }
 
-    pub fn get_default_auth(&self) -> &AccessRule {
-        &self.default_auth
-    }
-
     pub fn get_all_method_auth_mutability(&self) -> &BTreeMap<MethodKey, AccessRule> {
         &self.method_auth_mutability
     }
@@ -228,8 +233,10 @@ impl AccessRulesConfig {
 pub fn package_access_rules_from_owner_badge(
     owner_badge: &NonFungibleGlobalId,
 ) -> AccessRulesConfig {
-    let mut access_rules =
-        AccessRulesConfig::new().default(AccessRule::DenyAll, AccessRule::DenyAll);
+    let mut access_rules = AccessRulesConfig::new().default(
+        AccessRuleEntry::AccessRule(AccessRule::DenyAll),
+        AccessRule::DenyAll,
+    );
     access_rules.set_access_rule_and_mutability(
         MethodKey::new(NodeModuleId::Metadata, METADATA_GET_IDENT.to_string()),
         AccessRule::AllowAll,

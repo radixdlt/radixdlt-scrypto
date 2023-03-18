@@ -217,7 +217,7 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
 }
 
 #[test]
-fn user_can_not_mutate_auth_on_methods_that_control_auth() {
+fn user_cannot_mutate_auth_on_methods_that_control_auth() {
     // Arrange
     for access_rule_key in [
         MethodKey::new(
@@ -245,7 +245,7 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
         let access_rules: AccessRulesConfig = manifest_args!(
             HashMap::<MethodKey, AccessRuleEntry>::new(),
             HashMap::<String, AccessRule>::new(),
-            AccessRule::AllowAll,
+            AccessRuleEntry::AccessRule(AccessRule::AllowAll),
             HashMap::<MethodKey, AccessRule>::new(),
             HashMap::<String, AccessRule>::new(),
             AccessRule::AllowAll
