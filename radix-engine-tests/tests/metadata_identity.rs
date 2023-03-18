@@ -81,4 +81,3 @@ fn cannot_set_virtual_identity_metadata_without_owner() {
 fn cannot_set_allocated_identity_metadata_without_owner() {
     cannot_set_identity_metadata_without_owner(false);
 }
-

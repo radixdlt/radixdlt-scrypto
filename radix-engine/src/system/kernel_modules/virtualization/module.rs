@@ -8,8 +8,8 @@ use radix_engine_interface::blueprints::account::{
     ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_IDENT,
 };
 use radix_engine_interface::blueprints::identity::{
-    VirtualLazyLoadInput, IDENTITY_BLUEPRINT, IDENTITY_CREATE_VIRTUAL_ECDSA_IDENT,
-    IDENTITY_CREATE_VIRTUAL_EDDSA_IDENT,
+    VirtualLazyLoadInput, IDENTITY_BLUEPRINT, IDENTITY_CREATE_VIRTUAL_ECDSA_256K1_IDENT,
+    IDENTITY_CREATE_VIRTUAL_EDDSA_25519_IDENT,
 };
 
 #[derive(Debug, Clone)]
@@ -42,13 +42,13 @@ impl KernelModule for VirtualizationModule {
                     ComponentAddress::EcdsaSecp256k1VirtualIdentity(id) => (
                         IDENTITY_PACKAGE,
                         IDENTITY_BLUEPRINT,
-                        IDENTITY_CREATE_VIRTUAL_ECDSA_IDENT,
+                        IDENTITY_CREATE_VIRTUAL_ECDSA_256K1_IDENT,
                         id,
                     ),
                     ComponentAddress::EddsaEd25519VirtualIdentity(id) => (
                         IDENTITY_PACKAGE,
                         IDENTITY_BLUEPRINT,
-                        IDENTITY_CREATE_VIRTUAL_EDDSA_IDENT,
+                        IDENTITY_CREATE_VIRTUAL_EDDSA_25519_IDENT,
                         id,
                     ),
                     _ => return Ok(false),

@@ -10,7 +10,7 @@ use radix_engine_interface::blueprints::epoch_manager::{
     VALIDATOR_UNREGISTER_IDENT, VALIDATOR_UNSTAKE_IDENT,
 };
 use radix_engine_interface::blueprints::identity::{
-    IdentityCreateInput, IDENTITY_BLUEPRINT, IDENTITY_CREATE_IDENT,
+    IdentityCreateAdvancedInput, IDENTITY_BLUEPRINT, IDENTITY_CREATE_ADVANCED_IDENT,
 };
 use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey::{Burn, Mint};
 use radix_engine_interface::blueprints::resource::*;
@@ -380,8 +380,12 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallFunction {
             package_address: IDENTITY_PACKAGE,
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
-            function_name: IDENTITY_CREATE_IDENT.to_string(),
-            args: to_manifest_value(&IdentityCreateInput { access_rule }).unwrap(),
+            function_name: IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
+            args: to_manifest_value(&IdentityCreateAdvancedInput {
+                access_rule: access_rule.clone(),
+                mutability: access_rule.clone(),
+            })
+            .unwrap(),
         });
         self
     }

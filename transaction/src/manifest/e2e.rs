@@ -545,6 +545,7 @@ CREATE_ACCOUNT
             vec![],
             r##"
 CREATE_IDENTITY
+    Enum(0u8)
     Enum(0u8);
 "##,
         );

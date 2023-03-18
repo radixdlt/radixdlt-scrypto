@@ -1,3 +1,4 @@
+
 use crate::data::*;
 use crate::errors::*;
 use crate::manifest::ast;
@@ -15,7 +16,7 @@ use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerCreateValidatorInput, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT,
 };
 use radix_engine_interface::blueprints::identity::{
-    IdentityCreateInput, IDENTITY_BLUEPRINT, IDENTITY_CREATE_IDENT,
+    IdentityCreateAdvancedInput, IDENTITY_BLUEPRINT, IDENTITY_CREATE_ADVANCED_IDENT,
 };
 use radix_engine_interface::blueprints::resource::{
     AccessRule, FungibleResourceManagerCreateInput,
@@ -616,13 +617,22 @@ pub fn generate_instruction(
         ast::Instruction::AssertAccessRule { access_rule } => Instruction::AssertAccessRule {
             access_rule: generate_typed_value(access_rule, resolver, bech32_decoder, blobs)?,
         },
-        ast::Instruction::CreateIdentity { access_rule } => Instruction::CallFunction {
+        ast::Instruction::CreateIdentityAdvanced {
+            access_rule,
+            mutability,
+        } => Instruction::CallFunction {
             package_address: IDENTITY_PACKAGE,
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
-            function_name: IDENTITY_CREATE_IDENT.to_string(),
-            args: to_manifest_value(&IdentityCreateInput {
+            function_name: IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
+            args: to_manifest_value(&IdentityCreateAdvancedInput {
                 access_rule: generate_typed_value::<AccessRule>(
                     access_rule,
+                    resolver,
+                    bech32_decoder,
+                    blobs,
+                )?,
+                mutability: generate_typed_value::<AccessRule>(
+                    mutability,
                     resolver,
                     bech32_decoder,
                     blobs,

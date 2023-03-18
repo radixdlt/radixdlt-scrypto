@@ -252,8 +252,9 @@ impl Parser {
                 rule_set: self.parse_value()?,
                 timed_recovery_delay_in_minutes: self.parse_value()?,
             },
-            TokenKind::CreateIdentity => Instruction::CreateIdentity {
+            TokenKind::CreateIdentity => Instruction::CreateIdentityAdvanced {
                 access_rule: self.parse_value()?,
+                mutability: self.parse_value()?,
             },
             TokenKind::AssertAccessRule => Instruction::AssertAccessRule {
                 access_rule: self.parse_value()?,

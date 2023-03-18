@@ -334,7 +334,7 @@ pub fn create_genesis(
                 access_rules,
                 resource_address,
             })
-                .unwrap(),
+            .unwrap(),
         });
 
         pre_allocated_ids.insert(RENodeId::GlobalObject(IDENTITY_PACKAGE.into()));

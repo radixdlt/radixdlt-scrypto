@@ -3,7 +3,9 @@ use radix_engine::system::kernel_modules::auth::AuthError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
 use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
-use radix_engine_interface::blueprints::identity::{IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT, IdentitySecurifyToSingleBadgeInput};
+use radix_engine_interface::blueprints::identity::{
+    IdentitySecurifyToSingleBadgeInput, IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT,
+};
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -23,14 +25,16 @@ fn cannot_securify_in_advanced_mode() {
             component_address,
             method_name: IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT.to_string(),
             args: to_manifest_value(&IdentitySecurifyToSingleBadgeInput {}).unwrap(),
-        }).0
+        })
+        .0
         .call_method(
             account,
             ACCOUNT_DEPOSIT_BATCH_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -55,14 +59,16 @@ fn can_securify_from_virtual_identity() {
             component_address,
             method_name: IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT.to_string(),
             args: to_manifest_value(&IdentitySecurifyToSingleBadgeInput {}).unwrap(),
-        }).0
+        })
+        .0
         .call_method(
             account,
             ACCOUNT_DEPOSIT_BATCH_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
 
     // Assert
     receipt.expect_commit_success();
@@ -80,14 +86,16 @@ fn cannot_securify_twice() {
             component_address,
             method_name: IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT.to_string(),
             args: to_manifest_value(&IdentitySecurifyToSingleBadgeInput {}).unwrap(),
-        }).0
+        })
+        .0
         .call_method(
             account,
             ACCOUNT_DEPOSIT_BATCH_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
     receipt.expect_commit_success();
 
     // Act
@@ -97,14 +105,16 @@ fn cannot_securify_twice() {
             component_address,
             method_name: IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT.to_string(),
             args: to_manifest_value(&IdentitySecurifyToSingleBadgeInput {}).unwrap(),
-        }).0
+        })
+        .0
         .call_method(
             account,
             ACCOUNT_DEPOSIT_BATCH_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -127,14 +137,16 @@ fn can_set_metadata_after_securify() {
             component_address: identity_address,
             method_name: IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT.to_string(),
             args: to_manifest_value(&IdentitySecurifyToSingleBadgeInput {}).unwrap(),
-        }).0
+        })
+        .0
         .call_method(
             account,
             ACCOUNT_DEPOSIT_BATCH_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
     receipt.expect_commit_success();
 
     // Act
@@ -147,7 +159,8 @@ fn can_set_metadata_after_securify() {
             MetadataEntry::Value(MetadataValue::String("best package ever!".to_string())),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
 
     // Assert
     receipt.expect_commit_success();
