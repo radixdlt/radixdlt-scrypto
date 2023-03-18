@@ -159,9 +159,10 @@ impl IdentityNativePackage {
     }
 }
 
-enum IdentityInit {
+enum AccessRuleState {
     Advanced(AccessRule, AccessRule),
-    SingleOwner(AccessRule),
+    PreSecurifiedSingleOwner(NonFungibleGlobalId),
+    SecurifiedSingleOwner(NonFungibleLocalId),
 }
 
 pub struct IdentityBlueprint;
@@ -176,7 +177,7 @@ impl IdentityBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let (object, modules) =
-            Self::create_object(IdentityInit::Advanced(access_rule, mutability), api)?;
+            Self::create_object(AccessRuleState::Advanced(access_rule, mutability), api)?;
         let modules = modules
             .into_iter()
             .map(|(id, own)| (id, own.id()))
@@ -196,9 +197,8 @@ impl IdentityBlueprint {
             ECDSA_SECP256K1_TOKEN,
             NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
         );
-        let access_rule = rule!(require(non_fungible_global_id));
 
-        Self::create_object(IdentityInit::SingleOwner(access_rule), api)
+        Self::create_object(AccessRuleState::PreSecurifiedSingleOwner(non_fungible_global_id), api)
     }
 
     pub fn create_eddsa_virtual<Y>(
@@ -212,65 +212,25 @@ impl IdentityBlueprint {
             EDDSA_ED25519_TOKEN,
             NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
         );
-        let access_rule = rule!(require(non_fungible_global_id));
 
-        Self::create_object(IdentityInit::SingleOwner(access_rule), api)
+        Self::create_object(AccessRuleState::PreSecurifiedSingleOwner(non_fungible_global_id), api)
     }
 
     fn create_object<Y>(
-        init: IdentityInit,
+        init: AccessRuleState,
         api: &mut Y,
     ) -> Result<(Own, BTreeMap<NodeModuleId, Own>), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         let mut access_rules = AccessRulesConfig::new();
-
-        match init {
-            IdentityInit::Advanced(access_rule, mutability_rule) => {
-                access_rules.set_access_rule_and_mutability(
-                    MethodKey::new(
-                        NodeModuleId::SELF,
-                        IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT.to_string(),
-                    ),
-                    AccessRule::DenyAll,
-                    AccessRule::DenyAll,
-                );
-                access_rules.set_group_access_rule_and_mutability(
-                    OWNER_GROUP_NAME.to_string(),
-                    access_rule,
-                    mutability_rule,
-                );
-            }
-            IdentityInit::SingleOwner(access_rule) => {
-                let non_fungible_global_id = NonFungibleGlobalId::new(
-                    PACKAGE_TOKEN,
-                    NonFungibleLocalId::bytes(scrypto_encode(&IDENTITY_PACKAGE).unwrap()).unwrap(),
-                );
-                let this_package_rule = rule!(require(non_fungible_global_id));
-
-                access_rules.set_access_rule_and_mutability(
-                    MethodKey::new(
-                        NodeModuleId::SELF,
-                        IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT.to_string(),
-                    ),
-                    access_rule.clone(),
-                    this_package_rule.clone(),
-                );
-                access_rules.set_group_access_rule_and_mutability(
-                    OWNER_GROUP_NAME.to_string(),
-                    access_rule,
-                    this_package_rule,
-                );
-            }
-        };
-
         access_rules.set_method_access_rule_to_group(
             MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
             OWNER_GROUP_NAME.to_string(),
         );
-
         let access_rules = AccessRules::sys_new(access_rules, api)?;
+
+        Self::update_access_rules(&access_rules, init, api)?;
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
 
@@ -291,22 +251,74 @@ impl IdentityBlueprint {
     {
         let owner_token = ResourceManager(IDENTITY_OWNER_TOKEN);
         let (bucket, local_id) = owner_token.mint_non_fungible_single_uuid((), api)?;
-        let global_id = NonFungibleGlobalId::new(IDENTITY_OWNER_TOKEN, local_id);
 
         let attached_access_rules = AttachedAccessRules(receiver);
-        attached_access_rules.set_group_access_rule_and_mutability(
-            OWNER_GROUP_NAME,
-            rule!(require(global_id)),
-            AccessRule::DenyAll,
-            api,
-        )?;
-        attached_access_rules.set_method_access_rule_and_mutability(
-            MethodKey::new(NodeModuleId::SELF, IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT.to_string()),
-            AccessRuleEntry::AccessRule(AccessRule::DenyAll),
-            AccessRule::DenyAll,
-            api,
-        )?;
+        Self::update_access_rules(&attached_access_rules, AccessRuleState::SecurifiedSingleOwner(local_id), api)?;
 
         Ok(bucket)
     }
+
+    fn update_access_rules<A: AccessRulesObject, Y: ClientApi<RuntimeError>>(access_rules: &A, to_state: AccessRuleState, api: &mut Y) -> Result<(), RuntimeError> {
+        match to_state {
+            AccessRuleState::Advanced(access_rule, mutability) => {
+                access_rules.set_method_access_rule_and_mutability(
+                    MethodKey::new(
+                        NodeModuleId::SELF,
+                        IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT.to_string(),
+                    ),
+                    AccessRuleEntry::AccessRule(AccessRule::DenyAll),
+                    AccessRule::DenyAll,
+                    api,
+                )?;
+                access_rules.set_group_access_rule_and_mutability(
+                    OWNER_GROUP_NAME,
+                    access_rule,
+                    mutability,
+                    api,
+                )?;
+            }
+            AccessRuleState::PreSecurifiedSingleOwner(owner_id) => {
+                let package_id = NonFungibleGlobalId::new(
+                    PACKAGE_TOKEN,
+                    NonFungibleLocalId::bytes(scrypto_encode(&IDENTITY_PACKAGE).unwrap()).unwrap(),
+                );
+                let this_package_rule = rule!(require(package_id));
+
+                let access_rule = rule!(require(owner_id));
+                access_rules.set_method_access_rule_and_mutability(
+                    MethodKey::new(
+                        NodeModuleId::SELF,
+                        IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT.to_string(),
+                    ),
+                    AccessRuleEntry::AccessRule(access_rule.clone()),
+                    this_package_rule.clone(),
+                    api,
+                )?;
+                access_rules.set_group_access_rule_and_mutability(
+                    OWNER_GROUP_NAME,
+                    access_rule,
+                    this_package_rule,
+                    api,
+                )?;
+            }
+            AccessRuleState::SecurifiedSingleOwner(owner_local_id) => {
+                let global_id = NonFungibleGlobalId::new(IDENTITY_OWNER_TOKEN, owner_local_id);
+                access_rules.set_group_access_rule_and_mutability(
+                    OWNER_GROUP_NAME,
+                    rule!(require(global_id)),
+                    AccessRule::DenyAll,
+                    api,
+                )?;
+                access_rules.set_method_access_rule_and_mutability(
+                    MethodKey::new(NodeModuleId::SELF, IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT.to_string()),
+                    AccessRuleEntry::AccessRule(AccessRule::DenyAll),
+                    AccessRule::DenyAll,
+                    api,
+                )?;
+            }
+        }
+
+        Ok(())
+    }
+
 }
