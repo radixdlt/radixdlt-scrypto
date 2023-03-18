@@ -187,6 +187,7 @@ pub struct IdentityOwnerAccessRules;
 
 impl SecurifiedAccessRules for IdentityOwnerAccessRules {
     const OWNER_GROUP_NAME: &'static str = OWNER_GROUP_NAME;
+    const PUBLIC_METHODS: &'static [&'static str] = &[];
     const SECURIFY_IDENT: &'static str = IDENTITY_SECURIFY_IDENT;
     const PACKAGE: PackageAddress = IDENTITY_PACKAGE;
     const OWNER_TOKEN: ResourceAddress = IDENTITY_OWNER_TOKEN;
@@ -213,13 +214,7 @@ impl IdentityBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let access_rules = Self::init_access_rules(api)?;
-        IdentityOwnerAccessRules::advanced(
-            access_rule,
-            mutability,
-            &access_rules,
-            api,
-        )?;
+        let access_rules = IdentityOwnerAccessRules::create_advanced(access_rule, mutability, api)?;
 
         let (object, modules) =
             Self::create_object(access_rules, api)?;

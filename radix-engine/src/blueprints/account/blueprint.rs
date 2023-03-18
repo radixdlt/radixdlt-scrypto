@@ -41,6 +41,7 @@ pub struct AccountSecurify;
 
 impl SecurifiedAccessRules for AccountSecurify {
     const OWNER_GROUP_NAME: &'static str = OWNER_GROUP_NAME;
+    const PUBLIC_METHODS: &'static [&'static str] = &[ACCOUNT_DEPOSIT_IDENT, ACCOUNT_DEPOSIT_BATCH_IDENT];
     const SECURIFY_IDENT: &'static str = "Securify";
     const PACKAGE: PackageAddress = ACCOUNT_PACKAGE;
     const OWNER_TOKEN: ResourceAddress = IDENTITY_OWNER_TOKEN;
@@ -131,8 +132,7 @@ impl AccountBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let account = Self::create_local(api)?;
-        let access_rules = Self::init_access_rules(api)?;
-        AccountSecurify::advanced(withdraw_rule.clone(), withdraw_rule, &access_rules, api)?;
+        let access_rules = AccountSecurify::create_advanced(withdraw_rule.clone(), withdraw_rule, api)?;
         let modules = Self::create_modules(access_rules, api)?;
         let modules = modules
             .into_iter()
