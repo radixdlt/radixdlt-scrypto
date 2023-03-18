@@ -1,7 +1,14 @@
-use radix_engine_interface::api::node_modules::auth::{AccessRulesCreateInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT, ACCESS_RULES_SET_GROUP_ACCESS_RULE_AND_MUTABILITY_IDENT, AccessRulesSetGroupAccessRuleAndMutabilityInput, ACCESS_RULES_SET_METHOD_ACCESS_RULE_AND_MUTABILITY_IDENT, AccessRulesSetMethodAccessRuleAndMutabilityInput};
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::node_modules::auth::{
+    AccessRulesCreateInput, AccessRulesSetGroupAccessRuleAndMutabilityInput,
+    AccessRulesSetMethodAccessRuleAndMutabilityInput, ACCESS_RULES_BLUEPRINT,
+    ACCESS_RULES_CREATE_IDENT, ACCESS_RULES_SET_GROUP_ACCESS_RULE_AND_MUTABILITY_IDENT,
+    ACCESS_RULES_SET_METHOD_ACCESS_RULE_AND_MUTABILITY_IDENT,
+};
 use radix_engine_interface::api::types::{NodeModuleId, RENodeId};
-use radix_engine_interface::blueprints::resource::{AccessRule, AccessRuleEntry, AccessRulesConfig, MethodKey};
+use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::blueprints::resource::{
+    AccessRule, AccessRuleEntry, AccessRulesConfig, MethodKey,
+};
 use radix_engine_interface::constants::ACCESS_RULES_PACKAGE;
 use radix_engine_interface::data::scrypto::model::Own;
 use radix_engine_interface::data::scrypto::*;
@@ -36,7 +43,6 @@ impl AccessRulesObject for AccessRules {
     }
 }
 
-
 pub struct AttachedAccessRules(pub RENodeId);
 
 impl AccessRulesObject for AttachedAccessRules {
@@ -65,7 +71,7 @@ pub trait AccessRulesObject {
                 rule,
                 mutability,
             })
-                .unwrap(),
+            .unwrap(),
         )?;
 
         Ok(())
@@ -88,7 +94,7 @@ pub trait AccessRulesObject {
                 rule,
                 mutability,
             })
-                .unwrap(),
+            .unwrap(),
         )?;
 
         Ok(())

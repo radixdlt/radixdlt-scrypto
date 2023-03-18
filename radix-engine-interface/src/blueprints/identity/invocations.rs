@@ -15,7 +15,14 @@ pub struct IdentityCreateAdvancedInput {
     pub mutability: AccessRule,
 }
 
-pub type IdentityCreateOutput = ComponentAddress;
+pub type IdentityCreateAdvancedOutput = ComponentAddress;
+
+pub const IDENTITY_CREATE_IDENT: &str = "create";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct IdentityCreateInput {}
+
+pub type IdentityCreateOutput = (ComponentAddress, Bucket);
 
 pub const IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT: &str = "securify_to_single_badge";
 

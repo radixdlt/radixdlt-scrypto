@@ -31,8 +31,17 @@ impl IdentityNativePackage {
             FunctionSchema {
                 receiver: None,
                 input: aggregator.add_child_type_and_descendents::<IdentityCreateAdvancedInput>(),
-                output: aggregator.add_child_type_and_descendents::<IdentityCreateOutput>(),
+                output: aggregator.add_child_type_and_descendents::<IdentityCreateAdvancedOutput>(),
                 export_name: IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            IDENTITY_CREATE_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<IdentityCreateInput>(),
+                output: aggregator.add_child_type_and_descendents::<IdentityCreateOutput>(),
+                export_name: IDENTITY_CREATE_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -103,6 +112,22 @@ impl IdentityNativePackage {
 
                 let rtn =
                     IdentityBlueprint::create_advanced(input.access_rule, input.mutability, api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            IDENTITY_CREATE_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                if receiver.is_some() {
+                    return Err(RuntimeError::InterpreterError(
+                        InterpreterError::NativeUnexpectedReceiver(export_name.to_string()),
+                    ));
+                }
+                let _input: IdentityCreateInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+
+                let rtn = IdentityBlueprint::create(api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -186,6 +211,23 @@ impl IdentityBlueprint {
         Ok(address)
     }
 
+    pub fn create<Y>(api: &mut Y) -> Result<(Address, Bucket), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let owner_token = ResourceManager(IDENTITY_OWNER_TOKEN);
+        let (bucket, local_id) = owner_token.mint_non_fungible_single_uuid((), api)?;
+
+        let (object, modules) =
+            Self::create_object(AccessRuleState::SecurifiedSingleOwner(local_id), api)?;
+        let modules = modules
+            .into_iter()
+            .map(|(id, own)| (id, own.id()))
+            .collect();
+        let address = api.globalize(RENodeId::Object(object.id()), modules)?;
+        Ok((address, bucket))
+    }
+
     pub fn create_ecdsa_virtual<Y>(
         id: [u8; 26],
         api: &mut Y,
@@ -198,7 +240,10 @@ impl IdentityBlueprint {
             NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
         );
 
-        Self::create_object(AccessRuleState::PreSecurifiedSingleOwner(non_fungible_global_id), api)
+        Self::create_object(
+            AccessRuleState::PreSecurifiedSingleOwner(non_fungible_global_id),
+            api,
+        )
     }
 
     pub fn create_eddsa_virtual<Y>(
@@ -213,7 +258,10 @@ impl IdentityBlueprint {
             NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
         );
 
-        Self::create_object(AccessRuleState::PreSecurifiedSingleOwner(non_fungible_global_id), api)
+        Self::create_object(
+            AccessRuleState::PreSecurifiedSingleOwner(non_fungible_global_id),
+            api,
+        )
     }
 
     fn create_object<Y>(
@@ -253,12 +301,20 @@ impl IdentityBlueprint {
         let (bucket, local_id) = owner_token.mint_non_fungible_single_uuid((), api)?;
 
         let attached_access_rules = AttachedAccessRules(receiver);
-        Self::update_access_rules(&attached_access_rules, AccessRuleState::SecurifiedSingleOwner(local_id), api)?;
+        Self::update_access_rules(
+            &attached_access_rules,
+            AccessRuleState::SecurifiedSingleOwner(local_id),
+            api,
+        )?;
 
         Ok(bucket)
     }
 
-    fn update_access_rules<A: AccessRulesObject, Y: ClientApi<RuntimeError>>(access_rules: &A, to_state: AccessRuleState, api: &mut Y) -> Result<(), RuntimeError> {
+    fn update_access_rules<A: AccessRulesObject, Y: ClientApi<RuntimeError>>(
+        access_rules: &A,
+        to_state: AccessRuleState,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         match to_state {
             AccessRuleState::Advanced(access_rule, mutability) => {
                 access_rules.set_method_access_rule_and_mutability(
@@ -302,16 +358,19 @@ impl IdentityBlueprint {
                 )?;
             }
             AccessRuleState::SecurifiedSingleOwner(owner_local_id) => {
+                access_rules.set_method_access_rule_and_mutability(
+                    MethodKey::new(
+                        NodeModuleId::SELF,
+                        IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT.to_string(),
+                    ),
+                    AccessRuleEntry::AccessRule(AccessRule::DenyAll),
+                    AccessRule::DenyAll,
+                    api,
+                )?;
                 let global_id = NonFungibleGlobalId::new(IDENTITY_OWNER_TOKEN, owner_local_id);
                 access_rules.set_group_access_rule_and_mutability(
                     OWNER_GROUP_NAME,
                     rule!(require(global_id)),
-                    AccessRule::DenyAll,
-                    api,
-                )?;
-                access_rules.set_method_access_rule_and_mutability(
-                    MethodKey::new(NodeModuleId::SELF, IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT.to_string()),
-                    AccessRuleEntry::AccessRule(AccessRule::DenyAll),
                     AccessRule::DenyAll,
                     api,
                 )?;
@@ -320,5 +379,4 @@ impl IdentityBlueprint {
 
         Ok(())
     }
-
 }
