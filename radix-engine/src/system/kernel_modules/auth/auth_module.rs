@@ -117,13 +117,18 @@ impl AuthModule {
                             *node_id, *module_id, args, api,
                         )?
                     }
+                    ACCESS_RULES_SET_GROUP_ACCESS_RULE_AND_MUTABILITY_IDENT => {
+                        AccessRulesNativePackage::get_authorization_for_set_group_access_rule_and_mutability(
+                            *node_id, *module_id, args, api,
+                        )?
+                    }
                     ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT => {
-                        AccessRulesNativePackage::set_group_access_rule_authorization(
+                        AccessRulesNativePackage::get_authorization_for_set_group_access_rule(
                             *node_id, *module_id, args, api,
                         )?
                     }
                     ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT => {
-                        AccessRulesNativePackage::set_group_mutability_authorization(
+                        AccessRulesNativePackage::get_authorization_for_set_group_mutability(
                             *node_id, *module_id, args, api,
                         )?
                     }
