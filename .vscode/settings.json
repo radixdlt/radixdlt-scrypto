@@ -3,9 +3,13 @@
         "Cargo.toml",
         "simulator/Cargo.toml",
     ],
-    "rust-analyzer.cargo.features": [
-        "serde",
-    ],
+    // > Enable the below temporarily to work on certain features in VS Code.
+    // > But note that this can cause problems: https://github.com/rust-lang/rust-analyzer/issues/10298#issuecomment-1474923721
+    // > In particular, dummy features might need adding to the simulator/Cargo.toml for rust-analyzer to start.
+    // > And with these features enabled, all "Run Test" commands in projects without this feature will break - so disable this after work.
+    // "rust-analyzer.cargo.features": [
+    //     "serde",
+    // ],
     "cSpell.words": [
         "bech",
         "bincode",

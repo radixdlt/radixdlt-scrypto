@@ -116,8 +116,8 @@ pub fn validate_enum_metadata(
 
                 if let Some(variant_name) = &variant_metadata.type_name {
                     validate_enum_variant_name(variant_name.as_ref())?;
-                    let is_duplicate = unique_variant_names.insert(variant_name);
-                    if is_duplicate {
+                    let is_not_duplicate = unique_variant_names.insert(variant_name);
+                    if !is_not_duplicate {
                         return Err(
                             SchemaValidationError::TypeMetadataContainedDuplicateEnumVariantNames,
                         );
