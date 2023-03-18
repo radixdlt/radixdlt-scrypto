@@ -9,12 +9,13 @@ use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::resource::AccessRulesConfig;
+use radix_engine_interface::blueprints::resource::{AccessRuleEntry, AccessRulesConfig};
 use radix_engine_interface::blueprints::resource::MethodKey;
-use radix_engine_interface::blueprints::resource::{require, AccessRule, Bucket, Proof};
+use radix_engine_interface::blueprints::resource::{AccessRule, Bucket, Proof};
 
 use native_sdk::resource::{SysBucket, Vault};
 use radix_engine_interface::blueprints::identity::VirtualLazyLoadOutput;
+use crate::blueprints::util::{AccessRuleState, SecurifiedAccessRules};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct AccountSubstate {
@@ -34,17 +35,32 @@ impl From<AccountError> for RuntimeError {
     }
 }
 
+pub const OWNER_GROUP_NAME: &str = "owner";
+
+pub struct AccountOwnerAccessRules;
+
+impl SecurifiedAccessRules for AccountOwnerAccessRules {
+    const OWNER_GROUP_NAME: &'static str = OWNER_GROUP_NAME;
+    const SECURIFY_IDENT: &'static str = "Securify";
+    const PACKAGE: PackageAddress = ACCOUNT_PACKAGE;
+    const OWNER_TOKEN: ResourceAddress = IDENTITY_OWNER_TOKEN;
+}
+
+
 pub struct AccountBlueprint;
 
 impl AccountBlueprint {
     fn create_modules<Y>(
-        access_rule: AccessRule,
+        to_state: AccessRuleState,
         api: &mut Y,
     ) -> Result<BTreeMap<NodeModuleId, Own>, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let mut access_rules = AccessRulesConfig::new();
+        let mut access_rules = AccessRulesConfig::new().default(
+            AccessRuleEntry::group(OWNER_GROUP_NAME),
+            AccessRuleEntry::group(OWNER_GROUP_NAME),
+        );
         access_rules.set_access_rule_and_mutability(
             MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_IDENT),
             AccessRule::AllowAll,
@@ -55,13 +71,15 @@ impl AccountBlueprint {
             AccessRule::AllowAll,
             AccessRule::DenyAll,
         );
-        access_rules = access_rules.default(access_rule.clone(), access_rule);
-        let access_rules = AccessRules::sys_new(access_rules, api)?.0;
+        let access_rules = AccessRules::sys_new(access_rules, api)?;
+
+        AccountOwnerAccessRules::update_access_rules(&access_rules, to_state, api)?;
+
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
 
         let modules = btreemap!(
-            NodeModuleId::AccessRules => access_rules,
+            NodeModuleId::AccessRules => access_rules.0,
             NodeModuleId::Metadata => metadata,
             NodeModuleId::ComponentRoyalty => royalty,
         );
@@ -81,8 +99,8 @@ impl AccountBlueprint {
             ECDSA_SECP256K1_TOKEN,
             NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
         );
-        let access_rule = rule!(require(non_fungible_global_id));
-        let modules = Self::create_modules(access_rule, api)?;
+        let access_rule_state = AccessRuleState::PreSecurifiedSingleOwner(non_fungible_global_id);
+        let modules = Self::create_modules(access_rule_state, api)?;
 
         Ok((account, modules))
     }
@@ -99,8 +117,8 @@ impl AccountBlueprint {
             EDDSA_ED25519_TOKEN,
             NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
         );
-        let access_rule = rule!(require(non_fungible_global_id));
-        let modules = Self::create_modules(access_rule, api)?;
+        let access_rule_state = AccessRuleState::PreSecurifiedSingleOwner(non_fungible_global_id);
+        let modules = Self::create_modules(access_rule_state, api)?;
 
         Ok((account, modules))
     }
@@ -110,7 +128,8 @@ impl AccountBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let account = Self::create_local(api)?;
-        let modules = Self::create_modules(withdraw_rule, api)?;
+        let access_rule_state = AccessRuleState::Advanced(withdraw_rule.clone(), withdraw_rule);
+        let modules = Self::create_modules(access_rule_state, api)?;
         let modules = modules
             .into_iter()
             .map(|(id, own)| (id, own.id()))

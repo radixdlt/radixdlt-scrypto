@@ -471,7 +471,7 @@ pub fn create_genesis(
                 native_package_code_id: ACCOUNT_CODE_ID,
                 metadata: BTreeMap::new(),
                 access_rules: AccessRulesConfig::new(),
-                dependent_resources: vec![ECDSA_SECP256K1_TOKEN, EDDSA_ED25519_TOKEN],
+                dependent_resources: vec![ECDSA_SECP256K1_TOKEN, EDDSA_ED25519_TOKEN, PACKAGE_TOKEN],
                 dependent_components: vec![],
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,

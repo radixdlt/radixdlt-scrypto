@@ -4,7 +4,7 @@ use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
 use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
 use radix_engine_interface::blueprints::identity::{
-    IdentitySecurifyToSingleBadgeInput, IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT,
+    IdentitySecurifyToSingleBadgeInput, IDENTITY_SECURIFY_IDENT,
 };
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
@@ -23,7 +23,7 @@ fn cannot_securify_in_advanced_mode() {
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .add_instruction(Instruction::CallMethod {
             component_address,
-            method_name: IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT.to_string(),
+            method_name: IDENTITY_SECURIFY_IDENT.to_string(),
             args: to_manifest_value(&IdentitySecurifyToSingleBadgeInput {}).unwrap(),
         })
         .0
@@ -57,7 +57,7 @@ fn can_securify_from_virtual_identity() {
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .add_instruction(Instruction::CallMethod {
             component_address,
-            method_name: IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT.to_string(),
+            method_name: IDENTITY_SECURIFY_IDENT.to_string(),
             args: to_manifest_value(&IdentitySecurifyToSingleBadgeInput {}).unwrap(),
         })
         .0
@@ -84,7 +84,7 @@ fn cannot_securify_twice() {
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .add_instruction(Instruction::CallMethod {
             component_address,
-            method_name: IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT.to_string(),
+            method_name: IDENTITY_SECURIFY_IDENT.to_string(),
             args: to_manifest_value(&IdentitySecurifyToSingleBadgeInput {}).unwrap(),
         })
         .0
@@ -103,7 +103,7 @@ fn cannot_securify_twice() {
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .add_instruction(Instruction::CallMethod {
             component_address,
-            method_name: IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT.to_string(),
+            method_name: IDENTITY_SECURIFY_IDENT.to_string(),
             args: to_manifest_value(&IdentitySecurifyToSingleBadgeInput {}).unwrap(),
         })
         .0
@@ -135,7 +135,7 @@ fn can_set_metadata_after_securify() {
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .add_instruction(Instruction::CallMethod {
             component_address: identity_address,
-            method_name: IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT.to_string(),
+            method_name: IDENTITY_SECURIFY_IDENT.to_string(),
             args: to_manifest_value(&IdentitySecurifyToSingleBadgeInput {}).unwrap(),
         })
         .0

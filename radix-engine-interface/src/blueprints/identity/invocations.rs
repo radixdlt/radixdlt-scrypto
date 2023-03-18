@@ -24,7 +24,7 @@ pub struct IdentityCreateInput {}
 
 pub type IdentityCreateOutput = (ComponentAddress, Bucket);
 
-pub const IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT: &str = "securify_to_single_badge";
+pub const IDENTITY_SECURIFY_IDENT: &str = "securify";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct IdentitySecurifyToSingleBadgeInput {}

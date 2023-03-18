@@ -13,7 +13,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::FunctionSchema;
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::schema::{BlueprintSchema, Receiver};
-use crate::blueprints::util::{AccessRuleState, OwnerAccessRules};
+use crate::blueprints::util::{AccessRuleState, SecurifiedAccessRules};
 
 pub const OWNER_GROUP_NAME: &str = "owner";
 
@@ -45,14 +45,14 @@ impl IdentityNativePackage {
             },
         );
         functions.insert(
-            IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT.to_string(),
+            IDENTITY_SECURIFY_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(Receiver::SelfRefMut),
                 input: aggregator
                     .add_child_type_and_descendents::<IdentitySecurifyToSingleBadgeInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<IdentitySecurifyToSingleBadgeOutput>(),
-                export_name: IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT.to_string(),
+                export_name: IDENTITY_SECURIFY_IDENT.to_string(),
             },
         );
 
@@ -131,7 +131,7 @@ impl IdentityNativePackage {
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT => {
+            IDENTITY_SECURIFY_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::InterpreterError(
@@ -186,9 +186,9 @@ impl IdentityNativePackage {
 
 pub struct IdentityOwnerAccessRules;
 
-impl OwnerAccessRules for IdentityOwnerAccessRules {
+impl SecurifiedAccessRules for IdentityOwnerAccessRules {
     const OWNER_GROUP_NAME: &'static str = OWNER_GROUP_NAME;
-    const SECURIFY_IDENT: &'static str = IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT;
+    const SECURIFY_IDENT: &'static str = IDENTITY_SECURIFY_IDENT;
     const PACKAGE: PackageAddress = IDENTITY_PACKAGE;
     const OWNER_TOKEN: ResourceAddress = IDENTITY_OWNER_TOKEN;
 }

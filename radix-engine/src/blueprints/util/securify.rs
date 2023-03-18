@@ -10,7 +10,7 @@ pub enum AccessRuleState {
     SecurifiedSingleOwner(NonFungibleLocalId),
 }
 
-pub trait OwnerAccessRules {
+pub trait SecurifiedAccessRules {
     const OWNER_GROUP_NAME: &'static str;
     const SECURIFY_IDENT: &'static str;
     const PACKAGE: PackageAddress;
