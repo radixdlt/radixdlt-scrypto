@@ -63,7 +63,7 @@ pub struct AccessRulesConfig {
     method_auth: BTreeMap<MethodKey, AccessRuleEntry>,
     grouped_auth: BTreeMap<String, AccessRule>,
     default_auth: AccessRuleEntry,
-    method_auth_mutability: BTreeMap<MethodKey, AccessRule>,
+    method_auth_mutability: BTreeMap<MethodKey, AccessRuleEntry>,
     grouped_auth_mutability: BTreeMap<String, AccessRule>,
     default_auth_mutability: AccessRuleEntry,
 }
@@ -81,7 +81,7 @@ impl AccessRulesConfig {
     }
 
     // TODO: Move into scrypto repo as a builder
-    pub fn method<R: Into<AccessRule>>(
+    pub fn method<R: Into<AccessRuleEntry>>(
         mut self,
         method_name: &str,
         method_auth: AccessRule,
@@ -111,10 +111,32 @@ impl AccessRulesConfig {
         self.default_auth = default_auth;
     }
 
+    pub fn get_access_rule(&self, key: &MethodKey) -> AccessRule {
+        match self.method_auth.get(key) {
+            None => self.get_default(),
+            Some(AccessRuleEntry::AccessRule(access_rule)) => access_rule.clone(),
+            Some(AccessRuleEntry::Group(group_key)) => {
+                self.grouped_auth.get(group_key).cloned().unwrap_or(AccessRule::DenyAll)
+            },
+        }
+    }
+
+    // TODO: Remove, used currently for vault access
+    pub fn get_group_access_rule(&self, name: &str) -> AccessRule {
+        self.grouped_auth.get(name).cloned().unwrap_or(AccessRule::DenyAll)
+    }
+
     pub fn get_mutability(&self, key: &MethodKey) -> AccessRule {
         self.method_auth_mutability
             .get(key)
             .cloned()
+            .map(|e| {
+                match e {
+                    AccessRuleEntry::AccessRule(access_rule) => access_rule,
+                    AccessRuleEntry::Group(name) => self.grouped_auth.get(&name).cloned()
+                        .unwrap_or(AccessRule::DenyAll)
+                }
+            })
             .unwrap_or_else(|| self.get_default_mutability())
     }
 
@@ -134,27 +156,12 @@ impl AccessRulesConfig {
         }
     }
 
-    pub fn set_mutability(&mut self, key: MethodKey, method_auth: AccessRule) {
-        self.method_auth_mutability.insert(key, method_auth);
+    pub fn set_mutability<A: Into<AccessRuleEntry>>(&mut self, key: MethodKey, method_auth: A) {
+        self.method_auth_mutability.insert(key, method_auth.into());
     }
 
     pub fn set_group_mutability(&mut self, key: String, method_auth: AccessRule) {
         self.grouped_auth_mutability.insert(key, method_auth);
-    }
-
-    pub fn get(&self, key: &MethodKey) -> AccessRule {
-        match self.method_auth.get(key) {
-            None => self.get_default(),
-            Some(AccessRuleEntry::AccessRule(access_rule)) => access_rule.clone(),
-            Some(AccessRuleEntry::Group(group_key)) => self.get_group(group_key),
-        }
-    }
-
-    pub fn get_group(&self, key: &str) -> AccessRule {
-        self.grouped_auth
-            .get(key)
-            .cloned()
-            .unwrap_or_else(|| self.get_default())
     }
 
     fn get_default(&self) -> AccessRule {
@@ -189,26 +196,26 @@ impl AccessRulesConfig {
         self.grouped_auth_mutability.insert(group_key, mutability);
     }
 
-    pub fn set_access_rule_and_mutability(
+    pub fn set_access_rule_and_mutability<M: Into<AccessRuleEntry>>(
         &mut self,
         key: MethodKey,
         access_rule: AccessRule,
-        mutability: AccessRule,
+        mutability: M,
     ) {
         self.method_auth
             .insert(key.clone(), AccessRuleEntry::AccessRule(access_rule));
-        self.method_auth_mutability.insert(key, mutability);
+        self.method_auth_mutability.insert(key, mutability.into());
     }
 
-    pub fn set_group_and_mutability(
+    pub fn set_group_and_mutability<M: Into<AccessRuleEntry>>(
         &mut self,
         key: MethodKey,
         group: String,
-        mutability: AccessRule,
+        mutability: M,
     ) {
         self.method_auth
             .insert(key.clone(), AccessRuleEntry::Group(group));
-        self.method_auth_mutability.insert(key, mutability);
+        self.method_auth_mutability.insert(key, mutability.into());
     }
 
     pub fn set_method_access_rule_to_group(&mut self, key: MethodKey, group: String) {
@@ -222,14 +229,6 @@ impl AccessRulesConfig {
 
     pub fn get_all_grouped_auth(&self) -> &BTreeMap<String, AccessRule> {
         &self.grouped_auth
-    }
-
-    pub fn get_all_method_auth_mutability(&self) -> &BTreeMap<MethodKey, AccessRule> {
-        &self.method_auth_mutability
-    }
-
-    pub fn get_all_grouped_auth_mutability(&self) -> &BTreeMap<String, AccessRule> {
-        &self.grouped_auth_mutability
     }
 }
 

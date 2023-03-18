@@ -100,14 +100,17 @@ PUBLISH_PACKAGE
                 "set_royalty_config"
             ),
             Enum(
-                "AccessRule::Protected", 
+                "AccessRuleEntry::AccessRule",
                 Enum(
-                    "AccessRuleNode::ProofRule", 
+                    "AccessRule::Protected",
                     Enum(
-                        "ProofRule::Require", 
+                        "AccessRuleNode::ProofRule",
                         Enum(
-                            "SoftResourceOrNonFungible::StaticNonFungible", 
-                            NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}")
+                            "ProofRule::Require",
+                            Enum(
+                                "SoftResourceOrNonFungible::StaticNonFungible",
+                                NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}")
+                            )
                         )
                     )
                 )
@@ -117,14 +120,17 @@ PUBLISH_PACKAGE
                 "claim_royalty"
             ),
             Enum(
-                "AccessRule::Protected", 
+                "AccessRuleEntry::AccessRule",
                 Enum(
-                    "AccessRuleNode::ProofRule", 
+                    "AccessRule::Protected",
                     Enum(
-                        "ProofRule::Require", 
+                        "AccessRuleNode::ProofRule",
                         Enum(
-                            "SoftResourceOrNonFungible::StaticNonFungible", 
-                            NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}")
+                            "ProofRule::Require",
+                            Enum(
+                                "SoftResourceOrNonFungible::StaticNonFungible",
+                                NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}")
+                            )
                         )
                     )
                 )
@@ -132,16 +138,19 @@ PUBLISH_PACKAGE
             Tuple(
                 Enum("NodeModuleId::Metadata"),
                 "set"
-            ), 
+            ),
             Enum(
-                "AccessRule::Protected", 
+                "AccessRuleEntry::AccessRule",
                 Enum(
-                    "AccessRuleNode::ProofRule", 
+                    "AccessRule::Protected",
                     Enum(
-                        "ProofRule::Require", 
+                        "AccessRuleNode::ProofRule",
                         Enum(
-                            "SoftResourceOrNonFungible::StaticNonFungible", 
-                            NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}")
+                            "ProofRule::Require",
+                            Enum(
+                                "SoftResourceOrNonFungible::StaticNonFungible",
+                                NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}")
+                            )
                         )
                     )
                 )
@@ -151,14 +160,17 @@ PUBLISH_PACKAGE
                 "get"
             ),
             Enum(
-                "AccessRule::Protected", 
+                "AccessRuleEntry::AccessRule",
                 Enum(
-                    "AccessRuleNode::ProofRule", 
+                    "AccessRule::Protected",
                     Enum(
-                        "ProofRule::Require", 
+                        "AccessRuleNode::ProofRule",
                         Enum(
-                            "SoftResourceOrNonFungible::StaticNonFungible", 
-                            NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}")
+                            "ProofRule::Require",
+                            Enum(
+                                "SoftResourceOrNonFungible::StaticNonFungible",
+                                NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}")
+                            )
                         )
                     )
                 )
