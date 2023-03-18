@@ -3,7 +3,7 @@ use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
-use native_sdk::modules::access_rules::AccessRulesObject;
+use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::{ResourceManager, SysBucket, Vault};
@@ -678,7 +678,7 @@ impl ValidatorCreator {
         )?;
 
         let access_rules = Self::build_access_rules(owner_access_rule);
-        let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
+        let access_rules = AccessRules::sys_new(access_rules, api)?.0;
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
 
@@ -728,7 +728,7 @@ impl ValidatorCreator {
         )?;
 
         let access_rules = Self::build_access_rules(owner_access_rule);
-        let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
+        let access_rules = AccessRules::sys_new(access_rules, api)?.0;
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
 

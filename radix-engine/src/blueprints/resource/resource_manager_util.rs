@@ -1,6 +1,6 @@
 use crate::errors::RuntimeError;
 use crate::types::*;
-use native_sdk::modules::access_rules::AccessRulesObject;
+use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
@@ -265,8 +265,8 @@ where
     Y: ClientApi<RuntimeError>,
 {
     let (resman_access_rules, vault_access_rules) = build_access_rules(access_rules);
-    let resman_access_rules = AccessRulesObject::sys_new(resman_access_rules, api)?;
-    let vault_access_rules = AccessRulesObject::sys_new(vault_access_rules, api)?;
+    let resman_access_rules = AccessRules::sys_new(resman_access_rules, api)?.0;
+    let vault_access_rules = AccessRules::sys_new(vault_access_rules, api)?.0;
     let metadata = Metadata::sys_create_with_data(metadata, api)?;
     let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
 

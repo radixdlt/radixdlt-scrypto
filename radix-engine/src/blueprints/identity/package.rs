@@ -2,16 +2,10 @@ use crate::errors::InterpreterError;
 use crate::errors::RuntimeError;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
-use native_sdk::modules::access_rules::AccessRulesObject;
+use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::ResourceManager;
-use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesSetGroupAccessRuleAndMutabilityInput,
-    AccessRulesSetMethodAccessRuleAndMutabilityInput,
-    ACCESS_RULES_SET_GROUP_ACCESS_RULE_AND_MUTABILITY_IDENT,
-    ACCESS_RULES_SET_METHOD_ACCESS_RULE_AND_MUTABILITY_IDENT,
-};
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
@@ -276,14 +270,14 @@ impl IdentityBlueprint {
             OWNER_GROUP_NAME.to_string(),
         );
 
-        let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
+        let access_rules = AccessRules::sys_new(access_rules, api)?;
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
 
         let object_id = api.new_object(IDENTITY_BLUEPRINT, vec![])?;
 
         let modules = btreemap!(
-            NodeModuleId::AccessRules => access_rules,
+            NodeModuleId::AccessRules => access_rules.0,
             NodeModuleId::Metadata => metadata,
             NodeModuleId::ComponentRoyalty => royalty,
         );
@@ -299,31 +293,18 @@ impl IdentityBlueprint {
         let (bucket, local_id) = owner_token.mint_non_fungible_single_uuid((), api)?;
         let global_id = NonFungibleGlobalId::new(IDENTITY_OWNER_TOKEN, local_id);
 
-        let _rtn = api.call_module_method(
-            receiver,
-            NodeModuleId::AccessRules,
-            ACCESS_RULES_SET_GROUP_ACCESS_RULE_AND_MUTABILITY_IDENT,
-            scrypto_encode(&AccessRulesSetGroupAccessRuleAndMutabilityInput {
-                name: OWNER_GROUP_NAME.to_string(),
-                rule: rule!(require(global_id)),
-                mutability: AccessRule::DenyAll,
-            })
-            .unwrap(),
+        let attached_access_rules = AttachedAccessRules(receiver);
+        attached_access_rules.set_group_access_rule_and_mutability(
+            OWNER_GROUP_NAME,
+            rule!(require(global_id)),
+            AccessRule::DenyAll,
+            api,
         )?;
-
-        let _rtn = api.call_module_method(
-            receiver,
-            NodeModuleId::AccessRules,
-            ACCESS_RULES_SET_METHOD_ACCESS_RULE_AND_MUTABILITY_IDENT,
-            scrypto_encode(&AccessRulesSetMethodAccessRuleAndMutabilityInput {
-                key: MethodKey::new(
-                    NodeModuleId::SELF,
-                    IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT.to_string(),
-                ),
-                rule: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
-                mutability: AccessRule::DenyAll,
-            })
-            .unwrap(),
+        attached_access_rules.set_method_access_rule_and_mutability(
+            MethodKey::new(NodeModuleId::SELF, IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT.to_string()),
+            AccessRuleEntry::AccessRule(AccessRule::DenyAll),
+            AccessRule::DenyAll,
+            api,
         )?;
 
         Ok(bucket)

@@ -3,7 +3,7 @@ use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node::RENodeInit;
 use crate::types::*;
-use native_sdk::modules::access_rules::AccessRulesObject;
+use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::substate_api::LockFlags;
@@ -471,7 +471,7 @@ impl AccountNativePackage {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let access_rules =
-            AccessRulesObject::sys_new(access_rules_from_withdraw_rule(access_rule), api)?;
+            AccessRules::sys_new(access_rules_from_withdraw_rule(access_rule), api)?.0;
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
 

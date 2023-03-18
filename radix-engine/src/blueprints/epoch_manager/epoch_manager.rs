@@ -4,7 +4,7 @@ use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::types::*;
 use native_sdk::account::Account;
-use native_sdk::modules::access_rules::AccessRulesObject;
+use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::{ResourceManager, SysBucket};
@@ -192,7 +192,7 @@ impl EpochManagerBlueprint {
             rule!(require(AuthAddresses::system_role())), // Set epoch only used for debugging
         );
 
-        let access_rules = AccessRulesObject::sys_new(access_rules, api)?;
+        let access_rules = AccessRules::sys_new(access_rules, api)?.0;
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
 

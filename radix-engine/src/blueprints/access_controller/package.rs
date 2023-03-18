@@ -4,7 +4,7 @@ use crate::errors::{ApplicationError, InterpreterError, RuntimeError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
-use native_sdk::modules::access_rules::AccessRulesObject;
+use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::{SysBucket, Vault};
@@ -417,7 +417,7 @@ impl AccessControllerNativePackage {
         )?;
 
         let access_rules =
-            AccessRulesObject::sys_new(access_rules_from_rule_set(input.rule_set), api)?;
+            AccessRules::sys_new(access_rules_from_rule_set(input.rule_set), api)?.0;
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
 
