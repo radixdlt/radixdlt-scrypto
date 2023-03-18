@@ -459,6 +459,27 @@ pub fn create_genesis(
 
     // Account Package
     {
+        // TODO: Integrate this into package instantiation to remove circular depedendency
+        let mut access_rules = BTreeMap::new();
+        let global_id = NonFungibleGlobalId::package_actor(ACCOUNT_PACKAGE);
+        access_rules.insert(Mint, (rule!(require(global_id)), rule!(deny_all)));
+        access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
+        let resource_address = ACCOUNT_OWNER_TOKEN.to_array_without_entity_id();
+        pre_allocated_ids.insert(RENodeId::GlobalObject(ACCOUNT_OWNER_TOKEN.into()));
+        instructions.push(Instruction::CallFunction {
+            package_address: RESOURCE_MANAGER_PACKAGE,
+            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
+            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
+                id_type: NonFungibleIdType::UUID,
+                non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                metadata: btreemap!(),
+                access_rules,
+                resource_address,
+            })
+                .unwrap(),
+        });
+
         pre_allocated_ids.insert(RENodeId::GlobalObject(ACCOUNT_PACKAGE.into()));
         let package_address = ACCOUNT_PACKAGE.to_array_without_entity_id();
         instructions.push(Instruction::CallFunction {
@@ -474,6 +495,7 @@ pub fn create_genesis(
                 dependent_resources: vec![
                     ECDSA_SECP256K1_TOKEN,
                     EDDSA_ED25519_TOKEN,
+                    ACCOUNT_OWNER_TOKEN,
                     PACKAGE_TOKEN,
                 ],
                 dependent_components: vec![],

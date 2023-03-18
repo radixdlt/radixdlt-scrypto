@@ -183,7 +183,7 @@ impl IdentityNativePackage {
     }
 }
 
-pub struct IdentityOwnerAccessRules;
+struct IdentityOwnerAccessRules;
 
 impl SecurifiedAccessRules for IdentityOwnerAccessRules {
     const OWNER_GROUP_NAME: &'static str = OWNER_GROUP_NAME;

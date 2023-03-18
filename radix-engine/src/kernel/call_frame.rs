@@ -352,6 +352,10 @@ impl CallFrame {
             RENodeVisibilityOrigin::Normal,
         );
         frame.add_ref(
+            RENodeId::GlobalObject(ACCOUNT_OWNER_TOKEN.into()),
+            RENodeVisibilityOrigin::Normal,
+        );
+        frame.add_ref(
             RENodeId::GlobalObject(EPOCH_MANAGER.into()),
             RENodeVisibilityOrigin::Normal,
         );

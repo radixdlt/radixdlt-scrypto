@@ -14,7 +14,6 @@ use radix_engine_interface::blueprints::resource::{AccessRule, Bucket, Proof};
 use crate::blueprints::util::SecurifiedAccessRules;
 use native_sdk::resource::{SysBucket, Vault};
 use radix_engine_interface::blueprints::identity::VirtualLazyLoadOutput;
-use crate::blueprints::identity::IdentityOwnerAccessRules;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct AccountSubstate {
@@ -36,15 +35,15 @@ impl From<AccountError> for RuntimeError {
 
 pub const OWNER_GROUP_NAME: &str = "owner";
 
-pub struct AccountSecurify;
+struct AccountSecurify;
 
 impl SecurifiedAccessRules for AccountSecurify {
     const OWNER_GROUP_NAME: &'static str = OWNER_GROUP_NAME;
     const PUBLIC_METHODS: &'static [&'static str] =
         &[ACCOUNT_DEPOSIT_IDENT, ACCOUNT_DEPOSIT_BATCH_IDENT];
-    const SECURIFY_IDENT: &'static str = "Securify";
+    const SECURIFY_IDENT: &'static str = ACCOUNT_SECURIFY_IDENT;
     const PACKAGE: PackageAddress = ACCOUNT_PACKAGE;
-    const OWNER_TOKEN: ResourceAddress = IDENTITY_OWNER_TOKEN;
+    const OWNER_TOKEN: ResourceAddress = ACCOUNT_OWNER_TOKEN;
 }
 
 pub struct AccountBlueprint;
@@ -109,7 +108,7 @@ impl AccountBlueprint {
         where
             Y: ClientApi<RuntimeError>,
     {
-        IdentityOwnerAccessRules::securify(receiver, api)
+        AccountSecurify::securify(receiver, api)
     }
 
     pub fn create_global<Y>(withdraw_rule: AccessRule, api: &mut Y) -> Result<Address, RuntimeError>

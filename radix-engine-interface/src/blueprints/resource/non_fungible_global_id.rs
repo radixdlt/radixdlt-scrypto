@@ -1,3 +1,4 @@
+use radix_engine_common::data::scrypto::scrypto_encode;
 use crate::address::*;
 use crate::constants::*;
 use crate::crypto::*;
@@ -17,6 +18,12 @@ pub struct NonFungibleGlobalId(ResourceAddress, NonFungibleLocalId);
 impl NonFungibleGlobalId {
     pub const fn new(resource_address: ResourceAddress, local_id: NonFungibleLocalId) -> Self {
         Self(resource_address, local_id)
+    }
+
+    pub fn package_actor(package_address: PackageAddress) -> Self {
+        let local_id =
+            NonFungibleLocalId::bytes(scrypto_encode(&package_address).unwrap()).unwrap();
+        NonFungibleGlobalId::new(PACKAGE_TOKEN, local_id)
     }
 
     /// Returns the resource address.

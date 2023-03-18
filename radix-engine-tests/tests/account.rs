@@ -1,32 +1,71 @@
 use radix_engine::system::kernel_modules::execution_trace::ResourceChange;
 use radix_engine::types::*;
+use radix_engine_interface::blueprints::account::{ACCOUNT_DEPOSIT_BATCH_IDENT, ACCOUNT_SECURIFY_IDENT, AccountSecurifyInput};
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::Instruction;
 
 #[test]
+fn can_securify_virtual_account() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (_, _, original_account) = test_runner.new_account(true);
+    let (public_key, _, account) = test_runner.new_account(true);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_method(
+            account,
+            ACCOUNT_SECURIFY_IDENT,
+            to_manifest_value(&AccountSecurifyInput {}).unwrap(),
+        )
+        .call_method(
+            original_account,
+            ACCOUNT_DEPOSIT_BATCH_IDENT,
+            manifest_args!(ManifestExpression::EntireWorktop),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
 fn can_withdraw_from_my_allocated_account() {
-    can_withdraw_from_my_account_internal(false);
+    can_withdraw_from_my_account_internal(|test_runner| {
+        let (public_key, _, account) = test_runner.new_account(false);
+        (public_key, account)
+    });
 }
 
 #[test]
 fn can_withdraw_from_my_virtual_account() {
-    can_withdraw_from_my_account_internal(true);
+    can_withdraw_from_my_account_internal(|test_runner| {
+        let (public_key, _, account) = test_runner.new_account(true);
+        (public_key, account)
+    });
 }
 
-fn can_withdraw_from_my_account_internal(use_virtual: bool) {
+fn can_withdraw_from_my_account_internal<F>(new_account: F) where
+    F: FnOnce(&mut TestRunner) -> (EcdsaSecp256k1PublicKey, ComponentAddress)
+{
     // Arrange
     let mut test_runner = TestRunner::builder().build();
-    let (public_key, _, account) = test_runner.new_account(use_virtual);
-    let (_, _, other_account) = test_runner.new_account(use_virtual);
+    let (public_key, account) = new_account(&mut test_runner);
+    let (_, _, other_account) = test_runner.new_account(true);
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_and_withdraw(account, 10.into(), RADIX_TOKEN, 1.into())
         .call_method(
             other_account,
-            "deposit_batch",
+            ACCOUNT_DEPOSIT_BATCH_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -68,7 +107,7 @@ fn can_withdraw_non_fungible_from_my_account_internal(use_virtual: bool) {
         .lock_fee_and_withdraw(account, 10.into(), resource_address, 1.into())
         .call_method(
             other_account,
-            "deposit_batch",
+            ACCOUNT_DEPOSIT_BATCH_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
