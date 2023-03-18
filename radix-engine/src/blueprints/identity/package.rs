@@ -9,7 +9,7 @@ use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::api::node_modules::auth::{ACCESS_RULES_SET_GROUP_ACCESS_RULE_AND_MUTABILITY_IDENT, AccessRulesSetGroupAccessRuleAndMutabilityInput};
+use radix_engine_interface::api::node_modules::auth::{ACCESS_RULES_SET_GROUP_ACCESS_RULE_AND_MUTABILITY_IDENT, ACCESS_RULES_SET_METHOD_ACCESS_RULE_AND_MUTABILITY_IDENT, AccessRulesSetGroupAccessRuleAndMutabilityInput, AccessRulesSetMethodAccessRuleAndMutabilityInput};
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{BlueprintSchema, Receiver};
@@ -293,6 +293,17 @@ impl IdentityBlueprint {
             scrypto_encode(&AccessRulesSetGroupAccessRuleAndMutabilityInput {
                 name: OWNER_GROUP_NAME.to_string(),
                 rule: rule!(require(global_id)),
+                mutability: AccessRule::DenyAll,
+            }).unwrap(),
+        )?;
+
+        let _rtn = api.call_module_method(
+            receiver,
+            NodeModuleId::AccessRules,
+            ACCESS_RULES_SET_METHOD_ACCESS_RULE_AND_MUTABILITY_IDENT,
+            scrypto_encode(&AccessRulesSetMethodAccessRuleAndMutabilityInput {
+                key: MethodKey::new(NodeModuleId::SELF, IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT.to_string()),
+                rule: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
                 mutability: AccessRule::DenyAll,
             }).unwrap(),
         )?;

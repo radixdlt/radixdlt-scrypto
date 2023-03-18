@@ -107,13 +107,18 @@ impl AuthModule {
                 ) =>
             {
                 match ident.as_str() {
+                    ACCESS_RULES_SET_METHOD_ACCESS_RULE_AND_MUTABILITY_IDENT => {
+                        AccessRulesNativePackage::get_authorization_for_set_method_access_rule_and_mutability(
+                            *node_id, *module_id, args, api,
+                        )?
+                    }
                     ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT => {
-                        AccessRulesNativePackage::set_method_access_rule_authorization(
+                        AccessRulesNativePackage::get_authorization_for_set_method_access_rule(
                             *node_id, *module_id, args, api,
                         )?
                     }
                     ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT => {
-                        AccessRulesNativePackage::set_method_mutability_authorization(
+                        AccessRulesNativePackage::get_authorization_for_set_method_mutability(
                             *node_id, *module_id, args, api,
                         )?
                     }
