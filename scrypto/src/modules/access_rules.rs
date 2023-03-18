@@ -86,3 +86,12 @@ impl From<Mutability> for AccessRule {
         }
     }
 }
+
+impl From<Mutability> for AccessRuleEntry {
+    fn from(val: Mutability) -> Self {
+        match val {
+            Mutability::LOCKED => AccessRuleEntry::AccessRule(AccessRule::DenyAll),
+            Mutability::MUTABLE(rule) => AccessRuleEntry::AccessRule(rule),
+        }
+    }
+}

@@ -165,5 +165,8 @@ PUBLISH_PACKAGE
             )
         ), 
         Map<String, Enum>(),     # Group Auth Mutability Field
-        Enum("AccessRule::DenyAll")          # Default Auth Mutability Field
+        Enum(
+            "AccessRuleEntry::AccessRule",
+            Enum("AccessRule::DenyAll")          # Default Auth Mutability Field
+        )
     );

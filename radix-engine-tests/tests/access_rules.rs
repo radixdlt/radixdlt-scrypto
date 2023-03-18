@@ -248,7 +248,7 @@ fn user_cannot_mutate_auth_on_methods_that_control_auth() {
             AccessRuleEntry::AccessRule(AccessRule::AllowAll),
             HashMap::<MethodKey, AccessRule>::new(),
             HashMap::<String, AccessRule>::new(),
-            AccessRule::AllowAll
+            AccessRuleEntry::AccessRule(AccessRule::AllowAll)
         );
 
         let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
