@@ -42,7 +42,7 @@ use sbor::rust::mem;
 
 #[cfg(target_family = "unix")]
 #[cfg(feature = "resource_tracker")]
-use radix_engine_utils::QEMU_PLUGIN;
+use radix_engine_utils::*;
 use resources_tracker_macro::trace_resources;
 
 
@@ -84,6 +84,11 @@ where
         scrypto_interpreter: &'g ScryptoInterpreter<W>,
         module: KernelModuleMixer,
     ) -> Self {
+        #[cfg(feature = "resource_tracker")]
+        radix_engine_utils::QEMU_PLUGIN_CALIBRATOR.with(|v| {
+            v.borrow_mut();
+        });
+
         Self {
             execution_mode: ExecutionMode::Kernel,
             heap: Heap::new(),

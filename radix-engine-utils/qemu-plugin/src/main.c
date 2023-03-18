@@ -10,6 +10,7 @@
 QEMU_PLUGIN_EXPORT int qemu_plugin_version = QEMU_PLUGIN_VERSION;
 
 const gchar* SERVER_SOCKET_ADDR = "/tmp/scrypto-qemu-plugin-server.socket";
+const gchar* SHARED_MEM_ID = "/shm-radix";
 
 static guint64 instructions_count;
 static GThread* thr;
@@ -22,7 +23,7 @@ static guint64* shared_mem_ptr = NULL;
 
 void* create_shared_memory(size_t size) 
 {
-    int fd = shm_open( "/shm-radix", O_CREAT | O_EXCL | O_RDWR, S_IRUSR | S_IWUSR);
+    int fd = shm_open( SHARED_MEM_ID, O_CREAT | O_EXCL | O_RDWR, S_IRUSR | S_IWUSR);
     if (fd == -1)
     {
         g_print("Error calling shm_open()\n");

@@ -5,34 +5,21 @@ use std::fs::File;
 use std::io::prelude::*;
 use shared_memory::*;
 
+mod data_analyzer;
+use data_analyzer::{DataAnalyzer, OutputData, OutputDataEvent};
+
 
 const SRV_SOCKET_FN: &str = "/tmp/scrypto-qemu-plugin-server.socket";
 const CLI_SOCKET_FN: &str = "/tmp/scrypto-qemu-plugin-client.socket";
+const SHARED_MEM_ID: &str = "/shm-radix";
 const OUTPUT_DATA_COUNT: usize = 500000;
 
 std::thread_local! {
     pub static QEMU_PLUGIN: std::cell::RefCell<QemuPluginInterface<'static>> = std::cell::RefCell::new(QemuPluginInterface::new(true));
+    pub static QEMU_PLUGIN_CALIBRATOR: std::cell::RefCell<QemuPluginInterfaceCalibrator> = std::cell::RefCell::new(QemuPluginInterfaceCalibrator::new());
 }
 
 
-enum OutputDataEvent {
-    FunctionEnter,
-    FunctionExit
-}
-
-enum OutputParam {
-    Number(i64),
-    //Literal(fstr<50>)
-}
-
-struct OutputData<'a> {
-    event: OutputDataEvent,
-    stack_depth: usize,
-    cpu_instructions: u64,
-    cpu_instructions_calibrated: u64,
-    function_name: &'a str,
-    param: Option<OutputParam>,
-}
 
 
 pub struct QemuPluginInterface<'a> {
@@ -43,8 +30,10 @@ pub struct QemuPluginInterface<'a> {
     output_data: Vec<OutputData<'a>>,
     counter_offset: u64,
     counter_offset_parent: u64,
-    shmem: Shmem 
+    shmem: Shmem,
+    calibrated: bool
 }
+
 
 impl<'a> QemuPluginInterface<'a> {
     pub fn new(enabled: bool) -> Self {
@@ -55,7 +44,7 @@ impl<'a> QemuPluginInterface<'a> {
         socket.set_read_timeout(None).unwrap();
 
         //shared_memory::Shmem::
-        let shmem_conf = ShmemConf::new().os_id("/shm-radix");
+        let shmem_conf = ShmemConf::new().os_id(SHARED_MEM_ID);
         let shmem = match shmem_conf.open() {
             Ok(v) => v,
             Err(x) => panic!("Unable to open shmem {:?}", x)
@@ -69,9 +58,9 @@ impl<'a> QemuPluginInterface<'a> {
             output_data: Vec::with_capacity(OUTPUT_DATA_COUNT),
             counter_offset: 0,
             counter_offset_parent: 0,
-            shmem
+            shmem,
+            calibrated: false
         };
-
 
         // test connection
         ret.communicate_with_server(SRV_SOCKET_FN);
@@ -80,53 +69,10 @@ impl<'a> QemuPluginInterface<'a> {
             ret.counters_stack.push((String::with_capacity(50),0));
         }
 
-        ret.calibrate_counters();
-
         ret
     }
 
 
-    fn calibrate_inner(&mut self) -> u64 {
-        self.start_counting("test_inner");
-        self.stop_counting("test_inner").1
-    }
-
-    fn calibrate(&mut self, call_inner: bool) -> (u64, u64) {
-        self.start_counting("test");
-        let ret = if call_inner {
-            self.calibrate_inner()
-        } else {
-            0
-        };
-        (self.stop_counting("test").1, ret)
-    }
-
-
-    fn calibrate_counters(&mut self) {
-        let mut cnt = 0;
-        let mut cnt_parent = 0;
-
-        let loop_max = 10;
-
-        for _ in 0..loop_max {
-            let (parent, child) = self.calibrate(true);
-            cnt_parent += parent;
-            cnt += child;
-            println!("1 child/parent: {} {}", child, parent);
-        }
-        for _ in 0..loop_max {
-            let (parent, _child) = self.calibrate(false);
-            cnt_parent -= parent;
-            println!("2 parent: {}", parent);
-        }
-
-        self.output_data.clear();
-
-        self.counter_offset = cnt / loop_max;
-        self.counter_offset_parent = cnt_parent / loop_max;
-        println!("QemuPlugin counter offset: {} instructions, parent: {}", self.counter_offset, self.counter_offset_parent)
-    }
-    
     pub fn get_current_stack(&self) -> usize {
         self.stack_top
     }
@@ -221,9 +167,9 @@ impl<'a> QemuPluginInterface<'a> {
             self.output_data[i].cpu_instructions_calibrated = match self.output_data[i].cpu_instructions.checked_sub(self.counter_offset) {
                 Some(v) => v,
                 None => {
-                    println!("Subtraction overflow on {}, {}", self.output_data[i].function_name, i );
+                    //println!("Subtraction overflow on {}, {}", self.output_data[i].function_name, i );
                     ov_cnt += 1;
-                    0
+                    self.output_data[i].cpu_instructions_calibrated
                 }
             };
 
@@ -240,9 +186,9 @@ impl<'a> QemuPluginInterface<'a> {
                         self.output_data[i].cpu_instructions_calibrated = match self.output_data[i].cpu_instructions_calibrated.checked_sub(self.counter_offset_parent) {
                             Some(v) => v,
                             None => {
-                                println!("Subtraction overflow on {}, {}, {}", self.output_data[i].function_name, i, j );
+                                //println!("Subtraction overflow on {}, {}, {}", self.output_data[i].function_name, i, j );
                                 ov_cnt += 1;
-                                0
+                                self.output_data[i].cpu_instructions_calibrated
                             }
                         };
                     } else {
@@ -267,10 +213,13 @@ impl<'a> QemuPluginInterface<'a> {
     }
 }
 
+
 impl<'a> Drop for QemuPluginInterface<'a> {
     fn drop(&mut self) {
         self.prepare_output_data();
         self.save_output_to_file("/tmp/out.txt");
+
+        DataAnalyzer::generate_and_save_buckets(&self.output_data, "/tmp/buckets.csv");
     }
 }
 
@@ -286,3 +235,62 @@ impl<'a> OutputData<'a> {
     }
 }
 
+
+
+pub struct QemuPluginInterfaceCalibrator {}
+impl QemuPluginInterfaceCalibrator {
+
+    fn new() -> QemuPluginInterfaceCalibrator {
+        println!("QemuPluginInterfaceCalibrator");
+        let mut ret = QemuPluginInterfaceCalibrator {};
+        ret.calibrate_counters();
+        ret
+    }
+
+    fn calibrate_inner() -> u64 {
+        QEMU_PLUGIN.with(|v| v.borrow_mut().start_counting("calibrate_inner") );
+        QEMU_PLUGIN.with(|v| v.borrow_mut().stop_counting("calibrate_inner") ).1
+    }
+
+    fn calibrate(call_inner: bool) -> (u64, u64) {
+        QEMU_PLUGIN.with(|v| v.borrow_mut().start_counting("calibrate_inner") );
+        let ret = if call_inner {
+            QemuPluginInterfaceCalibrator::calibrate_inner()
+        } else {
+            0
+        };
+        (QEMU_PLUGIN.with(|v| v.borrow_mut().stop_counting("calibrate_inner") ).1, ret)
+    }
+
+
+    fn calibrate_counters(&mut self) {
+        let loop_max = 40;
+
+        let mut cal_data_parent: Vec<u64> = Vec::new();
+        let mut cal_data_child: Vec<u64> = Vec::new();
+        for _ in 0..loop_max {
+            let (parent, child) = QemuPluginInterfaceCalibrator::calibrate(true);
+            cal_data_parent.push(parent);
+            cal_data_child.push(child);
+            println!("child/parent: {} {}", child, parent);
+        }
+
+        DataAnalyzer::discard_spikes(&mut cal_data_child, 2);
+        let child_out = DataAnalyzer::average(&cal_data_child);
+        DataAnalyzer::discard_spikes(&mut cal_data_parent, 2);
+        let parent_out = DataAnalyzer::average(&cal_data_parent);
+        
+        println!("child out: {:?}\navg: {}", cal_data_child, child_out);
+        println!("parent out: {:?}\navg: {}", cal_data_parent, parent_out);
+
+        //self.output_data.clear();
+
+        println!("QemuPlugin counter offset: {} instructions, parent: {}", child_out, parent_out);
+
+        QEMU_PLUGIN.with(|v| {
+            v.borrow_mut().counter_offset = child_out;
+            v.borrow_mut().counter_offset_parent = parent_out;
+        });
+    }
+
+}
