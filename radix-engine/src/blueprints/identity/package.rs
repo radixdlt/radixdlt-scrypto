@@ -36,6 +36,15 @@ impl IdentityNativePackage {
                 export_name: IDENTITY_CREATE_IDENT.to_string(),
             },
         );
+        functions.insert(
+            IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<IdentitySecurifyToSingleBadgeInput>(),
+                output: aggregator.add_child_type_and_descendents::<IdentitySecurifyToSingleBadgeOutput>(),
+                export_name: IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT.to_string(),
+            },
+        );
 
         // TODO: Make these not visible to client (should only be called by virtualization)
         functions.insert(
@@ -92,6 +101,20 @@ impl IdentityNativePackage {
                 })?;
 
                 let rtn = IdentityBlueprint::create(input.access_rule, api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                let _input: IdentitySecurifyToSingleBadgeInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+
+                let rtn = IdentityBlueprint::securify_to_single_badge(receiver, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -227,7 +250,7 @@ impl IdentityBlueprint {
         Ok((Own::Object(object_id), modules))
     }
 
-    fn replace_access_rules_with_generated_owner_badge<Y>(
+    fn securify_to_single_badge<Y>(
         receiver: RENodeId,
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>

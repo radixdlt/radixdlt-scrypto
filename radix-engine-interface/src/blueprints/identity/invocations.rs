@@ -16,6 +16,14 @@ pub struct IdentityCreateInput {
 
 pub type IdentityCreateOutput = ComponentAddress;
 
+pub const IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT: &str = "securify_to_single_badge";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct IdentitySecurifyToSingleBadgeInput {
+}
+
+pub type IdentitySecurifyToSingleBadgeOutput = Bucket;
+
 pub const IDENTITY_CREATE_VIRTUAL_ECDSA_IDENT: &str = "create_virtual_ecdsa";
 pub const IDENTITY_CREATE_VIRTUAL_EDDSA_IDENT: &str = "create_virtual_eddsa";
 

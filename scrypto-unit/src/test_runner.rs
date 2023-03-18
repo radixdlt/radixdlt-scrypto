@@ -540,6 +540,30 @@ impl TestRunner {
         }
     }
 
+    pub fn new_identity(
+        &mut self,
+        pk: EcdsaSecp256k1PublicKey,
+        is_virtual: bool,
+    ) -> ComponentAddress {
+        if is_virtual {
+            ComponentAddress::virtual_identity_from_public_key(&pk)
+        } else {
+            let owner_id = NonFungibleGlobalId::from_public_key(&pk);
+            let manifest = ManifestBuilder::new()
+                .lock_fee(FAUCET_COMPONENT, 10.into())
+                .create_identity(rule!(require(owner_id)))
+                .build();
+            let receipt = self.execute_manifest(manifest, vec![]);
+            receipt.expect_commit_success();
+            let component_address = receipt
+                .expect_commit(true)
+                .entity_changes
+                .new_component_addresses[0];
+
+            component_address
+        }
+    }
+
     pub fn new_validator_with_pub_key(
         &mut self,
         pub_key: EcdsaSecp256k1PublicKey,
