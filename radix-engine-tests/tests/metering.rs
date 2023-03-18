@@ -64,7 +64,7 @@ fn test_basic_transfer() {
     // Assert
     // NOTE: If this test fails, it should print out the actual fee table in the error logs.
     // Or you can run just this test with the below:
-    // (cd radix-engine && cargo test --test metering -- test_basic_transfer)
+    // cargo test -p radix-engine-tests --test metering -- test_basic_transfer
     assert_eq!(
         7500 /* CreateNode */
         + 88000 /* DropLock */
@@ -199,17 +199,17 @@ fn test_radiswap() {
 
     // NOTE: If this test fails, it should print out the actual fee table in the error logs.
     // Or you can run just this test with the below:
-    // (cd radix-engine && cargo test --test metering -- test_radiswap)
+    // cargo test -p radix-engine-tests --test metering -- test_radiswap
     assert_eq!(
         12500 /* CreateNode */
         + 229000 /* DropLock */
         + 10000 /* DropNode */
         + 25340 /* Invoke */
         + 231500 /* LockSubstate */
-        + 2635210 /* ReadSubstate */
+        + 2630590 /* ReadSubstate */
         + 137500 /* RunNative */
         + 15000 /* RunSystem */
-        + 1653705 /* RunWasm */
+        + 1655335 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1625 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
@@ -309,17 +309,17 @@ fn test_flash_loan() {
 
     // NOTE: If this test fails, it should print out the actual fee table in the error logs.
     // Or you can run just this test with the below:
-    // (cd radix-engine && cargo test --test metering -- test_flash_loan)
+    // cargo test -p radix-engine-tests --test metering -- test_flash_loan
     assert_eq!(
         20000 /* CreateNode */
         + 348000 /* DropLock */
         + 20000 /* DropNode */
         + 44790 /* Invoke */
         + 356000 /* LockSubstate */
-        + 6645010 /* ReadSubstate */
+        + 6636950 /* ReadSubstate */
         + 215000 /* RunNative */
         + 30000 /* RunSystem */
-        + 1307375 /* RunWasm */
+        + 1310570 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2375 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
