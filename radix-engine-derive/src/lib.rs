@@ -6,6 +6,7 @@ mod scrypto_categorize;
 mod scrypto_decode;
 mod scrypto_describe;
 mod scrypto_encode;
+mod scrypto_event;
 mod scrypto_sbor;
 
 use proc_macro::TokenStream;
@@ -164,6 +165,26 @@ pub fn scrypto_describe(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(ScryptoSbor, attributes(sbor))]
 pub fn scrypto_sbor(input: TokenStream) -> TokenStream {
     scrypto_sbor::handle_scrypto_sbor(proc_macro2::TokenStream::from(input))
+        .unwrap_or_else(|err| err.to_compile_error())
+        .into()
+}
+
+/// Derive code for implementing the required logic to mark a type as being an event.
+///
+/// # Example
+///
+/// ```ignore
+/// use scrypto::prelude::*;
+///
+/// #[derive(ScryptoEvent)]
+/// pub struct MyStruct {
+///     pub field_1: u32,
+///     pub field_2: String,
+/// }
+/// ```
+#[proc_macro_derive(ScryptoEvent)]
+pub fn scrypto_event(input: TokenStream) -> TokenStream {
+    scrypto_event::handle_scrypto_event(proc_macro2::TokenStream::from(input))
         .unwrap_or_else(|err| err.to_compile_error())
         .into()
 }

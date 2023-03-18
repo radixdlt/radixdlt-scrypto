@@ -39,6 +39,7 @@ members = [
     "transaction_limits",
     "transaction_runtime",
     "events",
+    "events_invalid",
     "logger"
 ]
 

@@ -6,7 +6,6 @@ use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::access_rules::{
     FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
-use crate::system::node_modules::event_schema::PackageEventSchemaSubstate;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
@@ -28,8 +27,9 @@ pub enum PackageError {
     InvalidBlueprintWasm(SchemaValidationError),
     TooManySubstateSchemas,
 
+    FailedToResolveLocalSchema { local_type_index: LocalTypeIndex },
+    EventNameMismatch { expected: String, actual: String },
     InvalidEventSchema,
-    DuplicateEventNamesFound,
 }
 
 fn validate_package_schema(schema: &PackageSchema) -> Result<(), PackageError> {
@@ -43,28 +43,47 @@ fn validate_package_schema(schema: &PackageSchema) -> Result<(), PackageError> {
     Ok(())
 }
 
-fn validate_package_event_schema(
-    event_schema: &BTreeMap<String, Vec<(LocalTypeIndex, ScryptoSchema)>>,
-) -> Result<(), PackageError> {
-    // TODO: Should we check that the blueprint name is valid for that given package?
+fn validate_package_event_schema(schema: &PackageSchema) -> Result<(), PackageError> {
+    for BlueprintSchema {
+        schema,
+        event_schema,
+        ..
+    } in schema.blueprints.values()
+    {
+        // Package schema validation happens when the package is published. No need to redo
+        // it here again.
 
-    for (_, blueprint_event_schema) in event_schema {
-        for (local_type_index, schema) in blueprint_event_schema {
-            // Checking that the schema is itself valid
-            schema
-                .validate()
-                .map_err(|_| PackageError::InvalidEventSchema)?;
+        for (expected_event_name, local_type_index) in event_schema.iter() {
+            // Checking that the event name is indeed what the user claims it to be
+            let actual_event_name = schema.resolve_type_metadata(*local_type_index).map_or(
+                Err(PackageError::FailedToResolveLocalSchema {
+                    local_type_index: *local_type_index,
+                }),
+                |metadata| Ok(metadata.type_name.to_string()),
+            )?;
 
-            // Ensuring that the event is either a struct or an enum
-            match schema.resolve_type_kind(*local_type_index) {
+            if *expected_event_name != actual_event_name {
+                Err(PackageError::EventNameMismatch {
+                    expected: expected_event_name.to_string(),
+                    actual: actual_event_name,
+                })?
+            }
+
+            // Checking that the event is either a struct or an enum
+            let type_kind = schema.resolve_type_kind(*local_type_index).map_or(
+                Err(PackageError::FailedToResolveLocalSchema {
+                    local_type_index: *local_type_index,
+                }),
+                Ok,
+            )?;
+            match type_kind {
                 // Structs and Enums are allowed
-                Some(TypeKind::Enum { .. } | TypeKind::Tuple { .. }) => Ok(()),
-                _ => {
-                    return Err(PackageError::InvalidEventSchema);
-                }
-            }?
+                TypeKind::Enum { .. } | TypeKind::Tuple { .. } => Ok(()),
+                _ => Err(PackageError::InvalidEventSchema),
+            }?;
         }
     }
+
     Ok(())
 }
 
@@ -75,7 +94,6 @@ fn globalize_package<Y>(
     code: PackageCodeSubstate,
     royalty: PackageRoyaltySubstate,
     function_access_rules: FunctionAccessRulesSubstate,
-    event_schemas: PackageEventSchemaSubstate,
     metadata: BTreeMap<String, String>,
     access_rules: AccessRulesConfig,
     api: &mut Y,
@@ -93,7 +111,6 @@ where
         SubstateOffset::Package(PackageOffset::Code) => code.into(),
         SubstateOffset::Package(PackageOffset::Royalty) => royalty.into(),
         SubstateOffset::Package(PackageOffset::FunctionAccessRules) => function_access_rules.into(),
-        SubstateOffset::Package(PackageOffset::EventSchema) => event_schemas.into(),
     ));
 
     // Prepare node modules.
@@ -204,7 +221,8 @@ impl PackageNativePackage {
                 PACKAGE_BLUEPRINT.to_string() => BlueprintSchema {
                     schema,
                     substates,
-                    functions
+                    functions,
+                    event_schema: [].into()
                 }
             ),
         }
@@ -300,7 +318,7 @@ impl PackageNativePackage {
         // Validate schema
         validate_package_schema(&input.schema)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
-        validate_package_event_schema(&input.event_schema)
+        validate_package_event_schema(&input.schema)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
 
         // Build node init
@@ -321,10 +339,6 @@ impl PackageNativePackage {
             access_rules: input.package_access_rules,
             default_auth: input.default_package_access_rule,
         };
-        let event_schemas =
-            PackageEventSchemaSubstate(convert_event_schema(input.event_schema).map_err(
-                |error| RuntimeError::ApplicationError(ApplicationError::PackageError(error)),
-            )?);
 
         globalize_package(
             input.package_address,
@@ -333,7 +347,6 @@ impl PackageNativePackage {
             code,
             royalty,
             function_access_rules,
-            event_schemas,
             input.metadata,
             input.access_rules,
             api,
@@ -353,6 +366,8 @@ impl PackageNativePackage {
 
         // Validate schema
         validate_package_schema(&input.schema)
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
+        validate_package_event_schema(&input.schema)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
 
         // Validate WASM
@@ -381,7 +396,6 @@ impl PackageNativePackage {
             access_rules: BTreeMap::new(),
             default_auth: AccessRule::AllowAll,
         };
-        let event_schemas = PackageEventSchemaSubstate(BTreeMap::new()); // TODO: To rework in Pt3
 
         globalize_package(
             input.package_address,
@@ -390,7 +404,6 @@ impl PackageNativePackage {
             code,
             royalty,
             function_access_rules,
-            event_schemas,
             input.metadata,
             input.access_rules,
             api,
@@ -448,35 +461,4 @@ impl PackageNativePackage {
         };
         Ok(IndexedScryptoValue::from_typed(&bucket))
     }
-}
-
-fn convert_event_schema(
-    event_schema: BTreeMap<String, Vec<(LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>>,
-) -> Result<
-    BTreeMap<String, BTreeMap<String, (LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>>,
-    PackageError,
-> {
-    let mut package_event_schema = BTreeMap::<
-        String,
-        BTreeMap<String, (LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>,
-    >::new();
-    for (blueprint_name, event_schemas) in event_schema {
-        let blueprint_schema = package_event_schema.entry(blueprint_name).or_default();
-        for (local_type_index, schema) in event_schemas {
-            let event_name = {
-                (*schema
-                    .resolve_type_metadata(local_type_index)
-                    .map_or(Err(PackageError::InvalidEventSchema), Ok)?
-                    .type_name)
-                    .to_owned()
-            };
-            // TODO: Add a test once Scrypto events are implemented.
-            if let None = blueprint_schema.insert(event_name, (local_type_index, schema)) {
-                Ok(())
-            } else {
-                Err(PackageError::DuplicateEventNamesFound)
-            }?
-        }
-    }
-    Ok(package_event_schema)
 }
