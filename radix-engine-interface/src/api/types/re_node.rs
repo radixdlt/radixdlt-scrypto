@@ -23,13 +23,11 @@ pub enum RENodeType {
     KeyValueStore,
     Object,
     Vault,
-    TransactionRuntime,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum RENodeId {
     AuthZoneStack,
-    TransactionRuntime,
     GlobalObject(Address),
     KeyValueStore(KeyValueStoreId),
     // This is only used for owned objects (global objects have addresses)
@@ -41,7 +39,6 @@ impl fmt::Debug for RENodeId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::AuthZoneStack => write!(f, "AuthZoneStack"),
-            Self::TransactionRuntime => write!(f, "TransactionRuntime"),
             Self::KeyValueStore(id) => f
                 .debug_tuple("KeyValueStore")
                 .field(&hex::encode(id))
@@ -57,7 +54,6 @@ impl From<RENodeId> for [u8; OBJECT_ID_LENGTH] {
         match value {
             RENodeId::KeyValueStore(id) => id,
             RENodeId::Object(id) => id,
-            RENodeId::TransactionRuntime => [4u8; OBJECT_ID_LENGTH], // TODO: Remove, this is here to preserve receiver in invocation for now
             RENodeId::AuthZoneStack => [5u8; OBJECT_ID_LENGTH], // TODO: Remove, this is here to preserve receiver in invocation for now
             _ => panic!("Not a stored id: {:?}", value),
         }
@@ -70,7 +66,6 @@ impl From<RENodeId> for Vec<u8> {
         match value {
             RENodeId::KeyValueStore(id) => id.to_vec(),
             RENodeId::Object(id) => id.to_vec(),
-            RENodeId::TransactionRuntime => [4u8; OBJECT_ID_LENGTH].to_vec(), // TODO: Remove, this is here to preserve receiver in invocation for now
             RENodeId::AuthZoneStack => [5u8; OBJECT_ID_LENGTH].to_vec(), // TODO: Remove, this is here to preserve receiver in invocation for now
             RENodeId::GlobalObject(address) => address.to_vec(),
         }
@@ -127,7 +122,6 @@ pub enum NodeModuleId {
     AccessRules,
     AccessRules1, // TODO: remove
     ComponentRoyalty,
-    FunctionAccessRules, // TODO: remove
 }
 
 impl NodeModuleId {
@@ -139,7 +133,6 @@ impl NodeModuleId {
             3u32 => Some(NodeModuleId::AccessRules),
             4u32 => Some(NodeModuleId::AccessRules1),
             5u32 => Some(NodeModuleId::ComponentRoyalty),
-            7u32 => Some(NodeModuleId::FunctionAccessRules),
             _ => None,
         }
     }
@@ -152,7 +145,6 @@ impl NodeModuleId {
             NodeModuleId::AccessRules => 3u32,
             NodeModuleId::AccessRules1 => 4u32,
             NodeModuleId::ComponentRoyalty => 5u32,
-            NodeModuleId::FunctionAccessRules => 7u32,
         }
     }
 }
@@ -190,6 +182,8 @@ pub enum PackageOffset {
     CodeType,
     Code,
     Royalty,
+    FunctionAccessRules,
+    EventSchema,
 }
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -250,11 +244,6 @@ pub enum ClockOffset {
 }
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum TransactionRuntimeOffset {
-    TransactionRuntime,
-}
-
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum AccountOffset {
     Account,
 }
@@ -270,7 +259,6 @@ pub enum SubstateOffset {
     AuthZoneStack(AuthZoneStackOffset),
     Component(ComponentOffset),
     Package(PackageOffset),
-    PackageAccessRules,
     ResourceManager(ResourceManagerOffset),
     KeyValueStore(KeyValueStoreOffset),
     Vault(VaultOffset),
@@ -280,7 +268,6 @@ pub enum SubstateOffset {
     Proof(ProofOffset),
     Worktop(WorktopOffset),
     Clock(ClockOffset),
-    TransactionRuntime(TransactionRuntimeOffset),
     Account(AccountOffset),
     AccessController(AccessControllerOffset),
 

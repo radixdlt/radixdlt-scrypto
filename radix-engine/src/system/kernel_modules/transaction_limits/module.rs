@@ -158,6 +158,29 @@ impl TransactionLimitsModule {
             Ok(())
         }
     }
+
+    // This event handler is called from two places:
+    //  1. Before wasm nested function call
+    //  2. After wasm invocation
+    pub fn update_wasm_memory_usage(
+        &mut self,
+        depth: usize,
+        consumed_memory: usize,
+    ) -> Result<(), RuntimeError> {
+        // update current frame consumed memory
+        if let Some(val) = self.call_frames_stack.get_mut(depth) {
+            val.wasm_memory_usage = consumed_memory;
+        } else {
+            // When kernel pops the call frame there are some nested calls which
+            // are not aligned with before_push_frame() which requires pushing
+            // new value on a stack instead of updating it.
+            self.call_frames_stack.push(CallFrameLimitInfo {
+                wasm_memory_usage: consumed_memory,
+            })
+        }
+
+        self.validate_wasm_memory()
+    }
 }
 
 impl KernelModule for TransactionLimitsModule {
@@ -232,30 +255,5 @@ impl KernelModule for TransactionLimitsModule {
 
         // Validate
         tlimit.validate_substates(None, Some(size))
-    }
-
-    // This event handler is called from two places:
-    //  1. Before wasm nested function call
-    //  2. After wasm invocation
-    fn on_update_wasm_memory_usage<Y: KernelModuleApi<RuntimeError>>(
-        api: &mut Y,
-        consumed_memory: usize,
-    ) -> Result<(), RuntimeError> {
-        let depth = api.kernel_get_current_depth();
-        let tlimit = &mut api.kernel_get_module_state().transaction_limits;
-
-        // update current frame consumed memory
-        if let Some(val) = tlimit.call_frames_stack.get_mut(depth) {
-            val.wasm_memory_usage = consumed_memory;
-        } else {
-            // When kernel pops the call frame there are some nested calls which
-            // are not aligned with before_push_frame() which requires pushing
-            // new value on a stack instead of updating it.
-            tlimit.call_frames_stack.push(CallFrameLimitInfo {
-                wasm_memory_usage: consumed_memory,
-            })
-        }
-
-        tlimit.validate_wasm_memory()
     }
 }

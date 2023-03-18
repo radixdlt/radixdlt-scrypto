@@ -39,7 +39,7 @@ fn setup_test_runner() -> (TestRunner, ComponentAddress) {
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     let commit_result = receipt1.expect_commit(true);
-    let component_address = commit_result.entity_changes.new_component_addresses[0];
+    let component_address = commit_result.new_component_addresses()[0];
 
     (test_runner, component_address)
 }

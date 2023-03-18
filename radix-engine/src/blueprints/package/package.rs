@@ -2,8 +2,7 @@ use super::PackageCodeTypeSubstate;
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::kernel_modules::costing::{FIXED_HIGH_FEE, FIXED_MEDIUM_FEE};
-use crate::system::node::RENodeInit;
-use crate::system::node::RENodeModuleInit;
+use crate::system::node::{RENodeInit, RENodeModuleInit};
 use crate::system::node_modules::access_rules::{
     FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
@@ -11,9 +10,11 @@ use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::RuntimeSubstate;
 use crate::types::*;
 use crate::wasm::{PrepareError, WasmValidator};
-use core::fmt::Debug;
 use native_sdk::resource::{ResourceManager, Vault};
-use radix_engine_interface::api::unsafe_api::ClientCostingReason;
+use radix_engine_interface::api::component::{
+    ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
+};
+use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, AccessRulesConfig, FnKey};
@@ -38,21 +39,33 @@ fn validate_package_schema(schema: &PackageSchema) -> Result<(), PackageError> {
     Ok(())
 }
 
-fn build_package_node_modules(
+fn globalize_package<Y>(
+    package_address: Option<[u8; 26]>,
+    info: PackageInfoSubstate,
+    code_type: PackageCodeTypeSubstate,
+    code: PackageCodeSubstate,
+    royalty: PackageRoyaltySubstate,
+    function_access_rules: FunctionAccessRulesSubstate,
     metadata: BTreeMap<String, String>,
     access_rules: AccessRulesConfig,
-    function_access_rules: FunctionAccessRulesSubstate,
-) -> BTreeMap<NodeModuleId, RENodeModuleInit> {
-    let mut metadata_substates = BTreeMap::new();
-    for (key, value) in metadata {
-        metadata_substates.insert(
-            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
-                scrypto_encode(&key).unwrap(),
-            )),
-            RuntimeSubstate::KeyValueStoreEntry(Some(ScryptoValue::String { value })),
-        );
-    }
+    api: &mut Y,
+) -> Result<IndexedScryptoValue, RuntimeError>
+where
+    Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+{
+    // Use kernel API to commit substates directly.
+    // Can't use the ClientApi because of chicken-and-egg issue.
 
+    // Prepare node init.
+    let node_init = RENodeInit::GlobalObject(btreemap!(
+        SubstateOffset::Package(PackageOffset::Info) => info.into(),
+        SubstateOffset::Package(PackageOffset::CodeType) => code_type.into(),
+        SubstateOffset::Package(PackageOffset::Code) => code.into(),
+        SubstateOffset::Package(PackageOffset::Royalty) => royalty.into(),
+        SubstateOffset::Package(PackageOffset::FunctionAccessRules) => function_access_rules.into(),
+    ));
+
+    // Prepare node modules.
     let mut node_modules = BTreeMap::new();
     node_modules.insert(
         NodeModuleId::TypeInfo,
@@ -64,7 +77,19 @@ fn build_package_node_modules(
     );
     node_modules.insert(
         NodeModuleId::Metadata,
-        RENodeModuleInit::Metadata(metadata_substates),
+        RENodeModuleInit::Metadata(
+            metadata
+                .into_iter()
+                .map(|(key, value)| {
+                    (
+                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                            scrypto_encode(&key).unwrap(),
+                        )),
+                        RuntimeSubstate::KeyValueStoreEntry(Some(ScryptoValue::String { value })),
+                    )
+                })
+                .collect(),
+        ),
     );
     node_modules.insert(
         NodeModuleId::AccessRules,
@@ -73,11 +98,26 @@ fn build_package_node_modules(
         }),
     );
     node_modules.insert(
-        NodeModuleId::FunctionAccessRules,
-        RENodeModuleInit::FunctionAccessRules(function_access_rules),
+        NodeModuleId::ComponentRoyalty,
+        RENodeModuleInit::ComponentRoyalty(
+            ComponentRoyaltyConfigSubstate {
+                royalty_config: RoyaltyConfig::default(),
+            },
+            ComponentRoyaltyAccumulatorSubstate {
+                royalty_vault: None,
+            },
+        ),
     );
 
-    node_modules
+    let node_id = if let Some(address) = package_address {
+        RENodeId::GlobalObject(PackageAddress::Normal(address).into())
+    } else {
+        api.kernel_allocate_node_id(RENodeType::GlobalPackage)?
+    };
+    api.kernel_create_node(node_id, node_init, node_modules)?;
+
+    let package_address: PackageAddress = node_id.into();
+    Ok(IndexedScryptoValue::from_typed(&package_address))
 }
 
 pub struct PackageNativePackage;
@@ -245,29 +285,22 @@ impl PackageNativePackage {
             royalty_vault: None,
             blueprint_royalty_configs: BTreeMap::new(),
         };
-        let node_init = RENodeInit::GlobalPackage(info, code_type, code, royalty);
+        let function_access_rules = FunctionAccessRulesSubstate {
+            access_rules: input.package_access_rules,
+            default_auth: input.default_package_access_rule,
+        };
 
-        // Build node module init
-        let node_modules = build_package_node_modules(
+        globalize_package(
+            input.package_address,
+            info,
+            code_type,
+            code,
+            royalty,
+            function_access_rules,
             input.metadata,
             input.access_rules,
-            FunctionAccessRulesSubstate {
-                access_rules: input.package_access_rules,
-                default_auth: input.default_package_access_rule,
-            },
-        );
-
-        // Create package node
-        let node_id = if let Some(address) = input.package_address {
-            RENodeId::GlobalObject(PackageAddress::Normal(address).into())
-        } else {
-            api.kernel_allocate_node_id(RENodeType::GlobalPackage)?
-        };
-        api.kernel_create_node(node_id, node_init, node_modules)?;
-
-        // Return
-        let package_address: PackageAddress = node_id.into();
-        Ok(IndexedScryptoValue::from_typed(&package_address))
+            api,
+        )
     }
 
     pub(crate) fn publish_wasm<Y>(
@@ -307,29 +340,22 @@ impl PackageNativePackage {
             royalty_vault: None,
             blueprint_royalty_configs: input.royalty_config,
         };
-        let node_init = RENodeInit::GlobalPackage(info, code_type, code, royalty);
+        let function_access_rules = FunctionAccessRulesSubstate {
+            access_rules: BTreeMap::new(),
+            default_auth: AccessRule::AllowAll,
+        };
 
-        // Build node module init
-        let node_modules = build_package_node_modules(
+        globalize_package(
+            input.package_address,
+            info,
+            code_type,
+            code,
+            royalty,
+            function_access_rules,
             input.metadata,
             input.access_rules,
-            FunctionAccessRulesSubstate {
-                access_rules: BTreeMap::new(),
-                default_auth: AccessRule::AllowAll,
-            },
-        );
-
-        // Create package node
-        let node_id = if let Some(address) = input.package_address {
-            RENodeId::GlobalObject(PackageAddress::Normal(address).into())
-        } else {
-            api.kernel_allocate_node_id(RENodeType::GlobalPackage)?
-        };
-        api.kernel_create_node(node_id, node_init, node_modules)?;
-
-        // Return
-        let package_address: PackageAddress = node_id.into();
-        Ok(IndexedScryptoValue::from_typed(&package_address))
+            api,
+        )
     }
 
     pub(crate) fn set_royalty_config<Y>(

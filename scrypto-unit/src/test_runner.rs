@@ -22,15 +22,11 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::utils::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
-use radix_engine_interface::api::node_modules::auth::{
-    AuthAddresses, ACCESS_RULES_BLUEPRINT, FUNCTION_ACCESS_RULES_BLUEPRINT,
-};
-use radix_engine_interface::api::node_modules::metadata::{
-    MetadataEntry, MetadataValue, METADATA_BLUEPRINT,
-};
-use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
+use radix_engine_interface::api::node_modules::auth::*;
+use radix_engine_interface::api::node_modules::metadata::*;
+use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::types::{RENodeId, VaultOffset};
-use radix_engine_interface::api::ClientPackageApi;
+use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::clock::{
     ClockGetCurrentTimeInput, ClockSetCurrentTimeInput, TimePrecision,
     CLOCK_GET_CURRENT_TIME_IDENT, CLOCK_SET_CURRENT_TIME_IDENT,
@@ -439,10 +435,7 @@ impl TestRunner {
         let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
         receipt.expect_commit_success();
 
-        let account_component = receipt
-            .expect_commit(true)
-            .entity_changes
-            .new_component_addresses[0];
+        let account_component = receipt.expect_commit(true).new_component_addresses()[0];
 
         let manifest = ManifestBuilder::new()
             .call_method(FAUCET_COMPONENT, "free", manifest_args!())
@@ -556,11 +549,7 @@ impl TestRunner {
             .create_validator(pub_key, owner_access_rule)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
-        let address = receipt
-            .expect_commit(true)
-            .entity_changes
-            .new_component_addresses[0];
+        let address = receipt.expect_commit(true).new_component_addresses()[0];
         address
     }
 
@@ -578,11 +567,7 @@ impl TestRunner {
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
-        receipt
-            .expect_commit(true)
-            .entity_changes
-            .new_package_addresses[0]
+        receipt.expect_commit(true).new_package_addresses()[0]
     }
 
     pub fn publish_package_with_owner(
@@ -597,11 +582,7 @@ impl TestRunner {
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
-        receipt
-            .expect_commit(true)
-            .entity_changes
-            .new_package_addresses[0]
+        receipt.expect_commit(true).new_package_addresses()[0]
     }
 
     pub fn compile_and_publish<P: AsRef<Path>>(&mut self, package_dir: P) -> PackageAddress {
@@ -779,11 +760,7 @@ impl TestRunner {
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
-        receipt
-            .expect_commit(true)
-            .entity_changes
-            .new_resource_addresses[0]
+        receipt.expect_commit(true).new_resource_addresses()[0]
     }
 
     pub fn create_restricted_token(
@@ -925,11 +902,7 @@ impl TestRunner {
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
-        receipt
-            .expect_commit(true)
-            .entity_changes
-            .new_resource_addresses[0]
+        receipt.expect_commit(true).new_resource_addresses()[0]
     }
 
     pub fn create_fungible_resource(
@@ -951,11 +924,7 @@ impl TestRunner {
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
-        receipt
-            .expect_commit(true)
-            .entity_changes
-            .new_resource_addresses[0]
+        receipt.expect_commit(true).new_resource_addresses()[0]
     }
 
     pub fn create_mintable_fungible_resource(
@@ -978,11 +947,7 @@ impl TestRunner {
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
-        receipt
-            .expect_commit(true)
-            .entity_changes
-            .new_resource_addresses[0]
+        receipt.expect_commit(true).new_resource_addresses()[0]
     }
 
     pub fn new_component<F>(
@@ -1000,14 +965,14 @@ impl TestRunner {
             .build();
 
         let receipt = self.execute_manifest(manifest, initial_proofs);
-        receipt.new_component_addresses()[0]
+        receipt.expect_commit(true).new_component_addresses()[0]
     }
 
     pub fn set_current_epoch(&mut self, epoch: u64) {
         let instructions = vec![Instruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_SET_EPOCH_IDENT.to_string(),
-            args: to_manifest_value(&EpochManagerSetEpochInput { epoch }).unwrap(),
+            args: to_manifest_value(&EpochManagerSetEpochInput { epoch }),
         }];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
@@ -1028,7 +993,7 @@ impl TestRunner {
         let instructions = vec![Instruction::CallMethod {
             component_address: EPOCH_MANAGER,
             method_name: EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
-            args: to_manifest_value(&EpochManagerGetCurrentEpochInput).unwrap(),
+            args: to_manifest_value(&EpochManagerGetCurrentEpochInput),
         }];
 
         let blobs = vec![];
@@ -1043,7 +1008,7 @@ impl TestRunner {
             }
             .get_executable(vec![AuthAddresses::validator_role()]),
         );
-        receipt.output(0)
+        receipt.expect_commit(true).output(0)
     }
 
     pub fn get_state_hash(&self) -> Hash {
@@ -1057,7 +1022,7 @@ impl TestRunner {
         let instructions = vec![Instruction::CallMethod {
             component_address: CLOCK,
             method_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
-            args: to_manifest_value(&ClockSetCurrentTimeInput { current_time_ms }).unwrap(),
+            args: to_manifest_value(&ClockSetCurrentTimeInput { current_time_ms }),
         }];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
@@ -1071,14 +1036,14 @@ impl TestRunner {
             }
             .get_executable(vec![AuthAddresses::validator_role()]),
         );
-        receipt.output(0)
+        receipt.expect_commit(true).output(0)
     }
 
     pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {
         let instructions = vec![Instruction::CallMethod {
             component_address: CLOCK,
             method_name: CLOCK_GET_CURRENT_TIME_IDENT.to_string(),
-            args: to_manifest_value(&ClockGetCurrentTimeInput { precision }).unwrap(),
+            args: to_manifest_value(&ClockGetCurrentTimeInput { precision }),
         }];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
@@ -1092,7 +1057,7 @@ impl TestRunner {
             }
             .get_executable(vec![AuthAddresses::validator_role()]),
         );
-        receipt.output(0)
+        receipt.expect_commit(true).output(0)
     }
 
     pub fn kernel_invoke_function(
@@ -1153,11 +1118,6 @@ impl TestRunner {
                     NodeModuleId::ComponentRoyalty => (
                         ROYALTY_PACKAGE,
                         COMPONENT_ROYALTY_BLUEPRINT.into(),
-                        local_type_index.clone(),
-                    ),
-                    NodeModuleId::FunctionAccessRules => (
-                        ACCESS_RULES_PACKAGE,
-                        FUNCTION_ACCESS_RULES_BLUEPRINT.into(),
                         local_type_index.clone(),
                     ),
                     NodeModuleId::Metadata => (

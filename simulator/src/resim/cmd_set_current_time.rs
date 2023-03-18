@@ -27,8 +27,7 @@ impl SetCurrentTime {
             method_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
             args: to_manifest_value(&ClockSetCurrentTimeInput {
                 current_time_ms: self.date_time.to_instant().seconds_since_unix_epoch * 1000,
-            })
-            .unwrap(),
+            }),
         }];
 
         let blobs = vec![];

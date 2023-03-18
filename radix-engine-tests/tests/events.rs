@@ -310,14 +310,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
             )
             .build();
         let receipt = test_runner.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
-        (
-            receipt
-                .expect_commit(true)
-                .entity_changes
-                .new_resource_addresses[0],
-            id,
-        )
+        (receipt.expect_commit(true).new_resource_addresses()[0], id)
     };
     let vault_id = test_runner.get_component_vaults(account, recallable_resource_address)[0];
 
@@ -470,11 +463,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
             )
             .build();
         let receipt = test_runner.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
-        receipt
-            .expect_commit(true)
-            .entity_changes
-            .new_resource_addresses[0]
+        receipt.expect_commit(true).new_resource_addresses()[0]
     };
 
     let manifest = ManifestBuilder::new()
@@ -555,11 +544,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
             )
             .build();
         let receipt = test_runner.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
-        receipt
-            .expect_commit(true)
-            .entity_changes
-            .new_resource_addresses[0]
+        receipt.expect_commit(true).new_resource_addresses()[0]
     };
 
     let id = NonFungibleLocalId::Integer(IntegerNonFungibleLocalId::new(1));
@@ -641,8 +626,7 @@ fn epoch_manager_round_update_emits_correct_event() {
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&EpochManagerNextRoundInput {
             round: rounds_per_epoch - 1,
-        })
-        .unwrap(),
+        }),
     }];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
@@ -689,8 +673,7 @@ fn epoch_manager_epoch_update_emits_correct_event() {
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&EpochManagerNextRoundInput {
             round: rounds_per_epoch,
-        })
-        .unwrap(),
+        }),
     }];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
@@ -1286,8 +1269,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
             VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
             to_manifest_value(&ValidatorUpdateAcceptDelegatedStakeInput {
                 accept_delegated_stake: false,
-            })
-            .unwrap(),
+            }),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -1418,11 +1400,7 @@ fn create_validator(
         .create_validator(pk, owner_access_rule)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    receipt.expect_commit_success();
-    let component_address = receipt
-        .expect_commit(true)
-        .entity_changes
-        .new_component_addresses[0];
+    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     component_address
 }
@@ -1445,6 +1423,9 @@ fn create_all_allowed_resource(test_runner: &mut TestRunner) -> ResourceAddress 
         .create_fungible_resource(18, BTreeMap::new(), access_rules, None)
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
-    receipt.expect_commit_success();
-    *receipt.new_resource_addresses().get(0).unwrap()
+    *receipt
+        .expect_commit(true)
+        .new_resource_addresses()
+        .get(0)
+        .unwrap()
 }

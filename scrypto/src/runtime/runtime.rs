@@ -1,14 +1,10 @@
 use radix_engine_interface::api::types::FnIdentifier;
-use radix_engine_interface::api::ClientActorApi;
-use radix_engine_interface::api::{types::*, ClientEventApi, ClientObjectApi, ClientPackageApi};
+use radix_engine_interface::api::{types::*, ClientEventApi, ClientObjectApi};
+use radix_engine_interface::api::{ClientActorApi, ClientTransactionRuntimeApi};
 use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerGetCurrentEpochInput, EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
 };
 use radix_engine_interface::blueprints::resource::NonFungibleGlobalId;
-use radix_engine_interface::blueprints::transaction_runtime::{
-    TransactionRuntimeGenerateUuidInput, TransactionRuntimeGetHashInput,
-    TRANSACTION_RUNTIME_GENERATE_UUID_IDENT, TRANSACTION_RUNTIME_GET_HASH_IDENT,
-};
 use radix_engine_interface::constants::{EPOCH_MANAGER, PACKAGE_TOKEN};
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::{model::*, ScryptoCustomTypeExtension};
@@ -91,26 +87,12 @@ impl Runtime {
 
     /// Returns the transaction hash.
     pub fn transaction_hash() -> Hash {
-        let output = ScryptoEnv
-            .call_method(
-                RENodeId::TransactionRuntime,
-                TRANSACTION_RUNTIME_GET_HASH_IDENT,
-                scrypto_encode(&TransactionRuntimeGetHashInput {}).unwrap(),
-            )
-            .unwrap();
-        scrypto_decode(&output).unwrap()
+        ScryptoEnv.get_transaction_hash().unwrap()
     }
 
     /// Generates a UUID.
     pub fn generate_uuid() -> u128 {
-        let output = ScryptoEnv
-            .call_method(
-                RENodeId::TransactionRuntime,
-                TRANSACTION_RUNTIME_GENERATE_UUID_IDENT,
-                scrypto_encode(&TransactionRuntimeGenerateUuidInput {}).unwrap(),
-            )
-            .unwrap();
-        scrypto_decode(&output).unwrap()
+        ScryptoEnv.generate_uuid().unwrap()
     }
 
     /// Emits an application event

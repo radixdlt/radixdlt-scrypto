@@ -5,23 +5,22 @@ pub const CONSUME_BUFFER_FUNCTION_NAME: &str = "consume_buffer";
 pub const CONSUME_COST_UNITS_FUNCTION_ID: usize = 0x11;
 pub const CONSUME_COST_UNITS_FUNCTION_NAME: &str = "gas";
 
-pub const NEW_PACKAGE_FUNCTION_ID: usize = 0x20;
-pub const NEW_PACKAGE_FUNCTION_NAME: &str = "new_package";
-pub const CALL_FUNCTION_FUNCTION_ID: usize = 0x21;
-pub const CALL_FUNCTION_FUNCTION_NAME: &str = "call_function";
-
-pub const NEW_COMPONENT_FUNCTION_ID: usize = 0x30;
-pub const NEW_COMPONENT_FUNCTION_NAME: &str = "new_component";
+pub const NEW_OBJECT_FUNCTION_ID: usize = 0x30;
+pub const NEW_OBJECT_FUNCTION_NAME: &str = "new_object";
 pub const NEW_KEY_VALUE_STORE_FUNCTION_ID: usize = 0x31;
 pub const NEW_KEY_VALUE_STORE_FUNCTION_NAME: &str = "new_key_value_store";
-pub const GLOBALIZE_COMPONENT_FUNCTION_ID: usize = 0x32;
-pub const GLOBALIZE_COMPONENT_FUNCTION_NAME: &str = "globalize_component";
+pub const GLOBALIZE_OBJECT_FUNCTION_ID: usize = 0x32;
+pub const GLOBALIZE_OBJECT_FUNCTION_NAME: &str = "globalize_object";
 pub const CALL_METHOD_FUNCTION_ID: usize = 0x33;
 pub const CALL_METHOD_FUNCTION_NAME: &str = "call_method";
-pub const GET_COMPONENT_TYPE_INFO_FUNCTION_ID: usize = 0x34;
-pub const GET_COMPONENT_TYPE_INFO_FUNCTION_NAME: &str = "get_component_type_info";
-pub const GET_KEY_VALUE_STORE_INFO_FUNCTION_ID: usize = 0x35;
+pub const CALL_FUNCTION_FUNCTION_ID: usize = 0x34;
+pub const CALL_FUNCTION_FUNCTION_NAME: &str = "call_function";
+pub const GET_OBJECT_TYPE_INFO_FUNCTION_ID: usize = 0x35;
+pub const GET_OBJECT_TYPE_INFO_FUNCTION_NAME: &str = "get_object_type_info";
+pub const GET_KEY_VALUE_STORE_INFO_FUNCTION_ID: usize = 0x36;
 pub const GET_KEY_VALUE_STORE_INFO_FUNCTION_NAME: &str = "get_key_value_store_info";
+pub const DROP_OBJECT_FUNCTION_ID: usize = 0x37;
+pub const DROP_OBJECT_FUNCTION_NAME: &str = "drop_object";
 
 pub const LOCK_SUBSTATE_FUNCTION_ID: usize = 0x40;
 pub const LOCK_SUBSTATE_FUNCTION_NAME: &str = "lock_substate";
@@ -36,12 +35,12 @@ pub const EMIT_EVENT_FUNCTION_ID: usize = 0x50;
 pub const EMIT_EVENT_FUNCTION_NAME: &str = "emit_event";
 pub const LOG_FUNCTION_ID: usize = 0x51;
 pub const LOG_FUNCTION_NAME: &str = "log_message";
-
-// Under active refactoring
-pub const GET_ACTOR_FUNCTION_ID: usize = 0xf0;
+pub const GET_TRANSACTION_HASH_FUNCTION_ID: usize = 0x52;
+pub const GET_TRANSACTION_HASH_FUNCTION_NAME: &str = "get_transaction_hash";
+pub const GENERATE_UUID_FUNCTION_ID: usize = 0x53;
+pub const GENERATE_UUID_FUNCTION_NAME: &str = "generate_uuid";
+pub const GET_ACTOR_FUNCTION_ID: usize = 0x54;
 pub const GET_ACTOR_FUNCTION_NAME: &str = "get_actor";
-pub const DROP_NODE_FUNCTION_ID: usize = 0xf1;
-pub const DROP_NODE_FUNCTION_NAME: &str = "drop_node";
 
 pub const MODULE_ENV_NAME: &str = "env";
 pub const EXPORT_MEMORY: &str = "memory";

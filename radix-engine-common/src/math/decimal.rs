@@ -478,7 +478,11 @@ impl FromStr for Decimal {
         int *= tens.pow(Self::SCALE);
 
         if v.len() == 2 {
-            let scale: u32 = Self::SCALE - (v[1].len() as u32);
+            let scale = if let Some(scale) = Self::SCALE.checked_sub(v[1].len() as u32) {
+                Ok(scale)
+            } else {
+                Err(Self::Err::UnsupportedDecimalPlace)
+            }?;
 
             let frac = match BnumI256::from_str(v[1]) {
                 Ok(val) => val,
@@ -1230,5 +1234,32 @@ mod tests {
         assert_eq!(root_neg_4_42, None);
         assert_eq!(root_neg_5_42.unwrap(), dec!("-2.111785764966753912"));
         assert_eq!(root_0, None);
+    }
+
+    #[test]
+    fn no_panic_with_18_decimal_places() {
+        // Arrange
+        let string = "1.111111111111111111";
+
+        // Act
+        let decimal = Decimal::from_str(string);
+
+        // Assert
+        assert!(decimal.is_ok())
+    }
+
+    #[test]
+    fn no_panic_with_19_decimal_places() {
+        // Arrange
+        let string = "1.1111111111111111111";
+
+        // Act
+        let decimal = Decimal::from_str(string);
+
+        // Assert
+        assert!(matches!(
+            decimal,
+            Err(ParseDecimalError::UnsupportedDecimalPlace)
+        ))
     }
 }

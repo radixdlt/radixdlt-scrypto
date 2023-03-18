@@ -1,7 +1,8 @@
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, InterpreterError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::node::RENodeInit;
+use crate::system::node::{RENodeInit, RENodeModuleInit};
+use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRulesObject;
 use native_sdk::modules::metadata::Metadata;
@@ -12,11 +13,13 @@ use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::blueprints::resource::AccessRulesConfig;
 use radix_engine_interface::blueprints::resource::MethodKey;
-use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver};
+use radix_engine_interface::schema::{
+    BlueprintSchema, FunctionSchema, KeyValueStoreSchema, PackageSchema, Receiver,
+};
 
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use native_sdk::resource::{SysBucket, Vault};
-use radix_engine_interface::api::unsafe_api::ClientCostingReason;
+use radix_engine_interface::api::types::ClientCostingReason;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct AccountSubstate {
@@ -344,7 +347,15 @@ impl AccountNativePackage {
         let kv_store_id = {
             let node_id = api.kernel_allocate_node_id(RENodeType::KeyValueStore)?;
             let node = RENodeInit::KeyValueStore;
-            api.kernel_create_node(node_id, node, BTreeMap::new())?;
+            api.kernel_create_node(
+                node_id,
+                node,
+                btreemap!(
+                    NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::KeyValueStore(
+                        KeyValueStoreSchema::new::<ResourceAddress, Own>(false))
+                    )
+                ),
+            )?;
             node_id
         };
 
@@ -362,7 +373,7 @@ impl AccountNativePackage {
         let access_rules =
             AccessRulesObject::sys_new(access_rules_from_withdraw_rule(input.withdraw_rule), api)?;
         let metadata = Metadata::sys_create(api)?;
-        let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
+        let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
         let address = api.globalize(
             RENodeId::Object(account_id),
@@ -392,7 +403,15 @@ impl AccountNativePackage {
         let kv_store_id = {
             let node_id = api.kernel_allocate_node_id(RENodeType::KeyValueStore)?;
             let node = RENodeInit::KeyValueStore;
-            api.kernel_create_node(node_id, node, BTreeMap::new())?;
+            api.kernel_create_node(
+                node_id,
+                node,
+                btreemap!(
+                    NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::KeyValueStore(
+                        KeyValueStoreSchema::new::<ResourceAddress, Own>(false))
+                    )
+                ),
+            )?;
             node_id
         };
 

@@ -247,8 +247,7 @@ pub fn stop_timed_recovery_with_no_access_fails() {
                     confirmation_role: rule!(require(RADIX_TOKEN)),
                 },
                 timed_recovery_delay_in_minutes: Some(10),
-            })
-            .unwrap(),
+            }),
         )
         .build();
 
@@ -1471,7 +1470,7 @@ impl AccessControllerTestRunner {
         receipt.expect_commit_success();
 
         let access_controller_component_address =
-            receipt.new_component_addresses().get(0).unwrap().clone();
+            receipt.expect_commit(true).new_component_addresses()[0];
 
         Self {
             test_runner,
@@ -1492,7 +1491,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 "create_proof",
-                to_manifest_value(&AccessControllerCreateProofInput {}).unwrap(),
+                to_manifest_value(&AccessControllerCreateProofInput {}),
             )
             .pop_from_auth_zone(|builder, _| builder)
             .build();
@@ -1525,8 +1524,7 @@ impl AccessControllerTestRunner {
                         confirmation_role: proposed_confirmation_role,
                     },
                     timed_recovery_delay_in_minutes,
-                })
-                .unwrap(),
+                }),
             )
             .build();
         self.execute_manifest(manifest)
@@ -1570,8 +1568,7 @@ impl AccessControllerTestRunner {
                         },
                         timed_recovery_delay_in_minutes,
                     },
-                )
-                .unwrap(),
+                ),
             )
             .build();
         self.execute_manifest(manifest)
@@ -1597,8 +1594,7 @@ impl AccessControllerTestRunner {
                         confirmation_role: proposed_confirmation_role,
                     },
                     timed_recovery_delay_in_minutes,
-                })
-                .unwrap(),
+                }),
             )
             .build();
         self.execute_manifest(manifest)
@@ -1616,7 +1612,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 method_name,
-                to_manifest_value(&AccessControllerCancelPrimaryRoleRecoveryProposalInput).unwrap(),
+                to_manifest_value(&AccessControllerCancelPrimaryRoleRecoveryProposalInput),
             )
             .build();
         self.execute_manifest(manifest)
@@ -1628,7 +1624,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 "lock_primary_role",
-                to_manifest_value(&AccessControllerLockPrimaryRoleInput {}).unwrap(),
+                to_manifest_value(&AccessControllerLockPrimaryRoleInput {}),
             )
             .build();
         self.execute_manifest(manifest)
@@ -1640,7 +1636,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_component_address,
                 "unlock_primary_role",
-                to_manifest_value(&AccessControllerUnlockPrimaryRoleInput {}).unwrap(),
+                to_manifest_value(&AccessControllerUnlockPrimaryRoleInput {}),
             )
             .build();
         self.execute_manifest(manifest)
@@ -1666,8 +1662,7 @@ impl AccessControllerTestRunner {
                         confirmation_role: proposed_confirmation_role,
                     },
                     timed_recovery_delay_in_minutes,
-                })
-                .unwrap(),
+                }),
             )
             .build();
         self.execute_manifest(manifest)

@@ -2,6 +2,7 @@
 members = [
     "access_rules",
     "arguments",
+    "balance_changes",
     "bucket",
     "component",
     "core",
@@ -36,6 +37,7 @@ members = [
     "royalty",
     "royalty-auth",
     "transaction_limits",
+    "transaction_runtime",
     "events",
     "events_invalid",
     "logger"

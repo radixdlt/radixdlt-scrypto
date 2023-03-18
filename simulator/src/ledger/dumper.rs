@@ -108,7 +108,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 .map(|s| s.to_runtime().into())
                 .unwrap();
 
-            let raw_state = IndexedScryptoValue::from_slice(&state.raw).unwrap();
+            let raw_state = IndexedScryptoValue::from_scrypto_value(state.0);
             let (package_address, blueprint_name) = match type_info_substate {
                 TypeInfoSubstate::Object {
                     package_address,
