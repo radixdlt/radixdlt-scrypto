@@ -9,13 +9,12 @@ use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::resource::{AccessRuleEntry, AccessRulesConfig};
-use radix_engine_interface::blueprints::resource::MethodKey;
 use radix_engine_interface::blueprints::resource::{AccessRule, Bucket, Proof};
 
+use crate::blueprints::util::SecurifiedAccessRules;
 use native_sdk::resource::{SysBucket, Vault};
 use radix_engine_interface::blueprints::identity::VirtualLazyLoadOutput;
-use crate::blueprints::util::SecurifiedAccessRules;
+use crate::blueprints::identity::IdentityOwnerAccessRules;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct AccountSubstate {
@@ -41,35 +40,16 @@ pub struct AccountSecurify;
 
 impl SecurifiedAccessRules for AccountSecurify {
     const OWNER_GROUP_NAME: &'static str = OWNER_GROUP_NAME;
-    const PUBLIC_METHODS: &'static [&'static str] = &[ACCOUNT_DEPOSIT_IDENT, ACCOUNT_DEPOSIT_BATCH_IDENT];
+    const PUBLIC_METHODS: &'static [&'static str] =
+        &[ACCOUNT_DEPOSIT_IDENT, ACCOUNT_DEPOSIT_BATCH_IDENT];
     const SECURIFY_IDENT: &'static str = "Securify";
     const PACKAGE: PackageAddress = ACCOUNT_PACKAGE;
     const OWNER_TOKEN: ResourceAddress = IDENTITY_OWNER_TOKEN;
 }
 
-
 pub struct AccountBlueprint;
 
 impl AccountBlueprint {
-    fn init_access_rules<Y: ClientApi<RuntimeError>>(api: &mut Y) -> Result<AccessRules, RuntimeError> {
-        let mut access_rules = AccessRulesConfig::new().default(
-            AccessRuleEntry::group(OWNER_GROUP_NAME),
-            AccessRuleEntry::group(OWNER_GROUP_NAME),
-        );
-        access_rules.set_access_rule_and_mutability(
-            MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_IDENT),
-            AccessRule::AllowAll,
-            AccessRule::DenyAll,
-        );
-        access_rules.set_access_rule_and_mutability(
-            MethodKey::new(NodeModuleId::SELF, ACCOUNT_DEPOSIT_BATCH_IDENT),
-            AccessRule::AllowAll,
-            AccessRule::DenyAll,
-        );
-        let access_rules = AccessRules::sys_new(access_rules, api)?;
-        Ok(access_rules)
-    }
-
     fn create_modules<Y>(
         access_rules: AccessRules,
         api: &mut Y,
@@ -101,8 +81,7 @@ impl AccountBlueprint {
             ECDSA_SECP256K1_TOKEN,
             NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
         );
-        let access_rules = Self::init_access_rules(api)?;
-        AccountSecurify::presecurified(non_fungible_global_id, &access_rules, api)?;
+        let access_rules = AccountSecurify::create_presecurified(non_fungible_global_id, api)?;
         let modules = Self::create_modules(access_rules, api)?;
 
         Ok((account, modules))
@@ -120,11 +99,17 @@ impl AccountBlueprint {
             EDDSA_ED25519_TOKEN,
             NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
         );
-        let access_rules = Self::init_access_rules(api)?;
-        AccountSecurify::presecurified(non_fungible_global_id, &access_rules, api)?;
+        let access_rules = AccountSecurify::create_presecurified(non_fungible_global_id, api)?;
         let modules = Self::create_modules(access_rules, api)?;
 
         Ok((account, modules))
+    }
+
+    pub fn securify<Y>(receiver: RENodeId, api: &mut Y) -> Result<Bucket, RuntimeError>
+        where
+            Y: ClientApi<RuntimeError>,
+    {
+        IdentityOwnerAccessRules::securify(receiver, api)
     }
 
     pub fn create_global<Y>(withdraw_rule: AccessRule, api: &mut Y) -> Result<Address, RuntimeError>
@@ -132,7 +117,8 @@ impl AccountBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let account = Self::create_local(api)?;
-        let access_rules = AccountSecurify::create_advanced(withdraw_rule.clone(), withdraw_rule, api)?;
+        let access_rules =
+            AccountSecurify::create_advanced(withdraw_rule.clone(), withdraw_rule, api)?;
         let modules = Self::create_modules(access_rules, api)?;
         let modules = modules
             .into_iter()

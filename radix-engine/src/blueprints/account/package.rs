@@ -67,6 +67,16 @@ impl AccountNativePackage {
         );
 
         functions.insert(
+            ACCOUNT_SECURIFY_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRef),
+                input: aggregator.add_child_type_and_descendents::<AccountSecurifyInput>(),
+                output: aggregator.add_child_type_and_descendents::<AccountSecurifyOutput>(),
+                export_name: ACCOUNT_SECURIFY_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
             ACCOUNT_LOCK_FEE_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(Receiver::SelfRef),
@@ -271,6 +281,19 @@ impl AccountNativePackage {
                 })?;
 
                 let rtn = AccountBlueprint::create_local(api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            ACCOUNT_SECURIFY_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::InterpreterError(
+                    InterpreterError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                let _input: AccountSecurifyInput = input.as_typed().map_err(|e| {
+                    RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
+                })?;
+                let rtn = AccountBlueprint::securify(receiver, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }

@@ -40,6 +40,18 @@ pub const ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_IDENT: &str = "create_virtual_ecdsa
 pub const ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_IDENT: &str = "create_virtual_ecdsa_25519";
 
 //==================
+// Account Securify
+//==================
+
+pub const ACCOUNT_SECURIFY_IDENT: &str = "securify";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccountSecurifyInput {
+}
+
+pub type AccountSecurifyOutput = Bucket;
+
+//==================
 // Account Lock Fee
 //==================
 

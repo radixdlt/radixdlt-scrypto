@@ -801,10 +801,7 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
     let primary_group = "primary";
     access_rules.set_group_access_rule(primary_group.into(), rule_set.primary_role.clone());
     access_rules.set_method_access_rule_to_group(
-        MethodKey::new(
-            NodeModuleId::SELF,
-            ACCESS_CONTROLLER_CREATE_PROOF_IDENT,
-        ),
+        MethodKey::new(NodeModuleId::SELF, ACCESS_CONTROLLER_CREATE_PROOF_IDENT),
         primary_group.into(),
     );
     access_rules.set_method_access_rule_to_group(

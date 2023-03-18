@@ -5,6 +5,16 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::Instruction;
 
+#[test]
+fn can_withdraw_from_my_allocated_account() {
+    can_withdraw_from_my_account_internal(false);
+}
+
+#[test]
+fn can_withdraw_from_my_virtual_account() {
+    can_withdraw_from_my_account_internal(true);
+}
+
 fn can_withdraw_from_my_account_internal(use_virtual: bool) {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
@@ -45,15 +55,6 @@ fn can_withdraw_from_my_account_internal(use_virtual: bool) {
     );
 }
 
-#[test]
-fn can_withdraw_from_my_allocated_account() {
-    can_withdraw_from_my_account_internal(false);
-}
-
-#[test]
-fn can_withdraw_from_my_virtual_account() {
-    can_withdraw_from_my_account_internal(true);
-}
 
 fn can_withdraw_non_fungible_from_my_account_internal(use_virtual: bool) {
     // Arrange

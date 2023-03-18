@@ -51,10 +51,7 @@ impl ResourceManager {
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                    key: MethodKey::new(
-                        NodeModuleId::SELF,
-                        RESOURCE_MANAGER_BURN_IDENT,
-                    ),
+                    key: MethodKey::new(NodeModuleId::SELF, RESOURCE_MANAGER_BURN_IDENT),
                     rule: AccessRuleEntry::AccessRule(access_rule),
                 })
                 .unwrap(),
@@ -162,10 +159,7 @@ impl ResourceManager {
                 NodeModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
-                    key: MethodKey::new(
-                        NodeModuleId::SELF,
-                        RESOURCE_MANAGER_BURN_IDENT,
-                    ),
+                    key: MethodKey::new(NodeModuleId::SELF, RESOURCE_MANAGER_BURN_IDENT),
                     mutability: AccessRule::DenyAll,
                 })
                 .unwrap(),

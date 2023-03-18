@@ -173,10 +173,7 @@ impl ClockNativePackage {
             rule!(allow_all),
         );
         access_rules.set_method_access_rule(
-            MethodKey::new(
-                NodeModuleId::SELF,
-                CLOCK_COMPARE_CURRENT_TIME_IDENT,
-            ),
+            MethodKey::new(NodeModuleId::SELF, CLOCK_COMPARE_CURRENT_TIME_IDENT),
             rule!(allow_all),
         );
         let access_rules = AccessRules::sys_new(access_rules, api)?.0;

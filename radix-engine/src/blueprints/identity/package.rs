@@ -1,8 +1,9 @@
+use crate::blueprints::util::SecurifiedAccessRules;
 use crate::errors::InterpreterError;
 use crate::errors::RuntimeError;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
-use native_sdk::modules::access_rules::{AccessRules, AttachedAccessRules};
+use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::types::ClientCostingReason;
@@ -12,7 +13,6 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::FunctionSchema;
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::schema::{BlueprintSchema, Receiver};
-use crate::blueprints::util::SecurifiedAccessRules;
 
 pub const OWNER_GROUP_NAME: &str = "owner";
 
@@ -196,16 +196,6 @@ impl SecurifiedAccessRules for IdentityOwnerAccessRules {
 pub struct IdentityBlueprint;
 
 impl IdentityBlueprint {
-    fn init_access_rules<Y: ClientApi<RuntimeError>>(api: &mut Y) -> Result<AccessRules, RuntimeError> {
-        let mut access_rules = AccessRulesConfig::new();
-        access_rules = access_rules.default(
-            AccessRuleEntry::group(OWNER_GROUP_NAME),
-            AccessRuleEntry::group(OWNER_GROUP_NAME),
-        );
-        let access_rules = AccessRules::sys_new(access_rules, api)?;
-        Ok(access_rules)
-    }
-
     pub fn create_advanced<Y>(
         access_rule: AccessRule,
         mutability: AccessRule,
@@ -216,8 +206,7 @@ impl IdentityBlueprint {
     {
         let access_rules = IdentityOwnerAccessRules::create_advanced(access_rule, mutability, api)?;
 
-        let (object, modules) =
-            Self::create_object(access_rules, api)?;
+        let (object, modules) = Self::create_object(access_rules, api)?;
         let modules = modules
             .into_iter()
             .map(|(id, own)| (id, own.id()))
@@ -230,8 +219,7 @@ impl IdentityBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let access_rules = Self::init_access_rules(api)?;
-        let bucket = IdentityOwnerAccessRules::securify(&access_rules, api)?;
+        let (access_rules, bucket) = IdentityOwnerAccessRules::create_securified(api)?;
 
         let (object, modules) = Self::create_object(access_rules, api)?;
         let modules = modules
@@ -253,12 +241,8 @@ impl IdentityBlueprint {
             ECDSA_SECP256K1_TOKEN,
             NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
         );
-        let access_rules = Self::init_access_rules(api)?;
-        IdentityOwnerAccessRules::presecurified(
-            non_fungible_global_id,
-            &access_rules,
-            api,
-        )?;
+        let access_rules =
+            IdentityOwnerAccessRules::create_presecurified(non_fungible_global_id, api)?;
 
         Self::create_object(access_rules, api)
     }
@@ -274,14 +258,17 @@ impl IdentityBlueprint {
             EDDSA_ED25519_TOKEN,
             NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
         );
-        let access_rules = Self::init_access_rules(api)?;
-        IdentityOwnerAccessRules::presecurified(
-            non_fungible_global_id,
-            &access_rules,
-            api,
-        )?;
+        let access_rules =
+            IdentityOwnerAccessRules::create_presecurified(non_fungible_global_id, api)?;
 
         Self::create_object(access_rules, api)
+    }
+
+    fn securify<Y>(receiver: RENodeId, api: &mut Y) -> Result<Bucket, RuntimeError>
+        where
+            Y: ClientApi<RuntimeError>,
+    {
+        IdentityOwnerAccessRules::securify(receiver, api)
     }
 
     fn create_object<Y>(
@@ -304,19 +291,4 @@ impl IdentityBlueprint {
 
         Ok((Own::Object(object_id), modules))
     }
-
-    fn securify<Y>(receiver: RENodeId, api: &mut Y) -> Result<Bucket, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        let attached_access_rules = AttachedAccessRules(receiver);
-
-        let bucket = IdentityOwnerAccessRules::securify(
-            &attached_access_rules,
-            api,
-        )?;
-
-        Ok(bucket)
-    }
-
 }

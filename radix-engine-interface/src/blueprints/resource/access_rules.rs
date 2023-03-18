@@ -121,34 +121,41 @@ impl AccessRulesConfig {
         match self.method_auth.get(key) {
             None => self.get_default(),
             Some(AccessRuleEntry::AccessRule(access_rule)) => access_rule.clone(),
-            Some(AccessRuleEntry::Group(group_key)) => {
-                self.grouped_auth.get(group_key).cloned().unwrap_or(AccessRule::DenyAll)
-            },
+            Some(AccessRuleEntry::Group(group_key)) => self
+                .grouped_auth
+                .get(group_key)
+                .cloned()
+                .unwrap_or(AccessRule::DenyAll),
         }
     }
 
     // TODO: Remove, used currently for vault access
     pub fn get_group_access_rule(&self, name: &str) -> AccessRule {
-        self.grouped_auth.get(name).cloned().unwrap_or(AccessRule::DenyAll)
+        self.grouped_auth
+            .get(name)
+            .cloned()
+            .unwrap_or(AccessRule::DenyAll)
     }
 
     pub fn get_mutability(&self, key: &MethodKey) -> AccessRule {
         self.method_auth_mutability
             .get(key)
             .cloned()
-            .map(|e| {
-                match e {
-                    AccessRuleEntry::AccessRule(access_rule) => access_rule,
-                    AccessRuleEntry::Group(name) => self.grouped_auth.get(&name).cloned()
-                        .unwrap_or(AccessRule::DenyAll)
-                }
+            .map(|e| match e {
+                AccessRuleEntry::AccessRule(access_rule) => access_rule,
+                AccessRuleEntry::Group(name) => self
+                    .grouped_auth
+                    .get(&name)
+                    .cloned()
+                    .unwrap_or(AccessRule::DenyAll),
             })
             .unwrap_or_else(|| self.get_default_mutability())
     }
 
     pub fn get_group_mutability(&self, key: &str) -> AccessRule {
         self.grouped_auth_mutability
-            .get(key).cloned()
+            .get(key)
+            .cloned()
             .unwrap_or_else(|| self.get_default_mutability())
     }
 
@@ -170,7 +177,7 @@ impl AccessRulesConfig {
         self.grouped_auth_mutability.insert(key, method_auth);
     }
 
-    fn get_default(&self) -> AccessRule {
+    pub fn get_default(&self) -> AccessRule {
         match &self.default_auth {
             AccessRuleEntry::AccessRule(access_rule) => access_rule.clone(),
             AccessRuleEntry::Group(name) => match self.grouped_auth.get(name) {
@@ -256,10 +263,7 @@ pub fn package_access_rules_from_owner_badge(
         rule!(require(owner_badge.clone())),
     );
     access_rules.set_access_rule_and_mutability(
-        MethodKey::new(
-            NodeModuleId::SELF,
-            PACKAGE_SET_ROYALTY_CONFIG_IDENT,
-        ),
+        MethodKey::new(NodeModuleId::SELF, PACKAGE_SET_ROYALTY_CONFIG_IDENT),
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
     );
