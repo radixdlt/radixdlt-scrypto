@@ -1,4 +1,4 @@
-use sbor::rust::vec::Vec;
+use crate::rust::vec::Vec;
 
 /// Copies a slice to a fixed-sized array.
 pub fn copy_u8_array<const N: usize>(slice: &[u8]) -> [u8; N] {

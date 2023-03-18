@@ -414,11 +414,11 @@ fn convert_event_schema(
         let blueprint_schema = package_event_schema.entry(blueprint_name).or_default();
         for (local_type_index, schema) in event_schemas {
             let event_name = {
-                (*schema
+                schema
                     .resolve_type_metadata(local_type_index)
                     .map_or(Err(EventError::InvalidEventSchema), Ok)?
-                    .type_name)
-                    .to_owned()
+                    .get_name_string()
+                    .map_or(Err(EventError::InvalidEventSchema), Ok)?
             };
             // TODO: Add a test once Scrypto events are implemented.
             if let None = blueprint_schema.insert(event_name, (local_type_index, schema)) {

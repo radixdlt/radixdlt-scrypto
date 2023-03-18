@@ -1274,11 +1274,11 @@ struct CustomEvent {
 fn event_name<T: ScryptoDescribe>() -> String {
     let (local_type_index, schema) =
         generate_full_schema_from_single_type::<T, ScryptoCustomTypeExtension>();
-    (*schema
+    schema
         .resolve_type_metadata(local_type_index)
         .expect("Cant fail")
-        .type_name)
-        .to_owned()
+        .get_name_string()
+        .expect("Event expected to have name")
 }
 
 fn is_decoded_equal<T: ScryptoDecode + PartialEq>(expected: &T, actual: &[u8]) -> bool {

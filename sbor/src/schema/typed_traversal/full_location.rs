@@ -29,16 +29,9 @@ impl<'s, C: CustomTraversal> FullLocation<'s, C> {
                 write!(buf, "->").unwrap();
             }
             let type_index = container_type.self_type();
-            let type_kind = schema
-                .resolve_type_kind(type_index)
-                .expect("Type index not found in given schema");
-            let metadata = if !matches!(type_kind, TypeKind::Any) {
-                schema.resolve_type_metadata(type_index)
-            } else {
-                None
-            };
+            let metadata = schema.resolve_type_metadata(type_index);
             let type_name = metadata
-                .map(|m| m.type_name.as_ref())
+                .and_then(|m| m.get_name())
                 .unwrap_or_else(|| container_state.container_header.value_kind_name());
             let current_index = container_state.current_child_index();
             let header = container_state.container_header;
@@ -51,7 +44,13 @@ impl<'s, C: CustomTraversal> FullLocation<'s, C> {
                         _ => None,
                     });
                     let variant_part = variant_data
-                        .map(|d| format!("::{}{{{}}}", d.type_name, variant_header.variant))
+                        .map(|d| {
+                            format!(
+                                "::{}{{{}}}",
+                                d.get_name().expect("Enum variants require names"),
+                                variant_header.variant
+                            )
+                        })
                         .unwrap_or_else(|| format!("::{{{}}}", variant_header.variant));
                     let index = variant_data.and_then(|d| match &d.child_names {
                         Some(ChildNames::NamedFields(fields)) => {
@@ -103,7 +102,7 @@ impl<'s, C: CustomTraversal> FullLocation<'s, C> {
                 None
             };
             let type_name = metadata
-                .map(|m| m.type_name.to_string())
+                .and_then(|m| m.get_name_string())
                 .unwrap_or_else(|| current_value_info.value_kind.to_string());
             if let Some(variant) = current_value_info.variant {
                 let variant_data = metadata.and_then(|v| match &v.child_names {
@@ -111,7 +110,13 @@ impl<'s, C: CustomTraversal> FullLocation<'s, C> {
                     _ => None,
                 });
                 let variant_part = variant_data
-                    .map(|d| format!("::{}{{{}}}", d.type_name, variant))
+                    .map(|d| {
+                        format!(
+                            "::{}{{{}}}",
+                            d.get_name().expect("Enum variants require names"),
+                            variant
+                        )
+                    })
                     .unwrap_or_else(|| format!("::{{{}}}", variant));
                 write!(buf, "{}{}", type_name, variant_part).unwrap();
             } else {

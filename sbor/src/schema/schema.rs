@@ -1,4 +1,4 @@
-use crate::rust::vec::Vec;
+use crate::rust::prelude::*;
 use crate::*;
 
 /// An array of custom type kinds, and associated extra information which can attach to the type kinds
@@ -17,6 +17,14 @@ pub type SchemaTypeValidation<E> = TypeValidation<<E as CustomTypeExtension>::Cu
 pub type SchemaCustomTypeValidation<E> = <E as CustomTypeExtension>::CustomTypeValidation;
 
 impl<E: CustomTypeExtension> Schema<E> {
+    pub fn empty() -> Self {
+        Self {
+            type_kinds: vec![],
+            type_metadata: vec![],
+            type_validations: vec![],
+        }
+    }
+
     pub fn resolve_type_kind(
         &self,
         type_index: LocalTypeIndex,

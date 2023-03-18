@@ -75,11 +75,10 @@ impl CommitResult {
                 EpochChangeEvent,
                 ScryptoCustomTypeExtension,
             >();
-            (*schema
+            schema
                 .resolve_type_metadata(local_type_index)
                 .expect("Cant fail")
-                .type_name)
-                .to_owned()
+                .get_name_string()?
         };
         self.application_events
             .iter()

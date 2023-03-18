@@ -51,7 +51,7 @@ jobs:
       with:
         toolchain: stable
     - name: Run tests
-      run: cargo test
+      run: cargo test --features serde
       working-directory: sbor
     - name: Run tests (no_std)
       run: cargo test --no-default-features --features alloc

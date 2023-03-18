@@ -22,6 +22,7 @@ pub enum SchemaValidationError {
     TypeMetadataContainedUnexpectedEnumVariants,
     TypeMetadataContainedUnexpectedNamedFields,
     TypeMetadataContainedWrongNumberOfVariants,
+    TypeMetadataForEnumNameIsRequired,
     TypeMetadataForEnumIsNotEnumVariantChildNames,
     TypeMetadataHasMismatchingEnumDiscriminator,
     TypeMetadataContainedDuplicateEnumVariantNames,

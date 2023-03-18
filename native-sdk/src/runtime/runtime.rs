@@ -8,7 +8,6 @@ use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::time::*;
 use sbor::generate_full_schema_from_single_type;
 use sbor::rust::fmt::Debug;
-use sbor::rust::prelude::ToOwned;
 
 #[derive(Debug)]
 pub struct Runtime {}
@@ -27,11 +26,11 @@ impl Runtime {
         let event_name = {
             let (local_type_index, schema) =
                 generate_full_schema_from_single_type::<T, ScryptoCustomTypeExtension>();
-            (*schema
+            schema
                 .resolve_type_metadata(local_type_index)
                 .expect("Cant fail")
-                .type_name)
-                .to_owned()
+                .get_name_string()
+                .expect("Event must have name to be emitted")
         };
         api.emit_event(event_name, scrypto_encode(&event).unwrap())
     }
