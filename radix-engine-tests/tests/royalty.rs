@@ -26,7 +26,7 @@ fn test_component_royalty() {
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-    let component_address: ComponentAddress = receipt.output(1);
+    let component_address: ComponentAddress = receipt.expect_commit(true).output(1);
 
     // Call the paid method
     let receipt = test_runner.execute_manifest(
@@ -92,7 +92,7 @@ fn set_up_package_and_component() -> (
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-    let component_address: ComponentAddress = receipt.output(1);
+    let component_address: ComponentAddress = receipt.expect_commit(true).output(1);
 
     (
         test_runner,

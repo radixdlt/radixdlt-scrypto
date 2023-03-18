@@ -94,8 +94,8 @@ impl VisibilityProperties {
                 SubstateOffset::Package(PackageOffset::CodeType) => read_only,
                 SubstateOffset::Package(PackageOffset::Code) => read_only,
                 SubstateOffset::Package(PackageOffset::Royalty) => true,
+                SubstateOffset::Package(PackageOffset::FunctionAccessRules) => true,
                 SubstateOffset::Component(ComponentOffset::State0) => read_only,
-                SubstateOffset::PackageAccessRules => read_only,
                 SubstateOffset::TypeInfo(_) => read_only,
                 SubstateOffset::AccessRules(_) => read_only,
                 SubstateOffset::Royalty(_) => true,
@@ -103,13 +103,7 @@ impl VisibilityProperties {
             },
             (ExecutionMode::Client, offset) => {
                 if !flags.contains(LockFlags::MUTABLE) {
-                    if matches!(
-                        offset,
-                        SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo)
-                            | SubstateOffset::PackageEventSchema(
-                                PackageEventSchemaOffset::PackageEventSchema
-                            )
-                    ) {
+                    if matches!(offset, SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo)) {
                         return true;
                     }
 
@@ -133,6 +127,10 @@ impl VisibilityProperties {
                                 | (
                                     RENodeId::GlobalObject(_),
                                     SubstateOffset::Package(PackageOffset::Code), // TODO: Remove
+                                )
+                                | (
+                                    RENodeId::GlobalObject(_),
+                                    SubstateOffset::Package(PackageOffset::EventSchema), // TODO: Remove
                                 ) => read_only,
                                 // READ global substates
                                 (
@@ -162,6 +160,10 @@ impl VisibilityProperties {
                                         | (
                                             RENodeId::GlobalObject(_),
                                             SubstateOffset::Package(PackageOffset::Code), // TODO: Remove
+                                        )
+                                        | (
+                                            RENodeId::GlobalObject(_),
+                                            SubstateOffset::Package(PackageOffset::EventSchema), // TODO: Remove
                                         ) => read_only,
                                         // READ/WRITE KVStore entry
                                         (
@@ -286,7 +288,6 @@ impl SubstateProperties {
             SubstateOffset::Package(..) => true,
             SubstateOffset::ResourceManager(..) => true,
             SubstateOffset::KeyValueStore(..) => true,
-            SubstateOffset::NonFungibleStore(..) => true,
             SubstateOffset::Vault(..) => true,
             SubstateOffset::EpochManager(..) => true,
             SubstateOffset::Validator(..) => true,
@@ -294,12 +295,9 @@ impl SubstateProperties {
             SubstateOffset::Proof(..) => false,
             SubstateOffset::Worktop(..) => false,
             SubstateOffset::Clock(..) => true,
-            SubstateOffset::TransactionRuntime(..) => false,
             SubstateOffset::Account(..) => true,
             SubstateOffset::AccessController(..) => true,
             SubstateOffset::TypeInfo(..) => true,
-            SubstateOffset::PackageAccessRules => true,
-            SubstateOffset::PackageEventSchema(..) => true,
         }
     }
 

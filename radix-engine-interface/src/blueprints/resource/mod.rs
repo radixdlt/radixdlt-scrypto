@@ -1,6 +1,8 @@
 mod access_rules;
 mod bucket;
+mod fungible_resource_manager;
 mod non_fungible_global_id;
+mod non_fungible_resource_manager;
 mod proof;
 mod proof_rule;
 mod resource;
@@ -11,7 +13,9 @@ mod worktop;
 
 pub use access_rules::*;
 pub use bucket::*;
+pub use fungible_resource_manager::*;
 pub use non_fungible_global_id::*;
+pub use non_fungible_resource_manager::*;
 pub use proof::*;
 pub use proof_rule::*;
 pub use resource::*;

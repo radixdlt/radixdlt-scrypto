@@ -21,8 +21,7 @@ fn bench_spin_loop(c: &mut Criterion) {
             vec![],
         )
         .expect_commit(true)
-        .entity_changes
-        .new_component_addresses[0];
+        .new_component_addresses()[0];
 
     // Create a transfer manifest
     let manifest = ManifestBuilder::new()

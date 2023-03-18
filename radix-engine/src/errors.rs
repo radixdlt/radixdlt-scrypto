@@ -3,10 +3,10 @@ use crate::blueprints::account::AccountError;
 use crate::blueprints::epoch_manager::{EpochManagerError, ValidatorError};
 use crate::blueprints::package::PackageError;
 use crate::blueprints::resource::{
-    BucketError, ProofError, ResourceManagerError, VaultError, WorktopError,
+    BucketError, FungibleResourceManagerError, NonFungibleResourceManagerError, ProofError,
+    VaultError, WorktopError,
 };
 use crate::blueprints::transaction_processor::TransactionProcessorError;
-use crate::blueprints::transaction_runtime::TransactionRuntimeError;
 use crate::kernel::actor::{Actor, ExecutionMode};
 use crate::kernel::track::TrackError;
 use crate::system::kernel_modules::auth::AuthError;
@@ -146,7 +146,6 @@ pub enum KernelError {
     // Substate Constraints
     InvalidOffset(SubstateOffset),
     InvalidOwnership(SubstateOffset, PackageAddress, String),
-    InvalidOverwrite,
     InvalidId(RENodeId),
 
     // Actor Constraints
@@ -186,7 +185,12 @@ pub enum CallFrameError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemError {
+    NotAnObject,
+    NotAKeyValueStore,
+    InvalidSubstateWrite,
+    InvalidKeyValueStoreOwnership,
     InvalidLockFlags,
+    InvalidKeyValueStoreSchema(SchemaValidationError),
     CannotGlobalize,
     InvalidModuleSet(RENodeId, BTreeSet<NodeModuleId>),
     InvalidModule,
@@ -208,6 +212,8 @@ pub enum SubstateValidationError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum InterpreterError {
+    CallMethodOnKeyValueStore,
+
     NativeUnexpectedReceiver(String),
     NativeExpectedReceiver(String),
     NativeExportDoesNotExist(String),
@@ -320,11 +326,11 @@ pub enum ApplicationError {
 
     ValidatorError(ValidatorError),
 
-    ResourceManagerError(ResourceManagerError),
+    ResourceManagerError(FungibleResourceManagerError),
+
+    NonFungibleResourceManagerError(NonFungibleResourceManagerError),
 
     AccessRulesChainError(AccessRulesChainError),
-
-    TransactionRuntimeError(TransactionRuntimeError),
 
     BucketError(BucketError),
 
@@ -363,8 +369,8 @@ impl From<EpochManagerError> for ApplicationError {
     }
 }
 
-impl From<ResourceManagerError> for ApplicationError {
-    fn from(value: ResourceManagerError) -> Self {
+impl From<FungibleResourceManagerError> for ApplicationError {
+    fn from(value: FungibleResourceManagerError) -> Self {
         Self::ResourceManagerError(value)
     }
 }
@@ -372,12 +378,6 @@ impl From<ResourceManagerError> for ApplicationError {
 impl From<AccessRulesChainError> for ApplicationError {
     fn from(value: AccessRulesChainError) -> Self {
         Self::AccessRulesChainError(value)
-    }
-}
-
-impl From<TransactionRuntimeError> for ApplicationError {
-    fn from(value: TransactionRuntimeError) -> Self {
-        Self::TransactionRuntimeError(value)
     }
 }
 

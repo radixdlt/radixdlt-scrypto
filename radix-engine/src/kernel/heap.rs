@@ -1,14 +1,12 @@
 use super::track::Track;
-use crate::blueprints::resource::{BucketInfoSubstate, NonFungibleSubstate, ProofInfoSubstate};
-use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
+use crate::blueprints::resource::*;
 use crate::errors::CallFrameError;
 use crate::system::node_modules::access_rules::AuthZoneStackSubstate;
 use crate::system::node_substates::{RuntimeSubstate, SubstateRef, SubstateRefMut};
 use crate::types::HashMap;
-use radix_engine_interface::api::component::KeyValueStoreEntrySubstate;
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, BucketOffset, NodeModuleId, ProofOffset, RENodeId, SubstateId,
-    SubstateOffset, TransactionRuntimeOffset,
+    SubstateOffset,
 };
 use radix_engine_interface::blueprints::resource::{
     LiquidFungibleResource, LiquidNonFungibleResource, ResourceType,
@@ -46,20 +44,10 @@ impl Heap {
         // TODO: Will clean this up when virtual substates is cleaned up
         match (&node_id, module_id, offset) {
             (_, _, SubstateOffset::KeyValueStore(..)) => {
-                let entry = node.substates.entry((module_id, offset.clone())).or_insert(
-                    RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::None),
-                );
-                Ok(entry.to_ref())
-            }
-            (
-                RENodeId::NonFungibleStore(..),
-                NodeModuleId::SELF,
-                SubstateOffset::NonFungibleStore(..),
-            ) => {
                 let entry = node
                     .substates
                     .entry((module_id, offset.clone()))
-                    .or_insert(RuntimeSubstate::NonFungible(NonFungibleSubstate(None)));
+                    .or_insert(RuntimeSubstate::KeyValueStoreEntry(Option::None));
                 Ok(entry.to_ref())
             }
             _ => node
@@ -83,17 +71,11 @@ impl Heap {
 
         // TODO: Will clean this up when virtual substates is cleaned up
         match (&node_id, offset) {
-            (RENodeId::KeyValueStore(..), SubstateOffset::KeyValueStore(..)) => {
-                let entry = node.substates.entry((module_id, offset.clone())).or_insert(
-                    RuntimeSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate::None),
-                );
-                Ok(entry.to_ref_mut())
-            }
-            (RENodeId::NonFungibleStore(..), SubstateOffset::NonFungibleStore(..)) => {
+            (_, SubstateOffset::KeyValueStore(..)) => {
                 let entry = node
                     .substates
                     .entry((module_id, offset.clone()))
-                    .or_insert(RuntimeSubstate::NonFungible(NonFungibleSubstate(None)));
+                    .or_insert(RuntimeSubstate::KeyValueStoreEntry(Option::None));
                 Ok(entry.to_ref_mut())
             }
             _ => node
@@ -222,18 +204,6 @@ impl Into<AuthZoneStackSubstate> for HeapRENode {
             .remove(&(
                 NodeModuleId::SELF,
                 SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
-            ))
-            .unwrap()
-            .into()
-    }
-}
-
-impl Into<TransactionRuntimeSubstate> for HeapRENode {
-    fn into(mut self) -> TransactionRuntimeSubstate {
-        self.substates
-            .remove(&(
-                NodeModuleId::SELF,
-                SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime),
             ))
             .unwrap()
             .into()

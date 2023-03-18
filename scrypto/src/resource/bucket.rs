@@ -1,7 +1,7 @@
 use crate::resource::{ComponentAuthZone, NonFungible, ScryptoProof};
 use radix_engine_interface::api::types::NonFungibleData;
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::api::{ClientObjectApi, ClientPackageApi};
+use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
@@ -68,8 +68,8 @@ impl ScryptoBucket for Bucket {
         let _rtn = env
             .call_function(
                 RESOURCE_MANAGER_PACKAGE,
-                RESOURCE_MANAGER_BLUEPRINT,
-                RESOURCE_MANAGER_BURN_BUCKET_IDENT,
+                BUCKET_BLUEPRINT,
+                BUCKET_BURN_IDENT,
                 scrypto_encode(&ResourceManagerBurnInput {
                     bucket: Bucket(self.0),
                 })

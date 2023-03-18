@@ -1,7 +1,6 @@
 #![allow(unused_must_use)]
 use colored::*;
-use radix_engine::blueprints::resource::VaultInfoSubstate;
-use radix_engine::blueprints::resource::{NonFungibleSubstate, ResourceManagerSubstate};
+use radix_engine::blueprints::resource::*;
 use radix_engine::ledger::*;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::types::*;
@@ -81,7 +80,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
     // components have a `TypeInfoSubstate`. Other components require some special handling.
     let component_state_dump = match component_address {
         ComponentAddress::Normal(..) => {
-            let component_info_substate: TypeInfoSubstate = substate_store
+            let type_info_substate: TypeInfoSubstate = substate_store
                 .get_substate(&SubstateId(
                     RENodeId::GlobalObject(component_address.into()),
                     NodeModuleId::TypeInfo,
@@ -109,9 +108,15 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 .map(|s| s.to_runtime().into())
                 .unwrap();
 
-            let raw_state = IndexedScryptoValue::from_slice(&state.raw).unwrap();
-            let package_address = component_info_substate.package_address;
-            let blueprint_name = component_info_substate.blueprint_name;
+            let raw_state = IndexedScryptoValue::from_scrypto_value(state.0);
+            let (package_address, blueprint_name) = match type_info_substate {
+                TypeInfoSubstate::Object {
+                    package_address,
+                    blueprint_name,
+                    ..
+                } => (package_address, blueprint_name),
+                _ => panic!("Unexpected"),
+            };
             let access_rules = access_rules_chain_substate.access_rules;
 
             // Find all vaults owned by the component, assuming a tree structure.
@@ -337,7 +342,7 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
     );
     for (last, (key, substate)) in map.iter().identify_last() {
         let substate = substate.clone().to_runtime();
-        if let KeyValueStoreEntrySubstate::Some(value) = &substate.kv_store_entry() {
+        if let Option::Some(value) = &substate.kv_store_entry() {
             let key: ScryptoValue = scrypto_decode(&key).unwrap();
             let value_display_context =
                 ScryptoValueDisplayContext::with_optional_bench32(Some(&bech32_encoder));
@@ -348,15 +353,20 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
                 key.display(value_display_context),
                 value.display(value_display_context)
             );
-            for owned_node in substate.kv_store_entry().owned_node_ids() {
-                match owned_node {
-                    RENodeId::Object(vault_id) => {
-                        owned_vaults.push(vault_id);
+
+            if let Some(substate) = substate.kv_store_entry() {
+                let (_, own, _) =
+                    IndexedScryptoValue::from_scrypto_value(substate.clone()).unpack();
+                for owned_node in own {
+                    match owned_node {
+                        RENodeId::Object(vault_id) => {
+                            owned_vaults.push(vault_id);
+                        }
+                        RENodeId::KeyValueStore(kv_store_id) => {
+                            owned_kv_stores.push(kv_store_id);
+                        }
+                        _ => {}
                     }
-                    RENodeId::KeyValueStore(kv_store_id) => {
-                        owned_kv_stores.push(kv_store_id);
-                    }
-                    _ => {}
                 }
             }
         }
@@ -386,16 +396,8 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
 
         // READ resource manager
         let resource_address = vault_info.resource_address;
-        let resource_manager: Option<ResourceManagerSubstate> = substate_store
-            .get_substate(&SubstateId(
-                RENodeId::GlobalObject(resource_address.into()),
-                NodeModuleId::SELF,
-                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
-            ))
-            .map(|s| s.substate)
-            .map(|s| s.to_runtime().into());
-        let resource_manager = resource_manager.ok_or(DisplayError::ResourceManagerNotFound)?;
-        let name_metadata: Option<KeyValueStoreEntrySubstate> = substate_store
+
+        let name_metadata: Option<Option<ScryptoValue>> = substate_store
             .get_substate(&SubstateId(
                 RENodeId::GlobalObject(resource_address.into()),
                 NodeModuleId::Metadata,
@@ -406,7 +408,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             .map(|s| s.substate)
             .map(|s| s.to_runtime().into());
         let name_metadata = match name_metadata {
-            Some(KeyValueStoreEntrySubstate::Some(scrypto_value)) => {
+            Some(Option::Some(scrypto_value)) => {
                 let entry: MetadataEntry =
                     scrypto_decode(&scrypto_encode(&scrypto_value).unwrap()).unwrap();
                 match entry {
@@ -419,7 +421,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
         .map(|name| format!(", name: \"{}\"", name))
         .unwrap_or(String::new());
 
-        let symbol_metadata: Option<KeyValueStoreEntrySubstate> = substate_store
+        let symbol_metadata: Option<Option<ScryptoValue>> = substate_store
             .get_substate(&SubstateId(
                 RENodeId::GlobalObject(resource_address.into()),
                 NodeModuleId::Metadata,
@@ -430,7 +432,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             .map(|s| s.substate)
             .map(|s| s.to_runtime().into());
         let symbol_metadata = match symbol_metadata {
-            Some(KeyValueStoreEntrySubstate::Some(scrypto_value)) => {
+            Some(Option::Some(scrypto_value)) => {
                 let entry: MetadataEntry =
                     scrypto_decode(&scrypto_encode(&scrypto_value).unwrap()).unwrap();
                 match entry {
@@ -479,6 +481,16 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
 
         // DUMP non-fungibles
         if !vault_info.resource_type.is_fungible() {
+            let resource_manager: Option<NonFungibleResourceManagerSubstate> = substate_store
+                .get_substate(&SubstateId(
+                    RENodeId::GlobalObject(resource_address.into()),
+                    NodeModuleId::SELF,
+                    SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+                ))
+                .map(|s| s.substate)
+                .map(|s| s.to_runtime().into());
+            let resource_manager = resource_manager.ok_or(DisplayError::ResourceManagerNotFound)?;
+
             let vault: LiquidNonFungibleResource = substate_store
                 .get_substate(&SubstateId(
                     RENodeId::Object(*vault_id),
@@ -490,32 +502,30 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                 .unwrap();
 
             let ids = vault.ids();
+            let non_fungible_id = resource_manager.non_fungible_table;
             for (inner_last, id) in ids.iter().identify_last() {
-                let non_fungible: NonFungibleSubstate = substate_store
+                let non_fungible: Option<ScryptoValue> = substate_store
                     .get_substate(&SubstateId(
-                        RENodeId::NonFungibleStore(resource_manager.nf_store_id.unwrap()),
+                        RENodeId::KeyValueStore(non_fungible_id),
                         NodeModuleId::SELF,
-                        SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id.clone())),
+                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+                            scrypto_encode(id).unwrap(),
+                        )),
                     ))
                     .map(|s| s.substate.to_runtime())
                     .map(|s| s.into())
                     .unwrap();
-                if let Some(non_fungible) = non_fungible.0 {
+                if let Option::Some(value) = non_fungible {
                     let id = IndexedScryptoValue::from_typed(id);
-                    let immutable_data =
-                        IndexedScryptoValue::from_slice(&non_fungible.immutable_data()).unwrap();
-                    let mutable_data =
-                        IndexedScryptoValue::from_slice(&non_fungible.mutable_data()).unwrap();
                     let value_display_context =
                         ScryptoValueDisplayContext::with_optional_bench32(Some(&bech32_encoder));
                     writeln!(
                         output,
-                        "{}  {} NonFungible {{ id: {}, immutable_data: {}, mutable_data: {} }}",
+                        "{}  {} NonFungible {{ id: {}, data: {} }}",
                         if last { " " } else { "│" },
                         list_item_prefix(inner_last),
                         id.display(value_display_context),
-                        immutable_data.display(value_display_context),
-                        mutable_data.display(value_display_context)
+                        value.display(value_display_context),
                     );
                 }
             }
@@ -530,7 +540,7 @@ pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
     substate_store: &T,
     output: &mut O,
 ) -> Result<(), DisplayError> {
-    let resource_manager: Option<ResourceManagerSubstate> = substate_store
+    let resource_manager: Option<FungibleResourceManagerSubstate> = substate_store
         .get_substate(&SubstateId(
             RENodeId::GlobalObject(resource_address.into()),
             NodeModuleId::SELF,
@@ -540,12 +550,6 @@ pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
         .map(|s| s.to_runtime().into());
     let resource_manager = resource_manager.ok_or(DisplayError::ResourceManagerNotFound)?;
 
-    writeln!(
-        output,
-        "{}: {:?}",
-        "Resource Type".green().bold(),
-        resource_manager.resource_type
-    );
     writeln!(
         output,
         "{}: {}",

@@ -38,6 +38,12 @@ pub struct ExecutionTraceModule {
     vault_ops: Vec<(TraceActor, ObjectId, VaultOp, usize)>,
 }
 
+impl ExecutionTraceModule {
+    pub fn update_instruction_index(&mut self, new_index: usize) {
+        self.current_instruction_index = new_index;
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ResourceChange {
     pub resource_address: ResourceAddress,
@@ -347,16 +353,6 @@ impl KernelModule for ExecutionTraceModule {
             .handle_on_execution_finish(current_actor, current_depth, caller, resource_summary);
         Ok(())
     }
-
-    fn on_update_instruction_index<Y: KernelModuleApi<RuntimeError>>(
-        api: &mut Y,
-        new_index: usize,
-    ) -> Result<(), RuntimeError> {
-        api.kernel_get_module_state()
-            .execution_trace
-            .current_instruction_index = new_index;
-        Ok(())
-    }
 }
 
 impl ExecutionTraceModule {
@@ -656,7 +652,7 @@ impl ExecutionTraceModule {
 
 pub fn calculate_resource_changes(
     vault_ops: Vec<(TraceActor, ObjectId, VaultOp, usize)>,
-    actual_fee_payments: &BTreeMap<ObjectId, Decimal>,
+    fee_payments: &IndexMap<ObjectId, Decimal>,
     is_commit_success: bool,
 ) -> IndexMap<usize, Vec<ResourceChange>> {
     // FIXME: revert non-fee operations if `is_commit_success == false`
@@ -718,10 +714,7 @@ pub fn calculate_resource_changes(
         for (node_id, map) in instruction_resource_changes {
             for (vault_id, (resource_address, delta)) in map {
                 // Amount = put/take amount - fee_amount
-                let fee_amount = actual_fee_payments
-                    .get(&vault_id)
-                    .cloned()
-                    .unwrap_or_default();
+                let fee_amount = fee_payments.get(&vault_id).cloned().unwrap_or_default();
                 let amount = if is_commit_success {
                     delta
                 } else {

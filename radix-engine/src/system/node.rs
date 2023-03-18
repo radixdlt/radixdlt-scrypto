@@ -1,14 +1,9 @@
-use crate::blueprints::package::PackageCodeTypeSubstate;
-use crate::blueprints::transaction_runtime::TransactionRuntimeSubstate;
 use crate::system::node_modules::access_rules::*;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::node_substates::*;
 use crate::types::*;
 use radix_engine_interface::api::component::*;
-use radix_engine_interface::api::types::{AuthZoneStackOffset, PackageOffset, SubstateOffset};
-use radix_engine_interface::blueprints::package::*;
-
-use super::node_modules::event_schema::PackageEventSchemaSubstate;
+use radix_engine_interface::api::types::{AuthZoneStackOffset, SubstateOffset};
 
 #[derive(Debug)]
 pub enum RENodeModuleInit {
@@ -20,16 +15,12 @@ pub enum RENodeModuleInit {
 
     /* Access rules */
     MethodAccessRules(MethodAccessRulesSubstate),
-    FunctionAccessRules(FunctionAccessRulesSubstate), // TODO: remove
 
     /* Royalty */
     ComponentRoyalty(
         ComponentRoyaltyConfigSubstate,
         ComponentRoyaltyAccumulatorSubstate,
     ),
-
-    /* Events */
-    PackageEventSchema(PackageEventSchemaSubstate),
 }
 
 impl RENodeModuleInit {
@@ -44,9 +35,6 @@ impl RENodeModuleInit {
                     SubstateOffset::AccessRules(AccessRulesOffset::AccessRules),
                     access_rules.into(),
                 );
-            }
-            RENodeModuleInit::FunctionAccessRules(access_rules) => {
-                substates.insert(SubstateOffset::PackageAccessRules, access_rules.into());
             }
             RENodeModuleInit::TypeInfo(type_info) => {
                 substates.insert(
@@ -64,14 +52,6 @@ impl RENodeModuleInit {
                     accumulator.into(),
                 );
             }
-            RENodeModuleInit::PackageEventSchema(event_schema) => {
-                substates.insert(
-                    SubstateOffset::PackageEventSchema(
-                        PackageEventSchemaOffset::PackageEventSchema,
-                    ),
-                    event_schema.into(),
-                );
-            }
         }
 
         substates
@@ -81,17 +61,9 @@ impl RENodeModuleInit {
 #[derive(Debug)]
 pub enum RENodeInit {
     GlobalObject(BTreeMap<SubstateOffset, RuntimeSubstate>),
-    GlobalPackage(
-        PackageInfoSubstate,
-        PackageCodeTypeSubstate,
-        PackageCodeSubstate,
-        PackageRoyaltySubstate,
-    ),
     Object(BTreeMap<SubstateOffset, RuntimeSubstate>),
     AuthZoneStack(AuthZoneStackSubstate),
     KeyValueStore,
-    NonFungibleStore,
-    TransactionRuntime(TransactionRuntimeSubstate),
 }
 
 impl RENodeInit {
@@ -107,30 +79,7 @@ impl RENodeInit {
             RENodeInit::GlobalObject(object_substates) | RENodeInit::Object(object_substates) => {
                 substates.extend(object_substates);
             }
-            RENodeInit::KeyValueStore | RENodeInit::NonFungibleStore => {}
-            RENodeInit::GlobalPackage(package_info, code_type, code, royalty) => {
-                substates.insert(
-                    SubstateOffset::Package(PackageOffset::Info),
-                    package_info.into(),
-                );
-                substates.insert(
-                    SubstateOffset::Package(PackageOffset::CodeType),
-                    code_type.into(),
-                );
-                substates.insert(SubstateOffset::Package(PackageOffset::Code), code.into());
-                substates.insert(
-                    SubstateOffset::Package(PackageOffset::Royalty),
-                    royalty.into(),
-                );
-            }
-            RENodeInit::TransactionRuntime(transaction_hash) => {
-                substates.insert(
-                    SubstateOffset::TransactionRuntime(
-                        TransactionRuntimeOffset::TransactionRuntime,
-                    ),
-                    transaction_hash.into(),
-                );
-            }
+            RENodeInit::KeyValueStore => {}
         };
 
         substates

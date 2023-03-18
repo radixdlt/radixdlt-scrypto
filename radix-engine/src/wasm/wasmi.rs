@@ -177,51 +177,7 @@ fn call_function(
         .map(|buffer| buffer.0)
 }
 
-fn new_package(
-    mut caller: Caller<'_, HostState>,
-    code_ptr: u32,
-    code_len: u32,
-    schema_ptr: u32,
-    schema_len: u32,
-    access_rules_ptr: u32,
-    access_rules_len: u32,
-    royalty_config_ptr: u32,
-    royalty_config_len: u32,
-    metadata_ptr: u32,
-    metadata_len: u32,
-    event_schema_ptr: u32,
-    event_schema_len: u32,
-) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
-
-    runtime
-        .new_package(
-            read_memory(caller.as_context_mut(), memory, code_ptr, code_len)?,
-            read_memory(caller.as_context_mut(), memory, schema_ptr, schema_len)?,
-            read_memory(
-                caller.as_context_mut(),
-                memory,
-                access_rules_ptr,
-                access_rules_len,
-            )?,
-            read_memory(
-                caller.as_context_mut(),
-                memory,
-                royalty_config_ptr,
-                royalty_config_len,
-            )?,
-            read_memory(caller.as_context_mut(), memory, metadata_ptr, metadata_len)?,
-            read_memory(
-                caller.as_context_mut(),
-                memory,
-                event_schema_ptr,
-                event_schema_len,
-            )?,
-        )
-        .map(|buffer| buffer.0)
-}
-
-fn new_component(
+fn new_object(
     mut caller: Caller<'_, HostState>,
     blueprint_ident_ptr: u32,
     blueprint_ident_len: u32,
@@ -231,7 +187,7 @@ fn new_component(
     let (memory, runtime) = grab_runtime!(caller);
 
     runtime
-        .new_component(
+        .new_object(
             read_memory(
                 caller.as_context_mut(),
                 memory,
@@ -249,14 +205,23 @@ fn new_component(
 }
 
 fn new_key_value_store(
-    caller: Caller<'_, HostState>,
+    mut caller: Caller<'_, HostState>,
+    schema_id_ptr: u32,
+    schema_id_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (_memory, runtime) = grab_runtime!(caller);
+    let (memory, runtime) = grab_runtime!(caller);
 
-    runtime.new_key_value_store().map(|buffer| buffer.0)
+    runtime
+        .new_key_value_store(read_memory(
+            caller.as_context_mut(),
+            memory,
+            schema_id_ptr,
+            schema_id_len,
+        )?)
+        .map(|buffer| buffer.0)
 }
 
-fn globalize_component(
+fn globalize_object(
     mut caller: Caller<'_, HostState>,
     component_id_ptr: u32,
     component_id_len: u32,
@@ -266,7 +231,7 @@ fn globalize_component(
     let (memory, runtime) = grab_runtime!(caller);
 
     runtime
-        .globalize_component(
+        .globalize_object(
             read_memory(
                 caller.as_context_mut(),
                 memory,
@@ -283,7 +248,7 @@ fn globalize_component(
         .map(|buffer| buffer.0)
 }
 
-fn get_component_type_info(
+fn get_type_info(
     mut caller: Caller<'_, HostState>,
     component_id_ptr: u32,
     component_id_len: u32,
@@ -291,7 +256,7 @@ fn get_component_type_info(
     let (memory, runtime) = grab_runtime!(caller);
 
     runtime
-        .get_component_type_info(read_memory(
+        .get_type_info(read_memory(
             caller.as_context_mut(),
             memory,
             component_id_ptr,
@@ -300,7 +265,7 @@ fn get_component_type_info(
         .map(|buffer| buffer.0)
 }
 
-fn drop_node(
+fn drop_object(
     mut caller: Caller<'_, HostState>,
     node_id_ptr: u32,
     node_id_len: u32,
@@ -309,7 +274,7 @@ fn drop_node(
 
     let node_id = read_memory(caller.as_context_mut(), memory, node_id_ptr, node_id_len)?;
 
-    runtime.drop_node(node_id)
+    runtime.drop_object(node_id)
 }
 
 fn lock_substate(
@@ -396,6 +361,20 @@ fn emit_event(
     )?;
 
     runtime.emit_event(event_name, event_data)
+}
+
+fn get_transaction_hash(
+    caller: Caller<'_, HostState>,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (_, runtime) = grab_runtime!(caller);
+
+    runtime.get_transaction_hash().map(|buffer| buffer.0)
+}
+
+fn generate_uuid(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (_, runtime) = grab_runtime!(caller);
+
+    runtime.generate_uuid().map(|buffer| buffer.0)
 }
 
 fn log_message(
@@ -506,41 +485,6 @@ impl WasmiModule {
             },
         );
 
-        let host_new_package = Func::wrap(
-            store.as_context_mut(),
-            |caller: Caller<'_, HostState>,
-             code_ptr: u32,
-             code_len: u32,
-             schema_ptr: u32,
-             schema_len: u32,
-             access_rules_ptr: u32,
-             access_rules_len: u32,
-             royalty_config_ptr: u32,
-             royalty_config_len: u32,
-             metadata_ptr: u32,
-             metadata_len: u32,
-             event_schema_ptr: u32,
-             event_schema_len: u32|
-             -> Result<u64, Trap> {
-                new_package(
-                    caller,
-                    code_ptr,
-                    code_len,
-                    schema_ptr,
-                    schema_len,
-                    access_rules_ptr,
-                    access_rules_len,
-                    royalty_config_ptr,
-                    royalty_config_len,
-                    metadata_ptr,
-                    metadata_len,
-                    event_schema_ptr,
-                    event_schema_len,
-                )
-                .map_err(|e| e.into())
-            },
-        );
-
         let host_new_component = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
@@ -549,7 +493,7 @@ impl WasmiModule {
              app_states_ptr: u32,
              app_states_len: u32|
              -> Result<u64, Trap> {
-                new_component(
+                new_object(
                     caller,
                     blueprint_ident_ptr,
                     blueprint_ident_len,
@@ -562,12 +506,15 @@ impl WasmiModule {
 
         let host_new_key_value_store = Func::wrap(
             store.as_context_mut(),
-            |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
-                new_key_value_store(caller).map_err(|e| e.into())
+            |caller: Caller<'_, HostState>,
+             schema_ptr: u32,
+             schema_len: u32|
+             -> Result<u64, Trap> {
+                new_key_value_store(caller, schema_ptr, schema_len).map_err(|e| e.into())
             },
         );
 
-        let host_globalize_component = Func::wrap(
+        let host_globalize_object = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
              component_id_ptr: u32,
@@ -575,7 +522,7 @@ impl WasmiModule {
              access_rules_ptr: u32,
              access_rules_len: u32|
              -> Result<u64, Trap> {
-                globalize_component(
+                globalize_object(
                     caller,
                     component_id_ptr,
                     component_id_len,
@@ -586,14 +533,13 @@ impl WasmiModule {
             },
         );
 
-        let host_get_component_type_info = Func::wrap(
+        let host_get_type_info = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
              component_id_ptr: u32,
              component_id_len: u32|
              -> Result<u64, Trap> {
-                get_component_type_info(caller, component_id_ptr, component_id_len)
-                    .map_err(|e| e.into())
+                get_type_info(caller, component_id_ptr, component_id_len).map_err(|e| e.into())
             },
         );
 
@@ -603,7 +549,7 @@ impl WasmiModule {
              node_id_ptr: u32,
              node_id_len: u32|
              -> Result<(), Trap> {
-                drop_node(caller, node_id_ptr, node_id_len).map_err(|e| e.into())
+                drop_object(caller, node_id_ptr, node_id_len).map_err(|e| e.into())
             },
         );
 
@@ -699,12 +645,25 @@ impl WasmiModule {
             },
         );
 
+        let host_get_transaction_hash = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
+                get_transaction_hash(caller).map_err(|e| e.into())
+            },
+        );
+
+        let host_generate_uuid = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
+                generate_uuid(caller).map_err(|e| e.into())
+            },
+        );
+
         let mut linker = <Linker<HostState>>::new();
         linker_define!(linker, CONSUME_BUFFER_FUNCTION_NAME, host_consume_buffer);
         linker_define!(linker, CALL_METHOD_FUNCTION_NAME, host_call_method);
         linker_define!(linker, CALL_FUNCTION_FUNCTION_NAME, host_call_function);
-        linker_define!(linker, NEW_PACKAGE_FUNCTION_NAME, host_new_package);
-        linker_define!(linker, NEW_COMPONENT_FUNCTION_NAME, host_new_component);
+        linker_define!(linker, NEW_OBJECT_FUNCTION_NAME, host_new_component);
         linker_define!(
             linker,
             NEW_KEY_VALUE_STORE_FUNCTION_NAME,
@@ -712,15 +671,15 @@ impl WasmiModule {
         );
         linker_define!(
             linker,
-            GLOBALIZE_COMPONENT_FUNCTION_NAME,
-            host_globalize_component
+            GLOBALIZE_OBJECT_FUNCTION_NAME,
+            host_globalize_object
         );
         linker_define!(
             linker,
-            GET_COMPONENT_TYPE_INFO_FUNCTION_NAME,
-            host_get_component_type_info
+            GET_OBJECT_TYPE_INFO_FUNCTION_NAME,
+            host_get_type_info
         );
-        linker_define!(linker, DROP_NODE_FUNCTION_NAME, host_drop_node);
+        linker_define!(linker, DROP_OBJECT_FUNCTION_NAME, host_drop_node);
         linker_define!(linker, LOCK_SUBSTATE_FUNCTION_NAME, host_lock_substate);
         linker_define!(linker, READ_SUBSTATE_FUNCTION_NAME, host_read_substate);
         linker_define!(linker, WRITE_SUBSTATE_FUNCTION_NAME, host_write_substate);
@@ -733,6 +692,12 @@ impl WasmiModule {
         );
         linker_define!(linker, EMIT_EVENT_FUNCTION_NAME, host_emit_event);
         linker_define!(linker, LOG_FUNCTION_NAME, host_log);
+        linker_define!(
+            linker,
+            GET_TRANSACTION_HASH_FUNCTION_NAME,
+            host_get_transaction_hash
+        );
+        linker_define!(linker, GENERATE_UUID_FUNCTION_NAME, host_generate_uuid);
 
         linker.instantiate(store.as_context_mut(), &module)
     }

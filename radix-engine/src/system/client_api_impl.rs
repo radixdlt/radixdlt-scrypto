@@ -1,13 +1,8 @@
-use crate::blueprints::resource::*;
+use crate::errors::SystemError;
 use crate::errors::{ApplicationError, RuntimeError, SubstateValidationError};
-use crate::errors::{KernelError, SystemError};
 use crate::kernel::actor::{Actor, ActorIdentifier};
 use crate::kernel::kernel::Kernel;
-use crate::kernel::kernel_api::KernelNodeApi;
-use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::kernel::kernel_api::{KernelInternalApi, KernelInvokeApi};
-use crate::kernel::module::KernelModule;
-use crate::kernel::module_mixer::KernelModuleMixer;
+use crate::kernel::kernel_api::*;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
 use crate::system::kernel_modules::events::EventError;
 use crate::system::node::RENodeInit;
@@ -19,15 +14,14 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate,
-    KeyValueStoreEntrySubstate,
 };
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::types::Level;
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::api::unsafe_api::ClientCostingReason;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
@@ -35,21 +29,12 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::PackageSchema;
+use radix_engine_interface::schema::KeyValueStoreSchema;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
+use super::kernel_modules::costing::CostingReason;
 use super::node_modules::event_schema::PackageEventSchemaSubstate;
-
-impl<'g, 's, W> ClientNodeApi<RuntimeError> for Kernel<'g, 's, W>
-where
-    W: WasmEngine,
-{
-    fn sys_drop_node(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
-        self.kernel_drop_node(node_id)?;
-        Ok(())
-    }
-}
 
 impl<'g, 's, W> ClientSubstateApi<RuntimeError> for Kernel<'g, 's, W>
 where
@@ -92,9 +77,39 @@ where
         lock_handle: LockHandle,
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        let offset = self.kernel_get_lock_info(lock_handle)?.offset;
-        let substate = RuntimeSubstate::decode_from_buffer(&offset, &buffer)?;
+        let LockInfo {
+            node_id,
+            module_id,
+            offset,
+            ..
+        } = self.kernel_get_lock_info(lock_handle)?;
 
+        if module_id.eq(&NodeModuleId::SELF) {
+            let type_info = TypeInfoBlueprint::get_type(node_id, self)?;
+            match type_info {
+                TypeInfoSubstate::KeyValueStore(schema) => {
+                    validate_payload_against_schema(&buffer, &schema.schema, schema.value)
+                        .map_err(|_| {
+                            RuntimeError::SystemError(SystemError::InvalidSubstateWrite)
+                        })?;
+
+                    if !schema.can_own {
+                        let indexed = IndexedScryptoValue::from_slice(&buffer).map_err(|_| {
+                            RuntimeError::SystemError(SystemError::InvalidSubstateWrite)
+                        })?;
+                        let (_, own, _) = indexed.unpack();
+                        if !own.is_empty() {
+                            return Err(RuntimeError::SystemError(
+                                SystemError::InvalidKeyValueStoreOwnership,
+                            ));
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        let substate = RuntimeSubstate::decode_from_buffer(&offset, &buffer)?;
         // TODO: support all self substates
         // TODO: add payload schema validation
 
@@ -105,16 +120,11 @@ where
                 *state = next
             }
             RuntimeSubstate::KeyValueStoreEntry(next) => {
-                let entry: &mut KeyValueStoreEntrySubstate =
+                let entry: &mut Option<ScryptoValue> =
                     self.kernel_get_substate_ref_mut(lock_handle)?;
                 *entry = next;
             }
-            RuntimeSubstate::NonFungible(next) => {
-                let non_fungible: &mut NonFungibleSubstate =
-                    self.kernel_get_substate_ref_mut(lock_handle)?;
-                *non_fungible = next;
-            }
-            _ => return Err(RuntimeError::KernelError(KernelError::InvalidOverwrite)),
+            _ => return Err(RuntimeError::SystemError(SystemError::InvalidSubstateWrite)),
         }
 
         Ok(())
@@ -134,59 +144,6 @@ where
 {
     fn get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
         Ok(self.kernel_get_current_actor().unwrap().fn_identifier)
-    }
-}
-
-impl<'g, 's, W> ClientPackageApi<RuntimeError> for Kernel<'g, 's, W>
-where
-    W: WasmEngine,
-{
-    fn new_package(
-        &mut self,
-        code: Vec<u8>,
-        schema: PackageSchema,
-        access_rules: AccessRulesConfig,
-        royalty_config: BTreeMap<String, RoyaltyConfig>,
-        metadata: BTreeMap<String, String>,
-        event_schema: BTreeMap<String, Vec<(LocalTypeIndex, Schema<ScryptoCustomTypeExtension>)>>,
-    ) -> Result<PackageAddress, RuntimeError> {
-        let result = self.call_function(
-            PACKAGE_PACKAGE,
-            PACKAGE_BLUEPRINT,
-            PACKAGE_PUBLISH_WASM_IDENT,
-            scrypto_encode(&PackagePublishWasmInput {
-                package_address: None,
-                code,
-                schema,
-                access_rules,
-                royalty_config,
-                metadata,
-                event_schema,
-            })
-            .unwrap(),
-        )?;
-
-        let package_address: PackageAddress = scrypto_decode(&result).unwrap();
-        Ok(package_address)
-    }
-
-    fn call_function(
-        &mut self,
-        package_address: PackageAddress,
-        blueprint_name: &str,
-        function_name: &str,
-        args: Vec<u8>,
-    ) -> Result<Vec<u8>, RuntimeError> {
-        let invocation = FunctionInvocation {
-            fn_identifier: FnIdentifier::new(
-                package_address,
-                blueprint_name.to_string(),
-                function_name.to_string(),
-            ),
-            args,
-        };
-
-        self.kernel_invoke(invocation).map(|v| v.into())
     }
 }
 
@@ -280,8 +237,11 @@ where
         let mut parser = SubstateSchemaParser::new(&mut app_states);
         let node_init = match package_address {
             RESOURCE_MANAGER_PACKAGE => match blueprint_ident {
-                RESOURCE_MANAGER_BLUEPRINT => RENodeInit::Object(btreemap!(
+                FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT => RENodeInit::Object(btreemap!(
                     SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => RuntimeSubstate::ResourceManager(parser.decode_next())
+                )),
+                NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT => RENodeInit::Object(btreemap!(
+                    SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => RuntimeSubstate::NonFungibleResourceManager(parser.decode_next())
                 )),
                 PROOF_BLUEPRINT => RENodeInit::Object(btreemap!(
                     SubstateOffset::Proof(ProofOffset::Info) => RuntimeSubstate::ProofInfo(parser.decode_next()),
@@ -341,7 +301,7 @@ where
             )),
             _ => RENodeInit::Object(btreemap!(
                 SubstateOffset::Component(ComponentOffset::State0) => RuntimeSubstate::ComponentState(
-                    ComponentStateSubstate::new(scrypto_encode(&parser.decode_next::<ScryptoValue>()).unwrap())
+                    ComponentStateSubstate (parser.decode_next::<ScryptoValue>())
                 )
             )),
         };
@@ -371,7 +331,16 @@ where
 
         let node_type = match node_id {
             RENodeId::Object(..) => {
-                let (package_address, blueprint) = TypeInfoBlueprint::get_type(node_id, self)?;
+                let type_info = TypeInfoBlueprint::get_type(node_id, self)?;
+                let (package_address, blueprint) = match type_info {
+                    TypeInfoSubstate::Object {
+                        package_address,
+                        blueprint_name,
+                        global,
+                    } if !global => (package_address, blueprint_name),
+                    _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
+                };
+
                 match (package_address, blueprint.as_str()) {
                     (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => RENodeType::GlobalAccount,
                     (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => RENodeType::GlobalIdentity,
@@ -402,23 +371,13 @@ where
             NodeModuleId::AccessRules
         );
         // TODO: remove
-        let package_object = btreeset!(
-            NodeModuleId::Metadata,
-            NodeModuleId::ComponentRoyalty,
-            NodeModuleId::AccessRules,
-            NodeModuleId::FunctionAccessRules,
-        );
-        // TODO: remove
         let resource_manager_object = btreeset!(
             NodeModuleId::Metadata,
             NodeModuleId::ComponentRoyalty,
             NodeModuleId::AccessRules,
             NodeModuleId::AccessRules1
         );
-        if module_ids != standard_object
-            && module_ids != package_object
-            && module_ids != resource_manager_object
-        {
+        if module_ids != standard_object && module_ids != resource_manager_object {
             return Err(RuntimeError::SystemError(SystemError::InvalidModuleSet(
                 node_id, module_ids,
             )));
@@ -444,7 +403,12 @@ where
             ))
             .unwrap();
         let mut type_info_substate: TypeInfoSubstate = type_info.into();
-        type_info_substate.global = true;
+
+        match type_info_substate {
+            TypeInfoSubstate::Object { ref mut global, .. } if !*global => *global = true,
+            _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
+        };
+
         module_init.insert(
             NodeModuleId::TypeInfo,
             RENodeModuleInit::TypeInfo(type_info_substate),
@@ -454,10 +418,7 @@ where
 
         for (module_id, object_id) in modules {
             match module_id {
-                NodeModuleId::SELF
-                | NodeModuleId::TypeInfo
-                | NodeModuleId::FunctionAccessRules
-                | NodeModuleId::PackageEventSchema => {
+                NodeModuleId::SELF | NodeModuleId::TypeInfo => {
                     return Err(RuntimeError::SystemError(SystemError::InvalidModule))
                 }
                 NodeModuleId::AccessRules | NodeModuleId::AccessRules1 => {
@@ -593,23 +554,87 @@ where
         self.kernel_invoke(invocation).map(|v| v.into())
     }
 
+    fn call_function(
+        &mut self,
+        package_address: PackageAddress,
+        blueprint_name: &str,
+        function_name: &str,
+        args: Vec<u8>,
+    ) -> Result<Vec<u8>, RuntimeError> {
+        let invocation = FunctionInvocation {
+            fn_identifier: FnIdentifier::new(
+                package_address,
+                blueprint_name.to_string(),
+                function_name.to_string(),
+            ),
+            args,
+        };
+
+        self.kernel_invoke(invocation).map(|v| v.into())
+    }
+
     fn get_object_type_info(
         &mut self,
         node_id: RENodeId,
     ) -> Result<(PackageAddress, String), RuntimeError> {
-        TypeInfoBlueprint::get_type(node_id, self)
+        let type_info = TypeInfoBlueprint::get_type(node_id, self)?;
+        let blueprint = match type_info {
+            TypeInfoSubstate::Object {
+                package_address,
+                blueprint_name,
+                ..
+            } => (package_address, blueprint_name),
+            TypeInfoSubstate::KeyValueStore(..) => {
+                return Err(RuntimeError::SystemError(SystemError::NotAnObject))
+            }
+        };
+
+        Ok(blueprint)
     }
 
-    fn new_key_value_store(&mut self) -> Result<KeyValueStoreId, RuntimeError> {
+    fn get_key_value_store_info(
+        &mut self,
+        node_id: RENodeId,
+    ) -> Result<KeyValueStoreSchema, RuntimeError> {
+        let type_info = TypeInfoBlueprint::get_type(node_id, self)?;
+        let schema = match type_info {
+            TypeInfoSubstate::Object { .. } => {
+                return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
+            }
+            TypeInfoSubstate::KeyValueStore(schema) => schema,
+        };
+
+        Ok(schema)
+    }
+
+    fn new_key_value_store(
+        &mut self,
+        schema: KeyValueStoreSchema,
+    ) -> Result<KeyValueStoreId, RuntimeError> {
+        schema
+            .schema
+            .validate()
+            .map_err(|e| RuntimeError::SystemError(SystemError::InvalidKeyValueStoreSchema(e)))?;
+
         let node_id = self.kernel_allocate_node_id(RENodeType::KeyValueStore)?;
 
-        self.kernel_create_node(node_id, RENodeInit::KeyValueStore, btreemap!())?;
+        self.kernel_create_node(
+            node_id,
+            RENodeInit::KeyValueStore,
+            btreemap!(
+                NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::KeyValueStore(schema)),
+        ))?;
 
         Ok(node_id.into())
     }
+
+    fn drop_object(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
+        self.kernel_drop_node(node_id)?;
+        Ok(())
+    }
 }
 
-impl<'g, 's, W> ClientUnsafeApi<RuntimeError> for Kernel<'g, 's, W>
+impl<'g, 's, W> ClientCostingApi<RuntimeError> for Kernel<'g, 's, W>
 where
     W: WasmEngine,
 {
@@ -618,7 +643,17 @@ where
         units: u32,
         reason: ClientCostingReason,
     ) -> Result<(), RuntimeError> {
-        KernelModuleMixer::on_consume_cost_units(self, units, reason)
+        // No costing applied
+
+        self.kernel_get_module_state().costing.apply_execution_cost(
+            match reason {
+                ClientCostingReason::RunWasm => CostingReason::RunWasm,
+                ClientCostingReason::RunNative => CostingReason::RunNative,
+                ClientCostingReason::RunSystem => CostingReason::RunSystem,
+            },
+            |_| units,
+            5,
+        )
     }
 
     fn credit_cost_units(
@@ -627,15 +662,39 @@ where
         locked_fee: LiquidFungibleResource,
         contingent: bool,
     ) -> Result<LiquidFungibleResource, RuntimeError> {
-        KernelModuleMixer::on_credit_cost_units(self, vault_id, locked_fee, contingent)
-    }
+        // No costing applied
 
+        self.kernel_get_module_state()
+            .costing
+            .credit_cost_units(vault_id, locked_fee, contingent)
+    }
+}
+
+impl<'g, 's, W> ClientTransactionLimitsApi<RuntimeError> for Kernel<'g, 's, W>
+where
+    W: WasmEngine,
+{
+    fn update_wasm_memory_usage(&mut self, consumed_memory: usize) -> Result<(), RuntimeError> {
+        // No costing applied
+
+        let current_depth = self.kernel_get_current_depth();
+        self.kernel_get_module_state()
+            .transaction_limits
+            .update_wasm_memory_usage(current_depth, consumed_memory)
+    }
+}
+
+impl<'g, 's, W> ClientExecutionTraceApi<RuntimeError> for Kernel<'g, 's, W>
+where
+    W: WasmEngine,
+{
     fn update_instruction_index(&mut self, new_index: usize) -> Result<(), RuntimeError> {
-        KernelModuleMixer::on_update_instruction_index(self, new_index)
-    }
+        // No costing applied
 
-    fn update_wasm_memory_usage(&mut self, size: usize) -> Result<(), RuntimeError> {
-        KernelModuleMixer::on_update_wasm_memory_usage(self, size)
+        self.kernel_get_module_state()
+            .execution_trace
+            .update_instruction_index(new_index);
+        Ok(())
     }
 }
 
@@ -645,7 +704,7 @@ where
 {
     fn emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), RuntimeError> {
         // Costing event emission.
-        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         // Construct the event type identifier based on the current actor
         let (event_type_id, package_address, blueprint_name) = match self.kernel_get_current_actor()
@@ -665,16 +724,11 @@ where
                     NodeModuleId::ComponentRoyalty => {
                         Ok((ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT.into()))
                     }
-                    NodeModuleId::FunctionAccessRules => {
-                        Ok((ACCESS_RULES_PACKAGE, FUNCTION_ACCESS_RULES_BLUEPRINT.into()))
-                    }
                     NodeModuleId::Metadata => Ok((METADATA_PACKAGE, METADATA_BLUEPRINT.into())),
                     NodeModuleId::SELF => self.get_object_type_info(node_id),
-                    NodeModuleId::TypeInfo | NodeModuleId::PackageEventSchema => {
-                        Err(RuntimeError::ApplicationError(
-                            ApplicationError::EventError(EventError::NoAssociatedPackage),
-                        ))
-                    }
+                    NodeModuleId::TypeInfo => Err(RuntimeError::ApplicationError(
+                        ApplicationError::EventError(EventError::NoAssociatedPackage),
+                    )),
                 }?;
 
                 Ok((event_type_id, package_address, blueprint_name.to_owned()))
@@ -708,8 +762,8 @@ where
         let (local_type_index, schema) = {
             let handle = self.kernel_lock_substate(
                 RENodeId::GlobalObject(Address::Package(package_address)),
-                NodeModuleId::PackageEventSchema,
-                SubstateOffset::PackageEventSchema(PackageEventSchemaOffset::PackageEventSchema),
+                NodeModuleId::SELF,
+                SubstateOffset::Package(PackageOffset::EventSchema),
                 LockFlags::read_only(),
             )?;
             let package_schema =
@@ -753,10 +807,35 @@ where
     W: WasmEngine,
 {
     fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
+        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
+
         self.kernel_get_module_state()
             .logger
             .add_log(level, message);
         Ok(())
+    }
+}
+
+impl<'g, 's, W> ClientTransactionRuntimeApi<RuntimeError> for Kernel<'g, 's, W>
+where
+    W: WasmEngine,
+{
+    fn get_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
+        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
+
+        Ok(self
+            .kernel_get_module_state()
+            .transaction_runtime
+            .transaction_hash())
+    }
+
+    fn generate_uuid(&mut self) -> Result<u128, RuntimeError> {
+        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
+
+        Ok(self
+            .kernel_get_module_state()
+            .transaction_runtime
+            .generate_uuid())
     }
 }
 

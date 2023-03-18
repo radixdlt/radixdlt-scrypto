@@ -13,9 +13,7 @@ use super::module_mixer::KernelModuleMixer;
 use super::track::{Track, TrackError};
 use crate::blueprints::account::AccountSubstate;
 use crate::blueprints::identity::IdentityBlueprint;
-use crate::blueprints::resource::{
-    BucketInfoSubstate, FungibleProof, NonFungibleProof, ProofInfoSubstate,
-};
+use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::system::kernel_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
@@ -32,13 +30,14 @@ use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::types::{
     LockHandle, ProofOffset, RENodeId, SubstateId, SubstateOffset,
 };
-use radix_engine_interface::api::{ClientObjectApi, ClientPackageApi};
+use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::account::{
     ACCOUNT_BLUEPRINT, ACCOUNT_DEPOSIT_BATCH_IDENT, ACCOUNT_DEPOSIT_IDENT,
 };
 use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
+use radix_engine_interface::schema::KeyValueStoreSchema;
 use sbor::rust::mem;
 
 pub struct Kernel<
@@ -142,13 +141,21 @@ where
             let kv_store_id = {
                 let node_id = self.kernel_allocate_node_id(RENodeType::KeyValueStore)?;
                 let node = RENodeInit::KeyValueStore;
-                self.kernel_create_node(node_id, node, BTreeMap::new())?;
+                self.kernel_create_node(
+                    node_id,
+                    node,
+                    btreemap!(
+                        NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::KeyValueStore(
+                            KeyValueStoreSchema::new::<ResourceAddress, Own>(false))
+                        )
+                    ),
+                )?;
                 node_id
             };
 
             let node_id = {
                 let node_modules = btreemap!(
-                    NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate {
+                    NodeModuleId::TypeInfo => RENodeModuleInit::TypeInfo(TypeInfoSubstate::Object {
                         package_address: ACCOUNT_PACKAGE,
                         blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
                         global: false
@@ -186,7 +193,7 @@ where
 
         let access_rules = AccessRulesObject::sys_new(access_rules, self)?;
         let metadata = Metadata::sys_create(self)?;
-        let royalty = ComponentRoyalty::sys_create(self, RoyaltyConfig::default())?;
+        let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), self)?;
 
         self.globalize_with_address(
             component_id,
@@ -221,7 +228,7 @@ where
 
         let access_rules = AccessRulesObject::sys_new(access_rules, self)?;
         let metadata = Metadata::sys_create(self)?;
-        let royalty = ComponentRoyalty::sys_create(self, RoyaltyConfig::default())?;
+        let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), self)?;
 
         self.globalize_with_address(
             local_id,
@@ -290,7 +297,7 @@ where
 
     fn drop_node_internal(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError> {
         self.execute_in_mode::<_, _, RuntimeError>(ExecutionMode::DropNode, |api| match node_id {
-            RENodeId::AuthZoneStack | RENodeId::TransactionRuntime | RENodeId::Object(..) => {
+            RENodeId::AuthZoneStack | RENodeId::Object(..) => {
                 api.current_frame.remove_node(&mut api.heap, node_id)
             }
             _ => Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
@@ -555,12 +562,13 @@ where
                                 self.track
                                     .get_substate(*node_id, NodeModuleId::TypeInfo, &offset);
                             let type_substate: &TypeInfoSubstate = substate_ref.into();
-                            if !matches!(
-                                (
-                                    type_substate.package_address,
-                                    type_substate.blueprint_name.as_str()
-                                ),
-                                (RESOURCE_MANAGER_PACKAGE, VAULT_BLUEPRINT)
+                            if !matches!(type_substate,
+                                TypeInfoSubstate::Object {
+                                    package_address,
+                                    blueprint_name,
+                                    ..
+
+                                } if package_address.eq(&RESOURCE_MANAGER_PACKAGE) && blueprint_name.eq(VAULT_BLUEPRINT)
                             ) {
                                 return Err(RuntimeError::KernelError(
                                     KernelError::InvalidDirectAccess,
@@ -676,17 +684,15 @@ where
         match (node_id, &init) {
             (RENodeId::GlobalObject(Address::Component(..)), RENodeInit::GlobalObject(..)) => {}
             (RENodeId::GlobalObject(Address::Resource(..)), RENodeInit::GlobalObject(..)) => {}
-            (RENodeId::GlobalObject(Address::Package(..)), RENodeInit::GlobalPackage(..)) => {}
+            (RENodeId::GlobalObject(Address::Package(..)), RENodeInit::GlobalObject(..)) => {}
             (RENodeId::Object(..), RENodeInit::Object(..)) => {}
             (RENodeId::KeyValueStore(..), RENodeInit::KeyValueStore) => {}
-            (RENodeId::NonFungibleStore(..), RENodeInit::NonFungibleStore) => {}
             (RENodeId::AuthZoneStack, RENodeInit::AuthZoneStack(..)) => {}
-            (RENodeId::TransactionRuntime, RENodeInit::TransactionRuntime(..)) => {}
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id))),
         }
 
         let push_to_store = match init {
-            RENodeInit::GlobalObject(..) | RENodeInit::GlobalPackage(..) => true,
+            RENodeInit::GlobalObject(..) => true,
             _ => false,
         };
 

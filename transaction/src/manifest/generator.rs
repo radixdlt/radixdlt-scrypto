@@ -17,15 +17,17 @@ use radix_engine_interface::blueprints::epoch_manager::{
 use radix_engine_interface::blueprints::identity::{
     IdentityCreateInput, IDENTITY_BLUEPRINT, IDENTITY_CREATE_IDENT,
 };
-use radix_engine_interface::blueprints::resource::NonFungibleGlobalId;
 use radix_engine_interface::blueprints::resource::{
-    AccessRule, ResourceManagerCreateFungibleInput,
-    ResourceManagerCreateFungibleWithInitialSupplyInput, ResourceManagerCreateNonFungibleInput,
-    ResourceManagerCreateNonFungibleWithInitialSupplyInput, RESOURCE_MANAGER_BLUEPRINT,
-    RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT,
-    RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
-    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT,
-    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
+    AccessRule, FungibleResourceManagerCreateInput,
+    FungibleResourceManagerCreateWithInitialSupplyInput, NonFungibleResourceManagerCreateInput,
+    NonFungibleResourceManagerCreateWithInitialSupplyManifestInput,
+    FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+    FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+};
+use radix_engine_interface::blueprints::resource::{
+    NonFungibleGlobalId, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
 };
 use radix_engine_interface::constants::{
     ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, EPOCH_MANAGER, IDENTITY_PACKAGE,
@@ -72,6 +74,8 @@ pub enum GeneratorError {
     InvalidExpression(String),
     InvalidComponent(String),
     InvalidKeyValueStore(String),
+    InvalidBucket(String),
+    InvalidProof(String),
     InvalidVault(String),
     InvalidEcdsaSecp256k1PublicKey(String),
     InvalidEcdsaSecp256k1Signature(String),
@@ -375,7 +379,7 @@ pub fn generate_instruction(
                 package_address,
                 blueprint_name,
                 function_name,
-                args: to_manifest_value(&args).unwrap(),
+                args: to_manifest_value(&args),
             }
         }
         ast::Instruction::CallMethod {
@@ -392,7 +396,7 @@ pub fn generate_instruction(
             Instruction::CallMethod {
                 component_address,
                 method_name,
-                args: to_manifest_value(&args).unwrap(),
+                args,
             }
         }
         ast::Instruction::PublishPackage {
@@ -478,22 +482,17 @@ pub fn generate_instruction(
         },
         ast::Instruction::MintNonFungible {
             resource_address,
-            entries,
+            args,
         } => Instruction::MintNonFungible {
             resource_address: generate_resource_address(resource_address, bech32_decoder)?,
-            entries: generate_non_fungible_mint_params(entries, resolver, bech32_decoder, blobs)?,
+            args: generate_value(args, None, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::MintUuidNonFungible {
             resource_address,
-            entries,
+            args,
         } => Instruction::MintUuidNonFungible {
             resource_address: generate_resource_address(resource_address, bech32_decoder)?,
-            entries: generate_uuid_non_fungible_mint_params(
-                entries,
-                resolver,
-                bech32_decoder,
-                blobs,
-            )?,
+            args: generate_value(args, None, resolver, bech32_decoder, blobs)?,
         },
 
         ast::Instruction::CreateValidator {
@@ -510,8 +509,7 @@ pub fn generate_instruction(
                     bech32_decoder,
                     blobs,
                 )?,
-            })
-            .unwrap(),
+            }),
         },
         ast::Instruction::CreateFungibleResource {
             divisibility,
@@ -519,14 +517,13 @@ pub fn generate_instruction(
             access_rules,
         } => Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
-            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT.to_string(),
-            args: to_manifest_value(&ResourceManagerCreateFungibleInput {
+            blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
+            args: to_manifest_value(&FungibleResourceManagerCreateInput {
                 divisibility: generate_u8(divisibility)?,
                 metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
                 access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
-            })
-            .unwrap(),
+            }),
         },
         ast::Instruction::CreateFungibleResourceWithInitialSupply {
             divisibility,
@@ -535,53 +532,66 @@ pub fn generate_instruction(
             initial_supply,
         } => Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
-            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT.to_string(),
-            args: to_manifest_value(&ResourceManagerCreateFungibleWithInitialSupplyInput {
+            blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string(),
+            args: to_manifest_value(&FungibleResourceManagerCreateWithInitialSupplyInput {
                 divisibility: generate_u8(divisibility)?,
                 metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
                 access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
                 initial_supply: generate_decimal(initial_supply)?,
-            })
-            .unwrap(),
+            }),
         },
         ast::Instruction::CreateNonFungibleResource {
             id_type,
+            schema,
             metadata,
             access_rules,
         } => Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
-            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT.to_string(),
-            args: to_manifest_value(&ResourceManagerCreateNonFungibleInput {
+            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
+            args: to_manifest_value(&NonFungibleResourceManagerCreateInput {
                 id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
+                non_fungible_schema: generate_typed_value(schema, resolver, bech32_decoder, blobs)?,
                 metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
                 access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
-            })
-            .unwrap(),
+            }),
         },
         ast::Instruction::CreateNonFungibleResourceWithInitialSupply {
             id_type,
+            schema,
             metadata,
             access_rules,
             initial_supply,
         } => Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
-            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT
+            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                 .to_string(),
-            args: to_manifest_value(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
-                id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
-                metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
-                access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
-                entries: generate_non_fungible_mint_params(
-                    initial_supply,
-                    resolver,
-                    bech32_decoder,
-                    blobs,
-                )?,
-            })
-            .unwrap(),
+            args: to_manifest_value(
+                &NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
+                    id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
+                    non_fungible_schema: generate_typed_value(
+                        schema,
+                        resolver,
+                        bech32_decoder,
+                        blobs,
+                    )?,
+                    metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
+                    access_rules: generate_typed_value(
+                        access_rules,
+                        resolver,
+                        bech32_decoder,
+                        blobs,
+                    )?,
+                    entries: generate_non_fungible_mint_params(
+                        initial_supply,
+                        resolver,
+                        bech32_decoder,
+                        blobs,
+                    )?,
+                },
+            ),
         },
         ast::Instruction::CreateAccessController {
             controlled_asset,
@@ -621,8 +631,7 @@ pub fn generate_instruction(
                     bech32_decoder,
                     blobs,
                 )?,
-            })
-            .unwrap(),
+            }),
         },
         ast::Instruction::CreateAccount { withdraw_rule } => Instruction::CallFunction {
             package_address: ACCOUNT_PACKAGE,
@@ -635,8 +644,7 @@ pub fn generate_instruction(
                     bech32_decoder,
                     blobs,
                 )?,
-            })
-            .unwrap(),
+            }),
         },
     })
 }
@@ -931,20 +939,6 @@ fn generate_byte_vec_from_hex(value: &ast::Value) -> Result<Vec<u8>, GeneratorEr
     Ok(bytes)
 }
 
-/// This function generates args from an [`ast::Value`]. This is useful when minting NFTs to be able
-/// to specify their data in a human readable format instead of SBOR.
-fn generate_args_from_tuple(
-    value: &ast::Value,
-    resolver: &mut NameResolver,
-    bech32_decoder: &Bech32Decoder,
-    blobs: &BTreeMap<Hash, Vec<u8>>,
-) -> Result<ManifestValue, GeneratorError> {
-    match value {
-        ast::Value::Tuple(values) => generate_args(values, resolver, bech32_decoder, blobs),
-        v => invalid_type!(v, ast::Type::Tuple),
-    }
-}
-
 /// This function generates the mint parameters of a non fungible resource from an array which has
 /// the following structure:
 ///
@@ -958,19 +952,13 @@ fn generate_non_fungible_mint_params(
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
     blobs: &BTreeMap<Hash, Vec<u8>>,
-) -> Result<BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>, GeneratorError> {
+) -> Result<BTreeMap<NonFungibleLocalId, (ManifestValue,)>, GeneratorError> {
     match value {
-        ast::Value::Map(key_type, value_type, elements) => {
+        ast::Value::Map(key_type, _value_type, elements) => {
             if key_type != &ast::Type::NonFungibleLocalId {
                 return Err(GeneratorError::InvalidAstType {
                     expected_type: ast::Type::NonFungibleLocalId,
                     actual: key_type.clone(),
-                });
-            };
-            if value_type != &ast::Type::Tuple {
-                return Err(GeneratorError::InvalidAstType {
-                    expected_type: ast::Type::Tuple,
-                    actual: value_type.clone(),
                 });
             };
             if elements.len() % 2 != 0 {
@@ -980,90 +968,9 @@ fn generate_non_fungible_mint_params(
             let mut mint_params = BTreeMap::new();
             for i in 0..elements.len() / 2 {
                 let non_fungible_local_id = generate_non_fungible_local_id(&elements[i * 2])?;
-                let non_fungible_data = match elements[i * 2 + 1].clone() {
-                    ast::Value::Tuple(values) => {
-                        if values.len() != 2 {
-                            return Err(GeneratorError::InvalidLength {
-                                value_type: ast::Type::Tuple,
-                                expected_length: 2,
-                                actual: values.len(),
-                            });
-                        }
-
-                        let immutable_data = manifest_encode(&generate_args_from_tuple(
-                            &values[0],
-                            resolver,
-                            bech32_decoder,
-                            blobs,
-                        )?)
-                        .map_err(GeneratorError::ArgumentEncodingError)?;
-                        let mutable_data = manifest_encode(&generate_args_from_tuple(
-                            &values[1],
-                            resolver,
-                            bech32_decoder,
-                            blobs,
-                        )?)
-                        .map_err(GeneratorError::ArgumentEncodingError)?;
-
-                        (immutable_data, mutable_data)
-                    }
-                    v => invalid_type!(v, ast::Type::Tuple)?,
-                };
-                mint_params.insert(non_fungible_local_id, non_fungible_data);
-            }
-
-            Ok(mint_params)
-        }
-        v => invalid_type!(v, ast::Type::Array)?,
-    }
-}
-
-fn generate_uuid_non_fungible_mint_params(
-    value: &ast::Value,
-    resolver: &mut NameResolver,
-    bech32_decoder: &Bech32Decoder,
-    blobs: &BTreeMap<Hash, Vec<u8>>,
-) -> Result<Vec<(Vec<u8>, Vec<u8>)>, GeneratorError> {
-    match value {
-        ast::Value::Array(kind, elements) => {
-            if kind != &ast::Type::Tuple {
-                return Err(GeneratorError::InvalidAstType {
-                    expected_type: ast::Type::Tuple,
-                    actual: kind.clone(),
-                });
-            };
-
-            let mut mint_params = Vec::new();
-            for element in elements.into_iter() {
-                match element {
-                    ast::Value::Tuple(values) => {
-                        if values.len() != 2 {
-                            return Err(GeneratorError::InvalidLength {
-                                value_type: ast::Type::Tuple,
-                                expected_length: 2,
-                                actual: values.len(),
-                            });
-                        }
-
-                        let immutable_data = manifest_encode(&generate_args_from_tuple(
-                            &values[0],
-                            resolver,
-                            bech32_decoder,
-                            blobs,
-                        )?)
-                        .map_err(GeneratorError::ArgumentEncodingError)?;
-                        let mutable_data = manifest_encode(&generate_args_from_tuple(
-                            &values[1],
-                            resolver,
-                            bech32_decoder,
-                            blobs,
-                        )?)
-                        .map_err(GeneratorError::ArgumentEncodingError)?;
-
-                        mint_params.push((immutable_data, mutable_data));
-                    }
-                    v => invalid_type!(v, ast::Type::Tuple)?,
-                }
+                let non_fungible =
+                    generate_value(&elements[i * 2 + 1], None, resolver, bech32_decoder, blobs)?;
+                mint_params.insert(non_fungible_local_id, (non_fungible,));
             }
 
             Ok(mint_params)
@@ -1302,7 +1209,9 @@ mod tests {
     use crate::manifest::parser::Parser;
     use radix_engine_interface::address::Bech32Decoder;
     use radix_engine_interface::blueprints::resource::{
-        AccessRule, AccessRulesConfig, ResourceMethodAuthKey,
+        AccessRule, AccessRulesConfig, NonFungibleDataSchema,
+        NonFungibleResourceManagerMintManifestInput,
+        NonFungibleResourceManagerMintUuidManifestInput, ResourceMethodAuthKey,
     };
     use radix_engine_interface::network::NetworkDefinition;
     use radix_engine_interface::{dec, pdec};
@@ -1521,19 +1430,6 @@ mod tests {
                 amount: dec!("100")
             },
         );
-        generate_instruction_ok!(
-            r##"MINT_NON_FUNGIBLE Address("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak") Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128)));"##,
-            Instruction::MintNonFungible {
-                resource_address: resource,
-                entries: BTreeMap::from([(
-                    NonFungibleLocalId::integer(1),
-                    (
-                        manifest_encode(&(String::from("Hello World"), dec!("12"))).unwrap(),
-                        manifest_encode(&(12u8, 19u128)).unwrap()
-                    )
-                )])
-            },
-        );
     }
 
     #[test]
@@ -1565,13 +1461,14 @@ mod tests {
     #[test]
     fn test_create_non_fungible_instruction() {
         generate_instruction_ok!(
-            r#"CREATE_NON_FUNGIBLE_RESOURCE Enum("NonFungibleIdType::Integer") Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")));"#,
+            r#"CREATE_NON_FUNGIBLE_RESOURCE Enum("NonFungibleIdType::Integer") Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum(0u8, 66u8), Array<String>()) Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")));"#,
             Instruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
-                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_IDENT.to_string(),
-                args: to_manifest_value(&ResourceManagerCreateNonFungibleInput {
+                blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
+                args: to_manifest_value(&NonFungibleResourceManagerCreateInput {
                     id_type: NonFungibleIdType::Integer,
+                    non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                     metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
                     access_rules: BTreeMap::from([
                         (
@@ -1583,8 +1480,7 @@ mod tests {
                             (AccessRule::AllowAll, AccessRule::DenyAll)
                         ),
                     ]),
-                })
-                .unwrap(),
+                }),
             },
         );
     }
@@ -1592,34 +1488,36 @@ mod tests {
     #[test]
     fn test_create_non_fungible_with_initial_supply_instruction() {
         generate_instruction_ok!(
-            r##"CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY Enum("NonFungibleIdType::Integer") Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll"))) Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128)));"##,
+            r##"CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY Enum("NonFungibleIdType::Integer") Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum(0u8, 66u8), Array<String>()) Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll"))) Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple("Hello World", Decimal("12")));"##,
             Instruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
-                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT
+                blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
-                args: to_manifest_value(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
-                    id_type: NonFungibleIdType::Integer,
-                    metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
-                    access_rules: BTreeMap::from([
-                        (
-                            ResourceMethodAuthKey::Withdraw,
-                            (AccessRule::AllowAll, AccessRule::DenyAll)
-                        ),
-                        (
-                            ResourceMethodAuthKey::Deposit,
-                            (AccessRule::AllowAll, AccessRule::DenyAll)
-                        ),
-                    ]),
-                    entries: BTreeMap::from([(
-                        NonFungibleLocalId::integer(1),
-                        (
-                            manifest_encode(&(String::from("Hello World"), dec!("12"))).unwrap(),
-                            manifest_encode(&(12u8, 19u128)).unwrap()
-                        )
-                    )]),
-                })
-                .unwrap(),
+                args: to_manifest_value(
+                    &NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
+                        id_type: NonFungibleIdType::Integer,
+                        non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                        metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                        access_rules: BTreeMap::from([
+                            (
+                                ResourceMethodAuthKey::Withdraw,
+                                (AccessRule::AllowAll, AccessRule::DenyAll)
+                            ),
+                            (
+                                ResourceMethodAuthKey::Deposit,
+                                (AccessRule::AllowAll, AccessRule::DenyAll)
+                            ),
+                        ]),
+                        entries: BTreeMap::from([(
+                            NonFungibleLocalId::integer(1),
+                            (to_manifest_value(&(
+                                String::from("Hello World"),
+                                dec!("12")
+                            )),),
+                        )]),
+                    }
+                ),
             },
         );
     }
@@ -1630,9 +1528,9 @@ mod tests {
             r#"CREATE_FUNGIBLE_RESOURCE 18u8 Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")));"#,
             Instruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
-                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_IDENT.to_string(),
-                args: to_manifest_value(&ResourceManagerCreateFungibleInput {
+                blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
+                args: to_manifest_value(&FungibleResourceManagerCreateInput {
                     divisibility: 18,
                     metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
                     access_rules: BTreeMap::from([
@@ -1645,8 +1543,7 @@ mod tests {
                             (AccessRule::AllowAll, AccessRule::DenyAll)
                         ),
                     ]),
-                })
-                .unwrap(),
+                }),
             },
         );
     }
@@ -1657,10 +1554,10 @@ mod tests {
             r#"CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY 18u8 Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll"))) Decimal("500");"#,
             Instruction::CallFunction {
                 package_address: RESOURCE_MANAGER_PACKAGE,
-                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT
+                blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
-                args: to_manifest_value(&ResourceManagerCreateFungibleWithInitialSupplyInput {
+                args: to_manifest_value(&FungibleResourceManagerCreateWithInitialSupplyInput {
                     divisibility: 18,
                     metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
                     access_rules: BTreeMap::from([
@@ -1675,7 +1572,38 @@ mod tests {
                     ]),
                     initial_supply: "500".parse().unwrap()
                 })
-                .unwrap()
+            },
+        );
+    }
+
+    #[test]
+    fn test_mint_non_fungible_instruction() {
+        let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
+        let resource = bech32_decoder
+            .validate_and_decode_resource_address(
+                "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak",
+            )
+            .unwrap();
+
+        generate_instruction_ok!(
+            r##"
+            MINT_NON_FUNGIBLE
+                Address("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")
+                Tuple(
+                    Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple(Tuple("Hello World", Decimal("12"))))
+                );
+            "##,
+            Instruction::MintNonFungible {
+                resource_address: resource,
+                args: to_manifest_value(&NonFungibleResourceManagerMintManifestInput {
+                    entries: BTreeMap::from([(
+                        NonFungibleLocalId::integer(1),
+                        (to_manifest_value(&(
+                            String::from("Hello World"),
+                            dec!("12")
+                        )),)
+                    )])
+                })
             },
         );
     }
@@ -1693,19 +1621,20 @@ mod tests {
             r#"
             MINT_UUID_NON_FUNGIBLE
                 Address("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")
-                Array<Tuple>(
-                    Tuple(
-                        Tuple("Hello World", Decimal("12")),
-                        Tuple(12u8, 19u128)
+                Tuple(
+                    Array<Tuple>(
+                        Tuple(Tuple("Hello World", Decimal("12")))
                     )
                 );
             "#,
             Instruction::MintUuidNonFungible {
                 resource_address: resource,
-                entries: Vec::from([(
-                    manifest_encode(&(String::from("Hello World"), dec!("12"))).unwrap(),
-                    manifest_encode(&(12u8, 19u128)).unwrap()
-                )])
+                args: to_manifest_value(&NonFungibleResourceManagerMintUuidManifestInput {
+                    entries: Vec::from([(to_manifest_value(&(
+                        String::from("Hello World"),
+                        dec!("12")
+                    )),),])
+                }),
             },
         );
     }
@@ -1724,8 +1653,7 @@ mod tests {
                         .unwrap()
                         .public_key(),
                     owner_access_rule: AccessRule::AllowAll,
-                })
-                .unwrap(),
+                }),
             },
         );
     }

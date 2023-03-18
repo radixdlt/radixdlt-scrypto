@@ -19,12 +19,10 @@ use crate::system::kernel_modules::transaction_runtime::TransactionRuntimeModule
 use crate::system::node::RENodeInit;
 use crate::system::node::RENodeModuleInit;
 use crate::transaction::ExecutionConfig;
-use crate::types::api::unsafe_api::ClientCostingReason;
 use crate::types::*;
 use bitflags::bitflags;
 use radix_engine_interface::api::substate_api::LockFlags;
 use radix_engine_interface::api::*;
-use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::crypto::Hash;
 use sbor::rust::collections::BTreeMap;
 use transaction::model::AuthZoneParams;
@@ -101,7 +99,10 @@ impl KernelModuleMixer {
                 params: auth_zone_params.clone(),
             },
             logger: LoggerModule::default(),
-            transaction_runtime: TransactionRuntimeModule { tx_hash },
+            transaction_runtime: TransactionRuntimeModule {
+                tx_hash,
+                next_id: 0,
+            },
             transaction_limits: TransactionLimitsModule::new(TransactionLimitsConfig {
                 max_wasm_memory: execution_config.max_wasm_mem_per_transaction,
                 max_wasm_memory_per_call_frame: execution_config.max_wasm_mem_per_call_frame,
@@ -773,149 +774,6 @@ impl KernelModule for KernelModuleMixer {
         }
         if modules.contains(EnabledModules::EVENTS) {
             EventsModule::on_drop_lock(api, lock_handle)?;
-        }
-        Ok(())
-    }
-
-    fn on_consume_cost_units<Y: KernelModuleApi<RuntimeError>>(
-        api: &mut Y,
-        units: u32,
-        reason: ClientCostingReason,
-    ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
-        if modules.contains(EnabledModules::KERNEL_DEBUG) {
-            KernelTraceModule::on_consume_cost_units(api, units, reason)?;
-        }
-        if modules.contains(EnabledModules::COSTING) {
-            CostingModule::on_consume_cost_units(api, units, reason)?;
-        }
-        if modules.contains(EnabledModules::NODE_MOVE) {
-            NodeMoveModule::on_consume_cost_units(api, units, reason)?;
-        }
-        if modules.contains(EnabledModules::AUTH) {
-            AuthModule::on_consume_cost_units(api, units, reason)?;
-        }
-        if modules.contains(EnabledModules::LOGGER) {
-            LoggerModule::on_consume_cost_units(api, units, reason)?;
-        }
-        if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
-            TransactionRuntimeModule::on_consume_cost_units(api, units, reason)?;
-        }
-        if modules.contains(EnabledModules::EXECUTION_TRACE) {
-            ExecutionTraceModule::on_consume_cost_units(api, units, reason)?;
-        }
-        if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
-            TransactionLimitsModule::on_consume_cost_units(api, units, reason)?;
-        }
-        if modules.contains(EnabledModules::EVENTS) {
-            EventsModule::on_consume_cost_units(api, units, reason)?;
-        }
-        Ok(())
-    }
-
-    fn on_credit_cost_units<Y: KernelModuleApi<RuntimeError>>(
-        api: &mut Y,
-        vault_id: ObjectId,
-        mut fee: LiquidFungibleResource,
-        contingent: bool,
-    ) -> Result<LiquidFungibleResource, RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
-        if modules.contains(EnabledModules::KERNEL_DEBUG) {
-            fee = KernelTraceModule::on_credit_cost_units(api, vault_id, fee, contingent)?;
-        }
-        if modules.contains(EnabledModules::COSTING) {
-            fee = CostingModule::on_credit_cost_units(api, vault_id, fee, contingent)?;
-        }
-        if modules.contains(EnabledModules::NODE_MOVE) {
-            fee = NodeMoveModule::on_credit_cost_units(api, vault_id, fee, contingent)?;
-        }
-        if modules.contains(EnabledModules::AUTH) {
-            fee = AuthModule::on_credit_cost_units(api, vault_id, fee, contingent)?;
-        }
-        if modules.contains(EnabledModules::LOGGER) {
-            fee = LoggerModule::on_credit_cost_units(api, vault_id, fee, contingent)?;
-        }
-        if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
-            fee = TransactionRuntimeModule::on_credit_cost_units(api, vault_id, fee, contingent)?;
-        }
-        if modules.contains(EnabledModules::EXECUTION_TRACE) {
-            fee = ExecutionTraceModule::on_credit_cost_units(api, vault_id, fee, contingent)?;
-        }
-        if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
-            fee = TransactionLimitsModule::on_credit_cost_units(api, vault_id, fee, contingent)?;
-        }
-        if modules.contains(EnabledModules::EVENTS) {
-            fee = EventsModule::on_credit_cost_units(api, vault_id, fee, contingent)?;
-        }
-        Ok(fee)
-    }
-
-    fn on_update_instruction_index<Y: KernelModuleApi<RuntimeError>>(
-        api: &mut Y,
-        new_index: usize,
-    ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
-        if modules.contains(EnabledModules::KERNEL_DEBUG) {
-            KernelTraceModule::on_update_instruction_index(api, new_index)?;
-        }
-        if modules.contains(EnabledModules::COSTING) {
-            CostingModule::on_update_instruction_index(api, new_index)?;
-        }
-        if modules.contains(EnabledModules::NODE_MOVE) {
-            NodeMoveModule::on_update_instruction_index(api, new_index)?;
-        }
-        if modules.contains(EnabledModules::AUTH) {
-            AuthModule::on_update_instruction_index(api, new_index)?;
-        }
-        if modules.contains(EnabledModules::LOGGER) {
-            LoggerModule::on_update_instruction_index(api, new_index)?;
-        }
-        if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
-            TransactionRuntimeModule::on_update_instruction_index(api, new_index)?;
-        }
-        if modules.contains(EnabledModules::EXECUTION_TRACE) {
-            ExecutionTraceModule::on_update_instruction_index(api, new_index)?;
-        }
-        if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
-            TransactionLimitsModule::on_update_instruction_index(api, new_index)?;
-        }
-        if modules.contains(EnabledModules::EVENTS) {
-            EventsModule::on_update_instruction_index(api, new_index)?;
-        }
-        Ok(())
-    }
-
-    fn on_update_wasm_memory_usage<Y: KernelModuleApi<RuntimeError>>(
-        api: &mut Y,
-        consumed_memory: usize,
-    ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_module_state().enabled_modules;
-        if modules.contains(EnabledModules::KERNEL_DEBUG) {
-            KernelTraceModule::on_update_wasm_memory_usage(api, consumed_memory)?;
-        }
-        if modules.contains(EnabledModules::COSTING) {
-            CostingModule::on_update_wasm_memory_usage(api, consumed_memory)?;
-        }
-        if modules.contains(EnabledModules::NODE_MOVE) {
-            NodeMoveModule::on_update_wasm_memory_usage(api, consumed_memory)?;
-        }
-        if modules.contains(EnabledModules::AUTH) {
-            AuthModule::on_update_wasm_memory_usage(api, consumed_memory)?;
-        }
-        if modules.contains(EnabledModules::LOGGER) {
-            LoggerModule::on_update_wasm_memory_usage(api, consumed_memory)?;
-        }
-        if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
-            TransactionRuntimeModule::on_update_wasm_memory_usage(api, consumed_memory)?;
-        }
-        if modules.contains(EnabledModules::EXECUTION_TRACE) {
-            ExecutionTraceModule::on_update_wasm_memory_usage(api, consumed_memory)?;
-        }
-        if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
-            TransactionLimitsModule::on_update_wasm_memory_usage(api, consumed_memory)?;
-        }
-        if modules.contains(EnabledModules::EVENTS) {
-            EventsModule::on_update_wasm_memory_usage(api, consumed_memory)?;
         }
         Ok(())
     }

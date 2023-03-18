@@ -12,7 +12,6 @@ use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::resource::*;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
-use crate::blueprints::transaction_runtime::TransactionRuntimeNativePackage;
 use crate::kernel::interpreters::ScryptoInterpreter;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::system::node_modules::access_rules::{
@@ -79,8 +78,7 @@ pub fn create_genesis(
                 package_access_rules: PackageNativePackage::function_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
                 event_schema: BTreeMap::new(),
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -110,8 +108,7 @@ pub fn create_genesis(
                     >()]
                     .into(),
                 )]),
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -135,8 +132,7 @@ pub fn create_genesis(
                 package_access_rules: RoyaltyNativePackage::function_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
                 event_schema: BTreeMap::new(), // TODO: Royalty application events
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -172,8 +168,7 @@ pub fn create_genesis(
                     ]
                     .into(),
                 )]),
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -197,18 +192,36 @@ pub fn create_genesis(
                 default_package_access_rule: AccessRule::AllowAll,
                 event_schema: BTreeMap::from([
                     (
-                        RESOURCE_MANAGER_BLUEPRINT.into(),
+                        FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.into(),
                         [
                             generate_full_schema_from_single_type::<
                                 VaultCreationEvent,
                                 ScryptoCustomTypeExtension,
                             >(),
                             generate_full_schema_from_single_type::<
-                                MintResourceEvent,
+                                MintFungibleResourceEvent,
                                 ScryptoCustomTypeExtension,
                             >(),
                             generate_full_schema_from_single_type::<
-                                BurnResourceEvent,
+                                BurnFungibleResourceEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                        ]
+                        .into(),
+                    ),
+                    (
+                        NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.into(),
+                        [
+                            generate_full_schema_from_single_type::<
+                                VaultCreationEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                            generate_full_schema_from_single_type::<
+                                MintNonFungibleResourceEvent,
+                                ScryptoCustomTypeExtension,
+                            >(),
+                            generate_full_schema_from_single_type::<
+                                BurnNonFungibleResourceEvent,
                                 ScryptoCustomTypeExtension,
                             >(),
                         ]
@@ -237,8 +250,7 @@ pub fn create_genesis(
                         .into(),
                     ),
                 ]),
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -257,19 +269,18 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::GlobalObject(RADIX_TOKEN.into()));
         instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
-            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: RESOURCE_MANAGER_CREATE_FUNGIBLE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT
+            blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT
                 .to_string(),
             args: to_manifest_value(
-                &ResourceManagerCreateFungibleWithInitialSupplyAndAddressInput {
+                &FungibleResourceManagerCreateWithInitialSupplyAndAddressInput {
                     divisibility: 18,
                     metadata,
                     access_rules,
                     initial_supply,
                     resource_address,
                 },
-            )
-            .unwrap(),
+            ),
         });
     }
 
@@ -282,15 +293,15 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::GlobalObject(PACKAGE_TOKEN.into()));
         instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
-            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT.to_string(),
-            args: to_manifest_value(&ResourceManagerCreateNonFungibleWithAddressInput {
+            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
+            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
                 id_type: NonFungibleIdType::Bytes,
+                non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
                 resource_address,
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -313,8 +324,7 @@ pub fn create_genesis(
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
                 event_schema: BTreeMap::new(),
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -382,8 +392,7 @@ pub fn create_genesis(
                         .into(),
                     ),
                 ]),
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -406,8 +415,7 @@ pub fn create_genesis(
                 package_access_rules: ClockNativePackage::package_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
                 event_schema: BTreeMap::new(),
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -430,8 +438,7 @@ pub fn create_genesis(
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
                 event_schema: BTreeMap::new(), // TODO: Account events
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -483,8 +490,7 @@ pub fn create_genesis(
                     ]
                     .into(),
                 )]),
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -507,32 +513,7 @@ pub fn create_genesis(
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
                 event_schema: BTreeMap::new(),
-            })
-            .unwrap(),
-        });
-    }
-
-    // TransactionRuntime Package
-    {
-        pre_allocated_ids.insert(RENodeId::GlobalObject(TRANSACTION_RUNTIME_PACKAGE.into()));
-        let package_address = TRANSACTION_RUNTIME_PACKAGE.to_array_without_entity_id();
-        instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE_PACKAGE,
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeInput {
-                package_address: Some(package_address), // TODO: Clean this up
-                schema: TransactionRuntimeNativePackage::schema(),
-                metadata: BTreeMap::new(),
-                access_rules: AccessRulesConfig::new(),
-                native_package_code_id: TRANSACTION_RUNTIME_CODE_ID,
-                dependent_resources: vec![],
-                dependent_components: vec![],
-                package_access_rules: BTreeMap::new(),
-                default_package_access_rule: AccessRule::DenyAll,
-                event_schema: BTreeMap::new(),
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -555,8 +536,7 @@ pub fn create_genesis(
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::DenyAll,
                 event_schema: BTreeMap::new(),
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -569,15 +549,15 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::GlobalObject(ECDSA_SECP256K1_TOKEN.into()));
         instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
-            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT.to_string(),
-            args: to_manifest_value(&ResourceManagerCreateNonFungibleWithAddressInput {
+            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
+            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
                 id_type: NonFungibleIdType::Bytes,
+                non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
                 resource_address,
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -590,15 +570,15 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::GlobalObject(EDDSA_ED25519_TOKEN.into()));
         instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
-            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT.to_string(),
-            args: to_manifest_value(&ResourceManagerCreateNonFungibleWithAddressInput {
+            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
+            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
                 id_type: NonFungibleIdType::Bytes,
+                non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
                 resource_address,
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -611,15 +591,15 @@ pub fn create_genesis(
         pre_allocated_ids.insert(RENodeId::GlobalObject(SYSTEM_TOKEN.into()));
         instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_MANAGER_PACKAGE,
-            blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_ADDRESS_IDENT.to_string(),
-            args: to_manifest_value(&ResourceManagerCreateNonFungibleWithAddressInput {
+            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
+            args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
                 id_type: NonFungibleIdType::Bytes,
+                non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                 metadata,
                 access_rules,
                 resource_address,
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -641,8 +621,7 @@ pub fn create_genesis(
                 access_rules: AccessRulesConfig::new()
                     .default(AccessRule::DenyAll, AccessRule::DenyAll),
                 event_schema: BTreeMap::new(),
-            })
-            .unwrap(),
+            }),
         });
     }
 
@@ -654,7 +633,7 @@ pub fn create_genesis(
             package_address: CLOCK_PACKAGE,
             blueprint_name: CLOCK_BLUEPRINT.to_string(),
             function_name: CLOCK_CREATE_IDENT.to_string(),
-            args: to_manifest_value(&ClockCreateInput { component_address }).unwrap(),
+            args: to_manifest_value(&ClockCreateInput { component_address }),
         });
     }
 
@@ -749,7 +728,12 @@ pub fn create_genesis(
 
 pub fn genesis_result(receipt: &TransactionReceipt) -> GenesisReceipt {
     // TODO: Remove this when appropriate syscalls are implemented for Scrypto
-    let faucet_component = receipt.new_component_addresses().last().unwrap().clone();
+    let faucet_component = receipt
+        .expect_commit(true)
+        .new_component_addresses()
+        .last()
+        .unwrap()
+        .clone();
     GenesisReceipt { faucet_component }
 }
 
@@ -848,16 +832,14 @@ mod tests {
         #[cfg(not(feature = "alloc"))]
         println!("{:?}", transaction_receipt);
 
-        transaction_receipt.expect_commit_success();
-        let commit_result = transaction_receipt.expect_commit(true);
-        commit_result
+        transaction_receipt
+            .expect_commit(true)
             .next_epoch()
             .expect("There should be a new epoch.");
 
         assert!(transaction_receipt
             .expect_commit(true)
-            .entity_changes
-            .new_package_addresses
+            .new_package_addresses()
             .contains(&PACKAGE_PACKAGE));
         let genesis_receipt = genesis_result(&transaction_receipt);
         assert_eq!(genesis_receipt.faucet_component, FAUCET_COMPONENT);
@@ -885,7 +867,6 @@ mod tests {
             &genesis_transaction.get_executable(vec![AuthAddresses::system_role()]),
         );
 
-        transaction_receipt.expect_commit_success();
         let commit_result = transaction_receipt.expect_commit(true);
         commit_result.state_updates.commit(&mut substate_store);
 

@@ -85,9 +85,17 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                         SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(entry_id.clone())),
                     );
                     if let PersistedSubstate::KeyValueStoreEntry(entry) = substate {
-                        for child_node_id in entry.owned_node_ids() {
-                            self.traverse_recursive(Some(&substate_id), child_node_id, depth + 1)
+                        if let Some(value) = entry {
+                            let (_, own, _) =
+                                IndexedScryptoValue::from_scrypto_value(value.clone()).unpack();
+                            for child_node_id in own {
+                                self.traverse_recursive(
+                                    Some(&substate_id),
+                                    child_node_id,
+                                    depth + 1,
+                                )
                                 .expect("Broken Node Store");
+                            }
                         }
                     }
                 }
@@ -105,11 +113,14 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                 let runtime_substate = output_value.substate.to_runtime();
                 let type_substate: TypeInfoSubstate = runtime_substate.into();
 
-                match (
-                    type_substate.package_address,
-                    type_substate.blueprint_name.as_str(),
-                ) {
-                    (RESOURCE_MANAGER_PACKAGE, VAULT_BLUEPRINT) => {
+                match type_substate {
+                    TypeInfoSubstate::Object {
+                        package_address,
+                        blueprint_name,
+                        ..
+                    } if package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                        && blueprint_name.eq(VAULT_BLUEPRINT) =>
+                    {
                         if let Some(output_value) = self.substate_store.get_substate(&SubstateId(
                             node_id,
                             NodeModuleId::SELF,
@@ -189,6 +200,24 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                     node_id,
                     NodeModuleId::SELF,
                     SubstateOffset::Account(AccountOffset::Account),
+                );
+                let output_value = self
+                    .substate_store
+                    .get_substate(&substate_id)
+                    .expect("Broken Node Store");
+                let runtime_substate = output_value.substate.to_runtime();
+                let substate_ref = runtime_substate.to_ref();
+                let (_, owned_nodes) = substate_ref.references_and_owned_nodes();
+                for child_node_id in owned_nodes {
+                    self.traverse_recursive(Some(&substate_id), child_node_id, depth + 1)
+                        .expect("Broken Node Store");
+                }
+            }
+            RENodeId::GlobalObject(Address::Component(_)) => {
+                let substate_id = SubstateId(
+                    node_id,
+                    NodeModuleId::SELF,
+                    SubstateOffset::Component(ComponentOffset::State0),
                 );
                 let output_value = self
                     .substate_store

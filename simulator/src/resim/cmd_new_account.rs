@@ -2,9 +2,10 @@ use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::{
-    require, FromPublicKey, ResourceManagerCreateNonFungibleWithInitialSupplyInput,
-    ResourceMethodAuthKey, RESOURCE_MANAGER_BLUEPRINT,
-    RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT,
+    require, FromPublicKey, NonFungibleDataSchema,
+    NonFungibleResourceManagerCreateWithInitialSupplyManifestInput, ResourceMethodAuthKey,
+    NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
 };
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::rule;
@@ -30,7 +31,7 @@ pub struct NewAccount {
     trace: bool,
 }
 
-#[derive(ScryptoSbor)]
+#[derive(ScryptoSbor, ManifestSbor)]
 struct EmptyStruct;
 
 impl NewAccount {
@@ -63,17 +64,18 @@ impl NewAccount {
                 .outcome
                 .success_or_else(|err| TransactionFailed(err.clone()))?;
 
-            let account = commit_result.entity_changes.new_component_addresses[0];
+            let account = commit_result.new_component_addresses()[0];
             let manifest = ManifestBuilder::new()
                 .lock_fee(FAUCET_COMPONENT, 100.into())
                 .call_method(FAUCET_COMPONENT, "free", manifest_args!())
                 .add_instruction(Instruction::CallFunction {
                     package_address: RESOURCE_MANAGER_PACKAGE,
-                    blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                    function_name: RESOURCE_MANAGER_CREATE_NON_FUNGIBLE_WITH_INITIAL_SUPPLY_IDENT
+                    blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                    function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                         .to_string(),
-                    args: to_manifest_value(&ResourceManagerCreateNonFungibleWithInitialSupplyInput {
+                    args: to_manifest_value(&NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
                         id_type: NonFungibleIdType::Integer,
+                        non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                         metadata: btreemap!(
                             "name".to_owned() => "Owner Badge".to_owned()
                         ),
@@ -81,13 +83,9 @@ impl NewAccount {
                             ResourceMethodAuthKey::Withdraw => (rule!(allow_all), rule!(deny_all))
                         ),
                         entries: btreemap!(
-                            NonFungibleLocalId::integer(1) => (
-                                scrypto_encode(&EmptyStruct).unwrap(),
-                                scrypto_encode(&EmptyStruct).unwrap(),
-                            )
+                            NonFungibleLocalId::integer(1) => (to_manifest_value(&EmptyStruct {}) ,),
                         ),
-                    })
-                    .unwrap(),
+                    }),
                 })
                 .0
                 .call_method(
@@ -106,10 +104,7 @@ impl NewAccount {
                 out,
             )?
             .unwrap();
-            let resource_address = receipt
-                .expect_commit(true)
-                .entity_changes
-                .new_resource_addresses[0];
+            let resource_address = receipt.expect_commit(true).new_resource_addresses()[0];
             let owner_badge =
                 NonFungibleGlobalId::new(resource_address, NonFungibleLocalId::integer(1));
 

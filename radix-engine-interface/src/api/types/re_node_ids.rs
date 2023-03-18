@@ -6,4 +6,3 @@ pub type TransactionRuntimeId = u32;
 
 pub type ObjectId = [u8; OBJECT_ID_LENGTH];
 pub type KeyValueStoreId = [u8; OBJECT_ID_LENGTH];
-pub type NonFungibleStoreId = [u8; OBJECT_ID_LENGTH];

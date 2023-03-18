@@ -66,13 +66,14 @@ fn test_basic_transfer() {
     // Or you can run just this test with the below:
     // (cd radix-engine && cargo test --test metering -- test_basic_transfer)
     assert_eq!(
-        10000 /* CreateNode */
+        7500 /* CreateNode */
         + 88000 /* DropLock */
-        + 10000 /* DropNode */
+        + 7500 /* DropNode */
         + 11160 /* Invoke */
         + 89500 /* LockSubstate */
         + 61500 /* ReadSubstate */
-        + 70000 /* RunNative */
+        + 62500 /* RunNative */
+        + 7500 /* RunSystem */
         + 0 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1260 /* TxPayloadCost */
@@ -131,8 +132,8 @@ fn test_radiswap() {
                                 bucket1,
                                 bucket2,
                                 dec!("1000"),
-                                "LP__ETH",
-                                "LP token for /ETH swap",
+                                "LP_BTC_ETH",
+                                "LP token for BTC/ETH swap",
                                 "https://www.radiswap.com",
                                 fee_amount
                             ),
@@ -147,6 +148,7 @@ fn test_radiswap() {
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
+        .expect_commit(true)
         .output::<(ComponentAddress, Own)>(5);
 
     // Transfer `10,000 BTC` from `account2` to `account3`
@@ -199,14 +201,15 @@ fn test_radiswap() {
     // Or you can run just this test with the below:
     // (cd radix-engine && cargo test --test metering -- test_radiswap)
     assert_eq!(
-        15000 /* CreateNode */
-        + 228500 /* DropLock */
-        + 12500 /* DropNode */
+        12500 /* CreateNode */
+        + 229000 /* DropLock */
+        + 10000 /* DropNode */
         + 25340 /* Invoke */
-        + 231000 /* LockSubstate */
-        + 2636900 /* ReadSubstate */
-        + 152500 /* RunNative */
-        + 1520730 /* RunWasm */
+        + 231500 /* LockSubstate */
+        + 2635210 /* ReadSubstate */
+        + 137500 /* RunNative */
+        + 15000 /* RunSystem */
+        + 1653705 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1625 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
@@ -263,6 +266,7 @@ fn test_flash_loan() {
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
+        .expect_commit(true)
         .output::<(ComponentAddress, ResourceAddress)>(3);
 
     // Take loan
@@ -307,18 +311,19 @@ fn test_flash_loan() {
     // Or you can run just this test with the below:
     // (cd radix-engine && cargo test --test metering -- test_flash_loan)
     assert_eq!(
-        22500 /* CreateNode */
-        + 351000 /* DropLock */
-        + 22500 /* DropNode */
-        + 45770 /* Invoke */
-        + 359500 /* LockSubstate */
-        + 5266960 /* ReadSubstate */
-        + 245000 /* RunNative */
-        + 1172150 /* RunWasm */
+        20000 /* CreateNode */
+        + 348000 /* DropLock */
+        + 20000 /* DropNode */
+        + 44790 /* Invoke */
+        + 356000 /* LockSubstate */
+        + 6645010 /* ReadSubstate */
+        + 215000 /* RunNative */
+        + 30000 /* RunSystem */
+        + 1307375 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2375 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 92500, /* WriteSubstate */
+        + 90500, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
 }
@@ -439,7 +444,7 @@ fn setup_test_runner_with_fee_blueprint_component() -> (TestRunner, ComponentAdd
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     let commit_result = receipt1.expect_commit(true);
-    let component_address = commit_result.entity_changes.new_component_addresses[0];
+    let component_address = commit_result.new_component_addresses()[0];
 
     (test_runner, component_address)
 }

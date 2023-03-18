@@ -82,7 +82,6 @@ fn locking_fee_against_a_vault_emits_correct_events() {
 
     // Assert
     {
-        receipt.expect_commit_success();
         let events = receipt.expect_commit(true).clone().application_events;
         assert_eq!(events.len(), 1); // One event: lock fee
         assert!(match events.get(0) {
@@ -120,7 +119,6 @@ fn vault_fungible_recall_emits_correct_events() {
 
     // Assert
     {
-        receipt.expect_commit_success();
         let events = receipt.expect_commit(true).clone().application_events;
         assert_eq!(events.len(), 4); // Four events: vault lock fee, vault fungible withdraw, vault fungible recall, vault fungible deposit
         assert!(match events.get(0) {
@@ -194,14 +192,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
             )
             .build();
         let receipt = test_runner.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
-        (
-            receipt
-                .expect_commit(true)
-                .entity_changes
-                .new_resource_addresses[0],
-            id,
-        )
+        (receipt.expect_commit(true).new_resource_addresses()[0], id)
     };
     let vault_id = test_runner.get_component_vaults(account, recallable_resource_address)[0];
 
@@ -220,7 +211,6 @@ fn vault_non_fungible_recall_emits_correct_events() {
 
     // Assert
     {
-        receipt.expect_commit_success();
         let events = receipt.expect_commit(true).clone().application_events;
         assert_eq!(events.len(), 4); // Four events: vault lock fee, vault non-fungible withdraw, vault non-fungible recall, vault non-fungible deposit
         assert!(match events.get(0) {
@@ -297,7 +287,6 @@ fn resource_manager_new_vault_emits_correct_events() {
 
     // Assert
     {
-        receipt.expect_commit_success();
         let events = receipt.expect_commit(true).clone().application_events;
         assert_eq!(events.len(), 3); // Three events: vault lock fee, resource manager create vault, vault fungible deposit
         assert!(match events.get(0) {
@@ -356,11 +345,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
             )
             .build();
         let receipt = test_runner.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
-        receipt
-            .expect_commit(true)
-            .entity_changes
-            .new_resource_addresses[0]
+        receipt.expect_commit(true).new_resource_addresses()[0]
     };
 
     let manifest = ManifestBuilder::new()
@@ -374,7 +359,6 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
 
     // Assert
     {
-        receipt.expect_commit_success();
         let events = receipt.expect_commit(true).clone().application_events;
         assert_eq!(events.len(), 3); // Three events: vault lock fee, resource manager mint fungible, resource manager burn fungible
         assert!(match events.get(0) {
@@ -390,8 +374,11 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
             Some((
                 EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
                 ref event_data,
-            )) if is_event_name_equal::<MintResourceEvent, _>(event_event_name)
-                && is_decoded_equal(&MintResourceEvent::Amount(10.into()), event_data) =>
+            )) if is_event_name_equal::<MintFungibleResourceEvent, _>(event_event_name)
+                && is_decoded_equal(
+                    &MintFungibleResourceEvent { amount: 10.into() },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -399,8 +386,11 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
             Some((
                 EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
                 ref event_data,
-            )) if is_event_name_equal::<BurnResourceEvent, _>(event_event_name)
-                && is_decoded_equal(&BurnResourceEvent::Amount(10.into()), event_data) =>
+            )) if is_event_name_equal::<BurnFungibleResourceEvent, _>(event_event_name)
+                && is_decoded_equal(
+                    &BurnFungibleResourceEvent { amount: 10.into() },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -434,11 +424,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
             )
             .build();
         let receipt = test_runner.execute_manifest(manifest, vec![]);
-        receipt.expect_commit_success();
-        receipt
-            .expect_commit(true)
-            .entity_changes
-            .new_resource_addresses[0]
+        receipt.expect_commit(true).new_resource_addresses()[0]
     };
 
     let id = NonFungibleLocalId::Integer(IntegerNonFungibleLocalId::new(1));
@@ -453,7 +439,6 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
 
     // Assert
     {
-        receipt.expect_commit_success();
         let events = receipt.expect_commit(true).clone().application_events;
         assert_eq!(events.len(), 3); // Three events: vault lock fee, resource manager mint non-fungible, resource manager burn non-fungible
         assert!(match events.get(0) {
@@ -469,8 +454,13 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
             Some((
                 EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
                 ref event_data,
-            )) if is_event_name_equal::<MintResourceEvent, _>(event_event_name)
-                && is_decoded_equal(&MintResourceEvent::Ids([id.clone()].into()), event_data) =>
+            )) if is_event_name_equal::<MintNonFungibleResourceEvent, _>(event_event_name)
+                && is_decoded_equal(
+                    &MintNonFungibleResourceEvent {
+                        ids: [id.clone()].into()
+                    },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -478,8 +468,13 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
             Some((
                 EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
                 ref event_data,
-            )) if is_event_name_equal::<BurnResourceEvent, _>(event_event_name)
-                && is_decoded_equal(&BurnResourceEvent::Ids([id.clone()].into()), event_data) =>
+            )) if is_event_name_equal::<BurnNonFungibleResourceEvent, _>(event_event_name)
+                && is_decoded_equal(
+                    &BurnNonFungibleResourceEvent {
+                        ids: [id.clone()].into()
+                    },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -509,8 +504,7 @@ fn epoch_manager_round_update_emits_correct_event() {
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&EpochManagerNextRoundInput {
             round: rounds_per_epoch - 1,
-        })
-        .unwrap(),
+        }),
     }];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
@@ -524,7 +518,6 @@ fn epoch_manager_round_update_emits_correct_event() {
 
     // Assert
     {
-        receipt.expect_commit_success();
         let events = receipt.expect_commit(true).clone().application_events;
         assert_eq!(events.len(), 1); // One event: round change event
         assert!(match events.get(0) {
@@ -558,8 +551,7 @@ fn epoch_manager_epoch_update_emits_correct_event() {
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&EpochManagerNextRoundInput {
             round: rounds_per_epoch,
-        })
-        .unwrap(),
+        }),
     }];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
@@ -573,7 +565,6 @@ fn epoch_manager_epoch_update_emits_correct_event() {
 
     // Assert
     {
-        receipt.expect_commit_success();
         let events = receipt.expect_commit(true).clone().application_events;
         assert_eq!(events.len(), 1); // One event: epoch change event
         assert!(match events.get(0) {
@@ -618,7 +609,6 @@ fn validator_registration_emits_correct_event() {
 
     // Assert
     {
-        receipt.expect_commit_success();
         let events = receipt.expect_commit(true).clone().application_events;
         assert_eq!(events.len(), 2); // Two events: vault lock fee and register validator
         assert!(match events.get(0) {
@@ -675,7 +665,6 @@ fn validator_unregistration_emits_correct_event() {
 
     // Assert
     {
-        receipt.expect_commit_success();
         let events = receipt.expect_commit(true).clone().application_events;
         assert_eq!(events.len(), 2); // Two events: vault lock fee and register validator
         assert!(match events.get(0) {
@@ -744,7 +733,6 @@ fn validator_staking_emits_correct_event() {
 
     // Assert
     {
-        receipt.expect_commit_success();
         let events = receipt.expect_commit(true).clone().application_events;
         assert_eq!(events.len(), 7); // Seven events: vault lock fee, vault withdraw fungible, resource manager mint (lp tokens), vault deposit event, validator stake event, resource manager vault create (for the LP tokens), vault deposit
         assert!(match events.get(0) {
@@ -769,7 +757,7 @@ fn validator_staking_emits_correct_event() {
             Some((
                 EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
                 ..,
-            )) if is_event_name_equal::<MintResourceEvent, _>(event_event_name) => true,
+            )) if is_event_name_equal::<MintFungibleResourceEvent, _>(event_event_name) => true,
             _ => false,
         });
         assert!(match events.get(3) {
@@ -870,7 +858,6 @@ fn validator_unstake_emits_correct_events() {
 
     // Assert
     {
-        receipt.expect_commit_success();
         let events = receipt.expect_commit(true).clone().application_events;
         /*
         Nine Events:
@@ -907,8 +894,11 @@ fn validator_unstake_emits_correct_events() {
             Some((
                 EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
                 ref event_data,
-            )) if is_event_name_equal::<BurnResourceEvent, _>(event_event_name)
-                && is_decoded_equal(&BurnResourceEvent::Amount(1.into()), event_data) =>
+            )) if is_event_name_equal::<BurnFungibleResourceEvent, _>(event_event_name)
+                && is_decoded_equal(
+                    &BurnFungibleResourceEvent { amount: 1.into() },
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
@@ -936,7 +926,7 @@ fn validator_unstake_emits_correct_events() {
                     ref event_event_name,
                 ),
                 ..,
-            )) if is_event_name_equal::<MintResourceEvent, _>(event_event_name)
+            )) if is_event_name_equal::<MintNonFungibleResourceEvent, _>(event_event_name)
                 && *resource_address == validator_substate.unstake_nft =>
                 true,
             _ => false,
@@ -1039,7 +1029,6 @@ fn validator_claim_xrd_emits_correct_events() {
 
     // Assert
     {
-        receipt.expect_commit_success();
         let events = receipt.expect_commit(true).clone().application_events;
         /*
         Seven Events:
@@ -1074,7 +1063,7 @@ fn validator_claim_xrd_emits_correct_events() {
             Some((
                 EventTypeIdentifier(Emitter::Method(_, NodeModuleId::SELF), ref event_event_name),
                 ..,
-            )) if is_event_name_equal::<BurnResourceEvent, _>(event_event_name) => true,
+            )) if is_event_name_equal::<BurnNonFungibleResourceEvent, _>(event_event_name) => true,
             _ => false,
         });
         assert!(match events.get(3) {
@@ -1148,15 +1137,13 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
             VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
             to_manifest_value(&ValidatorUpdateAcceptDelegatedStakeInput {
                 accept_delegated_stake: false,
-            })
-            .unwrap(),
+            }),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     {
-        receipt.expect_commit_success();
         let events = receipt.expect_commit(true).clone().application_events;
         /*
         Two Events:
@@ -1226,7 +1213,6 @@ fn setting_metadata_emits_correct_events() {
 
     // Assert
     {
-        receipt.expect_commit_success();
         let events = receipt.expect_commit(true).clone().application_events;
         for (id, _) in events.iter() {
             println!("{}", test_runner.event_name(&id))
@@ -1263,7 +1249,7 @@ fn setting_metadata_emits_correct_events() {
 // Helpers
 //=========
 
-#[derive(NonFungibleData)]
+#[derive(ScryptoSbor, NonFungibleData, ManifestSbor)]
 struct EmptyStruct {}
 
 #[derive(ScryptoEncode, Describe)]
@@ -1299,11 +1285,7 @@ fn create_validator(
         .create_validator(pk, owner_access_rule)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    receipt.expect_commit_success();
-    let component_address = receipt
-        .expect_commit(true)
-        .entity_changes
-        .new_component_addresses[0];
+    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     component_address
 }
@@ -1326,6 +1308,9 @@ fn create_all_allowed_resource(test_runner: &mut TestRunner) -> ResourceAddress 
         .create_fungible_resource(18, BTreeMap::new(), access_rules, None)
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
-    receipt.expect_commit_success();
-    *receipt.new_resource_addresses().get(0).unwrap()
+    *receipt
+        .expect_commit(true)
+        .new_resource_addresses()
+        .get(0)
+        .unwrap()
 }

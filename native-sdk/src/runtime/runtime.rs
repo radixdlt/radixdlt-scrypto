@@ -2,7 +2,6 @@ use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
-use radix_engine_interface::blueprints::transaction_runtime::*;
 use radix_engine_interface::constants::{CLOCK, EPOCH_MANAGER};
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::time::*;
@@ -93,11 +92,6 @@ impl Runtime {
         Y: ClientApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        let rtn = api.call_method(
-            RENodeId::TransactionRuntime,
-            TRANSACTION_RUNTIME_GENERATE_UUID_IDENT,
-            scrypto_encode(&TransactionRuntimeGenerateUuidInput {}).unwrap(),
-        )?;
-        Ok(scrypto_decode(&rtn).unwrap())
+        api.generate_uuid()
     }
 }

@@ -63,13 +63,9 @@ impl IdAllocator {
     pub fn allocate_node_id(&mut self, node_type: RENodeType) -> Result<RENodeId, RuntimeError> {
         let node_id = match node_type {
             RENodeType::AuthZoneStack => Ok(RENodeId::AuthZoneStack),
-            RENodeType::TransactionRuntime => Ok(RENodeId::TransactionRuntime),
             RENodeType::KeyValueStore => {
                 self.new_kv_store_id().map(|id| RENodeId::KeyValueStore(id))
             }
-            RENodeType::NonFungibleStore => self
-                .new_nf_store_id()
-                .map(|id| RENodeId::NonFungibleStore(id)),
             RENodeType::Object => self.new_object_id().map(|id| RENodeId::Object(id)),
             RENodeType::Vault => self.new_vault_id().map(|id| RENodeId::Object(id)),
             RENodeType::GlobalPackage => self
@@ -223,11 +219,6 @@ impl IdAllocator {
 
     /// Creates a new key value store ID.
     pub fn new_kv_store_id(&mut self) -> Result<KeyValueStoreId, IdAllocationError> {
-        self.next_object_id(INTERNAL_KV_STORE_ID)
-    }
-
-    /// Creates a new non-fungible store ID.
-    pub fn new_nf_store_id(&mut self) -> Result<NonFungibleStoreId, IdAllocationError> {
         self.next_object_id(INTERNAL_KV_STORE_ID)
     }
 }
