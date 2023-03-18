@@ -26,6 +26,10 @@ pub enum PackageError {
 
     InvalidBlueprintWasm(SchemaValidationError),
     TooManySubstateSchemas,
+
+    FailedToResolveLocalSchema { local_type_index: LocalTypeIndex },
+    EventNameMismatch { expected: String, actual: String },
+    InvalidEventSchema,
 }
 
 fn validate_package_schema(schema: &PackageSchema) -> Result<(), PackageError> {
@@ -36,6 +40,50 @@ fn validate_package_schema(schema: &PackageSchema) -> Result<(), PackageError> {
             return Err(PackageError::TooManySubstateSchemas);
         }
     }
+    Ok(())
+}
+
+fn validate_package_event_schema(schema: &PackageSchema) -> Result<(), PackageError> {
+    for BlueprintSchema {
+        schema,
+        event_schema,
+        ..
+    } in schema.blueprints.values()
+    {
+        // Package schema validation happens when the package is published. No need to redo
+        // it here again.
+
+        for (expected_event_name, local_type_index) in event_schema.iter() {
+            // Checking that the event name is indeed what the user claims it to be
+            let actual_event_name = schema.resolve_type_metadata(*local_type_index).map_or(
+                Err(PackageError::FailedToResolveLocalSchema {
+                    local_type_index: *local_type_index,
+                }),
+                |metadata| Ok(metadata.type_name.to_string()),
+            )?;
+
+            if *expected_event_name != actual_event_name {
+                Err(PackageError::EventNameMismatch {
+                    expected: expected_event_name.to_string(),
+                    actual: actual_event_name,
+                })?
+            }
+
+            // Checking that the event is either a struct or an enum
+            let type_kind = schema.resolve_type_kind(*local_type_index).map_or(
+                Err(PackageError::FailedToResolveLocalSchema {
+                    local_type_index: *local_type_index,
+                }),
+                Ok,
+            )?;
+            match type_kind {
+                // Structs and Enums are allowed
+                TypeKind::Enum { .. } | TypeKind::Tuple { .. } => Ok(()),
+                _ => Err(PackageError::InvalidEventSchema),
+            }?;
+        }
+    }
+
     Ok(())
 }
 
@@ -270,6 +318,8 @@ impl PackageNativePackage {
         // Validate schema
         validate_package_schema(&input.schema)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
+        validate_package_event_schema(&input.schema)
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
 
         // Build node init
         let info = PackageInfoSubstate {
@@ -316,6 +366,8 @@ impl PackageNativePackage {
 
         // Validate schema
         validate_package_schema(&input.schema)
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
+        validate_package_event_schema(&input.schema)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
 
         // Validate WASM

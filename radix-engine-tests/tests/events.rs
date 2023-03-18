@@ -2,6 +2,7 @@ use radix_engine::blueprints::epoch_manager::{
     ClaimXrdEvent, EpochChangeEvent, RegisterValidatorEvent, RoundChangeEvent, StakeEvent,
     UnregisterValidatorEvent, UnstakeEvent, UpdateAcceptingStakeDelegationStateEvent,
 };
+use radix_engine::blueprints::package::PackageError;
 use radix_engine::blueprints::resource::*;
 use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::ledger::create_genesis;
@@ -134,8 +135,8 @@ fn cant_publish_a_package_with_non_struct_or_enum_event() {
     receipt.expect_specific_failure(|runtime_error| {
         matches!(
             runtime_error,
-            RuntimeError::ApplicationError(ApplicationError::EventError(
-                EventError::InvalidEventSchema,
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::InvalidEventSchema,
             )),
         )
     });
@@ -175,8 +176,8 @@ fn local_type_index_with_misleading_name_fails() {
     receipt.expect_specific_failure(|runtime_error| {
         matches!(
             runtime_error,
-            RuntimeError::ApplicationError(ApplicationError::EventError(
-                EventError::EventNameMismatch { .. },
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::EventNameMismatch { .. },
             )),
         )
     });
