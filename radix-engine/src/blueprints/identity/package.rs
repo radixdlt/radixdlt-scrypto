@@ -6,7 +6,6 @@ use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, Attached
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::ResourceManager;
-use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
@@ -272,9 +271,9 @@ impl IdentityBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let mut access_rules = AccessRulesConfig::new();
-        access_rules.set_method_access_rule_to_group(
-            MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT),
-            OWNER_GROUP_NAME.to_string(),
+        access_rules = access_rules.default(
+            AccessRuleEntry::group(OWNER_GROUP_NAME),
+            AccessRuleEntry::group(OWNER_GROUP_NAME),
         );
         let access_rules = AccessRules::sys_new(access_rules, api)?;
 

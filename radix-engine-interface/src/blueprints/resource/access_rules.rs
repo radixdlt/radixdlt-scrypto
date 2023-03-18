@@ -45,6 +45,12 @@ pub enum AccessRuleEntry {
     Group(String),
 }
 
+impl AccessRuleEntry {
+    pub fn group(name: &str) -> Self {
+        Self::Group(name.to_string())
+    }
+}
+
 impl From<AccessRule> for AccessRuleEntry {
     fn from(value: AccessRule) -> Self {
         AccessRuleEntry::AccessRule(value)
