@@ -12,7 +12,7 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::node_modules::auth::{ACCESS_RULES_SET_GROUP_ACCESS_RULE_AND_MUTABILITY_IDENT, AccessRulesSetGroupAccessRuleAndMutabilityInput};
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::BlueprintSchema;
+use radix_engine_interface::schema::{BlueprintSchema, Receiver};
 use radix_engine_interface::schema::FunctionSchema;
 use radix_engine_interface::schema::PackageSchema;
 
@@ -39,7 +39,7 @@ impl IdentityNativePackage {
         functions.insert(
             IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT.to_string(),
             FunctionSchema {
-                receiver: None,
+                receiver: Some(Receiver::SelfRefMut),
                 input: aggregator.add_child_type_and_descendents::<IdentitySecurifyToSingleBadgeInput>(),
                 output: aggregator.add_child_type_and_descendents::<IdentitySecurifyToSingleBadgeOutput>(),
                 export_name: IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT.to_string(),
@@ -157,6 +157,11 @@ impl IdentityNativePackage {
     }
 }
 
+enum IdentityInit {
+    Advanced(AccessRule, AccessRule),
+    SingleOwner(AccessRule),
+}
+
 pub struct IdentityBlueprint;
 
 impl IdentityBlueprint {
@@ -164,7 +169,10 @@ impl IdentityBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (object, modules) = Self::create_object(access_rule.clone(), access_rule, api)?;
+        let (object, modules) = Self::create_object(
+            IdentityInit::Advanced(access_rule.clone(), access_rule),
+            api,
+        )?;
         let modules = modules
             .into_iter()
             .map(|(id, own)| (id, own.id()))
@@ -186,12 +194,7 @@ impl IdentityBlueprint {
         );
         let access_rule = rule!(require(non_fungible_global_id));
 
-        let non_fungible_global_id = NonFungibleGlobalId::new(
-            PACKAGE_TOKEN,
-            NonFungibleLocalId::bytes(scrypto_encode(&IDENTITY_PACKAGE).unwrap()).unwrap(),
-        );
-        let mutability_rule = rule!(require(non_fungible_global_id));
-        Self::create_object(access_rule, mutability_rule, api)
+        Self::create_object(IdentityInit::SingleOwner(access_rule), api)
     }
 
     pub fn create_eddsa_virtual<Y>(
@@ -207,29 +210,51 @@ impl IdentityBlueprint {
         );
         let access_rule = rule!(require(non_fungible_global_id));
 
-        let non_fungible_global_id = NonFungibleGlobalId::new(
-            PACKAGE_TOKEN,
-            NonFungibleLocalId::bytes(scrypto_encode(&IDENTITY_PACKAGE).unwrap()).unwrap(),
-        );
-        let mutability_rule = rule!(require(non_fungible_global_id));
-
-        Self::create_object(access_rule, mutability_rule, api)
+        Self::create_object(IdentityInit::SingleOwner(access_rule), api)
     }
 
     fn create_object<Y>(
-        access_rule: AccessRule,
-        mutability: AccessRule,
+        init: IdentityInit,
         api: &mut Y,
     ) -> Result<(Own, BTreeMap<NodeModuleId, Own>), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         let mut access_rules = AccessRulesConfig::new();
-        access_rules.set_group_access_rule_and_mutability(
-            OWNER_GROUP_NAME.to_string(),
-            access_rule,
-            mutability,
-        );
+
+        match init {
+            IdentityInit::Advanced(access_rule, mutability_rule) => {
+                access_rules.set_access_rule_and_mutability(
+                    MethodKey::new(NodeModuleId::SELF, IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT.to_string()),
+                    AccessRule::DenyAll,
+                    AccessRule::DenyAll,
+                );
+                access_rules.set_group_access_rule_and_mutability(
+                    OWNER_GROUP_NAME.to_string(),
+                    access_rule,
+                    mutability_rule,
+                );
+            }
+            IdentityInit::SingleOwner(access_rule) => {
+                let non_fungible_global_id = NonFungibleGlobalId::new(
+                    PACKAGE_TOKEN,
+                    NonFungibleLocalId::bytes(scrypto_encode(&IDENTITY_PACKAGE).unwrap()).unwrap(),
+                );
+                let this_package_rule = rule!(require(non_fungible_global_id));
+
+                access_rules.set_access_rule_and_mutability(
+                    MethodKey::new(NodeModuleId::SELF, IDENTITY_SECURIFY_TO_SINGLE_BADGE_IDENT.to_string()),
+                    access_rule.clone(),
+                    this_package_rule.clone(),
+                );
+                access_rules.set_group_access_rule_and_mutability(
+                    OWNER_GROUP_NAME.to_string(),
+                    access_rule,
+                    this_package_rule,
+                );
+            }
+        };
+
         access_rules.set_method_access_rule_to_group(
             MethodKey::new(NodeModuleId::Metadata, METADATA_SET_IDENT.to_string()),
             OWNER_GROUP_NAME.to_string(),

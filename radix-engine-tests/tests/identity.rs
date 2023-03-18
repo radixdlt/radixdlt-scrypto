@@ -6,7 +6,6 @@ use radix_engine_interface::blueprints::identity::{IDENTITY_SECURIFY_TO_SINGLE_B
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::Instruction;
 
 #[test]
