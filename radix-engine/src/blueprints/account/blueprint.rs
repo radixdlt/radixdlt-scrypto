@@ -15,7 +15,7 @@ use radix_engine_interface::blueprints::resource::{AccessRule, Bucket, Proof};
 
 use native_sdk::resource::{SysBucket, Vault};
 use radix_engine_interface::blueprints::identity::VirtualLazyLoadOutput;
-use crate::blueprints::util::{AccessRuleState, SecurifiedAccessRules};
+use crate::blueprints::util::SecurifiedAccessRules;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct AccountSubstate {
@@ -37,9 +37,9 @@ impl From<AccountError> for RuntimeError {
 
 pub const OWNER_GROUP_NAME: &str = "owner";
 
-pub struct AccountOwnerAccessRules;
+pub struct AccountSecurify;
 
-impl SecurifiedAccessRules for AccountOwnerAccessRules {
+impl SecurifiedAccessRules for AccountSecurify {
     const OWNER_GROUP_NAME: &'static str = OWNER_GROUP_NAME;
     const SECURIFY_IDENT: &'static str = "Securify";
     const PACKAGE: PackageAddress = ACCOUNT_PACKAGE;
@@ -50,13 +50,7 @@ impl SecurifiedAccessRules for AccountOwnerAccessRules {
 pub struct AccountBlueprint;
 
 impl AccountBlueprint {
-    fn create_modules<Y>(
-        to_state: AccessRuleState,
-        api: &mut Y,
-    ) -> Result<BTreeMap<NodeModuleId, Own>, RuntimeError>
-    where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
-    {
+    fn init_access_rules<Y: ClientApi<RuntimeError>>(api: &mut Y) -> Result<AccessRules, RuntimeError> {
         let mut access_rules = AccessRulesConfig::new().default(
             AccessRuleEntry::group(OWNER_GROUP_NAME),
             AccessRuleEntry::group(OWNER_GROUP_NAME),
@@ -72,9 +66,16 @@ impl AccountBlueprint {
             AccessRule::DenyAll,
         );
         let access_rules = AccessRules::sys_new(access_rules, api)?;
+        Ok(access_rules)
+    }
 
-        AccountOwnerAccessRules::update_access_rules(&access_rules, to_state, api)?;
-
+    fn create_modules<Y>(
+        access_rules: AccessRules,
+        api: &mut Y,
+    ) -> Result<BTreeMap<NodeModuleId, Own>, RuntimeError>
+    where
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
+    {
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
 
@@ -99,8 +100,9 @@ impl AccountBlueprint {
             ECDSA_SECP256K1_TOKEN,
             NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
         );
-        let access_rule_state = AccessRuleState::PreSecurifiedSingleOwner(non_fungible_global_id);
-        let modules = Self::create_modules(access_rule_state, api)?;
+        let access_rules = Self::init_access_rules(api)?;
+        AccountSecurify::presecurified(non_fungible_global_id, &access_rules, api)?;
+        let modules = Self::create_modules(access_rules, api)?;
 
         Ok((account, modules))
     }
@@ -117,8 +119,9 @@ impl AccountBlueprint {
             EDDSA_ED25519_TOKEN,
             NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
         );
-        let access_rule_state = AccessRuleState::PreSecurifiedSingleOwner(non_fungible_global_id);
-        let modules = Self::create_modules(access_rule_state, api)?;
+        let access_rules = Self::init_access_rules(api)?;
+        AccountSecurify::presecurified(non_fungible_global_id, &access_rules, api)?;
+        let modules = Self::create_modules(access_rules, api)?;
 
         Ok((account, modules))
     }
@@ -128,8 +131,9 @@ impl AccountBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let account = Self::create_local(api)?;
-        let access_rule_state = AccessRuleState::Advanced(withdraw_rule.clone(), withdraw_rule);
-        let modules = Self::create_modules(access_rule_state, api)?;
+        let access_rules = Self::init_access_rules(api)?;
+        AccountSecurify::advanced(withdraw_rule.clone(), withdraw_rule, &access_rules, api)?;
+        let modules = Self::create_modules(access_rules, api)?;
         let modules = modules
             .into_iter()
             .map(|(id, own)| (id, own.id()))

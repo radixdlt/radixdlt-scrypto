@@ -5,7 +5,6 @@ use crate::types::*;
 use native_sdk::modules::access_rules::{AccessRules, AttachedAccessRules};
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
-use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::types::ClientCostingReason;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
@@ -13,7 +12,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::FunctionSchema;
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::schema::{BlueprintSchema, Receiver};
-use crate::blueprints::util::{AccessRuleState, SecurifiedAccessRules};
+use crate::blueprints::util::SecurifiedAccessRules;
 
 pub const OWNER_GROUP_NAME: &str = "owner";
 
@@ -141,7 +140,7 @@ impl IdentityNativePackage {
                     RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                 })?;
 
-                let rtn = IdentityBlueprint::securify_to_single_badge(receiver, api)?;
+                let rtn = IdentityBlueprint::securify(receiver, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -196,6 +195,16 @@ impl SecurifiedAccessRules for IdentityOwnerAccessRules {
 pub struct IdentityBlueprint;
 
 impl IdentityBlueprint {
+    fn init_access_rules<Y: ClientApi<RuntimeError>>(api: &mut Y) -> Result<AccessRules, RuntimeError> {
+        let mut access_rules = AccessRulesConfig::new();
+        access_rules = access_rules.default(
+            AccessRuleEntry::group(OWNER_GROUP_NAME),
+            AccessRuleEntry::group(OWNER_GROUP_NAME),
+        );
+        let access_rules = AccessRules::sys_new(access_rules, api)?;
+        Ok(access_rules)
+    }
+
     pub fn create_advanced<Y>(
         access_rule: AccessRule,
         mutability: AccessRule,
@@ -204,8 +213,16 @@ impl IdentityBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        let access_rules = Self::init_access_rules(api)?;
+        IdentityOwnerAccessRules::advanced(
+            access_rule,
+            mutability,
+            &access_rules,
+            api,
+        )?;
+
         let (object, modules) =
-            Self::create_object(AccessRuleState::Advanced(access_rule, mutability), api)?;
+            Self::create_object(access_rules, api)?;
         let modules = modules
             .into_iter()
             .map(|(id, own)| (id, own.id()))
@@ -218,11 +235,10 @@ impl IdentityBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let owner_token = ResourceManager(IDENTITY_OWNER_TOKEN);
-        let (bucket, local_id) = owner_token.mint_non_fungible_single_uuid((), api)?;
+        let access_rules = Self::init_access_rules(api)?;
+        let bucket = IdentityOwnerAccessRules::securify(&access_rules, api)?;
 
-        let (object, modules) =
-            Self::create_object(AccessRuleState::SecurifiedSingleOwner(local_id), api)?;
+        let (object, modules) = Self::create_object(access_rules, api)?;
         let modules = modules
             .into_iter()
             .map(|(id, own)| (id, own.id()))
@@ -242,11 +258,14 @@ impl IdentityBlueprint {
             ECDSA_SECP256K1_TOKEN,
             NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
         );
-
-        Self::create_object(
-            AccessRuleState::PreSecurifiedSingleOwner(non_fungible_global_id),
+        let access_rules = Self::init_access_rules(api)?;
+        IdentityOwnerAccessRules::presecurified(
+            non_fungible_global_id,
+            &access_rules,
             api,
-        )
+        )?;
+
+        Self::create_object(access_rules, api)
     }
 
     pub fn create_eddsa_virtual<Y>(
@@ -260,29 +279,23 @@ impl IdentityBlueprint {
             EDDSA_ED25519_TOKEN,
             NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
         );
-
-        Self::create_object(
-            AccessRuleState::PreSecurifiedSingleOwner(non_fungible_global_id),
+        let access_rules = Self::init_access_rules(api)?;
+        IdentityOwnerAccessRules::presecurified(
+            non_fungible_global_id,
+            &access_rules,
             api,
-        )
+        )?;
+
+        Self::create_object(access_rules, api)
     }
 
     fn create_object<Y>(
-        init: AccessRuleState,
+        access_rules: AccessRules,
         api: &mut Y,
     ) -> Result<(Own, BTreeMap<NodeModuleId, Own>), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let mut access_rules = AccessRulesConfig::new();
-        access_rules = access_rules.default(
-            AccessRuleEntry::group(OWNER_GROUP_NAME),
-            AccessRuleEntry::group(OWNER_GROUP_NAME),
-        );
-        let access_rules = AccessRules::sys_new(access_rules, api)?;
-
-        IdentityOwnerAccessRules::update_access_rules(&access_rules, init, api)?;
-
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
 
@@ -297,18 +310,14 @@ impl IdentityBlueprint {
         Ok((Own::Object(object_id), modules))
     }
 
-    fn securify_to_single_badge<Y>(receiver: RENodeId, api: &mut Y) -> Result<Bucket, RuntimeError>
+    fn securify<Y>(receiver: RENodeId, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let owner_token = ResourceManager(IDENTITY_OWNER_TOKEN);
-        let (bucket, local_id) = owner_token.mint_non_fungible_single_uuid((), api)?;
-
         let attached_access_rules = AttachedAccessRules(receiver);
 
-        IdentityOwnerAccessRules::update_access_rules(
+        let bucket = IdentityOwnerAccessRules::securify(
             &attached_access_rules,
-            AccessRuleState::SecurifiedSingleOwner(local_id),
             api,
         )?;
 
