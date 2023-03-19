@@ -3,11 +3,14 @@ use crate::*;
 
 pub const RADIX_TOKEN: ResourceAddress = vanity_address!(EntityType::FungibleResource, 0);
 
-pub const ECDSA_SECP256K1_TOKEN: ResourceAddress = vanity_address!(EntityType::NonFungibleResource, 0);
-pub const EDDSA_ED25519_TOKEN: ResourceAddress = vanity_address!(EntityType::NonFungibleResource, 1);
+pub const ECDSA_SECP256K1_TOKEN: ResourceAddress =
+    vanity_address!(EntityType::NonFungibleResource, 0);
+pub const EDDSA_ED25519_TOKEN: ResourceAddress =
+    vanity_address!(EntityType::NonFungibleResource, 1);
 pub const SYSTEM_TOKEN: ResourceAddress = vanity_address!(EntityType::NonFungibleResource, 2);
 pub const PACKAGE_TOKEN: ResourceAddress = vanity_address!(EntityType::NonFungibleResource, 3);
-pub const OLYMPIA_VALIDATOR_TOKEN: ResourceAddress = vanity_address!(EntityType::NonFungibleResource, 4);
+pub const OLYMPIA_VALIDATOR_TOKEN: ResourceAddress =
+    vanity_address!(EntityType::NonFungibleResource, 4);
 
 /// The address of the faucet package.
 pub const PACKAGE_PACKAGE: PackageAddress = vanity_address!(EntityType::Package, 0);

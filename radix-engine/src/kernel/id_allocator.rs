@@ -204,7 +204,9 @@ impl IdAllocator {
         ))
     }
 
-    pub fn new_non_fungible_resource_address(&mut self) -> Result<ResourceAddress, IdAllocationError> {
+    pub fn new_non_fungible_resource_address(
+        &mut self,
+    ) -> Result<ResourceAddress, IdAllocationError> {
         let mut data = self.transaction_hash.to_vec();
         let next_id = self.next_entity_id(EntityType::NonFungibleResource)?;
         data.extend(next_id.to_le_bytes());

@@ -56,9 +56,9 @@ impl TryFrom<&[u8]> for ComponentAddress {
                 EntityType::AccessControllerComponent => {
                     Ok(Self::AccessController(copy_u8_array(&slice[1..])))
                 }
-                EntityType::FungibleResource | EntityType::NonFungibleResource | EntityType::Package => {
-                    Err(AddressError::InvalidEntityTypeId(slice[0]))
-                }
+                EntityType::FungibleResource
+                | EntityType::NonFungibleResource
+                | EntityType::Package => Err(AddressError::InvalidEntityTypeId(slice[0])),
             },
             _ => Err(AddressError::InvalidLength(slice.len())),
         }

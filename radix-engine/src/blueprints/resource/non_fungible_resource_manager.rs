@@ -183,7 +183,8 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalNonFungibleResourceManager)?;
+        let global_node_id =
+            api.kernel_allocate_node_id(RENodeType::GlobalNonFungibleResourceManager)?;
         let resource_address: ResourceAddress = global_node_id.into();
         Self::create_with_address(
             id_type,
@@ -239,7 +240,8 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalNonFungibleResourceManager)?;
+        let global_node_id =
+            api.kernel_allocate_node_id(RENodeType::GlobalNonFungibleResourceManager)?;
         let resource_address: ResourceAddress = global_node_id.into();
 
         // TODO: Do this check in a better way (e.g. via type check)
@@ -287,7 +289,8 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalNonFungibleResourceManager)?;
+        let global_node_id =
+            api.kernel_allocate_node_id(RENodeType::GlobalNonFungibleResourceManager)?;
         let resource_address: ResourceAddress = global_node_id.into();
 
         let mut non_fungible_entries = BTreeMap::new();

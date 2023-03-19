@@ -2,12 +2,11 @@ use crate::data::scrypto::model::ComponentAddress;
 use crate::data::scrypto::model::PackageAddress;
 use crate::data::scrypto::model::ResourceAddress;
 
-
-pub const FUNGIBLE_RESOURCE_ADDRESS_ENTITY_ID: u8 = 0x00;
-pub const NON_FUNGIBLE_RESOURCE_ADDRESS_ENTITY_ID: u8 = 0x01;
-
 /// A unique identifier used in the addressing of Package Addresses.
-pub const PACKAGE_ADDRESS_ENTITY_ID: u8 = 0x02;
+pub const PACKAGE_ADDRESS_ENTITY_ID: u8 = 0x00;
+
+pub const FUNGIBLE_RESOURCE_ADDRESS_ENTITY_ID: u8 = 0x01;
+pub const NON_FUNGIBLE_RESOURCE_ADDRESS_ENTITY_ID: u8 = 0x02;
 
 /// A unique identifier used in the addressing of Generic Component Addresses.
 pub const NORMAL_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x03;
@@ -45,9 +44,9 @@ pub const ACCESS_CONTROLLER_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x0d;
 /// An enum which represents the different addressable entities.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd)]
 pub enum EntityType {
+    Package,
     NonFungibleResource,
     FungibleResource,
-    Package,
     NormalComponent,
     AccountComponent,
     IdentityComponent,

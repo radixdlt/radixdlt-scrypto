@@ -116,7 +116,8 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalFungibleResourceManager)?;
+        let global_node_id =
+            api.kernel_allocate_node_id(RENodeType::GlobalFungibleResourceManager)?;
         let resource_address: ResourceAddress = global_node_id.into();
 
         let resource_manager_substate =
@@ -142,7 +143,8 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
-        let global_node_id = api.kernel_allocate_node_id(RENodeType::GlobalFungibleResourceManager)?;
+        let global_node_id =
+            api.kernel_allocate_node_id(RENodeType::GlobalFungibleResourceManager)?;
         let resource_address: ResourceAddress = global_node_id.into();
 
         Self::create_with_initial_supply_and_address(

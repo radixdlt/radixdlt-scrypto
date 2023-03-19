@@ -43,6 +43,10 @@ fn can_withdraw_from_my_account_internal(use_virtual: bool) {
         other_account,
         transfer_amount,
     );
+    println!(
+        "{:?}",
+        Bech32Encoder::for_simulator().encode_resource_address_to_string(&RADIX_TOKEN)
+    );
 }
 
 #[test]

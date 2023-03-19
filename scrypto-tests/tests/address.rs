@@ -113,7 +113,9 @@ fn decode_invalid_bech32_variant_fails() {
 
     // Act
     let encoded_resource_address = bech32::encode(
-        bech32_encoder.hrp_set.get_entity_hrp(&EntityType::NonFungibleResource),
+        bech32_encoder
+            .hrp_set
+            .get_entity_hrp(&EntityType::NonFungibleResource),
         resource_address.to_vec().to_base32(),
         Variant::Bech32,
     )
@@ -228,7 +230,9 @@ fn decode_matching_resource_address_entity_id_succeeds() {
 
     // Act
     let encoded_resource_address = bech32::encode(
-        bech32_encoder.hrp_set.get_entity_hrp(&EntityType::NonFungibleResource),
+        bech32_encoder
+            .hrp_set
+            .get_entity_hrp(&EntityType::NonFungibleResource),
         generate_u8_array(NON_FUNGIBLE_RESOURCE_ADDRESS_ENTITY_ID).to_base32(),
         Variant::Bech32m,
     )
@@ -249,7 +253,9 @@ fn decode_mismatched_resource_address_entity_id_fails() {
 
     // Act
     let encoded_resource_address = bech32::encode(
-        bech32_encoder.hrp_set.get_entity_hrp(&EntityType::NonFungibleResource),
+        bech32_encoder
+            .hrp_set
+            .get_entity_hrp(&EntityType::NonFungibleResource),
         generate_u8_array(PACKAGE_ADDRESS_ENTITY_ID).to_base32(),
         Variant::Bech32m,
     )
@@ -273,7 +279,9 @@ fn decode_invalid_entity_specifier_fails() {
 
     // Act
     let encoded_resource_address = bech32::encode(
-        bech32_encoder.hrp_set.get_entity_hrp(&EntityType::NonFungibleResource),
+        bech32_encoder
+            .hrp_set
+            .get_entity_hrp(&EntityType::NonFungibleResource),
         generate_u8_array(PACKAGE_ADDRESS_ENTITY_ID).to_base32(),
         Variant::Bech32m,
     )
@@ -294,7 +302,9 @@ fn decode_invalid_network_specifier_fails() {
 
     // Act
     let encoded_resource_address = bech32::encode(
-        bech32_encoder.hrp_set.get_entity_hrp(&EntityType::NonFungibleResource),
+        bech32_encoder
+            .hrp_set
+            .get_entity_hrp(&EntityType::NonFungibleResource),
         generate_u8_array(NON_FUNGIBLE_RESOURCE_ADDRESS_ENTITY_ID).to_base32(),
         Variant::Bech32m,
     )

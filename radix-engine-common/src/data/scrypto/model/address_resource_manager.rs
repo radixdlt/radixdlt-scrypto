@@ -24,7 +24,9 @@ impl TryFrom<&[u8]> for ResourceAddress {
             ADDRESS_LENGTH => match EntityType::try_from(slice[0])
                 .map_err(|_| AddressError::InvalidEntityTypeId(slice[0]))?
             {
-                EntityType::NonFungibleResource => Ok(Self::NonFungible(copy_u8_array(&slice[1..]))),
+                EntityType::NonFungibleResource => {
+                    Ok(Self::NonFungible(copy_u8_array(&slice[1..])))
+                }
                 EntityType::FungibleResource => Ok(Self::Fungible(copy_u8_array(&slice[1..]))),
                 _ => Err(AddressError::InvalidEntityTypeId(slice[0])),
             },
@@ -36,8 +38,7 @@ impl TryFrom<&[u8]> for ResourceAddress {
 impl ResourceAddress {
     pub fn to_array_without_entity_id(&self) -> [u8; ADDRESS_HASH_LENGTH] {
         match self {
-            Self::Fungible(v)
-            | Self::NonFungible(v) => v.clone(),
+            Self::Fungible(v) | Self::NonFungible(v) => v.clone(),
         }
     }
 
@@ -45,10 +46,7 @@ impl ResourceAddress {
         let mut buf = Vec::new();
         buf.push(EntityType::resource(self).id());
         match self {
-            Self::Fungible(v)
-            | Self::NonFungible(v) => {
-                buf.extend(v)
-            },
+            Self::Fungible(v) | Self::NonFungible(v) => buf.extend(v),
         }
         buf
     }
