@@ -528,7 +528,8 @@ ASSERT_ACCESS_RULE
             &NetworkDefinition::simulator(),
             vec![],
             r##"
-CREATE_ACCOUNT
+CREATE_ACCOUNT_ADVANCED
+    Enum(0u8)
     Enum(0u8);
 "##,
         );

@@ -24,14 +24,15 @@ pub type AccountCreateLocalOutput = Own;
 // Account Create Global
 //=============
 
-pub const ACCOUNT_CREATE_GLOBAL_IDENT: &str = "create_global";
+pub const ACCOUNT_CREATE_ADVANCED_IDENT: &str = "create_advanced";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct AccountCreateGlobalInput {
-    pub withdraw_rule: AccessRule,
+pub struct AccountCreateAdvancedInput {
+    pub access_rule: AccessRule,
+    pub mutability: AccessRule,
 }
 
-pub type AccountCreateGlobalOutput = ComponentAddress;
+pub type AccountCreateAdvancedOutput = ComponentAddress;
 
 //=============
 // Account Virtual Lazy Load Functions

@@ -6,7 +6,7 @@ use radix_engine_interface::address::{AddressError, Bech32Encoder};
 use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
 };
-use radix_engine_interface::blueprints::account::{ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_GLOBAL_IDENT};
+use radix_engine_interface::blueprints::account::{ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_ADVANCED_IDENT};
 use radix_engine_interface::blueprints::epoch_manager::EPOCH_MANAGER_CREATE_VALIDATOR_IDENT;
 use radix_engine_interface::blueprints::identity::{
     IDENTITY_BLUEPRINT, IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
@@ -353,8 +353,8 @@ pub fn decompile_instruction<F: fmt::Write>(
                 blueprint_name.as_str(),
                 function_name.as_str(),
             ) {
-                (&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_GLOBAL_IDENT) => {
-                    write!(f, "CREATE_ACCOUNT")?;
+                (&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_ADVANCED_IDENT) => {
+                    write!(f, "CREATE_ACCOUNT_ADVANCED")?;
                 }
                 (&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT, IDENTITY_CREATE_ADVANCED_IDENT) => {
                     write!(f, "CREATE_IDENTITY_ADVANCED")?;

@@ -9,7 +9,7 @@ use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
 };
 use radix_engine_interface::blueprints::account::{
-    AccountCreateGlobalInput, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_GLOBAL_IDENT,
+    AccountCreateAdvancedInput, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_ADVANCED_IDENT,
 };
 use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerCreateValidatorInput, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT,
@@ -646,13 +646,19 @@ pub fn generate_instruction(
             })
             .unwrap(),
         },
-        ast::Instruction::CreateAccount { withdraw_rule } => Instruction::CallFunction {
+        ast::Instruction::CreateAccountAdvanced { access_rule, mutability } => Instruction::CallFunction {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
-            function_name: ACCOUNT_CREATE_GLOBAL_IDENT.to_string(),
-            args: to_manifest_value(&AccountCreateGlobalInput {
-                withdraw_rule: generate_typed_value(
-                    withdraw_rule,
+            function_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
+            args: to_manifest_value(&AccountCreateAdvancedInput {
+                access_rule: generate_typed_value(
+                    access_rule,
+                    resolver,
+                    bech32_decoder,
+                    blobs,
+                )?,
+                mutability: generate_typed_value(
+                    mutability,
                     resolver,
                     bech32_decoder,
                     blobs,

@@ -770,13 +770,14 @@ impl ManifestBuilder {
     }
 
     /// Creates an account.
-    pub fn new_account(&mut self, withdraw_auth: AccessRule) -> &mut Self {
+    pub fn new_account_advanced(&mut self, access_rule: AccessRule, mutability: AccessRule) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
-            function_name: ACCOUNT_CREATE_GLOBAL_IDENT.to_string(),
-            args: to_manifest_value(&AccountCreateGlobalInput {
-                withdraw_rule: withdraw_auth,
+            function_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
+            args: to_manifest_value(&AccountCreateAdvancedInput {
+                access_rule,
+                mutability,
             })
             .unwrap(),
         })

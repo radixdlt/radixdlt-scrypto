@@ -212,8 +212,9 @@ pub enum Instruction {
         access_rule: Value,
     },
 
-    CreateAccount {
-        withdraw_rule: Value,
+    CreateAccountAdvanced {
+        access_rule: Value,
+        mutability: Value,
     },
 }
 

@@ -47,12 +47,12 @@ impl AccountNativePackage {
         );
 
         functions.insert(
-            ACCOUNT_CREATE_GLOBAL_IDENT.to_string(),
+            ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
             FunctionSchema {
                 receiver: None,
-                input: aggregator.add_child_type_and_descendents::<AccountCreateGlobalInput>(),
-                output: aggregator.add_child_type_and_descendents::<AccountCreateGlobalOutput>(),
-                export_name: ACCOUNT_CREATE_GLOBAL_IDENT.to_string(),
+                input: aggregator.add_child_type_and_descendents::<AccountCreateAdvancedInput>(),
+                output: aggregator.add_child_type_and_descendents::<AccountCreateAdvancedOutput>(),
+                export_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
             },
         );
 
@@ -251,7 +251,7 @@ impl AccountNativePackage {
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            ACCOUNT_CREATE_GLOBAL_IDENT => {
+            ACCOUNT_CREATE_ADVANCED_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
@@ -260,10 +260,10 @@ impl AccountNativePackage {
                     ));
                 }
 
-                let input: AccountCreateGlobalInput = input.as_typed().map_err(|e| {
+                let input: AccountCreateAdvancedInput = input.as_typed().map_err(|e| {
                     RuntimeError::InterpreterError(InterpreterError::ScryptoInputDecodeError(e))
                 })?;
-                let rtn = AccountBlueprint::create_global(input.withdraw_rule, api)?;
+                let rtn = AccountBlueprint::create_advanced(input.access_rule, input.mutability, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }

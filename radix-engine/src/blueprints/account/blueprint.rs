@@ -111,13 +111,13 @@ impl AccountBlueprint {
         AccountSecurify::securify(receiver, api)
     }
 
-    pub fn create_global<Y>(withdraw_rule: AccessRule, api: &mut Y) -> Result<Address, RuntimeError>
+    pub fn create_advanced<Y>(withdraw_rule: AccessRule, mutability: AccessRule, api: &mut Y) -> Result<Address, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let account = Self::create_local(api)?;
         let access_rules =
-            AccountSecurify::create_advanced(withdraw_rule.clone(), withdraw_rule, api)?;
+            AccountSecurify::create_advanced(withdraw_rule, mutability, api)?;
         let modules = Self::create_modules(access_rules, api)?;
         let modules = modules
             .into_iter()
