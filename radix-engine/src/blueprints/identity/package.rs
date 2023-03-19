@@ -1,4 +1,4 @@
-use crate::blueprints::util::SecurifiedAccessRules;
+use crate::blueprints::util::{MethodType, PresecurifiedAccessRules, SecurifiedAccessRules};
 use crate::errors::InterpreterError;
 use crate::errors::RuntimeError;
 use crate::system::kernel_modules::costing::FIXED_LOW_FEE;
@@ -183,14 +183,16 @@ impl IdentityNativePackage {
     }
 }
 
-struct IdentityOwnerAccessRules;
+struct SecurifiedIdentity;
 
-impl SecurifiedAccessRules for IdentityOwnerAccessRules {
-    const OWNER_GROUP_NAME: &'static str = OWNER_GROUP_NAME;
-    const PUBLIC_METHODS: &'static [&'static str] = &[];
-    const SECURIFY_IDENT: &'static str = IDENTITY_SECURIFY_IDENT;
-    const PACKAGE: PackageAddress = IDENTITY_PACKAGE;
+impl SecurifiedAccessRules for SecurifiedIdentity {
+    const SECURIFY_IDENT: Option<&'static str> = Some(IDENTITY_SECURIFY_IDENT);
+    const OWNER_GROUP_NAME: &'static str = "owner";
     const OWNER_TOKEN: ResourceAddress = IDENTITY_OWNER_TOKEN;
+}
+
+impl PresecurifiedAccessRules for SecurifiedIdentity {
+    const PACKAGE: PackageAddress = IDENTITY_PACKAGE;
 }
 
 pub struct IdentityBlueprint;
@@ -204,7 +206,7 @@ impl IdentityBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let access_rules = IdentityOwnerAccessRules::create_advanced(access_rule, mutability, api)?;
+        let access_rules = SecurifiedIdentity::create_advanced(access_rule, mutability, api)?;
 
         let (object, modules) = Self::create_object(access_rules, api)?;
         let modules = modules
@@ -219,7 +221,7 @@ impl IdentityBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (access_rules, bucket) = IdentityOwnerAccessRules::create_securified(api)?;
+        let (access_rules, bucket) = SecurifiedIdentity::create_securified(api)?;
 
         let (object, modules) = Self::create_object(access_rules, api)?;
         let modules = modules
@@ -242,7 +244,7 @@ impl IdentityBlueprint {
             NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
         );
         let access_rules =
-            IdentityOwnerAccessRules::create_presecurified(non_fungible_global_id, api)?;
+            SecurifiedIdentity::create_presecurified(non_fungible_global_id, api)?;
 
         Self::create_object(access_rules, api)
     }
@@ -259,7 +261,7 @@ impl IdentityBlueprint {
             NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
         );
         let access_rules =
-            IdentityOwnerAccessRules::create_presecurified(non_fungible_global_id, api)?;
+            SecurifiedIdentity::create_presecurified(non_fungible_global_id, api)?;
 
         Self::create_object(access_rules, api)
     }
@@ -268,7 +270,7 @@ impl IdentityBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        IdentityOwnerAccessRules::securify(receiver, api)
+        SecurifiedIdentity::securify(receiver, api)
     }
 
     fn create_object<Y>(

@@ -17,6 +17,7 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
+use crate::blueprints::util::{MethodType, SecurifiedAccessRules};
 
 use super::{
     ClaimXrdEvent, RegisterValidatorEvent, StakeEvent, UnregisterValidatorEvent, UnstakeEvent,
@@ -481,6 +482,33 @@ impl ValidatorBlueprint {
     }
 }
 
+/*
+impl SecurifiedAccessRules for AccountSecurify {
+    const SECURIFY_IDENT: Option<&'static str> = None;
+    const OWNER_GROUP_NAME: &'static str = "owner";
+    const OWNER_TOKEN: ResourceAddress = ACCOUNT_OWNER_TOKEN;
+
+    fn non_owner_methods() -> Vec<(&'static str, MethodType)> {
+        let non_fungible_global_id = NonFungibleGlobalId::package_actor(EPOCH_MANAGER_PACKAGE);
+        access_rules.set_group_and_mutability(
+            MethodKey::new(NodeModuleId::SELF, VALIDATOR_STAKE_IDENT),
+            "owner".to_string(),
+            rule!(require(non_fungible_global_id)),
+        );
+        vec![
+            (VALIDATOR_UNSTAKE_IDENT, MethodType::Public),
+            (VALIDATOR_CLAIM_XRD_IDENT, MethodType::Public),
+            (VALIDATOR_STAKE_IDENT, MethodType::Custom(
+                AccessRuleEntry::Group(Self::OWNER_GROUP_NAME.to_string()),
+                AccessRuleEntry::AccessRule(
+                    rule!(require(non_fungible_global_id))
+                )
+            )),
+        ]
+    }
+}
+ */
+
 pub(crate) struct ValidatorCreator;
 
 impl ValidatorCreator {
@@ -615,19 +643,13 @@ impl ValidatorCreator {
             "owner".to_string(),
         );
 
-        let non_fungible_local_id =
-            NonFungibleLocalId::bytes(scrypto_encode(&EPOCH_MANAGER_PACKAGE).unwrap()).unwrap();
-        let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
+        let non_fungible_global_id = NonFungibleGlobalId::package_actor(EPOCH_MANAGER_PACKAGE);
         access_rules.set_group_and_mutability(
             MethodKey::new(NodeModuleId::SELF, VALIDATOR_STAKE_IDENT),
             "owner".to_string(),
             rule!(require(non_fungible_global_id)),
         );
 
-        access_rules.set_method_access_rule(
-            MethodKey::new(NodeModuleId::Metadata, METADATA_GET_IDENT),
-            rule!(allow_all),
-        );
         access_rules.set_method_access_rule(
             MethodKey::new(NodeModuleId::SELF, VALIDATOR_UNSTAKE_IDENT),
             rule!(allow_all),

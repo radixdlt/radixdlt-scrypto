@@ -209,14 +209,13 @@ impl AccessRulesConfig {
         self.grouped_auth_mutability.insert(group_key, mutability);
     }
 
-    pub fn set_access_rule_and_mutability<M: Into<AccessRuleEntry>>(
+    pub fn set_access_rule_and_mutability<A: Into<AccessRuleEntry>, M: Into<AccessRuleEntry>>(
         &mut self,
         key: MethodKey,
-        access_rule: AccessRule,
+        access_rule: A,
         mutability: M,
     ) {
-        self.method_auth
-            .insert(key.clone(), AccessRuleEntry::AccessRule(access_rule));
+        self.method_auth.insert(key.clone(), access_rule.into());
         self.method_auth_mutability.insert(key, mutability.into());
     }
 

@@ -11,7 +11,7 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::{AccessRule, Bucket, Proof};
 
-use crate::blueprints::util::SecurifiedAccessRules;
+use crate::blueprints::util::{MethodType, PresecurifiedAccessRules, SecurifiedAccessRules};
 use native_sdk::resource::{SysBucket, Vault};
 use radix_engine_interface::blueprints::identity::VirtualLazyLoadOutput;
 
@@ -33,18 +33,25 @@ impl From<AccountError> for RuntimeError {
     }
 }
 
-pub const OWNER_GROUP_NAME: &str = "owner";
+struct SecurifiedAccount;
 
-struct AccountSecurify;
-
-impl SecurifiedAccessRules for AccountSecurify {
-    const OWNER_GROUP_NAME: &'static str = OWNER_GROUP_NAME;
-    const PUBLIC_METHODS: &'static [&'static str] =
-        &[ACCOUNT_DEPOSIT_IDENT, ACCOUNT_DEPOSIT_BATCH_IDENT];
-    const SECURIFY_IDENT: &'static str = ACCOUNT_SECURIFY_IDENT;
-    const PACKAGE: PackageAddress = ACCOUNT_PACKAGE;
+impl SecurifiedAccessRules for SecurifiedAccount {
+    const SECURIFY_IDENT: Option<&'static str> = Some(ACCOUNT_SECURIFY_IDENT);
+    const OWNER_GROUP_NAME: &'static str = "owner";
     const OWNER_TOKEN: ResourceAddress = ACCOUNT_OWNER_TOKEN;
+
+    fn non_owner_methods() -> Vec<(&'static str, MethodType)> {
+        vec![
+            (ACCOUNT_DEPOSIT_IDENT, MethodType::Public),
+            (ACCOUNT_DEPOSIT_BATCH_IDENT, MethodType::Public),
+        ]
+    }
 }
+
+impl PresecurifiedAccessRules for SecurifiedAccount {
+    const PACKAGE: PackageAddress = ACCOUNT_PACKAGE;
+}
+
 
 pub struct AccountBlueprint;
 
@@ -80,7 +87,7 @@ impl AccountBlueprint {
             ECDSA_SECP256K1_TOKEN,
             NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
         );
-        let access_rules = AccountSecurify::create_presecurified(non_fungible_global_id, api)?;
+        let access_rules = SecurifiedAccount::create_presecurified(non_fungible_global_id, api)?;
         let modules = Self::create_modules(access_rules, api)?;
 
         Ok((account, modules))
@@ -98,7 +105,7 @@ impl AccountBlueprint {
             EDDSA_ED25519_TOKEN,
             NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
         );
-        let access_rules = AccountSecurify::create_presecurified(non_fungible_global_id, api)?;
+        let access_rules = SecurifiedAccount::create_presecurified(non_fungible_global_id, api)?;
         let modules = Self::create_modules(access_rules, api)?;
 
         Ok((account, modules))
@@ -108,7 +115,7 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        AccountSecurify::securify(receiver, api)
+        SecurifiedAccount::securify(receiver, api)
     }
 
     pub fn create_advanced<Y>(
@@ -120,7 +127,7 @@ impl AccountBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let account = Self::create_local(api)?;
-        let access_rules = AccountSecurify::create_advanced(withdraw_rule, mutability, api)?;
+        let access_rules = SecurifiedAccount::create_advanced(withdraw_rule, mutability, api)?;
         let modules = Self::create_modules(access_rules, api)?;
         let modules = modules
             .into_iter()
@@ -137,7 +144,7 @@ impl AccountBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let account = Self::create_local(api)?;
-        let (access_rules, bucket) = AccountSecurify::create_securified(api)?;
+        let (access_rules, bucket) = SecurifiedAccount::create_securified(api)?;
         let modules = Self::create_modules(access_rules, api)?;
         let modules = modules
             .into_iter()
