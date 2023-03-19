@@ -100,6 +100,13 @@ pub enum Instruction {
     ClearSignatureProofs,
 
     /// Publish a package.
+    PublishPackage {
+        code: ManifestBlobRef,
+        schema: ManifestBlobRef,
+        royalty_config: BTreeMap<String, RoyaltyConfig>,
+        metadata: BTreeMap<String, String>,
+    },
+
     PublishPackageAdvanced {
         code: ManifestBlobRef,
         schema: ManifestBlobRef,

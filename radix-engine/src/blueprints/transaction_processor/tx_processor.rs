@@ -271,6 +271,43 @@ impl TransactionProcessorBlueprint {
                     )?;
                     InstructionOutput::CallReturn(result.into())
                 }
+                Instruction::PublishPackage {
+                    code,
+                    schema,
+                    royalty_config,
+                    metadata,
+                } => {
+                    let code = processor.get_blob(&code)?;
+                    let schema = processor.get_blob(&schema)?;
+                    let schema = scrypto_decode::<PackageSchema>(schema).map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                            TransactionProcessorError::InvalidPackageSchema(e),
+                        ))
+                    })?;
+
+                    // TODO: remove clone by allowing invocation to have references, like in TransactionProcessorRunInvocation.
+                    let result = api.call_function(
+                        PACKAGE_PACKAGE,
+                        PACKAGE_BLUEPRINT,
+                        PACKAGE_PUBLISH_WASM_IDENT,
+                        scrypto_encode(&PackagePublishWasmInput {
+                            code: code.clone(),
+                            schema: schema.clone(),
+                            royalty_config: royalty_config.clone(),
+                            metadata: metadata.clone(),
+                        })
+                            .unwrap(),
+                    )?;
+
+                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result_indexed,
+                        &worktop,
+                        api,
+                    )?;
+
+                    InstructionOutput::CallReturn(result_indexed.into())
+                }
                 Instruction::PublishPackageAdvanced {
                     code,
                     schema,

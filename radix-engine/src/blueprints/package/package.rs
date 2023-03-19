@@ -488,7 +488,7 @@ impl PackageNativePackage {
         let (access_rules, bucket) = SecurifiedPackage::create_securified(api)?;
 
         let address = globalize_package(
-            package_address,
+            None,
             info,
             code_type,
             code,

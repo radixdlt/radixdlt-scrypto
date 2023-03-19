@@ -62,6 +62,9 @@ pub fn extract_refs_from_instruction(
             global_references.insert(resource_address.clone().into());
             extract_refs_from_value(&args, global_references, local_references);
         }
+        Instruction::PublishPackage { .. } => {
+            global_references.insert(PACKAGE_PACKAGE.clone().into());
+        }
         Instruction::PublishPackageAdvanced { access_rules, .. } => {
             global_references.insert(PACKAGE_PACKAGE.clone().into());
             // TODO: Remove and cleanup

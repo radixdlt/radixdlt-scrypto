@@ -277,13 +277,14 @@ impl NotarizedTransactionValidator {
                     Self::validate_call_args(&args, &mut id_validator)
                         .map_err(TransactionValidationError::CallDataValidationError)?;
                 }
-                Instruction::PublishPackageAdvanced { .. } => {}
                 Instruction::BurnResource { bucket_id } => {
                     id_validator
                         .drop_bucket(bucket_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::RecallResource { .. }
+                Instruction::PublishPackage { .. }
+                | Instruction::PublishPackageAdvanced { .. }
+                | Instruction::RecallResource { .. }
                 | Instruction::SetMetadata { .. }
                 | Instruction::RemoveMetadata { .. }
                 | Instruction::SetPackageRoyaltyConfig { .. }

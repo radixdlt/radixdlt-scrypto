@@ -401,6 +401,17 @@ pub fn generate_instruction(
                 args,
             }
         }
+        ast::Instruction::PublishPackage {
+            code,
+            schema,
+            royalty_config,
+            metadata,
+        } => Instruction::PublishPackage {
+            code: generate_blob(code, blobs)?,
+            schema: generate_blob(schema, blobs)?,
+            royalty_config: generate_typed_value(royalty_config, resolver, bech32_decoder, blobs)?,
+            metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
+        },
         ast::Instruction::PublishPackageAdvanced {
             code,
             schema,

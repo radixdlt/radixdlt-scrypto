@@ -437,6 +437,19 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_encoded_args(f, context, args)?;
             f.write_str(";")?;
         }
+        Instruction::PublishPackage {
+            code,
+            schema,
+            royalty_config,
+            metadata,
+        } => {
+            f.write_str("PUBLISH_PACKAGE")?;
+            format_typed_value(f, context, code)?;
+            format_typed_value(f, context, schema)?;
+            format_typed_value(f, context, royalty_config)?;
+            format_typed_value(f, context, metadata)?;
+            f.write_str(";")?;
+        }
         Instruction::PublishPackageAdvanced {
             code,
             schema,
