@@ -92,27 +92,20 @@ impl EpochManagerBlueprint {
         let mut validators = BTreeMap::new();
 
         for (key, validator_init) in validator_set {
-            let (owner_token_bucket, local_id) =
-                owner_resman.mint_non_fungible_single_uuid((), api)?;
-            let global_id = NonFungibleGlobalId::new(owner_resman.0, local_id.clone());
-
-            let validator_account = Account(validator_init.validator_account_address);
-            validator_account.deposit(owner_token_bucket, api)?;
-
             let stake = validator_init.initial_stake.sys_amount(api)?;
-            let (address, lp_bucket) = ValidatorCreator::create_with_initial_stake(
+            let (address, lp_bucket, owner_token_bucket) = ValidatorCreator::create_with_initial_stake(
                 address,
                 key,
-                rule!(require(global_id)),
                 validator_init.initial_stake,
                 true,
                 api,
             )?;
+
             let validator = Validator { key, stake };
             validators.insert(address, validator);
 
-            let staker_account = Account(validator_init.stake_account_address);
-            staker_account.deposit(lp_bucket, api)?;
+            Account(validator_init.validator_account_address).deposit(owner_token_bucket, api)?;
+            Account(validator_init.stake_account_address).deposit(lp_bucket, api)?;
         }
 
         let epoch_manager_id = {

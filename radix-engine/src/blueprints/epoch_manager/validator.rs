@@ -482,24 +482,20 @@ impl ValidatorBlueprint {
     }
 }
 
-/*
-impl SecurifiedAccessRules for AccountSecurify {
+struct SecurifiedValidator;
+
+impl SecurifiedAccessRules for SecurifiedValidator {
     const SECURIFY_IDENT: Option<&'static str> = None;
     const OWNER_GROUP_NAME: &'static str = "owner";
-    const OWNER_TOKEN: ResourceAddress = ACCOUNT_OWNER_TOKEN;
+    const OWNER_TOKEN: ResourceAddress = VALIDATOR_OWNER_TOKEN;
 
     fn non_owner_methods() -> Vec<(&'static str, MethodType)> {
         let non_fungible_global_id = NonFungibleGlobalId::package_actor(EPOCH_MANAGER_PACKAGE);
-        access_rules.set_group_and_mutability(
-            MethodKey::new(NodeModuleId::SELF, VALIDATOR_STAKE_IDENT),
-            "owner".to_string(),
-            rule!(require(non_fungible_global_id)),
-        );
         vec![
             (VALIDATOR_UNSTAKE_IDENT, MethodType::Public),
             (VALIDATOR_CLAIM_XRD_IDENT, MethodType::Public),
             (VALIDATOR_STAKE_IDENT, MethodType::Custom(
-                AccessRuleEntry::Group(Self::OWNER_GROUP_NAME.to_string()),
+                AccessRuleEntry::group(Self::OWNER_GROUP_NAME),
                 AccessRuleEntry::AccessRule(
                     rule!(require(non_fungible_global_id))
                 )
@@ -507,7 +503,6 @@ impl SecurifiedAccessRules for AccountSecurify {
         ]
     }
 }
- */
 
 pub(crate) struct ValidatorCreator;
 
@@ -665,11 +660,10 @@ impl ValidatorCreator {
     pub fn create_with_initial_stake<Y>(
         manager: ComponentAddress,
         key: EcdsaSecp256k1PublicKey,
-        owner_access_rule: AccessRule,
         initial_stake: Bucket,
         is_registered: bool,
         api: &mut Y,
-    ) -> Result<(ComponentAddress, Bucket), RuntimeError>
+    ) -> Result<(ComponentAddress, Bucket, Bucket), RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
@@ -699,21 +693,20 @@ impl ValidatorCreator {
             vec![scrypto_encode(&substate).unwrap()],
         )?;
 
-        let access_rules = Self::build_access_rules(owner_access_rule);
-        let access_rules = AccessRules::sys_new(access_rules, api)?.0;
+        let (access_rules, owner_token_bucket) = SecurifiedValidator::create_securified(api)?;
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(api, RoyaltyConfig::default())?;
 
         let address = api.globalize_with_address(
             RENodeId::Object(validator_id),
             btreemap!(
-                NodeModuleId::AccessRules => access_rules.id(),
+                NodeModuleId::AccessRules => access_rules.0.id(),
                 NodeModuleId::Metadata => metadata.id(),
                 NodeModuleId::ComponentRoyalty => royalty.id(),
             ),
             address.into(),
         )?;
-        Ok((address.into(), liquidity_bucket))
+        Ok((address.into(), liquidity_bucket, owner_token_bucket))
     }
 
     pub fn create<Y>(
